@@ -1,14 +1,15 @@
 import React from 'react';
-import { 
-  Zap, 
-  Shield, 
-  BarChart3, 
-  Users, 
-  MessageSquare, 
+import {
+  Zap,
+  Shield,
+  BarChart3,
+  Users,
+  MessageSquare,
   Clock,
   Sparkles,
   Lock,
 } from 'lucide-react';
+import { Link } from 'wouter';
 
 export default function Features() {
   const features = [
@@ -78,8 +79,8 @@ export default function Features() {
           {features.map((feature, index) => {
             const Icon = feature.icon;
             return (
-              <div 
-                key={index} 
+              <div
+                key={index}
                 className="bg-white rounded-xl p-6 shadow-sm hover:shadow-lg hover:border-blue-200 transition-all duration-300 border border-gray-100"
               >
                 <div className="mb-4">
@@ -104,9 +105,11 @@ export default function Features() {
           <p className="text-gray-600 mb-6">
             This is just the beginning. Discover more advanced features.
           </p>
-          <button className="border-2 border-gray-300 text-gray-900 px-8 py-3 rounded-lg font-semibold hover:border-gray-400 transition-all">
-            Explore All Features
-          </button>
+          <Link href="/login">
+            <button className="border-2 border-gray-300 text-gray-900 px-8 py-3 rounded-lg font-semibold hover:border-gray-400 transition-all cursor-pointer">
+              Explore All Features
+            </button>
+          </Link>
         </div>
       </div>
     </section>

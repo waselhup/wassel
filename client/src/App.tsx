@@ -14,6 +14,13 @@ import Leads from "./pages/Leads";
 import Queue from "./pages/Queue";
 import LeadImport from "./pages/LeadImport";
 import Templates from "./pages/Templates";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
+import Pricing from "./pages/Pricing";
+import Contact from "./pages/Contact";
+import Demo from "./pages/Demo";
+import Extension from "./pages/Extension";
+import About from "./pages/About";
 
 /**
  * Protected route wrapper that redirects to login if not authenticated
@@ -47,6 +54,13 @@ function Router() {
       <Route path={"/"} component={Landing} />
       <Route path={"/login"} component={Login} />
       <Route path={"/auth/callback"} component={AuthCallback} />
+      <Route path={"/privacy"} component={Privacy} />
+      <Route path={"/terms"} component={Terms} />
+      <Route path={"/pricing"} component={Pricing} />
+      <Route path={"/contact"} component={Contact} />
+      <Route path={"/demo"} component={Demo} />
+      <Route path={"/extension"} component={Extension} />
+      <Route path={"/about"} component={About} />
 
       {/* Protected routes */}
       <Route path={/^\/dashboard\/import/} component={() => <ProtectedRoute component={LeadImport} />} />

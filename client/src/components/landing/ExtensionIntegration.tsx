@@ -1,5 +1,6 @@
 import React from 'react';
 import { Chrome, ArrowRight, CheckCircle } from 'lucide-react';
+import { Link } from 'wouter';
 
 export default function ExtensionIntegration() {
   const steps = [
@@ -68,10 +69,12 @@ export default function ExtensionIntegration() {
                 </div>
               ))}
             </div>
-            <button className="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-all inline-flex items-center gap-2">
-              Download Extension
-              <ArrowRight size={20} />
-            </button>
+            <Link href="/extension">
+              <button className="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-all inline-flex items-center gap-2 cursor-pointer">
+                Download Extension
+                <ArrowRight size={20} />
+              </button>
+            </Link>
           </div>
         </div>
 
@@ -108,10 +111,12 @@ export default function ExtensionIntegration() {
           <p className="text-lg opacity-90 mb-8 max-w-2xl mx-auto">
             Join thousands of users achieving remarkable results with Wassel
           </p>
-          <button className="bg-white text-blue-600 font-semibold px-8 py-4 rounded-lg hover:shadow-lg transition-all inline-flex items-center gap-2">
-            Start Free Trial
-            <ArrowRight size={20} />
-          </button>
+          <Link href="/login">
+            <button className="bg-white text-blue-600 font-semibold px-8 py-4 rounded-lg hover:shadow-lg transition-all inline-flex items-center gap-2 cursor-pointer">
+              Start Free Trial
+              <ArrowRight size={20} />
+            </button>
+          </Link>
         </div>
       </div>
     </section>

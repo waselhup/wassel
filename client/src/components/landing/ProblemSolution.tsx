@@ -1,5 +1,6 @@
 import React from 'react';
 import { AlertCircle, CheckCircle, ArrowRight } from 'lucide-react';
+import { Link } from 'wouter';
 
 export default function ProblemSolution() {
   const problems = [
@@ -113,10 +114,12 @@ export default function ProblemSolution() {
           <p className="text-lg text-gray-700 max-w-2xl mx-auto mb-8">
             Spend less time on manual management, focus on building real and valuable relationships.
           </p>
-          <button className="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-all inline-flex items-center gap-2">
-            Discover How It Works
-            <ArrowRight size={20} />
-          </button>
+          <Link href="/login">
+            <button className="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-all inline-flex items-center gap-2 cursor-pointer">
+              Discover How It Works
+              <ArrowRight size={20} />
+            </button>
+          </Link>
         </div>
       </div>
     </section>

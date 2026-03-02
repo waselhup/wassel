@@ -1,5 +1,6 @@
 import React from 'react';
 import { Mail, Linkedin, Twitter, Instagram } from 'lucide-react';
+import { Link } from 'wouter';
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
@@ -8,46 +9,46 @@ export default function Footer() {
     {
       title: 'Product',
       links: [
-        { label: 'Features', href: '#features' },
-        { label: 'Pricing', href: '#pricing' },
-        { label: 'Extension', href: '#extension' },
-        { label: 'Roadmap', href: '#roadmap' },
+        { label: 'Features', href: '/#features' },
+        { label: 'Pricing', href: '/pricing' },
+        { label: 'Extension', href: '/extension' },
+        { label: 'Demo', href: '/demo' },
       ],
     },
     {
       title: 'Company',
       links: [
-        { label: 'About', href: '#about' },
-        { label: 'Blog', href: '#blog' },
-        { label: 'Careers', href: '#careers' },
-        { label: 'Contact', href: '#contact' },
+        { label: 'About', href: '/about' },
+        { label: 'Contact', href: '/contact' },
+        { label: 'Blog', href: '/contact' },
+        { label: 'Careers', href: '/contact' },
       ],
     },
     {
       title: 'Resources',
       links: [
-        { label: 'Guide', href: '#guide' },
-        { label: 'Videos', href: '#videos' },
-        { label: 'Community', href: '#community' },
-        { label: 'FAQ', href: '#faq' },
+        { label: 'Guide', href: '/demo' },
+        { label: 'Videos', href: '/demo' },
+        { label: 'Community', href: '/contact' },
+        { label: 'FAQ', href: '/contact' },
       ],
     },
     {
       title: 'Legal',
       links: [
-        { label: 'Privacy', href: '#privacy' },
-        { label: 'Terms', href: '#terms' },
-        { label: 'Cookies', href: '#cookies' },
-        { label: 'Compliance', href: '#compliance' },
+        { label: 'Privacy', href: '/privacy' },
+        { label: 'Terms', href: '/terms' },
+        { label: 'Cookies', href: '/privacy' },
+        { label: 'Compliance', href: '/terms' },
       ],
     },
   ];
 
   const socialLinks = [
-    { icon: Linkedin, href: '#linkedin', label: 'LinkedIn' },
-    { icon: Twitter, href: '#twitter', label: 'Twitter' },
-    { icon: Instagram, href: '#instagram', label: 'Instagram' },
-    { icon: Mail, href: '#email', label: 'Email' },
+    { icon: Linkedin, href: 'https://www.linkedin.com', label: 'LinkedIn' },
+    { icon: Twitter, href: 'https://twitter.com', label: 'Twitter' },
+    { icon: Instagram, href: 'https://instagram.com', label: 'Instagram' },
+    { icon: Mail, href: 'mailto:support@wassel.app', label: 'Email' },
   ];
 
   return (
@@ -67,7 +68,10 @@ export default function Footer() {
                 placeholder="Your email"
                 className="flex-1 px-4 py-3 rounded-lg bg-gray-800 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-600"
               />
-              <button className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-all">
+              <button
+                onClick={() => alert('Thank you for subscribing!')}
+                className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-all cursor-pointer"
+              >
                 Subscribe
               </button>
             </div>
@@ -95,6 +99,8 @@ export default function Footer() {
                   <a
                     key={index}
                     href={social.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     aria-label={social.label}
                     className="p-2 bg-gray-800 rounded-lg hover:bg-blue-600 transition-colors"
                   >
@@ -114,12 +120,12 @@ export default function Footer() {
                 <ul className="space-y-3">
                   {section.links.map((link, linkIndex) => (
                     <li key={linkIndex}>
-                      <a
+                      <Link
                         href={link.href}
                         className="text-gray-400 hover:text-white transition-colors"
                       >
                         {link.label}
-                      </a>
+                      </Link>
                     </li>
                   ))}
                 </ul>
@@ -132,15 +138,15 @@ export default function Footer() {
               © {currentYear} Wassel. All rights reserved.
             </p>
             <div className="flex gap-6 text-sm">
-              <a href="#privacy" className="text-gray-400 hover:text-white transition-colors">
+              <Link href="/privacy" className="text-gray-400 hover:text-white transition-colors">
                 Privacy
-              </a>
-              <a href="#terms" className="text-gray-400 hover:text-white transition-colors">
+              </Link>
+              <Link href="/terms" className="text-gray-400 hover:text-white transition-colors">
                 Terms
-              </a>
-              <a href="#cookies" className="text-gray-400 hover:text-white transition-colors">
-                Cookies
-              </a>
+              </Link>
+              <Link href="/contact" className="text-gray-400 hover:text-white transition-colors">
+                Contact
+              </Link>
             </div>
           </div>
         </div>
