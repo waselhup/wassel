@@ -1,0 +1,8 @@
+{
+  "query": "\nALTER TABLE campaigns ADD COLUMN client_id VARCHAR(36) DEFAULT NULL;\nALTER TABLE campaigns ADD COLUMN client_name VARCHAR(255) DEFAULT NULL;\n\nALTER TABLE leads ADD COLUMN client_id VARCHAR(36) DEFAULT NULL;\n\nALTER TABLE action_queue ADD COLUMN client_id VARCHAR(36) DEFAULT NULL;\n\nCREATE INDEX idx_campaigns_client_id ON campaigns(client_id);\nCREATE INDEX idx_leads_client_id ON leads(client_id);\nCREATE INDEX idx_action_queue_client_id ON action_queue(client_id);\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2sFPqyC1Ze76W1E.c80aa5ab5781 --database 6RoJdTu7RaLNRbncJ8kgEz --execute \nALTER TABLE campaigns ADD COLUMN client_id VARCHAR(36) DEFAULT NULL;\nALTER TABLE campaigns ADD COLUMN client_name VARCHAR(255) DEFAULT NULL;\n\nALTER TABLE leads ADD COLUMN client_id VARCHAR(36) DEFAULT NULL;\n\nALTER TABLE action_queue ADD COLUMN client_id VARCHAR(36) DEFAULT NULL;\n\nCREATE INDEX idx_campaigns_client_id ON campaigns(client_id);\nCREATE INDEX idx_leads_client_id ON leads(client_id);\nCREATE INDEX idx_action_queue_client_id ON action_queue(client_id);\n",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1146 (42S02) at line 7: Table '6rojdtu7ralnrbncj8kgez.action_queue' doesn't exist"
+  ]
+}

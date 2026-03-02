@@ -1,0 +1,8 @@
+{
+  "query": "\n-- Add client_id to campaigns table\nALTER TABLE campaigns ADD COLUMN client_id UUID DEFAULT NULL;\nALTER TABLE campaigns ADD COLUMN client_name VARCHAR(255) DEFAULT NULL;\n\n-- Add client_id to leads table\nALTER TABLE leads ADD COLUMN client_id UUID DEFAULT NULL;\n\n-- Add client_id to action_queue table\nALTER TABLE action_queue ADD COLUMN client_id UUID DEFAULT NULL;\n\n-- Create index for faster filtering\nCREATE INDEX idx_campaigns_client_id ON campaigns(client_id);\nCREATE INDEX idx_leads_client_id ON leads(client_id);\nCREATE INDEX idx_action_queue_client_id ON action_queue(client_id);\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2sFPqyC1Ze76W1E.c80aa5ab5781 --database 6RoJdTu7RaLNRbncJ8kgEz --execute \n-- Add client_id to campaigns table\nALTER TABLE campaigns ADD COLUMN client_id UUID DEFAULT NULL;\nALTER TABLE campaigns ADD COLUMN client_name VARCHAR(255) DEFAULT NULL;\n\n-- Add client_id to leads table\nALTER TABLE leads ADD COLUMN client_id UUID DEFAULT NULL;\n\n-- Add client_id to action_queue table\nALTER TABLE action_queue ADD COLUMN client_id UUID DEFAULT NULL;\n\n-- Create index for faster filtering\nCREATE INDEX idx_campaigns_client_id ON campaigns(client_id);\nCREATE INDEX idx_leads_client_id ON leads(client_id);\nCREATE INDEX idx_action_queue_client_id ON action_queue(client_id);\n",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1064 (42000) at line 3: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 47 near \"UUID DEFAULT NULL\""
+  ]
+}

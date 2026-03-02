@@ -1,5 +1,4 @@
 -- Enable extensions
-create extension if not exists "uuid-ossp";
 create extension if not exists "pgcrypto";
 
 -- Profiles (extends auth.users)
@@ -25,7 +24,7 @@ create table public.profiles (
 
 -- Teams (multi-tenant)
 create table public.teams (
-  id uuid default uuid_generate_v4() primary key,
+  id uuid default gen_random_uuid() primary key,
   name text not null,
   slug text unique not null,
   owner_id uuid references public.profiles(id) on delete cascade not null,
@@ -38,7 +37,7 @@ create table public.teams (
 
 -- Team Members
 create table public.team_members (
-  id uuid default uuid_generate_v4() primary key,
+  id uuid default gen_random_uuid() primary key,
   team_id uuid references public.teams(id) on delete cascade not null,
   user_id uuid references public.profiles(id) on delete cascade not null,
   role text default 'member' check (role in ('owner', 'admin', 'member')),
@@ -48,7 +47,7 @@ create table public.team_members (
 
 -- Campaigns
 create table public.campaigns (
-  id uuid default uuid_generate_v4() primary key,
+  id uuid default gen_random_uuid() primary key,
   team_id uuid references public.teams(id) on delete cascade not null,
   name text not null,
   description text,
@@ -66,7 +65,7 @@ create table public.campaigns (
 
 -- Campaign Steps (sequence)
 create table public.campaign_steps (
-  id uuid default uuid_generate_v4() primary key,
+  id uuid default gen_random_uuid() primary key,
   campaign_id uuid references public.campaigns(id) on delete cascade not null,
   step_number integer not null,
   step_type text not null check (step_type in ('visit', 'follow', 'invitation', 'message', 'email', 'delay', 'condition')),
@@ -78,7 +77,7 @@ create table public.campaign_steps (
 
 -- Leads
 create table public.leads (
-  id uuid default uuid_generate_v4() primary key,
+  id uuid default gen_random_uuid() primary key,
   team_id uuid references public.teams(id) on delete cascade not null,
   campaign_id uuid references public.campaigns(id) on delete set null,
   linkedin_id text,
@@ -108,7 +107,7 @@ create table public.leads (
 
 -- Action Queue (human-in-the-loop)
 create table public.action_queue (
-  id uuid default uuid_generate_v4() primary key,
+  id uuid default gen_random_uuid() primary key,
   team_id uuid references public.teams(id) on delete cascade not null,
   campaign_id uuid references public.campaigns(id) on delete cascade not null,
   lead_id uuid references public.leads(id) on delete cascade not null,
@@ -130,7 +129,7 @@ create table public.action_queue (
 
 -- Message Templates
 create table public.message_templates (
-  id uuid default uuid_generate_v4() primary key,
+  id uuid default gen_random_uuid() primary key,
   team_id uuid references public.teams(id) on delete cascade not null,
   name text not null,
   category text,
@@ -145,7 +144,7 @@ create table public.message_templates (
 
 -- Events (analytics)
 create table public.events (
-  id uuid default uuid_generate_v4() primary key,
+  id uuid default gen_random_uuid() primary key,
   team_id uuid references public.teams(id) on delete cascade not null,
   user_id uuid references public.profiles(id) on delete set null,
   event_type text not null,
@@ -157,7 +156,7 @@ create table public.events (
 
 -- Credit Transactions
 create table public.credit_transactions (
-  id uuid default uuid_generate_v4() primary key,
+  id uuid default gen_random_uuid() primary key,
   team_id uuid references public.teams(id) on delete cascade not null,
   user_id uuid references public.profiles(id) on delete set null,
   amount integer not null,
