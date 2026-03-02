@@ -1,12 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "مساعد وصل | Wassel Assistant",
-  "name_i18n": {
-    "en": "Wassel Assistant"
-  },
+  "name": "Wassel Assistant",
   "version": "1.0.0",
-  "description": "أداة احترافية لإدارة علاقات LinkedIn | Professional LinkedIn relationship management tool",
-  "default_locale": "ar",
+  "description": "Import LinkedIn prospects into Wassel campaigns",
   "permissions": [
     "storage",
     "activeTab",
@@ -14,14 +10,13 @@
   ],
   "host_permissions": [
     "https://www.linkedin.com/*",
-    "http://localhost:3000/*"
+    "https://wassel-alpha.vercel.app/*"
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "مساعد وصل",
+    "default_title": "Wassel Assistant",
     "default_icon": {
       "16": "icons/icon16.png",
-      "32": "icons/icon32.png",
       "48": "icons/icon48.png",
       "128": "icons/icon128.png"
     }
@@ -32,24 +27,36 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://www.linkedin.com/*"],
-      "js": ["content.js"],
-      "css": ["content.css"],
+      "matches": [
+        "https://www.linkedin.com/search/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "css": [
+        "content.css"
+      ],
       "run_at": "document_idle"
     }
   ],
   "web_accessible_resources": [
     {
-      "resources": ["sidebar.html", "assets/*"],
-      "matches": ["https://www.linkedin.com/*"]
+      "resources": [
+        "sidebar.html",
+        "icons/*"
+      ],
+      "matches": [
+        "https://www.linkedin.com/*"
+      ]
     }
   ],
   "externally_connectable": {
-    "matches": ["http://localhost:3000/*"]
+    "matches": [
+      "https://wassel-alpha.vercel.app/*"
+    ]
   },
   "icons": {
     "16": "icons/icon16.png",
-    "32": "icons/icon32.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   }

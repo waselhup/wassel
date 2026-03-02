@@ -181,29 +181,39 @@ export default function Dashboard() {
                       </div>
                     </div>
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${client.status === 'connected' ? 'bg-green-100 text-green-700' :
-                        client.status === 'invited' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-700'
+                      client.status === 'invited' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-700'
                       }`}>
                       {client.status === 'connected' ? 'Connected ✅' : client.status === 'invited' ? 'Invited 📧' : 'Pending ⏳'}
                     </span>
                   </div>
                   {client.status === 'connected' && (
                     <div className="flex items-center gap-2 mt-3 ml-14">
+                      <button onClick={() => {
+                        const config = JSON.stringify({ clientId: client.id, apiUrl: `${window.location.origin}/api` });
+                        navigator.clipboard.writeText(config);
+                        window.open('https://www.linkedin.com/search/results/people/', '_blank');
+                      }}
+                        className="text-xs bg-blue-600 text-white px-4 py-1.5 rounded-md hover:bg-blue-700 transition-colors inline-flex items-center gap-1 font-semibold"
+                      >
+                        ⚡ Operate
+                      </button>
                       <a href="https://www.linkedin.com/search/results/people/" target="_blank" rel="noopener noreferrer"
                         className="text-xs bg-blue-50 text-blue-700 px-3 py-1.5 rounded-md hover:bg-blue-100 transition-colors inline-flex items-center gap-1"
                       >
-                        <Linkedin className="w-3 h-3" /> Open LinkedIn ↗
+                        <Linkedin className="w-3 h-3" /> LinkedIn ↗
                       </a>
                       <a href="/extension"
                         className="text-xs bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-md hover:bg-indigo-100 transition-colors"
                       >
-                        Extension Setup
+                        Extension
                       </a>
                       <button onClick={() => copyToClipboard(JSON.stringify({ clientId: client.id, apiUrl: `${window.location.origin}/api` }))}
                         className="text-xs bg-gray-50 text-gray-700 px-3 py-1.5 rounded-md hover:bg-gray-100 transition-colors inline-flex items-center gap-1"
                       >
-                        <Copy className="w-3 h-3" /> Copy Pairing
+                        <Copy className="w-3 h-3" /> Pair
                       </button>
                     </div>
+
                   )}
                 </Card>
               ))}
