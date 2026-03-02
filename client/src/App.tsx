@@ -25,23 +25,25 @@ import Invite from "./pages/Invite";
 import Connected from "./pages/Connected";
 
 /**
- * Protected route wrapper that redirects to login if not authenticated
+ * Protected route wrapper that redirects to login if not authenticated.
+ * Accepts either Supabase session OR admin key from localStorage.
  */
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
   const { user, loading } = useAuth();
+  const hasAdminKey = !!localStorage.getItem('wassel_admin_key');
 
-  if (loading) {
+  if (loading && !hasAdminKey) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">جاري التحقق من جلستك...</p>
+          <p className="text-gray-600">Verifying session...</p>
         </div>
       </div>
     );
   }
 
-  if (!user) {
+  if (!user && !hasAdminKey) {
     window.location.href = '/login';
     return null;
   }
