@@ -1,5 +1,6 @@
 import React from 'react';
 import { ArrowRight, Sparkles } from 'lucide-react';
+import { Link } from 'wouter';
 
 export default function Hero() {
   return (
@@ -31,13 +32,17 @@ export default function Hero() {
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
-          <button className="bg-blue-600 text-white px-8 py-4 text-lg rounded-lg font-semibold hover:bg-blue-700 transition-all shadow-lg">
-            Start Free
-            <ArrowRight size={20} className="inline ml-2" />
-          </button>
-          <button className="border-2 border-gray-300 text-gray-900 px-8 py-4 text-lg rounded-lg font-semibold hover:border-gray-400 transition-all">
-            Watch Demo
-          </button>
+          <Link href="/login">
+            <button className="bg-blue-600 text-white px-8 py-4 text-lg rounded-lg font-semibold hover:bg-blue-700 transition-all shadow-lg cursor-pointer">
+              Start Free
+              <ArrowRight size={20} className="inline ml-2" />
+            </button>
+          </Link>
+          <Link href="/login">
+            <button className="border-2 border-gray-300 text-gray-900 px-8 py-4 text-lg rounded-lg font-semibold hover:border-gray-400 transition-all cursor-pointer">
+              Watch Demo
+            </button>
+          </Link>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-8 justify-center items-center text-sm text-gray-600 border-t border-gray-200 pt-8">

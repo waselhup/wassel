@@ -1,5 +1,6 @@
 import React from 'react';
 import { ArrowRight, Check } from 'lucide-react';
+import { Link } from 'wouter';
 
 export default function CTA() {
   const features = [
@@ -23,13 +24,17 @@ export default function CTA() {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-            <button className="bg-blue-600 text-white px-10 py-4 text-lg rounded-lg font-semibold hover:bg-blue-700 transition-all shadow-lg flex items-center justify-center gap-2">
-              Start Free Now
-              <ArrowRight size={20} />
-            </button>
-            <button className="border-2 border-gray-300 text-gray-900 px-10 py-4 text-lg rounded-lg font-semibold hover:border-gray-400 transition-all">
-              Watch Demo
-            </button>
+            <Link href="/login">
+              <button className="bg-blue-600 text-white px-10 py-4 text-lg rounded-lg font-semibold hover:bg-blue-700 transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer">
+                Start Free Now
+                <ArrowRight size={20} />
+              </button>
+            </Link>
+            <Link href="/login">
+              <button className="border-2 border-gray-300 text-gray-900 px-10 py-4 text-lg rounded-lg font-semibold hover:border-gray-400 transition-all cursor-pointer">
+                Watch Demo
+              </button>
+            </Link>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-8 border-t border-gray-200">
