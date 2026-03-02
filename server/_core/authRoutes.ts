@@ -36,6 +36,16 @@ router.post('/magic-link', async (req, res) => {
 
     if (error) {
       console.error('Magic link error:', error);
+
+      // Detect rate limit errors from Supabase
+      const errMsg = (error.message || '').toLowerCase();
+      if (errMsg.includes('rate') || errMsg.includes('exceeded') || errMsg.includes('too many') || error.status === 429) {
+        return res.status(429).json({
+          error: 'تم تجاوز الحد الأقصى لعدد المحاولات. الرجاء الانتظار دقيقة قبل المحاولة مرة أخرى.',
+          rateLimited: true,
+        });
+      }
+
       return res.status(400).json({ error: error.message || 'فشل إرسال رابط تسجيل الدخول' });
     }
 
