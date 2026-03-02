@@ -2,6 +2,9 @@ import express from "express";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
 import authRoutes from "./authRoutes";
+import linkedinAuthRoutes from "./linkedinAuth";
+import inviteRoutes from "./inviteRoutes";
+import extensionRoutes from "./extensionRoutes";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import cors from "cors";
@@ -26,6 +29,10 @@ app.use((req, res, next) => {
 
 registerOAuthRoutes(app);
 app.use("/api/auth", authRoutes);
+app.use("/api/auth/linkedin", linkedinAuthRoutes);
+app.use("/api/invites", inviteRoutes);
+app.use("/api/clients", inviteRoutes);
+app.use("/api/ext", extensionRoutes);
 
 // Health check endpoint
 app.get("/api/health", (_req: any, res: any) => {

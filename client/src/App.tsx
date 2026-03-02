@@ -21,6 +21,8 @@ import Contact from "./pages/Contact";
 import Demo from "./pages/Demo";
 import Extension from "./pages/Extension";
 import About from "./pages/About";
+import Invite from "./pages/Invite";
+import Connected from "./pages/Connected";
 
 /**
  * Protected route wrapper that redirects to login if not authenticated
@@ -61,6 +63,8 @@ function Router() {
       <Route path={"/demo"} component={Demo} />
       <Route path={"/extension"} component={Extension} />
       <Route path={"/about"} component={About} />
+      <Route path="/invite/:token" component={Invite} />
+      <Route path={"/connected"} component={Connected} />
 
       {/* Protected routes */}
       <Route path={/^\/dashboard\/import/} component={() => <ProtectedRoute component={LeadImport} />} />
