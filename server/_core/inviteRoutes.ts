@@ -1,42 +1,50 @@
 import { Router, Request, Response } from 'express';
 import { randomBytes } from 'crypto';
 import { supabase } from '../supabase';
-import { getUserTeamId } from '../db';
 
 const router = Router();
 
 const INVITE_EXPIRY_HOURS = 72;
 
 /**
+ * Verify admin access via ADMIN_KEY (not Supabase JWT).
+ */
+function requireAdmin(req: Request, res: Response): boolean {
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith('Bearer ')) {
+        res.status(401).json({ error: 'Authentication required' });
+        return false;
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const adminKey = process.env.ADMIN_KEY;
+
+    if (!adminKey || token !== adminKey) {
+        res.status(401).json({ error: 'Invalid admin key' });
+        return false;
+    }
+
+    return true;
+}
+
+/**
  * POST /api/invites/send
  * Admin sends an invite to a client email.
  * Body: { email: string, name?: string }
- * Requires: Authorization header with Supabase JWT
+ * Requires: Authorization: Bearer <ADMIN_KEY>
  */
 router.post('/send', async (req: Request, res: Response) => {
     try {
-        // Get admin user from Authorization header
-        const authHeader = req.headers.authorization;
-        if (!authHeader?.startsWith('Bearer ')) {
-            return res.status(401).json({ error: 'Authentication required' });
-        }
-
-        const token = authHeader.replace('Bearer ', '');
-        const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-
-        if (authError || !user) {
-            return res.status(401).json({ error: 'Invalid authentication' });
-        }
-
-        const teamId = await getUserTeamId(user.id);
-        if (!teamId) {
-            return res.status(403).json({ error: 'No team found for user' });
-        }
+        if (!requireAdmin(req, res)) return;
 
         const { email, name } = req.body;
         if (!email || typeof email !== 'string') {
             return res.status(400).json({ error: 'Email is required' });
         }
+
+        // For admin-key auth, we use a default team ID
+        // In production, this would come from a teams table
+        const teamId = process.env.DEFAULT_TEAM_ID || '00000000-0000-0000-0000-000000000001';
 
         // Create or find client
         let clientId: string;
@@ -65,6 +73,7 @@ router.post('/send', async (req: Request, res: Response) => {
             }
             clientId = newClient.id;
         }
+
 
         // Generate invite token
         const inviteToken = randomBytes(32).toString('hex');
@@ -182,26 +191,13 @@ router.get('/validate/:token', async (req: Request, res: Response) => {
 /**
  * GET /api/clients/status
  * Lists all clients with their statuses (admin-only).
- * Requires: Authorization header with Supabase JWT
+ * Requires: Authorization: Bearer <ADMIN_KEY>
  */
 router.get('/status', async (req: Request, res: Response) => {
     try {
-        const authHeader = req.headers.authorization;
-        if (!authHeader?.startsWith('Bearer ')) {
-            return res.status(401).json({ error: 'Authentication required' });
-        }
+        if (!requireAdmin(req, res)) return;
 
-        const token = authHeader.replace('Bearer ', '');
-        const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-
-        if (authError || !user) {
-            return res.status(401).json({ error: 'Invalid authentication' });
-        }
-
-        const teamId = await getUserTeamId(user.id);
-        if (!teamId) {
-            return res.status(403).json({ error: 'No team found' });
-        }
+        const teamId = process.env.DEFAULT_TEAM_ID || '00000000-0000-0000-0000-000000000001';
 
         const { data: clients, error: clientsError } = await supabase
             .from('clients')
@@ -228,5 +224,6 @@ router.get('/status', async (req: Request, res: Response) => {
         res.status(500).json({ error: 'Server error' });
     }
 });
+
 
 export default router;

@@ -23,7 +23,7 @@ router.post('/magic-link', async (req, res) => {
     }
 
     // Get the origin from the request for redirect URL
-    const origin = req.get('origin') || process.env.VITE_FRONTEND_URL || 'http://localhost:3000';
+    const origin = req.get('origin') || process.env.VITE_FRONTEND_URL || process.env.APP_URL || 'https://wassel-alpha.vercel.app';
     const redirectUrl = `${origin}/auth/callback`;
 
     // Send magic link

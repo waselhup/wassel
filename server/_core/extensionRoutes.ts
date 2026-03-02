@@ -1,13 +1,12 @@
 import { Router, Request, Response } from 'express';
 import { supabase } from '../supabase';
-import { getUserTeamId } from '../db';
 
 const router = Router();
 
 /**
- * Middleware: extract admin user + team from Authorization header
+ * Middleware: verify admin access via ADMIN_KEY
  */
-async function requireAdmin(req: Request, res: Response): Promise<{ userId: string; teamId: string } | null> {
+function requireAdmin(req: Request, res: Response): { teamId: string } | null {
     const authHeader = req.headers.authorization;
     if (!authHeader?.startsWith('Bearer ')) {
         res.status(401).json({ error: 'Authentication required' });
@@ -15,21 +14,17 @@ async function requireAdmin(req: Request, res: Response): Promise<{ userId: stri
     }
 
     const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error } = await supabase.auth.getUser(token);
+    const adminKey = process.env.ADMIN_KEY;
 
-    if (error || !user) {
-        res.status(401).json({ error: 'Invalid authentication' });
+    if (!adminKey || token !== adminKey) {
+        res.status(401).json({ error: 'Invalid admin key' });
         return null;
     }
 
-    const teamId = await getUserTeamId(user.id);
-    if (!teamId) {
-        res.status(403).json({ error: 'No team found' });
-        return null;
-    }
-
-    return { userId: user.id, teamId };
+    const teamId = process.env.DEFAULT_TEAM_ID || '00000000-0000-0000-0000-000000000001';
+    return { teamId };
 }
+
 
 /**
  * GET /api/ext/bootstrap?client_id=...
