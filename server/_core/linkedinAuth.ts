@@ -11,14 +11,30 @@ const LINKEDIN_USERINFO_URL = 'https://api.linkedin.com/v2/userinfo';
 const SCOPES = 'openid profile email';
 const STATE_TTL_MINUTES = 10;
 
-function getConfig() {
-    const clientId = process.env.LINKEDIN_CLIENT_ID;
-    const clientSecret = process.env.LINKEDIN_CLIENT_SECRET;
-    const redirectUri = process.env.LINKEDIN_REDIRECT_URI || 'https://wassel-alpha.vercel.app/api/auth/linkedin/callback';
-    const appUrl = process.env.APP_URL || 'https://wassel-alpha.vercel.app';
+/**
+ * Sanitize an env var: trim whitespace, strip surrounding quotes.
+ */
+function sanitizeEnv(val: string | undefined): string {
+    if (!val) return '';
+    let s = val.trim();
+    // Strip surrounding single or double quotes
+    if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) {
+        s = s.slice(1, -1).trim();
+    }
+    return s;
+}
 
-    if (!clientId || !clientSecret) {
-        throw new Error('Missing LINKEDIN_CLIENT_ID or LINKEDIN_CLIENT_SECRET');
+function getConfig() {
+    const clientId = sanitizeEnv(process.env.LINKEDIN_CLIENT_ID);
+    const clientSecret = sanitizeEnv(process.env.LINKEDIN_CLIENT_SECRET);
+    const redirectUri = sanitizeEnv(process.env.LINKEDIN_REDIRECT_URI) || 'https://wassel-alpha.vercel.app/api/auth/linkedin/callback';
+    const appUrl = sanitizeEnv(process.env.APP_URL) || 'https://wassel-alpha.vercel.app';
+
+    if (!clientId || clientId.includes(' ')) {
+        throw new Error(`Missing/invalid LINKEDIN_CLIENT_ID env var (len=${clientId.length}, hasSpace=${clientId.includes(' ')})`);
+    }
+    if (!clientSecret || clientSecret.includes(' ')) {
+        throw new Error(`Missing/invalid LINKEDIN_CLIENT_SECRET env var (len=${clientSecret.length})`);
     }
 
     return { clientId, clientSecret, redirectUri, appUrl };
@@ -66,23 +82,56 @@ router.get('/start', async (req: Request, res: Response) => {
             expires_at: expiresAt,
         });
 
-        const config = getConfig();
+        let config: ReturnType<typeof getConfig>;
+        try {
+            config = getConfig();
+        } catch (envErr: any) {
+            console.error('[LinkedIn OAuth] ENV_ERROR:', envErr.message);
+            return res.status(500).json({ error: envErr.message });
+        }
 
-        // Build LinkedIn OAuth URL
-        const params = new URLSearchParams({
-            response_type: 'code',
-            client_id: config.clientId,
-            redirect_uri: config.redirectUri,
-            state,
-            scope: SCOPES,
-        });
+        // Debug logging (safe: mask most of client_id)
+        const tail = config.clientId.slice(-3);
+        const masked = '*'.repeat(Math.max(0, config.clientId.length - 3)) + tail;
+        console.log(`[LinkedIn OAuth] START client_id_len=${config.clientId.length} client_id=${masked} redirect_uri=${config.redirectUri} scope=${SCOPES} state=${state.substring(0, 8)}...`);
 
-        const authUrl = `${LINKEDIN_AUTH_URL}?${params.toString()}`;
+        // Build LinkedIn OAuth URL — use manual concatenation to avoid any URLSearchParams encoding issues
+        const authUrl = `${LINKEDIN_AUTH_URL}?response_type=code&client_id=${encodeURIComponent(config.clientId)}&redirect_uri=${encodeURIComponent(config.redirectUri)}&state=${encodeURIComponent(state)}&scope=${encodeURIComponent(SCOPES)}`;
+
+        console.log(`[LinkedIn OAuth] REDIRECT_URL=${authUrl.substring(0, 120)}...`);
+
         return res.redirect(302, authUrl);
     } catch (error) {
         console.error('[LinkedIn OAuth] Start error:', error);
         return res.status(500).json({ error: 'Failed to start LinkedIn OAuth' });
     }
+});
+
+/**
+ * GET /api/auth/linkedin/debug
+ * Returns masked OAuth config for diagnosing issues. No auth required (read-only, safe).
+ */
+router.get('/debug', (_req: Request, res: Response) => {
+    const rawId = process.env.LINKEDIN_CLIENT_ID || '';
+    const rawSecret = process.env.LINKEDIN_CLIENT_SECRET || '';
+    const rawRedirect = process.env.LINKEDIN_REDIRECT_URI || '';
+
+    const clientId = sanitizeEnv(process.env.LINKEDIN_CLIENT_ID);
+    const redirectUri = sanitizeEnv(process.env.LINKEDIN_REDIRECT_URI) || 'https://wassel-alpha.vercel.app/api/auth/linkedin/callback';
+
+    res.json({
+        client_id_raw_len: rawId.length,
+        client_id_raw_first3: rawId.substring(0, 3),
+        client_id_raw_last3: rawId.slice(-3),
+        client_id_raw_charCodes_first5: Array.from(rawId.substring(0, 5)).map(c => c.charCodeAt(0)),
+        client_id_sanitized: clientId ? `${clientId.substring(0, 3)}..${clientId.slice(-3)}` : 'EMPTY',
+        client_id_sanitized_len: clientId.length,
+        client_secret_present: rawSecret.length > 0,
+        client_secret_len: rawSecret.length,
+        redirect_uri: redirectUri,
+        scopes: SCOPES,
+        auth_url: LINKEDIN_AUTH_URL,
+    });
 });
 
 /**
