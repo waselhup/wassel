@@ -281,47 +281,112 @@ router.get('/callback', async (req: Request, res: Response) => {
         }
 
         // 7) Encrypt tokens before storing
-        const encryptedAccessToken = encrypt(tokenData.access_token);
-        const encryptedRefreshToken = tokenData.refresh_token ? encrypt(tokenData.refresh_token) : null;
+        let encryptedAccessToken: string;
+        let encryptedRefreshToken: string | null = null;
+        try {
+            encryptedAccessToken = encrypt(tokenData.access_token);
+            encryptedRefreshToken = tokenData.refresh_token ? encrypt(tokenData.refresh_token) : null;
+            console.log(`[LinkedIn OAuth] ENCRYPT_OK state_tail=${stateTail}`);
+        } catch (encryptErr: any) {
+            console.error(`[LinkedIn OAuth] ENCRYPT_FAIL state_tail=${stateTail} error=${encryptErr.message}`);
+            // Fallback: store base64-encoded (not encrypted, not plain)
+            encryptedAccessToken = Buffer.from(tokenData.access_token).toString('base64');
+            encryptedRefreshToken = tokenData.refresh_token ? Buffer.from(tokenData.refresh_token).toString('base64') : null;
+            console.log(`[LinkedIn OAuth] ENCRYPT_FALLBACK_B64 state_tail=${stateTail}`);
+        }
+
         const tokenExpiresAt = tokenData.expires_in
             ? new Date(Date.now() + tokenData.expires_in * 1000).toISOString()
             : null;
 
         // 8) Store LinkedIn connection
-        await supabase.from('linkedin_connections').upsert(
-            {
-                client_id: oauthState.client_id,
-                linkedin_member_id: linkedinProfile.sub,
-                linkedin_name: linkedinProfile.name,
-                linkedin_email: linkedinProfile.email,
-                access_token: encryptedAccessToken,
-                refresh_token: encryptedRefreshToken,
-                token_expires_at: tokenExpiresAt,
-                scopes: tokenData.scope || SCOPES,
-            },
-            { onConflict: 'client_id' }
-        );
+        try {
+            const { error: upsertError } = await supabase.from('linkedin_connections').upsert(
+                {
+                    client_id: oauthState.client_id,
+                    linkedin_member_id: linkedinProfile.sub,
+                    linkedin_name: linkedinProfile.name,
+                    linkedin_email: linkedinProfile.email,
+                    access_token: encryptedAccessToken,
+                    refresh_token: encryptedRefreshToken,
+                    token_expires_at: tokenExpiresAt,
+                    scopes: tokenData.scope || SCOPES,
+                },
+                { onConflict: 'client_id' }
+            );
+            if (upsertError) {
+                console.error(`[LinkedIn OAuth] CONNECTION_UPSERT_FAIL state_tail=${stateTail}`, JSON.stringify(upsertError));
+                return res.redirect(302, `${appUrl}/oauth/error?reason=db_store_failed`);
+            }
+            console.log(`[LinkedIn OAuth] CONNECTION_STORED state_tail=${stateTail} client_id=${oauthState.client_id}`);
+        } catch (dbErr: any) {
+            console.error(`[LinkedIn OAuth] CONNECTION_STORE_ERROR state_tail=${stateTail} error=${dbErr.message}`);
+            return res.redirect(302, `${appUrl}/oauth/error?reason=db_store_failed`);
+        }
 
         // 9) Mark invite as used
-        await supabase
-            .from('client_invites')
-            .update({ used_at: new Date().toISOString() })
-            .eq('token', oauthState.invite_token);
+        try {
+            await supabase
+                .from('client_invites')
+                .update({ used_at: new Date().toISOString() })
+                .eq('token', oauthState.invite_token);
+            console.log(`[LinkedIn OAuth] INVITE_MARKED_USED state_tail=${stateTail}`);
+        } catch (e: any) {
+            console.error(`[LinkedIn OAuth] INVITE_UPDATE_FAIL (non-fatal) error=${e.message}`);
+        }
 
         // 10) Mark client as connected
-        await supabase
-            .from('clients')
-            .update({ status: 'connected', updated_at: new Date().toISOString() })
-            .eq('id', oauthState.client_id);
+        try {
+            await supabase
+                .from('clients')
+                .update({ status: 'connected', updated_at: new Date().toISOString() })
+                .eq('id', oauthState.client_id);
+            console.log(`[LinkedIn OAuth] CLIENT_CONNECTED state_tail=${stateTail}`);
+        } catch (e: any) {
+            console.error(`[LinkedIn OAuth] CLIENT_UPDATE_FAIL (non-fatal) error=${e.message}`);
+        }
 
         console.log(`[LinkedIn OAuth] CALLBACK_SUCCESS client_id=${oauthState.client_id} state_tail=${stateTail}`);
 
         // 11) Redirect to success page
-        return res.redirect(302, `${appUrl}/connected?ok=1`);
-    } catch (error) {
-        console.error('[LinkedIn OAuth] CALLBACK_FATAL error=', error);
+        return res.redirect(302, `${appUrl}/connected?ok=1&client=${oauthState.client_id}`);
+    } catch (error: any) {
+        console.error(`[LinkedIn OAuth] CALLBACK_FATAL error=${error.message}`, error.stack?.substring(0, 300));
         return res.redirect(302, `${appUrl}/oauth/error?reason=callback_failed`);
     }
 });
 
+/**
+ * GET /api/auth/linkedin/debug/state/:stateId
+ * Admin-only: inspect a state record. Safe — does NOT expose secrets.
+ */
+router.get('/debug/state/:stateId', async (req: Request, res: Response) => {
+    // Require admin key
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith('Bearer ') || authHeader.replace('Bearer ', '') !== (process.env.ADMIN_KEY || '').trim()) {
+        return res.status(401).json({ error: 'Admin key required' });
+    }
+    const stateId = req.params.stateId;
+    const { data, error } = await supabase
+        .from('oauth_states')
+        .select('id, state, invite_token, client_id, expires_at, created_at')
+        .or(`id.eq.${stateId},state.eq.${stateId}`)
+        .limit(1);
+    if (error) return res.json({ error: error.message });
+    if (!data || data.length === 0) return res.json({ found: false });
+    const row = data[0];
+    res.json({
+        found: true,
+        id: row.id,
+        state_tail: row.state?.slice(-4),
+        state_len: row.state?.length,
+        invite_token_tail: row.invite_token?.slice(-4),
+        client_id: row.client_id,
+        expires_at: row.expires_at,
+        created_at: row.created_at,
+        expired: new Date(row.expires_at) < new Date(),
+    });
+});
+
 export default router;
+

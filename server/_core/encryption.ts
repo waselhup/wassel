@@ -5,9 +5,11 @@ const IV_LENGTH = 16;
 const TAG_LENGTH = 16;
 
 function getKey(): Buffer {
-    const key = process.env.ENCRYPTION_KEY;
+    let key = process.env.ENCRYPTION_KEY || '';
+    // Strip whitespace/CRLF that Vercel env vars may include
+    key = key.trim();
     if (!key || key.length !== 64) {
-        throw new Error('ENCRYPTION_KEY must be a 64-char hex string (32 bytes)');
+        throw new Error(`ENCRYPTION_KEY must be a 64-char hex string (32 bytes). Got length=${key.length}`);
     }
     return Buffer.from(key, 'hex');
 }
