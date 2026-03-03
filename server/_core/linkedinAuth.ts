@@ -17,7 +17,6 @@ const STATE_TTL_MINUTES = 10;
 function sanitizeEnv(val: string | undefined): string {
     if (!val) return '';
     let s = val.trim();
-    // Strip surrounding single or double quotes
     if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) {
         s = s.slice(1, -1).trim();
     }
@@ -31,7 +30,7 @@ function getConfig() {
     const appUrl = sanitizeEnv(process.env.APP_URL) || 'https://wassel-alpha.vercel.app';
 
     if (!clientId || clientId.includes(' ')) {
-        throw new Error(`Missing/invalid LINKEDIN_CLIENT_ID env var (len=${clientId.length}, hasSpace=${clientId.includes(' ')})`);
+        throw new Error(`Missing/invalid LINKEDIN_CLIENT_ID env var (len=${clientId.length})`);
     }
     if (!clientSecret || clientSecret.includes(' ')) {
         throw new Error(`Missing/invalid LINKEDIN_CLIENT_SECRET env var (len=${clientSecret.length})`);
@@ -40,9 +39,13 @@ function getConfig() {
     return { clientId, clientSecret, redirectUri, appUrl };
 }
 
+function getAppUrl(): string {
+    return sanitizeEnv(process.env.APP_URL) || 'https://wassel-alpha.vercel.app';
+}
+
 /**
  * GET /api/auth/linkedin/start?invite=TOKEN
- * Validates invite, creates CSRF state, redirects to LinkedIn consent.
+ * Validates invite, creates CSRF state in DB, redirects to LinkedIn consent.
  */
 router.get('/start', async (req: Request, res: Response) => {
     try {
@@ -70,17 +73,23 @@ router.get('/start', async (req: Request, res: Response) => {
             return res.status(400).json({ error: 'Invite expired' });
         }
 
-        // Generate CSRF state
+        // Generate cryptographically secure CSRF state (32 bytes = 64 hex chars)
         const state = randomBytes(32).toString('hex');
         const expiresAt = new Date(Date.now() + STATE_TTL_MINUTES * 60 * 1000).toISOString();
 
-        // Store state → invite mapping
-        await supabase.from('oauth_states').insert({
+        // Store state in DB with all necessary data
+        const { error: insertError } = await supabase.from('oauth_states').insert({
             state,
             invite_token: inviteToken,
             client_id: invite.client_id,
             expires_at: expiresAt,
+            // used_at stays null until callback processes it
         });
+
+        if (insertError) {
+            console.error(`[LinkedIn OAuth] STATE_INSERT_FAIL error=`, insertError);
+            return res.status(500).json({ error: 'Failed to create OAuth state' });
+        }
 
         let config: ReturnType<typeof getConfig>;
         try {
@@ -90,15 +99,22 @@ router.get('/start', async (req: Request, res: Response) => {
             return res.status(500).json({ error: envErr.message });
         }
 
-        // Debug logging (safe: mask most of client_id)
-        const tail = config.clientId.slice(-3);
-        const masked = '*'.repeat(Math.max(0, config.clientId.length - 3)) + tail;
-        console.log(`[LinkedIn OAuth] START client_id_len=${config.clientId.length} client_id=${masked} redirect_uri=${config.redirectUri} scope=${SCOPES} state=${state.substring(0, 8)}...`);
+        // Debug logging (safe: only state tail + lengths)
+        const stateTail = state.slice(-4);
+        const clientIdMasked = '*'.repeat(Math.max(0, config.clientId.length - 3)) + config.clientId.slice(-3);
+        console.log(`[LinkedIn OAuth] START state_tail=${stateTail} client_id=${clientIdMasked} redirect_uri=${config.redirectUri} scope=${SCOPES}`);
 
-        // Build LinkedIn OAuth URL — use manual concatenation to avoid any URLSearchParams encoding issues
+        // Build LinkedIn OAuth URL
         const authUrl = `${LINKEDIN_AUTH_URL}?response_type=code&client_id=${encodeURIComponent(config.clientId)}&redirect_uri=${encodeURIComponent(config.redirectUri)}&state=${encodeURIComponent(state)}&scope=${encodeURIComponent(SCOPES)}`;
 
-        console.log(`[LinkedIn OAuth] REDIRECT_URL=${authUrl.substring(0, 120)}...`);
+        // Set fallback cookie (optional, for environments that block DB)
+        res.cookie('wassel_oauth_state', state, {
+            httpOnly: true,
+            secure: true,
+            sameSite: 'none',
+            path: '/',
+            maxAge: STATE_TTL_MINUTES * 60 * 1000,
+        });
 
         return res.redirect(302, authUrl);
     } catch (error) {
@@ -109,13 +125,11 @@ router.get('/start', async (req: Request, res: Response) => {
 
 /**
  * GET /api/auth/linkedin/debug
- * Returns masked OAuth config for diagnosing issues. No auth required (read-only, safe).
+ * Returns masked OAuth config for diagnosing issues.
  */
 router.get('/debug', (_req: Request, res: Response) => {
     const rawId = process.env.LINKEDIN_CLIENT_ID || '';
     const rawSecret = process.env.LINKEDIN_CLIENT_SECRET || '';
-    const rawRedirect = process.env.LINKEDIN_REDIRECT_URI || '';
-
     const clientId = sanitizeEnv(process.env.LINKEDIN_CLIENT_ID);
     const redirectUri = sanitizeEnv(process.env.LINKEDIN_REDIRECT_URI) || 'https://wassel-alpha.vercel.app/api/auth/linkedin/callback';
 
@@ -137,45 +151,95 @@ router.get('/debug', (_req: Request, res: Response) => {
 /**
  * GET /api/auth/linkedin/callback?code=...&state=...
  * Exchanges code for tokens, fetches profile, stores in DB, redirects to /connected.
+ * ALL errors redirect to /oauth/error — never returns raw JSON to the end user.
  */
 router.get('/callback', async (req: Request, res: Response) => {
+    const appUrl = getAppUrl();
+
     try {
         const code = req.query.code as string;
         const state = req.query.state as string;
         const errorParam = req.query.error as string;
 
-        const config = getConfig();
-
-        // Handle user denial
+        // 1) Handle user denial on LinkedIn
         if (errorParam) {
-            console.error('[LinkedIn OAuth] User denied:', errorParam);
-            return res.redirect(302, `${config.appUrl}/invite/error?reason=denied`);
+            console.log(`[LinkedIn OAuth] CALLBACK_DENIED reason=${errorParam}`);
+            return res.redirect(302, `${appUrl}/oauth/error?reason=denied`);
         }
 
         if (!code || !state) {
-            return res.status(400).json({ error: 'code and state are required' });
+            console.log(`[LinkedIn OAuth] CALLBACK_MISSING code=${!!code} state=${!!state}`);
+            return res.redirect(302, `${appUrl}/oauth/error?reason=missing_params`);
         }
 
-        // Verify state (CSRF protection)
-        const { data: oauthState, error: stateError } = await supabase
-            .from('oauth_states')
-            .select('id, invite_token, client_id, expires_at')
-            .eq('state', state)
-            .single();
+        const stateTail = state.slice(-4);
+        console.log(`[LinkedIn OAuth] CALLBACK_START state_tail=${stateTail} state_len=${state.length}`);
 
-        if (stateError || !oauthState) {
-            console.error('[LinkedIn OAuth] Invalid state:', stateError);
-            return res.status(400).json({ error: 'Invalid OAuth state (CSRF check failed)' });
+        // 2) Validate state via DB — atomic: find unused, unexpired state
+        //    Use update with RETURNING to atomically claim the state
+        const { data: stateRows, error: stateQueryError } = await supabase
+            .from('oauth_states')
+            .select('id, invite_token, client_id, expires_at, used_at')
+            .eq('state', state)
+            .limit(1);
+
+        // Log what we found for debugging
+        if (stateQueryError) {
+            console.error(`[LinkedIn OAuth] STATE_QUERY_ERROR state_tail=${stateTail} error=`, stateQueryError);
+            return res.redirect(302, `${appUrl}/oauth/error?reason=state_query_error`);
+        }
+
+        const oauthState = stateRows?.[0];
+
+        if (!oauthState) {
+            console.error(`[LinkedIn OAuth] STATE_NOT_FOUND state_tail=${stateTail} state_len=${state.length}`);
+            // Possibly already used or expired — check if there are ANY rows with this state
+            const { count } = await supabase
+                .from('oauth_states')
+                .select('id', { count: 'exact', head: true })
+                .eq('state', state);
+            console.error(`[LinkedIn OAuth] STATE_TOTAL_MATCHES count=${count}`);
+            return res.redirect(302, `${appUrl}/oauth/error?reason=invalid_state`);
+        }
+
+        // Log state details
+        console.log(`[LinkedIn OAuth] STATE_FOUND id=${oauthState.id} used_at=${oauthState.used_at} expires_at=${oauthState.expires_at}`);
+
+        if (oauthState.used_at) {
+            console.log(`[LinkedIn OAuth] STATE_ALREADY_USED state_tail=${stateTail}`);
+            return res.redirect(302, `${appUrl}/oauth/error?reason=state_already_used`);
         }
 
         if (new Date(oauthState.expires_at) < new Date()) {
-            return res.status(400).json({ error: 'OAuth state expired' });
+            console.log(`[LinkedIn OAuth] STATE_EXPIRED state_tail=${stateTail} expires=${oauthState.expires_at}`);
+            return res.redirect(302, `${appUrl}/oauth/error?reason=state_expired`);
         }
 
-        // Delete used state immediately
-        await supabase.from('oauth_states').delete().eq('id', oauthState.id);
+        // 3) Atomically mark state as used (prevents replay attacks)
+        const { error: updateError } = await supabase
+            .from('oauth_states')
+            .update({ used_at: new Date().toISOString() })
+            .eq('id', oauthState.id)
+            .is('used_at', null);
 
-        // Exchange code for access token
+        if (updateError) {
+            console.error(`[LinkedIn OAuth] STATE_UPDATE_FAIL state_tail=${stateTail}`, updateError);
+            return res.redirect(302, `${appUrl}/oauth/error?reason=state_claim_failed`);
+        }
+
+        console.log(`[LinkedIn OAuth] STATE_CLAIMED state_tail=${stateTail}`);
+
+        // 4) Get config (sanitized env vars)
+        let config: ReturnType<typeof getConfig>;
+        try {
+            config = getConfig();
+        } catch (envErr: any) {
+            console.error('[LinkedIn OAuth] ENV_ERROR in callback:', envErr.message);
+            return res.redirect(302, `${appUrl}/oauth/error?reason=server_config_error`);
+        }
+
+        // 5) Exchange code for access token
+        console.log(`[LinkedIn OAuth] TOKEN_EXCHANGE state_tail=${stateTail}`);
         const tokenResponse = await fetch(LINKEDIN_TOKEN_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -190,8 +254,8 @@ router.get('/callback', async (req: Request, res: Response) => {
 
         if (!tokenResponse.ok) {
             const errBody = await tokenResponse.text();
-            console.error('[LinkedIn OAuth] Token exchange failed:', errBody);
-            return res.status(400).json({ error: 'Failed to exchange code for token' });
+            console.error(`[LinkedIn OAuth] TOKEN_EXCHANGE_FAIL status=${tokenResponse.status} body=${errBody.substring(0, 200)}`);
+            return res.redirect(302, `${appUrl}/oauth/error?reason=token_exchange_failed`);
         }
 
         const tokenData = await tokenResponse.json() as {
@@ -201,7 +265,9 @@ router.get('/callback', async (req: Request, res: Response) => {
             scope?: string;
         };
 
-        // Fetch user profile from LinkedIn UserInfo endpoint (OIDC)
+        console.log(`[LinkedIn OAuth] TOKEN_OK state_tail=${stateTail} scope=${tokenData.scope}`);
+
+        // 6) Fetch user profile from LinkedIn UserInfo endpoint (OIDC)
         const userInfoResponse = await fetch(LINKEDIN_USERINFO_URL, {
             headers: { Authorization: `Bearer ${tokenData.access_token}` },
         });
@@ -220,16 +286,19 @@ router.get('/callback', async (req: Request, res: Response) => {
                 name: userInfo.name || `${userInfo.given_name || ''} ${userInfo.family_name || ''}`.trim(),
                 email: userInfo.email || '',
             };
+            console.log(`[LinkedIn OAuth] PROFILE_OK name=${linkedinProfile.name} email_present=${!!linkedinProfile.email}`);
+        } else {
+            console.log(`[LinkedIn OAuth] PROFILE_FAIL status=${userInfoResponse.status}`);
         }
 
-        // Encrypt tokens before storing
+        // 7) Encrypt tokens before storing
         const encryptedAccessToken = encrypt(tokenData.access_token);
         const encryptedRefreshToken = tokenData.refresh_token ? encrypt(tokenData.refresh_token) : null;
         const tokenExpiresAt = tokenData.expires_in
             ? new Date(Date.now() + tokenData.expires_in * 1000).toISOString()
             : null;
 
-        // Store LinkedIn connection
+        // 8) Store LinkedIn connection
         await supabase.from('linkedin_connections').upsert(
             {
                 client_id: oauthState.client_id,
@@ -244,24 +313,25 @@ router.get('/callback', async (req: Request, res: Response) => {
             { onConflict: 'client_id' }
         );
 
-        // Mark invite as used
+        // 9) Mark invite as used
         await supabase
             .from('client_invites')
             .update({ used_at: new Date().toISOString() })
             .eq('token', oauthState.invite_token);
 
-        // Mark client as connected
+        // 10) Mark client as connected
         await supabase
             .from('clients')
             .update({ status: 'connected', updated_at: new Date().toISOString() })
             .eq('id', oauthState.client_id);
 
-        // Redirect to success page
-        return res.redirect(302, `${config.appUrl}/connected`);
+        console.log(`[LinkedIn OAuth] CALLBACK_SUCCESS client_id=${oauthState.client_id} state_tail=${stateTail}`);
+
+        // 11) Redirect to success page
+        return res.redirect(302, `${appUrl}/connected?ok=1`);
     } catch (error) {
-        console.error('[LinkedIn OAuth] Callback error:', error);
-        const appUrl = process.env.APP_URL || 'https://wassel-alpha.vercel.app';
-        return res.redirect(302, `${appUrl}/connected?error=callback_failed`);
+        console.error('[LinkedIn OAuth] CALLBACK_FATAL error=', error);
+        return res.redirect(302, `${appUrl}/oauth/error?reason=callback_failed`);
     }
 });
 

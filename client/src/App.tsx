@@ -23,6 +23,7 @@ import Extension from "./pages/Extension";
 import About from "./pages/About";
 import Invite from "./pages/Invite";
 import Connected from "./pages/Connected";
+import OAuthError from "./pages/OAuthError";
 
 /**
  * Protected route wrapper that redirects to login if not authenticated.
@@ -67,6 +68,7 @@ function Router() {
       <Route path={"/about"} component={About} />
       <Route path="/invite/:token" component={Invite} />
       <Route path={"/connected"} component={Connected} />
+      <Route path={"/oauth/error"} component={OAuthError} />
 
       {/* Protected routes */}
       <Route path={/^\/dashboard\/import/} component={() => <ProtectedRoute component={LeadImport} />} />
