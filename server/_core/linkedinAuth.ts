@@ -175,55 +175,44 @@ router.get('/callback', async (req: Request, res: Response) => {
         const stateTail = state.slice(-4);
         console.log(`[LinkedIn OAuth] CALLBACK_START state_tail=${stateTail} state_len=${state.length}`);
 
-        // 2) Validate state via DB — atomic: find unused, unexpired state
-        //    Use update with RETURNING to atomically claim the state
+        // 2) Validate state via DB lookup
         const { data: stateRows, error: stateQueryError } = await supabase
             .from('oauth_states')
-            .select('id, invite_token, client_id, expires_at, used_at')
+            .select('id, invite_token, client_id, expires_at')
             .eq('state', state)
             .limit(1);
 
         // Log what we found for debugging
         if (stateQueryError) {
-            console.error(`[LinkedIn OAuth] STATE_QUERY_ERROR state_tail=${stateTail} error=`, stateQueryError);
+            console.error(`[LinkedIn OAuth] STATE_QUERY_ERROR state_tail=${stateTail} error=`, JSON.stringify(stateQueryError));
             return res.redirect(302, `${appUrl}/oauth/error?reason=state_query_error`);
         }
 
         const oauthState = stateRows?.[0];
 
         if (!oauthState) {
-            console.error(`[LinkedIn OAuth] STATE_NOT_FOUND state_tail=${stateTail} state_len=${state.length}`);
-            // Possibly already used or expired — check if there are ANY rows with this state
-            const { count } = await supabase
-                .from('oauth_states')
-                .select('id', { count: 'exact', head: true })
-                .eq('state', state);
-            console.error(`[LinkedIn OAuth] STATE_TOTAL_MATCHES count=${count}`);
+            console.error(`[LinkedIn OAuth] STATE_NOT_FOUND state_tail=${stateTail} state_len=${state.length} (state already used or never created)`);
             return res.redirect(302, `${appUrl}/oauth/error?reason=invalid_state`);
         }
 
         // Log state details
-        console.log(`[LinkedIn OAuth] STATE_FOUND id=${oauthState.id} used_at=${oauthState.used_at} expires_at=${oauthState.expires_at}`);
-
-        if (oauthState.used_at) {
-            console.log(`[LinkedIn OAuth] STATE_ALREADY_USED state_tail=${stateTail}`);
-            return res.redirect(302, `${appUrl}/oauth/error?reason=state_already_used`);
-        }
+        console.log(`[LinkedIn OAuth] STATE_FOUND id=${oauthState.id} expires_at=${oauthState.expires_at}`);
 
         if (new Date(oauthState.expires_at) < new Date()) {
             console.log(`[LinkedIn OAuth] STATE_EXPIRED state_tail=${stateTail} expires=${oauthState.expires_at}`);
+            // Clean up expired state
+            await supabase.from('oauth_states').delete().eq('id', oauthState.id);
             return res.redirect(302, `${appUrl}/oauth/error?reason=state_expired`);
         }
 
-        // 3) Atomically mark state as used (prevents replay attacks)
-        const { error: updateError } = await supabase
+        // 3) Delete state immediately to prevent replay attacks (atomic)
+        const { error: deleteError } = await supabase
             .from('oauth_states')
-            .update({ used_at: new Date().toISOString() })
-            .eq('id', oauthState.id)
-            .is('used_at', null);
+            .delete()
+            .eq('id', oauthState.id);
 
-        if (updateError) {
-            console.error(`[LinkedIn OAuth] STATE_UPDATE_FAIL state_tail=${stateTail}`, updateError);
+        if (deleteError) {
+            console.error(`[LinkedIn OAuth] STATE_DELETE_FAIL state_tail=${stateTail}`, deleteError);
             return res.redirect(302, `${appUrl}/oauth/error?reason=state_claim_failed`);
         }
 
