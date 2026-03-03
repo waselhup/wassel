@@ -96,13 +96,16 @@ router.post('/send', async (req: Request, res: Response) => {
 
         // Build invite link
         const appUrl = process.env.APP_URL || 'https://wassel-alpha.vercel.app';
-        const inviteLink = `${appUrl}/invite/${inviteToken}`;
+        const inviteUrl = `${appUrl}/invite/${inviteToken}`;
 
         // Try sending email via Resend if available
         const resendApiKey = process.env.RESEND_API_KEY;
-        let emailSent = false;
+        let sent = false;
+        let provider: 'resend' | 'none' = 'none';
+        let emailError: string | null = null;
 
         if (resendApiKey) {
+            provider = 'resend';
             try {
                 const emailRes = await fetch('https://api.resend.com/emails', {
                     method: 'POST',
@@ -120,7 +123,7 @@ router.post('/send', async (req: Request, res: Response) => {
                 <p style="font-size: 16px; color: #333;">You've been invited to connect your LinkedIn account with Wassel.</p>
                 <p style="font-size: 16px; color: #333;">Click the button below to get started:</p>
                 <div style="text-align: center; margin: 30px 0;">
-                  <a href="${inviteLink}" style="background-color: #2563eb; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-size: 16px; font-weight: 600;">
+                  <a href="${inviteUrl}" style="background-color: #2563eb; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-size: 16px; font-weight: 600;">
                     Connect LinkedIn
                   </a>
                 </div>
@@ -130,24 +133,36 @@ router.post('/send', async (req: Request, res: Response) => {
             `,
                     }),
                 });
-                emailSent = emailRes.ok;
-            } catch (emailError) {
-                console.error('[Invite] Email send failed:', emailError);
+                sent = emailRes.ok;
+                if (!sent) {
+                    const errBody = await emailRes.text();
+                    emailError = `Resend ${emailRes.status}: ${errBody.substring(0, 200)}`;
+                    console.error(`[Invite] SEND_EMAIL_FAIL email=${email} status=${emailRes.status} body=${errBody.substring(0, 200)}`);
+                }
+            } catch (err: any) {
+                emailError = err.message || 'Unknown email error';
+                console.error(`[Invite] SEND_EMAIL_ERROR email=${email} error=${emailError}`);
             }
         }
 
+        console.log(`[Invite] SEND_OK email=${email} clientId=${clientId} sent=${sent} provider=${provider}`);
+
         res.json({
             success: true,
-            inviteLink,
-            emailSent,
             clientId,
-            message: emailSent
-                ? 'Invite sent successfully'
-                : 'Invite created. Share the link manually (no email provider configured).',
+            inviteToken,
+            inviteUrl,
+            sent,
+            provider,
+            message: sent
+                ? 'Invite sent successfully via email'
+                : 'Invite created. Copy the link and share it manually.',
+            ...(emailError ? { emailError } : {}),
         });
-    } catch (error) {
-        console.error('[Invite] Send error:', error);
-        res.status(500).json({ error: 'Server error' });
+    } catch (error: any) {
+        const errorId = randomBytes(4).toString('hex');
+        console.error(`[Invite] SEND_FATAL errorId=${errorId} error=`, error);
+        res.status(500).json({ error: 'Server error', errorId });
     }
 });
 
@@ -225,5 +240,53 @@ router.get('/status', async (req: Request, res: Response) => {
     }
 });
 
+/**
+ * GET /api/invites/latest
+ * Returns last 20 invites with masked tokens (admin-only debugging).
+ */
+router.get('/latest', async (req: Request, res: Response) => {
+    try {
+        if (!requireAdmin(req, res)) return;
+
+        const teamId = process.env.DEFAULT_TEAM_ID || '00000000-0000-0000-0000-000000000001';
+        const appUrl = process.env.APP_URL || 'https://wassel-alpha.vercel.app';
+
+        const { data: invites, error } = await supabase
+            .from('client_invites')
+            .select(`
+                id,
+                token,
+                expires_at,
+                used_at,
+                created_at,
+                clients(id, email, name, status)
+            `)
+            .order('created_at', { ascending: false })
+            .limit(20);
+
+        if (error) {
+            console.error('[Invites] Latest error:', error);
+            return res.status(500).json({ error: 'Failed to fetch invites' });
+        }
+
+        const result = (invites || []).map((inv: any) => ({
+            id: inv.id,
+            email: inv.clients?.email || 'unknown',
+            name: inv.clients?.name || null,
+            status: inv.used_at ? 'used' : (new Date(inv.expires_at) < new Date() ? 'expired' : 'pending'),
+            clientStatus: inv.clients?.status || 'unknown',
+            created_at: inv.created_at,
+            expires_at: inv.expires_at,
+            used_at: inv.used_at,
+            tokenMasked: inv.token ? `${inv.token.substring(0, 8)}...` : null,
+            inviteUrl: `${appUrl}/invite/${inv.token}`,
+        }));
+
+        res.json({ invites: result });
+    } catch (error) {
+        console.error('[Invites] Latest error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
 
 export default router;
