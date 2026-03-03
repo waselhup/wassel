@@ -1,37 +1,31 @@
-import { useLocation } from 'wouter';
-
 const REASONS: Record<string, { title: string; message: string }> = {
     denied: {
         title: 'Access Denied',
-        message: 'You denied access to your LinkedIn account. If this was a mistake, please try again.',
+        message: 'You denied access to your LinkedIn account. If this was a mistake, click the button below to try again.',
     },
     invalid_state: {
         title: 'Session Expired',
-        message: 'Your authentication session has expired or is invalid. Please use your invite link again.',
-    },
-    state_already_used: {
-        title: 'Link Already Used',
-        message: 'This authentication session has already been used. If you need to reconnect, use your invite link again.',
+        message: 'Your authentication session has expired or was already used. This can happen if you took too long on the LinkedIn page, or opened the link in a different browser.',
     },
     state_expired: {
         title: 'Session Expired',
-        message: 'Your authentication session expired. Please go back to your invite link and try again.',
+        message: 'Your authentication session timed out (10 minutes). Please go back to your invite link and click Connect LinkedIn again.',
     },
     token_exchange_failed: {
         title: 'Connection Failed',
-        message: 'We could not complete the connection with LinkedIn. Please try again in a few minutes.',
+        message: 'We could not complete the connection with LinkedIn. This is usually temporary — please wait a moment and try again.',
     },
     missing_params: {
-        title: 'Invalid Request',
-        message: 'The authentication response was incomplete. Please try again from your invite link.',
+        title: 'Incomplete Response',
+        message: 'LinkedIn did not return the expected data. This can happen if the page was interrupted. Please try again.',
     },
     callback_failed: {
         title: 'Something Went Wrong',
-        message: 'An unexpected error occurred during authentication. Please try again.',
+        message: 'An unexpected error occurred while completing your connection. Please try again — if it persists, contact your campaign manager.',
     },
     server_config_error: {
         title: 'Server Error',
-        message: 'There is a temporary server issue. Please try again later or contact support.',
+        message: 'There is a temporary server configuration issue. Please try again later or contact support.',
     },
     state_query_error: {
         title: 'Server Error',
@@ -39,7 +33,11 @@ const REASONS: Record<string, { title: string; message: string }> = {
     },
     state_claim_failed: {
         title: 'Session Conflict',
-        message: 'Your session could not be claimed. Please use your invite link again.',
+        message: 'Your session could not be claimed — another request may have used it. Please use your invite link to start a fresh connection.',
+    },
+    db_store_failed: {
+        title: 'Save Failed',
+        message: 'Your LinkedIn connection was verified but we could not save it. Please try again — your LinkedIn account is safe.',
     },
 };
 
@@ -51,34 +49,107 @@ const DEFAULT_REASON = {
 export default function OAuthError() {
     const params = new URLSearchParams(window.location.search);
     const reason = params.get('reason') || '';
+    const invite = params.get('invite') || '';
     const info = REASONS[reason] || DEFAULT_REASON;
 
+    // Build the "Try Again" URL: prefer invite link if we know the token
+    const tryAgainUrl = invite ? `/invite/${invite}` : '/';
+    const tryAgainLabel = invite ? '← Try Again' : '← Back to Homepage';
+
     return (
-        <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 flex items-center justify-center px-4">
-            <div className="max-w-md w-full bg-white rounded-2xl shadow-lg p-8 text-center">
-                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+        <div style={{
+            minHeight: '100vh',
+            background: 'linear-gradient(135deg, #fef2f2 0%, #fff7ed 100%)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+            fontFamily: "'Inter', -apple-system, sans-serif",
+        }}>
+            <div style={{
+                maxWidth: '440px',
+                width: '100%',
+                backgroundColor: '#fff',
+                borderRadius: '16px',
+                boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
+                padding: '40px 32px',
+                textAlign: 'center',
+            }}>
+                {/* Error icon */}
+                <div style={{
+                    width: '64px',
+                    height: '64px',
+                    backgroundColor: '#fef2f2',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    margin: '0 auto 24px auto',
+                }}>
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
                     </svg>
                 </div>
-                <h1 className="text-2xl font-bold text-gray-900 mb-3">{info.title}</h1>
-                <p className="text-gray-600 mb-8 leading-relaxed">{info.message}</p>
-                <div className="space-y-3">
-                    <button
-                        onClick={() => window.history.back()}
-                        className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+
+                <h1 style={{ fontSize: '22px', fontWeight: '700', color: '#111827', margin: '0 0 12px 0' }}>
+                    {info.title}
+                </h1>
+                <p style={{ fontSize: '15px', color: '#6b7280', margin: '0 0 24px 0', lineHeight: '1.6' }}>
+                    {info.message}
+                </p>
+
+                {/* Tip for in-app browsers */}
+                <div style={{
+                    backgroundColor: '#fffbeb',
+                    border: '1px solid #fde68a',
+                    borderRadius: '8px',
+                    padding: '12px 16px',
+                    marginBottom: '24px',
+                    textAlign: 'left',
+                }}>
+                    <p style={{ fontSize: '13px', color: '#92400e', margin: 0, lineHeight: '1.5' }}>
+                        💡 <strong>Tip:</strong> For the best experience, open your invite link in <strong>Chrome</strong> or <strong>Safari</strong> — not inside email apps or messengers.
+                    </p>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <a
+                        href={tryAgainUrl}
+                        style={{
+                            display: 'block',
+                            padding: '14px 24px',
+                            backgroundColor: '#2563eb',
+                            color: '#fff',
+                            borderRadius: '10px',
+                            fontWeight: '600',
+                            fontSize: '15px',
+                            textDecoration: 'none',
+                            transition: 'background-color 0.2s',
+                        }}
                     >
-                        ← Try Again
-                    </button>
+                        {tryAgainLabel}
+                    </a>
                     <a
                         href="/"
-                        className="block w-full bg-gray-100 text-gray-700 py-3 px-6 rounded-lg font-semibold hover:bg-gray-200 transition-colors"
+                        style={{
+                            display: 'block',
+                            padding: '14px 24px',
+                            backgroundColor: '#f3f4f6',
+                            color: '#374151',
+                            borderRadius: '10px',
+                            fontWeight: '600',
+                            fontSize: '15px',
+                            textDecoration: 'none',
+                        }}
                     >
                         Go to Homepage
                     </a>
                 </div>
+
                 {reason && (
-                    <p className="text-xs text-gray-400 mt-6">Error code: {reason}</p>
+                    <p style={{ fontSize: '11px', color: '#d1d5db', marginTop: '20px' }}>
+                        Error: {reason}
+                    </p>
                 )}
             </div>
         </div>
