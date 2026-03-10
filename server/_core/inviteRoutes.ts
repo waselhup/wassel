@@ -6,26 +6,8 @@ const router = Router();
 
 const INVITE_EXPIRY_HOURS = 72;
 
-/**
- * Verify admin access via ADMIN_KEY (not Supabase JWT).
- */
-function requireAdmin(req: Request, res: Response): boolean {
-    const authHeader = req.headers.authorization;
-    if (!authHeader?.startsWith('Bearer ')) {
-        res.status(401).json({ error: 'Authentication required' });
-        return false;
-    }
-
-    const token = authHeader.replace('Bearer ', '');
-    const adminKey = process.env.ADMIN_KEY;
-
-    if (!adminKey || token !== adminKey) {
-        res.status(401).json({ error: 'Invalid admin key' });
-        return false;
-    }
-
-    return true;
-}
+// NOTE: Auth is handled by expressAuthMiddleware + requireRole in vercel.ts
+// req.user is always available in these handlers (set by middleware)
 
 /**
  * POST /api/invites/send
@@ -35,16 +17,13 @@ function requireAdmin(req: Request, res: Response): boolean {
  */
 router.post('/send', async (req: Request, res: Response) => {
     try {
-        if (!requireAdmin(req, res)) return;
-
         const { email, name } = req.body;
         if (!email || typeof email !== 'string') {
             return res.status(400).json({ error: 'Email is required' });
         }
 
-        // For admin-key auth, we use a default team ID
-        // In production, this would come from a teams table
-        const teamId = process.env.DEFAULT_TEAM_ID || '00000000-0000-0000-0000-000000000001';
+        // teamId comes from authenticated user's team membership
+        const teamId = (req as any).user?.teamId || process.env.DEFAULT_TEAM_ID || '00000000-0000-0000-0000-000000000001';
 
         // Create or find client
         let clientId: string;
@@ -210,9 +189,7 @@ router.get('/validate/:token', async (req: Request, res: Response) => {
  */
 router.get('/status', async (req: Request, res: Response) => {
     try {
-        if (!requireAdmin(req, res)) return;
-
-        const teamId = process.env.DEFAULT_TEAM_ID || '00000000-0000-0000-0000-000000000001';
+        const teamId = (req as any).user?.teamId || process.env.DEFAULT_TEAM_ID || '00000000-0000-0000-0000-000000000001';
 
         const { data: clients, error: clientsError } = await supabase
             .from('clients')
@@ -246,9 +223,7 @@ router.get('/status', async (req: Request, res: Response) => {
  */
 router.get('/latest', async (req: Request, res: Response) => {
     try {
-        if (!requireAdmin(req, res)) return;
-
-        const teamId = process.env.DEFAULT_TEAM_ID || '00000000-0000-0000-0000-000000000001';
+        const teamId = (req as any).user?.teamId || process.env.DEFAULT_TEAM_ID || '00000000-0000-0000-0000-000000000001';
         const appUrl = process.env.APP_URL || 'https://wassel-alpha.vercel.app';
 
         const { data: invites, error } = await supabase
@@ -289,4 +264,117 @@ router.get('/latest', async (req: Request, res: Response) => {
     }
 });
 
+/**
+ * POST /api/clients/:id/disconnect
+ * Disconnects LinkedIn from a client: deletes linkedin_connections row, resets status.
+ * Admin-only.
+ */
+router.post('/:id/disconnect', async (req: Request, res: Response) => {
+    try {
+        const clientId = req.params.id;
+
+        console.log(`[Clients] DISCONNECT_START client_id=${clientId.substring(0, 8)}...`);
+
+        // Delete LinkedIn connection
+        const { error: delError } = await supabase
+            .from('linkedin_connections')
+            .delete()
+            .eq('client_id', clientId);
+
+        if (delError) {
+            console.warn(`[Clients] DISCONNECT linkedin_connections delete warning:`, delError.message);
+        }
+
+        // Set status back to invited
+        const { error: updateError } = await supabase
+            .from('clients')
+            .update({ status: 'invited', updated_at: new Date().toISOString() })
+            .eq('id', clientId);
+
+        if (updateError) {
+            console.error(`[Clients] DISCONNECT status update fail:`, updateError.message);
+            return res.status(500).json({ error: 'Failed to update client status' });
+        }
+
+        console.log(`[Clients] DISCONNECT_OK client_id=${clientId.substring(0, 8)}...`);
+        res.json({ success: true, message: 'LinkedIn disconnected. Client can reconnect via invite link.' });
+    } catch (error: any) {
+        console.error('[Clients] Disconnect error:', error.message || error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+/**
+ * DELETE /api/clients/:id
+ * Deletes a client and all associated data (cascade).
+ * Admin-only.
+ */
+router.delete('/:id', async (req: Request, res: Response) => {
+    try {
+        const clientId = req.params.id;
+
+        console.log(`[Clients] DELETE_START client_id=${clientId.substring(0, 8)}...`);
+
+        // Cascade delete in order (children first)
+        // 1. Delete prospects
+        const { error: e1 } = await supabase.from('prospects').delete().eq('client_id', clientId);
+        if (e1) console.warn(`[Clients] DELETE prospects warn:`, e1.message);
+
+        // 2. Delete prospect_import_jobs
+        const { error: e2 } = await supabase.from('prospect_import_jobs').delete().eq('client_id', clientId);
+        if (e2) console.warn(`[Clients] DELETE import_jobs warn:`, e2.message);
+
+        // 3. Delete linkedin_connections
+        const { error: e3 } = await supabase.from('linkedin_connections').delete().eq('client_id', clientId);
+        if (e3) console.warn(`[Clients] DELETE linkedin_connections warn:`, e3.message);
+
+        // 4. Delete client_invites
+        const { error: e4 } = await supabase.from('client_invites').delete().eq('client_id', clientId);
+        if (e4) console.warn(`[Clients] DELETE invites warn:`, e4.message);
+
+        // 5. Delete oauth_states referencing this client
+        const { error: e5 } = await supabase.from('oauth_states').delete().eq('client_id', clientId);
+        if (e5) console.warn(`[Clients] DELETE oauth_states warn:`, e5.message);
+
+        // 6. Delete client record
+        const { error: e6 } = await supabase.from('clients').delete().eq('id', clientId);
+        if (e6) {
+            console.error(`[Clients] DELETE client fail:`, e6.message);
+            return res.status(500).json({ error: 'Failed to delete client record' });
+        }
+
+        console.log(`[Clients] DELETE_OK client_id=${clientId.substring(0, 8)}...`);
+        res.json({ success: true, message: 'Client and all associated data deleted.' });
+    } catch (error: any) {
+        console.error('[Clients] Delete error:', error.message || error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+/**
+ * DELETE /api/invites/:id
+ * Deletes a specific invite by ID.
+ * Admin-only.
+ */
+router.delete('/:id', async (req: Request, res: Response) => {
+    try {
+        const inviteId = req.params.id;
+
+        console.log(`[Invites] DELETE invite_id=${inviteId.substring(0, 8)}...`);
+
+        const { error } = await supabase.from('client_invites').delete().eq('id', inviteId);
+
+        if (error) {
+            console.error(`[Invites] DELETE fail:`, error.message);
+            return res.status(500).json({ error: 'Failed to delete invite' });
+        }
+
+        res.json({ success: true, message: 'Invite deleted.' });
+    } catch (error: any) {
+        console.error('[Invites] Delete error:', error.message || error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
 export default router;
+

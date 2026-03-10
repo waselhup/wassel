@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Loader2, Users, Target, Clock, ArrowRight, Mail, Linkedin, Copy, Send, LogOut, CheckCircle, ExternalLink, RefreshCw } from 'lucide-react';
+import { Loader2, Users, Target, Clock, ArrowRight, Mail, Linkedin, Copy, Send, LogOut, CheckCircle, ExternalLink, RefreshCw, Trash2, Unlink } from 'lucide-react';
 
 type Client = {
   id: string;
@@ -38,12 +38,12 @@ type InviteResult = {
   emailError?: string;
 };
 
-function getAdminKey(): string {
-  return localStorage.getItem('wassel_admin_key') || '';
+function getAuthToken(): string {
+  return localStorage.getItem('supabase_token') || '';
 }
 
-function adminHeaders(): Record<string, string> {
-  return { 'Content-Type': 'application/json', Authorization: `Bearer ${getAdminKey()}` };
+function authHeaders(): Record<string, string> {
+  return { 'Content-Type': 'application/json', Authorization: `Bearer ${getAuthToken()}` };
 }
 
 export default function Dashboard() {
@@ -55,22 +55,25 @@ export default function Dashboard() {
   const [invites, setInvites] = useState<InviteRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState('');
+  const [actionLoading, setActionLoading] = useState('');
+  const [toast, setToast] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; email: string } | null>(null);
+  const [deleteInput, setDeleteInput] = useState('');
 
   useEffect(() => {
-    const key = getAdminKey();
-    if (!key) { window.location.href = '/login'; return; }
+    const token = getAuthToken();
+    if (!token) { window.location.href = '/login'; return; }
     fetchClients();
     fetchInvites();
   }, []);
 
   const fetchClients = async () => {
     try {
-      const res = await fetch('/api/clients/status', { headers: adminHeaders() });
+      const res = await fetch('/api/clients/status', { headers: authHeaders() });
       if (res.ok) {
         const data = await res.json();
         setClients(data.clients || []);
       } else if (res.status === 401) {
-        localStorage.removeItem('wassel_admin_key');
         window.location.href = '/login';
       }
     } catch (e) { console.error('Failed to fetch clients:', e); }
@@ -79,7 +82,7 @@ export default function Dashboard() {
 
   const fetchInvites = async () => {
     try {
-      const res = await fetch('/api/invites/latest', { headers: adminHeaders() });
+      const res = await fetch('/api/invites/latest', { headers: authHeaders() });
       if (res.ok) {
         const data = await res.json();
         setInvites(data.invites || []);
@@ -94,7 +97,7 @@ export default function Dashboard() {
     try {
       const res = await fetch('/api/invites/send', {
         method: 'POST',
-        headers: adminHeaders(),
+        headers: authHeaders(),
         body: JSON.stringify({ email: inviteEmail, name: inviteName || undefined }),
       });
       const data = await res.json();
@@ -115,14 +118,67 @@ export default function Dashboard() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('wassel_admin_key');
-    window.location.href = '/';
+    localStorage.removeItem('supabase_token');
+    window.location.href = '/login';
   };
 
   const copyText = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     setCopied(label);
     setTimeout(() => setCopied(''), 2000);
+  };
+
+  const showToast = (type: 'ok' | 'err', msg: string) => {
+    setToast({ type, msg });
+    setTimeout(() => setToast(null), 4000);
+  };
+
+  const handleDisconnect = async (clientId: string) => {
+    if (!confirm('Disconnect LinkedIn for this client? They can reconnect via invite link.')) return;
+    setActionLoading(clientId);
+    try {
+      const res = await fetch(`/api/admin/clients/${clientId}/disconnect`, { method: 'POST', headers: authHeaders() });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast('ok', 'LinkedIn disconnected');
+        fetchClients();
+      } else {
+        showToast('err', data.error || 'Disconnect failed');
+      }
+    } catch { showToast('err', 'Network error'); }
+    finally { setActionLoading(''); }
+  };
+
+  const handleDeleteClient = async (clientId: string) => {
+    setActionLoading(clientId);
+    try {
+      const res = await fetch(`/api/admin/clients/${clientId}`, { method: 'DELETE', headers: authHeaders() });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast('ok', 'Client deleted');
+        setDeleteConfirm(null);
+        setDeleteInput('');
+        fetchClients();
+        fetchInvites();
+      } else {
+        showToast('err', data.error || 'Delete failed');
+      }
+    } catch { showToast('err', 'Network error'); }
+    finally { setActionLoading(''); }
+  };
+
+  const handleDeleteInvite = async (inviteId: string) => {
+    if (!confirm('Delete this invite?')) return;
+    try {
+      const res = await fetch(`/api/invites/${inviteId}`, { method: 'DELETE', headers: authHeaders() });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast('ok', 'Invite deleted');
+        fetchInvites();
+      } else {
+        showToast('err', data.error || 'Delete failed');
+      }
+    } catch { showToast('err', 'Network error'); }
   };
 
   if (loading) {
@@ -152,6 +208,35 @@ export default function Dashboard() {
           </Button>
         </div>
       </header>
+
+      {/* Toast */}
+      {toast && (
+        <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-sm font-medium transition-all ${toast.type === 'ok' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
+          }`}>{toast.msg}</div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full">
+            <h3 className="text-lg font-bold text-gray-900 mb-2">Delete Client</h3>
+            <p className="text-sm text-gray-600 mb-1">This will permanently delete <strong>{deleteConfirm.email}</strong> and all associated data (LinkedIn connection, invites, prospects, import jobs).</p>
+            <p className="text-sm text-red-600 font-medium mb-3">Type <code className="bg-red-50 px-1 rounded">DELETE</code> to confirm:</p>
+            <Input value={deleteInput} onChange={e => setDeleteInput(e.target.value)} placeholder="Type DELETE" className="mb-3" />
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => { setDeleteConfirm(null); setDeleteInput(''); }}>Cancel</Button>
+              <Button
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                disabled={deleteInput !== 'DELETE' || actionLoading === deleteConfirm.id}
+                onClick={() => handleDeleteClient(deleteConfirm.id)}
+              >
+                {actionLoading === deleteConfirm.id ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Trash2 className="w-4 h-4 mr-1" />}
+                Delete Forever
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* ── Invite Client ── */}
@@ -226,13 +311,13 @@ export default function Dashboard() {
                       </div>
                     </div>
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${client.status === 'connected' ? 'bg-green-100 text-green-700' :
-                        client.status === 'invited' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-700'
+                      client.status === 'invited' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-700'
                       }`}>
                       {client.status === 'connected' ? 'Connected ✅' : client.status === 'invited' ? 'Invited 📧' : 'Pending ⏳'}
                     </span>
                   </div>
                   {client.status === 'connected' && (
-                    <div className="flex items-center gap-2 mt-3 ml-14">
+                    <div className="flex items-center gap-2 mt-3 ml-14 flex-wrap">
                       <button onClick={() => {
                         copyText(JSON.stringify({ clientId: client.id, apiUrl: `${window.location.origin}/api` }), client.id);
                         window.open('https://www.linkedin.com/search/results/people/', '_blank');
@@ -240,10 +325,30 @@ export default function Dashboard() {
                         className="text-xs bg-blue-600 text-white px-4 py-1.5 rounded-md hover:bg-blue-700 transition-colors inline-flex items-center gap-1 font-semibold">
                         ⚡ Operate
                       </button>
-                      <a href="/extension" className="text-xs bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-md hover:bg-indigo-100 transition-colors">Extension</a>
-                      <button onClick={() => copyText(JSON.stringify({ clientId: client.id, apiUrl: `${window.location.origin}/api` }), 'pair-' + client.id)}
+                      <button onClick={() => copyText(client.id, 'cid-' + client.id)}
                         className="text-xs bg-gray-50 text-gray-700 px-3 py-1.5 rounded-md hover:bg-gray-100 transition-colors inline-flex items-center gap-1">
-                        <Copy className="w-3 h-3" /> {copied === 'pair-' + client.id ? 'Copied!' : 'Pair'}
+                        <Copy className="w-3 h-3" /> {copied === 'cid-' + client.id ? 'Copied ID!' : 'Copy ID'}
+                      </button>
+                      <button onClick={() => handleDisconnect(client.id)}
+                        disabled={actionLoading === client.id}
+                        className="text-xs bg-orange-50 text-orange-700 px-3 py-1.5 rounded-md hover:bg-orange-100 transition-colors inline-flex items-center gap-1">
+                        <Unlink className="w-3 h-3" /> Disconnect
+                      </button>
+                      <button onClick={() => setDeleteConfirm({ id: client.id, email: client.email })}
+                        className="text-xs bg-red-50 text-red-700 px-3 py-1.5 rounded-md hover:bg-red-100 transition-colors inline-flex items-center gap-1">
+                        <Trash2 className="w-3 h-3" /> Delete
+                      </button>
+                    </div>
+                  )}
+                  {(client.status === 'invited' || client.status === 'pending') && (
+                    <div className="flex items-center gap-2 mt-3 ml-14 flex-wrap">
+                      <button onClick={() => copyText(client.id, 'cid-' + client.id)}
+                        className="text-xs bg-gray-50 text-gray-700 px-3 py-1.5 rounded-md hover:bg-gray-100 transition-colors inline-flex items-center gap-1">
+                        <Copy className="w-3 h-3" /> {copied === 'cid-' + client.id ? 'Copied ID!' : 'Copy ID'}
+                      </button>
+                      <button onClick={() => setDeleteConfirm({ id: client.id, email: client.email })}
+                        className="text-xs bg-red-50 text-red-700 px-3 py-1.5 rounded-md hover:bg-red-100 transition-colors inline-flex items-center gap-1">
+                        <Trash2 className="w-3 h-3" /> Delete
                       </button>
                     </div>
                   )}
@@ -290,7 +395,7 @@ export default function Dashboard() {
                         <td className="px-4 py-3 text-gray-600">{inv.name || '—'}</td>
                         <td className="px-4 py-3">
                           <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${inv.status === 'used' ? 'bg-green-100 text-green-700' :
-                              inv.status === 'expired' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'
+                            inv.status === 'expired' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'
                             }`}>
                             {inv.status === 'used' ? 'Used ✅' : inv.status === 'expired' ? 'Expired ⏰' : 'Pending ⏳'}
                           </span>
@@ -306,6 +411,10 @@ export default function Dashboard() {
                             <a href={inv.inviteUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-700">
                               <ExternalLink className="w-3 h-3" />
                             </a>
+                            <button onClick={() => handleDeleteInvite(inv.id)}
+                              className="text-xs text-red-500 hover:text-red-700 px-1 py-1">
+                              <Trash2 className="w-3 h-3" />
+                            </button>
                           </div>
                         </td>
                       </tr>

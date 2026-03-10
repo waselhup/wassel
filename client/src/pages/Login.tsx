@@ -2,32 +2,37 @@ import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Linkedin, Shield, AlertCircle, Loader2 } from 'lucide-react';
-import { Link } from 'wouter';
+import { AlertCircle, Loader2, Mail, Lock, UserPlus } from 'lucide-react';
+import { Link, useLocation } from 'wouter';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function Login() {
-  const [showAdmin, setShowAdmin] = useState(false);
-  const [adminKey, setAdminKey] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const { signIn, user } = useAuth();
+  const [, navigate] = useLocation();
 
-  const handleAdminLogin = async (e: React.FormEvent) => {
+  // If already logged in, redirect based on role
+  if (user) {
+    if (user.role === 'super_admin') {
+      window.location.href = '/admin';
+    } else {
+      window.location.href = '/app';
+    }
+    return null;
+  }
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
     try {
-      // Verify admin key against backend
-      const res = await fetch('/api/clients/status', {
-        headers: { Authorization: `Bearer ${adminKey}` },
-      });
-
-      if (res.ok) {
-        // Valid admin key — store and redirect
-        localStorage.setItem('wassel_admin_key', adminKey);
-        window.location.href = '/dashboard';
-      } else {
-        setError('Invalid admin key. Please check and try again.');
+      const result = await signIn(email, password);
+      if (result.error) {
+        setError(result.error);
       }
     } catch {
       setError('Connection error. Please try again.');
@@ -45,99 +50,97 @@ export default function Login() {
           <p className="text-gray-600">LinkedIn Campaign Management</p>
         </div>
 
+        {/* Sign In Card */}
         <Card className="p-8 shadow-lg">
-          {!showAdmin ? (
-            // Customer view — LinkedIn is the primary auth
-            <div className="space-y-6">
-              <div className="text-center mb-4">
-                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Linkedin className="w-8 h-8 text-blue-600" />
-                </div>
-                <h2 className="text-xl font-semibold text-gray-900 mb-2">Welcome to Wassel</h2>
-                <p className="text-gray-600 text-sm">
-                  If you received an invite link, click it to connect your LinkedIn account.
-                </p>
-              </div>
-
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
-                <p className="text-sm text-blue-800 font-medium mb-1">Received an invitation?</p>
-                <p className="text-xs text-blue-600">
-                  Check your email for the invite link from your campaign manager.
-                  Click the link to connect your LinkedIn account securely.
-                </p>
-              </div>
-
-              <div className="border-t border-gray-200 pt-4">
-                <button
-                  onClick={() => setShowAdmin(true)}
-                  className="w-full flex items-center justify-center gap-2 text-sm text-gray-500 hover:text-gray-700 py-2 transition-colors"
-                >
-                  <Shield className="w-4 h-4" />
-                  Admin Access
-                </button>
-              </div>
+          <form onSubmit={handleLogin} className="space-y-5">
+            <div className="text-center mb-2">
+              <h2 className="text-xl font-semibold text-gray-900 mb-1">Sign In</h2>
+              <p className="text-sm text-gray-500">Access your Wassel dashboard</p>
             </div>
-          ) : (
-            // Admin login — simple key auth
-            <form onSubmit={handleAdminLogin} className="space-y-6">
-              <div className="text-center mb-2">
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Shield className="w-8 h-8 text-gray-600" />
-                </div>
-                <h2 className="text-xl font-semibold text-gray-900 mb-1">Admin Login</h2>
-                <p className="text-sm text-gray-500">Enter your admin key to access the dashboard.</p>
-              </div>
 
-              <div>
-                <label htmlFor="admin-key" className="block text-sm font-medium text-gray-700 mb-2">
-                  Admin Key
-                </label>
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1.5">
+                Email
+              </label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <Input
-                  id="admin-key"
-                  type="password"
-                  placeholder="Enter admin key"
-                  value={adminKey}
-                  onChange={(e) => setAdminKey(e.target.value)}
+                  id="email"
+                  type="email"
+                  placeholder="you@company.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   disabled={loading}
                   required
-                  className="w-full"
+                  className="w-full pl-10"
                 />
               </div>
+            </div>
 
-              {error && (
-                <div className="flex items-start gap-3 p-3 bg-red-50 border border-red-200 rounded-lg">
-                  <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                  <p className="text-sm text-red-800">{error}</p>
-                </div>
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1.5">
+                Password
+              </label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={loading}
+                  required
+                  className="w-full pl-10"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end">
+              <Link href="/forgot-password" className="text-xs text-blue-600 hover:underline">
+                Forgot Password?
+              </Link>
+            </div>
+
+            {error && (
+              <div className="flex items-start gap-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-red-800">{error}</p>
+              </div>
+            )}
+
+            <Button
+              type="submit"
+              disabled={loading || !email || !password}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Signing in...
+                </>
+              ) : (
+                'Sign In'
               )}
+            </Button>
+          </form>
 
-              <Button
-                type="submit"
-                disabled={loading || !adminKey}
-                className="w-full bg-gray-900 hover:bg-gray-800 text-white"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Verifying...
-                  </>
-                ) : (
-                  'Sign In'
-                )}
+          {/* Prominent signup CTA */}
+          <div className="mt-6 pt-5 border-t border-gray-200">
+            <p className="text-center text-sm text-gray-600 mb-3">New to Wassel?</p>
+            <Link href="/signup">
+              <Button variant="outline" className="w-full border-blue-300 text-blue-600 hover:bg-blue-50">
+                <UserPlus className="w-4 h-4 mr-2" />
+                Create Account
               </Button>
-
-              <button
-                type="button"
-                onClick={() => { setShowAdmin(false); setError(''); }}
-                className="w-full text-sm text-gray-500 hover:text-gray-700 py-1"
-              >
-                ← Back
-              </button>
-            </form>
-          )}
+            </Link>
+          </div>
         </Card>
 
+        {/* Secondary: invite link note */}
         <p className="text-center text-xs text-gray-400 mt-6">
+          Received an invite link? <Link href="/invite" className="hover:underline text-blue-400">Click here</Link>
+          {' · '}
           <Link href="/terms" className="hover:underline">Terms</Link>
           {' · '}
           <Link href="/privacy" className="hover:underline">Privacy</Link>

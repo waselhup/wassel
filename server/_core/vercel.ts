@@ -5,9 +5,9 @@ import authRoutes from "./authRoutes";
 import linkedinAuthRoutes from "./linkedinAuth";
 import inviteRoutes from "./inviteRoutes";
 import extensionRoutes from "./extensionRoutes";
+import clientRoutes from "./clientRoutes";
 import { appRouter } from "../routers";
-import { createContext } from "./context";
-import cors from "cors";
+import { createContext, expressAuthMiddleware, requireRole } from "./context";
 
 // We import node fetch here implicitly if needed or use specific middleware setup
 const app = express();
@@ -30,9 +30,14 @@ app.use((req, res, next) => {
 registerOAuthRoutes(app);
 app.use("/api/auth", authRoutes);
 app.use("/api/auth/linkedin", linkedinAuthRoutes);
-app.use("/api/invites", inviteRoutes);
-app.use("/api/clients", inviteRoutes);
-app.use("/api/ext", extensionRoutes);
+
+// Admin routes: JWT + super_admin role required
+app.use("/api/invites", expressAuthMiddleware, requireRole('super_admin'), inviteRoutes);
+app.use("/api/clients", expressAuthMiddleware, requireRole('super_admin'), inviteRoutes);
+app.use("/api/admin/clients", expressAuthMiddleware, requireRole('super_admin'), clientRoutes);
+
+// Extension routes: JWT required (any authenticated user)
+app.use("/api/ext", expressAuthMiddleware, extensionRoutes);
 
 // Health check endpoint
 app.get("/api/health", (_req: any, res: any) => {
