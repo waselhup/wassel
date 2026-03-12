@@ -243,4 +243,282 @@
         div.textContent = str;
         return div.innerHTML;
     }
+
+    // ========================================================================
+    // AUTOMATION: Listen for EXECUTE_STEP messages from background.js
+    // ========================================================================
+    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+        if (message.type !== 'EXECUTE_STEP') return false;
+
+        const { data } = message;
+        console.log('[Wassel] Executing step:', data.stepType, data.prospectName);
+
+        executeStep(data)
+            .then(result => sendResponse(result))
+            .catch(err => sendResponse({ success: false, error: err.message }));
+
+        return true; // async response
+    });
+
+    // Random delay helper
+    function randomDelay(minMs, maxMs) {
+        return new Promise(resolve => {
+            const delay = Math.floor(Math.random() * (maxMs - minMs)) + minMs;
+            setTimeout(resolve, delay);
+        });
+    }
+
+    // Check for LinkedIn restriction signals
+    function checkForRestrictions() {
+        const pageText = document.body.innerText || '';
+        const restrictionSignals = [
+            'you\'ve reached the weekly invitation limit',
+            'restriction',
+            'temporarily restricted',
+            'unusual activity',
+            'verify your identity',
+            'security verification',
+            'captcha',
+        ];
+
+        for (const signal of restrictionSignals) {
+            if (pageText.toLowerCase().includes(signal)) {
+                return signal;
+            }
+        }
+        return null;
+    }
+
+    // Execute the appropriate step
+    async function executeStep(data) {
+        switch (data.stepType) {
+            case 'visit':
+                return await executeVisit(data);
+            case 'invite':
+            case 'invitation':
+                return await executeInvite(data);
+            case 'message':
+                return await executeMessage(data);
+            default:
+                return { success: false, error: `Unknown step type: ${data.stepType}` };
+        }
+    }
+
+    // VISIT: Navigate to profile, wait, return
+    async function executeVisit(data) {
+        try {
+            if (!data.linkedinUrl) {
+                return { success: false, error: 'No LinkedIn URL' };
+            }
+
+            // Navigate to profile
+            window.location.href = data.linkedinUrl;
+
+            // Wait for page to load
+            await new Promise(resolve => {
+                const checkLoaded = setInterval(() => {
+                    if (document.readyState === 'complete') {
+                        clearInterval(checkLoaded);
+                        resolve();
+                    }
+                }, 500);
+            });
+
+            // Check for restrictions
+            const restriction = checkForRestrictions();
+            if (restriction) {
+                return { success: false, linkedinRestriction: true, error: `Restriction: ${restriction}` };
+            }
+
+            // Wait random 4-7 seconds (simulate browsing)
+            await randomDelay(4000, 7000);
+
+            return { success: true };
+        } catch (e) {
+            return { success: false, error: e.message };
+        }
+    }
+
+    // INVITE: Navigate to profile, click Connect, optionally add note
+    async function executeInvite(data) {
+        try {
+            if (!data.linkedinUrl) {
+                return { success: false, error: 'No LinkedIn URL' };
+            }
+
+            // Navigate to profile if not already there
+            if (!window.location.href.includes(data.linkedinUrl.split('/in/')[1])) {
+                window.location.href = data.linkedinUrl;
+                await new Promise(resolve => {
+                    const checkLoaded = setInterval(() => {
+                        if (document.readyState === 'complete') {
+                            clearInterval(checkLoaded);
+                            resolve();
+                        }
+                    }, 500);
+                });
+                await randomDelay(2000, 4000);
+            }
+
+            // Check for restrictions
+            const restriction = checkForRestrictions();
+            if (restriction) {
+                return { success: false, linkedinRestriction: true, error: `Restriction: ${restriction}` };
+            }
+
+            // Find and click Connect button
+            const connectBtn = findButton(['Connect', 'connect', 'Se connecter']);
+            if (!connectBtn) {
+                // Try "More" menu first
+                const moreBtn = findButton(['More', 'Plus', '...']);
+                if (moreBtn) {
+                    moreBtn.click();
+                    await randomDelay(1000, 2000);
+                    const connectInMenu = findButton(['Connect', 'connect']);
+                    if (connectInMenu) {
+                        connectInMenu.click();
+                    } else {
+                        return { success: false, error: 'Connect button not found in menu' };
+                    }
+                } else {
+                    return { success: false, error: 'Connect button not found' };
+                }
+            } else {
+                connectBtn.click();
+            }
+
+            await randomDelay(1500, 3000);
+
+            // If message template exists, add a note
+            if (data.messageTemplate && data.messageTemplate.trim()) {
+                const addNoteBtn = findButton(['Add a note', 'Ajouter une note']);
+                if (addNoteBtn) {
+                    addNoteBtn.click();
+                    await randomDelay(1000, 2000);
+
+                    // Find the note textarea
+                    const textarea = document.querySelector('textarea[name="message"], textarea#custom-message, textarea.connect-button-send-invite__custom-message');
+                    if (textarea) {
+                        // Truncate to 300 chars
+                        const noteText = data.messageTemplate.substring(0, 300);
+                        textarea.focus();
+                        textarea.value = noteText;
+                        textarea.dispatchEvent(new Event('input', { bubbles: true }));
+                        await randomDelay(500, 1000);
+                    }
+                }
+            }
+
+            // Click Send
+            await randomDelay(1000, 2000);
+            const sendBtn = findButton(['Send', 'Envoyer', 'Send now']);
+            if (sendBtn) {
+                sendBtn.click();
+                await randomDelay(1000, 2000);
+                return { success: true };
+            } else {
+                // Try clicking the main send/connect button in dialog
+                const dialogSend = document.querySelector('button[aria-label="Send now"], button[aria-label="Send invitation"]');
+                if (dialogSend) {
+                    dialogSend.click();
+                    await randomDelay(1000, 2000);
+                    return { success: true };
+                }
+                return { success: false, error: 'Send button not found' };
+            }
+        } catch (e) {
+            return { success: false, error: e.message };
+        }
+    }
+
+    // MESSAGE: Open messaging, paste message, send
+    async function executeMessage(data) {
+        try {
+            if (!data.linkedinUrl) {
+                return { success: false, error: 'No LinkedIn URL' };
+            }
+
+            // Navigate to messaging with this prospect
+            const profileSlug = data.linkedinUrl.split('/in/')[1]?.replace(/\/$/, '');
+            if (!profileSlug) {
+                return { success: false, error: 'Invalid LinkedIn URL' };
+            }
+
+            // Navigate to the profile first
+            window.location.href = data.linkedinUrl;
+            await new Promise(resolve => {
+                const checkLoaded = setInterval(() => {
+                    if (document.readyState === 'complete') {
+                        clearInterval(checkLoaded);
+                        resolve();
+                    }
+                }, 500);
+            });
+            await randomDelay(2000, 4000);
+
+            // Check for restrictions
+            const restriction = checkForRestrictions();
+            if (restriction) {
+                return { success: false, linkedinRestriction: true, error: `Restriction: ${restriction}` };
+            }
+
+            // Find and click the Message button
+            const messageBtn = findButton(['Message', 'Envoyer un message']);
+            if (!messageBtn) {
+                return { success: false, error: 'Message button not found' };
+            }
+
+            messageBtn.click();
+            await randomDelay(2000, 4000);
+
+            // Find the message input
+            const messageInput = document.querySelector(
+                'div.msg-form__contenteditable[contenteditable="true"], ' +
+                'div[role="textbox"][contenteditable="true"], ' +
+                'div.msg-form__msg-content-container div[contenteditable]'
+            );
+
+            if (!messageInput) {
+                return { success: false, error: 'Message input not found' };
+            }
+
+            // Type the message
+            messageInput.focus();
+            await randomDelay(500, 1000);
+            messageInput.innerHTML = `<p>${escapeHtml(data.messageTemplate || '')}</p>`;
+            messageInput.dispatchEvent(new Event('input', { bubbles: true }));
+            await randomDelay(1000, 2000);
+
+            // Click Send
+            const sendBtn = document.querySelector(
+                'button.msg-form__send-button, ' +
+                'button[type="submit"].msg-form__send-button'
+            );
+
+            if (sendBtn && !sendBtn.disabled) {
+                sendBtn.click();
+                await randomDelay(1000, 2000);
+                return { success: true };
+            } else {
+                return { success: false, error: 'Send button not found or disabled' };
+            }
+        } catch (e) {
+            return { success: false, error: e.message };
+        }
+    }
+
+    // Helper: find a button by text content
+    function findButton(textOptions) {
+        const buttons = document.querySelectorAll('button, a[role="button"]');
+        for (const btn of buttons) {
+            const btnText = (btn.textContent || '').trim().toLowerCase();
+            for (const option of textOptions) {
+                if (btnText === option.toLowerCase() || btnText.includes(option.toLowerCase())) {
+                    return btn;
+                }
+            }
+        }
+        return null;
+    }
 })();
+

@@ -222,7 +222,7 @@ export default function Campaigns() {
                     className="flex-1 text-gray-700"
                     onClick={() => {
                       // Navigate to campaign details
-                      window.location.href = `/dashboard/campaigns/${campaign.id}`;
+                      window.location.href = `/app/campaigns/${campaign.id}`;
                     }}
                   >
                     عرض التفاصيل
