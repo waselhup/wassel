@@ -122,6 +122,9 @@ async function startPolling() {
 
     // Also process immediately
     processQueue();
+
+    // Start connection checker alongside
+    startConnectionChecker();
 }
 
 function stopPolling() {
@@ -131,6 +134,7 @@ function stopPolling() {
     }
     isProcessing = false;
     isPaused = false;
+    stopConnectionChecker();
     console.log('[Wassel] Stopped automation polling.');
 }
 
@@ -245,21 +249,104 @@ async function processQueue() {
 }
 
 // ============================================================================
-// Also run acceptance checks periodically (every 6 hours = 21600000ms)
+// Connection Status Checker — polls every 10 minutes
+// Visits LinkedIn profiles to check if connection was accepted
 // ============================================================================
-setInterval(async () => {
+let connectionCheckInterval = null;
+let isCheckingConnections = false;
+
+function startConnectionChecker() {
+    if (connectionCheckInterval) return;
+    console.log('[Wassel] Starting connection status checker (every 10 min)...');
+    connectionCheckInterval = setInterval(connectionCheckLoop, 600000); // 10 minutes
+    // Also run immediately
+    connectionCheckLoop();
+}
+
+function stopConnectionChecker() {
+    if (connectionCheckInterval) {
+        clearInterval(connectionCheckInterval);
+        connectionCheckInterval = null;
+    }
+    isCheckingConnections = false;
+}
+
+async function connectionCheckLoop() {
+    if (isCheckingConnections || isPaused) return;
+
     const config = await getConfig();
     if (!config.apiToken) return;
 
+    isCheckingConnections = true;
+
     try {
-        const result = await apiCall('/sequence/check-acceptances', { method: 'POST' });
-        if (result.success) {
-            console.log(`[Wassel] Acceptance check: unlocked=${result.unlocked}, expired=${result.expired}, deferred=${result.deferred}`);
+        // Fetch prospects needing connection check
+        const result = await apiCall('/sequence/pending-acceptance-checks');
+
+        if (!result.success || !result.data || result.data.length === 0) {
+            isCheckingConnections = false;
+            return;
+        }
+
+        console.log(`[Wassel] Checking ${result.data.length} connection(s)...`);
+
+        // Need a LinkedIn tab
+        const tabs = await chrome.tabs.query({ url: '*://www.linkedin.com/*' });
+        if (tabs.length === 0) {
+            console.log('[Wassel] No LinkedIn tab found for connection checks.');
+            isCheckingConnections = false;
+            return;
+        }
+
+        const linkedInTab = tabs[0];
+
+        for (const check of result.data) {
+            if (!check.linkedinUrl) continue;
+
+            try {
+                // Send CHECK_CONNECTION_STATUS to content script
+                const response = await chrome.tabs.sendMessage(linkedInTab.id, {
+                    type: 'CHECK_CONNECTION_STATUS',
+                    data: {
+                        linkedinUrl: check.linkedinUrl,
+                        prospectName: check.prospectName,
+                    },
+                });
+
+                if (response && response.status) {
+                    // Report result to backend
+                    await apiCall('/sequence/update-connection-status', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            prospectId: check.prospectId,
+                            status: response.status, // 'accepted' | 'pending' | 'withdrawn'
+                            jobId: check.jobId,
+                        }),
+                    });
+
+                    const emoji = response.status === 'accepted' ? '✅' : response.status === 'withdrawn' ? '❌' : '⏳';
+                    console.log(`[Wassel] ${emoji} ${check.prospectName}: ${response.status}`);
+
+                    // Update badge briefly
+                    if (response.status === 'accepted') {
+                        chrome.action.setBadgeText({ text: '✓' });
+                        chrome.action.setBadgeBackgroundColor({ color: '#22c55e' });
+                        setTimeout(() => chrome.action.setBadgeText({ text: '' }), 5000);
+                    }
+                }
+            } catch (msgError) {
+                console.error(`[Wassel] Error checking ${check.prospectName}:`, msgError);
+            }
+
+            // Random 5-15 second delay between checks
+            await randomDelay(5000, 15000);
         }
     } catch (e) {
-        // Silent fail for background check
+        console.error('[Wassel] Connection check error:', e);
+    } finally {
+        isCheckingConnections = false;
     }
-}, 21600000); // 6 hours
+}
 
 // ============================================================================
 // Message handler — from popup and content scripts

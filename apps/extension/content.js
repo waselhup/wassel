@@ -245,20 +245,117 @@
     }
 
     // ========================================================================
-    // AUTOMATION: Listen for EXECUTE_STEP messages from background.js
+    // AUTOMATION: Listen for messages from background.js
     // ========================================================================
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-        if (message.type !== 'EXECUTE_STEP') return false;
+        if (message.type === 'EXECUTE_STEP') {
+            const { data } = message;
+            console.log('[Wassel] Executing step:', data.stepType, data.prospectName);
 
-        const { data } = message;
-        console.log('[Wassel] Executing step:', data.stepType, data.prospectName);
+            executeStep(data)
+                .then(result => sendResponse(result))
+                .catch(err => sendResponse({ success: false, error: err.message }));
 
-        executeStep(data)
-            .then(result => sendResponse(result))
-            .catch(err => sendResponse({ success: false, error: err.message }));
+            return true; // async response
+        }
 
-        return true; // async response
+        if (message.type === 'CHECK_CONNECTION_STATUS') {
+            const { data } = message;
+            console.log('[Wassel] Checking connection:', data.prospectName);
+
+            checkConnectionStatus(data)
+                .then(result => sendResponse(result))
+                .catch(err => sendResponse({ status: 'pending', error: err.message }));
+
+            return true; // async response
+        }
+
+        return false;
     });
+
+    // CHECK_CONNECTION_STATUS: Navigate to profile, detect button state
+    async function checkConnectionStatus(data) {
+        try {
+            if (!data.linkedinUrl) {
+                return { status: 'pending', error: 'No LinkedIn URL' };
+            }
+
+            // Navigate to profile if not already there
+            const profileSlug = data.linkedinUrl.split('/in/')[1]?.replace(/\/$/, '');
+            if (!profileSlug || !window.location.href.includes(profileSlug)) {
+                window.location.href = data.linkedinUrl;
+                await new Promise(resolve => {
+                    const checkLoaded = setInterval(() => {
+                        if (document.readyState === 'complete') {
+                            clearInterval(checkLoaded);
+                            resolve();
+                        }
+                    }, 500);
+                });
+                // Wait for LinkedIn to fully render
+                await randomDelay(3000, 5000);
+            }
+
+            // Check for restrictions first
+            const restriction = checkForRestrictions();
+            if (restriction) {
+                return { status: 'pending', error: `Restriction: ${restriction}` };
+            }
+
+            // Detect connection status from profile buttons
+            const buttons = document.querySelectorAll('button, a[role="button"]');
+            let hasMessageBtn = false;
+            let hasPendingBtn = false;
+            let hasConnectBtn = false;
+
+            for (const btn of buttons) {
+                const btnText = (btn.textContent || '').trim().toLowerCase();
+                const ariaLabel = (btn.getAttribute('aria-label') || '').toLowerCase();
+
+                // "Message" button = connected (accepted)
+                if (btnText === 'message' || ariaLabel.includes('message')) {
+                    hasMessageBtn = true;
+                }
+
+                // "Pending" button = invite sent, not yet accepted
+                if (btnText === 'pending' || btnText.includes('pending') || ariaLabel.includes('pending')) {
+                    hasPendingBtn = true;
+                }
+
+                // "Connect" button = not connected (withdrawn or never invited)
+                if (btnText === 'connect' || ariaLabel.includes('connect')) {
+                    // Ignore "Connect with" type links
+                    if (!btnText.includes('connected') && !ariaLabel.includes('connected')) {
+                        hasConnectBtn = true;
+                    }
+                }
+            }
+
+            // Determine status based on button priority
+            if (hasMessageBtn) {
+                console.log(`[Wassel] ✅ ${data.prospectName}: Message button found → accepted`);
+                return { status: 'accepted' };
+            }
+
+            if (hasPendingBtn) {
+                console.log(`[Wassel] ⏳ ${data.prospectName}: Pending button found → still waiting`);
+                return { status: 'pending' };
+            }
+
+            if (hasConnectBtn) {
+                console.log(`[Wassel] ❌ ${data.prospectName}: Connect button found → withdrawn`);
+                return { status: 'withdrawn' };
+            }
+
+            // Fallback: can't determine, assume still pending
+            console.log(`[Wassel] ❓ ${data.prospectName}: Could not determine status, assuming pending`);
+            return { status: 'pending' };
+
+        } catch (e) {
+            console.error('[Wassel] Connection check error:', e);
+            return { status: 'pending', error: e.message };
+        }
+    }
 
     // Random delay helper
     function randomDelay(minMs, maxMs) {

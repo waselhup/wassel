@@ -464,21 +464,37 @@ router.get('/campaigns/:id/stats', async (req: Request, res: Response) => {
 
     const stats = Object.values(stepStats).sort((a: any, b: any) => a.stepNumber - b.stepNumber);
 
-    // Summary
-    const totalProspects = stats.length > 0 ? Object.values(stats[0] as any).reduce((sum: number, v: any) => {
-      if (typeof v === 'number' && !['stepNumber'].includes(String(v))) return sum;
-      return sum;
-    }, 0) : 0;
-
     const sent = (statuses || []).filter((s: any) => s.status === 'completed').length;
     const inProgress = (statuses || []).filter((s: any) => ['pending', 'in_progress'].includes(s.status)).length;
     const failed = (statuses || []).filter((s: any) => s.status === 'failed').length;
+
+    // Acceptance rate: count prospects with invite completed → how many accepted
+    const inviteSteps = (statuses || []).filter((s: any) =>
+      (s as any).campaign_steps?.step_type === 'invitation' || (s as any).campaign_steps?.step_type === 'invite'
+    );
+    const inviteCompleted = inviteSteps.filter((s: any) => s.status === 'completed').length;
+
+    // Get acceptance count from prospects table
+    let accepted = 0;
+    if (inviteCompleted > 0) {
+      const prospectIds = Array.from(new Set(inviteSteps.filter((s: any) => s.status === 'completed').map((s: any) => s.prospect_id || '')));
+      if (prospectIds.length > 0) {
+        const { count } = await supabase
+          .from('prospects')
+          .select('id', { count: 'exact', head: true })
+          .in('id', prospectIds as string[])
+          .eq('connection_status', 'accepted');
+        accepted = count || 0;
+      }
+    }
+
+    const acceptanceRate = inviteCompleted > 0 ? Math.round((accepted / inviteCompleted) * 100) : 0;
 
     res.json({
       success: true,
       data: {
         steps: stats,
-        summary: { sent, inProgress, failed },
+        summary: { sent, inProgress, failed, inviteCompleted, accepted, acceptanceRate },
       },
     });
   } catch (e: any) {
@@ -521,13 +537,25 @@ router.get('/campaigns/:id/prospect-status', async (req: Request, res: Response)
           name,
           linkedin_url,
           company,
-          title
+          title,
+          connection_status
         )
       `)
       .eq('campaign_id', req.params.id)
       .order('created_at', { ascending: true });
 
     if (error) return res.status(500).json({ error: error.message });
+
+    // Fetch last_checked_at from acceptance_check_jobs for all prospects in this campaign
+    const { data: checkJobs } = await supabase
+      .from('acceptance_check_jobs')
+      .select('prospect_id, last_checked_at')
+      .eq('campaign_id', req.params.id);
+
+    const lastCheckedMap: Record<string, string | null> = {};
+    for (const job of (checkJobs || [])) {
+      lastCheckedMap[job.prospect_id] = job.last_checked_at;
+    }
 
     // Group by prospect
     const prospectMap: Record<string, any> = {};
@@ -543,6 +571,8 @@ router.get('/campaigns/:id/prospect-status', async (req: Request, res: Response)
           linkedinUrl: prospect.linkedin_url,
           company: prospect.company,
           title: prospect.title,
+          connectionStatus: prospect.connection_status || 'none',
+          lastCheckedAt: lastCheckedMap[item.prospect_id] || null,
           steps: {},
         };
       }
@@ -558,6 +588,222 @@ router.get('/campaigns/:id/prospect-status', async (req: Request, res: Response)
     }
 
     res.json({ success: true, data: Object.values(prospectMap) });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ============================================================================
+// GET /api/sequence/pending-acceptance-checks — Prospects needing connection check
+// Extension calls this every 10 minutes
+// ============================================================================
+router.get('/pending-acceptance-checks', async (req: Request, res: Response) => {
+  try {
+    const teamId = getTeamId(req);
+    if (!teamId) return res.status(401).json({ error: 'Unauthorized' });
+
+    const sixHoursAgo = new Date(Date.now() - 6 * 3600000).toISOString();
+    const fourteenDaysAgo = new Date(Date.now() - 14 * 86400000).toISOString();
+
+    // Find acceptance_check_jobs that are due
+    const { data: jobs, error } = await supabase
+      .from('acceptance_check_jobs')
+      .select(`
+        id,
+        prospect_id,
+        prospect_step_status_id,
+        campaign_id,
+        last_checked_at,
+        checks_remaining,
+        created_at
+      `)
+      .gt('checks_remaining', 0)
+      .gte('created_at', fourteenDaysAgo)
+      .or(`last_checked_at.is.null,last_checked_at.lt.${sixHoursAgo}`)
+      .limit(10);
+
+    if (error) return res.status(500).json({ error: error.message });
+
+    if (!jobs || jobs.length === 0) {
+      return res.json({ success: true, data: [] });
+    }
+
+    // Get prospect details for each job
+    const prospectIds = jobs.map(j => j.prospect_id);
+    const { data: prospects } = await supabase
+      .from('prospects')
+      .select('id, linkedin_url, name, company, connection_status')
+      .in('id', prospectIds);
+
+    const prospectMap: Record<string, any> = {};
+    for (const p of (prospects || [])) {
+      prospectMap[p.id] = p;
+    }
+
+    // Verify campaigns belong to team
+    const campaignIds = Array.from(new Set(jobs.map(j => j.campaign_id)));
+    const { data: campaigns } = await supabase
+      .from('campaigns')
+      .select('id')
+      .in('id', campaignIds)
+      .eq('team_id', teamId);
+
+    const validCampaignIds = new Set((campaigns || []).map(c => c.id));
+
+    const result = jobs
+      .filter(j => validCampaignIds.has(j.campaign_id))
+      .map(j => ({
+        jobId: j.id,
+        prospectId: j.prospect_id,
+        prospectStepStatusId: j.prospect_step_status_id,
+        campaignId: j.campaign_id,
+        linkedinUrl: prospectMap[j.prospect_id]?.linkedin_url || '',
+        prospectName: prospectMap[j.prospect_id]?.name || 'Unknown',
+        currentStatus: prospectMap[j.prospect_id]?.connection_status || 'none',
+        lastCheckedAt: j.last_checked_at,
+        checksRemaining: j.checks_remaining,
+      }));
+
+    res.json({ success: true, data: result });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ============================================================================
+// POST /api/sequence/update-connection-status — Extension reports LinkedIn status
+// ============================================================================
+router.post('/update-connection-status', async (req: Request, res: Response) => {
+  try {
+    const teamId = getTeamId(req);
+    if (!teamId) return res.status(401).json({ error: 'Unauthorized' });
+
+    const { prospectId, status, jobId } = req.body;
+    if (!prospectId || !status) {
+      return res.status(400).json({ error: 'prospectId and status required' });
+    }
+
+    if (!['accepted', 'pending', 'withdrawn'].includes(status)) {
+      return res.status(400).json({ error: 'status must be accepted, pending, or withdrawn' });
+    }
+
+    const now = new Date().toISOString();
+
+    // 1. Update prospect's connection_status
+    await supabase
+      .from('prospects')
+      .update({ connection_status: status })
+      .eq('id', prospectId);
+
+    // 2. Update linkedin_connections if exists
+    const { data: existingConn } = await supabase
+      .from('linkedin_connections')
+      .select('id')
+      .eq('prospect_id', prospectId)
+      .single();
+
+    if (existingConn) {
+      await supabase
+        .from('linkedin_connections')
+        .update({ connection_status: status })
+        .eq('prospect_id', prospectId);
+    }
+
+    // 3. Handle based on status
+    if (status === 'accepted') {
+      // Find the acceptance_check_job for this prospect
+      const { data: job } = jobId
+        ? await supabase.from('acceptance_check_jobs').select('*').eq('id', jobId).single()
+        : await supabase.from('acceptance_check_jobs').select('*').eq('prospect_id', prospectId).limit(1).single();
+
+      if (job) {
+        // Get the message step's delay_days
+        const { data: pss } = await supabase
+          .from('prospect_step_status')
+          .select('step_id, campaign_steps!inner(delay_days)')
+          .eq('id', job.prospect_step_status_id)
+          .single();
+
+        const delayDays = (pss as any)?.campaign_steps?.delay_days || 0;
+        const scheduledAt = delayDays > 0
+          ? new Date(Date.now() + delayDays * 86400000).toISOString()
+          : now;
+
+        // Unlock Message 1 step
+        await supabase
+          .from('prospect_step_status')
+          .update({ status: 'pending', scheduled_at: scheduledAt })
+          .eq('id', job.prospect_step_status_id);
+
+        // Delete the check job (resolved)
+        await supabase.from('acceptance_check_jobs').delete().eq('id', job.id);
+
+        console.log(`[ConnSync] ✓ ${prospectId} accepted → Message 1 unlocked`);
+      }
+
+      res.json({ success: true, action: 'unlocked_message', prospectId });
+
+    } else if (status === 'withdrawn') {
+      // Find and skip message step, delete job
+      const { data: job } = jobId
+        ? await supabase.from('acceptance_check_jobs').select('*').eq('id', jobId).single()
+        : await supabase.from('acceptance_check_jobs').select('*').eq('prospect_id', prospectId).limit(1).single();
+
+      if (job) {
+        // Mark Message 1 step as skipped
+        await supabase
+          .from('prospect_step_status')
+          .update({ status: 'skipped', error_message: 'Connection withdrawn/expired' })
+          .eq('id', job.prospect_step_status_id);
+
+        // Also skip any subsequent message steps for this prospect in this campaign
+        const { data: laterSteps } = await supabase
+          .from('prospect_step_status')
+          .select('id')
+          .eq('prospect_id', prospectId)
+          .eq('campaign_id', job.campaign_id)
+          .eq('status', 'waiting');
+
+        if (laterSteps && laterSteps.length > 0) {
+          await supabase
+            .from('prospect_step_status')
+            .update({ status: 'skipped', error_message: 'Connection not established' })
+            .in('id', laterSteps.map(s => s.id));
+        }
+
+        // Delete the job
+        await supabase.from('acceptance_check_jobs').delete().eq('id', job.id);
+
+        console.log(`[ConnSync] ✗ ${prospectId} withdrawn → steps skipped`);
+      }
+
+      res.json({ success: true, action: 'skipped', prospectId });
+
+    } else {
+      // status === 'pending' — still waiting, update last_checked_at
+      if (jobId) {
+        const { data: job } = await supabase
+          .from('acceptance_check_jobs')
+          .select('checks_remaining')
+          .eq('id', jobId)
+          .single();
+
+        await supabase
+          .from('acceptance_check_jobs')
+          .update({
+            last_checked_at: now,
+            checks_remaining: (job?.checks_remaining || 56) - 1,
+          })
+          .eq('id', jobId);
+      } else {
+        await supabase
+          .from('acceptance_check_jobs')
+          .update({ last_checked_at: now })
+          .eq('prospect_id', prospectId);
+      }
+
+      res.json({ success: true, action: 'still_pending', prospectId });
+    }
   } catch (e: any) {
     res.status(500).json({ error: e.message });
   }

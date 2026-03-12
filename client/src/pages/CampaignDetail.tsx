@@ -7,7 +7,7 @@ import {
   ArrowLeft, Eye, UserPlus, MessageSquare, Clock,
   Plus, Trash2, Save, Play, Pause, Loader2,
   CheckCircle, XCircle, Lock, AlertTriangle, ChevronDown, ChevronUp,
-  Users, BarChart3, Zap
+  Users, BarChart3, Zap, Link2
 } from 'lucide-react';
 import { Link, useRoute, useLocation } from 'wouter';
 import { trpc } from '@/lib/trpc';
@@ -444,6 +444,12 @@ export default function CampaignDetail() {
                     <thead>
                       <tr className="bg-gray-50/80 border-b">
                         <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">الاسم</th>
+                        <th className="text-center px-3 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                          <div className="flex items-center justify-center gap-1">
+                            <Link2 className="w-3 h-3" />
+                            الاتصال
+                          </div>
+                        </th>
                         {steps.map((step, i) => (
                           <th key={i} className="text-center px-3 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                             {step.name || `خطوة ${i + 1}`}
@@ -459,6 +465,54 @@ export default function CampaignDetail() {
                               <p className="font-medium text-gray-900 text-sm">{prospect.name || '—'}</p>
                               <p className="text-xs text-gray-500">{prospect.company || ''}</p>
                             </div>
+                          </td>
+                          {/* Connection status column */}
+                          <td className="text-center px-3 py-3">
+                            {(() => {
+                              const cs = prospect.connectionStatus || 'none';
+                              const lastChecked = prospect.lastCheckedAt;
+                              const hoursAgo = lastChecked
+                                ? Math.round((Date.now() - new Date(lastChecked).getTime()) / 3600000)
+                                : null;
+                              const tooltip = hoursAgo !== null
+                                ? `آخر فحص: قبل ${hoursAgo} ساعة`
+                                : 'لم يتم الفحص بعد';
+
+                              if (cs === 'accepted') {
+                                return (
+                                  <div className="flex items-center justify-center" title={tooltip}>
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-50 text-green-700 text-xs font-medium">
+                                      ✅ متصل
+                                    </span>
+                                  </div>
+                                );
+                              }
+                              if (cs === 'withdrawn') {
+                                return (
+                                  <div className="flex items-center justify-center" title={tooltip}>
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-50 text-red-600 text-xs font-medium">
+                                      ❌ منسحب
+                                    </span>
+                                  </div>
+                                );
+                              }
+                              if (cs === 'pending') {
+                                return (
+                                  <div className="flex items-center justify-center" title={tooltip}>
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-600 text-xs font-medium">
+                                      ⏳ معلق
+                                    </span>
+                                  </div>
+                                );
+                              }
+                              return (
+                                <div className="flex items-center justify-center" title="لم يتم إرسال دعوة">
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-gray-50 text-gray-400 text-xs">
+                                    —
+                                  </span>
+                                </div>
+                              );
+                            })()}
                           </td>
                           {steps.map((step, stepIdx) => {
                             const stepNum = stepIdx + 1;
@@ -502,7 +556,7 @@ export default function CampaignDetail() {
             ) : (
               <>
                 {/* Summary cards */}
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-4 gap-4">
                   <Card className="p-5 bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
                     <p className="text-xs font-medium text-green-600 mb-1">مكتمل</p>
                     <p className="text-3xl font-bold text-green-700">{stats.summary?.sent || 0}</p>
@@ -514,6 +568,16 @@ export default function CampaignDetail() {
                   <Card className="p-5 bg-gradient-to-br from-red-50 to-rose-50 border-red-200">
                     <p className="text-xs font-medium text-red-600 mb-1">فشل</p>
                     <p className="text-3xl font-bold text-red-700">{stats.summary?.failed || 0}</p>
+                  </Card>
+                  <Card className="p-5 bg-gradient-to-br from-indigo-50 to-violet-50 border-indigo-200">
+                    <p className="text-xs font-medium text-indigo-600 mb-1">نسبة القبول</p>
+                    <p className="text-3xl font-bold text-indigo-700">{stats.summary?.acceptanceRate || 0}%</p>
+                    <div className="mt-2">
+                      <div className="w-full bg-indigo-100 rounded-full h-1.5">
+                        <div className="bg-indigo-500 h-1.5 rounded-full transition-all" style={{ width: `${stats.summary?.acceptanceRate || 0}%` }}></div>
+                      </div>
+                      <p className="text-[10px] text-indigo-400 mt-1">{stats.summary?.accepted || 0} / {stats.summary?.inviteCompleted || 0} دعوة</p>
+                    </div>
                   </Card>
                 </div>
 
