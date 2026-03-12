@@ -36,7 +36,7 @@ export default function ForgotPassword() {
 
     if (sent) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center p-4">
+            <div className="min-h-screen flex items-center justify-center p-4 auth-glow" style={{ background: 'var(--bg-base)' }}>
                 <div className="w-full max-w-md">
                     <Card className="p-8 shadow-lg text-center">
                         <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -63,11 +63,11 @@ export default function ForgotPassword() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center p-4">
-            <div className="w-full max-w-md">
+        <div className="min-h-screen flex items-center justify-center p-4 auth-glow" style={{ background: 'var(--bg-base)' }}>
+            <div className="w-full max-w-md relative z-10">
                 <div className="text-center mb-8">
-                    <h1 className="text-4xl font-bold text-blue-600 mb-2">Wassel</h1>
-                    <p className="text-gray-600">Reset your password</p>
+                    <h1 className="text-4xl font-extrabold mb-2" style={{ fontFamily: "'Syne', sans-serif", background: 'linear-gradient(135deg, #7c3aed, #ec4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Wassel</h1>
+                    <p style={{ color: 'var(--text-secondary)' }}>Reset your password</p>
                 </div>
 
                 <Card className="p-8 shadow-lg">

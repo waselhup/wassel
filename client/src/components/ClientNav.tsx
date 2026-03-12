@@ -7,8 +7,8 @@ import {
 import { Link, useLocation } from 'wouter';
 
 /**
- * Client navigation bar for /app/* pages.
- * Shows: Overview, Campaigns, Leads, Import, Extension
+ * Client navigation — dark sidebar for /app/* pages.
+ * Purple active state, glass surface, user avatar at bottom.
  */
 export default function ClientNav() {
     const { user, signOut } = useAuth();
@@ -27,51 +27,103 @@ export default function ClientNav() {
         { href: '/app/extension', label: 'Extension', icon: Chrome, match: /^\/app\/extension/ },
     ];
 
-    return (
-        <>
-            {/* Top header */}
-            <header className="bg-white border-b shadow-sm">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center h-14">
-                        <div className="flex items-center gap-3">
-                            <Link href="/app">
-                                <span className="text-lg font-bold text-blue-600 cursor-pointer">Wassel</span>
-                            </Link>
-                            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">Client</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <span className="text-sm text-gray-500 hidden sm:inline">{user?.email}</span>
-                            <Button variant="ghost" size="sm" onClick={handleLogout}>
-                                <LogOut className="w-4 h-4" />
-                            </Button>
-                        </div>
-                    </div>
-                </div>
-            </header>
+    // Initials for avatar
+    const initials = user?.email
+        ? user.email.slice(0, 2).toUpperCase()
+        : 'WA';
 
-            {/* Tab navigation */}
-            <nav className="bg-white border-b">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex gap-1 overflow-x-auto">
+    return (
+        <div className="flex h-screen">
+            {/* Sidebar */}
+            <aside
+                className="w-60 flex flex-col justify-between shrink-0"
+                style={{
+                    background: 'var(--bg-surface)',
+                    borderRight: '1px solid var(--border-subtle)',
+                }}
+            >
+                {/* Logo */}
+                <div>
+                    <div className="px-5 pt-6 pb-5">
+                        <Link href="/app">
+                            <div className="flex items-center gap-2.5 cursor-pointer">
+                                <div
+                                    className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm"
+                                    style={{ background: 'var(--gradient-primary)' }}
+                                >
+                                    W
+                                </div>
+                                <span
+                                    className="text-lg font-extrabold tracking-tight"
+                                    style={{ fontFamily: "'Syne', sans-serif", color: 'var(--text-primary)' }}
+                                >
+                                    assel
+                                </span>
+                            </div>
+                        </Link>
+                    </div>
+
+                    {/* Nav items */}
+                    <nav className="px-3 space-y-1">
                         {navItems.map((item) => {
                             const isActive = item.match.test(location);
                             return (
                                 <Link key={item.href} href={item.href}>
                                     <button
-                                        className={`flex items-center gap-1.5 px-3 py-3 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${isActive
-                                                ? 'text-blue-600 border-blue-600'
-                                                : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300'
-                                            }`}
+                                        className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all"
+                                        style={{
+                                            background: isActive ? 'rgba(124, 58, 237, 0.15)' : 'transparent',
+                                            border: isActive ? '1px solid rgba(124, 58, 237, 0.3)' : '1px solid transparent',
+                                            color: isActive ? 'var(--accent-secondary)' : 'var(--text-secondary)',
+                                        }}
                                     >
-                                        <item.icon className="w-4 h-4" />
+                                        <item.icon
+                                            className="w-4 h-4"
+                                            style={{ color: isActive ? 'var(--accent-primary)' : 'var(--text-muted)' }}
+                                        />
                                         {item.label}
                                     </button>
                                 </Link>
                             );
                         })}
+                    </nav>
+                </div>
+
+                {/* User section */}
+                <div
+                    className="px-4 py-4 mx-3 mb-3 rounded-lg"
+                    style={{
+                        background: 'rgba(255, 255, 255, 0.03)',
+                        border: '1px solid var(--border-subtle)',
+                    }}
+                >
+                    <div className="flex items-center gap-3">
+                        <div
+                            className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
+                            style={{ background: 'var(--gradient-primary)' }}
+                        >
+                            {initials}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium truncate" style={{ color: 'var(--text-primary)' }}>
+                                {user?.email || 'User'}
+                            </p>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                                <div className="online-dot"></div>
+                                <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Online</span>
+                            </div>
+                        </div>
+                        <button
+                            onClick={handleLogout}
+                            className="p-1.5 rounded-md transition-colors"
+                            style={{ color: 'var(--text-muted)' }}
+                            title="Sign Out"
+                        >
+                            <LogOut className="w-3.5 h-3.5" />
+                        </button>
                     </div>
                 </div>
-            </nav>
-        </>
+            </aside>
+        </div>
     );
 }

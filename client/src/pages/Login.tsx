@@ -42,20 +42,20 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center p-4 auth-glow" style={{ background: 'var(--bg-base)' }}>
+      <div className="w-full max-w-md relative z-10">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-blue-600 mb-2">Wassel</h1>
-          <p className="text-gray-600">LinkedIn Campaign Management</p>
+          <h1 className="text-4xl font-extrabold mb-2" style={{ fontFamily: "'Syne', sans-serif", background: 'linear-gradient(135deg, #7c3aed, #ec4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Wassel</h1>
+          <p style={{ color: 'var(--text-secondary)' }}>LinkedIn Campaign Management</p>
         </div>
 
         {/* Sign In Card */}
         <Card className="p-8 shadow-lg">
           <form onSubmit={handleLogin} className="space-y-5">
             <div className="text-center mb-2">
-              <h2 className="text-xl font-semibold text-gray-900 mb-1">Sign In</h2>
-              <p className="text-sm text-gray-500">Access your Wassel dashboard</p>
+              <h2 className="text-xl font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>Sign In</h2>
+              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Access your Wassel dashboard</p>
             </div>
 
             <div>
@@ -112,7 +112,8 @@ export default function Login() {
             <Button
               type="submit"
               disabled={loading || !email || !password}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+              className="w-full text-white"
+              style={{ background: 'var(--gradient-primary)', boxShadow: '0 0 20px rgba(124,58,237,0.3)' }}
             >
               {loading ? (
                 <>

@@ -84,7 +84,7 @@ export default function ResetPassword() {
 
     if (checking) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center p-4">
+            <div className="min-h-screen flex items-center justify-center p-4 auth-glow" style={{ background: 'var(--bg-base)' }}>
                 <div className="text-center">
                     <Loader2 className="w-10 h-10 animate-spin text-blue-600 mx-auto mb-3" />
                     <p className="text-gray-600">Verifying your reset link...</p>
@@ -95,7 +95,7 @@ export default function ResetPassword() {
 
     if (success) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center p-4">
+            <div className="min-h-screen flex items-center justify-center p-4 auth-glow" style={{ background: 'var(--bg-base)' }}>
                 <div className="w-full max-w-md">
                     <Card className="p-8 shadow-lg text-center">
                         <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -118,7 +118,7 @@ export default function ResetPassword() {
 
     if (!sessionReady) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center p-4">
+            <div className="min-h-screen flex items-center justify-center p-4 auth-glow" style={{ background: 'var(--bg-base)' }}>
                 <div className="w-full max-w-md">
                     <Card className="p-8 shadow-lg text-center">
                         <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -140,11 +140,11 @@ export default function ResetPassword() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center p-4">
-            <div className="w-full max-w-md">
+        <div className="min-h-screen flex items-center justify-center p-4 auth-glow" style={{ background: 'var(--bg-base)' }}>
+            <div className="w-full max-w-md relative z-10">
                 <div className="text-center mb-8">
-                    <h1 className="text-4xl font-bold text-blue-600 mb-2">Wassel</h1>
-                    <p className="text-gray-600">Set your new password</p>
+                    <h1 className="text-4xl font-extrabold mb-2" style={{ fontFamily: "'Syne', sans-serif", background: 'linear-gradient(135deg, #7c3aed, #ec4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Wassel</h1>
+                    <p style={{ color: 'var(--text-secondary)' }}>Set your new password</p>
                 </div>
 
                 <Card className="p-8 shadow-lg">
