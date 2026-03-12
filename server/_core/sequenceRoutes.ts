@@ -917,4 +917,341 @@ router.post('/check-acceptances', async (req: Request, res: Response) => {
   }
 });
 
+// ============================================================================
+// GET /api/sequence/campaigns/:id/analytics — Full campaign analytics
+// ============================================================================
+router.get('/campaigns/:id/analytics', async (req: Request, res: Response) => {
+  try {
+    const teamId = getTeamId(req);
+    if (!teamId) return res.status(401).json({ error: 'Unauthorized' });
+
+    const campaignId = req.params.id;
+
+    const { data: campaign } = await supabase
+      .from('campaigns')
+      .select('id, created_at, status')
+      .eq('id', campaignId)
+      .eq('team_id', teamId)
+      .single();
+
+    if (!campaign) return res.status(404).json({ error: 'Campaign not found' });
+
+    // Get all step statuses with step info
+    const { data: statuses } = await supabase
+      .from('prospect_step_status')
+      .select(`
+        prospect_id,
+        status,
+        executed_at,
+        campaign_steps!inner (
+          step_type,
+          step_number,
+          name
+        )
+      `)
+      .eq('campaign_id', campaignId);
+
+    // Get prospect connection + reply info
+    const prospectIds = Array.from(new Set((statuses || []).map((s: any) => s.prospect_id)));
+
+    let prospects: any[] = [];
+    if (prospectIds.length > 0) {
+      const { data } = await supabase
+        .from('prospects')
+        .select('id, connection_status, replied_at, reply_detected')
+        .in('id', prospectIds);
+      prospects = data || [];
+    }
+
+    const prospectMap: Record<string, any> = {};
+    for (const p of prospects) {
+      prospectMap[p.id] = p;
+    }
+
+    // === FUNNEL COUNTS ===
+    const enrolled = prospectIds.length;
+
+    let visited = 0, invited = 0, messaged = 0, followedUp = 0;
+
+    // Track step execution per prospect
+    const prospectSteps: Record<string, Record<string, string>> = {};
+    for (const s of (statuses || [])) {
+      const step = (s as any).campaign_steps;
+      if (!prospectSteps[s.prospect_id]) prospectSteps[s.prospect_id] = {};
+      prospectSteps[s.prospect_id][`${step.step_type}_${step.step_number}`] = s.status;
+
+      if (s.status === 'completed') {
+        if (step.step_type === 'visit') visited++;
+        if (step.step_type === 'invitation' || step.step_type === 'invite') invited++;
+        if (step.step_type === 'message') {
+          // First message step = messaged, subsequent = follow-up
+          const messageStepNums = (statuses || [])
+            .filter((st: any) => (st as any).campaign_steps.step_type === 'message')
+            .map((st: any) => (st as any).campaign_steps.step_number)
+            .sort((a: number, b: number) => a - b);
+          const firstMessageNum = messageStepNums[0];
+          if (step.step_number === firstMessageNum) messaged++;
+          else followedUp++;
+        }
+      }
+    }
+
+    const accepted = prospects.filter(p => p.connection_status === 'accepted').length;
+    const replied = prospects.filter(p => p.reply_detected).length;
+
+    // === CONVERSION RATES ===
+    const acceptanceRate = invited > 0 ? Math.round((accepted / invited) * 100) : 0;
+    const messageRate = accepted > 0 ? Math.round((messaged / accepted) * 100) : 0;
+    const replyRate = messaged > 0 ? Math.round((replied / messaged) * 100) : 0;
+
+    // === TIME METRICS ===
+    const startDate = campaign.created_at;
+    const daysRunning = Math.max(1, Math.ceil((Date.now() - new Date(startDate).getTime()) / 86400000));
+
+    // Avg days from invite → acceptance
+    let avgDaysToAccept = 0;
+    if (accepted > 0) {
+      const acceptTimes: number[] = [];
+      for (const pid of prospectIds) {
+        const p = prospectMap[pid];
+        if (p?.connection_status !== 'accepted') continue;
+
+        // Find invite executed_at for this prospect
+        const inviteStep = (statuses || []).find((s: any) =>
+          s.prospect_id === pid &&
+          s.status === 'completed' &&
+          ((s as any).campaign_steps.step_type === 'invitation' || (s as any).campaign_steps.step_type === 'invite')
+        );
+
+        if (inviteStep?.executed_at) {
+          // Use the first message step's executed_at as proxy for acceptance time
+          const msgStep = (statuses || []).find((s: any) =>
+            s.prospect_id === pid &&
+            s.status === 'completed' &&
+            (s as any).campaign_steps.step_type === 'message'
+          );
+
+          if (msgStep?.executed_at) {
+            const days = (new Date(msgStep.executed_at).getTime() - new Date(inviteStep.executed_at).getTime()) / 86400000;
+            if (days > 0) acceptTimes.push(days);
+          }
+        }
+      }
+      if (acceptTimes.length > 0) {
+        avgDaysToAccept = Math.round(acceptTimes.reduce((a, b) => a + b, 0) / acceptTimes.length * 10) / 10;
+      }
+    }
+
+    // Estimated completion: based on current pace
+    const remainingProspects = enrolled - visited;
+    const prospectsPerDay = daysRunning > 0 ? visited / daysRunning : 0;
+    const estimatedDaysLeft = prospectsPerDay > 0 ? Math.ceil(remainingProspects / prospectsPerDay) : null;
+
+    // === DAILY SNAPSHOTS (last 14 days) ===
+    const { data: snapshots } = await supabase
+      .from('campaign_analytics_snapshots')
+      .select('*')
+      .eq('campaign_id', campaignId)
+      .order('snapshot_date', { ascending: true })
+      .limit(14);
+
+    res.json({
+      success: true,
+      data: {
+        funnel: { enrolled, visited, invited, accepted, messaged, followedUp, replied },
+        rates: {
+          acceptanceRate: `${acceptanceRate}%`,
+          messageRate: `${messageRate}%`,
+          replyRate: `${replyRate}%`,
+        },
+        time: {
+          startDate,
+          daysRunning,
+          avgDaysToAccept,
+          estimatedDaysLeft,
+        },
+        dailySnapshots: snapshots || [],
+      },
+    });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ============================================================================
+// POST /api/sequence/campaigns/:id/snapshot — Save daily analytics snapshot
+// ============================================================================
+router.post('/campaigns/:id/snapshot', async (req: Request, res: Response) => {
+  try {
+    const teamId = getTeamId(req);
+    if (!teamId) return res.status(401).json({ error: 'Unauthorized' });
+
+    const campaignId = req.params.id;
+
+    const { data: campaign } = await supabase
+      .from('campaigns')
+      .select('id')
+      .eq('id', campaignId)
+      .eq('team_id', teamId)
+      .single();
+
+    if (!campaign) return res.status(404).json({ error: 'Campaign not found' });
+
+    // Compute current counts
+    const { data: statuses } = await supabase
+      .from('prospect_step_status')
+      .select('prospect_id, status, campaign_steps!inner(step_type, step_number)')
+      .eq('campaign_id', campaignId);
+
+    const prospectIds = Array.from(new Set((statuses || []).map((s: any) => s.prospect_id)));
+
+    let visitsD = 0, invitesD = 0, messagesD = 0, followUpsD = 0;
+    const messageNums = (statuses || [])
+      .filter((s: any) => (s as any).campaign_steps.step_type === 'message')
+      .map((s: any) => (s as any).campaign_steps.step_number)
+      .sort((a: number, b: number) => a - b);
+    const firstMsgNum = messageNums.length > 0 ? messageNums[0] : 999;
+
+    for (const s of (statuses || [])) {
+      if (s.status !== 'completed') continue;
+      const step = (s as any).campaign_steps;
+      if (step.step_type === 'visit') visitsD++;
+      if (step.step_type === 'invitation' || step.step_type === 'invite') invitesD++;
+      if (step.step_type === 'message') {
+        if (step.step_number === firstMsgNum) messagesD++;
+        else followUpsD++;
+      }
+    }
+
+    let acceptedD = 0, repliesD = 0;
+    if (prospectIds.length > 0) {
+      const { count: ac } = await supabase
+        .from('prospects')
+        .select('id', { count: 'exact', head: true })
+        .in('id', prospectIds)
+        .eq('connection_status', 'accepted');
+      acceptedD = ac || 0;
+
+      const { count: rc } = await supabase
+        .from('prospects')
+        .select('id', { count: 'exact', head: true })
+        .in('id', prospectIds)
+        .eq('reply_detected', true);
+      repliesD = rc || 0;
+    }
+
+    // Upsert snapshot for today
+    const today = new Date().toISOString().split('T')[0];
+
+    const { data: existing } = await supabase
+      .from('campaign_analytics_snapshots')
+      .select('id')
+      .eq('campaign_id', campaignId)
+      .eq('snapshot_date', today)
+      .single();
+
+    if (existing) {
+      await supabase
+        .from('campaign_analytics_snapshots')
+        .update({
+          enrolled: prospectIds.length,
+          visits_done: visitsD,
+          invites_sent: invitesD,
+          accepted: acceptedD,
+          messages_sent: messagesD,
+          follow_ups_sent: followUpsD,
+          replies: repliesD,
+        })
+        .eq('id', existing.id);
+    } else {
+      await supabase
+        .from('campaign_analytics_snapshots')
+        .insert({
+          campaign_id: campaignId,
+          snapshot_date: today,
+          enrolled: prospectIds.length,
+          visits_done: visitsD,
+          invites_sent: invitesD,
+          accepted: acceptedD,
+          messages_sent: messagesD,
+          follow_ups_sent: followUpsD,
+          replies: repliesD,
+        });
+    }
+
+    res.json({ success: true, snapshot: { date: today, enrolled: prospectIds.length, visits: visitsD, invites: invitesD, accepted: acceptedD, messages: messagesD, followUps: followUpsD, replies: repliesD } });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ============================================================================
+// POST /api/sequence/prospects/:id/mark-replied — Mark prospect as replied
+// ============================================================================
+router.post('/prospects/:id/mark-replied', async (req: Request, res: Response) => {
+  try {
+    const teamId = getTeamId(req);
+    if (!teamId) return res.status(401).json({ error: 'Unauthorized' });
+
+    const prospectId = req.params.id;
+    const now = new Date().toISOString();
+
+    // Verify prospect belongs to team via campaigns
+    const { data: pss } = await supabase
+      .from('prospect_step_status')
+      .select('campaign_id')
+      .eq('prospect_id', prospectId)
+      .limit(1)
+      .single();
+
+    if (!pss) return res.status(404).json({ error: 'Prospect not found in any campaign' });
+
+    const { data: campaign } = await supabase
+      .from('campaigns')
+      .select('id')
+      .eq('id', pss.campaign_id)
+      .eq('team_id', teamId)
+      .single();
+
+    if (!campaign) return res.status(403).json({ error: 'Forbidden' });
+
+    // Update prospect
+    await supabase
+      .from('prospects')
+      .update({ replied_at: now, reply_detected: true })
+      .eq('id', prospectId);
+
+    // Check if Message 2 (follow-up) is waiting → unlock immediately
+    // Find all steps for this prospect that are 'waiting' and are message type
+    const { data: waitingSteps } = await supabase
+      .from('prospect_step_status')
+      .select('id, step_id, campaign_steps!inner(step_type, step_number)')
+      .eq('prospect_id', prospectId)
+      .eq('status', 'waiting');
+
+    // Find message steps that are after the first message step (i.e., follow-ups)
+    const messageSteps = (waitingSteps || []).filter((s: any) =>
+      (s as any).campaign_steps.step_type === 'message'
+    );
+
+    if (messageSteps.length > 0) {
+      // Unlock the next waiting message step immediately (reply = high intent)
+      const nextStep = messageSteps.sort((a: any, b: any) =>
+        (a as any).campaign_steps.step_number - (b as any).campaign_steps.step_number
+      )[0];
+
+      await supabase
+        .from('prospect_step_status')
+        .update({ status: 'pending', scheduled_at: now })
+        .eq('id', nextStep.id);
+
+      console.log(`[Analytics] ✓ ${prospectId} replied → Follow-up unlocked`);
+    }
+
+    res.json({ success: true, prospectId, repliedAt: now });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 export default router;

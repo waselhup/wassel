@@ -7,7 +7,7 @@ import {
   ArrowLeft, Eye, UserPlus, MessageSquare, Clock,
   Plus, Trash2, Save, Play, Pause, Loader2,
   CheckCircle, XCircle, Lock, AlertTriangle, ChevronDown, ChevronUp,
-  Users, BarChart3, Zap, Link2
+  Users, BarChart3, Zap, Link2, Reply, Calendar, TrendingUp, Target
 } from 'lucide-react';
 import { Link, useRoute, useLocation } from 'wouter';
 import { trpc } from '@/lib/trpc';
@@ -76,6 +76,10 @@ export default function CampaignDetail() {
   const [prospectGrid, setProspectGrid] = useState<any[]>([]);
   const [loadingStats, setLoadingStats] = useState(false);
 
+  // Analytics state
+  const [analytics, setAnalytics] = useState<any>(null);
+  const [loadingAnalytics, setLoadingAnalytics] = useState(false);
+
   // Tab state
   const [activeTab, setActiveTab] = useState<'sequence' | 'prospects' | 'stats'>('sequence');
 
@@ -112,11 +116,35 @@ export default function CampaignDetail() {
     setLoadingStats(false);
   }, [campaignId]);
 
+  // Load full analytics
+  const loadAnalytics = useCallback(async () => {
+    if (!campaignId) return;
+    setLoadingAnalytics(true);
+    try {
+      const res = await seqApi(`/campaigns/${campaignId}/analytics`);
+      if (res.success) setAnalytics(res.data);
+    } catch (e) { /* silent */ }
+    setLoadingAnalytics(false);
+  }, [campaignId]);
+
   useEffect(() => {
-    if (activeTab === 'prospects' || activeTab === 'stats') {
-      loadStats();
-    }
-  }, [activeTab, loadStats]);
+    if (activeTab === 'prospects') loadStats();
+    if (activeTab === 'stats') loadAnalytics();
+  }, [activeTab, loadStats, loadAnalytics]);
+
+  // Mark prospect as replied
+  const markReplied = async (prospectId: string) => {
+    try {
+      const res = await seqApi(`/prospects/${prospectId}/mark-replied`, { method: 'POST' });
+      if (res.success) {
+        setProspectGrid(prev => prev.map(p =>
+          p.prospectId === prospectId
+            ? { ...p, replied: true, repliedAt: res.repliedAt }
+            : p
+        ));
+      }
+    } catch (e) { /* silent */ }
+  };
 
   // Add step
   const addStep = (type: string) => {
@@ -455,6 +483,12 @@ export default function CampaignDetail() {
                             {step.name || `خطوة ${i + 1}`}
                           </th>
                         ))}
+                        <th className="text-center px-3 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                          <div className="flex items-center justify-center gap-1">
+                            <Reply className="w-3 h-3" />
+                            الرد
+                          </div>
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
@@ -531,6 +565,21 @@ export default function CampaignDetail() {
                               </td>
                             );
                           })}
+                          {/* Reply column */}
+                          <td className="text-center px-3 py-3">
+                            {prospect.replied ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-medium">
+                                <CheckCircle className="w-3 h-3" /> رد
+                              </span>
+                            ) : (
+                              <button
+                                onClick={() => markReplied(prospect.prospectId)}
+                                className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-gray-50 text-gray-500 text-xs hover:bg-green-50 hover:text-green-600 transition-colors border border-gray-200 hover:border-green-300"
+                              >
+                                <Reply className="w-3 h-3" /> ✓ رد
+                              </button>
+                            )}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -541,70 +590,162 @@ export default function CampaignDetail() {
           </div>
         )}
 
-        {/* ======= STATS TAB ======= */}
+        {/* ======= STATS TAB — Analytics Dashboard ======= */}
         {activeTab === 'stats' && (
           <div className="space-y-6">
-            {loadingStats ? (
+            {loadingAnalytics ? (
               <div className="text-center py-12">
                 <Loader2 className="w-8 h-8 animate-spin text-blue-500 mx-auto mb-3" />
+                <p className="text-gray-500 text-sm">جاري تحميل التحليلات...</p>
               </div>
-            ) : !stats ? (
+            ) : !analytics ? (
               <Card className="p-8 text-center">
                 <BarChart3 className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-600">لا توجد بيانات إحصائية بعد</p>
+                <p className="text-gray-600">لا توجد بيانات تحليلية بعد</p>
               </Card>
             ) : (
               <>
-                {/* Summary cards */}
+                {/* === KEY METRICS CARDS === */}
                 <div className="grid grid-cols-4 gap-4">
-                  <Card className="p-5 bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
-                    <p className="text-xs font-medium text-green-600 mb-1">مكتمل</p>
-                    <p className="text-3xl font-bold text-green-700">{stats.summary?.sent || 0}</p>
-                  </Card>
-                  <Card className="p-5 bg-gradient-to-br from-blue-50 to-cyan-50 border-blue-200">
-                    <p className="text-xs font-medium text-blue-600 mb-1">قيد التنفيذ</p>
-                    <p className="text-3xl font-bold text-blue-700">{stats.summary?.inProgress || 0}</p>
-                  </Card>
-                  <Card className="p-5 bg-gradient-to-br from-red-50 to-rose-50 border-red-200">
-                    <p className="text-xs font-medium text-red-600 mb-1">فشل</p>
-                    <p className="text-3xl font-bold text-red-700">{stats.summary?.failed || 0}</p>
-                  </Card>
-                  <Card className="p-5 bg-gradient-to-br from-indigo-50 to-violet-50 border-indigo-200">
-                    <p className="text-xs font-medium text-indigo-600 mb-1">نسبة القبول</p>
-                    <p className="text-3xl font-bold text-indigo-700">{stats.summary?.acceptanceRate || 0}%</p>
-                    <div className="mt-2">
-                      <div className="w-full bg-indigo-100 rounded-full h-1.5">
-                        <div className="bg-indigo-500 h-1.5 rounded-full transition-all" style={{ width: `${stats.summary?.acceptanceRate || 0}%` }}></div>
-                      </div>
-                      <p className="text-[10px] text-indigo-400 mt-1">{stats.summary?.accepted || 0} / {stats.summary?.inviteCompleted || 0} دعوة</p>
+                  <Card className="p-5 bg-gradient-to-br from-blue-50 to-sky-50 border-blue-200">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Users className="w-4 h-4 text-blue-500" />
+                      <p className="text-xs font-medium text-blue-600">العملاء المحتملين</p>
                     </div>
+                    <p className="text-3xl font-bold text-blue-700">{analytics.funnel?.enrolled || 0}</p>
+                  </Card>
+                  <Card className="p-5 bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Target className="w-4 h-4 text-green-500" />
+                      <p className="text-xs font-medium text-green-600">نسبة القبول</p>
+                    </div>
+                    <p className="text-3xl font-bold text-green-700">{analytics.rates?.acceptanceRate || '0%'}</p>
+                  </Card>
+                  <Card className="p-5 bg-gradient-to-br from-purple-50 to-violet-50 border-purple-200">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Reply className="w-4 h-4 text-purple-500" />
+                      <p className="text-xs font-medium text-purple-600">نسبة الرد</p>
+                    </div>
+                    <p className="text-3xl font-bold text-purple-700">{analytics.rates?.replyRate || '0%'}</p>
+                  </Card>
+                  <Card className="p-5 bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Calendar className="w-4 h-4 text-amber-500" />
+                      <p className="text-xs font-medium text-amber-600">أيام التشغيل</p>
+                    </div>
+                    <p className="text-3xl font-bold text-amber-700">{analytics.time?.daysRunning || 0}</p>
+                    {analytics.time?.avgDaysToAccept > 0 && (
+                      <p className="text-[10px] text-amber-500 mt-1">متوسط القبول: {analytics.time.avgDaysToAccept} يوم</p>
+                    )}
                   </Card>
                 </div>
 
-                {/* Per-step stats */}
-                <Card className="p-5">
-                  <h3 className="text-sm font-semibold text-gray-700 mb-4">إحصائيات كل خطوة</h3>
+                {/* === FUNNEL VISUALIZATION === */}
+                <Card className="p-6">
+                  <h3 className="text-sm font-semibold text-gray-700 mb-5 flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4" />
+                    قمع التحويل
+                  </h3>
                   <div className="space-y-3">
-                    {(stats.steps || []).map((stepStat: any) => {
-                      const total = stepStat.waiting + stepStat.pending + stepStat.in_progress + stepStat.completed + stepStat.failed + stepStat.skipped;
-                      const completedPct = total > 0 ? Math.round((stepStat.completed / total) * 100) : 0;
+                    {(() => {
+                      const f = analytics.funnel || {};
+                      const maxVal = Math.max(f.enrolled || 1, 1);
+                      const funnelRows = [
+                        { label: 'مسجلين', value: f.enrolled || 0, pct: 100, color: 'from-blue-500 to-blue-400' },
+                        { label: 'تمت الزيارة', value: f.visited || 0, pct: f.enrolled ? Math.round(((f.visited || 0) / f.enrolled) * 100) : 0, color: 'from-cyan-500 to-cyan-400' },
+                        { label: 'دعوات مرسلة', value: f.invited || 0, pct: f.enrolled ? Math.round(((f.invited || 0) / f.enrolled) * 100) : 0, color: 'from-teal-500 to-teal-400' },
+                        { label: 'قبلوا الدعوة', value: f.accepted || 0, pct: f.invited ? Math.round(((f.accepted || 0) / f.invited) * 100) : 0, color: 'from-green-500 to-green-400' },
+                        { label: 'رسالة 1', value: f.messaged || 0, pct: f.accepted ? Math.round(((f.messaged || 0) / f.accepted) * 100) : 0, color: 'from-purple-500 to-purple-400' },
+                        { label: 'رسالة 2', value: f.followedUp || 0, pct: f.messaged ? Math.round(((f.followedUp || 0) / f.messaged) * 100) : 0, color: 'from-indigo-500 to-indigo-400' },
+                        { label: 'ردوا', value: f.replied || 0, pct: f.messaged ? Math.round(((f.replied || 0) / f.messaged) * 100) : 0, color: 'from-pink-500 to-rose-400' },
+                      ];
 
-                      return (
-                        <div key={stepStat.stepId} className="flex items-center gap-4">
-                          <div className="w-28 text-sm font-medium text-gray-700 truncate">
-                            {stepStat.stepName}
-                          </div>
-                          <div className="flex-1">
-                            <div className="w-full bg-gray-100 rounded-full h-2.5">
-                              <div className="bg-green-500 h-2.5 rounded-full transition-all" style={{ width: `${completedPct}%` }}></div>
+                      return funnelRows.map((row, idx) => {
+                        const barWidth = maxVal > 0 ? Math.max(2, Math.round((row.value / maxVal) * 100)) : 0;
+                        const rateColor = row.pct >= 70 ? 'text-green-600' : row.pct >= 40 ? 'text-amber-600' : 'text-red-500';
+
+                        return (
+                          <div key={idx} className="flex items-center gap-3">
+                            <div className="w-24 text-sm font-medium text-gray-600 text-right">{row.label}</div>
+                            <div className="flex-1 relative">
+                              <div className="w-full bg-gray-50 rounded-lg h-8 overflow-hidden">
+                                <div
+                                  className={`h-full rounded-lg bg-gradient-to-r ${row.color} transition-all duration-700 ease-out flex items-center justify-end pr-2`}
+                                  style={{ width: `${barWidth}%` }}
+                                >
+                                  {barWidth > 15 && (
+                                    <span className="text-white text-xs font-bold">{row.value}</span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="w-16 text-right">
+                              <span className="text-sm font-bold text-gray-800">{row.value}</span>
+                              {idx > 0 && (
+                                <span className={`text-[10px] block ${rateColor}`}>({row.pct}%)</span>
+                              )}
                             </div>
                           </div>
-                          <div className="w-24 text-xs text-gray-500 text-right">
-                            {stepStat.completed}/{total} ({completedPct}%)
+                        );
+                      });
+                    })()}
+                  </div>
+                </Card>
+
+                {/* === DAILY ACTIVITY CHART === */}
+                {analytics.dailySnapshots && analytics.dailySnapshots.length > 0 && (
+                  <Card className="p-6">
+                    <h3 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                      <BarChart3 className="w-4 h-4" />
+                      النشاط اليومي (آخر 14 يوم)
+                    </h3>
+                    <div className="flex items-end gap-1 h-40">
+                      {analytics.dailySnapshots.map((snap: any, idx: number) => {
+                        const maxSnap = Math.max(...analytics.dailySnapshots.map((s: any) => Math.max(s.invites_sent || 0, s.accepted || 0, s.messages_sent || 0, 1)));
+                        const inviteH = maxSnap > 0 ? ((snap.invites_sent || 0) / maxSnap) * 100 : 0;
+                        const acceptH = maxSnap > 0 ? ((snap.accepted || 0) / maxSnap) * 100 : 0;
+                        const msgH = maxSnap > 0 ? ((snap.messages_sent || 0) / maxSnap) * 100 : 0;
+                        const day = new Date(snap.snapshot_date).toLocaleDateString('ar', { day: 'numeric' });
+
+                        return (
+                          <div key={idx} className="flex-1 flex flex-col items-center gap-0.5" title={`${snap.snapshot_date}\nدعوات: ${snap.invites_sent || 0}\nقبول: ${snap.accepted || 0}\nرسائل: ${snap.messages_sent || 0}`}>
+                            <div className="w-full flex gap-[1px] items-end" style={{ height: '120px' }}>
+                              <div className="flex-1 bg-blue-400 rounded-t-sm transition-all" style={{ height: `${Math.max(inviteH, 2)}%` }}></div>
+                              <div className="flex-1 bg-green-400 rounded-t-sm transition-all" style={{ height: `${Math.max(acceptH, 2)}%` }}></div>
+                              <div className="flex-1 bg-purple-400 rounded-t-sm transition-all" style={{ height: `${Math.max(msgH, 2)}%` }}></div>
+                            </div>
+                            <span className="text-[9px] text-gray-400">{day}</span>
                           </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
+                    <div className="flex items-center justify-center gap-4 mt-3 text-xs text-gray-500">
+                      <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-blue-400"></span> دعوات</span>
+                      <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-green-400"></span> قبول</span>
+                      <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-purple-400"></span> رسائل</span>
+                    </div>
+                  </Card>
+                )}
+
+                {/* === TIME METRICS === */}
+                <Card className="p-5">
+                  <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                    <Clock className="w-4 h-4" />
+                    مقاييس الوقت
+                  </h3>
+                  <div className="grid grid-cols-3 gap-4 text-center">
+                    <div>
+                      <p className="text-2xl font-bold text-gray-800">{analytics.time?.daysRunning || 0}</p>
+                      <p className="text-xs text-gray-500">أيام التشغيل</p>
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold text-gray-800">{analytics.time?.avgDaysToAccept || '—'}</p>
+                      <p className="text-xs text-gray-500">متوسط أيام القبول</p>
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold text-gray-800">{analytics.time?.estimatedDaysLeft ? `~${analytics.time.estimatedDaysLeft}` : '—'}</p>
+                      <p className="text-xs text-gray-500">أيام حتى الإكمال</p>
+                    </div>
                   </div>
                 </Card>
               </>

@@ -147,6 +147,17 @@ async function processQueue() {
     isProcessing = true;
 
     try {
+        // Daily snapshot trigger — once per day
+        const today = new Date().toISOString().split('T')[0];
+        const { lastSnapshotDate } = await chrome.storage.local.get('lastSnapshotDate');
+        if (lastSnapshotDate !== today && config.activeCampaignId) {
+            try {
+                await apiCall(`/sequence/campaigns/${config.activeCampaignId}/snapshot`, { method: 'POST' });
+                await chrome.storage.local.set({ lastSnapshotDate: today });
+                console.log('[Wassel] Daily snapshot saved for', today);
+            } catch (e) { /* silent */ }
+        }
+
         // Fetch queue
         const result = await apiCall(`/sequence/campaigns/${config.activeCampaignId}/queue`);
 
