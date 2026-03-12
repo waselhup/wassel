@@ -1,42 +1,7 @@
-import { useState, useEffect } from 'react';
-import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Loader2, Users, Target, Clock, ArrowRight, Mail, Linkedin, Copy, Send, LogOut, CheckCircle, ExternalLink, RefreshCw, Trash2, Unlink } from 'lucide-react';
-
-type Client = {
-  id: string;
-  email: string;
-  name: string | null;
-  status: string;
-  created_at: string;
-  linkedin_connections?: Array<{ linkedin_name?: string; linkedin_email?: string }>;
-};
-
-type InviteRecord = {
-  id: string;
-  email: string;
-  name: string | null;
-  status: string;
-  clientStatus: string;
-  created_at: string;
-  expires_at: string;
-  used_at: string | null;
-  tokenMasked: string;
-  inviteUrl: string;
-};
-
-type InviteResult = {
-  success?: boolean;
-  clientId?: string;
-  inviteToken?: string;
-  inviteUrl?: string;
-  sent?: boolean;
-  provider?: string;
-  message?: string;
-  error?: string;
-  emailError?: string;
-};
+import { useState, useEffect, useCallback } from 'react';
+import { useLocation, Link } from 'wouter';
+import AdminNav from '@/components/AdminNav';
+import { Users, Target, TrendingUp, Database, Clock, Shield, Eye, Ban, ArrowLeft, Search, BarChart3, Activity } from 'lucide-react';
 
 function getAuthToken(): string {
   return localStorage.getItem('supabase_token') || '';
@@ -46,408 +11,482 @@ function authHeaders(): Record<string, string> {
   return { 'Content-Type': 'application/json', Authorization: `Bearer ${getAuthToken()}` };
 }
 
-export default function Dashboard() {
-  const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteName, setInviteName] = useState('');
-  const [inviteLoading, setInviteLoading] = useState(false);
-  const [inviteResult, setInviteResult] = useState<InviteResult | null>(null);
-  const [clients, setClients] = useState<Client[]>([]);
-  const [invites, setInvites] = useState<InviteRecord[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [copied, setCopied] = useState('');
-  const [actionLoading, setActionLoading] = useState('');
-  const [toast, setToast] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
-  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; email: string } | null>(null);
-  const [deleteInput, setDeleteInput] = useState('');
+function timeAgo(ts: string): string {
+  const ms = Date.now() - new Date(ts).getTime();
+  const mins = Math.floor(ms / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  return `${days}d ago`;
+}
 
-  useEffect(() => {
-    const token = getAuthToken();
-    if (!token) { window.location.href = '/login'; return; }
-    fetchClients();
-    fetchInvites();
-  }, []);
+/* ========== Impersonation Banner ========== */
+function ImpersonationBanner() {
+  const impersonating = localStorage.getItem('admin_impersonate_email');
+  if (!impersonating) return null;
 
-  const fetchClients = async () => {
-    try {
-      const res = await fetch('/api/clients/status', { headers: authHeaders() });
-      if (res.ok) {
-        const data = await res.json();
-        setClients(data.clients || []);
-      } else if (res.status === 401) {
-        window.location.href = '/login';
-      }
-    } catch (e) { console.error('Failed to fetch clients:', e); }
-    finally { setLoading(false); }
-  };
-
-  const fetchInvites = async () => {
-    try {
-      const res = await fetch('/api/invites/latest', { headers: authHeaders() });
-      if (res.ok) {
-        const data = await res.json();
-        setInvites(data.invites || []);
-      }
-    } catch (e) { console.error('Failed to fetch invites:', e); }
-  };
-
-  const handleSendInvite = async () => {
-    if (!inviteEmail) return;
-    setInviteLoading(true);
-    setInviteResult(null);
-    try {
-      const res = await fetch('/api/invites/send', {
-        method: 'POST',
-        headers: authHeaders(),
-        body: JSON.stringify({ email: inviteEmail, name: inviteName || undefined }),
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        setInviteResult(data);
-        setInviteEmail('');
-        setInviteName('');
-        fetchClients();
-        fetchInvites();
-      } else {
-        setInviteResult({ error: data.error || 'Failed to send invite' });
-      }
-    } catch {
-      setInviteResult({ error: 'Network error' });
-    } finally {
-      setInviteLoading(false);
+  const exitImpersonation = () => {
+    const backup = localStorage.getItem('admin_backup_token');
+    if (backup) {
+      localStorage.setItem('supabase_token', backup);
+      localStorage.removeItem('admin_backup_token');
+      localStorage.removeItem('admin_impersonate_email');
+      window.location.href = '/admin/customers';
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('supabase_token');
-    window.location.href = '/login';
-  };
+  return (
+    <div className="fixed top-0 left-0 right-0 z-[100] px-4 py-2 text-center text-sm font-semibold text-white"
+      style={{ background: 'linear-gradient(90deg, #dc2626, #ef4444)' }}>
+      ⚠️ Viewing as <strong>{impersonating}</strong>
+      <button onClick={exitImpersonation} className="ml-4 px-3 py-1 rounded text-xs font-bold"
+        style={{ background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.3)' }}>
+        Exit Impersonation
+      </button>
+    </div>
+  );
+}
 
-  const copyText = (text: string, label: string) => {
-    navigator.clipboard.writeText(text);
-    setCopied(label);
-    setTimeout(() => setCopied(''), 2000);
-  };
-
-  const showToast = (type: 'ok' | 'err', msg: string) => {
-    setToast({ type, msg });
-    setTimeout(() => setToast(null), 4000);
-  };
-
-  const handleDisconnect = async (clientId: string) => {
-    if (!confirm('Disconnect LinkedIn for this client? They can reconnect via invite link.')) return;
-    setActionLoading(clientId);
-    try {
-      const res = await fetch(`/api/admin/clients/${clientId}/disconnect`, { method: 'POST', headers: authHeaders() });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        showToast('ok', 'LinkedIn disconnected');
-        fetchClients();
-      } else {
-        showToast('err', data.error || 'Disconnect failed');
-      }
-    } catch { showToast('err', 'Network error'); }
-    finally { setActionLoading(''); }
-  };
-
-  const handleDeleteClient = async (clientId: string) => {
-    setActionLoading(clientId);
-    try {
-      const res = await fetch(`/api/admin/clients/${clientId}`, { method: 'DELETE', headers: authHeaders() });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        showToast('ok', 'Client deleted');
-        setDeleteConfirm(null);
-        setDeleteInput('');
-        fetchClients();
-        fetchInvites();
-      } else {
-        showToast('err', data.error || 'Delete failed');
-      }
-    } catch { showToast('err', 'Network error'); }
-    finally { setActionLoading(''); }
-  };
-
-  const handleDeleteInvite = async (inviteId: string) => {
-    if (!confirm('Delete this invite?')) return;
-    try {
-      const res = await fetch(`/api/invites/${inviteId}`, { method: 'DELETE', headers: authHeaders() });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        showToast('ok', 'Invite deleted');
-        fetchInvites();
-      } else {
-        showToast('err', data.error || 'Delete failed');
-      }
-    } catch { showToast('err', 'Network error'); }
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading dashboard...</p>
+/* ========== Metric Card ========== */
+function MetricCard({ icon: Icon, label, value, sub, color = '#ef4444' }: {
+  icon: any; label: string; value: string | number; sub?: string; color?: string;
+}) {
+  return (
+    <div className="p-5 rounded-xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', backdropFilter: 'blur(12px)' }}>
+      <div className="flex items-center gap-3 mb-3">
+        <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: `${color}15` }}>
+          <Icon className="w-4.5 h-4.5" style={{ color }} />
         </div>
+        <span className="text-xs uppercase tracking-wider font-semibold" style={{ color: 'var(--text-muted)' }}>{label}</span>
       </div>
-    );
-  }
+      <p className="text-3xl font-extrabold" style={{ fontFamily: "'Syne', sans-serif" }}>{value}</p>
+      {sub && <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{sub}</p>}
+    </div>
+  );
+}
 
-  const connectedCount = clients.filter(c => c.status === 'connected').length;
-  const invitedCount = clients.filter(c => c.status === 'invited' || c.status === 'pending').length;
+/* ========================================================
+   OVERVIEW VIEW (/admin)
+   ======================================================== */
+function OverviewView() {
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/admin/overview', { headers: authHeaders() })
+      .then(r => r.json())
+      .then(d => { setData(d); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
+
+  if (loading) return <div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-2 rounded-full animate-spin" style={{ borderColor: 'var(--border-subtle)', borderTopColor: '#ef4444' }}></div></div>;
+
+  const m = data?.metrics || {};
+  const activity = data?.activity || [];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
-      <header className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-blue-600">Wassel</h1>
-            <p className="text-sm text-gray-600">Admin Dashboard</p>
-          </div>
-          <Button variant="outline" size="sm" onClick={handleLogout}>
-            <LogOut className="w-4 h-4 mr-2" /> Sign Out
-          </Button>
-        </div>
-      </header>
+    <div>
+      <h1 className="text-2xl font-extrabold mb-6" style={{ fontFamily: "'Syne', sans-serif" }}>Admin Overview</h1>
 
-      {/* Toast */}
-      {toast && (
-        <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-sm font-medium transition-all ${toast.type === 'ok' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
-          }`}>{toast.msg}</div>
-      )}
+      {/* 4 Metric Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <MetricCard icon={Users} label="Total Customers" value={m.totalTeams} />
+        <MetricCard icon={Activity} label="Active This Week" value={m.activeWeek} color="#22c55e" />
+        <MetricCard icon={Target} label="Campaigns Running" value={m.activeCampaigns} color="#f59e0b" />
+        <MetricCard icon={Database} label="Total Prospects" value={m.totalProspects?.toLocaleString()} color="#a855f7" />
+      </div>
 
-      {/* Delete Confirmation Modal */}
-      {deleteConfirm && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full">
-            <h3 className="text-lg font-bold text-gray-900 mb-2">Delete Client</h3>
-            <p className="text-sm text-gray-600 mb-1">This will permanently delete <strong>{deleteConfirm.email}</strong> and all associated data (LinkedIn connection, invites, prospects, import jobs).</p>
-            <p className="text-sm text-red-600 font-medium mb-3">Type <code className="bg-red-50 px-1 rounded">DELETE</code> to confirm:</p>
-            <Input value={deleteInput} onChange={e => setDeleteInput(e.target.value)} placeholder="Type DELETE" className="mb-3" />
-            <div className="flex gap-2">
-              <Button variant="outline" className="flex-1" onClick={() => { setDeleteConfirm(null); setDeleteInput(''); }}>Cancel</Button>
-              <Button
-                className="flex-1 bg-red-600 hover:bg-red-700 text-white"
-                disabled={deleteInput !== 'DELETE' || actionLoading === deleteConfirm.id}
-                onClick={() => handleDeleteClient(deleteConfirm.id)}
-              >
-                {actionLoading === deleteConfirm.id ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Trash2 className="w-4 h-4 mr-1" />}
-                Delete Forever
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* ── Invite Client ── */}
-        <Card className="p-6 mb-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <Send className="w-5 h-5 text-blue-600" /> Invite Client
-          </h2>
-          <div className="flex flex-col sm:flex-row gap-3 mb-3">
-            <Input placeholder="Client email" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} className="flex-1" type="email" />
-            <Input placeholder="Name (optional)" value={inviteName} onChange={e => setInviteName(e.target.value)} className="sm:w-48" />
-            <Button onClick={handleSendInvite} disabled={!inviteEmail || inviteLoading} className="bg-blue-600 hover:bg-blue-700">
-              {inviteLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
-              Send Invite
-            </Button>
-          </div>
-
-          {/* Invite Result */}
-          {inviteResult && (
-            inviteResult.success ? (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-3">
-                <div className="flex items-center gap-2 mb-2">
-                  <CheckCircle className="w-5 h-5 text-green-600" />
-                  <span className="font-semibold text-green-800">Invite Created!</span>
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${inviteResult.sent ? 'bg-green-200 text-green-800' : 'bg-yellow-200 text-yellow-800'}`}>
-                    {inviteResult.sent ? `Email sent via ${inviteResult.provider}` : 'No email — copy link below'}
-                  </span>
+      {/* Activity Feed */}
+      <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
+        <h3 className="text-xs font-bold uppercase tracking-wider mb-4" style={{ color: 'var(--text-muted)' }}>Recent Activity</h3>
+        {activity.length === 0 ? (
+          <p className="text-sm py-8 text-center" style={{ color: 'var(--text-muted)' }}>No recent activity</p>
+        ) : (
+          <div className="space-y-3">
+            {activity.map((a: any, i: number) => (
+              <div key={i} className="flex items-center gap-3 py-2 rounded-lg px-3 transition" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                <div className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0"
+                  style={{ background: a.type === 'signup' ? '#22c55e' : '#ef4444' }}>
+                  {a.name?.slice(0, 2).toUpperCase() || '??'}
                 </div>
-                <div className="flex items-center gap-2 bg-white border border-green-300 rounded-md p-2">
-                  <code className="text-sm text-gray-800 flex-1 break-all">{inviteResult.inviteUrl}</code>
-                  <button onClick={() => copyText(inviteResult.inviteUrl!, 'link')} className="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 flex items-center gap-1 whitespace-nowrap">
-                    <Copy className="w-3 h-3" /> {copied === 'link' ? 'Copied!' : 'Copy'}
-                  </button>
-                </div>
-                {inviteResult.emailError && (
-                  <p className="text-xs text-red-600 mt-2">⚠ Email error: {inviteResult.emailError}</p>
-                )}
-                <p className="text-xs text-green-700 mt-2">{inviteResult.message}</p>
+                <p className="text-sm flex-1" style={{ color: 'var(--text-secondary)' }}>{a.text}</p>
+                <span className="text-[10px] shrink-0" style={{ color: 'var(--text-muted)' }}>{timeAgo(a.time)}</span>
               </div>
-            ) : (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3 mt-3">
-                <p className="text-sm text-red-800">❌ {inviteResult.error}</p>
-              </div>
-            )
-          )}
-        </Card>
-
-        {/* ── Stats ── */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          <Card className="p-6"><div className="flex items-center justify-between"><div><p className="text-sm text-gray-600 mb-1">Total Clients</p><p className="text-2xl font-bold text-gray-900">{clients.length}</p></div><Users className="w-8 h-8 text-blue-600 opacity-20" /></div></Card>
-          <Card className="p-6"><div className="flex items-center justify-between"><div><p className="text-sm text-gray-600 mb-1">Connected</p><p className="text-2xl font-bold text-green-600">{connectedCount}</p></div><Linkedin className="w-8 h-8 text-green-600 opacity-20" /></div></Card>
-          <Card className="p-6"><div className="flex items-center justify-between"><div><p className="text-sm text-gray-600 mb-1">Pending</p><p className="text-2xl font-bold text-yellow-600">{invitedCount}</p></div><Mail className="w-8 h-8 text-yellow-600 opacity-20" /></div></Card>
-        </div>
-
-        {/* ── Clients ── */}
-        {clients.length > 0 && (
-          <div className="mb-8">
-            <h3 className="text-xl font-semibold text-gray-900 mb-4">Clients</h3>
-            <div className="grid gap-3">
-              {clients.map(client => (
-                <Card key={client.id} className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${client.status === 'connected' ? 'bg-green-100' : 'bg-gray-100'}`}>
-                        {client.status === 'connected' ? <Linkedin className="w-5 h-5 text-green-600" /> : <Mail className="w-5 h-5 text-gray-400" />}
-                      </div>
-                      <div>
-                        <p className="font-medium text-gray-900">{client.name || client.email}</p>
-                        <p className="text-sm text-gray-500">{client.email}</p>
-                        {client.linkedin_connections?.[0]?.linkedin_name && (
-                          <p className="text-xs text-blue-600">LinkedIn: {client.linkedin_connections[0].linkedin_name}</p>
-                        )}
-                      </div>
-                    </div>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${client.status === 'connected' ? 'bg-green-100 text-green-700' :
-                      client.status === 'invited' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-700'
-                      }`}>
-                      {client.status === 'connected' ? 'Connected ✅' : client.status === 'invited' ? 'Invited 📧' : 'Pending ⏳'}
-                    </span>
-                  </div>
-                  {client.status === 'connected' && (
-                    <div className="flex items-center gap-2 mt-3 ml-14 flex-wrap">
-                      <button onClick={() => {
-                        copyText(JSON.stringify({ clientId: client.id, apiUrl: `${window.location.origin}/api` }), client.id);
-                        window.open('https://www.linkedin.com/search/results/people/', '_blank');
-                      }}
-                        className="text-xs bg-blue-600 text-white px-4 py-1.5 rounded-md hover:bg-blue-700 transition-colors inline-flex items-center gap-1 font-semibold">
-                        ⚡ Operate
-                      </button>
-                      <button onClick={() => copyText(client.id, 'cid-' + client.id)}
-                        className="text-xs bg-gray-50 text-gray-700 px-3 py-1.5 rounded-md hover:bg-gray-100 transition-colors inline-flex items-center gap-1">
-                        <Copy className="w-3 h-3" /> {copied === 'cid-' + client.id ? 'Copied ID!' : 'Copy ID'}
-                      </button>
-                      <button onClick={() => handleDisconnect(client.id)}
-                        disabled={actionLoading === client.id}
-                        className="text-xs bg-orange-50 text-orange-700 px-3 py-1.5 rounded-md hover:bg-orange-100 transition-colors inline-flex items-center gap-1">
-                        <Unlink className="w-3 h-3" /> Disconnect
-                      </button>
-                      <button onClick={() => setDeleteConfirm({ id: client.id, email: client.email })}
-                        className="text-xs bg-red-50 text-red-700 px-3 py-1.5 rounded-md hover:bg-red-100 transition-colors inline-flex items-center gap-1">
-                        <Trash2 className="w-3 h-3" /> Delete
-                      </button>
-                    </div>
-                  )}
-                  {(client.status === 'invited' || client.status === 'pending') && (
-                    <div className="flex items-center gap-2 mt-3 ml-14 flex-wrap">
-                      <button onClick={() => copyText(client.id, 'cid-' + client.id)}
-                        className="text-xs bg-gray-50 text-gray-700 px-3 py-1.5 rounded-md hover:bg-gray-100 transition-colors inline-flex items-center gap-1">
-                        <Copy className="w-3 h-3" /> {copied === 'cid-' + client.id ? 'Copied ID!' : 'Copy ID'}
-                      </button>
-                      <button onClick={() => setDeleteConfirm({ id: client.id, email: client.email })}
-                        className="text-xs bg-red-50 text-red-700 px-3 py-1.5 rounded-md hover:bg-red-100 transition-colors inline-flex items-center gap-1">
-                        <Trash2 className="w-3 h-3" /> Delete
-                      </button>
-                    </div>
-                  )}
-                </Card>
-              ))}
-            </div>
+            ))}
           </div>
         )}
-
-        {clients.length === 0 && (
-          <Card className="p-12 text-center mb-8">
-            <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No Clients Yet</h3>
-            <p className="text-gray-500">Send your first invite above to get started.</p>
-          </Card>
-        )}
-
-        {/* ── Invite History ── */}
-        {invites.length > 0 && (
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-semibold text-gray-900">Invite History</h3>
-              <Button variant="outline" size="sm" onClick={fetchInvites}>
-                <RefreshCw className="w-3 h-3 mr-1" /> Refresh
-              </Button>
-            </div>
-            <Card className="overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50 border-b">
-                    <tr>
-                      <th className="text-left px-4 py-3 font-medium text-gray-600">Email</th>
-                      <th className="text-left px-4 py-3 font-medium text-gray-600">Name</th>
-                      <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
-                      <th className="text-left px-4 py-3 font-medium text-gray-600">Created</th>
-                      <th className="text-left px-4 py-3 font-medium text-gray-600">Expires</th>
-                      <th className="text-left px-4 py-3 font-medium text-gray-600">Link</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {invites.map(inv => (
-                      <tr key={inv.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-3 text-gray-900">{inv.email}</td>
-                        <td className="px-4 py-3 text-gray-600">{inv.name || '—'}</td>
-                        <td className="px-4 py-3">
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${inv.status === 'used' ? 'bg-green-100 text-green-700' :
-                            inv.status === 'expired' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'
-                            }`}>
-                            {inv.status === 'used' ? 'Used ✅' : inv.status === 'expired' ? 'Expired ⏰' : 'Pending ⏳'}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-gray-500 text-xs">{new Date(inv.created_at).toLocaleDateString()}</td>
-                        <td className="px-4 py-3 text-gray-500 text-xs">{new Date(inv.expires_at).toLocaleDateString()}</td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-1">
-                            <button onClick={() => copyText(inv.inviteUrl, 'inv-' + inv.id)}
-                              className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded hover:bg-blue-100 inline-flex items-center gap-1">
-                              <Copy className="w-3 h-3" /> {copied === 'inv-' + inv.id ? 'Copied!' : 'Copy'}
-                            </button>
-                            <a href={inv.inviteUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-700">
-                              <ExternalLink className="w-3 h-3" />
-                            </a>
-                            <button onClick={() => handleDeleteInvite(inv.id)}
-                              className="text-xs text-red-500 hover:text-red-700 px-1 py-1">
-                              <Trash2 className="w-3 h-3" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </Card>
-          </div>
-        )}
-
-        {/* ── Navigation Cards ── */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-          <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer border-l-4 border-l-blue-600">
-            <Target className="w-8 h-8 text-blue-600 mb-3" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Campaigns</h3>
-            <p className="text-sm text-gray-600 mb-4">Create and manage campaigns</p>
-            <a href="/dashboard/campaigns" className="text-blue-600 hover:text-blue-700 font-semibold text-sm flex items-center gap-1">Go <ArrowRight className="w-4 h-4" /></a>
-          </Card>
-          <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer border-l-4 border-l-green-600">
-            <Users className="w-8 h-8 text-green-600 mb-3" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Leads</h3>
-            <p className="text-sm text-gray-600 mb-4">View and manage prospects</p>
-            <a href="/dashboard/leads" className="text-blue-600 hover:text-blue-700 font-semibold text-sm flex items-center gap-1">Go <ArrowRight className="w-4 h-4" /></a>
-          </Card>
-          <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer border-l-4 border-l-orange-600">
-            <Clock className="w-8 h-8 text-orange-600 mb-3" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Queue</h3>
-            <p className="text-sm text-gray-600 mb-4">Review pending actions</p>
-            <a href="/dashboard/queue" className="text-blue-600 hover:text-blue-700 font-semibold text-sm flex items-center gap-1">Go <ArrowRight className="w-4 h-4" /></a>
-          </Card>
-        </div>
-      </main>
+      </div>
     </div>
+  );
+}
+
+/* ========================================================
+   CUSTOMERS TABLE VIEW (/admin/customers)
+   ======================================================== */
+function CustomersView() {
+  const [customers, setCustomers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [sort, setSort] = useState<'date' | 'active' | 'prospects'>('date');
+  const [, navigate] = useLocation();
+
+  useEffect(() => {
+    fetch('/api/admin/customers', { headers: authHeaders() })
+      .then(r => r.json())
+      .then(d => { setCustomers(d.customers || []); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
+
+  const impersonate = async (userId: string, email: string) => {
+    if (!confirm(`Impersonate ${email}?`)) return;
+    try {
+      const res = await fetch('/api/admin/impersonate', {
+        method: 'POST', headers: authHeaders(),
+        body: JSON.stringify({ targetUserId: userId }),
+      });
+      const data = await res.json();
+      if (data.token) {
+        localStorage.setItem('admin_backup_token', getAuthToken());
+        localStorage.setItem('supabase_token', data.token);
+        localStorage.setItem('admin_impersonate_email', email);
+        window.location.href = '/app';
+      }
+    } catch (e) { console.error(e); }
+  };
+
+  const toggleSuspend = async (teamId: string) => {
+    try {
+      const res = await fetch(`/api/admin/customers/${teamId}/suspend`, {
+        method: 'POST', headers: authHeaders(),
+      });
+      const { status } = await res.json();
+      setCustomers(prev => prev.map(c => c.id === teamId ? { ...c, status } : c));
+    } catch (e) { console.error(e); }
+  };
+
+  const filtered = customers
+    .filter(c => !search || c.name?.toLowerCase().includes(search.toLowerCase()) || c.email?.toLowerCase().includes(search.toLowerCase()))
+    .sort((a, b) => {
+      if (sort === 'active') return new Date(b.lastActive || 0).getTime() - new Date(a.lastActive || 0).getTime();
+      if (sort === 'prospects') return (b.prospects || 0) - (a.prospects || 0);
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+
+  const planColors: Record<string, string> = { trial: '#94a3b8', starter: '#3b82f6', growth: '#a855f7', agency: '#f59e0b' };
+  const statusColors: Record<string, string> = { active: '#22c55e', inactive: '#94a3b8', suspended: '#ef4444' };
+
+  return (
+    <div>
+      <h1 className="text-2xl font-extrabold mb-6" style={{ fontFamily: "'Syne', sans-serif" }}>Customers</h1>
+
+      {/* Controls */}
+      <div className="flex flex-col sm:flex-row gap-3 mb-6">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--text-muted)' }} />
+          <input
+            value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="Search by name or email..."
+            className="w-full pl-10 pr-4 py-2.5 rounded-lg text-sm"
+            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border-subtle)', color: 'var(--text-primary)' }}
+          />
+        </div>
+        <select value={sort} onChange={e => setSort(e.target.value as any)}
+          className="px-3 py-2.5 rounded-lg text-sm"
+          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border-subtle)', color: 'var(--text-primary)' }}>
+          <option value="date">Signup Date</option>
+          <option value="active">Last Active</option>
+          <option value="prospects">Prospects</option>
+        </select>
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center py-12"><div className="w-8 h-8 border-2 rounded-full animate-spin" style={{ borderColor: 'var(--border-subtle)', borderTopColor: '#ef4444' }}></div></div>
+      ) : (
+        <div className="rounded-xl overflow-hidden" style={{ border: '1px solid var(--border-subtle)' }}>
+          <table className="w-full text-sm">
+            <thead>
+              <tr style={{ background: 'rgba(255,255,255,0.03)' }}>
+                <th className="text-left px-4 py-3 text-[10px] uppercase tracking-wider font-semibold" style={{ color: 'var(--text-muted)' }}>Customer</th>
+                <th className="text-left px-4 py-3 text-[10px] uppercase tracking-wider font-semibold hidden md:table-cell" style={{ color: 'var(--text-muted)' }}>Plan</th>
+                <th className="text-left px-4 py-3 text-[10px] uppercase tracking-wider font-semibold hidden lg:table-cell" style={{ color: 'var(--text-muted)' }}>Prospects</th>
+                <th className="text-left px-4 py-3 text-[10px] uppercase tracking-wider font-semibold hidden lg:table-cell" style={{ color: 'var(--text-muted)' }}>Campaigns</th>
+                <th className="text-left px-4 py-3 text-[10px] uppercase tracking-wider font-semibold hidden sm:table-cell" style={{ color: 'var(--text-muted)' }}>Status</th>
+                <th className="text-right px-4 py-3 text-[10px] uppercase tracking-wider font-semibold" style={{ color: 'var(--text-muted)' }}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map(c => (
+                <tr key={c.id} className="transition" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                  <td className="px-4 py-3">
+                    <p className="font-medium text-sm" style={{ color: 'var(--text-primary)' }}>{c.name}</p>
+                    <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{c.email}</p>
+                  </td>
+                  <td className="px-4 py-3 hidden md:table-cell">
+                    <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full" style={{ background: `${planColors[c.plan] || '#94a3b8'}20`, color: planColors[c.plan] || '#94a3b8' }}>
+                      {c.plan}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 hidden lg:table-cell text-sm" style={{ color: 'var(--text-secondary)' }}>{c.prospects}</td>
+                  <td className="px-4 py-3 hidden lg:table-cell text-sm" style={{ color: 'var(--text-secondary)' }}>{c.campaigns}</td>
+                  <td className="px-4 py-3 hidden sm:table-cell">
+                    <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full" style={{ background: `${statusColors[c.status] || '#94a3b8'}15`, color: statusColors[c.status] || '#94a3b8', border: `1px solid ${statusColors[c.status] || '#94a3b8'}40` }}>
+                      {c.status}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <div className="flex items-center justify-end gap-1.5">
+                      <Link href={`/admin/customers/${c.id}`}>
+                        <button className="p-1.5 rounded-md" style={{ color: 'var(--text-muted)' }} title="View"><Eye className="w-3.5 h-3.5" /></button>
+                      </Link>
+                      {c.userId && (
+                        <button onClick={() => impersonate(c.userId, c.email)} className="p-1.5 rounded-md" style={{ color: '#f59e0b' }} title="Impersonate">
+                          <Shield className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                      <button onClick={() => toggleSuspend(c.id)} className="p-1.5 rounded-md" style={{ color: c.status === 'suspended' ? '#22c55e' : '#ef4444' }} title={c.status === 'suspended' ? 'Unsuspend' : 'Suspend'}>
+                        <Ban className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {filtered.length === 0 && <p className="text-center py-8 text-sm" style={{ color: 'var(--text-muted)' }}>No customers found</p>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ========================================================
+   CUSTOMER DETAIL VIEW (/admin/customers/:id)
+   ======================================================== */
+function CustomerDetailView({ teamId }: { teamId: string }) {
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(`/api/admin/customers/${teamId}`, { headers: authHeaders() })
+      .then(r => r.json())
+      .then(d => { setData(d); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, [teamId]);
+
+  if (loading) return <div className="flex justify-center py-20"><div className="w-8 h-8 border-2 rounded-full animate-spin" style={{ borderColor: 'var(--border-subtle)', borderTopColor: '#ef4444' }}></div></div>;
+  if (!data?.team) return <p style={{ color: 'var(--text-muted)' }}>Team not found</p>;
+
+  const m = data.metrics || {};
+  const planColors: Record<string, string> = { trial: '#94a3b8', starter: '#3b82f6', growth: '#a855f7', agency: '#f59e0b' };
+
+  return (
+    <div>
+      <Link href="/admin/customers">
+        <button className="flex items-center gap-1.5 text-sm mb-4" style={{ color: 'var(--text-muted)' }}>
+          <ArrowLeft className="w-3.5 h-3.5" /> Back to Customers
+        </button>
+      </Link>
+
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-6">
+        <h1 className="text-2xl font-extrabold" style={{ fontFamily: "'Syne', sans-serif" }}>
+          {data.profile?.full_name || data.team.name || 'Customer'}
+        </h1>
+        <span className="text-xs font-bold uppercase px-2.5 py-1 rounded-full"
+          style={{ background: `${planColors[data.team.plan] || '#94a3b8'}20`, color: planColors[data.team.plan] || '#94a3b8' }}>
+          {data.team.plan}
+        </span>
+      </div>
+      <p className="text-sm mb-6" style={{ color: 'var(--text-muted)' }}>{data.profile?.email}</p>
+
+      {/* 4 Metrics */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <MetricCard icon={Users} label="Prospects" value={m.prospects} />
+        <MetricCard icon={Target} label="Active Campaigns" value={m.activeCampaigns} color="#f59e0b" />
+        <MetricCard icon={TrendingUp} label="Accept Rate" value={`${m.acceptanceRate}%`} color="#22c55e" />
+        <MetricCard icon={Clock} label="Days Since Signup" value={m.daysSinceSignup} color="#a855f7" />
+      </div>
+
+      {/* Campaigns Table */}
+      <div className="rounded-xl overflow-hidden" style={{ border: '1px solid var(--border-subtle)' }}>
+        <div className="px-4 py-3" style={{ background: 'rgba(255,255,255,0.03)' }}>
+          <h3 className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Campaigns</h3>
+        </div>
+        <table className="w-full text-sm">
+          <tbody>
+            {(data.campaigns || []).map((c: any) => (
+              <tr key={c.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                <td className="px-4 py-3 font-medium" style={{ color: 'var(--text-primary)' }}>{c.name}</td>
+                <td className="px-4 py-3">
+                  <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full"
+                    style={{ background: c.status === 'active' ? '#22c55e15' : '#94a3b815', color: c.status === 'active' ? '#22c55e' : '#94a3b8' }}>
+                    {c.status}
+                  </span>
+                </td>
+                <td className="px-4 py-3 text-xs" style={{ color: 'var(--text-muted)' }}>{c.type}</td>
+                <td className="px-4 py-3 text-xs text-right" style={{ color: 'var(--text-muted)' }}>{new Date(c.created_at).toLocaleDateString()}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {(!data.campaigns || data.campaigns.length === 0) && <p className="text-center py-6 text-sm" style={{ color: 'var(--text-muted)' }}>No campaigns</p>}
+      </div>
+    </div>
+  );
+}
+
+/* ========================================================
+   USAGE STATS VIEW (/admin/stats)
+   ======================================================== */
+function StatsView() {
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/admin/stats', { headers: authHeaders() })
+      .then(r => r.json())
+      .then(d => { setData(d); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
+
+  if (loading) return <div className="flex justify-center py-20"><div className="w-8 h-8 border-2 rounded-full animate-spin" style={{ borderColor: 'var(--border-subtle)', borderTopColor: '#ef4444' }}></div></div>;
+
+  const daily = data?.dailyData || [];
+  const tableCounts = data?.tableCounts || {};
+  const maxSignup = Math.max(...daily.map((d: any) => d.signups), 1);
+  const maxInvite = Math.max(...daily.map((d: any) => d.invites), 1);
+
+  return (
+    <div>
+      <h1 className="text-2xl font-extrabold mb-6" style={{ fontFamily: "'Syne', sans-serif" }}>Platform Stats</h1>
+
+      {/* System Health Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-8">
+        {Object.entries(tableCounts).map(([table, count]) => (
+          <div key={table} className="p-4 rounded-xl text-center" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
+            <p className="text-xl font-bold" style={{ fontFamily: "'Syne', sans-serif" }}>{(count as number).toLocaleString()}</p>
+            <p className="text-[10px] uppercase tracking-wider mt-1" style={{ color: 'var(--text-muted)' }}>{table}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Daily Signups Chart */}
+      <div className="rounded-xl p-5 mb-6" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
+        <h3 className="text-xs font-bold uppercase tracking-wider mb-4" style={{ color: 'var(--text-muted)' }}>Daily Signups (30 days)</h3>
+        <div className="flex items-end gap-1 h-32">
+          {daily.map((d: any, i: number) => (
+            <div key={i} className="flex-1 flex flex-col items-center gap-1">
+              <div
+                className="w-full rounded-t-sm transition-all"
+                style={{
+                  height: `${(d.signups / maxSignup) * 100}%`,
+                  minHeight: d.signups > 0 ? '4px' : '1px',
+                  background: d.signups > 0 ? '#ef4444' : 'rgba(255,255,255,0.06)',
+                }}
+                title={`${d.date}: ${d.signups} signups`}
+              ></div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Daily Invites Chart */}
+      <div className="rounded-xl p-5 mb-6" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
+        <h3 className="text-xs font-bold uppercase tracking-wider mb-4" style={{ color: 'var(--text-muted)' }}>Daily Invites Sent (30 days)</h3>
+        <div className="flex items-end gap-1 h-32">
+          {daily.map((d: any, i: number) => (
+            <div key={i} className="flex-1 flex flex-col items-center gap-1">
+              <div
+                className="w-full rounded-t-sm transition-all"
+                style={{
+                  height: `${(d.invites / maxInvite) * 100}%`,
+                  minHeight: d.invites > 0 ? '4px' : '1px',
+                  background: d.invites > 0 ? '#a855f7' : 'rgba(255,255,255,0.06)',
+                }}
+                title={`${d.date}: ${d.invites} invites`}
+              ></div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Daily Connections Chart */}
+      <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
+        <h3 className="text-xs font-bold uppercase tracking-wider mb-4" style={{ color: 'var(--text-muted)' }}>Daily Connections (30 days)</h3>
+        <div className="flex items-end gap-1 h-32">
+          {daily.map((d: any, i: number) => {
+            const maxConn = Math.max(...daily.map((x: any) => x.connections), 1);
+            return (
+              <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                <div
+                  className="w-full rounded-t-sm transition-all"
+                  style={{
+                    height: `${(d.connections / maxConn) * 100}%`,
+                    minHeight: d.connections > 0 ? '4px' : '1px',
+                    background: d.connections > 0 ? '#22c55e' : 'rgba(255,255,255,0.06)',
+                  }}
+                  title={`${d.date}: ${d.connections} connections`}
+                ></div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ========================================================
+   SETTINGS PLACEHOLDER
+   ======================================================== */
+function SettingsView() {
+  return (
+    <div>
+      <h1 className="text-2xl font-extrabold mb-6" style={{ fontFamily: "'Syne', sans-serif" }}>Admin Settings</h1>
+      <div className="rounded-xl p-10 text-center" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
+        <p className="text-lg mb-2" style={{ color: 'var(--text-secondary)' }}>⚙️ Settings coming soon</p>
+        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Email configuration, plan management, and system settings will be here.</p>
+      </div>
+    </div>
+  );
+}
+
+/* ========================================================
+   MAIN DASHBOARD EXPORT
+   ======================================================== */
+export default function Dashboard() {
+  const [location] = useLocation();
+
+  // Determine which sub-view to show
+  const customerDetailMatch = location.match(/^\/admin\/customers\/(.+)/);
+  let view = 'overview';
+  let detailId = '';
+
+  if (customerDetailMatch) {
+    view = 'detail';
+    detailId = customerDetailMatch[1];
+  } else if (location.startsWith('/admin/customers')) {
+    view = 'customers';
+  } else if (location.startsWith('/admin/stats')) {
+    view = 'stats';
+  } else if (location.startsWith('/admin/settings')) {
+    view = 'settings';
+  }
+
+  return (
+    <>
+      <ImpersonationBanner />
+      <div className="flex min-h-screen" style={{ background: 'var(--bg-base)' }}>
+        <AdminNav />
+        <main className="flex-1 p-6 lg:p-8 overflow-y-auto" style={{ maxHeight: '100vh' }}>
+          {view === 'overview' && <OverviewView />}
+          {view === 'customers' && <CustomersView />}
+          {view === 'detail' && <CustomerDetailView teamId={detailId} />}
+          {view === 'stats' && <StatsView />}
+          {view === 'settings' && <SettingsView />}
+        </main>
+      </div>
+    </>
   );
 }

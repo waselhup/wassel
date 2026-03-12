@@ -7,6 +7,7 @@ import inviteRoutes from "./inviteRoutes";
 import extensionRoutes from "./extensionRoutes";
 import clientRoutes from "./clientRoutes";
 import sequenceRoutes from "./sequenceRoutes";
+import adminRoutes from "./adminRoutes";
 import { appRouter } from "../routers";
 import { createContext, expressAuthMiddleware, requireRole } from "./context";
 
@@ -36,6 +37,7 @@ app.use("/api/auth/linkedin", linkedinAuthRoutes);
 app.use("/api/invites", expressAuthMiddleware, requireRole('super_admin'), inviteRoutes);
 app.use("/api/clients", expressAuthMiddleware, requireRole('super_admin'), inviteRoutes);
 app.use("/api/admin/clients", expressAuthMiddleware, requireRole('super_admin'), clientRoutes);
+app.use("/api/admin", expressAuthMiddleware, requireRole('super_admin'), adminRoutes);
 
 // Extension routes: JWT required (any authenticated user)
 app.use("/api/ext", expressAuthMiddleware, extensionRoutes);
