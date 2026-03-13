@@ -101,6 +101,55 @@ chrome.runtime.onStartup.addListener(() => {
 setInterval(syncTokenFromDashboard, 30 * 60 * 1000);
 
 // ============================================================================
+// CSV Auto-Download — saves prospects to user's PC after import
+// ============================================================================
+function downloadProspectsCSV(prospects) {
+    try {
+        const headers = ['Name', 'Title', 'Company', 'LinkedIn URL', 'Imported At'];
+        const today = new Date().toLocaleDateString();
+
+        const rows = prospects.map(p => [
+            p.name || '',
+            p.title || p.job_title || p.jobTitle || '',
+            p.company || '',
+            p.linkedin_url || p.linkedinUrl || '',
+            today,
+        ]);
+
+        const csvContent = [
+            headers.join(','),
+            ...rows.map(row =>
+                row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')
+            ),
+        ].join('\n');
+
+        // UTF-8 BOM for Arabic name support
+        const bom = '\uFEFF';
+        const blob = new Blob([bom + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const reader = new FileReader();
+
+        reader.onload = () => {
+            const timestamp = new Date().toISOString().slice(0, 10);
+            chrome.downloads.download({
+                url: reader.result,
+                filename: `wassel-prospects-${timestamp}.csv`,
+                saveAs: false,
+            }, (downloadId) => {
+                if (chrome.runtime.lastError) {
+                    console.error('[Wassel] CSV download error:', chrome.runtime.lastError.message);
+                } else {
+                    console.log(`[Wassel] ✅ CSV downloaded (${prospects.length} prospects), downloadId=${downloadId}`);
+                }
+            });
+        };
+
+        reader.readAsDataURL(blob);
+    } catch (e) {
+        console.error('[Wassel] CSV download error:', e);
+    }
+}
+
+// ============================================================================
 // Rate limiting — stored daily in chrome.storage.local
 // ============================================================================
 async function getDailyCounts() {
@@ -444,6 +493,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 console.error('[Wassel] Import failed:', JSON.stringify(response));
             } else {
                 console.log('[Wassel] Import success:', response.imported, 'imported');
+                // Auto-download CSV after successful import
+                downloadProspectsCSV(prospects);
             }
             sendResponse(response);
         });
