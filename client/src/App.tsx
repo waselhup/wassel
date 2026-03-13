@@ -31,6 +31,7 @@ import OAuthError from "./pages/OAuthError";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import CampaignDetail from "./pages/CampaignDetail";
+import CampaignWizard from "./pages/CampaignWizard";
 
 /**
  * Route guard: requires authenticated user (any role).
@@ -173,6 +174,7 @@ function Router() {
       <Route path={/^\/app\/templates/} component={() => <ClientRoute component={Templates} />} />
       <Route path={/^\/app\/leads/} component={() => <ClientRoute component={Leads} />} />
       <Route path={/^\/app\/queue/} component={() => <ClientRoute component={Queue} />} />
+      <Route path="/app/campaigns/new" component={() => <ClientRoute component={CampaignWizard} />} />
       <Route path="/app/campaigns/:id" component={() => <ClientRoute component={CampaignDetail} />} />
       <Route path={/^\/app\/campaigns/} component={() => <ClientRoute component={Campaigns} />} />
       <Route path={/^\/app/} component={() => <ClientRoute component={ClientDashboard} />} />

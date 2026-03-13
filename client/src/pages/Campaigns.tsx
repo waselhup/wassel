@@ -1,260 +1,103 @@
-import { useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Loader2, Plus, Target, Trash2, Zap, ChevronRight } from 'lucide-react';
-import { trpc } from '@/lib/trpc';
-import { Link } from 'wouter';
+import { useState, useEffect } from 'react';
+import { useLocation } from 'wouter';
 import ClientNav from '@/components/ClientNav';
+import { useAuth } from '@/contexts/AuthContext';
+import { Plus, ChevronRight, Loader2, Megaphone } from 'lucide-react';
 
 export default function Campaigns() {
-  const { user } = useAuth();
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    type: 'invitation_message' as const,
-  });
+  const [, navigate] = useLocation();
+  const { accessToken } = useAuth();
+  const token = accessToken || localStorage.getItem('supabase_token') || '';
 
-  // Fetch campaigns
-  const { data: campaigns, isLoading, refetch } = trpc.campaigns.list.useQuery();
+  const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Create campaign mutation
-  const createCampaign = trpc.campaigns.create.useMutation({
-    onSuccess: () => {
-      setFormData({ name: '', description: '', type: 'invitation_message' });
-      setShowCreateForm(false);
-      refetch();
-    },
-  });
+  useEffect(() => {
+    if (!token) return;
+    fetch('/api/ext/campaigns', {
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+    })
+      .then(r => r.json())
+      .then(data => {
+        const list = data.data || data.campaigns || data || [];
+        setCampaigns(Array.isArray(list) ? list : []);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [token]);
 
-  // Delete campaign mutation
-  const deleteCampaign = trpc.campaigns.delete.useMutation({
-    onSuccess: () => {
-      refetch();
-    },
-  });
-
-  const handleCreateCampaign = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.name.trim()) return;
-
-    try {
-      await createCampaign.mutateAsync({
-        name: formData.name,
-        description: formData.description || undefined,
-        type: formData.type,
-      });
-    } catch (err) {
-      console.error('[Campaigns] Create failed:', err);
-    }
+  const card: React.CSSProperties = { background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', borderRadius: 12, padding: 20, cursor: 'pointer', transition: 'border-color 0.2s' };
+  const statusColors: Record<string, { dot: string; bg: string; text: string }> = {
+    active: { dot: '#22c55e', bg: 'rgba(34,197,94,0.1)', text: '#86efac' },
+    paused: { dot: '#f59e0b', bg: 'rgba(245,158,11,0.1)', text: '#fcd34d' },
+    draft: { dot: '#64748b', bg: 'rgba(100,116,139,0.1)', text: '#94a3b8' },
+    completed: { dot: '#3b82f6', bg: 'rgba(59,130,246,0.1)', text: '#93c5fd' },
   };
-
-  const handleDeleteCampaign = async (id: string) => {
-    if (confirm('هل أنت متأكد من حذف هذه الحملة؟')) {
-      await deleteCampaign.mutateAsync({ id });
-    }
-  };
-
-  const campaignTypes: Record<string, string> = {
-    invitation: 'Invitations',
-    message: 'Messages',
-    invitation_message: 'Invite + Message',
-    visit: 'Profile Visits',
-    email_finder: 'Email Finder',
-    combined: 'Combined',
-  };
-
-  const statusLabels: Record<string, { text: string; bg: string; color: string }> = {
-    active: { text: 'Active', bg: 'rgba(34,197,94,0.12)', color: '#22c55e' },
-    draft: { text: 'Draft', bg: 'rgba(148,163,184,0.12)', color: '#94a3b8' },
-    paused: { text: 'Paused', bg: 'rgba(245,158,11,0.12)', color: '#f59e0b' },
-    completed: { text: 'Completed', bg: 'rgba(99,102,241,0.12)', color: '#6366f1' },
-  };
-
-  if (isLoading) {
-    return (
-      <div className="flex min-h-screen" style={{ background: 'var(--bg-base)' }}>
-        <ClientNav />
-        <div className="flex-1 flex items-center justify-center">
-          <Loader2 className="w-8 h-8 animate-spin" style={{ color: 'var(--accent-primary)' }} />
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="flex min-h-screen" style={{ background: 'var(--bg-base)' }}>
       <ClientNav />
-
       <main className="flex-1 overflow-y-auto p-6 lg:p-8" style={{ maxHeight: '100vh' }}>
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-extrabold flex items-center gap-3" style={{ fontFamily: "'Syne', sans-serif", color: 'var(--text-primary)' }}>
-              <Target className="w-6 h-6" style={{ color: 'var(--accent-primary)' }} />
-              Campaigns
-            </h1>
-            <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Create and manage your LinkedIn outreach campaigns</p>
+        <div style={{ maxWidth: 800 }}>
+          {/* Header */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+            <div>
+              <h2 style={{ fontSize: 22, fontWeight: 800, color: '#f1f5f9', fontFamily: "'Syne', sans-serif", marginBottom: 4 }}>Campaigns</h2>
+              <p style={{ color: '#64748b', fontSize: 13 }}>Manage your outreach sequences.</p>
+            </div>
+            <button onClick={() => navigate('/app/campaigns/new')}
+              style={{ background: 'linear-gradient(135deg,#7c3aed,#ec4899)', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 20px', fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Plus size={16} /> New Campaign
+            </button>
           </div>
-          <Button
-            onClick={() => setShowCreateForm(!showCreateForm)}
-            size="sm"
-            className="text-white flex items-center gap-1.5"
-            style={{ background: 'var(--gradient-primary)' }}
-          >
-            <Plus className="w-3.5 h-3.5" />
-            New Campaign
-          </Button>
+
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: 60, color: '#64748b' }}>
+              <Loader2 size={28} className="animate-spin" style={{ margin: '0 auto 12px' }} />
+              <p>Loading campaigns...</p>
+            </div>
+          ) : campaigns.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: 60, background: 'var(--bg-card)', borderRadius: 16, border: '1px solid var(--border-subtle)' }}>
+              <Megaphone size={40} style={{ color: '#475569', margin: '0 auto 16px' }} />
+              <h3 style={{ color: '#f1f5f9', fontSize: 18, fontWeight: 700, marginBottom: 8 }}>No campaigns yet</h3>
+              <p style={{ color: '#64748b', fontSize: 14, marginBottom: 20 }}>Create your first outreach campaign to start connecting with prospects.</p>
+              <button onClick={() => navigate('/app/campaigns/new')}
+                style={{ background: 'linear-gradient(135deg,#7c3aed,#ec4899)', color: '#fff', border: 'none', borderRadius: 8, padding: '12px 24px', fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <Plus size={16} /> Create your first campaign
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {campaigns.map((c: any) => {
+                const st = statusColors[c.status] || statusColors.draft;
+                return (
+                  <div key={c.id} style={card}
+                    onClick={() => navigate(`/app/campaigns/${c.id}`)}
+                    onMouseOver={e => (e.currentTarget.style.borderColor = 'rgba(124,58,237,0.3)')}
+                    onMouseOut={e => (e.currentTarget.style.borderColor = 'var(--border-subtle)')}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                          <div style={{ width: 8, height: 8, borderRadius: '50%', background: st.dot }} />
+                          <h3 style={{ color: '#f1f5f9', fontSize: 16, fontWeight: 700, margin: 0 }}>{c.name}</h3>
+                          <span style={{ background: st.bg, color: st.text, padding: '2px 8px', borderRadius: 12, fontSize: 11, fontWeight: 600, textTransform: 'uppercase' }}>
+                            {c.status}
+                          </span>
+                        </div>
+                        {c.description && <p style={{ color: '#64748b', fontSize: 12, marginBottom: 8 }}>{c.description}</p>}
+                        <div style={{ display: 'flex', gap: 16, color: '#475569', fontSize: 12 }}>
+                          <span>Created {new Date(c.created_at).toLocaleDateString()}</span>
+                          {c.type && <span style={{ color: '#64748b' }}>Type: {c.type}</span>}
+                        </div>
+                      </div>
+                      <ChevronRight size={18} style={{ color: '#475569', marginTop: 4 }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
-
-        {/* Create Form */}
-        {showCreateForm && (
-          <div className="rounded-xl p-5 mb-6" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-accent)', boxShadow: '0 0 30px rgba(124,58,237,0.08)' }}>
-            <h2 className="text-sm font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Create New Campaign</h2>
-            <form onSubmit={handleCreateCampaign} className="space-y-4">
-              <div>
-                <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Campaign Name *</label>
-                <Input
-                  type="text"
-                  placeholder="e.g., Q2 LinkedIn Outreach"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  required
-                  className="w-full"
-                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border-subtle)', color: 'var(--text-primary)' }}
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Description (optional)</label>
-                <textarea
-                  placeholder="Add a description for your campaign..."
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg text-sm"
-                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border-subtle)', color: 'var(--text-primary)' }}
-                  rows={2}
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Campaign Type *</label>
-                <select
-                  value={formData.type}
-                  onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
-                  className="w-full px-3 py-2 rounded-lg text-sm"
-                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border-subtle)', color: 'var(--text-primary)' }}
-                >
-                  {Object.entries(campaignTypes).map(([key, label]) => (
-                    <option key={key} value={key}>{label}</option>
-                  ))}
-                </select>
-              </div>
-
-              {createCampaign.error && (
-                <div className="text-xs p-3 rounded-lg" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#fca5a5' }}>
-                  {createCampaign.error.message}
-                </div>
-              )}
-
-              <div className="flex items-center gap-3">
-                <Button
-                  type="submit"
-                  disabled={createCampaign.isPending || !formData.name.trim()}
-                  size="sm"
-                  className="text-white flex items-center gap-1.5"
-                  style={{ background: 'var(--gradient-primary)' }}
-                >
-                  {createCampaign.isPending ? (
-                    <><Loader2 className="w-3.5 h-3.5 animate-spin" />Creating...</>
-                  ) : (
-                    <><Zap className="w-3.5 h-3.5" />Create Campaign</>
-                  )}
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowCreateForm(false)}
-                  style={{ color: 'var(--text-muted)' }}
-                >
-                  Cancel
-                </Button>
-              </div>
-            </form>
-          </div>
-        )}
-
-        {/* Campaigns Grid */}
-        {campaigns && campaigns.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {campaigns.map((campaign: any) => {
-              const st = statusLabels[campaign.status] || statusLabels.draft;
-              return (
-                <div key={campaign.id} className="p-5 rounded-xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{campaign.name}</h3>
-                      <p className="text-[10px] mt-0.5" style={{ color: 'var(--text-muted)' }}>
-                        {campaignTypes[campaign.type] || campaign.type}
-                      </p>
-                    </div>
-                    <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full" style={{ background: st.bg, color: st.color }}>
-                      {st.text}
-                    </span>
-                  </div>
-
-                  {campaign.description && (
-                    <p className="text-xs mb-3" style={{ color: 'var(--text-muted)' }}>{campaign.description}</p>
-                  )}
-
-                  <div className="grid grid-cols-2 gap-3 mb-4 p-3 rounded-lg" style={{ background: 'rgba(255,255,255,0.02)' }}>
-                    <div>
-                      <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Prospects</p>
-                      <p className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>{campaign.stats?.total_leads || 0}</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Completed</p>
-                      <p className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>{campaign.stats?.completed || 0}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <Link href={`/app/campaigns/${campaign.id}`}>
-                      <Button variant="ghost" size="sm" className="flex-1 text-xs" style={{ color: 'var(--text-secondary)', border: '1px solid var(--border-subtle)' }}>
-                        Details <ChevronRight className="w-3 h-3 ml-1" />
-                      </Button>
-                    </Link>
-                    <button
-                      onClick={() => handleDeleteCampaign(campaign.id)}
-                      disabled={deleteCampaign.isPending}
-                      className="p-1.5 rounded-md transition-colors"
-                      style={{ color: 'var(--text-muted)' }}
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="p-12 text-center rounded-xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
-            <Target className="w-12 h-12 mx-auto mb-3" style={{ color: 'var(--text-muted)' }} />
-            <h3 className="text-base font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>No campaigns yet</h3>
-            <p className="text-xs mb-5" style={{ color: 'var(--text-muted)' }}>Create your first campaign to start outreach</p>
-            <Button
-              onClick={() => setShowCreateForm(true)}
-              size="sm"
-              className="text-white mx-auto flex items-center gap-1.5"
-              style={{ background: 'var(--gradient-primary)' }}
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Create Campaign
-            </Button>
-          </div>
-        )}
       </main>
     </div>
   );
