@@ -45,30 +45,61 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     try {
-      // Fetch profile with role from backend via tRPC or direct query
-      const { data: profile } = await supabase
+      // Fetch profile with role
+      let { data: profile } = await supabase
         .from('profiles')
         .select('role')
         .eq('id', supabaseUser.id)
         .single();
+
+      // Auto-provision profile for new users (e.g. Google OAuth)
+      if (!profile) {
+        const fullName = supabaseUser.user_metadata?.full_name || supabaseUser.email?.split('@')[0] || '';
+        await supabase.from('profiles').upsert({
+          id: supabaseUser.id,
+          email: supabaseUser.email,
+          full_name: fullName,
+          role: 'client_user',
+        }, { onConflict: 'id' });
+        profile = { role: 'client_user' };
+      }
 
       if (profile?.role === 'super_admin') {
         baseUser.role = 'super_admin';
       }
 
       // Fetch team membership
-      const { data: membership } = await supabase
+      let { data: membership } = await supabase
         .from('team_members')
         .select('team_id')
         .eq('user_id', supabaseUser.id)
         .limit(1)
         .single();
 
+      // Auto-provision team for new users
+      if (!membership) {
+        const teamName = (supabaseUser.user_metadata?.full_name || supabaseUser.email?.split('@')[0] || 'My') + "'s Team";
+        const { data: newTeam } = await supabase
+          .from('teams')
+          .insert({ name: teamName, plan: 'trial', status: 'active' })
+          .select('id')
+          .single();
+
+        if (newTeam?.id) {
+          await supabase.from('team_members').insert({
+            team_id: newTeam.id,
+            user_id: supabaseUser.id,
+            role: 'owner',
+          });
+          membership = { team_id: newTeam.id };
+        }
+      }
+
       if (membership?.team_id) {
         baseUser.teamId = membership.team_id;
       }
     } catch (err) {
-      console.warn('[Auth] Failed to load profile/team:', err);
+      console.warn('[Auth] Failed to load/provision profile/team:', err);
     }
 
     return baseUser;

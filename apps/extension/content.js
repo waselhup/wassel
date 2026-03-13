@@ -79,76 +79,154 @@
         fab.style.display = 'flex';
     });
 
-    // Scan page for prospects
+    // Scan page for prospects — 5-strategy fallback
     scanBtn.addEventListener('click', () => {
         statusEl.textContent = 'Scanning...';
         statusEl.className = 'wassel-status wassel-status-info';
         allProspects = [];
         selectedProspects = [];
 
-        // Find LinkedIn search result cards — try multiple selectors (LinkedIn changes these)
-        const SELECTORS = [
-            'div[data-view-name="search-entity-result-universal-template"]',
-            '.reusable-search__result-container',
-            '.entity-result',
-            '[data-chameleon-result-urn]',
-            'li.reusable-search__result-container',
-        ];
+        console.log('[Wassel] Starting smart scan...');
 
-        let resultCards = [];
-        let usedSelector = '';
-        for (const selector of SELECTORS) {
-            resultCards = document.querySelectorAll(selector);
-            if (resultCards.length > 0) {
-                usedSelector = selector;
-                break;
+        // Strategy 1: data-view-name attribute (newest LinkedIn)
+        let resultCards = document.querySelectorAll(
+            '[data-view-name="search-entity-result-universal-template"]'
+        );
+        console.log('[Wassel] Strategy 1 (data-view-name):', resultCards.length);
+
+        // Strategy 2: search-results-container li
+        if (resultCards.length === 0) {
+            resultCards = document.querySelectorAll(
+                '.search-results-container ul > li'
+            );
+            console.log('[Wassel] Strategy 2 (search-results li):', resultCards.length);
+        }
+
+        // Strategy 3: reusable-search / entity-result classes
+        if (resultCards.length === 0) {
+            resultCards = document.querySelectorAll(
+                '.reusable-search__result-container, .entity-result'
+            );
+            console.log('[Wassel] Strategy 3 (reusable-search):', resultCards.length);
+        }
+
+        // Strategy 4: find ALL list items that contain profile links
+        if (resultCards.length === 0) {
+            const allLi = document.querySelectorAll('li');
+            resultCards = Array.from(allLi).filter(li => {
+                return li.querySelector('a[href*="/in/"]');
+            });
+            console.log('[Wassel] Strategy 4 (li with /in/ links):', resultCards.length);
+        }
+
+        // Strategy 5: Direct link approach — build from profile links
+        if (resultCards.length === 0) {
+            const profileLinks = document.querySelectorAll('a[href*="/in/"]');
+            console.log('[Wassel] Strategy 5 (direct links):', profileLinks.length);
+
+            if (profileLinks.length > 0) {
+                const seen = new Set();
+                let idx = 0;
+                profileLinks.forEach(link => {
+                    const href = link.href;
+                    if (!href || !href.includes('/in/')) return;
+                    const cleanUrl = href.split('?')[0];
+                    if (seen.has(cleanUrl)) return;
+                    seen.add(cleanUrl);
+
+                    const container = link.closest('li') || link.parentElement;
+                    const nameEl = container?.querySelector(
+                        '.entity-result__title-text, [aria-hidden="true"], ' +
+                        '.artdeco-entity-lockup__title, span[dir="ltr"]'
+                    );
+                    const titleEl = container?.querySelector(
+                        '.entity-result__primary-subtitle, ' +
+                        '.artdeco-entity-lockup__subtitle'
+                    );
+                    const companyEl = container?.querySelector(
+                        '.entity-result__secondary-subtitle'
+                    );
+
+                    const name = nameEl?.innerText?.trim() || link.innerText?.trim() || '';
+                    if (!name || name.length < 2) return;
+
+                    allProspects.push({
+                        id: idx++,
+                        name,
+                        linkedin_url: cleanUrl,
+                        title: titleEl?.innerText?.trim() || '',
+                        company: companyEl?.innerText?.trim() || '',
+                        location: '',
+                        selected: true,
+                    });
+                });
+                console.log('[Wassel] Strategy 5 extracted:', allProspects.length);
             }
         }
 
-        console.log('[Wassel] Found cards:', resultCards.length);
-        console.log('[Wassel] Using selector:', usedSelector || 'none matched');
+        // Extract from cards (strategies 1–4)
+        if (allProspects.length === 0 && resultCards.length > 0) {
+            resultCards.forEach((card, i) => {
+                try {
+                    // Name — try multiple selectors
+                    const nameEl = card.querySelector(
+                        '.entity-result__title-text a span[aria-hidden="true"], ' +
+                        '.entity-result__title-line a span[dir="ltr"] span[aria-hidden="true"], ' +
+                        '.app-aware-link span[aria-hidden="true"], ' +
+                        '.artdeco-entity-lockup__title span, ' +
+                        '[data-anonymize="person-name"]'
+                    );
+                    const name = nameEl ? nameEl.textContent.trim() : '';
 
-        resultCards.forEach((card, i) => {
-            try {
-                // Name
-                const nameEl = card.querySelector('.entity-result__title-text a span[aria-hidden="true"], .entity-result__title-line a span[dir="ltr"] span[aria-hidden="true"], .app-aware-link span[aria-hidden="true"]');
-                const name = nameEl ? nameEl.textContent.trim() : '';
+                    // Profile URL
+                    const linkEl = card.querySelector(
+                        'a[href*="/in/"], a.app-aware-link[href*="/in/"]'
+                    );
+                    const linkedinUrl = linkEl ? linkEl.href.split('?')[0] : '';
 
-                // Profile URL
-                const linkEl = card.querySelector('a.app-aware-link[href*="/in/"]');
-                const linkedinUrl = linkEl ? linkEl.href.split('?')[0] : '';
+                    // Title / headline
+                    const titleEl = card.querySelector(
+                        '.entity-result__primary-subtitle, ' +
+                        '.entity-result__summary, ' +
+                        '.artdeco-entity-lockup__subtitle'
+                    );
+                    const title = titleEl ? titleEl.textContent.trim() : '';
 
-                // Title / headline
-                const titleEl = card.querySelector('.entity-result__primary-subtitle, .entity-result__summary');
-                const title = titleEl ? titleEl.textContent.trim() : '';
+                    // Company
+                    const companyEl = card.querySelector('.entity-result__secondary-subtitle');
+                    const company = companyEl ? companyEl.textContent.trim() : '';
 
-                // Company  
-                const companyEl = card.querySelector('.entity-result__secondary-subtitle');
-                const company = companyEl ? companyEl.textContent.trim() : '';
+                    // Location
+                    const locationEl = card.querySelector(
+                        '.entity-result__simple-insight, .entity-result__content-summary'
+                    );
+                    const location = locationEl ? locationEl.textContent.trim() : '';
 
-                // Location
-                const locationEl = card.querySelector('.entity-result__simple-insight, .entity-result__content-summary');
-                const location = locationEl ? locationEl.textContent.trim() : '';
-
-                if (name && linkedinUrl) {
-                    allProspects.push({
-                        id: i,
-                        name,
-                        linkedin_url: linkedinUrl,
-                        title,
-                        company,
-                        location,
-                        selected: true,
-                    });
+                    if (name && linkedinUrl) {
+                        allProspects.push({
+                            id: i,
+                            name,
+                            linkedin_url: linkedinUrl,
+                            title,
+                            company,
+                            location,
+                            selected: true,
+                        });
+                    }
+                } catch (e) {
+                    console.warn('[Wassel] Failed to parse card:', e);
                 }
-            } catch (e) {
-                console.warn('[Wassel] Failed to parse card:', e);
-            }
-        });
+            });
+        }
+
+        console.log('[Wassel] Total prospects found:', allProspects.length);
 
         if (allProspects.length === 0) {
-            statusEl.textContent = 'No prospects found on this page. Try a LinkedIn People search.';
+            statusEl.textContent = 'No prospects found. Make sure you are on a LinkedIn People search page and scroll down to load results.';
             statusEl.className = 'wassel-status wassel-status-warn';
+            // Log DOM debug info
+            console.log('[Wassel] DEBUG — body classes:', document.body.className);
+            console.log('[Wassel] DEBUG — main HTML:', document.querySelector('main')?.innerHTML?.substring(0, 500));
             return;
         }
 

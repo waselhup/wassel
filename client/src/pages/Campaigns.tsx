@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Loader2, Plus, Target, Trash2, Zap } from 'lucide-react';
+import { Loader2, Plus, Target, Trash2, Zap, ChevronRight } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
+import { Link } from 'wouter';
+import ClientNav from '@/components/ClientNav';
 
 export default function Campaigns() {
   const { user } = useAuth();
@@ -38,11 +39,15 @@ export default function Campaigns() {
     e.preventDefault();
     if (!formData.name.trim()) return;
 
-    await createCampaign.mutateAsync({
-      name: formData.name,
-      description: formData.description || undefined,
-      type: formData.type,
-    });
+    try {
+      await createCampaign.mutateAsync({
+        name: formData.name,
+        description: formData.description || undefined,
+        type: formData.type,
+      });
+    } catch (err) {
+      console.error('[Campaigns] Create failed:', err);
+    }
   };
 
   const handleDeleteCampaign = async (id: string) => {
@@ -51,211 +56,206 @@ export default function Campaigns() {
     }
   };
 
-  const campaignTypes = {
-    invitation: 'دعوات',
-    message: 'رسائل',
-    invitation_message: 'دعوات + رسائل',
-    visit: 'زيارات',
-    email_finder: 'البحث عن البريد',
-    combined: 'متقدم',
+  const campaignTypes: Record<string, string> = {
+    invitation: 'Invitations',
+    message: 'Messages',
+    invitation_message: 'Invite + Message',
+    visit: 'Profile Visits',
+    email_finder: 'Email Finder',
+    combined: 'Combined',
+  };
+
+  const statusLabels: Record<string, { text: string; bg: string; color: string }> = {
+    active: { text: 'Active', bg: 'rgba(34,197,94,0.12)', color: '#22c55e' },
+    draft: { text: 'Draft', bg: 'rgba(148,163,184,0.12)', color: '#94a3b8' },
+    paused: { text: 'Paused', bg: 'rgba(245,158,11,0.12)', color: '#f59e0b' },
+    completed: { text: 'Completed', bg: 'rgba(99,102,241,0.12)', color: '#6366f1' },
   };
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">جاري تحميل الحملات...</p>
+      <div className="flex min-h-screen" style={{ background: 'var(--bg-base)' }}>
+        <ClientNav />
+        <div className="flex-1 flex items-center justify-center">
+          <Loader2 className="w-8 h-8 animate-spin" style={{ color: 'var(--accent-primary)' }} />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-8">
-      <div className="max-w-6xl mx-auto">
+    <div className="flex min-h-screen" style={{ background: 'var(--bg-base)' }}>
+      <ClientNav />
+
+      <main className="flex-1 overflow-y-auto p-6 lg:p-8" style={{ maxHeight: '100vh' }}>
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-              <Target className="w-8 h-8 text-blue-600" />
-              الحملات
+            <h1 className="text-2xl font-extrabold flex items-center gap-3" style={{ fontFamily: "'Syne', sans-serif", color: 'var(--text-primary)' }}>
+              <Target className="w-6 h-6" style={{ color: 'var(--accent-primary)' }} />
+              Campaigns
             </h1>
-            <p className="text-gray-600 mt-1">أنشئ وأدر حملات LinkedIn الخاصة بك</p>
+            <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Create and manage your LinkedIn outreach campaigns</p>
           </div>
           <Button
             onClick={() => setShowCreateForm(!showCreateForm)}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold flex items-center gap-2"
+            size="sm"
+            className="text-white flex items-center gap-1.5"
+            style={{ background: 'var(--gradient-primary)' }}
           >
-            <Plus className="w-4 h-4" />
-            حملة جديدة
+            <Plus className="w-3.5 h-3.5" />
+            New Campaign
           </Button>
         </div>
 
         {/* Create Form */}
         {showCreateForm && (
-          <Card className="p-8 mb-8 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6">إنشاء حملة جديدة</h2>
-            <form onSubmit={handleCreateCampaign} className="space-y-6">
+          <div className="rounded-xl p-5 mb-6" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-accent)', boxShadow: '0 0 30px rgba(124,58,237,0.08)' }}>
+            <h2 className="text-sm font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Create New Campaign</h2>
+            <form onSubmit={handleCreateCampaign} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  اسم الحملة *
-                </label>
+                <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Campaign Name *</label>
                 <Input
                   type="text"
-                  placeholder="مثال: حملة البحث عن عملاء تقنيين"
+                  placeholder="e.g., Q2 LinkedIn Outreach"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   required
                   className="w-full"
+                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border-subtle)', color: 'var(--text-primary)' }}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  الوصف (اختياري)
-                </label>
+                <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Description (optional)</label>
                 <textarea
-                  placeholder="أضف وصفاً لحملتك..."
+                  placeholder="Add a description for your campaign..."
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  rows={3}
+                  className="w-full px-3 py-2 rounded-lg text-sm"
+                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border-subtle)', color: 'var(--text-primary)' }}
+                  rows={2}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  نوع الحملة *
-                </label>
+                <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Campaign Type *</label>
                 <select
                   value={formData.type}
                   onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 rounded-lg text-sm"
+                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border-subtle)', color: 'var(--text-primary)' }}
                 >
                   {Object.entries(campaignTypes).map(([key, label]) => (
-                    <option key={key} value={key}>
-                      {label}
-                    </option>
+                    <option key={key} value={key}>{label}</option>
                   ))}
                 </select>
               </div>
 
-              <div className="flex items-center gap-4">
+              {createCampaign.error && (
+                <div className="text-xs p-3 rounded-lg" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#fca5a5' }}>
+                  {createCampaign.error.message}
+                </div>
+              )}
+
+              <div className="flex items-center gap-3">
                 <Button
                   type="submit"
                   disabled={createCampaign.isPending || !formData.name.trim()}
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-semibold flex items-center gap-2"
+                  size="sm"
+                  className="text-white flex items-center gap-1.5"
+                  style={{ background: 'var(--gradient-primary)' }}
                 >
                   {createCampaign.isPending ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      جاري الإنشاء...
-                    </>
+                    <><Loader2 className="w-3.5 h-3.5 animate-spin" />Creating...</>
                   ) : (
-                    <>
-                      <Zap className="w-4 h-4" />
-                      إنشاء الحملة
-                    </>
+                    <><Zap className="w-3.5 h-3.5" />Create Campaign</>
                   )}
                 </Button>
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="ghost"
+                  size="sm"
                   onClick={() => setShowCreateForm(false)}
-                  className="text-gray-700"
+                  style={{ color: 'var(--text-muted)' }}
                 >
-                  إلغاء
+                  Cancel
                 </Button>
               </div>
             </form>
-          </Card>
+          </div>
         )}
 
-        {/* Campaigns List */}
+        {/* Campaigns Grid */}
         {campaigns && campaigns.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {campaigns.map((campaign) => (
-              <Card key={campaign.id} className="p-6 hover:shadow-lg transition-shadow">
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900">{campaign.name}</h3>
-                    <p className="text-sm text-gray-500 mt-1">
-                      {campaignTypes[campaign.type as keyof typeof campaignTypes] || campaign.type}
-                    </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {campaigns.map((campaign: any) => {
+              const st = statusLabels[campaign.status] || statusLabels.draft;
+              return (
+                <div key={campaign.id} className="p-5 rounded-xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{campaign.name}</h3>
+                      <p className="text-[10px] mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                        {campaignTypes[campaign.type] || campaign.type}
+                      </p>
+                    </div>
+                    <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full" style={{ background: st.bg, color: st.color }}>
+                      {st.text}
+                    </span>
                   </div>
-                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                    campaign.status === 'active'
-                      ? 'bg-green-100 text-green-800'
-                      : campaign.status === 'draft'
-                      ? 'bg-gray-100 text-gray-800'
-                      : campaign.status === 'paused'
-                      ? 'bg-yellow-100 text-yellow-800'
-                      : 'bg-gray-100 text-gray-800'
-                  }`}>
-                    {campaign.status === 'active' ? 'نشطة' : campaign.status === 'draft' ? 'مسودة' : campaign.status === 'paused' ? 'موقوفة' : campaign.status}
-                  </span>
-                </div>
 
-                {campaign.description && (
-                  <p className="text-gray-600 text-sm mb-4">{campaign.description}</p>
-                )}
+                  {campaign.description && (
+                    <p className="text-xs mb-3" style={{ color: 'var(--text-muted)' }}>{campaign.description}</p>
+                  )}
 
-                <div className="grid grid-cols-2 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
-                  <div>
-                    <p className="text-xs text-gray-500">العملاء المحتملين</p>
-                    <p className="text-lg font-semibold text-gray-900">
-                      {campaign.stats?.total_leads || 0}
-                    </p>
+                  <div className="grid grid-cols-2 gap-3 mb-4 p-3 rounded-lg" style={{ background: 'rgba(255,255,255,0.02)' }}>
+                    <div>
+                      <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Prospects</p>
+                      <p className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>{campaign.stats?.total_leads || 0}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Completed</p>
+                      <p className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>{campaign.stats?.completed || 0}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-xs text-gray-500">المكتملة</p>
-                    <p className="text-lg font-semibold text-gray-900">
-                      {campaign.stats?.completed || 0}
-                    </p>
+
+                  <div className="flex items-center gap-2">
+                    <Link href={`/app/campaigns/${campaign.id}`}>
+                      <Button variant="ghost" size="sm" className="flex-1 text-xs" style={{ color: 'var(--text-secondary)', border: '1px solid var(--border-subtle)' }}>
+                        Details <ChevronRight className="w-3 h-3 ml-1" />
+                      </Button>
+                    </Link>
+                    <button
+                      onClick={() => handleDeleteCampaign(campaign.id)}
+                      disabled={deleteCampaign.isPending}
+                      className="p-1.5 rounded-md transition-colors"
+                      style={{ color: 'var(--text-muted)' }}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </div>
-
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    className="flex-1 text-gray-700"
-                    onClick={() => {
-                      // Navigate to campaign details
-                      window.location.href = `/app/campaigns/${campaign.id}`;
-                    }}
-                  >
-                    عرض التفاصيل
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                    onClick={() => handleDeleteCampaign(campaign.id)}
-                    disabled={deleteCampaign.isPending}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              </Card>
-            ))}
+              );
+            })}
           </div>
         ) : (
-          <Card className="p-12 text-center">
-            <Target className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">لا توجد حملات حتى الآن</h3>
-            <p className="text-gray-600 mb-6">
-              ابدأ بإنشاء حملتك الأولى لتبدأ رحلتك مع وصل
-            </p>
+          <div className="p-12 text-center rounded-xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
+            <Target className="w-12 h-12 mx-auto mb-3" style={{ color: 'var(--text-muted)' }} />
+            <h3 className="text-base font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>No campaigns yet</h3>
+            <p className="text-xs mb-5" style={{ color: 'var(--text-muted)' }}>Create your first campaign to start outreach</p>
             <Button
               onClick={() => setShowCreateForm(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold flex items-center gap-2 mx-auto"
+              size="sm"
+              className="text-white mx-auto flex items-center gap-1.5"
+              style={{ background: 'var(--gradient-primary)' }}
             >
-              <Plus className="w-4 h-4" />
-              إنشاء حملة جديدة
+              <Plus className="w-3.5 h-3.5" />
+              Create Campaign
             </Button>
-          </Card>
+          </div>
         )}
-      </div>
+      </main>
     </div>
   );
 }
