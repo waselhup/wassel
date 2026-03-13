@@ -345,9 +345,17 @@
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         if (message.type === 'EXECUTE_STEP') {
             const { data } = message;
-            console.log('[Wassel] Executing step:', data.stepType, data.prospectName);
+            // Normalize field names (global queue uses snake_case, per-campaign uses camelCase)
+            const normalized = {
+                ...data,
+                stepType: data.stepType || data.step_type,
+                linkedinUrl: data.linkedinUrl || data.linkedin_url,
+                prospectName: data.prospectName || data.name,
+                messageTemplate: data.messageTemplate || data.message_template || '',
+            };
+            console.log('[Wassel] Executing step:', normalized.stepType, normalized.prospectName);
 
-            executeStep(data)
+            executeStep(normalized)
                 .then(result => sendResponse(result))
                 .catch(err => sendResponse({ success: false, error: err.message }));
 
@@ -483,16 +491,18 @@
 
     // Execute the appropriate step
     async function executeStep(data) {
-        switch (data.stepType) {
+        const stepType = data.stepType || data.step_type;
+        switch (stepType) {
             case 'visit':
                 return await executeVisit(data);
             case 'invite':
             case 'invitation':
                 return await executeInvite(data);
             case 'message':
+            case 'follow':
                 return await executeMessage(data);
             default:
-                return { success: false, error: `Unknown step type: ${data.stepType}` };
+                return { success: false, error: `Unknown step type: ${stepType}` };
         }
     }
 

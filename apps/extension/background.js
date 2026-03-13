@@ -263,93 +263,54 @@ async function processQueue() {
     if (isProcessing || isPaused) return;
 
     const config = await getConfig();
-    if (!config.apiToken || !config.activeCampaignId) return;
+    if (!config.apiToken) return;
 
     isProcessing = true;
 
     try {
-        const today = new Date().toISOString().split('T')[0];
-        const { lastSnapshotDate } = await chrome.storage.local.get('lastSnapshotDate');
-        if (lastSnapshotDate !== today && config.activeCampaignId) {
-            try {
-                await apiCall(`/sequence/campaigns/${config.activeCampaignId}/snapshot`, { method: 'POST' });
-                await chrome.storage.local.set({ lastSnapshotDate: today });
-                console.log('[Wassel] Daily snapshot saved for', today);
-            } catch (e) { /* silent */ }
-        }
+        // Use global queue endpoint — fetches pending actions across ALL active campaigns
+        const result = await apiCall('/sequence/queue/active');
 
-        const result = await apiCall(`/sequence/campaigns/${config.activeCampaignId}/queue`);
-
-        if (!result.success || !result.data || result.data.length === 0) {
+        if (!result.success || !result.queue || result.queue.length === 0) {
+            console.log('[Wassel] No pending queue items');
             isProcessing = false;
             return;
         }
 
-        const item = result.data[0];
+        const item = result.queue[0];
 
-        if (!(await canPerformAction(item.stepType))) {
-            console.log(`[Wassel] Rate limit reached for ${item.stepType}. Skipping.`);
+        if (!(await canPerformAction(item.step_type))) {
+            console.log(`[Wassel] Rate limit reached for ${item.step_type}. Skipping.`);
             isProcessing = false;
             return;
         }
 
-        console.log(`[Wassel] Processing: ${item.stepType} for ${item.prospectName}`);
+        console.log(`[Wassel] Processing: ${item.step_type} for ${item.name} (${item.linkedin_url})`);
 
-        const tabs = await chrome.tabs.query({ url: '*://www.linkedin.com/*' });
-
-        if (tabs.length === 0) {
-            console.log('[Wassel] No LinkedIn tab found. Opening one...');
-            isProcessing = false;
-            return;
-        }
-
-        const linkedInTab = tabs[0];
-
+        // Execute actions directly from background script
         try {
-            const response = await chrome.tabs.sendMessage(linkedInTab.id, {
-                type: 'EXECUTE_STEP',
-                data: item,
-            });
-
-            if (response && response.success) {
-                await apiCall('/sequence/step/complete', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        prospectStepId: item.prospectStepId,
-                        status: 'completed',
-                    }),
-                });
-
-                await incrementCount(item.stepType);
-                console.log(`[Wassel] ✓ Completed: ${item.stepType} for ${item.prospectName}`);
-                chrome.action.setBadgeText({ text: '✓' });
-                chrome.action.setBadgeBackgroundColor({ color: '#22c55e' });
+            if (item.step_type === 'visit') {
+                // Visit: open tab, wait, close
+                await executeVisitAction(item);
+            } else if (item.step_type === 'invitation') {
+                // Invite: needs content script on the profile page
+                await executeViaContentScript(item);
+            } else if (item.step_type === 'message' || item.step_type === 'follow') {
+                // Message: needs content script on the profile page
+                await executeViaContentScript(item);
             } else {
-                if (response && response.linkedinRestriction) {
-                    console.error('[Wassel] ⚠ LinkedIn restriction detected! Pausing campaign.');
-                    isPaused = true;
-                    await apiCall('/sequence/campaigns/pause', {
-                        method: 'POST',
-                        body: JSON.stringify({
-                            campaignId: config.activeCampaignId,
-                            reason: response.error || 'LinkedIn restriction detected',
-                        }),
-                    });
-                    chrome.action.setBadgeText({ text: '!' });
-                    chrome.action.setBadgeBackgroundColor({ color: '#ef4444' });
-                } else {
-                    await apiCall('/sequence/step/complete', {
-                        method: 'POST',
-                        body: JSON.stringify({
-                            prospectStepId: item.prospectStepId,
-                            status: 'failed',
-                            errorMessage: response?.error || 'Unknown error',
-                        }),
-                    });
-                }
+                console.log(`[Wassel] Unknown step_type: ${item.step_type}, marking complete`);
+                await markStepComplete(item.prospectStepId, 'completed');
             }
-        } catch (sendError) {
-            console.error('[Wassel] Error sending to content script:', sendError);
+
+            await incrementCount(item.step_type);
+            console.log(`[Wassel] ✓ Completed: ${item.step_type} for ${item.name}`);
+            chrome.action.setBadgeText({ text: '✓' });
+            chrome.action.setBadgeBackgroundColor({ color: '#22c55e' });
+            setTimeout(() => chrome.action.setBadgeText({ text: '' }), 5000);
+        } catch (actionError) {
+            console.error(`[Wassel] ✗ Failed: ${item.step_type} for ${item.name}:`, actionError.message);
+            await markStepComplete(item.prospectStepId, 'failed', actionError.message);
         }
 
         await delayBetweenActions();
@@ -359,6 +320,86 @@ async function processQueue() {
     } finally {
         isProcessing = false;
     }
+}
+
+// Helper to mark step complete/failed via API
+async function markStepComplete(prospectStepId, status, errorMessage) {
+    await apiCall('/sequence/step/complete', {
+        method: 'POST',
+        body: JSON.stringify({ prospectStepId, status, errorMessage: errorMessage || null }),
+    });
+}
+
+// Execute Visit — open profile tab, wait, close
+async function executeVisitAction(item) {
+    console.log(`[Wassel] 👁 Visiting ${item.linkedin_url}`);
+    const tab = await chrome.tabs.create({ url: item.linkedin_url, active: false });
+    const waitTime = 4000 + Math.random() * 3000; // 4-7 seconds
+    await new Promise(r => setTimeout(r, waitTime));
+    try { await chrome.tabs.remove(tab.id); } catch (e) { /* tab may already be closed */ }
+    await markStepComplete(item.prospectStepId, 'completed');
+}
+
+// Execute Invite/Message via content script on the profile page
+async function executeViaContentScript(item) {
+    console.log(`[Wassel] 🔗 Opening ${item.linkedin_url} for ${item.step_type}`);
+    
+    // Open profile tab
+    const tab = await chrome.tabs.create({ url: item.linkedin_url, active: true });
+    
+    // Wait for page to load
+    await new Promise(r => setTimeout(r, 4000 + Math.random() * 2000));
+    
+    // Send action to content script
+    return new Promise((resolve, reject) => {
+        chrome.tabs.sendMessage(tab.id, {
+            type: 'EXECUTE_STEP',
+            data: item,
+        }, async (response) => {
+            try {
+                if (chrome.runtime.lastError) {
+                    // Content script not ready — retry once
+                    console.log('[Wassel] Content script not ready, retrying...');
+                    await new Promise(r => setTimeout(r, 3000));
+                    chrome.tabs.sendMessage(tab.id, {
+                        type: 'EXECUTE_STEP',
+                        data: item,
+                    }, async (retryResponse) => {
+                        await new Promise(r => setTimeout(r, 2000));
+                        try { await chrome.tabs.remove(tab.id); } catch (e) {}
+                        if (retryResponse?.success) {
+                            await markStepComplete(item.prospectStepId, 'completed');
+                            resolve();
+                        } else {
+                            await markStepComplete(item.prospectStepId, 'failed', retryResponse?.error || 'Content script failed');
+                            reject(new Error(retryResponse?.error || 'Content script failed'));
+                        }
+                    });
+                    return;
+                }
+                
+                await new Promise(r => setTimeout(r, 2000));
+                try { await chrome.tabs.remove(tab.id); } catch (e) {}
+                
+                if (response?.linkedinRestriction) {
+                    isPaused = true;
+                    chrome.action.setBadgeText({ text: '!' });
+                    chrome.action.setBadgeBackgroundColor({ color: '#ef4444' });
+                    await markStepComplete(item.prospectStepId, 'failed', 'LinkedIn restriction');
+                    reject(new Error('LinkedIn restriction'));
+                } else if (response?.success) {
+                    await markStepComplete(item.prospectStepId, 'completed');
+                    resolve();
+                } else {
+                    await markStepComplete(item.prospectStepId, 'failed', response?.error || 'Unknown error');
+                    reject(new Error(response?.error || 'Action failed'));
+                }
+            } catch (err) {
+                try { await chrome.tabs.remove(tab.id); } catch (e) {}
+                reject(err);
+            }
+        });
+    });
 }
 
 // ============================================================================
@@ -537,10 +578,27 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
 });
 
-// When extension is installed, sync token automatically
+// When extension is installed, sync token and start automation
 chrome.runtime.onInstalled.addListener(() => {
     chrome.storage.local.set({ apiUrl: API_BASE });
     console.log('[Wassel] Extension installed. Auto-syncing token...');
-    // Give the browser a moment to settle, then sync
-    setTimeout(syncTokenFromDashboard, 2000);
+    setTimeout(async () => {
+        await syncTokenFromDashboard();
+        // Auto-start polling after successful sync
+        const config = await getConfig();
+        if (config.apiToken) {
+            console.log('[Wassel] Token found, auto-starting campaign automation...');
+            startPolling();
+        }
+    }, 2000);
 });
+
+// Also auto-start polling when service worker wakes up
+(async () => {
+    await new Promise(r => setTimeout(r, 3000));
+    const config = await getConfig();
+    if (config.apiToken && !pollInterval) {
+        console.log('[Wassel] Service worker wake-up: starting automation...');
+        startPolling();
+    }
+})();
