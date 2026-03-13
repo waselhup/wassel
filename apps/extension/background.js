@@ -429,12 +429,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
 
     if (message.type === 'IMPORT_PROSPECTS') {
-        const { clientId, campaignId, sourceUrl, prospects } = message;
+        const { campaignId, sourceUrl, prospects } = message;
         apiCall('/ext/import', {
             method: 'POST',
             body: JSON.stringify({
-                client_id: clientId,
-                campaign_id: campaignId,
+                campaign_id: campaignId || null,
                 source_url: sourceUrl,
                 prospects,
             }),

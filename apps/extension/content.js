@@ -293,7 +293,7 @@
             type: 'GET_CONFIG',
         }, (config) => {
             if (!config || !config.apiToken) {
-                showResult('error', 'Not authenticated. Open the extension popup and enter your API token.');
+                showResult('error', 'Not connected. Open wassel-alpha.vercel.app, log in, then click the extension popup to sync.');
                 importing = false;
                 updateImportBtn();
                 return;
@@ -301,21 +301,21 @@
 
             chrome.runtime.sendMessage({
                 type: 'IMPORT_PROSPECTS',
-                clientId: config.clientId || '',
                 campaignId: null,
                 sourceUrl: window.location.href,
                 prospects: selectedProspects.map(p => ({
                     linkedin_url: p.linkedin_url,
                     name: p.name,
-                    title: p.title,
-                    company: p.company,
-                    location: p.location,
+                    first_name: p.name ? p.name.split(' ')[0] : '',
+                    last_name: p.name ? p.name.split(' ').slice(1).join(' ') : '',
+                    job_title: p.title || '',
+                    company: p.company || '',
+                    location: p.location || '',
                 })),
             }, (response) => {
                 importing = false;
                 if (response && response.success) {
                     showResult('success', `✅ ${response.imported} prospects imported successfully!`);
-                    // Mark imported prospects
                     selectedProspects.forEach(p => p.selected = false);
                     selectedProspects = [];
                     updateImportBtn();
