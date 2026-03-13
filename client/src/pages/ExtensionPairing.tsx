@@ -1,12 +1,11 @@
 import { useState } from 'react';
-import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import {
     Loader2, Copy, CheckCircle, AlertCircle, Chrome,
     Key, Clock, RefreshCw, Shield
 } from 'lucide-react';
-import { Link } from 'wouter';
+import ClientNav from '@/components/ClientNav';
 
 export default function ExtensionPairing() {
     const { user, accessToken } = useAuth();
@@ -17,7 +16,9 @@ export default function ExtensionPairing() {
     const [copied, setCopied] = useState(false);
 
     const generateToken = async () => {
-        if (!accessToken) {
+        // Try accessToken from context first, fall back to localStorage
+        const token = accessToken || localStorage.getItem('supabase_token');
+        if (!token) {
             setError('Not authenticated. Please sign in first.');
             return;
         }
@@ -31,7 +32,7 @@ export default function ExtensionPairing() {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${accessToken}`,
+                    'Authorization': `Bearer ${token}`,
                 },
             });
 
@@ -59,150 +60,106 @@ export default function ExtensionPairing() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
-            {/* Header */}
-            <header className="bg-white border-b shadow-sm">
-                <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center h-16">
-                        <div className="flex items-center gap-3">
-                            <Link href="/app">
-                                <span className="text-xl font-bold text-blue-600 hover:text-blue-700 cursor-pointer">Wassel</span>
-                            </Link>
-                            <span className="text-gray-400">/</span>
-                            <span className="text-sm font-medium text-gray-600">Extension Setup</span>
-                        </div>
-                        <Link href="/app">
-                            <Button variant="ghost" size="sm">← Back to Dashboard</Button>
-                        </Link>
+        <div className="flex min-h-screen" style={{ background: 'var(--bg-base)' }}>
+            <ClientNav />
+
+            <main className="flex-1 overflow-y-auto p-6 lg:p-8" style={{ maxHeight: '100vh' }}>
+                <div className="max-w-3xl">
+                    <div className="mb-6">
+                        <h2 className="text-2xl font-extrabold mb-1" style={{ fontFamily: "'Syne', sans-serif", color: 'var(--text-primary)' }}>Chrome Extension Setup</h2>
+                        <p style={{ color: 'var(--text-muted)' }}>Connect the Wassel Chrome Extension to your account.</p>
                     </div>
-                </div>
-            </header>
 
-            <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <div className="mb-8">
-                    <h2 className="text-2xl font-bold text-gray-900 mb-2">Chrome Extension Setup</h2>
-                    <p className="text-gray-500">Connect the Wassel Chrome Extension to your account.</p>
-                </div>
-
-                {/* Step 1: Install */}
-                <Card className="p-6 mb-6">
-                    <div className="flex items-start gap-4">
-                        <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                            <Chrome className="w-5 h-5 text-blue-600" />
-                        </div>
-                        <div>
-                            <h3 className="text-lg font-semibold text-gray-900 mb-1">Step 1: Install Extension</h3>
-                            <p className="text-sm text-gray-600 mb-3">
-                                Load the Wassel extension in Chrome using Developer Mode.
-                            </p>
-                            <ol className="text-sm text-gray-600 space-y-1 list-decimal list-inside">
-                                <li>Open <code className="bg-gray-100 px-1 py-0.5 rounded text-xs">chrome://extensions</code></li>
-                                <li>Enable "Developer mode" (top right)</li>
-                                <li>Click "Load unpacked" and select the <code className="bg-gray-100 px-1 py-0.5 rounded text-xs">wassel-extension</code> folder</li>
-                            </ol>
+                    {/* Step 1: Install */}
+                    <div className="rounded-xl p-5 mb-4" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
+                        <div className="flex items-start gap-4">
+                            <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(124,58,237,0.12)' }}>
+                                <Chrome className="w-4.5 h-4.5" style={{ color: 'var(--accent-primary)' }} />
+                            </div>
+                            <div>
+                                <h3 className="text-sm font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>Step 1: Install Extension</h3>
+                                <p className="text-xs mb-2" style={{ color: 'var(--text-muted)' }}>Load the Wassel extension in Chrome using Developer Mode.</p>
+                                <ol className="text-xs space-y-1 list-decimal list-inside" style={{ color: 'var(--text-secondary)' }}>
+                                    <li>Open <code className="px-1 py-0.5 rounded text-[10px]" style={{ background: 'rgba(255,255,255,0.06)' }}>chrome://extensions</code></li>
+                                    <li>Enable "Developer mode" (top right)</li>
+                                    <li>Click "Load unpacked" and select the extension folder</li>
+                                </ol>
+                            </div>
                         </div>
                     </div>
-                </Card>
 
-                {/* Step 2: Generate Token */}
-                <Card className="p-6 mb-6">
-                    <div className="flex items-start gap-4">
-                        <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                            <Key className="w-5 h-5 text-green-600" />
-                        </div>
-                        <div className="flex-1">
-                            <h3 className="text-lg font-semibold text-gray-900 mb-1">Step 2: Generate Extension Token</h3>
-                            <p className="text-sm text-gray-600 mb-4">
-                                Generate a secure, short-lived token for the extension. This token expires in 1 hour.
-                            </p>
+                    {/* Step 2: Generate Token */}
+                    <div className="rounded-xl p-5 mb-4" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
+                        <div className="flex items-start gap-4">
+                            <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(34,197,94,0.12)' }}>
+                                <Key className="w-4.5 h-4.5" style={{ color: '#22c55e' }} />
+                            </div>
+                            <div className="flex-1">
+                                <h3 className="text-sm font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>Step 2: Generate Extension Token</h3>
+                                <p className="text-xs mb-3" style={{ color: 'var(--text-muted)' }}>Generate a secure, short-lived token. Expires in 1 hour.</p>
 
-                            {error && (
-                                <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg mb-4">
-                                    <AlertCircle className="w-4 h-4 text-red-600" />
-                                    <p className="text-sm text-red-800">{error}</p>
-                                </div>
-                            )}
-
-                            {!extensionToken ? (
-                                <Button
-                                    onClick={generateToken}
-                                    disabled={loading}
-                                    className="bg-blue-600 hover:bg-blue-700 text-white"
-                                >
-                                    {loading ? (
-                                        <>
-                                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                            Generating...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Key className="w-4 h-4 mr-2" />
-                                            Generate Token
-                                        </>
-                                    )}
-                                </Button>
-                            ) : (
-                                <div className="space-y-3">
-                                    <div className="bg-gray-50 border rounded-lg p-3">
-                                        <div className="flex items-center justify-between mb-2">
-                                            <span className="text-xs font-medium text-gray-500">Extension Token</span>
-                                            <Button variant="ghost" size="sm" onClick={copyToken}>
-                                                {copied ? (
-                                                    <>
-                                                        <CheckCircle className="w-3 h-3 mr-1 text-green-600" />
-                                                        <span className="text-green-600 text-xs">Copied!</span>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <Copy className="w-3 h-3 mr-1" />
-                                                        <span className="text-xs">Copy</span>
-                                                    </>
-                                                )}
-                                            </Button>
-                                        </div>
-                                        <code className="text-xs text-gray-700 break-all block">
-                                            {extensionToken.substring(0, 60)}...
-                                        </code>
+                                {error && (
+                                    <div className="flex items-center gap-2 p-3 rounded-lg mb-3" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)' }}>
+                                        <AlertCircle className="w-3.5 h-3.5" style={{ color: '#ef4444' }} />
+                                        <p className="text-xs" style={{ color: '#fca5a5' }}>{error}</p>
                                     </div>
+                                )}
 
-                                    <div className="flex items-center gap-4 text-sm text-gray-500">
-                                        <span className="flex items-center gap-1">
-                                            <Clock className="w-3.5 h-3.5" />
-                                            Expires: {expiresAt ? new Date(expiresAt).toLocaleTimeString() : 'unknown'}
-                                        </span>
-                                        <span className="flex items-center gap-1">
-                                            <Shield className="w-3.5 h-3.5" />
-                                            {user?.role === 'super_admin' ? 'Admin' : 'Client'} access
-                                        </span>
-                                    </div>
-
-                                    <Button variant="outline" size="sm" onClick={generateToken}>
-                                        <RefreshCw className="w-3.5 h-3.5 mr-1" />
-                                        Regenerate
+                                {!extensionToken ? (
+                                    <Button
+                                        onClick={generateToken}
+                                        disabled={loading}
+                                        size="sm"
+                                        className="text-white"
+                                        style={{ background: 'var(--gradient-primary)' }}
+                                    >
+                                        {loading ? (
+                                            <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />Generating...</>
+                                        ) : (
+                                            <><Key className="w-3.5 h-3.5 mr-1.5" />Generate Token</>
+                                        )}
                                     </Button>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </Card>
+                                ) : (
+                                    <div className="space-y-3">
+                                        <div className="p-3 rounded-lg" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border-subtle)' }}>
+                                            <div className="flex items-center justify-between mb-1.5">
+                                                <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Extension Token</span>
+                                                <button onClick={copyToken} className="flex items-center gap-1 text-[10px] px-2 py-1 rounded" style={{ color: copied ? '#22c55e' : 'var(--text-muted)', background: 'rgba(255,255,255,0.04)' }}>
+                                                    {copied ? <><CheckCircle className="w-3 h-3" />Copied!</> : <><Copy className="w-3 h-3" />Copy</>}
+                                                </button>
+                                            </div>
+                                            <code className="text-[10px] break-all block" style={{ color: 'var(--text-secondary)' }}>
+                                                {extensionToken.substring(0, 60)}...
+                                            </code>
+                                        </div>
 
-                {/* Step 3: Paste in Extension */}
-                <Card className="p-6">
-                    <div className="flex items-start gap-4">
-                        <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                            <CheckCircle className="w-5 h-5 text-purple-600" />
-                        </div>
-                        <div>
-                            <h3 className="text-lg font-semibold text-gray-900 mb-1">Step 3: Paste in Extension</h3>
-                            <p className="text-sm text-gray-600 mb-2">
-                                Open the Wassel extension popup, paste the token in the API Token field, and click Save.
-                            </p>
-                            <p className="text-xs text-gray-400">
-                                The extension will automatically connect to your Wassel account and start working on LinkedIn pages.
-                            </p>
+                                        <div className="flex items-center gap-4 text-[10px]" style={{ color: 'var(--text-muted)' }}>
+                                            <span className="flex items-center gap-1"><Clock className="w-3 h-3" />Expires: {expiresAt ? new Date(expiresAt).toLocaleTimeString() : 'unknown'}</span>
+                                            <span className="flex items-center gap-1"><Shield className="w-3 h-3" />{user?.role === 'super_admin' ? 'Admin' : 'Client'} access</span>
+                                        </div>
+
+                                        <Button variant="outline" size="sm" onClick={generateToken} style={{ color: 'var(--text-secondary)', borderColor: 'var(--border-subtle)' }}>
+                                            <RefreshCw className="w-3 h-3 mr-1" />Regenerate
+                                        </Button>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
-                </Card>
+
+                    {/* Step 3: Paste */}
+                    <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
+                        <div className="flex items-start gap-4">
+                            <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(168,85,247,0.12)' }}>
+                                <CheckCircle className="w-4.5 h-4.5" style={{ color: '#a855f7' }} />
+                            </div>
+                            <div>
+                                <h3 className="text-sm font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>Step 3: Paste in Extension</h3>
+                                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Open the Wassel extension popup, paste the token, and click Save.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </main>
         </div>
     );

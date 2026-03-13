@@ -192,17 +192,20 @@ function Router() {
 }
 
 function App() {
+  const lang = typeof window !== 'undefined' ? localStorage.getItem('wassel_lang') || 'en' : 'en';
   return (
-    <ErrorBoundary>
-      <ThemeProvider defaultTheme="light">
-        <AuthProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Router />
-          </TooltipProvider>
-        </AuthProvider>
-      </ThemeProvider>
-    </ErrorBoundary>
+    <div dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+      <ErrorBoundary>
+        <ThemeProvider defaultTheme="light">
+          <AuthProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Router />
+            </TooltipProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </ErrorBoundary>
+    </div>
   );
 }
 

@@ -24,21 +24,11 @@ type Campaign = {
     created_at: string;
 };
 
-type ImportJob = {
-    id: string;
-    campaign_id: string;
-    source_url: string | null;
-    prospect_count: number;
-    status: string;
-    created_at: string;
-};
-
 export default function ClientDashboard() {
     const { user } = useAuth();
     const [campaigns, setCampaigns] = useState<Campaign[]>([]);
     const [prospects, setProspects] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [linkedinStatus, setLinkedinStatus] = useState<'connected' | 'pending' | 'unknown'>('unknown');
 
     useEffect(() => {
         fetchData();
@@ -47,14 +37,11 @@ export default function ClientDashboard() {
     const fetchData = async () => {
         setLoading(true);
         try {
-            // Fetch campaigns
             const campRes = await fetch('/api/ext/campaigns', { headers: authHeaders() });
             if (campRes.ok) {
                 const campData = await campRes.json();
                 setCampaigns(campData.campaigns || []);
             }
-
-            // Fetch prospects (recent imports)
             const prospectsRes = await fetch('/api/ext/prospects', { headers: authHeaders() });
             if (prospectsRes.ok) {
                 const prospectsData = await prospectsRes.json();
@@ -67,144 +54,136 @@ export default function ClientDashboard() {
         }
     };
 
-
-
     if (loading) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
-                <div className="text-center">
-                    <Loader2 className="w-10 h-10 animate-spin text-blue-600 mx-auto mb-3" />
-                    <p className="text-gray-600">Loading your workspace...</p>
+            <div className="flex min-h-screen" style={{ background: 'var(--bg-base)' }}>
+                <ClientNav />
+                <div className="flex-1 flex items-center justify-center">
+                    <div className="text-center">
+                        <Loader2 className="w-8 h-8 animate-spin mx-auto mb-3" style={{ color: 'var(--accent-primary)' }} />
+                        <p style={{ color: 'var(--text-muted)' }}>Loading your workspace...</p>
+                    </div>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+        <div className="flex min-h-screen" style={{ background: 'var(--bg-base)' }}>
             <ClientNav />
 
-            {/* Content */}
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-
+            {/* Main content — scrollable */}
+            <main className="flex-1 overflow-y-auto p-6 lg:p-8" style={{ maxHeight: '100vh' }}>
                 {/* Welcome */}
-                <div className="mb-8">
-                    <h2 className="text-2xl font-bold text-gray-900 mb-1">
+                <div className="mb-6">
+                    <h2 className="text-2xl font-extrabold mb-1" style={{ fontFamily: "'Syne', sans-serif", color: 'var(--text-primary)' }}>
                         Welcome back{user?.email ? `, ${user.email.split('@')[0]}` : ''}!
                     </h2>
-                    <p className="text-gray-500">Here's an overview of your LinkedIn campaigns.</p>
+                    <p style={{ color: 'var(--text-muted)' }}>Here's an overview of your LinkedIn campaigns.</p>
                 </div>
 
-                {/* Stats cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    <Card className="p-6">
+                {/* 3 Stat cards — visible immediately */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                    <div className="p-5 rounded-xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', backdropFilter: 'blur(12px)' }}>
                         <div className="flex items-start justify-between">
                             <div>
-                                <p className="text-sm text-gray-500 font-medium">Total Campaigns</p>
-                                <h3 className="text-3xl font-bold text-gray-900 mt-1">{campaigns.length}</h3>
+                                <p className="text-xs uppercase tracking-wider font-semibold mb-2" style={{ color: 'var(--text-muted)' }}>Total Campaigns</p>
+                                <h3 className="text-3xl font-extrabold" style={{ fontFamily: "'Syne', sans-serif" }}>{campaigns.length}</h3>
                             </div>
-                            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                                <Target className="w-5 h-5 text-blue-600" />
+                            <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: 'rgba(124,58,237,0.12)' }}>
+                                <Target className="w-4 h-4" style={{ color: 'var(--accent-primary)' }} />
                             </div>
-                        </div>
-                    </Card>
-
-                    <Card className="p-6">
-                        <div className="flex items-start justify-between">
-                            <div>
-                                <p className="text-sm text-gray-500 font-medium">Imported Prospects</p>
-                                <h3 className="text-3xl font-bold text-gray-900 mt-1">{prospects.length}</h3>
-                            </div>
-                            <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                                <Users className="w-5 h-5 text-green-600" />
-                            </div>
-                        </div>
-                    </Card>
-
-                    <Card className="p-6">
-                        <div className="flex items-start justify-between">
-                            <div>
-                                <p className="text-sm text-gray-500 font-medium">LinkedIn Status</p>
-                                <div className="flex items-center gap-2 mt-1">
-                                    <CheckCircle className="w-5 h-5 text-green-500" />
-                                    <span className="text-sm font-medium text-green-700">Connected</span>
-                                </div>
-                            </div>
-                            <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
-                                <Linkedin className="w-5 h-5 text-indigo-600" />
-                            </div>
-                        </div>
-                    </Card>
-                </div>
-
-                {/* Campaigns */}
-                <Card className="mb-8">
-                    <div className="p-6 border-b">
-                        <div className="flex items-center justify-between">
-                            <h3 className="text-lg font-semibold text-gray-900">Your Campaigns</h3>
-                            <Link href="/app/campaigns">
-                                <Button variant="outline" size="sm">
-                                    View all <ChevronRight className="w-4 h-4 ml-1" />
-                                </Button>
-                            </Link>
                         </div>
                     </div>
-                    <div className="divide-y">
+
+                    <div className="p-5 rounded-xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', backdropFilter: 'blur(12px)' }}>
+                        <div className="flex items-start justify-between">
+                            <div>
+                                <p className="text-xs uppercase tracking-wider font-semibold mb-2" style={{ color: 'var(--text-muted)' }}>Imported Prospects</p>
+                                <h3 className="text-3xl font-extrabold" style={{ fontFamily: "'Syne', sans-serif" }}>{prospects.length}</h3>
+                            </div>
+                            <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: 'rgba(34,197,94,0.12)' }}>
+                                <Users className="w-4 h-4" style={{ color: '#22c55e' }} />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="p-5 rounded-xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', backdropFilter: 'blur(12px)' }}>
+                        <div className="flex items-start justify-between">
+                            <div>
+                                <p className="text-xs uppercase tracking-wider font-semibold mb-2" style={{ color: 'var(--text-muted)' }}>LinkedIn Status</p>
+                                <div className="flex items-center gap-2 mt-1">
+                                    <CheckCircle className="w-4 h-4" style={{ color: '#22c55e' }} />
+                                    <span className="text-sm font-medium" style={{ color: '#22c55e' }}>Connected</span>
+                                </div>
+                            </div>
+                            <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: 'rgba(99,102,241,0.12)' }}>
+                                <Linkedin className="w-4 h-4" style={{ color: '#6366f1' }} />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Campaigns List */}
+                <div className="rounded-xl mb-6 overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
+                    <div className="px-5 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                        <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Your Campaigns</h3>
+                        <Link href="/app/campaigns">
+                            <Button variant="ghost" size="sm" style={{ color: 'var(--text-muted)' }}>
+                                View all <ChevronRight className="w-3.5 h-3.5 ml-1" />
+                            </Button>
+                        </Link>
+                    </div>
+                    <div>
                         {campaigns.length === 0 ? (
-                            <div className="p-8 text-center text-gray-500">
-                                <Target className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                                <p>No campaigns yet.</p>
-                                <p className="text-sm mt-1">Create a campaign in the Campaigns tab to start importing leads.</p>
+                            <div className="p-8 text-center">
+                                <Target className="w-8 h-8 mx-auto mb-3" style={{ color: 'var(--text-muted)' }} />
+                                <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No campaigns yet. Create one to start importing leads.</p>
                             </div>
                         ) : (
                             campaigns.map((c) => (
-                                <div key={c.id} className="p-4 flex items-center justify-between hover:bg-gray-50">
+                                <div key={c.id} className="px-5 py-3.5 flex items-center justify-between" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                                     <div>
-                                        <p className="font-medium text-gray-900">{c.name}</p>
-                                        <p className="text-xs text-gray-500">Created {new Date(c.created_at).toLocaleDateString()}</p>
+                                        <p className="font-medium text-sm" style={{ color: 'var(--text-primary)' }}>{c.name}</p>
+                                        <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Created {new Date(c.created_at).toLocaleDateString()}</p>
                                     </div>
-                                    <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${c.status === 'active'
-                                        ? 'bg-green-100 text-green-700'
-                                        : 'bg-gray-100 text-gray-600'
-                                        }`}>
+                                    <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full"
+                                        style={{
+                                            background: c.status === 'active' ? 'rgba(34,197,94,0.12)' : 'rgba(148,163,184,0.12)',
+                                            color: c.status === 'active' ? '#22c55e' : '#94a3b8',
+                                        }}>
                                         {c.status}
                                     </span>
                                 </div>
                             ))
                         )}
                     </div>
-                </Card>
+                </div>
 
                 {/* Recent Imports */}
-                <Card>
-                    <div className="p-6 border-b">
-                        <div className="flex items-center justify-between">
-                            <h3 className="text-lg font-semibold text-gray-900">Recent Imports</h3>
-                            <span className="text-sm text-gray-500">{prospects.length} total prospects</span>
-                        </div>
+                <div className="rounded-xl mb-6 overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
+                    <div className="px-5 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                        <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Recent Imports</h3>
+                        <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{prospects.length} total</span>
                     </div>
-                    <div className="divide-y">
+                    <div>
                         {prospects.length === 0 ? (
-                            <div className="p-8 text-center text-gray-500">
-                                <Download className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                                <p>No imports yet.</p>
-                                <p className="text-sm mt-1">Use the Wassel Chrome Extension to import prospects from LinkedIn.</p>
+                            <div className="p-8 text-center">
+                                <Download className="w-8 h-8 mx-auto mb-3" style={{ color: 'var(--text-muted)' }} />
+                                <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No imports yet. Use the Chrome Extension to import prospects.</p>
                             </div>
                         ) : (
                             prospects.slice(0, 10).map((p) => (
-                                <div key={p.id} className="p-4 flex items-center justify-between hover:bg-gray-50">
+                                <div key={p.id} className="px-5 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                                     <div>
-                                        <p className="font-medium text-gray-900">{p.name || 'Unknown'}</p>
-                                        <p className="text-sm text-gray-500">{p.title || ''} {p.company ? `at ${p.company}` : ''}</p>
+                                        <p className="font-medium text-sm" style={{ color: 'var(--text-primary)' }}>{p.name || 'Unknown'}</p>
+                                        <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{p.title || ''} {p.company ? `at ${p.company}` : ''}</p>
                                     </div>
-                                    <div className="flex items-center gap-3">
-                                        <span className="text-xs text-gray-400">
-                                            {new Date(p.created_at).toLocaleDateString()}
-                                        </span>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{new Date(p.created_at).toLocaleDateString()}</span>
                                         {p.linkedin_url && (
-                                            <a href={p.linkedin_url} target="_blank" rel="noopener noreferrer"
-                                                className="text-blue-500 hover:text-blue-700">
-                                                <ExternalLink className="w-4 h-4" />
+                                            <a href={p.linkedin_url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent-secondary)' }}>
+                                                <ExternalLink className="w-3.5 h-3.5" />
                                             </a>
                                         )}
                                     </div>
@@ -212,21 +191,21 @@ export default function ClientDashboard() {
                             ))
                         )}
                     </div>
-                </Card>
+                </div>
 
                 {/* Extension CTA */}
-                <div className="mt-8 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-6 text-white">
+                <div className="p-5 rounded-xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-accent)', boxShadow: '0 0 30px rgba(124,58,237,0.08)' }}>
                     <div className="flex items-center justify-between">
                         <div>
-                            <h3 className="text-lg font-semibold">Wassel Chrome Extension</h3>
-                            <p className="text-blue-100 text-sm mt-1">
+                            <h3 className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>Wassel Chrome Extension</h3>
+                            <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
                                 Import LinkedIn search results directly into your campaigns.
                             </p>
                         </div>
-                        <Link href="/extension">
-                            <Button className="bg-white text-blue-600 hover:bg-blue-50">
-                                <Download className="w-4 h-4 mr-2" />
-                                Get Extension
+                        <Link href="/app/extension">
+                            <Button size="sm" className="text-white" style={{ background: 'var(--gradient-primary)' }}>
+                                <Download className="w-3.5 h-3.5 mr-1.5" />
+                                Setup
                             </Button>
                         </Link>
                     </div>

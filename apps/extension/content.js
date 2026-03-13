@@ -86,8 +86,27 @@
         allProspects = [];
         selectedProspects = [];
 
-        // Find LinkedIn search result cards
-        const resultCards = document.querySelectorAll('.reusable-search__result-container, .entity-result');
+        // Find LinkedIn search result cards — try multiple selectors (LinkedIn changes these)
+        const SELECTORS = [
+            'div[data-view-name="search-entity-result-universal-template"]',
+            '.reusable-search__result-container',
+            '.entity-result',
+            '[data-chameleon-result-urn]',
+            'li.reusable-search__result-container',
+        ];
+
+        let resultCards = [];
+        let usedSelector = '';
+        for (const selector of SELECTORS) {
+            resultCards = document.querySelectorAll(selector);
+            if (resultCards.length > 0) {
+                usedSelector = selector;
+                break;
+            }
+        }
+
+        console.log('[Wassel] Found cards:', resultCards.length);
+        console.log('[Wassel] Using selector:', usedSelector || 'none matched');
 
         resultCards.forEach((card, i) => {
             try {
