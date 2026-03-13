@@ -80,6 +80,15 @@ router.post('/campaigns/:id/steps', async (req: Request, res: Response) => {
     const { steps } = req.body;
     if (!Array.isArray(steps)) return res.status(400).json({ error: 'steps array required' });
 
+    // Normalize step_type to match DB CHECK constraint:
+    // allowed: 'visit', 'follow', 'invitation', 'message', 'email', 'delay', 'condition'
+    const typeMap: Record<string, string> = {
+      'visit': 'visit', 'follow': 'follow', 'invitation': 'invitation',
+      'message': 'message', 'email': 'email', 'delay': 'delay', 'condition': 'condition',
+      'invite': 'invitation', 'connection_request': 'invitation',
+      'follow_up': 'follow', 'follow_up_message': 'follow', 'followup': 'follow',
+    };
+
     // Delete existing steps, then insert new ones
     await supabase
       .from('campaign_steps')
@@ -89,7 +98,7 @@ router.post('/campaigns/:id/steps', async (req: Request, res: Response) => {
     const stepsToInsert = steps.map((step: any, index: number) => ({
       campaign_id: req.params.id,
       step_number: index + 1,
-      step_type: step.step_type,
+      step_type: typeMap[step.step_type] || step.step_type,
       name: step.name || `Step ${index + 1}`,
       configuration: step.configuration || {},
       message_template: step.message_template || null,

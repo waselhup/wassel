@@ -169,10 +169,10 @@ export default function CampaignWizard() {
 
       // 2. Create steps
       const stepsPayload = [
-        { step_type: 'visit', name: 'Visit Profile', delay_days: 0 },
-        { step_type: 'invite', name: 'Send Invite', message_template: inviteNote || null, delay_days: inviteDelay },
-        { step_type: 'message', name: 'First Message', message_template: msg1, delay_days: msg1Delay },
-        { step_type: 'message', name: 'Follow Up', message_template: followUp, delay_days: followDelay },
+        { step_type: 'visit', name: 'Visit Profile', delay_days: 0, configuration: {} },
+        { step_type: 'invitation', name: 'Send Invite', message_template: inviteNote || null, delay_days: inviteDelay, configuration: {} },
+        { step_type: 'message', name: 'First Message', message_template: msg1, delay_days: msg1Delay, configuration: {} },
+        { step_type: 'follow', name: 'Follow Up', message_template: followUp, delay_days: followDelay, configuration: {} },
       ];
       const stepsRes = await apiFetch(`/api/sequence/campaigns/${campaignId}/steps`, token, {
         method: 'POST',
