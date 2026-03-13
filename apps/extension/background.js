@@ -430,6 +430,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
     if (message.type === 'IMPORT_PROSPECTS') {
         const { campaignId, sourceUrl, prospects } = message;
+        console.log('[Wassel] Import request:', prospects?.length, 'prospects');
+        console.log('[Wassel] Sample prospect:', JSON.stringify(prospects?.[0]));
         apiCall('/ext/import', {
             method: 'POST',
             body: JSON.stringify({
@@ -437,7 +439,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 source_url: sourceUrl,
                 prospects,
             }),
-        }).then(sendResponse);
+        }).then(response => {
+            if (!response?.success) {
+                console.error('[Wassel] Import failed:', JSON.stringify(response));
+            } else {
+                console.log('[Wassel] Import success:', response.imported, 'imported');
+            }
+            sendResponse(response);
+        });
         return true;
     }
 

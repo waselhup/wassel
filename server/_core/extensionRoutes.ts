@@ -121,48 +121,82 @@ router.get('/campaigns', async (req: Request, res: Response) => {
 router.post('/import', async (req: Request, res: Response) => {
     try {
         const teamId = getTeamId(req);
-        if (!teamId) {
+        const userId = (req as any).user?.id;
+
+        // Fallback: if teamId not in JWT, query from team_members
+        let resolvedTeamId = teamId;
+        if (!resolvedTeamId && userId) {
+            const { data: membership } = await supabase
+                .from('team_members')
+                .select('team_id')
+                .eq('user_id', userId)
+                .single();
+            resolvedTeamId = membership?.team_id || null;
+        }
+
+        if (!resolvedTeamId) {
+            console.error('[Import] NO_TEAM user:', JSON.stringify((req as any).user));
             return res.status(401).json({ error: 'No team associated with user' });
         }
 
         const { client_id, campaign_id, source_url, prospects } = req.body;
 
-        // client_id is optional — fall back to team_id from auth token
-        const resolvedClientId = client_id || teamId;
-
-        console.log(`[Import] START team_id=${teamId} client_id=${resolvedClientId ? resolvedClientId.substring(0, 8) + '...' : 'auto'} count=${prospects?.length || 0} source=${source_url || 'none'}`);
+        console.log(`[Import] START team_id=${resolvedTeamId} count=${prospects?.length || 0} source=${source_url || 'none'}`);
 
         if (!prospects || !Array.isArray(prospects) || prospects.length === 0) {
-            console.log(`[Import] VALIDATION_FAIL prospects_is_array=${Array.isArray(prospects)} count=${prospects?.length || 0}`);
+            console.error('[Import] VALIDATION_FAIL body:', JSON.stringify(req.body).substring(0, 500));
             return res.status(400).json({ error: 'prospects array is required and must not be empty' });
         }
 
-        // Prepare prospect records — use team_id from auth
+        // Normalize prospect records — match actual DB columns: name, title, company, location
         const prospectRecords = prospects.map((p: any) => {
-            const nameParts = (p.name || '').split(' ');
+            // Accept multiple field name variations
+            const name = p.name || [p.first_name || p.firstName || '', p.last_name || p.lastName || ''].filter(Boolean).join(' ') || 'Unknown';
+            const title = p.title || p.job_title || p.jobTitle || null;
+            const company = p.company || p.company_name || null;
+            const linkedinUrl = p.linkedin_url || p.linkedinUrl || p.profile_url || '';
+            const location = p.location || null;
+
             return {
-                team_id: teamId,
+                team_id: resolvedTeamId,
+                client_id: client_id || resolvedTeamId,
                 campaign_id: campaign_id || null,
-                linkedin_url: p.linkedin_url || p.linkedinUrl || '',
-                first_name: p.first_name || nameParts[0] || null,
-                last_name: p.last_name || nameParts.slice(1).join(' ') || null,
-                job_title: p.job_title || p.title || null,
-                company: p.company || null,
-                location: p.location || null,
+                linkedin_url: linkedinUrl,
+                name,
+                title,
+                company,
+                location,
                 source_url: source_url || null,
                 status: 'imported',
             };
         });
 
-        // Insert prospects
+        console.log('[Import] Sample record:', JSON.stringify(prospectRecords[0]));
+
+        // Upsert to handle duplicates gracefully
         const { data: inserted, error: insertError } = await supabase
             .from('prospects')
-            .insert(prospectRecords)
+            .upsert(prospectRecords, { onConflict: 'linkedin_url,team_id', ignoreDuplicates: true })
             .select('id');
 
         if (insertError) {
-            console.error(`[Import] INSERT_FAIL team_id=${teamId} error=`, insertError.message || insertError);
-            return res.status(500).json({ error: 'Failed to import prospects', detail: insertError.message || 'Database insert error' });
+            console.error(`[Import] INSERT_FAIL team_id=${resolvedTeamId} error=`, insertError.message || insertError);
+            console.error('[Import] INSERT_FAIL detail:', JSON.stringify(insertError));
+            
+            // Fallback: try regular insert if upsert fails (no unique constraint)
+            const { data: inserted2, error: insertError2 } = await supabase
+                .from('prospects')
+                .insert(prospectRecords)
+                .select('id');
+
+            if (insertError2) {
+                console.error('[Import] FALLBACK_INSERT_FAIL:', insertError2.message);
+                return res.status(500).json({ error: 'Failed to import prospects', detail: insertError2.message });
+            }
+
+            const count = inserted2?.length || prospects.length;
+            console.log(`[Import] OK (fallback insert) team_id=${resolvedTeamId} imported=${count}`);
+            return res.json({ success: true, imported: count, message: `${count} prospects imported successfully` });
         }
 
         const importedCount = inserted?.length || prospects.length;
@@ -170,7 +204,7 @@ router.post('/import', async (req: Request, res: Response) => {
         // Create import job record (non-fatal if fails)
         try {
             await supabase.from('prospect_import_jobs').insert({
-                team_id: teamId,
+                client_id: client_id || resolvedTeamId,
                 campaign_id: campaign_id || null,
                 source_url: source_url || null,
                 prospect_count: importedCount,
@@ -180,7 +214,7 @@ router.post('/import', async (req: Request, res: Response) => {
             console.warn(`[Import] JOB_RECORD_FAIL (non-fatal):`, jobErr.message);
         }
 
-        console.log(`[Import] OK team_id=${teamId} imported=${importedCount}`);
+        console.log(`[Import] OK team_id=${resolvedTeamId} imported=${importedCount}`);
 
         res.json({
             success: true,
@@ -189,6 +223,8 @@ router.post('/import', async (req: Request, res: Response) => {
         });
     } catch (error: any) {
         console.error('[Import] FATAL:', error.message || error);
+        console.error('[Import] FATAL body:', JSON.stringify(req.body).substring(0, 500));
+        console.error('[Import] FATAL user:', JSON.stringify((req as any).user));
         res.status(500).json({ error: 'Server error', detail: error.message || 'Unknown error' });
     }
 });

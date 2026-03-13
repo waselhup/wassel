@@ -305,10 +305,8 @@
                 sourceUrl: window.location.href,
                 prospects: selectedProspects.map(p => ({
                     linkedin_url: p.linkedin_url,
-                    name: p.name,
-                    first_name: p.name ? p.name.split(' ')[0] : '',
-                    last_name: p.name ? p.name.split(' ').slice(1).join(' ') : '',
-                    job_title: p.title || '',
+                    name: p.name || '',
+                    title: p.title || '',
                     company: p.company || '',
                     location: p.location || '',
                 })),
