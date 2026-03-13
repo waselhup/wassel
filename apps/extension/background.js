@@ -1,15 +1,16 @@
 // Wassel Extension — Background Service Worker
-// Handles communication, automation polling, and rate limiting
+// Handles auto-auth, communication, automation polling, and rate limiting
 
 const API_BASE = 'https://wassel-alpha.vercel.app/api';
+const DASHBOARD_ORIGIN = 'https://wassel-alpha.vercel.app';
 
 // ============================================================================
 // Storage helpers
 // ============================================================================
 async function getConfig() {
-    const result = await chrome.storage.local.get(['apiToken', 'clientId', 'apiUrl', 'activeCampaignId']);
+    const result = await chrome.storage.local.get(['wasselToken', 'clientId', 'apiUrl', 'activeCampaignId']);
     return {
-        apiToken: result.apiToken || '',
+        apiToken: result.wasselToken || '',
         clientId: result.clientId || '',
         apiUrl: result.apiUrl || API_BASE,
         activeCampaignId: result.activeCampaignId || '',
@@ -21,13 +22,91 @@ async function setConfig(config) {
 }
 
 // ============================================================================
+// AUTO-SYNC TOKEN — reads Supabase session from dashboard tab
+// ============================================================================
+async function syncTokenFromDashboard() {
+    try {
+        const tabs = await chrome.tabs.query({});
+        const wasselTab = tabs.find(t =>
+            t.url && t.url.includes('wassel-alpha.vercel.app')
+        );
+
+        if (!wasselTab || !wasselTab.id) {
+            console.log('[Wassel] No dashboard tab found for token sync.');
+            return { synced: false, reason: 'no_tab' };
+        }
+
+        const results = await chrome.scripting.executeScript({
+            target: { tabId: wasselTab.id },
+            func: () => {
+                // Find Supabase auth token in localStorage
+                const keys = Object.keys(localStorage);
+
+                // Strategy 1: Look for supabase_token (set by AuthContext)
+                const directToken = localStorage.getItem('supabase_token');
+                if (directToken) return { token: directToken, source: 'supabase_token' };
+
+                // Strategy 2: Look for sb-*-auth-token key (Supabase SDK format)
+                const sbKey = keys.find(k =>
+                    k.startsWith('sb-') && k.endsWith('-auth-token')
+                );
+                if (sbKey) {
+                    try {
+                        const raw = localStorage.getItem(sbKey);
+                        const parsed = JSON.parse(raw);
+                        const accessToken = parsed?.access_token || parsed?.currentSession?.access_token;
+                        if (accessToken) return { token: accessToken, source: sbKey };
+                    } catch {}
+                }
+
+                // Strategy 3: Find any key with supabase + auth
+                const fallbackKey = keys.find(k =>
+                    k.toLowerCase().includes('supabase') &&
+                    k.toLowerCase().includes('auth')
+                );
+                if (fallbackKey) {
+                    try {
+                        const raw = localStorage.getItem(fallbackKey);
+                        const parsed = JSON.parse(raw);
+                        const accessToken = parsed?.access_token || parsed?.currentSession?.access_token;
+                        if (accessToken) return { token: accessToken, source: fallbackKey };
+                    } catch {}
+                }
+
+                return null;
+            },
+        });
+
+        if (results && results[0] && results[0].result) {
+            const { token, source } = results[0].result;
+            await chrome.storage.local.set({ wasselToken: token });
+            console.log(`[Wassel] ✅ Token synced from dashboard (source: ${source})`);
+            return { synced: true, source };
+        }
+
+        console.log('[Wassel] Dashboard tab found but no token in localStorage.');
+        return { synced: false, reason: 'no_token' };
+    } catch (e) {
+        console.error('[Wassel] Token sync error:', e);
+        return { synced: false, reason: e.message };
+    }
+}
+
+// Auto-sync on startup and periodically
+chrome.runtime.onStartup.addListener(() => {
+    syncTokenFromDashboard();
+});
+
+// Sync every 30 minutes to refresh token
+setInterval(syncTokenFromDashboard, 30 * 60 * 1000);
+
+// ============================================================================
 // Rate limiting — stored daily in chrome.storage.local
 // ============================================================================
 async function getDailyCounts() {
-    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    const today = new Date().toISOString().split('T')[0];
     const result = await chrome.storage.local.get(['rateLimitDate', 'inviteCount', 'messageCount']);
 
-    // Reset if new day
     if (result.rateLimitDate !== today) {
         await chrome.storage.local.set({
             rateLimitDate: today,
@@ -65,7 +144,7 @@ async function canPerformAction(type) {
 async function apiCall(endpoint, options = {}) {
     const config = await getConfig();
     if (!config.apiToken) {
-        return { error: 'Not authenticated. Open extension popup and sign in.' };
+        return { error: 'Not authenticated. Open Wassel dashboard and sign in.' };
     }
 
     const url = `${config.apiUrl}${endpoint}`;
@@ -94,12 +173,10 @@ function randomDelay(minMs, maxMs) {
     });
 }
 
-// Between actions: 30-90 seconds
 function delayBetweenActions() {
     return randomDelay(30000, 90000);
 }
 
-// Within action: 2-8 seconds
 function delayWithinAction() {
     return randomDelay(2000, 8000);
 }
@@ -115,15 +192,10 @@ let pollInterval = null;
 // Automation polling — polls queue every 60 seconds
 // ============================================================================
 async function startPolling() {
-    if (pollInterval) return; // Already polling
-
+    if (pollInterval) return;
     console.log('[Wassel] Starting automation polling...');
     pollInterval = setInterval(processQueue, 60000);
-
-    // Also process immediately
     processQueue();
-
-    // Start connection checker alongside
     startConnectionChecker();
 }
 
@@ -147,7 +219,6 @@ async function processQueue() {
     isProcessing = true;
 
     try {
-        // Daily snapshot trigger — once per day
         const today = new Date().toISOString().split('T')[0];
         const { lastSnapshotDate } = await chrome.storage.local.get('lastSnapshotDate');
         if (lastSnapshotDate !== today && config.activeCampaignId) {
@@ -158,7 +229,6 @@ async function processQueue() {
             } catch (e) { /* silent */ }
         }
 
-        // Fetch queue
         const result = await apiCall(`/sequence/campaigns/${config.activeCampaignId}/queue`);
 
         if (!result.success || !result.data || result.data.length === 0) {
@@ -166,10 +236,8 @@ async function processQueue() {
             return;
         }
 
-        // Process one item at a time
         const item = result.data[0];
 
-        // Check rate limits
         if (!(await canPerformAction(item.stepType))) {
             console.log(`[Wassel] Rate limit reached for ${item.stepType}. Skipping.`);
             isProcessing = false;
@@ -178,19 +246,16 @@ async function processQueue() {
 
         console.log(`[Wassel] Processing: ${item.stepType} for ${item.prospectName}`);
 
-        // Send to content script for execution
         const tabs = await chrome.tabs.query({ url: '*://www.linkedin.com/*' });
 
         if (tabs.length === 0) {
             console.log('[Wassel] No LinkedIn tab found. Opening one...');
-            // Will be picked up on next poll after user opens LinkedIn
             isProcessing = false;
             return;
         }
 
         const linkedInTab = tabs[0];
 
-        // Execute the action via content script
         try {
             const response = await chrome.tabs.sendMessage(linkedInTab.id, {
                 type: 'EXECUTE_STEP',
@@ -198,7 +263,6 @@ async function processQueue() {
             });
 
             if (response && response.success) {
-                // Mark step as completed
                 await apiCall('/sequence/step/complete', {
                     method: 'POST',
                     body: JSON.stringify({
@@ -207,21 +271,14 @@ async function processQueue() {
                     }),
                 });
 
-                // Increment rate limit counter
                 await incrementCount(item.stepType);
-
                 console.log(`[Wassel] ✓ Completed: ${item.stepType} for ${item.prospectName}`);
-
-                // Update badge
                 chrome.action.setBadgeText({ text: '✓' });
                 chrome.action.setBadgeBackgroundColor({ color: '#22c55e' });
             } else {
-                // Check if it's a LinkedIn restriction
                 if (response && response.linkedinRestriction) {
                     console.error('[Wassel] ⚠ LinkedIn restriction detected! Pausing campaign.');
                     isPaused = true;
-
-                    // Pause campaign on server
                     await apiCall('/sequence/campaigns/pause', {
                         method: 'POST',
                         body: JSON.stringify({
@@ -229,12 +286,9 @@ async function processQueue() {
                             reason: response.error || 'LinkedIn restriction detected',
                         }),
                     });
-
-                    // Red warning badge
                     chrome.action.setBadgeText({ text: '!' });
                     chrome.action.setBadgeBackgroundColor({ color: '#ef4444' });
                 } else {
-                    // Regular failure
                     await apiCall('/sequence/step/complete', {
                         method: 'POST',
                         body: JSON.stringify({
@@ -249,7 +303,6 @@ async function processQueue() {
             console.error('[Wassel] Error sending to content script:', sendError);
         }
 
-        // Random delay before next processing
         await delayBetweenActions();
 
     } catch (e) {
@@ -261,7 +314,6 @@ async function processQueue() {
 
 // ============================================================================
 // Connection Status Checker — polls every 10 minutes
-// Visits LinkedIn profiles to check if connection was accepted
 // ============================================================================
 let connectionCheckInterval = null;
 let isCheckingConnections = false;
@@ -269,8 +321,7 @@ let isCheckingConnections = false;
 function startConnectionChecker() {
     if (connectionCheckInterval) return;
     console.log('[Wassel] Starting connection status checker (every 10 min)...');
-    connectionCheckInterval = setInterval(connectionCheckLoop, 600000); // 10 minutes
-    // Also run immediately
+    connectionCheckInterval = setInterval(connectionCheckLoop, 600000);
     connectionCheckLoop();
 }
 
@@ -291,7 +342,6 @@ async function connectionCheckLoop() {
     isCheckingConnections = true;
 
     try {
-        // Fetch prospects needing connection check
         const result = await apiCall('/sequence/pending-acceptance-checks');
 
         if (!result.success || !result.data || result.data.length === 0) {
@@ -301,7 +351,6 @@ async function connectionCheckLoop() {
 
         console.log(`[Wassel] Checking ${result.data.length} connection(s)...`);
 
-        // Need a LinkedIn tab
         const tabs = await chrome.tabs.query({ url: '*://www.linkedin.com/*' });
         if (tabs.length === 0) {
             console.log('[Wassel] No LinkedIn tab found for connection checks.');
@@ -315,7 +364,6 @@ async function connectionCheckLoop() {
             if (!check.linkedinUrl) continue;
 
             try {
-                // Send CHECK_CONNECTION_STATUS to content script
                 const response = await chrome.tabs.sendMessage(linkedInTab.id, {
                     type: 'CHECK_CONNECTION_STATUS',
                     data: {
@@ -325,12 +373,11 @@ async function connectionCheckLoop() {
                 });
 
                 if (response && response.status) {
-                    // Report result to backend
                     await apiCall('/sequence/update-connection-status', {
                         method: 'POST',
                         body: JSON.stringify({
                             prospectId: check.prospectId,
-                            status: response.status, // 'accepted' | 'pending' | 'withdrawn'
+                            status: response.status,
                             jobId: check.jobId,
                         }),
                     });
@@ -338,7 +385,6 @@ async function connectionCheckLoop() {
                     const emoji = response.status === 'accepted' ? '✅' : response.status === 'withdrawn' ? '❌' : '⏳';
                     console.log(`[Wassel] ${emoji} ${check.prospectName}: ${response.status}`);
 
-                    // Update badge briefly
                     if (response.status === 'accepted') {
                         chrome.action.setBadgeText({ text: '✓' });
                         chrome.action.setBadgeBackgroundColor({ color: '#22c55e' });
@@ -349,7 +395,6 @@ async function connectionCheckLoop() {
                 console.error(`[Wassel] Error checking ${check.prospectName}:`, msgError);
             }
 
-            // Random 5-15 second delay between checks
             await randomDelay(5000, 15000);
         }
     } catch (e) {
@@ -370,6 +415,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
     if (message.type === 'SET_CONFIG') {
         setConfig(message.config).then(() => sendResponse({ ok: true }));
+        return true;
+    }
+
+    if (message.type === 'SYNC_TOKEN') {
+        syncTokenFromDashboard().then(sendResponse);
         return true;
     }
 
@@ -428,8 +478,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
 });
 
-// When extension is installed, set default config
+// When extension is installed, sync token automatically
 chrome.runtime.onInstalled.addListener(() => {
     chrome.storage.local.set({ apiUrl: API_BASE });
-    console.log('[Wassel] Extension installed. API:', API_BASE);
+    console.log('[Wassel] Extension installed. Auto-syncing token...');
+    // Give the browser a moment to settle, then sync
+    setTimeout(syncTokenFromDashboard, 2000);
 });

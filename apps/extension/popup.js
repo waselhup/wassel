@@ -1,68 +1,101 @@
-// Wassel Extension — Popup Script
+// Wassel Extension — Popup Script (Auto-Auth)
 document.addEventListener('DOMContentLoaded', async () => {
     const statusBox = document.getElementById('status-box');
     const statusText = document.getElementById('status-text');
-    const configSection = document.getElementById('config-section');
+    const loginSection = document.getElementById('login-section');
     const connectedSection = document.getElementById('connected-section');
-    const apiTokenInput = document.getElementById('api-token');
-    const clientIdInput = document.getElementById('client-id');
-    const saveBtn = document.getElementById('save-btn');
+    const openDashboardBtn = document.getElementById('open-dashboard-btn');
+    const retrySyncBtn = document.getElementById('retry-sync-btn');
     const testBtn = document.getElementById('test-btn');
     const openLinkedinBtn = document.getElementById('open-linkedin-btn');
     const dashboardBtn = document.getElementById('dashboard-btn');
-    const disconnectBtn = document.getElementById('disconnect-btn');
+    const resyncBtn = document.getElementById('resync-btn');
 
     function setStatus(type, text) {
         statusBox.className = `status ${type}`;
-        statusBox.querySelector('.dot').className = `dot ${type === 'ok' ? 'green' : type === 'err' ? 'red' : 'yellow'}`;
+        const dotClass = type === 'ok' ? 'green' : type === 'err' ? 'red' : type === 'syncing' ? 'purple' : 'yellow';
+        statusBox.querySelector('.dot').className = `dot ${dotClass}`;
         statusText.textContent = text;
     }
 
-    // Check existing config
-    chrome.runtime.sendMessage({ type: 'GET_CONFIG' }, (config) => {
-        if (config && config.apiToken) {
-            configSection.classList.add('hidden');
-            connectedSection.classList.remove('hidden');
-            setStatus('ok', 'Connected to Wassel');
+    function showConnected() {
+        loginSection.classList.add('hidden');
+        connectedSection.classList.remove('hidden');
+        setStatus('ok', '✅ Connected to Wassel');
+    }
+
+    function showNotConnected(reason) {
+        connectedSection.classList.add('hidden');
+        loginSection.classList.remove('hidden');
+        if (reason === 'no_tab') {
+            setStatus('pending', 'Open Wassel dashboard to connect');
+        } else if (reason === 'no_token') {
+            setStatus('pending', 'Please log in to Wassel dashboard first');
         } else {
-            configSection.classList.remove('hidden');
-            connectedSection.classList.add('hidden');
-            setStatus('pending', 'Not configured — enter your API token below');
+            setStatus('err', 'Could not connect — ' + (reason || 'unknown'));
         }
+    }
+
+    // Auto-sync on popup open
+    async function autoSync() {
+        setStatus('syncing', 'Connecting to dashboard...');
+
+        // First check if we already have a token
+        chrome.runtime.sendMessage({ type: 'GET_CONFIG' }, (config) => {
+            if (config && config.apiToken) {
+                // Already have a token — verify it's still valid
+                showConnected();
+                return;
+            }
+
+            // No token — try to sync from dashboard tab
+            chrome.runtime.sendMessage({ type: 'SYNC_TOKEN' }, (result) => {
+                if (result && result.synced) {
+                    showConnected();
+                } else {
+                    showNotConnected(result?.reason || 'unknown');
+                }
+            });
+        });
+    }
+
+    // Run auto-sync immediately
+    autoSync();
+
+    // Sync button
+    retrySyncBtn.addEventListener('click', () => {
+        setStatus('syncing', 'Syncing...');
+        chrome.runtime.sendMessage({ type: 'SYNC_TOKEN' }, (result) => {
+            if (result && result.synced) {
+                showConnected();
+            } else {
+                showNotConnected(result?.reason || 'unknown');
+            }
+        });
     });
 
-    // Save config
-    saveBtn.addEventListener('click', () => {
-        const apiToken = apiTokenInput.value.trim();
-        if (!apiToken) {
-            setStatus('err', 'API token is required');
-            return;
-        }
-
-        const config = {
-            apiToken,
-            clientId: clientIdInput.value.trim(),
-        };
-
-        chrome.runtime.sendMessage({ type: 'SET_CONFIG', config }, (response) => {
-            if (response && response.ok) {
-                configSection.classList.add('hidden');
-                connectedSection.classList.remove('hidden');
-                setStatus('ok', 'Connected to Wassel');
+    // Resync (refresh session)
+    resyncBtn.addEventListener('click', () => {
+        setStatus('syncing', 'Refreshing session...');
+        chrome.runtime.sendMessage({ type: 'SYNC_TOKEN' }, (result) => {
+            if (result && result.synced) {
+                showConnected();
+            } else {
+                showNotConnected(result?.reason || 'unknown');
             }
         });
     });
 
     // Test connection
     testBtn.addEventListener('click', () => {
-        setStatus('pending', 'Testing connection...');
+        setStatus('syncing', 'Testing connection...');
         testBtn.disabled = true;
         chrome.runtime.sendMessage({ type: 'TEST_CONNECTION' }, (response) => {
             testBtn.disabled = false;
             if (response && response.ok) {
-                setStatus('ok', 'Backend reachable ✓');
+                setStatus('ok', '✅ Backend reachable');
             } else {
-                setStatus('err', 'Connection failed: ' + (response?.error || 'Unknown error'));
+                setStatus('err', 'Connection failed: ' + (response?.error || 'Unknown'));
             }
         });
     });
@@ -74,17 +107,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Open Dashboard
     dashboardBtn.addEventListener('click', () => {
-        chrome.tabs.create({ url: 'https://wassel-alpha.vercel.app/dashboard' });
+        chrome.tabs.create({ url: 'https://wassel-alpha.vercel.app/app' });
     });
 
-    // Disconnect
-    disconnectBtn.addEventListener('click', () => {
-        chrome.storage.local.clear(() => {
-            configSection.classList.remove('hidden');
-            connectedSection.classList.add('hidden');
-            apiTokenInput.value = '';
-            clientIdInput.value = '';
-            setStatus('pending', 'Disconnected — enter token to reconnect');
-        });
+    // Open Dashboard (login prompt)
+    openDashboardBtn.addEventListener('click', () => {
+        chrome.tabs.create({ url: 'https://wassel-alpha.vercel.app/login' });
     });
 });

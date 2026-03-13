@@ -14,11 +14,12 @@
         body {
             width: 340px;
             font-family: 'Segoe UI', Inter, sans-serif;
-            background: #f8fafc;
+            background: #0a0a12;
+            color: #f1f5f9;
         }
 
         .header {
-            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            background: linear-gradient(135deg, #7c3aed, #ec4899);
             color: white;
             padding: 16px;
         }
@@ -49,64 +50,44 @@
         }
 
         .status.ok {
-            background: #ecfdf5;
-            color: #065f46;
-            border: 1px solid #a7f3d0;
+            background: rgba(34, 197, 94, 0.1);
+            color: #86efac;
+            border: 1px solid rgba(34, 197, 94, 0.3);
         }
 
         .status.err {
-            background: #fef2f2;
-            color: #991b1b;
-            border: 1px solid #fecaca;
+            background: rgba(239, 68, 68, 0.1);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.3);
         }
 
         .status.pending {
-            background: #fffbeb;
-            color: #92400e;
-            border: 1px solid #fde68a;
+            background: rgba(245, 158, 11, 0.1);
+            color: #fcd34d;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .status.syncing {
+            background: rgba(124, 58, 237, 0.1);
+            color: #c4b5fd;
+            border: 1px solid rgba(124, 58, 237, 0.3);
         }
 
         .dot {
             width: 8px;
             height: 8px;
             border-radius: 50%;
+            flex-shrink: 0;
         }
 
-        .dot.green {
-            background: #10b981;
-        }
+        .dot.green { background: #22c55e; }
+        .dot.red { background: #ef4444; }
+        .dot.yellow { background: #f59e0b; }
+        .dot.purple { background: #7c3aed; animation: pulse 1.5s infinite; }
 
-        .dot.red {
-            background: #ef4444;
-        }
-
-        .dot.yellow {
-            background: #f59e0b;
-        }
-
-        .field {
-            margin-bottom: 12px;
-        }
-
-        .field label {
-            display: block;
-            font-size: 12px;
-            color: #6b7280;
-            margin-bottom: 4px;
-            font-weight: 500;
-        }
-
-        .field input {
-            width: 100%;
-            padding: 8px 12px;
-            border: 1px solid #d1d5db;
-            border-radius: 6px;
-            font-size: 13px;
-        }
-
-        .field input:focus {
-            outline: none;
-            border-color: #2563eb;
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
         }
 
         .btn {
@@ -117,30 +98,26 @@
             font-size: 13px;
             font-weight: 600;
             cursor: pointer;
-            transition: background 0.2s;
+            transition: all 0.2s;
         }
 
         .btn-primary {
-            background: #2563eb;
+            background: linear-gradient(135deg, #7c3aed, #ec4899);
             color: white;
         }
 
         .btn-primary:hover {
-            background: #1d4ed8;
+            opacity: 0.9;
         }
 
         .btn-secondary {
-            background: #f3f4f6;
-            color: #374151;
+            background: rgba(255, 255, 255, 0.06);
+            color: #94a3b8;
+            border: 1px solid rgba(255, 255, 255, 0.08);
         }
 
         .btn-secondary:hover {
-            background: #e5e7eb;
-        }
-
-        .btn-success {
-            background: #10b981;
-            color: white;
+            background: rgba(255, 255, 255, 0.1);
         }
 
         .btn:disabled {
@@ -156,7 +133,7 @@
         }
 
         .divider {
-            border-top: 1px solid #e5e7eb;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
             margin: 12px 0;
         }
 
@@ -166,7 +143,7 @@
         }
 
         .footer a {
-            color: #2563eb;
+            color: #a855f7;
             text-decoration: none;
             font-size: 12px;
         }
@@ -177,8 +154,20 @@
 
         .info {
             font-size: 12px;
-            color: #6b7280;
-            margin-top: 4px;
+            color: #64748b;
+            margin-top: 8px;
+            text-align: center;
+        }
+
+        .login-prompt {
+            text-align: center;
+            padding: 20px 0;
+        }
+
+        .login-prompt p {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-bottom: 12px;
         }
     </style>
 </head>
@@ -191,25 +180,23 @@
 
     <div class="content">
         <!-- Connection Status -->
-        <div id="status-box" class="status pending">
-            <span class="dot yellow"></span>
-            <span id="status-text">Checking connection...</span>
+        <div id="status-box" class="status syncing">
+            <span class="dot purple"></span>
+            <span id="status-text">Connecting to dashboard...</span>
         </div>
 
-        <!-- Config Section (shown when not configured) -->
-        <div id="config-section">
-            <div class="field">
-                <label>API Token (from Wassel Dashboard)</label>
-                <input type="password" id="api-token" placeholder="Paste your Supabase JWT token">
+        <!-- Not Logged In Section -->
+        <div id="login-section" class="hidden">
+            <div class="login-prompt">
+                <p>Open the Wassel dashboard and log in to automatically connect the extension.</p>
+                <button class="btn btn-primary" id="open-dashboard-btn">🚀 Open Wassel Dashboard</button>
+                <div class="info">After logging in, click the sync button below.</div>
             </div>
-            <div class="field">
-                <label>Client ID (optional)</label>
-                <input type="text" id="client-id" placeholder="UUID of the client account">
-            </div>
-            <button class="btn btn-primary" id="save-btn">Save & Connect</button>
+            <div class="divider"></div>
+            <button class="btn btn-secondary" id="retry-sync-btn">🔄 Sync Now</button>
         </div>
 
-        <!-- Connected Section (shown when configured) -->
+        <!-- Connected Section -->
         <div id="connected-section" class="hidden">
             <div class="actions">
                 <button class="btn btn-primary" id="open-linkedin-btn">🔍 Open LinkedIn Search</button>
@@ -217,12 +204,12 @@
                 <button class="btn btn-secondary" id="dashboard-btn">📊 Open Dashboard</button>
             </div>
             <div class="divider"></div>
-            <button class="btn btn-secondary" id="disconnect-btn" style="color: #dc2626;">Disconnect</button>
+            <button class="btn btn-secondary" id="resync-btn">🔄 Refresh Session</button>
         </div>
     </div>
 
     <div class="footer">
-        <a href="https://wassel-alpha.vercel.app/extension" target="_blank">Extension Help & Setup Guide</a>
+        <a href="https://wassel-alpha.vercel.app/app/extension" target="_blank">Extension Help & Setup</a>
     </div>
 
     <script src="popup.js"></script>
