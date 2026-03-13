@@ -84,8 +84,6 @@ export const campaignsRouter = router({
         name: z.string().min(1, 'اسم الحملة مطلوب').max(255),
         description: z.string().optional(),
         type: z.enum(['invitation', 'message', 'invitation_message', 'visit', 'email_finder', 'combined']),
-        clientId: z.string().optional(),
-        clientName: z.string().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -110,16 +108,6 @@ export const campaignsRouter = router({
             description: input.description || null,
             status: 'draft',
             type: input.type,
-            client_id: input.clientId || null,
-            client_name: input.clientName || null,
-            configuration: {},
-            stats: {
-              total_leads: 0,
-              completed: 0,
-              pending: 0,
-              failed: 0,
-            },
-            created_by: ctx.user.id,
           })
           .select()
           .single();
