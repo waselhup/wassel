@@ -52,9 +52,18 @@ export default function Campaigns() {
           </div>
 
           {loading ? (
-            <div style={{ textAlign: 'center', padding: 60, color: '#64748b' }}>
-              <Loader2 size={28} className="animate-spin" style={{ margin: '0 auto 12px' }} />
-              <p>Loading campaigns...</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {[1,2,3].map(i => (
+                <div key={i} style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', borderRadius: 12, padding: 20 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                    <div className="skeleton" style={{ width: 8, height: 8, borderRadius: '50%' }} />
+                    <div className="skeleton" style={{ width: 160, height: 16 }} />
+                    <div className="skeleton" style={{ width: 50, height: 18, borderRadius: 12 }} />
+                  </div>
+                  <div className="skeleton" style={{ width: '60%', height: 12, marginBottom: 8 }} />
+                  <div className="skeleton" style={{ width: 120, height: 12 }} />
+                </div>
+              ))}
             </div>
           ) : campaigns.length === 0 ? (
             <div style={{ textAlign: 'center', padding: 60, background: 'var(--bg-card)', borderRadius: 16, border: '1px solid var(--border-subtle)' }}>

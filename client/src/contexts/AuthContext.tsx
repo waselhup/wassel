@@ -27,10 +27,29 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const CACHE_KEY = 'wassel_user_cache';
+const TOKEN_KEY = 'supabase_token';
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [accessToken, setAccessToken] = useState<string | null>(null);
+  // Try loading cached user immediately — no spinner
+  const cached = (() => {
+    try {
+      const raw = localStorage.getItem(CACHE_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      // Cache valid for 24 hours
+      if (parsed && parsed.cachedAt && Date.now() - parsed.cachedAt < 86400000) {
+        return parsed as AuthUser;
+      }
+      return null;
+    } catch { return null; }
+  })();
+
+  const cachedToken = localStorage.getItem(TOKEN_KEY) || null;
+
+  const [user, setUser] = useState<AuthUser | null>(cached);
+  const [loading, setLoading] = useState(!cached); // No loading if cache exists
+  const [accessToken, setAccessToken] = useState<string | null>(cachedToken);
 
   /**
    * Load role and teamId from the backend profile
@@ -105,23 +124,55 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return baseUser;
   }
 
+  /** Cache user data to localStorage */
+  function cacheUser(authUser: AuthUser) {
+    try {
+      localStorage.setItem(CACHE_KEY, JSON.stringify({
+        ...authUser,
+        cachedAt: Date.now(),
+      }));
+    } catch { /* quota exceeded — ignore */ }
+  }
+
   async function handleSession(session: Session | null) {
     if (session?.user) {
       const enrichedUser = await loadUserProfile(session.user, session.access_token);
       setUser(enrichedUser);
       setAccessToken(session.access_token);
+      cacheUser(enrichedUser);
     } else {
       setUser(null);
       setAccessToken(null);
+      localStorage.removeItem(CACHE_KEY);
     }
   }
 
   useEffect(() => {
-    // Check current session
     const checkAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        await handleSession(session);
+
+        if (session?.user) {
+          // If we already have cached data, update silently in background
+          if (cached) {
+            setAccessToken(session.access_token);
+            localStorage.setItem(TOKEN_KEY, session.access_token);
+            // Silently refresh profile in background — no spinner
+            loadUserProfile(session.user, session.access_token).then(enriched => {
+              setUser(enriched);
+              cacheUser(enriched);
+            });
+          } else {
+            // No cache — must wait for full load
+            await handleSession(session);
+          }
+        } else {
+          // No session — clear everything
+          setUser(null);
+          setAccessToken(null);
+          localStorage.removeItem(CACHE_KEY);
+          localStorage.removeItem(TOKEN_KEY);
+        }
       } catch (error) {
         console.error('Auth check failed:', error);
       } finally {
@@ -131,10 +182,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     checkAuth();
 
-    // Listen for auth changes
+    // Listen for auth changes (login/logout/token refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
-        await handleSession(session);
+        if (session?.user) {
+          setAccessToken(session.access_token);
+          localStorage.setItem(TOKEN_KEY, session.access_token);
+          const enriched = await loadUserProfile(session.user, session.access_token);
+          setUser(enriched);
+          cacheUser(enriched);
+        } else {
+          setUser(null);
+          setAccessToken(null);
+          localStorage.removeItem(CACHE_KEY);
+          localStorage.removeItem(TOKEN_KEY);
+        }
       }
     );
 
@@ -159,12 +221,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
     if (error) return { error: error.message };
 
-    // If email confirmation is required, let the user know
     if (data.user && !data.session) {
       return { error: 'Please check your email to confirm your account.' };
     }
 
-    // Create profile entry (trigger should handle this, but as fallback)
     if (data.user) {
       await supabase.from('profiles').upsert({
         id: data.user.id,
@@ -178,19 +238,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
-    // Clear admin key if any
     localStorage.removeItem('wassel_admin_key');
+    localStorage.removeItem(CACHE_KEY);
+    localStorage.removeItem(TOKEN_KEY);
     await supabase.auth.signOut();
     setUser(null);
     setAccessToken(null);
   };
 
-  // Store token in localStorage for tRPC and Express routes
+  // Keep token in sync
   useEffect(() => {
     if (accessToken) {
-      localStorage.setItem('supabase_token', accessToken);
-    } else {
-      localStorage.removeItem('supabase_token');
+      localStorage.setItem(TOKEN_KEY, accessToken);
     }
   }, [accessToken]);
 

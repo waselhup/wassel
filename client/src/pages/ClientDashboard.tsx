@@ -58,10 +58,24 @@ export default function ClientDashboard() {
         return (
             <div className="flex min-h-screen" style={{ background: 'var(--bg-base)' }}>
                 <ClientNav />
-                <div className="flex-1 flex items-center justify-center">
-                    <div className="text-center">
-                        <Loader2 className="w-8 h-8 animate-spin mx-auto mb-3" style={{ color: 'var(--accent-primary)' }} />
-                        <p style={{ color: 'var(--text-muted)' }}>Loading your workspace...</p>
+                <div className="flex-1 overflow-y-auto p-6 lg:p-8" style={{ maxHeight: '100vh' }}>
+                    <div style={{ maxWidth: 900 }}>
+                        <div className="skeleton" style={{ width: 200, height: 24, marginBottom: 8 }} />
+                        <div className="skeleton" style={{ width: 300, height: 14, marginBottom: 28 }} />
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 28 }}>
+                            {[1,2,3].map(i => (
+                                <div key={i} style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', borderRadius: 12, padding: 20 }}>
+                                    <div className="skeleton" style={{ width: 80, height: 12, marginBottom: 12 }} />
+                                    <div className="skeleton" style={{ width: 50, height: 28 }} />
+                                </div>
+                            ))}
+                        </div>
+                        {[1,2].map(i => (
+                            <div key={i} style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', borderRadius: 12, padding: 20, marginBottom: 12 }}>
+                                <div className="skeleton" style={{ width: 160, height: 16, marginBottom: 10 }} />
+                                <div className="skeleton" style={{ width: '50%', height: 12 }} />
+                            </div>
+                        ))}
                     </div>
                 </div>
             </div>
