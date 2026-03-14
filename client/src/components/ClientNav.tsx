@@ -15,7 +15,24 @@ export default function ClientNav() {
     const [location] = useLocation();
 
     const handleLogout = async () => {
-        await signOut();
+        try {
+            // Clear ALL cached data first
+            localStorage.removeItem('wassel_user_cache');
+            localStorage.removeItem('supabase_token');
+            localStorage.removeItem('wassel_admin_key');
+            localStorage.removeItem('wassel_user');
+            localStorage.removeItem('wassel_lang');
+            // Clear any Supabase sb-* keys
+            Object.keys(localStorage).forEach(key => {
+                if (key.startsWith('sb-') || key.startsWith('supabase')) {
+                    localStorage.removeItem(key);
+                }
+            });
+            await signOut();
+        } catch (e) {
+            console.error('Logout error:', e);
+        }
+        // Always redirect regardless of errors
         window.location.href = '/login';
     };
 
