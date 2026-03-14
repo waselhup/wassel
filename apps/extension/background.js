@@ -235,29 +235,56 @@ function delayWithinAction() {
 // ============================================================================
 let isProcessing = false;
 let isPaused = false;
-let pollInterval = null;
+let isPollingActive = false;
 
 // ============================================================================
-// Automation polling — polls queue every 60 seconds
+// Automation polling — uses chrome.alarms (survives service worker suspension)
 // ============================================================================
 async function startPolling() {
-    if (pollInterval) return;
-    console.log('[Wassel] Starting automation polling...');
-    pollInterval = setInterval(processQueue, 60000);
+    if (isPollingActive) return;
+    isPollingActive = true;
+    console.log('[Wassel] Starting automation polling via chrome.alarms...');
+    
+    // Keep service worker alive every 25 seconds
+    chrome.alarms.create('keepAlive', { periodInMinutes: 0.4 });
+    // Main automation loop every 1 minute
+    chrome.alarms.create('automationLoop', { periodInMinutes: 1 });
+    // Connection checker every 10 minutes
+    chrome.alarms.create('connectionCheck', { periodInMinutes: 10 });
+    // Token sync every 30 minutes
+    chrome.alarms.create('tokenSync', { periodInMinutes: 30 });
+    
+    // Run immediately
     processQueue();
-    startConnectionChecker();
+    connectionCheckLoop();
 }
 
 function stopPolling() {
-    if (pollInterval) {
-        clearInterval(pollInterval);
-        pollInterval = null;
-    }
+    isPollingActive = false;
     isProcessing = false;
     isPaused = false;
-    stopConnectionChecker();
+    chrome.alarms.clear('automationLoop');
+    chrome.alarms.clear('connectionCheck');
     console.log('[Wassel] Stopped automation polling.');
 }
+
+// Chrome alarms handler — runs even after service worker suspension
+chrome.alarms.onAlarm.addListener(async (alarm) => {
+    if (alarm.name === 'keepAlive') {
+        // Just keeping the service worker alive, no action needed
+        return;
+    }
+    if (alarm.name === 'automationLoop') {
+        await processQueue();
+    }
+    if (alarm.name === 'connectionCheck') {
+        await connectionCheckLoop();
+    }
+    if (alarm.name === 'tokenSync') {
+        console.log('[Wassel] Auto-refreshing token...');
+        await syncTokenFromDashboard();
+    }
+});
 
 async function processQueue() {
     if (isProcessing || isPaused) return;
@@ -403,25 +430,9 @@ async function executeViaContentScript(item) {
 }
 
 // ============================================================================
-// Connection Status Checker — polls every 10 minutes
+// Connection Status Checker
 // ============================================================================
-let connectionCheckInterval = null;
 let isCheckingConnections = false;
-
-function startConnectionChecker() {
-    if (connectionCheckInterval) return;
-    console.log('[Wassel] Starting connection status checker (every 10 min)...');
-    connectionCheckInterval = setInterval(connectionCheckLoop, 600000);
-    connectionCheckLoop();
-}
-
-function stopConnectionChecker() {
-    if (connectionCheckInterval) {
-        clearInterval(connectionCheckInterval);
-        connectionCheckInterval = null;
-    }
-    isCheckingConnections = false;
-}
 
 async function connectionCheckLoop() {
     if (isCheckingConnections || isPaused) return;
@@ -560,7 +571,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.type === 'GET_AUTOMATION_STATUS') {
         getDailyCounts().then(counts => {
             sendResponse({
-                isPolling: !!pollInterval,
+                isPolling: isPollingActive,
                 isProcessing,
                 isPaused,
                 ...counts,
@@ -578,26 +589,39 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
 });
 
-// When extension is installed, sync token and start automation
-chrome.runtime.onInstalled.addListener(() => {
+// When extension is installed, set up alarms and start
+chrome.runtime.onInstalled.addListener(async () => {
     chrome.storage.local.set({ apiUrl: API_BASE });
-    console.log('[Wassel] Extension installed. Auto-syncing token...');
-    setTimeout(async () => {
-        await syncTokenFromDashboard();
-        // Auto-start polling after successful sync
-        const config = await getConfig();
-        if (config.apiToken) {
-            console.log('[Wassel] Token found, auto-starting campaign automation...');
-            startPolling();
-        }
-    }, 2000);
+    console.log('[Wassel] Extension installed. Setting up...');
+    
+    // Sync token
+    await syncTokenFromDashboard();
+    
+    // Start automation if token exists
+    const config = await getConfig();
+    if (config.apiToken) {
+        console.log('[Wassel] Token found, starting campaign automation...');
+        startPolling();
+    }
 });
 
-// Also auto-start polling when service worker wakes up
-(async () => {
-    await new Promise(r => setTimeout(r, 3000));
+// When Chrome starts (after restart), re-sync and restart
+chrome.runtime.onStartup.addListener(async () => {
+    console.log('[Wassel] Chrome started. Re-syncing token...');
+    await syncTokenFromDashboard();
+    
     const config = await getConfig();
-    if (config.apiToken && !pollInterval) {
+    if (config.apiToken) {
+        console.log('[Wassel] Token found on startup, starting automation...');
+        startPolling();
+    }
+});
+
+// Also auto-start when service worker wakes up (fallback)
+(async () => {
+    await new Promise(r => setTimeout(r, 2000));
+    const config = await getConfig();
+    if (config.apiToken && !isPollingActive) {
         console.log('[Wassel] Service worker wake-up: starting automation...');
         startPolling();
     }

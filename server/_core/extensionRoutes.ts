@@ -120,23 +120,29 @@ router.get('/campaigns', async (req: Request, res: Response) => {
  */
 router.post('/import', async (req: Request, res: Response) => {
     try {
-        const teamId = getTeamId(req);
-        const userId = (req as any).user?.id;
+        // Always do fresh DB lookup for team_id — never rely solely on JWT claim
+        const userId = (req as any).user?.id || (req as any).user?.sub;
 
-        // Fallback: if teamId not in JWT, query from team_members
-        let resolvedTeamId = teamId;
-        if (!resolvedTeamId && userId) {
-            const { data: membership } = await supabase
+        if (!userId) {
+            console.error('[Import] NO_USER auth:', JSON.stringify((req as any).user));
+            return res.status(401).json({ error: 'Not authenticated' });
+        }
+
+        // Try JWT claim first, then always verify via DB
+        let resolvedTeamId = getTeamId(req);
+
+        if (!resolvedTeamId) {
+            const { data: membership, error: memberError } = await supabase
                 .from('team_members')
                 .select('team_id')
                 .eq('user_id', userId)
                 .single();
-            resolvedTeamId = membership?.team_id || null;
-        }
 
-        if (!resolvedTeamId) {
-            console.error('[Import] NO_TEAM user:', JSON.stringify((req as any).user));
-            return res.status(401).json({ error: 'No team associated with user' });
+            if (memberError || !membership?.team_id) {
+                console.error('[Import] NO_TEAM user:', userId, memberError?.message);
+                return res.status(400).json({ error: 'No team associated with user', userId });
+            }
+            resolvedTeamId = membership.team_id;
         }
 
         const { client_id, campaign_id, source_url, prospects } = req.body;
