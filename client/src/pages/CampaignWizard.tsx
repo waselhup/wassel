@@ -2,9 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'wouter';
 import ClientNav from '@/components/ClientNav';
 import { useAuth } from '@/contexts/AuthContext';
-import { Eye, Handshake, MessageCircle, Reply, ChevronRight, ChevronLeft, Rocket, CheckCircle, Search, Users, Loader2 } from 'lucide-react';
-
-const API = import.meta.env.VITE_SUPABASE_URL ? '' : '';
+import Avatar from '@/components/Avatar';
+import { ChevronRight, ChevronLeft, Rocket, CheckCircle, Search, Users, Loader2, Lock } from 'lucide-react';
 
 // Fetch helper
 async function apiFetch(path: string, token: string, options?: RequestInit) {
@@ -70,6 +69,24 @@ function ProgressBar({ current }: { current: number }) {
   );
 }
 
+// ─── Step Toggle Card ──────────────────────────────────────
+type StepKey = 'visit' | 'invite' | 'message' | 'follow';
+
+const STEP_DEFS: { key: StepKey; emoji: string; label: string; desc: string; locked?: boolean; bgColor: string }[] = [
+  { key: 'visit', emoji: '👁', label: 'Visit', desc: 'View profile', locked: true, bgColor: 'rgba(59,130,246,0.12)' },
+  { key: 'invite', emoji: '🤝', label: 'Invite', desc: 'Connect request', bgColor: 'rgba(34,197,94,0.12)' },
+  { key: 'message', emoji: '💬', label: 'Msg 1', desc: 'First message', bgColor: 'rgba(124,58,237,0.12)' },
+  { key: 'follow', emoji: '↩️', label: 'Follow Up', desc: 'Follow-up msg', bgColor: 'rgba(236,72,153,0.12)' },
+];
+
+function getCampaignTypeLabel(enabled: Record<StepKey, boolean>): string {
+  const count = Object.values(enabled).filter(Boolean).length;
+  if (count <= 1) return 'Visit Only';
+  if (count === 2) return 'Visit + Invite';
+  if (count === 3) return 'Visit + Invite + Message';
+  return 'Full Sequence';
+}
+
 // ─── Main Wizard ───────────────────────────────────────────
 export default function CampaignWizard() {
   const [, navigate] = useLocation();
@@ -84,6 +101,9 @@ export default function CampaignWizard() {
   // Step 1 state
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [enabledSteps, setEnabledSteps] = useState<Record<StepKey, boolean>>({
+    visit: true, invite: true, message: true, follow: true,
+  });
 
   // Step 2 state
   const [inviteDelay, setInviteDelay] = useState(0);
@@ -135,15 +155,51 @@ export default function CampaignWizard() {
     else setSelected(new Set(filteredProspects.map(p => p.id)));
   };
 
+  // Toggle a step on/off (with sequential enforcement)
+  const toggleStep = (key: StepKey) => {
+    if (key === 'visit') return; // locked
+    const order: StepKey[] = ['visit', 'invite', 'message', 'follow'];
+    const idx = order.indexOf(key);
+
+    if (enabledSteps[key]) {
+      // Turning OFF → also disable all subsequent
+      const updated = { ...enabledSteps };
+      for (let i = idx; i < order.length; i++) updated[order[i]] = false;
+      updated.visit = true; // always on
+      setEnabledSteps(updated);
+    } else {
+      // Turning ON → check that previous step is enabled
+      const prev = order[idx - 1];
+      if (!enabledSteps[prev]) return; // can't enable without previous
+      setEnabledSteps({ ...enabledSteps, [key]: true });
+    }
+  };
+
+  const canToggle = (key: StepKey): boolean => {
+    if (key === 'visit') return false;
+    const order: StepKey[] = ['visit', 'invite', 'message', 'follow'];
+    const idx = order.indexOf(key);
+    if (!enabledSteps[key]) {
+      // For turning on: previous must be enabled
+      return enabledSteps[order[idx - 1]];
+    }
+    return true; // can always turn off
+  };
+
   // Validation
   const canNext = () => {
     if (step === 0) return name.trim().length >= 3;
-    if (step === 1) return msg1.trim().length > 0 && followUp.trim().length > 0;
+    if (step === 1) {
+      // Message fields only required if those steps are enabled
+      if (enabledSteps.message && msg1.trim().length === 0) return false;
+      if (enabledSteps.follow && followUp.trim().length === 0) return false;
+      return true;
+    }
     if (step === 2) return selected.size > 0;
     return true;
   };
 
-  // Resolve variables for preview
+  // Preview variables
   const previewMsg = (template: string) => {
     const sample = prospects.find(p => selected.has(p.id)) || prospects[0] || {};
     const parts = (sample.name || 'Prospect').split(' ');
@@ -154,26 +210,30 @@ export default function CampaignWizard() {
       .replace(/\{\{jobTitle\}\}/g, sample.title || 'Title');
   };
 
+  // Count enabled steps
+  const activeStepCount = Object.values(enabledSteps).filter(Boolean).length;
+
   // LAUNCH
   const launch = async () => {
     setLaunching(true);
     setError('');
     try {
       // 1. Create campaign
+      const campType = activeStepCount <= 1 ? 'visit_only' : activeStepCount === 2 ? 'invitation' : 'invitation_message';
       const campRes = await apiFetch('/api/trpc/campaigns.create', token, {
         method: 'POST',
-        body: JSON.stringify({ json: { name, description, type: 'invitation_message' } }),
+        body: JSON.stringify({ json: { name, description, type: campType } }),
       });
       const campaignId = campRes?.result?.data?.json?.id || campRes?.result?.data?.id;
       if (!campaignId) throw new Error(campRes?.error?.message || 'Failed to create campaign');
 
-      // 2. Create steps
-      const stepsPayload = [
-        { step_type: 'visit', name: 'Visit Profile', delay_days: 0, configuration: {} },
-        { step_type: 'invitation', name: 'Send Invite', message_template: inviteNote || null, delay_days: inviteDelay, configuration: {} },
-        { step_type: 'message', name: 'First Message', message_template: msg1, delay_days: msg1Delay, configuration: {} },
-        { step_type: 'follow', name: 'Follow Up', message_template: followUp, delay_days: followDelay, configuration: {} },
-      ];
+      // 2. Create only enabled steps
+      const stepsPayload: any[] = [];
+      if (enabledSteps.visit) stepsPayload.push({ step_type: 'visit', name: 'Visit Profile', delay_days: 0, configuration: {} });
+      if (enabledSteps.invite) stepsPayload.push({ step_type: 'invitation', name: 'Send Invite', message_template: inviteNote || null, delay_days: inviteDelay, configuration: {} });
+      if (enabledSteps.message) stepsPayload.push({ step_type: 'message', name: 'First Message', message_template: msg1, delay_days: msg1Delay, configuration: {} });
+      if (enabledSteps.follow) stepsPayload.push({ step_type: 'follow', name: 'Follow Up', message_template: followUp, delay_days: followDelay, configuration: {} });
+
       const stepsRes = await apiFetch(`/api/sequence/campaigns/${campaignId}/steps`, token, {
         method: 'POST',
         body: JSON.stringify({ steps: stepsPayload }),
@@ -186,9 +246,6 @@ export default function CampaignWizard() {
         body: JSON.stringify({ prospect_ids: Array.from(selected) }),
       });
       if (enrollRes.error) throw new Error(enrollRes.error);
-
-      // 4. Activate campaign
-      // (campaign is created as 'draft', optionally set to active — already handled if tRPC creates as draft)
 
       setLaunchedData({ id: campaignId, name, count: selected.size });
     } catch (e: any) {
@@ -209,6 +266,12 @@ export default function CampaignWizard() {
 
   // ─────────── SUCCESS SCREEN ──────────────────────────────
   if (launched) {
+    const enabledLabels: string[] = [];
+    if (enabledSteps.visit) enabledLabels.push('👁 Visit ' + launched.count + ' profiles');
+    if (enabledSteps.invite) enabledLabels.push('🤝 Send connection requests');
+    if (enabledSteps.message) enabledLabels.push('💬 Send personalized messages');
+    if (enabledSteps.follow) enabledLabels.push('↩️ Follow up automatically');
+
     return (
       <div className="flex min-h-screen" style={{ background: 'var(--bg-base)' }}>
         <ClientNav />
@@ -222,10 +285,7 @@ export default function CampaignWizard() {
             <div style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 10, padding: 16, marginBottom: 24, textAlign: 'left' }}>
               <p style={{ color: '#86efac', fontSize: 13, marginBottom: 8 }}>Wassel will automatically:</p>
               <ul style={{ color: '#94a3b8', fontSize: 13, listStyle: 'none', padding: 0 }}>
-                <li style={{ marginBottom: 4 }}>👁 Visit {launched.count} profiles</li>
-                <li style={{ marginBottom: 4 }}>🤝 Send connection requests</li>
-                <li style={{ marginBottom: 4 }}>💬 Send personalized messages after acceptance</li>
-                <li>↩️ Follow up automatically</li>
+                {enabledLabels.map((l, i) => <li key={i} style={{ marginBottom: 4 }}>{l}</li>)}
               </ul>
             </div>
             <button style={btnPrimary} onClick={() => navigate(`/app/campaigns/${launched.id}`)}>
@@ -253,26 +313,91 @@ export default function CampaignWizard() {
             </div>
           )}
 
-          {/* ── STEP 1: Setup ── */}
+          {/* ── STEP 1: Setup + Step Toggles ── */}
           {step === 0 && (
-            <div style={card}>
-              <h3 style={{ color: '#f1f5f9', fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Campaign Setup</h3>
-              <div style={{ marginBottom: 16 }}>
-                <label style={label}>Campaign Name *</label>
-                <input style={input} value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Q2 Recruiter Outreach" />
-                {name.length > 0 && name.length < 3 && <p style={{ color: '#f87171', fontSize: 11, marginTop: 4 }}>Name must be at least 3 characters</p>}
+            <div>
+              <div style={card}>
+                <h3 style={{ color: '#f1f5f9', fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Campaign Setup</h3>
+                <div style={{ marginBottom: 16 }}>
+                  <label style={label}>Campaign Name *</label>
+                  <input style={input} value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Q2 Recruiter Outreach" />
+                  {name.length > 0 && name.length < 3 && <p style={{ color: '#f87171', fontSize: 11, marginTop: 4 }}>Name must be at least 3 characters</p>}
+                </div>
+                <div>
+                  <label style={label}>Description (optional)</label>
+                  <textarea style={textarea} value={description} onChange={e => setDescription(e.target.value)} placeholder="What is this campaign about?" rows={3} />
+                </div>
               </div>
-              <div>
-                <label style={label}>Description (optional)</label>
-                <textarea style={textarea} value={description} onChange={e => setDescription(e.target.value)} placeholder="What is this campaign about?" rows={3} />
+
+              {/* Step Toggles */}
+              <div style={card}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                  <h3 style={{ color: '#f1f5f9', fontSize: 16, fontWeight: 700 }}>Choose Sequence Steps</h3>
+                  <span style={{
+                    background: 'linear-gradient(135deg,rgba(124,58,237,0.2),rgba(236,72,153,0.2))',
+                    color: '#c4b5fd', padding: '4px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600,
+                    border: '1px solid rgba(124,58,237,0.3)',
+                  }}>
+                    {getCampaignTypeLabel(enabledSteps)}
+                  </span>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
+                  {STEP_DEFS.map(sd => {
+                    const on = enabledSteps[sd.key];
+                    const canClick = sd.locked ? false : canToggle(sd.key);
+                    const tooltip = sd.locked
+                      ? 'Visit is always required'
+                      : !on && !canClick
+                        ? `Enable ${STEP_DEFS[STEP_DEFS.findIndex(s => s.key === sd.key) - 1]?.label} first`
+                        : undefined;
+
+                    return (
+                      <button
+                        key={sd.key}
+                        type="button"
+                        title={tooltip}
+                        onClick={() => !sd.locked && canClick && toggleStep(sd.key)}
+                        style={{
+                          background: on ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.01)',
+                          border: on ? '1px solid rgba(124,58,237,0.4)' : '1px solid rgba(255,255,255,0.06)',
+                          borderRadius: 10,
+                          padding: '14px 8px',
+                          textAlign: 'center',
+                          cursor: sd.locked ? 'default' : canClick ? 'pointer' : 'not-allowed',
+                          opacity: on ? 1 : 0.4,
+                          transition: 'all 0.2s',
+                        }}
+                      >
+                        <div style={{ fontSize: 22, marginBottom: 6, filter: on ? 'none' : 'grayscale(1)' }}>{sd.emoji}</div>
+                        <div style={{ color: on ? '#f1f5f9' : '#475569', fontSize: 12, fontWeight: 600, marginBottom: 2 }}>{sd.label}</div>
+                        <div style={{ color: '#64748b', fontSize: 10, marginBottom: 8 }}>{sd.desc}</div>
+                        {sd.locked ? (
+                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 3, background: 'rgba(34,197,94,0.15)', color: '#86efac', borderRadius: 6, padding: '2px 8px', fontSize: 10, fontWeight: 600 }}>
+                            <Lock size={9} /> ON
+                          </div>
+                        ) : (
+                          <div style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 3,
+                            background: on ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.04)',
+                            color: on ? '#86efac' : '#475569',
+                            borderRadius: 6, padding: '2px 8px', fontSize: 10, fontWeight: 600,
+                          }}>
+                            {on ? '✓ ON' : 'OFF'}
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           )}
 
-          {/* ── STEP 2: Sequence ── */}
+          {/* ── STEP 2: Sequence (only enabled steps) ── */}
           {step === 1 && (
             <div>
-              {/* Visit Profile */}
+              {/* Visit Profile — always shown */}
               <div style={card}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
                   <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(59,130,246,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>👁</div>
@@ -284,68 +409,84 @@ export default function CampaignWizard() {
                 <p style={{ color: '#475569', fontSize: 12 }}>Delay: 0 days (immediate)</p>
               </div>
 
-              <div style={{ textAlign: 'center', color: '#475569', fontSize: 12, margin: '4px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                Wait <select value={inviteDelay} onChange={e => setInviteDelay(+e.target.value)} style={delaySelect}>{[0,1,2,3].map(d => <option key={d} value={d}>{d}</option>)}</select> days ↓
-              </div>
-
-              {/* Send Invite */}
-              <div style={card}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                  <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(34,197,94,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>🤝</div>
-                  <div>
-                    <h4 style={{ color: '#f1f5f9', fontSize: 14, fontWeight: 600 }}>Send Invite</h4>
-                    <p style={{ color: '#64748b', fontSize: 11 }}>Connection request with optional note</p>
+              {/* Invite */}
+              {enabledSteps.invite && (
+                <>
+                  <div style={{ textAlign: 'center', color: '#475569', fontSize: 12, margin: '4px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                    Wait <select value={inviteDelay} onChange={e => setInviteDelay(+e.target.value)} style={delaySelect}>{[0,1,2,3].map(d => <option key={d} value={d}>{d}</option>)}</select> days ↓
                   </div>
-                </div>
-                <label style={label}>Connection Note (optional, max 300)</label>
-                <textarea ref={inviteRef} style={textarea} value={inviteNote} onChange={e => setInviteNote(e.target.value.slice(0, 300))} placeholder="Add a personal note to your connection request..." rows={3} maxLength={300} />
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <VariableChips textareaRef={inviteRef} value={inviteNote} onChange={setInviteNote} />
-                  <span style={{ color: '#475569', fontSize: 11 }}>{inviteNote.length}/300</span>
-                </div>
-              </div>
-
-              <div style={{ textAlign: 'center', color: '#475569', fontSize: 12, margin: '4px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                Wait <select value={msg1Delay} onChange={e => setMsg1Delay(+e.target.value)} style={delaySelect}>{[0,1,2,3,4,5,6,7].map(d => <option key={d} value={d}>{d}</option>)}</select> days after acceptance ↓
-              </div>
+                  <div style={card}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                      <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(34,197,94,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>🤝</div>
+                      <div>
+                        <h4 style={{ color: '#f1f5f9', fontSize: 14, fontWeight: 600 }}>Send Invite</h4>
+                        <p style={{ color: '#64748b', fontSize: 11 }}>Connection request with optional note</p>
+                      </div>
+                    </div>
+                    <label style={label}>Connection Note (optional, max 300)</label>
+                    <textarea ref={inviteRef} style={textarea} value={inviteNote} onChange={e => setInviteNote(e.target.value.slice(0, 300))} placeholder="Add a personal note to your connection request..." rows={3} maxLength={300} />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <VariableChips textareaRef={inviteRef} value={inviteNote} onChange={setInviteNote} />
+                      <span style={{ color: '#475569', fontSize: 11 }}>{inviteNote.length}/300</span>
+                    </div>
+                  </div>
+                </>
+              )}
 
               {/* Message 1 */}
-              <div style={card}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                  <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(124,58,237,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>💬</div>
-                  <div>
-                    <h4 style={{ color: '#f1f5f9', fontSize: 14, fontWeight: 600 }}>First Message</h4>
-                    <p style={{ color: '#64748b', fontSize: 11 }}>Sent after connection is accepted</p>
+              {enabledSteps.message && (
+                <>
+                  <div style={{ textAlign: 'center', color: '#475569', fontSize: 12, margin: '4px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                    Wait <select value={msg1Delay} onChange={e => setMsg1Delay(+e.target.value)} style={delaySelect}>{[0,1,2,3,4,5,6,7].map(d => <option key={d} value={d}>{d}</option>)}</select> days after acceptance ↓
                   </div>
-                </div>
-                <label style={label}>Message * (max 500)</label>
-                <textarea ref={msg1Ref} style={{ ...textarea, borderColor: msg1.length === 0 && step === 1 ? 'rgba(239,68,68,0.3)' : undefined }} value={msg1} onChange={e => setMsg1(e.target.value.slice(0, 500))} placeholder="Hi {{firstName}}, I noticed you work at {{company}}..." rows={4} maxLength={500} />
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <VariableChips textareaRef={msg1Ref} value={msg1} onChange={setMsg1} />
-                  <span style={{ color: '#475569', fontSize: 11 }}>{msg1.length}/500</span>
-                </div>
-              </div>
-
-              <div style={{ textAlign: 'center', color: '#475569', fontSize: 12, margin: '4px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                Wait <select value={followDelay} onChange={e => setFollowDelay(+e.target.value)} style={delaySelect}>{[1,2,3,4,5,6,7,8,9,10,11,12,13,14].map(d => <option key={d} value={d}>{d}</option>)}</select> days ↓
-              </div>
+                  <div style={card}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                      <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(124,58,237,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>💬</div>
+                      <div>
+                        <h4 style={{ color: '#f1f5f9', fontSize: 14, fontWeight: 600 }}>First Message</h4>
+                        <p style={{ color: '#64748b', fontSize: 11 }}>Sent after connection is accepted</p>
+                      </div>
+                    </div>
+                    <label style={label}>Message * (max 500)</label>
+                    <textarea ref={msg1Ref} style={{ ...textarea, borderColor: msg1.length === 0 ? 'rgba(239,68,68,0.3)' : undefined }} value={msg1} onChange={e => setMsg1(e.target.value.slice(0, 500))} placeholder="Hi {{firstName}}, I noticed you work at {{company}}..." rows={4} maxLength={500} />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <VariableChips textareaRef={msg1Ref} value={msg1} onChange={setMsg1} />
+                      <span style={{ color: '#475569', fontSize: 11 }}>{msg1.length}/500</span>
+                    </div>
+                  </div>
+                </>
+              )}
 
               {/* Follow Up */}
-              <div style={card}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                  <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(236,72,153,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>↩️</div>
-                  <div>
-                    <h4 style={{ color: '#f1f5f9', fontSize: 14, fontWeight: 600 }}>Follow Up Message</h4>
-                    <p style={{ color: '#64748b', fontSize: 11 }}>Sent if no reply to the first message</p>
+              {enabledSteps.follow && (
+                <>
+                  <div style={{ textAlign: 'center', color: '#475569', fontSize: 12, margin: '4px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                    Wait <select value={followDelay} onChange={e => setFollowDelay(+e.target.value)} style={delaySelect}>{[1,2,3,4,5,6,7,8,9,10,11,12,13,14].map(d => <option key={d} value={d}>{d}</option>)}</select> days ↓
                   </div>
+                  <div style={card}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                      <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(236,72,153,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>↩️</div>
+                      <div>
+                        <h4 style={{ color: '#f1f5f9', fontSize: 14, fontWeight: 600 }}>Follow Up Message</h4>
+                        <p style={{ color: '#64748b', fontSize: 11 }}>Sent if no reply to the first message</p>
+                      </div>
+                    </div>
+                    <label style={label}>Message * (max 500)</label>
+                    <textarea ref={followRef} style={{ ...textarea, borderColor: followUp.length === 0 ? 'rgba(239,68,68,0.3)' : undefined }} value={followUp} onChange={e => setFollowUp(e.target.value.slice(0, 500))} placeholder="Hi {{firstName}}, just following up on my previous message..." rows={4} maxLength={500} />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <VariableChips textareaRef={followRef} value={followUp} onChange={setFollowUp} />
+                      <span style={{ color: '#475569', fontSize: 11 }}>{followUp.length}/500</span>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* When only Visit is selected */}
+              {!enabledSteps.invite && !enabledSteps.message && !enabledSteps.follow && (
+                <div style={{ ...card, textAlign: 'center', color: '#64748b', fontSize: 13 }}>
+                  This campaign will only visit profiles. No messages will be sent.
                 </div>
-                <label style={label}>Message * (max 500)</label>
-                <textarea ref={followRef} style={{ ...textarea, borderColor: followUp.length === 0 && step === 1 ? 'rgba(239,68,68,0.3)' : undefined }} value={followUp} onChange={e => setFollowUp(e.target.value.slice(0, 500))} placeholder="Hi {{firstName}}, just following up on my previous message..." rows={4} maxLength={500} />
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <VariableChips textareaRef={followRef} value={followUp} onChange={setFollowUp} />
-                  <span style={{ color: '#475569', fontSize: 11 }}>{followUp.length}/500</span>
-                </div>
-              </div>
+              )}
             </div>
           )}
 
@@ -356,8 +497,6 @@ export default function CampaignWizard() {
                 <h3 style={{ color: '#f1f5f9', fontSize: 16, fontWeight: 700 }}>Select Prospects</h3>
                 <span style={{ background: 'rgba(124,58,237,0.15)', color: '#c4b5fd', padding: '4px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600 }}>{selected.size} selected</span>
               </div>
-
-              {/* Search + Select All */}
               <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
                 <div style={{ flex: 1, position: 'relative' }}>
                   <Search size={14} style={{ position: 'absolute', left: 10, top: 10, color: '#475569' }} />
@@ -391,7 +530,12 @@ export default function CampaignWizard() {
                       {filteredProspects.map(p => (
                         <tr key={p.id} onClick={() => toggleSelect(p.id)} style={{ cursor: 'pointer', borderTop: '1px solid rgba(255,255,255,0.04)', background: selected.has(p.id) ? 'rgba(124,58,237,0.06)' : 'transparent' }}>
                           <td style={{ padding: '8px 12px' }}><input type="checkbox" checked={selected.has(p.id)} readOnly style={{ accentColor: '#7c3aed' }} /></td>
-                          <td style={{ padding: '8px 12px', color: '#f1f5f9', fontWeight: 500 }}>{p.name || '—'}</td>
+                          <td style={{ padding: '8px 12px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <Avatar name={p.name || '?'} size="sm" />
+                              <span style={{ color: '#f1f5f9', fontWeight: 500 }}>{p.name || '—'}</span>
+                            </div>
+                          </td>
                           <td style={{ padding: '8px 12px', color: '#94a3b8' }}>{p.title || '—'}</td>
                           <td style={{ padding: '8px 12px', color: '#94a3b8' }}>{p.company || '—'}</td>
                         </tr>
@@ -415,7 +559,7 @@ export default function CampaignWizard() {
                   </div>
                   <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: 14, textAlign: 'center' }}>
                     <div style={{ color: '#64748b', fontSize: 11, marginBottom: 4 }}>Sequence</div>
-                    <div style={{ color: '#f1f5f9', fontSize: 14, fontWeight: 600 }}>4 steps</div>
+                    <div style={{ color: '#f1f5f9', fontSize: 14, fontWeight: 600 }}>{activeStepCount} step{activeStepCount > 1 ? 's' : ''}</div>
                   </div>
                   <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: 14, textAlign: 'center' }}>
                     <div style={{ color: '#64748b', fontSize: 11, marginBottom: 4 }}>Prospects</div>
@@ -425,15 +569,23 @@ export default function CampaignWizard() {
 
                 <h4 style={{ color: '#94a3b8', fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Sequence Preview</h4>
                 <div style={{ borderLeft: '2px solid rgba(124,58,237,0.3)', paddingLeft: 16 }}>
-                  <div style={{ marginBottom: 14 }}><span style={{ color: '#64748b', fontSize: 11 }}>Day 0</span><br /><span style={{ color: '#f1f5f9', fontSize: 13 }}>👁 Visit Profile</span></div>
-                  <div style={{ marginBottom: 14 }}><span style={{ color: '#64748b', fontSize: 11 }}>Day {inviteDelay}</span><br /><span style={{ color: '#f1f5f9', fontSize: 13 }}>🤝 Send Invite {inviteNote ? `— "${inviteNote.slice(0, 50)}${inviteNote.length > 50 ? '...' : ''}"` : ''}</span></div>
-                  <div style={{ marginBottom: 14 }}><span style={{ color: '#64748b', fontSize: 11 }}>+{msg1Delay}d after accepted</span><br /><span style={{ color: '#f1f5f9', fontSize: 13 }}>💬 "{msg1.slice(0, 60)}{msg1.length > 60 ? '...' : ''}"</span></div>
-                  <div><span style={{ color: '#64748b', fontSize: 11 }}>+{followDelay}d later</span><br /><span style={{ color: '#f1f5f9', fontSize: 13 }}>↩️ "{followUp.slice(0, 60)}{followUp.length > 60 ? '...' : ''}"</span></div>
+                  {enabledSteps.visit && (
+                    <div style={{ marginBottom: 14 }}><span style={{ color: '#64748b', fontSize: 11 }}>Day 0</span><br /><span style={{ color: '#f1f5f9', fontSize: 13 }}>👁 Visit Profile</span></div>
+                  )}
+                  {enabledSteps.invite && (
+                    <div style={{ marginBottom: 14 }}><span style={{ color: '#64748b', fontSize: 11 }}>Day {inviteDelay}</span><br /><span style={{ color: '#f1f5f9', fontSize: 13 }}>🤝 Send Invite {inviteNote ? `— "${inviteNote.slice(0, 50)}${inviteNote.length > 50 ? '...' : ''}"` : ''}</span></div>
+                  )}
+                  {enabledSteps.message && (
+                    <div style={{ marginBottom: 14 }}><span style={{ color: '#64748b', fontSize: 11 }}>+{msg1Delay}d after accepted</span><br /><span style={{ color: '#f1f5f9', fontSize: 13 }}>💬 "{msg1.slice(0, 60)}{msg1.length > 60 ? '...' : ''}"</span></div>
+                  )}
+                  {enabledSteps.follow && (
+                    <div><span style={{ color: '#64748b', fontSize: 11 }}>+{followDelay}d later</span><br /><span style={{ color: '#f1f5f9', fontSize: 13 }}>↩️ "{followUp.slice(0, 60)}{followUp.length > 60 ? '...' : ''}"</span></div>
+                  )}
                 </div>
               </div>
 
               {/* Variable preview */}
-              {prospects.length > 0 && (
+              {prospects.length > 0 && enabledSteps.message && (
                 <div style={{ ...card, background: 'rgba(124,58,237,0.06)', border: '1px solid rgba(124,58,237,0.2)' }}>
                   <h4 style={{ color: '#c4b5fd', fontSize: 12, fontWeight: 600, marginBottom: 8 }}>📝 Message Preview (using first prospect)</h4>
                   <p style={{ color: '#94a3b8', fontSize: 13, fontStyle: 'italic' }}>"{previewMsg(msg1).slice(0, 120)}{previewMsg(msg1).length > 120 ? '...' : ''}"</p>

@@ -275,5 +275,60 @@ router.get('/prospects', async (req: Request, res: Response) => {
         res.status(500).json({ error: 'Server error' });
     }
 });
+/**
+ * DELETE /api/ext/prospects
+ * Bulk-delete prospects. Body: { prospectIds: string[] }
+ * Team-isolated — only deletes prospects belonging to user's team.
+ */
+router.delete('/prospects', async (req: Request, res: Response) => {
+    try {
+        const teamId = getTeamId(req);
+        if (!teamId) {
+            return res.status(401).json({ error: 'No team associated with user' });
+        }
+
+        const { prospectIds } = req.body;
+
+        if (!prospectIds || !Array.isArray(prospectIds) || prospectIds.length === 0) {
+            return res.status(400).json({ error: 'prospectIds array is required' });
+        }
+
+        // Verify all prospects belong to this team
+        const { data: owned } = await supabase
+            .from('prospects')
+            .select('id')
+            .eq('team_id', teamId)
+            .in('id', prospectIds);
+
+        const ownedIds = (owned || []).map(p => p.id);
+
+        if (ownedIds.length === 0) {
+            return res.status(404).json({ error: 'No matching prospects found' });
+        }
+
+        // Delete related prospect_step_status rows first
+        await supabase
+            .from('prospect_step_status')
+            .delete()
+            .in('prospect_id', ownedIds);
+
+        // Delete prospects
+        const { error: deleteError } = await supabase
+            .from('prospects')
+            .delete()
+            .in('id', ownedIds);
+
+        if (deleteError) {
+            console.error('[Extension] Delete prospects error:', deleteError);
+            return res.status(500).json({ error: 'Failed to delete prospects' });
+        }
+
+        console.log(`[Extension] Deleted ${ownedIds.length} prospects for team ${teamId}`);
+        res.json({ success: true, deleted: ownedIds.length });
+    } catch (error) {
+        console.error('[Extension] Delete prospects error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
 
 export default router;

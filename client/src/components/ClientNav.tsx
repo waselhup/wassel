@@ -1,4 +1,5 @@
 import { useAuth } from '@/contexts/AuthContext';
+import Avatar from '@/components/Avatar';
 import {
     LayoutDashboard, Target, Users, Download, Chrome,
     LogOut
@@ -44,9 +45,8 @@ export default function ClientNav() {
         { href: '/app/extension', label: 'Extension', icon: Chrome, match: /^\/app\/extension/ },
     ];
 
-    const initials = user?.email
-        ? user.email.slice(0, 2).toUpperCase()
-        : 'WA';
+    const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
+    const avatarUrl = user?.user_metadata?.avatar_url || null;
 
     return (
         <aside
@@ -113,12 +113,7 @@ export default function ClientNav() {
                 }}
             >
                 <div className="flex items-center gap-3">
-                    <div
-                        className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
-                        style={{ background: 'var(--gradient-primary)' }}
-                    >
-                        {initials}
-                    </div>
+                    <Avatar name={displayName} size="md" imageUrl={avatarUrl} />
                     <div className="flex-1 min-w-0">
                         <p className="text-xs font-medium truncate" style={{ color: 'var(--text-primary)' }}>
                             {user?.email || 'User'}
