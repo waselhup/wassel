@@ -740,5 +740,77 @@
         }
         return null;
     }
+
+    // ── Message handler for popup scan requests ──
+    chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+        if (msg.type === 'SCAN_PROSPECTS') {
+            console.log('[Wassel] Popup requested scan...');
+            const scanned = [];
+
+            // Strategy 1: data-view-name
+            let cards = document.querySelectorAll('[data-view-name="search-entity-result-universal-template"]');
+            // Strategy 2: search-results li
+            if (cards.length === 0) cards = document.querySelectorAll('.search-results-container ul > li');
+            // Strategy 3: reusable-search
+            if (cards.length === 0) cards = document.querySelectorAll('.reusable-search__result-container, .entity-result');
+            // Strategy 4: li with /in/ links
+            if (cards.length === 0) {
+                cards = Array.from(document.querySelectorAll('li')).filter(li => li.querySelector('a[href*="/in/"]'));
+            }
+
+            // Strategy 5: direct links
+            if (cards.length === 0) {
+                const profileLinks = document.querySelectorAll('a[href*="/in/"]');
+                const seen = new Set();
+                profileLinks.forEach(link => {
+                    const href = link.href;
+                    if (!href || !href.includes('/in/')) return;
+                    const cleanUrl = href.split('?')[0];
+                    if (seen.has(cleanUrl)) return;
+                    seen.add(cleanUrl);
+                    const container = link.closest('li') || link.parentElement;
+                    const nameEl = container?.querySelector('.entity-result__title-text, [aria-hidden="true"], .artdeco-entity-lockup__title, span[dir="ltr"]');
+                    const titleEl = container?.querySelector('.entity-result__primary-subtitle, .artdeco-entity-lockup__subtitle');
+                    const companyEl = container?.querySelector('.entity-result__secondary-subtitle');
+                    const photoEl = container?.querySelector('img.presence-entity__image, img.EntityPhoto-circle-3, img[class*="profile-photo"], .ivm-image-view-model img, img.ivm-view-attr__img--centered');
+                    const name = nameEl?.innerText?.trim() || link.innerText?.trim() || '';
+                    if (name && name.length >= 2) {
+                        scanned.push({
+                            name,
+                            linkedin_url: cleanUrl,
+                            title: titleEl?.innerText?.trim() || '',
+                            company: companyEl?.innerText?.trim() || '',
+                            photo_url: photoEl?.src || null,
+                        });
+                    }
+                });
+            }
+
+            // Extract from cards (strategies 1-4)
+            if (scanned.length === 0 && cards.length > 0) {
+                cards.forEach(card => {
+                    try {
+                        const nameEl = card.querySelector('.entity-result__title-text a span[aria-hidden="true"], .entity-result__title-line a span[dir="ltr"] span[aria-hidden="true"], .app-aware-link span[aria-hidden="true"], .artdeco-entity-lockup__title span, [data-anonymize="person-name"]');
+                        const name = nameEl ? nameEl.textContent.trim() : '';
+                        const linkEl = card.querySelector('a[href*="/in/"], a.app-aware-link[href*="/in/"]');
+                        const linkedinUrl = linkEl ? linkEl.href.split('?')[0] : '';
+                        const titleEl = card.querySelector('.entity-result__primary-subtitle, .entity-result__summary, .artdeco-entity-lockup__subtitle');
+                        const title = titleEl ? titleEl.textContent.trim() : '';
+                        const companyEl = card.querySelector('.entity-result__secondary-subtitle');
+                        const company = companyEl ? companyEl.textContent.trim() : '';
+                        const photoEl = card.querySelector('img.presence-entity__image, img.EntityPhoto-circle-3, img[class*="profile-photo"], .ivm-image-view-model img, img.ivm-view-attr__img--centered');
+                        const photoUrl = photoEl ? photoEl.src : null;
+                        if (name && linkedinUrl) {
+                            scanned.push({ name, linkedin_url: linkedinUrl, title, company, photo_url: photoUrl });
+                        }
+                    } catch (e) { /* skip */ }
+                });
+            }
+
+            console.log('[Wassel] Popup scan found:', scanned.length, 'prospects');
+            sendResponse({ prospects: scanned });
+            return true; // async
+        }
+    });
 })();
 
