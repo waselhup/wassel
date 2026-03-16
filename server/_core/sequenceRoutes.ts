@@ -1357,17 +1357,31 @@ router.post('/prospects/:id/mark-replied', async (req: Request, res: Response) =
 
 // ============================================================================
 // GET /api/sequence/queue/active — Global queue for extension automation
-// Returns pending actions across ALL active campaigns, max 5
+// FIXED: Uses 2-step approach to avoid PostgREST nested filter issues
 // ============================================================================
 router.get('/queue/active', async (req: Request, res: Response) => {
   try {
     const teamId = getTeamId(req);
     if (!teamId) return res.status(401).json({ error: 'Unauthorized' });
 
-    const now = new Date().toISOString();
+    // Step 1: Get active campaign IDs for this team
+    const { data: activeCampaigns, error: campError } = await supabase
+      .from('campaigns')
+      .select('id')
+      .eq('team_id', teamId)
+      .in('status', ['active']);
 
-    // Get pending step statuses where scheduled_at <= now, for active campaigns
-    const { data: items, error } = await supabase
+    if (campError || !activeCampaigns || activeCampaigns.length === 0) {
+      console.log(`[Queue] No active campaigns for team=${teamId}`);
+      return res.json({ success: true, queue: [], count: 0 });
+    }
+
+    const campaignIds = activeCampaigns.map((c: any) => c.id);
+    console.log(`[Queue] Active campaigns: ${campaignIds.length} for team=${teamId}`);
+
+    // Step 2: Get pending steps for those campaigns
+    const now = new Date().toISOString();
+    const { data: items, error: qError } = await supabase
       .from('prospect_step_status')
       .select(`
         id,
@@ -1376,47 +1390,42 @@ router.get('/queue/active', async (req: Request, res: Response) => {
         step_id,
         prospect_id,
         campaign_id,
-        campaign_steps!inner (
+        campaign_steps (
           step_type,
           step_number,
           message_template,
           delay_days,
           name
         ),
-        prospects!inner (
+        prospects (
           id,
           name,
           linkedin_url,
           title,
           company,
           reply_detected
-        ),
-        campaigns!inner (
-          id,
-          name,
-          status,
-          team_id
         )
       `)
+      .in('campaign_id', campaignIds)
       .eq('status', 'pending')
       .lte('scheduled_at', now)
-      .eq('campaigns.team_id', teamId)
-      .in('campaigns.status', ['active', 'draft'])
       .order('scheduled_at', { ascending: true })
       .limit(5);
 
-    if (error) {
-      console.error('[Queue] Error:', error);
-      return res.json({ success: true, queue: [] });
+    if (qError) {
+      console.error('[Queue] Query error:', qError.message);
+      return res.json({ success: true, queue: [], count: 0, error: qError.message });
     }
 
-    // Map to flat objects for the extension
+    console.log(`[Queue] Raw items found: ${items?.length || 0}`);
+
+    // Map to flat objects
     const queue = (items || []).map((item: any) => {
       const step = item.campaign_steps;
       const prospect = item.prospects;
 
       // Replace template variables
-      let message = step.message_template || '';
+      let message = step?.message_template || '';
       if (prospect) {
         const nameParts = (prospect.name || '').split(' ');
         message = message
@@ -1428,10 +1437,10 @@ router.get('/queue/active', async (req: Request, res: Response) => {
 
       return {
         prospectStepId: item.id,
-        step_type: step.step_type,
-        step_number: step.step_number,
-        step_name: step.name,
-        delay_days: step.delay_days,
+        step_type: step?.step_type,
+        step_number: step?.step_number,
+        step_name: step?.name,
+        delay_days: step?.delay_days,
         message,
         prospect_id: prospect?.id,
         name: prospect?.name,
@@ -1443,10 +1452,60 @@ router.get('/queue/active', async (req: Request, res: Response) => {
       };
     });
 
+    console.log(`[Queue] Returning ${queue.length} pending actions`);
     res.json({ success: true, queue, count: queue.length });
   } catch (e: any) {
     console.error('[Queue] Error:', e);
     res.status(500).json({ error: e.message });
+  }
+});
+
+// ============================================================================
+// GET /api/sequence/debug/queue — Debug endpoint (temporary, no auth)
+// ============================================================================
+router.get('/debug/queue', async (_req: Request, res: Response) => {
+  try {
+    // Raw query: all pending steps with campaign info
+    const { data, error } = await supabase
+      .from('prospect_step_status')
+      .select(`
+        id,
+        status,
+        scheduled_at,
+        campaign_id,
+        step_id,
+        prospect_id,
+        campaign_steps (step_type, step_number, name),
+        prospects (name, linkedin_url),
+        campaigns (name, status, team_id)
+      `)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false })
+      .limit(20);
+
+    if (error) {
+      return res.json({ error: error.message, hint: error.hint });
+    }
+
+    // Also count all statuses
+    const { data: counts } = await supabase
+      .from('prospect_step_status')
+      .select('status')
+      .limit(100);
+
+    const statusCounts: Record<string, number> = {};
+    (counts || []).forEach((r: any) => {
+      statusCounts[r.status] = (statusCounts[r.status] || 0) + 1;
+    });
+
+    res.json({
+      pending_items: data?.length || 0,
+      status_counts: statusCounts,
+      items: data,
+      now: new Date().toISOString(),
+    });
+  } catch (e: any) {
+    res.json({ error: e.message });
   }
 });
 
