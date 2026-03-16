@@ -154,6 +154,34 @@ router.post('/import', async (req: Request, res: Response) => {
             return res.status(400).json({ error: 'prospects array is required and must not be empty' });
         }
 
+        // ── Plan Limits ──
+        const { data: team } = await supabase
+            .from('teams')
+            .select('plan')
+            .eq('id', resolvedTeamId)
+            .single();
+
+        const plan = team?.plan || 'trial';
+        const PLAN_LIMITS: Record<string, number> = { trial: 100, starter: 500, growth: 2000, agency: 10000 };
+        const maxProspects = PLAN_LIMITS[plan] || 100;
+
+        const { count: existingCount } = await supabase
+            .from('prospects')
+            .select('id', { count: 'exact', head: true })
+            .eq('team_id', resolvedTeamId);
+
+        const currentCount = existingCount || 0;
+        if (currentCount + prospects.length > maxProspects) {
+            const remaining = Math.max(0, maxProspects - currentCount);
+            return res.status(403).json({
+                error: `You've reached your ${plan} plan limit of ${maxProspects} prospects. You have ${remaining} slots remaining. Upgrade your plan to import more.`,
+                limit: maxProspects,
+                current: currentCount,
+                remaining,
+                upgrade: true,
+            });
+        }
+
         // Normalize prospect records — match actual DB columns: name, title, company, location
         const prospectRecords = prospects.map((p: any) => {
             // Accept multiple field name variations

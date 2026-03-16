@@ -96,6 +96,38 @@ export default function ClientDashboard() {
                     <p style={{ color: 'var(--text-muted)' }}>Here's an overview of your LinkedIn campaigns.</p>
                 </div>
 
+                {/* Onboarding Checklist — show for new users */}
+                {(campaigns.length === 0 || prospects.length === 0) && (
+                    <div className="rounded-xl mb-6 overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(124,58,237,0.08), rgba(236,72,153,0.06))', border: '1px solid rgba(124,58,237,0.2)' }}>
+                        <div className="px-5 py-4" style={{ borderBottom: '1px solid rgba(124,58,237,0.15)' }}>
+                            <h3 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>🚀 Get Started — Launch Checklist</h3>
+                            <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Complete these steps to start automating</p>
+                        </div>
+                        <div className="px-5 py-3 space-y-2">
+                            {[
+                                { done: true, text: '✅ Create your Wassel account', link: '' },
+                                { done: prospects.length > 0, text: prospects.length > 0 ?  '✅ Import prospects' : '⬜ Import prospects from LinkedIn', link: '/app/import' },
+                                { done: campaigns.length > 0, text: campaigns.length > 0 ? '✅ Create your first campaign' : '⬜ Create your first campaign', link: '/app/campaigns/new' },
+                                { done: campaigns.some(c => c.status === 'active'), text: campaigns.some(c => c.status === 'active') ? '✅ Launch a campaign' : '⬜ Launch a campaign', link: campaigns.length > 0 ? `/app/campaigns/${campaigns[0]?.id}` : '/app/campaigns/new' },
+                                { done: false, text: '⬜ Install Chrome Extension', link: '/app/extension' },
+                            ].map((step, i) => (
+                                <Link key={i} href={step.link || '#'}>
+                                    <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all" style={{
+                                        background: step.done ? 'rgba(34,197,94,0.08)' : 'rgba(255,255,255,0.03)',
+                                        border: step.done ? '1px solid rgba(34,197,94,0.2)' : '1px solid rgba(255,255,255,0.06)',
+                                        cursor: step.link ? 'pointer' : 'default',
+                                        opacity: step.done ? 0.7 : 1,
+                                    }}>
+                                        <span style={{ fontSize: 14 }}>{step.done ? '✓' : (i + 1)}</span>
+                                        <span className="text-sm" style={{ color: step.done ? '#86efac' : 'var(--text-secondary)', textDecoration: step.done ? 'line-through' : 'none' }}>{step.text}</span>
+                                        {step.link && !step.done && <ChevronRight className="w-3.5 h-3.5 ml-auto" style={{ color: 'var(--accent-primary)' }} />}
+                                    </div>
+                                </Link>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 {/* 3 Stat cards — visible immediately */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
                     <div className="p-5 rounded-xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', backdropFilter: 'blur(12px)' }}>

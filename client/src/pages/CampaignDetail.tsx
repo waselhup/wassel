@@ -272,6 +272,29 @@ export default function CampaignDetail() {
         </div>
       </div>
 
+      {/* Status Banner */}
+      <div className="max-w-6xl mx-auto px-6 pt-4">
+        {(() => {
+          const s = campaign.status;
+          const banners: Record<string, { bg: string; border: string; icon: string; color: string; title: string; desc: string }> = {
+            active: { bg: 'bg-green-50', border: 'border-green-200', icon: '🟢', color: 'text-green-800', title: 'Campaign Running', desc: 'Wassel extension is executing actions. Keep a LinkedIn tab open.' },
+            paused: { bg: 'bg-amber-50', border: 'border-amber-200', icon: '⏸', color: 'text-amber-800', title: 'Campaign Paused', desc: 'Automation is paused. Resume to continue outreach.' },
+            draft: { bg: 'bg-gray-50', border: 'border-gray-200', icon: '📝', color: 'text-gray-700', title: 'Draft — Not Yet Launched', desc: 'Add steps and enroll prospects, then launch the campaign.' },
+            completed: { bg: 'bg-blue-50', border: 'border-blue-200', icon: '✅', color: 'text-blue-800', title: 'Campaign Complete', desc: 'All steps have been executed for all enrolled prospects.' },
+          };
+          const b = banners[s] || banners.draft;
+          return (
+            <div className={`${b.bg} ${b.border} border rounded-lg px-4 py-3 flex items-center gap-3`}>
+              <span className="text-lg">{b.icon}</span>
+              <div>
+                <p className={`text-sm font-semibold ${b.color}`}>{b.title}</p>
+                <p className="text-xs text-gray-500">{b.desc}</p>
+              </div>
+            </div>
+          );
+        })()}
+      </div>
+
       {/* Tabs */}
       <div className="max-w-6xl mx-auto px-6 pt-4">
         <div className="flex gap-1 bg-white/60 rounded-lg p-1 w-fit">

@@ -3,7 +3,7 @@ import { useLocation } from 'wouter';
 import ClientNav from '@/components/ClientNav';
 import { useAuth } from '@/contexts/AuthContext';
 import Avatar from '@/components/Avatar';
-import { ChevronRight, ChevronLeft, Rocket, CheckCircle, Search, Users, Loader2, Lock } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Rocket, CheckCircle, Search, Users, Loader2, Lock, Sparkles } from 'lucide-react';
 
 // Fetch helper
 async function apiFetch(path: string, token: string, options?: RequestInit) {
@@ -115,6 +115,36 @@ export default function CampaignWizard() {
   const inviteRef = useRef<HTMLTextAreaElement>(null);
   const msg1Ref = useRef<HTMLTextAreaElement>(null);
   const followRef = useRef<HTMLTextAreaElement>(null);
+
+  // AI Writer state
+  const [aiTarget, setAiTarget] = useState<'invite' | 'message' | 'follow_up' | null>(null);
+  const [aiGoal, setAiGoal] = useState('');
+  const [aiTone, setAiTone] = useState('professional');
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiResult, setAiResult] = useState('');
+
+  const generateAI = async (stepType: string) => {
+    setAiLoading(true);
+    setAiResult('');
+    try {
+      const res = await apiFetch('/api/ai/generate-message', token, {
+        method: 'POST',
+        body: JSON.stringify({ stepType, goal: aiGoal || 'LinkedIn outreach', tone: aiTone }),
+      });
+      setAiResult(res.message || 'AI generation failed. Check your API key.');
+    } catch (e: any) {
+      setAiResult('Error: ' + (e.message || 'Unknown'));
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const useAiResult = (setter: (v: string) => void) => {
+    setter(aiResult);
+    setAiTarget(null);
+    setAiResult('');
+    setAiGoal('');
+  };
 
   // Step 3 state
   const [prospects, setProspects] = useState<any[]>([]);
@@ -429,6 +459,42 @@ export default function CampaignWizard() {
                       <VariableChips textareaRef={inviteRef} value={inviteNote} onChange={setInviteNote} />
                       <span style={{ color: '#475569', fontSize: 11 }}>{inviteNote.length}/300</span>
                     </div>
+                    {/* AI Writer */}
+                    {aiTarget !== 'invite' ? (
+                      <button type="button" onClick={() => { setAiTarget('invite'); setAiResult(''); }}
+                        style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 6, background: 'linear-gradient(135deg,rgba(124,58,237,0.12),rgba(236,72,153,0.12))', border: '1px solid rgba(124,58,237,0.25)', borderRadius: 8, padding: '8px 14px', color: '#c4b5fd', fontSize: 13, fontWeight: 600, cursor: 'pointer', width: '100%', justifyContent: 'center' }}>
+                        <Sparkles size={14} /> ✨ Write with Wassel AI
+                      </button>
+                    ) : (
+                      <div style={{ marginTop: 10, background: 'rgba(124,58,237,0.06)', border: '1px solid rgba(124,58,237,0.2)', borderRadius: 10, padding: 14 }}>
+                        <div style={{ marginBottom: 10 }}>
+                          <label style={label}>What's your goal?</label>
+                          <input style={input} value={aiGoal} onChange={e => setAiGoal(e.target.value)} placeholder="e.g. Connect with recruiters in tech" />
+                        </div>
+                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+                          {(['professional','friendly','direct','arabic'] as const).map(t => (
+                            <button key={t} type="button" onClick={() => setAiTone(t)}
+                              style={{ padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: 'pointer', border: aiTone === t ? '2px solid #a855f7' : '1px solid rgba(255,255,255,0.1)', background: aiTone === t ? 'rgba(168,85,247,0.15)' : 'rgba(255,255,255,0.04)', color: aiTone === t ? '#c4b5fd' : '#94a3b8' }}>
+                              {t === 'professional' ? '💼 Professional' : t === 'friendly' ? '😊 Friendly' : t === 'direct' ? '🎯 Direct' : '🌍 Arabic'}
+                            </button>
+                          ))}
+                        </div>
+                        <button type="button" onClick={() => generateAI('invite')} disabled={aiLoading}
+                          style={{ ...btnPrimary, width: '100%', justifyContent: 'center', opacity: aiLoading ? 0.7 : 1 }}>
+                          {aiLoading ? <><Loader2 size={14} className="animate-spin" /> Generating...</> : <><Sparkles size={14} /> Generate</>}
+                        </button>
+                        {aiResult && (
+                          <div style={{ marginTop: 10, background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: 8, padding: 12 }}>
+                            <p style={{ color: '#e2e8f0', fontSize: 13, whiteSpace: 'pre-wrap', marginBottom: 10 }}>{aiResult}</p>
+                            <div style={{ display: 'flex', gap: 8 }}>
+                              <button type="button" onClick={() => useAiResult(setInviteNote)} style={{ ...btnPrimary, fontSize: 12, padding: '6px 14px' }}>✓ Use This</button>
+                              <button type="button" onClick={() => generateAI('invite')} style={{ ...btnSecondary, fontSize: 12, padding: '6px 14px' }}>↻ Regenerate</button>
+                              <button type="button" onClick={() => setAiTarget(null)} style={{ ...btnSecondary, fontSize: 12, padding: '6px 14px' }}>✕ Close</button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </>
               )}
@@ -453,6 +519,42 @@ export default function CampaignWizard() {
                       <VariableChips textareaRef={msg1Ref} value={msg1} onChange={setMsg1} />
                       <span style={{ color: '#475569', fontSize: 11 }}>{msg1.length}/500</span>
                     </div>
+                    {/* AI Writer */}
+                    {aiTarget !== 'message' ? (
+                      <button type="button" onClick={() => { setAiTarget('message'); setAiResult(''); }}
+                        style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 6, background: 'linear-gradient(135deg,rgba(124,58,237,0.12),rgba(236,72,153,0.12))', border: '1px solid rgba(124,58,237,0.25)', borderRadius: 8, padding: '8px 14px', color: '#c4b5fd', fontSize: 13, fontWeight: 600, cursor: 'pointer', width: '100%', justifyContent: 'center' }}>
+                        <Sparkles size={14} /> ✨ Write with Wassel AI
+                      </button>
+                    ) : (
+                      <div style={{ marginTop: 10, background: 'rgba(124,58,237,0.06)', border: '1px solid rgba(124,58,237,0.2)', borderRadius: 10, padding: 14 }}>
+                        <div style={{ marginBottom: 10 }}>
+                          <label style={label}>What's your goal?</label>
+                          <input style={input} value={aiGoal} onChange={e => setAiGoal(e.target.value)} placeholder="e.g. Pitch our consulting services" />
+                        </div>
+                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+                          {(['professional','friendly','direct','arabic'] as const).map(t => (
+                            <button key={t} type="button" onClick={() => setAiTone(t)}
+                              style={{ padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: 'pointer', border: aiTone === t ? '2px solid #a855f7' : '1px solid rgba(255,255,255,0.1)', background: aiTone === t ? 'rgba(168,85,247,0.15)' : 'rgba(255,255,255,0.04)', color: aiTone === t ? '#c4b5fd' : '#94a3b8' }}>
+                              {t === 'professional' ? '💼 Professional' : t === 'friendly' ? '😊 Friendly' : t === 'direct' ? '🎯 Direct' : '🌍 Arabic'}
+                            </button>
+                          ))}
+                        </div>
+                        <button type="button" onClick={() => generateAI('message')} disabled={aiLoading}
+                          style={{ ...btnPrimary, width: '100%', justifyContent: 'center', opacity: aiLoading ? 0.7 : 1 }}>
+                          {aiLoading ? <><Loader2 size={14} className="animate-spin" /> Generating...</> : <><Sparkles size={14} /> Generate</>}
+                        </button>
+                        {aiResult && (
+                          <div style={{ marginTop: 10, background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: 8, padding: 12 }}>
+                            <p style={{ color: '#e2e8f0', fontSize: 13, whiteSpace: 'pre-wrap', marginBottom: 10 }}>{aiResult}</p>
+                            <div style={{ display: 'flex', gap: 8 }}>
+                              <button type="button" onClick={() => useAiResult(setMsg1)} style={{ ...btnPrimary, fontSize: 12, padding: '6px 14px' }}>✓ Use This</button>
+                              <button type="button" onClick={() => generateAI('message')} style={{ ...btnSecondary, fontSize: 12, padding: '6px 14px' }}>↻ Regenerate</button>
+                              <button type="button" onClick={() => setAiTarget(null)} style={{ ...btnSecondary, fontSize: 12, padding: '6px 14px' }}>✕ Close</button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </>
               )}
@@ -477,6 +579,42 @@ export default function CampaignWizard() {
                       <VariableChips textareaRef={followRef} value={followUp} onChange={setFollowUp} />
                       <span style={{ color: '#475569', fontSize: 11 }}>{followUp.length}/500</span>
                     </div>
+                    {/* AI Writer */}
+                    {aiTarget !== 'follow_up' ? (
+                      <button type="button" onClick={() => { setAiTarget('follow_up'); setAiResult(''); }}
+                        style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 6, background: 'linear-gradient(135deg,rgba(124,58,237,0.12),rgba(236,72,153,0.12))', border: '1px solid rgba(124,58,237,0.25)', borderRadius: 8, padding: '8px 14px', color: '#c4b5fd', fontSize: 13, fontWeight: 600, cursor: 'pointer', width: '100%', justifyContent: 'center' }}>
+                        <Sparkles size={14} /> ✨ Write with Wassel AI
+                      </button>
+                    ) : (
+                      <div style={{ marginTop: 10, background: 'rgba(124,58,237,0.06)', border: '1px solid rgba(124,58,237,0.2)', borderRadius: 10, padding: 14 }}>
+                        <div style={{ marginBottom: 10 }}>
+                          <label style={label}>What's your goal?</label>
+                          <input style={input} value={aiGoal} onChange={e => setAiGoal(e.target.value)} placeholder="e.g. Re-engage after no reply" />
+                        </div>
+                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+                          {(['professional','friendly','direct','arabic'] as const).map(t => (
+                            <button key={t} type="button" onClick={() => setAiTone(t)}
+                              style={{ padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: 'pointer', border: aiTone === t ? '2px solid #a855f7' : '1px solid rgba(255,255,255,0.1)', background: aiTone === t ? 'rgba(168,85,247,0.15)' : 'rgba(255,255,255,0.04)', color: aiTone === t ? '#c4b5fd' : '#94a3b8' }}>
+                              {t === 'professional' ? '💼 Professional' : t === 'friendly' ? '😊 Friendly' : t === 'direct' ? '🎯 Direct' : '🌍 Arabic'}
+                            </button>
+                          ))}
+                        </div>
+                        <button type="button" onClick={() => generateAI('follow_up')} disabled={aiLoading}
+                          style={{ ...btnPrimary, width: '100%', justifyContent: 'center', opacity: aiLoading ? 0.7 : 1 }}>
+                          {aiLoading ? <><Loader2 size={14} className="animate-spin" /> Generating...</> : <><Sparkles size={14} /> Generate</>}
+                        </button>
+                        {aiResult && (
+                          <div style={{ marginTop: 10, background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: 8, padding: 12 }}>
+                            <p style={{ color: '#e2e8f0', fontSize: 13, whiteSpace: 'pre-wrap', marginBottom: 10 }}>{aiResult}</p>
+                            <div style={{ display: 'flex', gap: 8 }}>
+                              <button type="button" onClick={() => useAiResult(setFollowUp)} style={{ ...btnPrimary, fontSize: 12, padding: '6px 14px' }}>✓ Use This</button>
+                              <button type="button" onClick={() => generateAI('follow_up')} style={{ ...btnSecondary, fontSize: 12, padding: '6px 14px' }}>↻ Regenerate</button>
+                              <button type="button" onClick={() => setAiTarget(null)} style={{ ...btnSecondary, fontSize: 12, padding: '6px 14px' }}>✕ Close</button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </>
               )}
