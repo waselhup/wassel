@@ -217,6 +217,56 @@ router.post('/campaigns/:id/enroll', async (req: Request, res: Response) => {
 });
 
 // ============================================================================
+// GET /api/sequence/campaigns/:id/activity — Recent automation activity
+// ============================================================================
+router.get('/campaigns/:id/activity', async (req: Request, res: Response) => {
+  try {
+    const teamId = getTeamId(req);
+    if (!teamId) return res.status(401).json({ error: 'Unauthorized' });
+
+    const { data: campaign } = await supabase
+      .from('campaigns')
+      .select('id')
+      .eq('id', req.params.id)
+      .eq('team_id', teamId)
+      .single();
+
+    if (!campaign) return res.status(404).json({ error: 'Campaign not found' });
+
+    const { data: items, error } = await supabase
+      .from('prospect_step_status')
+      .select(`
+        id,
+        status,
+        executed_at,
+        updated_at,
+        campaign_steps (step_type, step_number, name),
+        prospects (name, photo_url)
+      `)
+      .eq('campaign_id', req.params.id)
+      .in('status', ['completed', 'failed', 'in_progress'])
+      .order('updated_at', { ascending: false })
+      .limit(20);
+
+    if (error) return res.status(500).json({ error: error.message });
+
+    const activity = (items || []).map((item: any) => ({
+      id: item.id,
+      prospectName: item.prospects?.name || 'Unknown',
+      photoUrl: item.prospects?.photo_url || null,
+      stepType: item.campaign_steps?.step_type || 'unknown',
+      stepName: item.campaign_steps?.name || '',
+      status: item.status,
+      executedAt: item.executed_at || item.updated_at,
+    }));
+
+    res.json({ success: true, activity });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ============================================================================
 // GET /api/sequence/campaigns/:id/queue — Get pending actions
 // Returns items where status='pending' AND scheduled_at <= now, max 50
 // Includes variable-replaced message templates

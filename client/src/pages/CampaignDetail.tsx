@@ -14,6 +14,17 @@ import { trpc } from '@/lib/trpc';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'https://wassel-alpha.vercel.app/api';
 
+function getTimeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  return `${days}d ago`;
+}
+
 // API helper for sequence endpoints
 async function seqApi(path: string, options: RequestInit = {}) {
   const token = localStorage.getItem('supabase_access_token') || '';
@@ -97,6 +108,48 @@ export default function CampaignDetail() {
 
   // Tab state
   const [activeTab, setActiveTab] = useState<'sequence' | 'prospects' | 'stats'>('sequence');
+
+  // Activity feed state
+  const [activity, setActivity] = useState<any[]>([]);
+  const [loadingActivity, setLoadingActivity] = useState(false);
+
+  // Test automation state
+  const [testResult, setTestResult] = useState<any>(null);
+  const [testLoading, setTestLoading] = useState(false);
+
+  // Load recent activity
+  const loadActivity = useCallback(async () => {
+    if (!campaignId) return;
+    setLoadingActivity(true);
+    try {
+      const res = await seqApi(`/campaigns/${campaignId}/activity`);
+      if (res.success) setActivity(res.activity || []);
+    } catch {}
+    setLoadingActivity(false);
+  }, [campaignId]);
+
+  // Auto-refresh activity every 30s
+  useEffect(() => {
+    loadActivity();
+    const interval = setInterval(loadActivity, 30000);
+    return () => clearInterval(interval);
+  }, [loadActivity]);
+
+  // Test automation handler
+  const testAutomation = async () => {
+    setTestLoading(true);
+    try {
+      const token = localStorage.getItem('supabase_token') || localStorage.getItem('supabase_access_token') || '';
+      const res = await fetch(`${API_BASE}/sequence/queue/active`, {
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      });
+      const data = await res.json();
+      setTestResult(data);
+    } catch (e: any) {
+      setTestResult({ error: e.message });
+    }
+    setTestLoading(false);
+  };
 
   // Load steps
   useEffect(() => {
@@ -388,6 +441,104 @@ export default function CampaignDetail() {
             </div>
           );
         })()}
+      </div>
+
+      {/* Activity Feed + Test Automation */}
+      <div className="max-w-6xl mx-auto px-6 pt-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {/* Recent Activity */}
+          <div className="lg:col-span-2">
+            <Card className="p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                  Recent Activity
+                  {campaign?.status === 'active' && (
+                    <span className="inline-flex items-center gap-1 text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
+                      <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+                      Live
+                    </span>
+                  )}
+                </h3>
+                <button onClick={loadActivity} className="text-xs text-gray-400 hover:text-gray-600">↻ Refresh</button>
+              </div>
+              {activity.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-400 text-sm">No activity yet.</p>
+                  <p className="text-gray-400 text-xs mt-1">Keep Chrome open with extension active for automation to run.</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {activity.map((a: any) => {
+                    const icons: Record<string, string> = { visit: '👁', invitation: '🤝', invite: '🤝', message: '💬', follow: '↩', follow_up: '↩' };
+                    const labels: Record<string, string> = { visit: 'Visited', invitation: 'Invite sent to', invite: 'Invite sent to', message: 'Message sent to', follow: 'Follow-up sent to', follow_up: 'Follow-up sent to' };
+                    const icon = icons[a.stepType] || '⚡';
+                    const label = labels[a.stepType] || a.stepType;
+                    const timeAgo = a.executedAt ? getTimeAgo(a.executedAt) : '';
+                    return (
+                      <div key={a.id} className="flex items-center gap-3 py-2 px-3 rounded-lg bg-gray-50/60 hover:bg-gray-50">
+                        <span className="text-base">{a.status === 'failed' ? '❌' : icon}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-gray-700 truncate">
+                            <span className="text-gray-500">{label}</span>{' '}
+                            <span className="font-medium">{a.prospectName}</span>
+                          </p>
+                        </div>
+                        <span className="text-xs text-gray-400 shrink-0">{timeAgo}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </Card>
+          </div>
+
+          {/* Test Automation */}
+          {campaign?.status === 'active' && (
+            <div className="lg:col-span-1">
+              <Card className="p-4">
+                <h3 className="text-sm font-semibold text-gray-800 mb-3">Automation Status</h3>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={testAutomation}
+                  disabled={testLoading}
+                  className="w-full mb-3"
+                >
+                  {testLoading ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : '🧪'}
+                  {testLoading ? 'Checking...' : 'Test Automation'}
+                </Button>
+                {testResult && (
+                  <div className={`text-xs rounded-lg p-3 ${
+                    testResult.queue?.length > 0
+                      ? 'bg-green-50 text-green-800 border border-green-200'
+                      : 'bg-amber-50 text-amber-800 border border-amber-200'
+                  }`}>
+                    {testResult.error ? (
+                      <p>❌ Error: {testResult.error}</p>
+                    ) : testResult.queue?.length > 0 ? (
+                      <>
+                        <p className="font-semibold">✅ Automation is working!</p>
+                        <p className="mt-1">Next: {testResult.queue[0]?.step_type} for {testResult.queue[0]?.name}</p>
+                        <p>Queue: {testResult.queue.length} action{testResult.queue.length > 1 ? 's' : ''} pending</p>
+                        <p className="mt-1 text-green-600">Extension will execute in ~60 seconds</p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="font-semibold">⚠️ Queue is empty</p>
+                        <p className="mt-1">Possible reasons:</p>
+                        <ul className="list-disc ml-4 mt-0.5">
+                          <li>All prospects already contacted</li>
+                          <li>Campaign just launched (wait 1 min)</li>
+                          <li>No prospects enrolled</li>
+                        </ul>
+                      </>
+                    )}
+                  </div>
+                )}
+              </Card>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Tabs */}

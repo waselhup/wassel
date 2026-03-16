@@ -72,19 +72,24 @@ function ProgressBar({ current }: { current: number }) {
 // ─── Step Toggle Card ──────────────────────────────────────
 type StepKey = 'visit' | 'invite' | 'message' | 'follow';
 
-const STEP_DEFS: { key: StepKey; emoji: string; label: string; desc: string; locked?: boolean; bgColor: string }[] = [
-  { key: 'visit', emoji: '👁', label: 'Visit', desc: 'View profile', locked: true, bgColor: 'rgba(59,130,246,0.12)' },
+const STEP_DEFS: { key: StepKey; emoji: string; label: string; desc: string; bgColor: string }[] = [
+  { key: 'visit', emoji: '👁', label: 'Visit', desc: 'View profile', bgColor: 'rgba(59,130,246,0.12)' },
   { key: 'invite', emoji: '🤝', label: 'Invite', desc: 'Connect request', bgColor: 'rgba(34,197,94,0.12)' },
   { key: 'message', emoji: '💬', label: 'Msg 1', desc: 'First message', bgColor: 'rgba(124,58,237,0.12)' },
   { key: 'follow', emoji: '↩️', label: 'Follow Up', desc: 'Follow-up msg', bgColor: 'rgba(236,72,153,0.12)' },
 ];
 
 function getCampaignTypeLabel(enabled: Record<StepKey, boolean>): string {
-  const count = Object.values(enabled).filter(Boolean).length;
-  if (count <= 1) return 'Visit Only';
-  if (count === 2) return 'Visit + Invite';
-  if (count === 3) return 'Visit + Invite + Message';
-  return 'Full Sequence';
+  const active = Object.entries(enabled).filter(([, v]) => v).map(([k]) => k) as StepKey[];
+  if (active.length === 0) return 'Select steps';
+  if (active.length === 1) {
+    if (active[0] === 'visit') return 'Visit Only';
+    if (active[0] === 'invite') return 'Invite Only';
+    return active[0].charAt(0).toUpperCase() + active[0].slice(1) + ' Only';
+  }
+  if (active.length === 4) return 'Full Sequence';
+  const labels: Record<StepKey, string> = { visit: 'Visit', invite: 'Invite', message: 'Msg', follow: 'Follow Up' };
+  return active.map(k => labels[k]).join(' + ');
 }
 
 // ─── Main Wizard ───────────────────────────────────────────
@@ -185,35 +190,37 @@ export default function CampaignWizard() {
     else setSelected(new Set(filteredProspects.map(p => p.id)));
   };
 
-  // Toggle a step on/off (with sequential enforcement)
+  // Toggle a step on/off
+  // Rules: message → requires invite, follow → requires message
+  // Visit and Invite are independent. At least 1 step must be ON.
   const toggleStep = (key: StepKey) => {
-    if (key === 'visit') return; // locked
-    const order: StepKey[] = ['visit', 'invite', 'message', 'follow'];
-    const idx = order.indexOf(key);
+    const updated = { ...enabledSteps, [key]: !enabledSteps[key] };
 
-    if (enabledSteps[key]) {
-      // Turning OFF → also disable all subsequent
-      const updated = { ...enabledSteps };
-      for (let i = idx; i < order.length; i++) updated[order[i]] = false;
-      updated.visit = true; // always on
-      setEnabledSteps(updated);
-    } else {
-      // Turning ON → check that previous step is enabled
-      const prev = order[idx - 1];
-      if (!enabledSteps[prev]) return; // can't enable without previous
-      setEnabledSteps({ ...enabledSteps, [key]: true });
+    // If turning OFF visit or invite, cascade disable dependents
+    if (key === 'invite' && !updated.invite) {
+      updated.message = false;
+      updated.follow = false;
     }
+    if (key === 'message' && !updated.message) {
+      updated.follow = false;
+    }
+
+    // At least one step must remain ON
+    if (!updated.visit && !updated.invite && !updated.message && !updated.follow) return;
+
+    setEnabledSteps(updated);
   };
 
   const canToggle = (key: StepKey): boolean => {
-    if (key === 'visit') return false;
-    const order: StepKey[] = ['visit', 'invite', 'message', 'follow'];
-    const idx = order.indexOf(key);
-    if (!enabledSteps[key]) {
-      // For turning on: previous must be enabled
-      return enabledSteps[order[idx - 1]];
+    if (enabledSteps[key]) {
+      // Can turn off unless it's the last one
+      const othersOn = Object.entries(enabledSteps).filter(([k, v]) => k !== key && v).length;
+      return othersOn > 0;
     }
-    return true; // can always turn off
+    // Can turn on — but check dependencies
+    if (key === 'message') return enabledSteps.invite;
+    if (key === 'follow') return enabledSteps.message;
+    return true; // visit and invite are always toggleable
   };
 
   // Validation
