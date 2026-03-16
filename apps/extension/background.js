@@ -340,6 +340,7 @@ async function processQueue() {
     try {
         // Use global queue endpoint — fetches pending actions across ALL active campaigns
         const result = await apiCall('/sequence/queue/active');
+        console.log('[Wassel] Queue response:', JSON.stringify(result).substring(0, 300));
 
         if (!result.success || !result.queue || result.queue.length === 0) {
             console.log('[Wassel] No pending queue items');

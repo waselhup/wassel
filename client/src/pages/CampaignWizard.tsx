@@ -277,6 +277,13 @@ export default function CampaignWizard() {
       });
       if (enrollRes.error) throw new Error(enrollRes.error);
 
+      // 4. Set campaign status to ACTIVE
+      const activateRes = await apiFetch('/api/trpc/campaigns.updateStatus', token, {
+        method: 'POST',
+        body: JSON.stringify({ json: { id: campaignId, status: 'active' } }),
+      });
+      console.log('[Wizard] Campaign activated:', activateRes);
+
       setLaunchedData({ id: campaignId, name, count: selected.size });
     } catch (e: any) {
       setError(e.message || 'Launch failed');

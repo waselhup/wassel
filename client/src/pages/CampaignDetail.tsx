@@ -61,10 +61,25 @@ export default function CampaignDetail() {
   const campaignId = params?.id || location.split('/app/campaigns/')[1]?.split('/')[0] || '';
 
   const { user } = useAuth();
+  const utils = trpc.useUtils();
   const { data: campaign, isLoading: loadingCampaign } = trpc.campaigns.get.useQuery(
     { id: campaignId },
     { enabled: !!campaignId }
   );
+  const updateStatusMutation = trpc.campaigns.updateStatus.useMutation({
+    onSuccess: () => { utils.campaigns.get.invalidate({ id: campaignId }); },
+  });
+
+  const [statusUpdating, setStatusUpdating] = useState(false);
+  const changeCampaignStatus = async (newStatus: string) => {
+    setStatusUpdating(true);
+    try {
+      await updateStatusMutation.mutateAsync({ id: campaignId, status: newStatus as any });
+    } catch (e) {
+      console.error('Status update failed:', e);
+    }
+    setStatusUpdating(false);
+  };
 
   // Steps state
   const [steps, setSteps] = useState<Step[]>([]);
@@ -257,6 +272,40 @@ export default function CampaignDetail() {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              {campaign.status === 'draft' && (
+                <Button
+                  size="sm"
+                  onClick={() => changeCampaignStatus('active')}
+                  disabled={statusUpdating}
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                >
+                  {statusUpdating ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Play className="w-4 h-4 mr-1" />}
+                  🚀 Launch
+                </Button>
+              )}
+              {campaign.status === 'active' && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => changeCampaignStatus('paused')}
+                  disabled={statusUpdating}
+                  className="text-amber-600 border-amber-300"
+                >
+                  {statusUpdating ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Pause className="w-4 h-4 mr-1" />}
+                  Pause
+                </Button>
+              )}
+              {campaign.status === 'paused' && (
+                <Button
+                  size="sm"
+                  onClick={() => changeCampaignStatus('active')}
+                  disabled={statusUpdating}
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                >
+                  {statusUpdating ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Play className="w-4 h-4 mr-1" />}
+                  ▶ Resume
+                </Button>
+              )}
               <Button
                 variant="outline"
                 size="sm"
@@ -284,12 +333,36 @@ export default function CampaignDetail() {
           };
           const b = banners[s] || banners.draft;
           return (
-            <div className={`${b.bg} ${b.border} border rounded-lg px-4 py-3 flex items-center gap-3`}>
-              <span className="text-lg">{b.icon}</span>
-              <div>
-                <p className={`text-sm font-semibold ${b.color}`}>{b.title}</p>
-                <p className="text-xs text-gray-500">{b.desc}</p>
+            <div className={`${b.bg} ${b.border} border rounded-lg px-4 py-3 flex items-center justify-between gap-3`}>
+              <div className="flex items-center gap-3">
+                <span className="text-lg">{b.icon}</span>
+                <div>
+                  <p className={`text-sm font-semibold ${b.color}`}>{b.title}</p>
+                  <p className="text-xs text-gray-500">{b.desc}</p>
+                </div>
               </div>
+              {s === 'draft' && (
+                <Button
+                  size="sm"
+                  onClick={() => changeCampaignStatus('active')}
+                  disabled={statusUpdating}
+                  className="bg-green-600 hover:bg-green-700 text-white shrink-0"
+                >
+                  {statusUpdating ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Play className="w-4 h-4 mr-1" />}
+                  🚀 Launch Now
+                </Button>
+              )}
+              {s === 'paused' && (
+                <Button
+                  size="sm"
+                  onClick={() => changeCampaignStatus('active')}
+                  disabled={statusUpdating}
+                  className="bg-green-600 hover:bg-green-700 text-white shrink-0"
+                >
+                  {statusUpdating ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Play className="w-4 h-4 mr-1" />}
+                  ▶ Resume
+                </Button>
+              )}
             </div>
           );
         })()}
