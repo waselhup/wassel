@@ -1,375 +1,133 @@
 <!DOCTYPE html>
 <html>
-
 <head>
-    <meta charset="utf-8">
-    <title>Wassel</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            width: 380px;
-            max-height: 520px;
-            font-family: 'Segoe UI', Inter, sans-serif;
-            background: #0a0a12;
-            color: #f1f5f9;
-        }
-
-        .header {
-            background: linear-gradient(135deg, #7c3aed, #ec4899);
-            color: white;
-            padding: 14px 16px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .header h1 {
-            font-size: 17px;
-            font-weight: 700;
-        }
-
-        .header p {
-            font-size: 11px;
-            opacity: 0.85;
-            margin-top: 2px;
-        }
-
-        .header-badge {
-            font-size: 10px;
-            background: rgba(255,255,255,0.2);
-            padding: 3px 8px;
-            border-radius: 12px;
-            font-weight: 600;
-        }
-
-        .content {
-            padding: 14px;
-        }
-
-        .status {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 12px;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            font-size: 13px;
-        }
-
-        .status.ok {
-            background: rgba(34, 197, 94, 0.1);
-            color: #86efac;
-            border: 1px solid rgba(34, 197, 94, 0.3);
-        }
-
-        .status.err {
-            background: rgba(239, 68, 68, 0.1);
-            color: #fca5a5;
-            border: 1px solid rgba(239, 68, 68, 0.3);
-        }
-
-        .status.pending {
-            background: rgba(245, 158, 11, 0.1);
-            color: #fcd34d;
-            border: 1px solid rgba(245, 158, 11, 0.3);
-        }
-
-        .status.syncing {
-            background: rgba(124, 58, 237, 0.1);
-            color: #c4b5fd;
-            border: 1px solid rgba(124, 58, 237, 0.3);
-        }
-
-        .status.found {
-            background: rgba(34, 197, 94, 0.1);
-            color: #86efac;
-            border: 1px solid rgba(34, 197, 94, 0.3);
-            font-weight: 600;
-        }
-
-        .dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            flex-shrink: 0;
-        }
-
-        .dot.green { background: #22c55e; }
-        .dot.red { background: #ef4444; }
-        .dot.yellow { background: #f59e0b; }
-        .dot.purple { background: #7c3aed; animation: pulse 1.5s infinite; }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.4; }
-        }
-
-        .btn {
-            width: 100%;
-            padding: 10px;
-            border: none;
-            border-radius: 8px;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #7c3aed, #ec4899);
-            color: white;
-        }
-
-        .btn-primary:hover { opacity: 0.9; }
-
-        .btn-success {
-            background: linear-gradient(135deg, #059669, #22c55e);
-            color: white;
-        }
-
-        .btn-success:hover { opacity: 0.9; }
-
-        .btn-secondary {
-            background: rgba(255, 255, 255, 0.06);
-            color: #94a3b8;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-        }
-
-        .btn-secondary:hover { background: rgba(255, 255, 255, 0.1); }
-
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .actions {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            margin-top: 10px;
-        }
-
-        .divider {
-            border-top: 1px solid rgba(255, 255, 255, 0.06);
-            margin: 10px 0;
-        }
-
-        .footer {
-            padding: 10px 16px;
-            text-align: center;
-        }
-
-        .footer a {
-            color: #a855f7;
-            text-decoration: none;
-            font-size: 12px;
-        }
-
-        .hidden { display: none !important; }
-
-        .info {
-            font-size: 11px;
-            color: #64748b;
-            margin-top: 6px;
-            text-align: center;
-        }
-
-        .login-prompt {
-            text-align: center;
-            padding: 16px 0;
-        }
-
-        .login-prompt p {
-            font-size: 12px;
-            color: #94a3b8;
-            margin-bottom: 12px;
-        }
-
-        /* Prospect list */
-        .prospect-list {
-            max-height: 280px;
-            overflow-y: auto;
-            margin: 8px 0;
-        }
-
-        .prospect-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 8px 10px;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background 0.15s;
-            border: 1px solid transparent;
-        }
-
-        .prospect-item:hover {
-            background: rgba(255, 255, 255, 0.04);
-        }
-
-        .prospect-item.selected {
-            background: rgba(124, 58, 237, 0.08);
-            border-color: rgba(124, 58, 237, 0.2);
-        }
-
-        .prospect-item input[type="checkbox"] {
-            accent-color: #7c3aed;
-            width: 16px;
-            height: 16px;
-            cursor: pointer;
-        }
-
-        .prospect-info { flex: 1; min-width: 0; }
-
-        .prospect-name {
-            font-size: 13px;
-            font-weight: 600;
-            color: #f1f5f9;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .prospect-detail {
-            font-size: 11px;
-            color: #64748b;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .select-bar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 6px 0;
-        }
-
-        .select-bar span {
-            font-size: 12px;
-            color: #94a3b8;
-        }
-
-        .select-bar button {
-            background: none;
-            border: 1px solid rgba(124,58,237,0.3);
-            color: #c4b5fd;
-            font-size: 11px;
-            padding: 4px 10px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
-        }
-
-        .select-bar button:hover {
-            background: rgba(124,58,237,0.1);
-        }
-
-        .import-result {
-            padding: 10px 12px;
-            border-radius: 8px;
-            font-size: 13px;
-            margin-top: 8px;
-        }
-
-        .import-result.success {
-            background: rgba(34,197,94,0.1);
-            color: #86efac;
-            border: 1px solid rgba(34,197,94,0.3);
-        }
-
-        .import-result.error {
-            background: rgba(239,68,68,0.1);
-            color: #fca5a5;
-            border: 1px solid rgba(239,68,68,0.3);
-        }
-
-        .prospect-list::-webkit-scrollbar {
-            width: 4px;
-        }
-        .prospect-list::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        .prospect-list::-webkit-scrollbar-thumb {
-            background: rgba(255,255,255,0.1);
-            border-radius: 4px;
-        }
-    </style>
+  <meta charset="utf-8">
+  <title>Wassel</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{width:380px;font-family:'Segoe UI',Inter,system-ui,sans-serif;background:#0a0a12;color:#f1f5f9}
+    .header{background:linear-gradient(135deg,#7c3aed,#ec4899);padding:14px 16px;display:flex;align-items:center;justify-content:space-between}
+    .header h1{font-size:17px;font-weight:700;color:#fff}
+    .header p{font-size:11px;color:rgba(255,255,255,.8);margin-top:2px}
+    .badge{font-size:10px;background:rgba(255,255,255,.2);padding:3px 10px;border-radius:12px;font-weight:700;color:#fff}
+    .content{padding:14px}
+    .status-bar{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:8px;margin-bottom:12px;font-size:13px;font-weight:500}
+    .status-bar.ok{background:rgba(34,197,94,.1);color:#86efac;border:1px solid rgba(34,197,94,.3)}
+    .status-bar.err{background:rgba(239,68,68,.1);color:#fca5a5;border:1px solid rgba(239,68,68,.3)}
+    .status-bar.warn{background:rgba(245,158,11,.1);color:#fcd34d;border:1px solid rgba(245,158,11,.3)}
+    .status-bar.info{background:rgba(124,58,237,.1);color:#c4b5fd;border:1px solid rgba(124,58,237,.3)}
+    .status-bar.found{background:rgba(34,197,94,.1);color:#86efac;border:1px solid rgba(34,197,94,.3);font-weight:700}
+    .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+    .dot.green{background:#22c55e}.dot.red{background:#ef4444}.dot.yellow{background:#f59e0b}
+    .dot.purple{background:#7c3aed;animation:pulse 1.5s infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+    .btn{width:100%;padding:10px;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:6px}
+    .btn:disabled{opacity:.5;cursor:not-allowed}
+    .btn-scan{background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;font-size:14px;padding:12px}
+    .btn-scan:hover:not(:disabled){opacity:.9}
+    .btn-import{background:linear-gradient(135deg,#059669,#22c55e);color:#fff;font-size:14px;padding:12px}
+    .btn-import:hover:not(:disabled){opacity:.9}
+    .btn-secondary{background:rgba(255,255,255,.06);color:#94a3b8;border:1px solid rgba(255,255,255,.08)}
+    .btn-secondary:hover{background:rgba(255,255,255,.1)}
+    .btn-primary{background:linear-gradient(135deg,#7c3aed,#ec4899);color:#fff}
+    .btn-primary:hover{opacity:.9}
+    .actions{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+    .row{display:flex;gap:8px}
+    .row .btn{flex:1}
+    .divider{border-top:1px solid rgba(255,255,255,.06);margin:12px 0}
+    .hidden{display:none!important}
+    .footer{padding:10px 16px;text-align:center}
+    .footer a{color:#a855f7;text-decoration:none;font-size:12px}
+    /* Prospect list */
+    .select-bar{display:flex;align-items:center;justify-content:space-between;padding:8px 0}
+    .select-bar span{font-size:12px;color:#94a3b8}
+    .select-bar button{background:none;border:1px solid rgba(124,58,237,.3);color:#c4b5fd;font-size:11px;padding:4px 12px;border-radius:6px;cursor:pointer;font-weight:600}
+    .select-bar button:hover{background:rgba(124,58,237,.12)}
+    .prospect-list{max-height:260px;overflow-y:auto;margin:6px 0 10px}
+    .prospect-list::-webkit-scrollbar{width:4px}
+    .prospect-list::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:4px}
+    .p-item{display:flex;align-items:center;gap:10px;padding:7px 8px;border-radius:8px;cursor:pointer;transition:background .12s;border:1px solid transparent}
+    .p-item:hover{background:rgba(255,255,255,.04)}
+    .p-item.sel{background:rgba(124,58,237,.08);border-color:rgba(124,58,237,.2)}
+    .p-item input[type=checkbox]{accent-color:#7c3aed;width:15px;height:15px;cursor:pointer;flex-shrink:0}
+    .p-avatar{width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0;background:#1e1b4b}
+    .p-info{flex:1;min-width:0}
+    .p-name{font-size:13px;font-weight:600;color:#f1f5f9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .p-detail{font-size:11px;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .result-box{padding:12px;border-radius:8px;font-size:13px;margin-top:8px;text-align:center}
+    .result-box.success{background:rgba(34,197,94,.1);color:#86efac;border:1px solid rgba(34,197,94,.3)}
+    .result-box.error{background:rgba(239,68,68,.1);color:#fca5a5;border:1px solid rgba(239,68,68,.3)}
+    .info-text{font-size:11px;color:#475569;text-align:center;margin-top:6px}
+    .login-prompt{text-align:center;padding:16px 0}
+    .login-prompt p{font-size:12px;color:#94a3b8;margin-bottom:12px}
+  </style>
 </head>
-
 <body>
-    <div class="header">
-        <div>
-            <h1>⚡ Wassel</h1>
-            <p>LinkedIn Prospect Importer</p>
-        </div>
-        <span id="header-badge" class="header-badge hidden"></span>
+  <div class="header">
+    <div>
+      <h1>⚡ Wassel</h1>
+      <p>LinkedIn Prospect Importer</p>
+    </div>
+    <span id="badge" class="badge hidden"></span>
+  </div>
+
+  <div class="content">
+    <div id="status" class="status-bar info">
+      <span class="dot purple"></span>
+      <span id="status-text">Connecting...</span>
     </div>
 
-    <div class="content">
-        <!-- Connection Status -->
-        <div id="status-box" class="status syncing">
-            <span class="dot purple"></span>
-            <span id="status-text">Connecting to dashboard...</span>
-        </div>
-
-        <!-- Not Logged In Section -->
-        <div id="login-section" class="hidden">
-            <div class="login-prompt">
-                <p>Open the Wassel dashboard and log in to automatically connect the extension.</p>
-                <button class="btn btn-primary" id="open-dashboard-btn">🚀 Open Wassel Dashboard</button>
-                <div class="info">After logging in, click the sync button below.</div>
-            </div>
-            <div class="divider"></div>
-            <button class="btn btn-secondary" id="retry-sync-btn">🔄 Sync Now</button>
-        </div>
-
-        <!-- Connected Section (Non-LinkedIn) -->
-        <div id="connected-section" class="hidden">
-            <div class="actions">
-                <button class="btn btn-primary" id="open-linkedin-btn">🔍 Open LinkedIn Search</button>
-                <button class="btn btn-secondary" id="test-btn">🔌 Test Connection</button>
-                <button class="btn btn-secondary" id="dashboard-btn">📊 Open Dashboard</button>
-            </div>
-            <div class="divider"></div>
-            <button class="btn btn-secondary" id="resync-btn">🔄 Refresh Session</button>
-        </div>
-
-        <!-- Scan Section (LinkedIn Search Page) -->
-        <div id="scan-section" class="hidden">
-            <button class="btn btn-primary" id="scan-btn">🔍 Scan Page for Prospects</button>
-
-            <div id="scan-results" class="hidden">
-                <div class="select-bar">
-                    <span id="selected-count">0 selected</span>
-                    <button id="select-all-btn">Select All</button>
-                </div>
-
-                <div id="prospect-list" class="prospect-list"></div>
-
-                <button class="btn btn-success" id="import-btn" disabled>📥 Import Selected (0)</button>
-            </div>
-
-            <div id="import-result" class="hidden"></div>
-
-            <div class="divider"></div>
-            <div style="display:flex; gap:8px;">
-                <button class="btn btn-secondary" id="scan-dashboard-btn" style="flex:1">📊 Dashboard</button>
-                <button class="btn btn-secondary" id="scan-rescan-btn" style="flex:1">🔄 Re-scan</button>
-            </div>
-        </div>
+    <!-- VIEW: Not Connected -->
+    <div id="view-login" class="hidden">
+      <div class="login-prompt">
+        <p>Open the Wassel dashboard and log in to connect.</p>
+        <button class="btn btn-primary" id="btn-open-login">🚀 Open Wassel Dashboard</button>
+        <div class="info-text" style="margin-top:10px">After logging in, click Sync below.</div>
+      </div>
+      <div class="divider"></div>
+      <button class="btn btn-secondary" id="btn-sync">🔄 Sync Now</button>
     </div>
 
-    <div class="footer">
-        <a href="https://wassel-alpha.vercel.app/app/extension" target="_blank">Extension Help & Setup</a>
+    <!-- VIEW: Connected (non-LinkedIn) -->
+    <div id="view-connected" class="hidden">
+      <div class="actions">
+        <button class="btn btn-primary" id="btn-linkedin">🔍 Open LinkedIn Search</button>
+        <button class="btn btn-secondary" id="btn-test">🔌 Test Connection</button>
+        <button class="btn btn-secondary" id="btn-dashboard">📊 Open Dashboard</button>
+      </div>
+      <div class="divider"></div>
+      <button class="btn btn-secondary" id="btn-resync">🔄 Refresh Session</button>
     </div>
 
-    <script src="popup.js"></script>
+    <!-- VIEW: LinkedIn Scan -->
+    <div id="view-scan" class="hidden">
+      <button class="btn btn-scan" id="btn-scan">🔍 Scan Page</button>
+
+      <!-- After scan -->
+      <div id="scan-results" class="hidden">
+        <div class="select-bar">
+          <span id="sel-count">0 selected</span>
+          <button id="btn-select-all">☑ Select All</button>
+        </div>
+        <div id="prospect-list" class="prospect-list"></div>
+        <button class="btn btn-import" id="btn-import" disabled>📥 Import Selected (0)</button>
+      </div>
+
+      <!-- After import -->
+      <div id="import-result" class="hidden"></div>
+
+      <div class="divider"></div>
+      <div class="row">
+        <button class="btn btn-secondary" id="btn-scan-dash">📊 Dashboard</button>
+        <button class="btn btn-secondary" id="btn-rescan">🔄 Re-scan</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <a href="https://wassel-alpha.vercel.app/app/extension" target="_blank">Extension Help & Setup</a>
+  </div>
+
+  <script src="popup.js"></script>
 </body>
-
 </html>

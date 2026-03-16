@@ -1,380 +1,430 @@
-// Wassel Extension — Popup Script (Dual-View: Scan + Connected)
-document.addEventListener('DOMContentLoaded', async () => {
-    const statusBox = document.getElementById('status-box');
-    const statusText = document.getElementById('status-text');
-    const headerBadge = document.getElementById('header-badge');
-    const loginSection = document.getElementById('login-section');
-    const connectedSection = document.getElementById('connected-section');
-    const scanSection = document.getElementById('scan-section');
+// Wassel Extension — Popup (v2 — uses chrome.scripting for reliable scan)
+document.addEventListener('DOMContentLoaded', () => {
+  // ── Elements ──
+  const statusBar  = document.getElementById('status');
+  const statusText = document.getElementById('status-text');
+  const badge      = document.getElementById('badge');
 
-    // Login elements
-    const openDashboardBtn = document.getElementById('open-dashboard-btn');
-    const retrySyncBtn = document.getElementById('retry-sync-btn');
+  const viewLogin     = document.getElementById('view-login');
+  const viewConnected = document.getElementById('view-connected');
+  const viewScan      = document.getElementById('view-scan');
 
-    // Connected elements
-    const testBtn = document.getElementById('test-btn');
-    const openLinkedinBtn = document.getElementById('open-linkedin-btn');
-    const dashboardBtn = document.getElementById('dashboard-btn');
-    const resyncBtn = document.getElementById('resync-btn');
+  const scanResults   = document.getElementById('scan-results');
+  const prospectList  = document.getElementById('prospect-list');
+  const selCountEl    = document.getElementById('sel-count');
+  const importResult  = document.getElementById('import-result');
 
-    // Scan elements
-    const scanBtn = document.getElementById('scan-btn');
-    const scanResults = document.getElementById('scan-results');
-    const prospectList = document.getElementById('prospect-list');
-    const selectedCountEl = document.getElementById('selected-count');
-    const selectAllBtn = document.getElementById('select-all-btn');
-    const importBtn = document.getElementById('import-btn');
-    const importResultEl = document.getElementById('import-result');
-    const scanDashboardBtn = document.getElementById('scan-dashboard-btn');
-    const scanRescanBtn = document.getElementById('scan-rescan-btn');
+  // ── State ──
+  let prospects = [];
+  let selected  = new Set();
 
-    let prospects = [];
-    let selected = new Set();
+  // ── Status helper ──
+  function setStatus(type, text) {
+    statusBar.className = 'status-bar ' + type;
+    const dotColors = { ok:'green', err:'red', warn:'yellow', info:'purple', found:'green' };
+    statusBar.querySelector('.dot').className = 'dot ' + (dotColors[type] || 'purple');
+    statusText.textContent = text;
+  }
 
-    // ── Helpers ──
-    function setStatus(type, text) {
-        statusBox.className = `status ${type}`;
-        const dotClass = type === 'ok' ? 'green' : type === 'err' ? 'red' : type === 'syncing' ? 'purple' : type === 'found' ? 'green' : 'yellow';
-        statusBox.querySelector('.dot').className = `dot ${dotClass}`;
-        statusText.textContent = text;
-    }
+  function hideAllViews() {
+    viewLogin.classList.add('hidden');
+    viewConnected.classList.add('hidden');
+    viewScan.classList.add('hidden');
+  }
 
-    function hideAll() {
-        loginSection.classList.add('hidden');
-        connectedSection.classList.add('hidden');
-        scanSection.classList.add('hidden');
-    }
+  // ── Views ──
+  function showLogin(reason) {
+    hideAllViews();
+    viewLogin.classList.remove('hidden');
+    if (reason === 'no_tab') setStatus('warn', 'Open Wassel dashboard to connect');
+    else if (reason === 'no_token') setStatus('warn', 'Please log in to Wassel first');
+    else setStatus('err', 'Not connected — ' + (reason || 'unknown'));
+  }
 
-    function showConnected() {
-        hideAll();
-        connectedSection.classList.remove('hidden');
-        setStatus('ok', '✅ Connected to Wassel');
-    }
+  function showConnected() {
+    hideAllViews();
+    viewConnected.classList.remove('hidden');
+    badge.classList.add('hidden');
+    setStatus('ok', '✅ Connected to Wassel');
+  }
 
-    function showNotConnected(reason) {
-        hideAll();
-        loginSection.classList.remove('hidden');
-        if (reason === 'no_tab') {
-            setStatus('pending', 'Open Wassel dashboard to connect');
-        } else if (reason === 'no_token') {
-            setStatus('pending', 'Please log in to Wassel dashboard first');
-        } else {
-            setStatus('err', 'Could not connect — ' + (reason || 'unknown'));
+  function showScanView() {
+    hideAllViews();
+    viewScan.classList.remove('hidden');
+    badge.textContent = 'LinkedIn';
+    badge.classList.remove('hidden');
+    setStatus('ok', '✅ Ready — click Scan Page');
+  }
+
+  // ── Token helper ──
+  function getToken() {
+    return new Promise(resolve => {
+      chrome.runtime.sendMessage({ type: 'GET_CONFIG' }, config => {
+        resolve(config?.apiToken || null);
+      });
+    });
+  }
+
+  function syncToken() {
+    return new Promise(resolve => {
+      chrome.runtime.sendMessage({ type: 'SYNC_TOKEN' }, result => {
+        resolve(result);
+      });
+    });
+  }
+
+  // ══════════════════════════════════════════
+  //  SCAN — uses chrome.scripting.executeScript
+  // ══════════════════════════════════════════
+
+  // This function is serialized and injected into the LinkedIn page
+  function extractProspects() {
+    const prospects = [];
+    const seen = new Set();
+
+    const links = document.querySelectorAll('a[href*="/in/"]');
+
+    links.forEach(link => {
+      try {
+        const href = link.href || '';
+        if (!href.includes('linkedin.com/in/')) return;
+
+        const cleanUrl = href.split('?')[0];
+        if (seen.has(cleanUrl)) return;
+        const slug = cleanUrl.split('/in/')[1];
+        if (!slug || slug.replace(/\//g, '').length < 3) return;
+        seen.add(cleanUrl);
+
+        const li = link.closest('li');
+        const container = li || link.closest('[class*="result"]') || link.parentElement;
+        if (!container) return;
+
+        // Name
+        let name = '';
+        const nameSelectors = [
+          'span[aria-hidden="true"]',
+          '[class*="title"] span',
+          '[class*="name"]',
+          'span.t-16',
+          'span.t-bold',
+        ];
+        for (const sel of nameSelectors) {
+          const el = container.querySelector(sel);
+          const text = el?.innerText?.trim()?.split('\n')[0]?.trim();
+          if (text && text.length > 1 &&
+              !text.includes('·') &&
+              !text.toLowerCase().includes('connect') &&
+              !text.toLowerCase().includes('follow') &&
+              !text.toLowerCase().includes('message') &&
+              !text.toLowerCase().includes('pending')) {
+            name = text;
+            break;
+          }
         }
-    }
+        if (!name || name.length < 2) return;
 
-    function showScanView() {
-        hideAll();
-        scanSection.classList.remove('hidden');
-        headerBadge.textContent = 'LinkedIn';
-        headerBadge.classList.remove('hidden');
-        setStatus('ok', '✅ Ready to scan this page');
-    }
+        // Title
+        const titleEl = container.querySelector(
+          '[class*="primary-subtitle"], [class*="subtitle"]:first-of-type, .entity-result__summary'
+        );
 
-    function updateSelection() {
-        const count = selected.size;
-        selectedCountEl.textContent = `${count} selected`;
-        importBtn.textContent = `📥 Import Selected (${count})`;
-        importBtn.disabled = count === 0;
+        // Company
+        const companyEl = container.querySelector('[class*="secondary-subtitle"]');
 
-        // Update checkboxes
-        document.querySelectorAll('.prospect-item').forEach(item => {
-            const id = item.dataset.id;
-            const checkbox = item.querySelector('input[type="checkbox"]');
-            if (checkbox) checkbox.checked = selected.has(id);
-            item.classList.toggle('selected', selected.has(id));
+        // Photo
+        const photoEl = container.querySelector('img');
+        const photoSrc = photoEl?.src || '';
+        const photoUrl = (photoSrc.includes('media') || photoSrc.includes('profile')) ? photoSrc : null;
+
+        prospects.push({
+          name: name.substring(0, 100),
+          title: (titleEl?.innerText?.trim() || '').substring(0, 150),
+          company: (companyEl?.innerText?.trim() || '').substring(0, 100),
+          linkedin_url: cleanUrl,
+          photo_url: photoUrl,
         });
-    }
+      } catch (e) { /* skip */ }
+    });
 
-    function renderProspects() {
-        prospectList.innerHTML = '';
-        prospects.forEach((p, i) => {
-            const id = p.linkedin_url || p.linkedinUrl || `prospect-${i}`;
-            const item = document.createElement('div');
-            item.className = `prospect-item ${selected.has(id) ? 'selected' : ''}`;
-            item.dataset.id = id;
-            item.innerHTML = `
-                <input type="checkbox" ${selected.has(id) ? 'checked' : ''}>
-                <div class="prospect-info">
-                    <div class="prospect-name">${p.name || 'Unknown'}</div>
-                    <div class="prospect-detail">${p.title || p.headline || ''} ${p.company ? '· ' + p.company : ''}</div>
-                </div>
-            `;
-            item.addEventListener('click', (e) => {
-                if (e.target.tagName === 'INPUT') return;
-                if (selected.has(id)) {
-                    selected.delete(id);
-                } else {
-                    selected.add(id);
-                }
-                updateSelection();
-            });
-            item.querySelector('input').addEventListener('change', () => {
-                if (selected.has(id)) {
-                    selected.delete(id);
-                } else {
-                    selected.add(id);
-                }
-                updateSelection();
-            });
-            prospectList.appendChild(item);
-        });
-    }
+    return prospects;
+  }
 
-    // ── Scanning ──
-    async function scanPage() {
-        scanBtn.disabled = true;
-        scanBtn.textContent = '⏳ Scanning...';
-        setStatus('syncing', 'Scanning LinkedIn page...');
+  async function scanPage() {
+    const scanBtn = document.getElementById('btn-scan');
+    scanBtn.disabled = true;
+    scanBtn.innerHTML = '⏳ Scanning...';
+    setStatus('info', 'Scanning LinkedIn page...');
+    scanResults.classList.add('hidden');
+    importResult.classList.add('hidden');
 
-        // Get active tab
-        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-        if (!tab || !tab.id) {
-            setStatus('err', 'Cannot access current tab');
-            scanBtn.disabled = false;
-            scanBtn.textContent = '🔍 Scan Page for Prospects';
-            return;
-        }
-
-        try {
-            // Inject content script scan if needed, then ask it for prospects
-            const results = await chrome.tabs.sendMessage(tab.id, { type: 'SCAN_PROSPECTS' });
-            if (results && results.prospects && results.prospects.length > 0) {
-                prospects = results.prospects;
-                selected = new Set(prospects.map((p, i) => p.linkedin_url || p.linkedinUrl || `prospect-${i}`));
-
-                setStatus('found', `🎯 Found ${prospects.length} prospects`);
-                renderProspects();
-                scanResults.classList.remove('hidden');
-                updateSelection();
-            } else {
-                setStatus('pending', 'No prospects found. Scroll down and try again.');
-            }
-        } catch (e) {
-            console.error('Scan error:', e);
-            // Content script may not be injected — try injecting it
-            try {
-                await chrome.scripting.executeScript({
-                    target: { tabId: tab.id },
-                    files: ['content.js']
-                });
-                // Retry scan after injection
-                setTimeout(async () => {
-                    try {
-                        const results = await chrome.tabs.sendMessage(tab.id, { type: 'SCAN_PROSPECTS' });
-                        if (results && results.prospects && results.prospects.length > 0) {
-                            prospects = results.prospects;
-                            selected = new Set(prospects.map((p, i) => p.linkedin_url || p.linkedinUrl || `prospect-${i}`));
-                            setStatus('found', `🎯 Found ${prospects.length} prospects`);
-                            renderProspects();
-                            scanResults.classList.remove('hidden');
-                            updateSelection();
-                        } else {
-                            setStatus('pending', 'No prospects found. Try scrolling down first.');
-                        }
-                    } catch (e2) {
-                        setStatus('err', 'Content script not responding. Refresh the page.');
-                    }
-                }, 500);
-            } catch (injectErr) {
-                setStatus('err', 'Cannot scan this page. Make sure you are on LinkedIn search.');
-            }
-        }
-
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (!tab?.id) {
+        setStatus('err', 'No active tab found');
         scanBtn.disabled = false;
-        scanBtn.textContent = '🔍 Scan Page for Prospects';
+        scanBtn.innerHTML = '🔍 Scan Page';
+        return;
+      }
+
+      const results = await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: extractProspects,
+      });
+
+      const found = results?.[0]?.result || [];
+      console.log('[Wassel] Found:', found.length, 'prospects');
+
+      if (found.length === 0) {
+        setStatus('warn', 'No prospects found. Scroll down and try again.');
+        scanBtn.disabled = false;
+        scanBtn.innerHTML = '🔍 Scan Page';
+        return;
+      }
+
+      prospects = found;
+      selected = new Set(prospects.map((_, i) => i));
+
+      setStatus('found', `🎯 Found ${prospects.length} prospects`);
+      renderProspects();
+      scanResults.classList.remove('hidden');
+      updateSelection();
+
+    } catch (err) {
+      console.error('[Wassel] Scan error:', err);
+      setStatus('err', 'Scan failed. Make sure you are on LinkedIn.');
     }
 
-    // ── Import ──
-    async function importSelected() {
-        if (selected.size === 0) return;
+    scanBtn.disabled = false;
+    scanBtn.innerHTML = '🔍 Scan Page';
+  }
 
-        importBtn.disabled = true;
-        importBtn.textContent = '⏳ Importing...';
-        importResultEl.classList.add('hidden');
+  // ── Render prospect list ──
+  function renderProspects() {
+    prospectList.innerHTML = '';
+    prospects.forEach((p, i) => {
+      const div = document.createElement('div');
+      div.className = 'p-item' + (selected.has(i) ? ' sel' : '');
+      div.dataset.idx = i;
 
-        const selectedProspects = prospects.filter((p, i) => {
-            const id = p.linkedin_url || p.linkedinUrl || `prospect-${i}`;
-            return selected.has(id);
-        });
+      const avatarSrc = p.photo_url || 'data:image/svg+xml,' + encodeURIComponent(
+        '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><rect width="32" height="32" rx="16" fill="#1e1b4b"/><text x="16" y="20" text-anchor="middle" fill="#c4b5fd" font-size="14" font-family="sans-serif">' + (p.name?.[0] || '?') + '</text></svg>'
+      );
 
-        // Get API token from background
-        chrome.runtime.sendMessage({ type: 'GET_CONFIG' }, async (config) => {
-            if (!config || !config.apiToken) {
-                importResultEl.innerHTML = '<div class="import-result error">Not connected to Wassel. Please sync first.</div>';
-                importResultEl.classList.remove('hidden');
-                importBtn.disabled = false;
-                importBtn.textContent = `📥 Import Selected (${selected.size})`;
-                return;
-            }
+      div.innerHTML = `
+        <input type="checkbox" ${selected.has(i) ? 'checked' : ''}>
+        <img class="p-avatar" src="${avatarSrc}" onerror="this.style.display='none'">
+        <div class="p-info">
+          <div class="p-name">${esc(p.name)}</div>
+          <div class="p-detail">${esc(p.title)}${p.company ? ' · ' + esc(p.company) : ''}</div>
+        </div>
+      `;
 
-            try {
-                const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-                const apiBase = config.apiBase || 'https://wassel-alpha.vercel.app/api';
-                const res = await fetch(`${apiBase}/ext/import`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${config.apiToken}`,
-                    },
-                    body: JSON.stringify({
-                        prospects: selectedProspects,
-                        source_url: tab?.url || 'linkedin_search',
-                    }),
-                });
+      div.addEventListener('click', e => {
+        if (e.target.tagName === 'INPUT') return;
+        toggleSelect(i);
+      });
+      div.querySelector('input').addEventListener('change', () => toggleSelect(i));
 
-                const data = await res.json();
+      prospectList.appendChild(div);
+    });
+  }
 
-                if (res.ok) {
-                    const count = data.imported || data.count || selectedProspects.length;
-                    importResultEl.innerHTML = `<div class="import-result success">✅ ${count} prospects imported successfully!</div>`;
+  function toggleSelect(i) {
+    if (selected.has(i)) selected.delete(i); else selected.add(i);
+    updateSelection();
+  }
 
-                    // Trigger CSV download
-                    downloadCSV(selectedProspects);
-                } else {
-                    const errMsg = data.error || 'Import failed';
-                    importResultEl.innerHTML = `<div class="import-result error">❌ ${errMsg}</div>`;
-                }
-            } catch (e) {
-                importResultEl.innerHTML = `<div class="import-result error">❌ Network error: ${e.message}</div>`;
-            }
+  function updateSelection() {
+    selCountEl.textContent = selected.size + ' selected';
+    const importBtn = document.getElementById('btn-import');
+    importBtn.textContent = `📥 Import Selected (${selected.size})`;
+    importBtn.disabled = selected.size === 0;
 
-            importResultEl.classList.remove('hidden');
-            importBtn.disabled = false;
-            importBtn.textContent = `📥 Import Selected (${selected.size})`;
-        });
+    document.querySelectorAll('.p-item').forEach(el => {
+      const idx = parseInt(el.dataset.idx);
+      el.classList.toggle('sel', selected.has(idx));
+      el.querySelector('input').checked = selected.has(idx);
+    });
+  }
+
+  function esc(str) {
+    const d = document.createElement('div');
+    d.textContent = str || '';
+    return d.innerHTML;
+  }
+
+  // ── Import ──
+  async function importSelected() {
+    const items = prospects.filter((_, i) => selected.has(i));
+    if (!items.length) return;
+
+    const importBtn = document.getElementById('btn-import');
+    importBtn.disabled = true;
+    importBtn.innerHTML = '⏳ Importing...';
+    importResult.classList.add('hidden');
+    setStatus('info', `Importing ${items.length} prospects...`);
+
+    const token = await getToken();
+    if (!token) {
+      setStatus('err', 'Not connected. Click Refresh Session.');
+      importBtn.disabled = false;
+      importBtn.innerHTML = `📥 Import Selected (${selected.size})`;
+      return;
     }
 
-    // ── CSV Download ──
-    function downloadCSV(prospects) {
-        const headers = ['Name', 'Title', 'Company', 'LinkedIn URL', 'Imported At'];
-        const rows = prospects.map(p => [
-            p.name || '',
-            p.title || p.headline || '',
-            p.company || '',
-            p.linkedin_url || p.linkedinUrl || '',
-            new Date().toLocaleDateString(),
-        ]);
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      const res = await fetch('https://wassel-alpha.vercel.app/api/ext/import', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token,
+        },
+        body: JSON.stringify({
+          prospects: items,
+          source_url: tab?.url || 'linkedin_search',
+        }),
+      });
 
-        const csvContent = [
-            headers.join(','),
-            ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')),
-        ].join('\n');
+      const data = await res.json();
 
-        const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        chrome.downloads.download({
-            url: url,
-            filename: `wassel-prospects-${new Date().toISOString().slice(0, 10)}.csv`,
-            saveAs: false,
-        });
+      if (res.ok) {
+        const count = data.imported || data.count || items.length;
+        importResult.innerHTML = `<div class="result-box success">✅ ${count} prospects imported successfully!</div>`;
+        setStatus('ok', `✅ ${count} imported`);
+        downloadCSV(items);
+      } else {
+        const errMsg = data.error || 'Import failed';
+        importResult.innerHTML = `<div class="result-box error">❌ ${errMsg}</div>`;
+        setStatus('err', errMsg);
+      }
+    } catch (e) {
+      importResult.innerHTML = `<div class="result-box error">❌ Network error: ${e.message}</div>`;
+      setStatus('err', 'Connection error');
     }
 
-    // ── Event Listeners ──
-    scanBtn.addEventListener('click', scanPage);
-    scanRescanBtn.addEventListener('click', scanPage);
+    importResult.classList.remove('hidden');
+    importBtn.disabled = false;
+    importBtn.innerHTML = `📥 Import Selected (${selected.size})`;
+  }
 
-    selectAllBtn.addEventListener('click', () => {
-        if (selected.size === prospects.length) {
-            selected.clear();
-        } else {
-            prospects.forEach((p, i) => {
-                selected.add(p.linkedin_url || p.linkedinUrl || `prospect-${i}`);
-            });
-        }
-        updateSelection();
-        renderProspects();
+  // ── CSV Download ──
+  function downloadCSV(items) {
+    const headers = ['Name','Title','Company','LinkedIn URL','Imported'];
+    const rows = items.map(p => [
+      p.name || '',
+      p.title || '',
+      p.company || '',
+      p.linkedin_url || '',
+      new Date().toLocaleDateString(),
+    ]);
+    const csv = [
+      headers.join(','),
+      ...rows.map(r => r.map(c => '"' + String(c).replace(/"/g, '""') + '"').join(',')),
+    ].join('\n');
+
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    chrome.downloads.download({
+      url,
+      filename: 'wassel-prospects-' + new Date().toISOString().slice(0, 10) + '.csv',
+      saveAs: false,
     });
+  }
 
-    importBtn.addEventListener('click', importSelected);
+  // ══════════════════════════════════════════
+  //  EVENT LISTENERS
+  // ══════════════════════════════════════════
 
-    scanDashboardBtn.addEventListener('click', () => {
-        chrome.tabs.create({ url: 'https://wassel-alpha.vercel.app/app' });
+  document.getElementById('btn-scan').addEventListener('click', scanPage);
+  document.getElementById('btn-rescan').addEventListener('click', scanPage);
+
+  document.getElementById('btn-select-all').addEventListener('click', () => {
+    if (selected.size === prospects.length) {
+      selected.clear();
+    } else {
+      prospects.forEach((_, i) => selected.add(i));
+    }
+    updateSelection();
+  });
+
+  document.getElementById('btn-import').addEventListener('click', importSelected);
+
+  document.getElementById('btn-linkedin').addEventListener('click', () => {
+    chrome.tabs.create({ url: 'https://www.linkedin.com/search/results/people/' });
+  });
+
+  document.getElementById('btn-dashboard').addEventListener('click', () => {
+    chrome.tabs.create({ url: 'https://wassel-alpha.vercel.app/app' });
+  });
+
+  document.getElementById('btn-scan-dash').addEventListener('click', () => {
+    chrome.tabs.create({ url: 'https://wassel-alpha.vercel.app/app' });
+  });
+
+  document.getElementById('btn-open-login').addEventListener('click', () => {
+    chrome.tabs.create({ url: 'https://wassel-alpha.vercel.app/login' });
+  });
+
+  document.getElementById('btn-test').addEventListener('click', () => {
+    setStatus('info', 'Testing...');
+    const btn = document.getElementById('btn-test');
+    btn.disabled = true;
+    chrome.runtime.sendMessage({ type: 'TEST_CONNECTION' }, r => {
+      btn.disabled = false;
+      if (r?.ok) setStatus('ok', '✅ Backend reachable');
+      else setStatus('err', 'Failed: ' + (r?.error || 'Unknown'));
     });
+  });
 
-    // Connected view buttons
-    openLinkedinBtn.addEventListener('click', () => {
-        chrome.tabs.create({ url: 'https://www.linkedin.com/search/results/people/' });
-    });
+  document.getElementById('btn-sync').addEventListener('click', async () => {
+    setStatus('info', 'Syncing...');
+    const result = await syncToken();
+    if (result?.synced) await init();
+    else showLogin(result?.reason || 'unknown');
+  });
 
-    dashboardBtn.addEventListener('click', () => {
-        chrome.tabs.create({ url: 'https://wassel-alpha.vercel.app/app' });
-    });
+  document.getElementById('btn-resync').addEventListener('click', async () => {
+    setStatus('info', 'Refreshing...');
+    const result = await syncToken();
+    if (result?.synced) await init();
+    else showLogin(result?.reason || 'unknown');
+  });
 
-    openDashboardBtn.addEventListener('click', () => {
-        chrome.tabs.create({ url: 'https://wassel-alpha.vercel.app/login' });
-    });
+  // ══════════════════════════════════════════
+  //  INIT — detect URL and show correct view
+  // ══════════════════════════════════════════
 
-    testBtn.addEventListener('click', () => {
-        setStatus('syncing', 'Testing connection...');
-        testBtn.disabled = true;
-        chrome.runtime.sendMessage({ type: 'TEST_CONNECTION' }, (response) => {
-            testBtn.disabled = false;
-            if (response && response.ok) {
-                setStatus('ok', '✅ Backend reachable');
-            } else {
-                setStatus('err', 'Connection failed: ' + (response?.error || 'Unknown'));
-            }
-        });
-    });
+  async function init() {
+    setStatus('info', 'Connecting...');
 
-    retrySyncBtn.addEventListener('click', () => {
-        setStatus('syncing', 'Syncing...');
-        chrome.runtime.sendMessage({ type: 'SYNC_TOKEN' }, (result) => {
-            if (result && result.synced) {
-                detectAndShow();
-            } else {
-                showNotConnected(result?.reason || 'unknown');
-            }
-        });
-    });
+    const token = await getToken();
 
-    resyncBtn.addEventListener('click', () => {
-        setStatus('syncing', 'Refreshing session...');
-        chrome.runtime.sendMessage({ type: 'SYNC_TOKEN' }, (result) => {
-            if (result && result.synced) {
-                detectAndShow();
-            } else {
-                showNotConnected(result?.reason || 'unknown');
-            }
-        });
-    });
-
-    // ── Main Logic: Detect URL and show appropriate view ──
-    async function detectAndShow() {
-        // Check if we have a token
-        chrome.runtime.sendMessage({ type: 'GET_CONFIG' }, async (config) => {
-            if (!config || !config.apiToken) {
-                // Try syncing first
-                chrome.runtime.sendMessage({ type: 'SYNC_TOKEN' }, async (result) => {
-                    if (result && result.synced) {
-                        await showCorrectView();
-                    } else {
-                        showNotConnected(result?.reason || 'unknown');
-                    }
-                });
-                return;
-            }
-            await showCorrectView();
-        });
+    if (!token) {
+      const result = await syncToken();
+      if (!result?.synced) {
+        showLogin(result?.reason || 'no_token');
+        return;
+      }
     }
 
-    async function showCorrectView() {
-        try {
-            const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-            const url = tab?.url || '';
-            const isLinkedIn = url.includes('linkedin.com/search') || url.includes('linkedin.com/in/');
+    // We have a token — detect if on LinkedIn
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      const url = tab?.url || '';
+      const isLinkedIn = url.includes('linkedin.com/search') ||
+                         url.includes('linkedin.com/in/') ||
+                         url.includes('linkedin.com/mynetwork');
 
-            if (isLinkedIn) {
-                showScanView();
-            } else {
-                showConnected();
-            }
-        } catch (e) {
-            showConnected();
-        }
+      if (isLinkedIn) {
+        showScanView();
+      } else {
+        showConnected();
+      }
+    } catch (e) {
+      showConnected();
     }
+  }
 
-    // Initialize
-    detectAndShow();
+  init();
 });
