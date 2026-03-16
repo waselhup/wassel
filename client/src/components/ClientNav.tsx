@@ -1,8 +1,9 @@
+import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import Avatar from '@/components/Avatar';
 import {
     LayoutDashboard, Target, Users, Download, Chrome,
-    LogOut
+    LogOut, Globe
 } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 
@@ -10,20 +11,22 @@ import { Link, useLocation } from 'wouter';
  * Client navigation sidebar for /app/* pages.
  * Renders just <aside> — parent flex container is in each page.
  * RTL-aware: border switches side automatically via CSS.
+ * Includes language toggle (AR/EN) and mobile bottom nav support.
  */
 export default function ClientNav() {
     const { user, signOut } = useAuth();
     const [location] = useLocation();
+    const [lang, setLang] = useState(
+        localStorage.getItem('wassel_lang') || 'en'
+    );
 
     const handleLogout = async () => {
         try {
-            // Clear ALL cached data first
             localStorage.removeItem('wassel_user_cache');
             localStorage.removeItem('supabase_token');
             localStorage.removeItem('wassel_admin_key');
             localStorage.removeItem('wassel_user');
             localStorage.removeItem('wassel_lang');
-            // Clear any Supabase sb-* keys
             Object.keys(localStorage).forEach(key => {
                 if (key.startsWith('sb-') || key.startsWith('supabase')) {
                     localStorage.removeItem(key);
@@ -33,8 +36,15 @@ export default function ClientNav() {
         } catch (e) {
             console.error('Logout error:', e);
         }
-        // Always redirect regardless of errors
         window.location.href = '/login';
+    };
+
+    const toggleLang = () => {
+        const newLang = lang === 'en' ? 'ar' : 'en';
+        setLang(newLang);
+        localStorage.setItem('wassel_lang', newLang);
+        document.documentElement.dir = newLang === 'ar' ? 'rtl' : 'ltr';
+        window.location.reload();
     };
 
     const navItems = [
@@ -50,7 +60,7 @@ export default function ClientNav() {
 
     return (
         <aside
-            className="w-60 flex flex-col justify-between shrink-0 h-screen"
+            className="client-nav-sidebar w-60 flex flex-col justify-between shrink-0 h-screen"
             style={{
                 background: 'var(--bg-surface)',
                 borderInlineEnd: '1px solid var(--border-subtle)',
@@ -59,7 +69,7 @@ export default function ClientNav() {
             {/* Top: Logo + Nav */}
             <div>
                 {/* Logo */}
-                <div className="px-5 pt-6 pb-5">
+                <div className="px-5 pt-6 pb-5 desktop-only">
                     <Link href="/app">
                         <div className="flex items-center gap-2.5 cursor-pointer">
                             <div
@@ -85,7 +95,7 @@ export default function ClientNav() {
                         return (
                             <Link key={item.href} href={item.href}>
                                 <button
-                                    className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all"
+                                    className="nav-item w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all"
                                     style={{
                                         background: isActive ? 'rgba(124, 58, 237, 0.15)' : 'transparent',
                                         border: isActive ? '1px solid rgba(124, 58, 237, 0.3)' : '1px solid transparent',
@@ -96,7 +106,7 @@ export default function ClientNav() {
                                         className="w-4 h-4"
                                         style={{ color: isActive ? 'var(--accent-primary)' : 'var(--text-muted)' }}
                                     />
-                                    {item.label}
+                                    <span className="nav-label">{item.label}</span>
                                 </button>
                             </Link>
                         );
@@ -104,33 +114,58 @@ export default function ClientNav() {
                 </nav>
             </div>
 
-            {/* User section */}
-            <div
-                className="px-4 py-4 mx-3 mb-3 rounded-lg"
-                style={{
-                    background: 'rgba(255, 255, 255, 0.03)',
-                    border: '1px solid var(--border-subtle)',
-                }}
-            >
-                <div className="flex items-center gap-3">
-                    <Avatar name={displayName} size="md" imageUrl={avatarUrl} />
-                    <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium truncate" style={{ color: 'var(--text-primary)' }}>
-                            {user?.email || 'User'}
-                        </p>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                            <div className="online-dot"></div>
-                            <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Online</span>
-                        </div>
-                    </div>
+            {/* Bottom: Language toggle + User section */}
+            <div className="desktop-only">
+                {/* Language Toggle */}
+                <div className="px-3 mb-2">
                     <button
-                        onClick={handleLogout}
-                        className="p-1.5 rounded-md transition-colors"
-                        style={{ color: 'var(--text-muted)' }}
-                        title="Sign Out"
+                        onClick={toggleLang}
+                        className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm transition-all"
+                        style={{
+                            background: 'rgba(255, 255, 255, 0.04)',
+                            border: '1px solid rgba(255, 255, 255, 0.08)',
+                            color: 'var(--text-secondary)',
+                            cursor: 'pointer',
+                        }}
                     >
-                        <LogOut className="w-3.5 h-3.5" />
+                        <span className="flex items-center gap-2">
+                            <Globe className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />
+                            {lang === 'en' ? '🌐 العربية' : '🌐 English'}
+                        </span>
+                        <span style={{ opacity: 0.5, fontSize: '11px' }}>
+                            {lang === 'en' ? 'EN' : 'AR'}
+                        </span>
                     </button>
+                </div>
+
+                {/* User section */}
+                <div
+                    className="px-4 py-4 mx-3 mb-3 rounded-lg"
+                    style={{
+                        background: 'rgba(255, 255, 255, 0.03)',
+                        border: '1px solid var(--border-subtle)',
+                    }}
+                >
+                    <div className="flex items-center gap-3">
+                        <Avatar name={displayName} size="md" imageUrl={avatarUrl} />
+                        <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium truncate" style={{ color: 'var(--text-primary)' }}>
+                                {user?.email || 'User'}
+                            </p>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                                <div className="online-dot"></div>
+                                <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Online</span>
+                            </div>
+                        </div>
+                        <button
+                            onClick={handleLogout}
+                            className="p-1.5 rounded-md transition-colors"
+                            style={{ color: 'var(--text-muted)' }}
+                            title="Sign Out"
+                        >
+                            <LogOut className="w-3.5 h-3.5" />
+                        </button>
+                    </div>
                 </div>
             </div>
         </aside>

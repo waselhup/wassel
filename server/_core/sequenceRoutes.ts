@@ -1355,4 +1355,212 @@ router.post('/prospects/:id/mark-replied', async (req: Request, res: Response) =
   }
 });
 
+// ============================================================================
+// GET /api/sequence/queue/active — Global queue for extension automation
+// Returns pending actions across ALL active campaigns, max 5
+// ============================================================================
+router.get('/queue/active', async (req: Request, res: Response) => {
+  try {
+    const teamId = getTeamId(req);
+    if (!teamId) return res.status(401).json({ error: 'Unauthorized' });
+
+    const now = new Date().toISOString();
+
+    // Get pending step statuses where scheduled_at <= now, for active campaigns
+    const { data: items, error } = await supabase
+      .from('prospect_step_status')
+      .select(`
+        id,
+        status,
+        scheduled_at,
+        step_id,
+        prospect_id,
+        campaign_id,
+        campaign_steps!inner (
+          step_type,
+          step_number,
+          message_template,
+          delay_days,
+          name
+        ),
+        prospects!inner (
+          id,
+          name,
+          linkedin_url,
+          title,
+          company,
+          reply_detected
+        ),
+        campaigns!inner (
+          id,
+          name,
+          status,
+          team_id
+        )
+      `)
+      .eq('status', 'pending')
+      .lte('scheduled_at', now)
+      .eq('campaigns.team_id', teamId)
+      .in('campaigns.status', ['active', 'draft'])
+      .order('scheduled_at', { ascending: true })
+      .limit(5);
+
+    if (error) {
+      console.error('[Queue] Error:', error);
+      return res.json({ success: true, queue: [] });
+    }
+
+    // Map to flat objects for the extension
+    const queue = (items || []).map((item: any) => {
+      const step = item.campaign_steps;
+      const prospect = item.prospects;
+
+      // Replace template variables
+      let message = step.message_template || '';
+      if (prospect) {
+        const nameParts = (prospect.name || '').split(' ');
+        message = message
+          .replace(/\{\{firstName\}\}/g, nameParts[0] || '')
+          .replace(/\{\{lastName\}\}/g, nameParts.slice(1).join(' ') || '')
+          .replace(/\{\{company\}\}/g, prospect.company || '')
+          .replace(/\{\{jobTitle\}\}/g, prospect.title || '');
+      }
+
+      return {
+        prospectStepId: item.id,
+        step_type: step.step_type,
+        step_number: step.step_number,
+        step_name: step.name,
+        delay_days: step.delay_days,
+        message,
+        prospect_id: prospect?.id,
+        name: prospect?.name,
+        linkedin_url: prospect?.linkedin_url,
+        title: prospect?.title,
+        company: prospect?.company,
+        reply_detected: prospect?.reply_detected,
+        campaign_id: item.campaign_id,
+      };
+    });
+
+    res.json({ success: true, queue, count: queue.length });
+  } catch (e: any) {
+    console.error('[Queue] Error:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ============================================================================
+// POST /api/sequence/step/complete — Mark a step as completed/failed
+// Unlocks next step, with smart reply-skip logic for follow-ups
+// ============================================================================
+router.post('/step/complete', async (req: Request, res: Response) => {
+  try {
+    const teamId = getTeamId(req);
+    if (!teamId) return res.status(401).json({ error: 'Unauthorized' });
+
+    const { prospectStepId, status, errorMessage } = req.body;
+    if (!prospectStepId || !status) {
+      return res.status(400).json({ error: 'prospectStepId and status required' });
+    }
+
+    const now = new Date().toISOString();
+
+    // Get current step info
+    const { data: currentStep } = await supabase
+      .from('prospect_step_status')
+      .select(`
+        id, prospect_id, campaign_id, step_id,
+        campaign_steps!inner (step_number, step_type)
+      `)
+      .eq('id', prospectStepId)
+      .single();
+
+    if (!currentStep) {
+      return res.status(404).json({ error: 'Step status not found' });
+    }
+
+    // Update current step
+    await supabase
+      .from('prospect_step_status')
+      .update({
+        status,
+        completed_at: status === 'completed' ? now : null,
+        error_message: errorMessage || null,
+      })
+      .eq('id', prospectStepId);
+
+    // If completed, unlock next step
+    if (status === 'completed') {
+      const stepData = (currentStep as any).campaign_steps;
+      const nextStepNumber = stepData.step_number + 1;
+
+      // Find next step in the campaign
+      const { data: nextStepDef } = await supabase
+        .from('campaign_steps')
+        .select('id, step_type, delay_days, step_number')
+        .eq('campaign_id', currentStep.campaign_id)
+        .eq('step_number', nextStepNumber)
+        .single();
+
+      if (nextStepDef) {
+        // Find the prospect_step_status row for this next step
+        const { data: nextPSS } = await supabase
+          .from('prospect_step_status')
+          .select('id')
+          .eq('prospect_id', currentStep.prospect_id)
+          .eq('step_id', nextStepDef.id)
+          .eq('campaign_id', currentStep.campaign_id)
+          .single();
+
+        if (nextPSS) {
+          // Smart reply-skip: if follow-up step and prospect already replied, skip
+          if (nextStepDef.step_type === 'follow' || nextStepDef.step_type === 'message' && nextStepDef.step_number >= 4) {
+            const { data: prospect } = await supabase
+              .from('prospects')
+              .select('reply_detected')
+              .eq('id', currentStep.prospect_id)
+              .single();
+
+            if (prospect?.reply_detected) {
+              await supabase
+                .from('prospect_step_status')
+                .update({
+                  status: 'skipped',
+                  error_message: 'Replied — follow-up skipped',
+                })
+                .eq('id', nextPSS.id);
+
+              console.log(`[Step] ✓ Skipped follow-up for ${currentStep.prospect_id} — prospect replied`);
+              return res.json({ success: true, skipped: true });
+            }
+          }
+
+          // Calculate scheduled_at based on delay_days
+          const scheduledAt = new Date();
+          scheduledAt.setDate(scheduledAt.getDate() + (nextStepDef.delay_days || 0));
+
+          await supabase
+            .from('prospect_step_status')
+            .update({
+              status: 'pending',
+              scheduled_at: scheduledAt.toISOString(),
+            })
+            .eq('id', nextPSS.id);
+
+          console.log(`[Step] ✓ Next step ${nextStepDef.step_type} unlocked for ${currentStep.prospect_id}, scheduled at ${scheduledAt.toISOString()}`);
+        }
+      } else {
+        // No next step — all steps complete for this prospect
+        console.log(`[Step] ✓ All steps complete for prospect ${currentStep.prospect_id}`);
+      }
+    }
+
+    res.json({ success: true });
+  } catch (e: any) {
+    console.error('[Step] Error:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 export default router;

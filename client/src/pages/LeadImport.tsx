@@ -1,17 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Upload, Plus, Loader2, CheckCircle, AlertCircle, Users } from 'lucide-react';
-import { trpc } from '@/lib/trpc';
-
-type ImportMode = 'csv' | 'manual';
+import ClientNav from '@/components/ClientNav';
+import { Upload, Plus, Loader2, CheckCircle, AlertCircle, Users, ArrowLeft } from 'lucide-react';
+import { useLocation } from 'wouter';
 
 export default function LeadImport() {
   const { user } = useAuth();
-  const [mode, setMode] = useState<ImportMode>('csv');
-  const [campaignId, setCampaignId] = useState('');
+  const [, navigate] = useLocation();
+  const [mode, setMode] = useState<'csv' | 'manual'>('csv');
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [csvPreview, setCsvPreview] = useState<any[]>([]);
   const [manualLeads, setManualLeads] = useState<any[]>([
@@ -20,105 +16,100 @@ export default function LeadImport() {
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<any>(null);
 
-  // Fetch campaigns
-  const { data: campaigns = [] } = trpc.campaigns.list.useQuery();
+  // Build auth headers
+  const getHeaders = () => {
+    const token = localStorage.getItem('supabase_token');
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    };
+  };
 
-  // Import leads mutation
-  const importLeads = trpc.leads.importLeads.useMutation({
-    onSuccess: (result: any) => {
-      setImportResult(result);
-      setImporting(false);
-    },
-    onError: (error: any) => {
-      setImportResult({ error: error.message });
-      setImporting(false);
-    },
-  });
-
-  const handleCSVUpload = (e: React.ChangeEvent<HTMLInputElement>): void => {
+  const handleCSVUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     setCsvFile(file);
     const reader = new FileReader();
     reader.onload = (event) => {
       const csv = event.target?.result as string;
       const lines = csv.split('\n').filter(line => line.trim());
       const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-      
       const preview = lines.slice(1, 6).map(line => {
         const values = line.split(',').map(v => v.trim());
         return {
           linkedin_url: values[headers.indexOf('linkedin_url')] || values[0],
-          first_name: values[headers.indexOf('first_name')] || '',
-          last_name: values[headers.indexOf('last_name')] || '',
+          name: values[headers.indexOf('name')] || `${values[headers.indexOf('first_name')] || ''} ${values[headers.indexOf('last_name')] || ''}`.trim(),
           company: values[headers.indexOf('company')] || '',
-          headline: values[headers.indexOf('headline')] || '',
+          title: values[headers.indexOf('title')] || values[headers.indexOf('headline')] || '',
         };
       });
-      
       setCsvPreview(preview);
     };
     reader.readAsText(file);
   };
 
   const handleImportCSV = async () => {
-    if (!csvFile || !campaignId) {
-      alert('الرجاء اختيار ملف CSV وحملة');
-      return;
-    }
-
+    if (!csvFile) return;
     setImporting(true);
     const reader = new FileReader();
     reader.onload = async (event) => {
       const csv = event.target?.result as string;
       const lines = csv.split('\n').filter(line => line.trim());
       const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-      
-      const leads = lines.slice(1).map(line => {
+      const prospects = lines.slice(1).map(line => {
         const values = line.split(',').map(v => v.trim());
         return {
           linkedin_url: values[headers.indexOf('linkedin_url')] || values[0],
-          first_name: values[headers.indexOf('first_name')] || '',
-          last_name: values[headers.indexOf('last_name')] || '',
+          name: `${values[headers.indexOf('first_name')] || ''} ${values[headers.indexOf('last_name')] || ''}`.trim() || values[headers.indexOf('name')] || '',
           company: values[headers.indexOf('company')] || '',
-          headline: values[headers.indexOf('headline')] || '',
-          email: values[headers.indexOf('email')] || '',
+          title: values[headers.indexOf('title')] || values[headers.indexOf('headline')] || '',
         };
-      }).filter(lead => lead.linkedin_url);
+      }).filter(p => p.linkedin_url);
 
-      await importLeads.mutateAsync({
-        campaignId,
-        leads,
-      });
+      try {
+        const res = await fetch('/api/ext/import', {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({ prospects, source_url: 'csv_import' }),
+        });
+        const data = await res.json();
+        setImportResult(data);
+      } catch (e: any) {
+        setImportResult({ error: e.message });
+      } finally {
+        setImporting(false);
+      }
     };
     reader.readAsText(csvFile);
   };
 
   const handleImportManual = async () => {
-    if (!campaignId) {
-      alert('الرجاء اختيار حملة');
-      return;
-    }
-
-    const validLeads = manualLeads.filter(lead => lead.linkedin_url);
-    if (validLeads.length === 0) {
-      alert('الرجاء إضافة عملاء محتملين');
-      return;
-    }
-
+    const validLeads = manualLeads.filter(l => l.linkedin_url);
+    if (validLeads.length === 0) return;
     setImporting(true);
-    await importLeads.mutateAsync({
-      campaignId,
-      leads: validLeads,
-    });
+    try {
+      const prospects = validLeads.map(l => ({
+        linkedin_url: l.linkedin_url,
+        name: `${l.first_name} ${l.last_name}`.trim(),
+        company: l.company,
+        title: '',
+      }));
+      const res = await fetch('/api/ext/import', {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ prospects, source_url: 'manual_import' }),
+      });
+      const data = await res.json();
+      setImportResult(data);
+    } catch (e: any) {
+      setImportResult({ error: e.message });
+    } finally {
+      setImporting(false);
+    }
   };
 
   const addManualLead = () => {
-    setManualLeads([
-      ...manualLeads,
-      { linkedin_url: '', first_name: '', last_name: '', company: '' }
-    ]);
+    setManualLeads([...manualLeads, { linkedin_url: '', first_name: '', last_name: '', company: '' }]);
   };
 
   const updateManualLead = (index: number, field: string, value: string) => {
@@ -131,292 +122,238 @@ export default function LeadImport() {
     setManualLeads(manualLeads.filter((_, i) => i !== index));
   };
 
+  const inputStyle: React.CSSProperties = {
+    width: '100%',
+    padding: '10px 14px',
+    background: 'rgba(255,255,255,0.05)',
+    border: '1px solid var(--border-subtle)',
+    borderRadius: '8px',
+    color: 'var(--text-primary)',
+    fontSize: '14px',
+    outline: 'none',
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-8">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3 mb-2">
-            <Users className="w-8 h-8 text-blue-600" />
-            استيراد العملاء المحتملين
-          </h1>
-          <p className="text-gray-600">أضف عملاء محتملين إلى حملتك من CSV أو يدوياً</p>
-        </div>
+    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-base)' }}>
+      <ClientNav />
+      <main className="main-content" style={{ flex: 1, padding: '32px', overflowY: 'auto' }}>
+        {/* Back button */}
+        <button
+          onClick={() => navigate('/app')}
+          style={{
+            display: 'flex', alignItems: 'center', gap: '6px',
+            background: 'none', border: 'none', color: 'var(--text-secondary)',
+            cursor: 'pointer', fontSize: '14px', marginBottom: '20px', padding: '6px 0',
+          }}
+        >
+          <ArrowLeft size={16} /> Back
+        </button>
 
-        {/* Campaign Selection */}
-        <Card className="p-6 mb-8 bg-white border-blue-200">
-          <label className="block text-sm font-medium text-gray-700 mb-3">
-            اختر الحملة *
-          </label>
-          <select
-            value={campaignId}
-            onChange={(e) => setCampaignId(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">-- اختر حملة --</option>
-            {campaigns.map((campaign) => (
-              <option key={campaign.id} value={campaign.id}>
-                {campaign.name}
-              </option>
-            ))}
-          </select>
-        </Card>
+        <h1 style={{ fontSize: '28px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '8px' }}>
+          Import Prospects
+        </h1>
+        <p style={{ color: 'var(--text-secondary)', marginBottom: '32px' }}>
+          Add prospects to your workspace via CSV or manual entry
+        </p>
 
-        {/* Mode Selection */}
-        <div className="flex gap-4 mb-8">
-          <Button
-            onClick={() => setMode('csv')}
-            className={`flex-1 py-3 font-semibold flex items-center gap-2 justify-center ${
-              mode === 'csv'
-                ? 'bg-blue-600 text-white'
-                : 'bg-white text-gray-700 border-2 border-gray-300'
-            }`}
-          >
-            <Upload className="w-5 h-5" />
-            استيراد CSV
-          </Button>
-          <Button
-            onClick={() => setMode('manual')}
-            className={`flex-1 py-3 font-semibold flex items-center gap-2 justify-center ${
-              mode === 'manual'
-                ? 'bg-blue-600 text-white'
-                : 'bg-white text-gray-700 border-2 border-gray-300'
-            }`}
-          >
-            <Plus className="w-5 h-5" />
-            إدخال يدوي
-          </Button>
+        {/* Mode tabs */}
+        <div style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
+          {(['csv', 'manual'] as const).map(m => (
+            <button
+              key={m}
+              onClick={() => setMode(m)}
+              style={{
+                flex: 1, padding: '12px', borderRadius: '10px', fontSize: '14px', fontWeight: 600,
+                cursor: 'pointer', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                background: mode === m ? 'rgba(124,58,237,0.15)' : 'rgba(255,255,255,0.05)',
+                color: mode === m ? 'var(--accent-secondary)' : 'var(--text-secondary)',
+              }}
+            >
+              {m === 'csv' ? <><Upload size={16} /> CSV Import</> : <><Plus size={16} /> Manual Entry</>}
+            </button>
+          ))}
         </div>
 
         {/* CSV Import */}
         {mode === 'csv' && (
-          <Card className="p-8 mb-8">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6">استيراد من CSV</h2>
-            
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                اختر ملف CSV
-              </label>
-              <div className="border-2 border-dashed border-blue-300 rounded-lg p-8 text-center">
-                <input
-                  type="file"
-                  accept=".csv"
-                  onChange={handleCSVUpload}
-                  className="hidden"
-                  id="csv-input"
-                />
-                <label htmlFor="csv-input" className="cursor-pointer">
-                  <Upload className="w-12 h-12 text-blue-400 mx-auto mb-3" />
-                  <p className="text-gray-700 font-medium">اسحب ملف CSV هنا أو انقر للاختيار</p>
-                  <p className="text-sm text-gray-500 mt-1">
-                    {csvFile ? csvFile.name : 'الصيغ المدعومة: CSV فقط'}
-                  </p>
-                </label>
-              </div>
-            </div>
+          <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '12px', padding: '32px' }}>
+            <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '20px' }}>Import from CSV</h2>
+            <label
+              htmlFor="csv-input"
+              style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px 20px',
+                border: '2px dashed rgba(124,58,237,0.3)', borderRadius: '12px', cursor: 'pointer',
+                background: 'rgba(124,58,237,0.05)', marginBottom: '20px', textAlign: 'center',
+              }}
+            >
+              <Upload size={32} style={{ color: 'var(--accent-primary)', marginBottom: '12px' }} />
+              <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>
+                {csvFile ? csvFile.name : 'Click to select CSV file'}
+              </span>
+              <span style={{ color: 'var(--text-muted)', fontSize: '12px', marginTop: '4px' }}>
+                Required columns: linkedin_url, name or first_name + last_name
+              </span>
+              <input id="csv-input" type="file" accept=".csv" onChange={handleCSVUpload} style={{ display: 'none' }} />
+            </label>
 
-            {/* CSV Preview */}
             {csvPreview.length > 0 && (
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">معاينة البيانات</h3>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
+              <div style={{ marginBottom: '20px' }}>
+                <h3 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '12px' }}>Preview (first 5 rows)</h3>
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                     <thead>
-                      <tr className="bg-gray-100">
-                        <th className="px-4 py-2 text-right font-semibold text-gray-900">رابط LinkedIn</th>
-                        <th className="px-4 py-2 text-right font-semibold text-gray-900">الاسم الأول</th>
-                        <th className="px-4 py-2 text-right font-semibold text-gray-900">الاسم الأخير</th>
-                        <th className="px-4 py-2 text-right font-semibold text-gray-900">الشركة</th>
+                      <tr>
+                        {['Name', 'LinkedIn URL', 'Title', 'Company'].map(h => (
+                          <th key={h} style={{ padding: '8px 12px', borderBottom: '1px solid var(--border-subtle)', color: 'var(--text-muted)', textAlign: 'left' }}>{h}</th>
+                        ))}
                       </tr>
                     </thead>
                     <tbody>
-                      {csvPreview.map((lead, idx) => (
-                        <tr key={idx} className="border-b border-gray-200">
-                          <td className="px-4 py-3 text-gray-700">{lead.linkedin_url}</td>
-                          <td className="px-4 py-3 text-gray-700">{lead.first_name}</td>
-                          <td className="px-4 py-3 text-gray-700">{lead.last_name}</td>
-                          <td className="px-4 py-3 text-gray-700">{lead.company}</td>
+                      {csvPreview.map((row, i) => (
+                        <tr key={i}>
+                          <td style={{ padding: '8px 12px', color: 'var(--text-primary)' }}>{row.name}</td>
+                          <td style={{ padding: '8px 12px', color: 'var(--text-secondary)', fontSize: '12px' }}>{row.linkedin_url}</td>
+                          <td style={{ padding: '8px 12px', color: 'var(--text-secondary)' }}>{row.title}</td>
+                          <td style={{ padding: '8px 12px', color: 'var(--text-secondary)' }}>{row.company}</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
-                <p className="text-sm text-gray-500 mt-3">
-                  معاينة أول 5 صفوف. سيتم استيراد جميع الصفوف.
-                </p>
               </div>
             )}
 
-            <Button
+            <button
               onClick={handleImportCSV}
-              disabled={!csvFile || !campaignId || importing}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 flex items-center gap-2 justify-center"
+              disabled={!csvFile || importing}
+              style={{
+                width: '100%', padding: '14px', borderRadius: '10px', border: 'none',
+                background: csvFile && !importing ? 'var(--gradient-primary)' : 'rgba(255,255,255,0.1)',
+                color: 'white', fontSize: '15px', fontWeight: 600, cursor: csvFile && !importing ? 'pointer' : 'not-allowed',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+              }}
             >
-              {importing ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  جاري الاستيراد...
-                </>
-              ) : (
-                <>
-                  <Upload className="w-5 h-5" />
-                  استيراد الآن
-                </>
-              )}
-            </Button>
-          </Card>
+              {importing ? <><Loader2 size={18} className="animate-spin" /> Importing...</> : <><Upload size={18} /> Import Now</>}
+            </button>
+          </div>
         )}
 
         {/* Manual Entry */}
         {mode === 'manual' && (
-          <Card className="p-8 mb-8">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6">إدخال يدوي</h2>
-            
-            <div className="space-y-6 mb-6">
-              {manualLeads.map((lead, idx) => (
-                <div key={idx} className="p-6 border border-gray-200 rounded-lg bg-gray-50">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        رابط LinkedIn *
-                      </label>
-                      <Input
-                        type="url"
-                        placeholder="https://linkedin.com/in/..."
-                        value={lead.linkedin_url}
-                        onChange={(e) => updateManualLead(idx, 'linkedin_url', e.target.value)}
-                        className="w-full"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        الاسم الأول
-                      </label>
-                      <Input
-                        type="text"
-                        placeholder="محمد"
-                        value={lead.first_name}
-                        onChange={(e) => updateManualLead(idx, 'first_name', e.target.value)}
-                        className="w-full"
-                      />
-                    </div>
+          <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '12px', padding: '32px' }}>
+            <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '20px' }}>Manual Entry</h2>
+            {manualLeads.map((lead, idx) => (
+              <div
+                key={idx}
+                style={{
+                  padding: '20px', border: '1px solid var(--border-subtle)', borderRadius: '10px',
+                  marginBottom: '12px', background: 'rgba(255,255,255,0.02)',
+                }}
+              >
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '6px' }}>LinkedIn URL *</label>
+                    <input
+                      type="url" placeholder="https://linkedin.com/in/..." value={lead.linkedin_url}
+                      onChange={e => updateManualLead(idx, 'linkedin_url', e.target.value)} style={inputStyle}
+                    />
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        الاسم الأخير
-                      </label>
-                      <Input
-                        type="text"
-                        placeholder="علي"
-                        value={lead.last_name}
-                        onChange={(e) => updateManualLead(idx, 'last_name', e.target.value)}
-                        className="w-full"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        الشركة
-                      </label>
-                      <Input
-                        type="text"
-                        placeholder="شركة التقنية"
-                        value={lead.company}
-                        onChange={(e) => updateManualLead(idx, 'company', e.target.value)}
-                        className="w-full"
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        البريد الإلكتروني
-                      </label>
-                      <Input
-                        type="email"
-                        placeholder="email@example.com"
-                        value={lead.email || ''}
-                        onChange={(e) => updateManualLead(idx, 'email', e.target.value)}
-                        className="w-full"
-                      />
-                    </div>
-                    <div className="flex items-end">
-                      {manualLeads.length > 1 && (
-                        <Button
-                          onClick={() => removeManualLead(idx)}
-                          variant="outline"
-                          className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          حذف
-                        </Button>
-                      )}
-                    </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '6px' }}>First Name</label>
+                    <input
+                      type="text" placeholder="John" value={lead.first_name}
+                      onChange={e => updateManualLead(idx, 'first_name', e.target.value)} style={inputStyle}
+                    />
                   </div>
                 </div>
-              ))}
-            </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '6px' }}>Last Name</label>
+                    <input
+                      type="text" placeholder="Doe" value={lead.last_name}
+                      onChange={e => updateManualLead(idx, 'last_name', e.target.value)} style={inputStyle}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '6px' }}>Company</label>
+                    <input
+                      type="text" placeholder="Company" value={lead.company}
+                      onChange={e => updateManualLead(idx, 'company', e.target.value)} style={inputStyle}
+                    />
+                  </div>
+                </div>
+                {manualLeads.length > 1 && (
+                  <button
+                    onClick={() => removeManualLead(idx)}
+                    style={{
+                      marginTop: '12px', padding: '6px 12px', borderRadius: '6px', border: '1px solid rgba(239,68,68,0.3)',
+                      background: 'rgba(239,68,68,0.1)', color: '#ef4444', fontSize: '12px', cursor: 'pointer',
+                    }}
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+            ))}
 
-            <Button
+            <button
               onClick={addManualLead}
-              variant="outline"
-              className="w-full mb-6 border-2 border-blue-300 text-blue-600 hover:bg-blue-50 font-semibold py-2 flex items-center gap-2 justify-center"
+              style={{
+                width: '100%', padding: '12px', borderRadius: '10px', border: '2px dashed rgba(124,58,237,0.3)',
+                background: 'rgba(124,58,237,0.05)', color: 'var(--accent-primary)', fontSize: '14px', fontWeight: 500,
+                cursor: 'pointer', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+              }}
             >
-              <Plus className="w-5 h-5" />
-              إضافة عميل آخر
-            </Button>
+              <Plus size={16} /> Add Another
+            </button>
 
-            <Button
+            <button
               onClick={handleImportManual}
-              disabled={!campaignId || importing}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 flex items-center gap-2 justify-center"
+              disabled={importing}
+              style={{
+                width: '100%', padding: '14px', borderRadius: '10px', border: 'none',
+                background: !importing ? 'var(--gradient-primary)' : 'rgba(255,255,255,0.1)',
+                color: 'white', fontSize: '15px', fontWeight: 600, cursor: !importing ? 'pointer' : 'not-allowed',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+              }}
             >
-              {importing ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  جاري الاستيراد...
-                </>
-              ) : (
-                <>
-                  <Plus className="w-5 h-5" />
-                  استيراد {manualLeads.length} عميل
-                </>
-              )}
-            </Button>
-          </Card>
+              {importing ? <><Loader2 size={18} className="animate-spin" /> Importing...</> : <><Plus size={18} /> Import {manualLeads.length} Prospect{manualLeads.length > 1 ? 's' : ''}</>}
+            </button>
+          </div>
         )}
 
         {/* Import Result */}
         {importResult && (
-          <Card className={`p-6 ${importResult.error ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'}`}>
-            <div className="flex items-start gap-4">
-              {importResult.error ? (
-                <>
-                  <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0 mt-1" />
-                  <div>
-                    <h3 className="font-semibold text-red-900 mb-2">خطأ في الاستيراد</h3>
-                    <p className="text-red-700">{importResult.error}</p>
+          <div
+            style={{
+              marginTop: '20px', padding: '20px', borderRadius: '12px',
+              background: importResult.error ? 'rgba(239,68,68,0.1)' : 'rgba(34,197,94,0.1)',
+              border: `1px solid ${importResult.error ? 'rgba(239,68,68,0.3)' : 'rgba(34,197,94,0.3)'}`,
+              display: 'flex', alignItems: 'center', gap: '12px',
+            }}
+          >
+            {importResult.error ? (
+              <>
+                <AlertCircle size={20} style={{ color: '#ef4444' }} />
+                <div>
+                  <div style={{ fontWeight: 600, color: '#ef4444', marginBottom: '4px' }}>Import Failed</div>
+                  <div style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>{importResult.error}</div>
+                </div>
+              </>
+            ) : (
+              <>
+                <CheckCircle size={20} style={{ color: '#22c55e' }} />
+                <div>
+                  <div style={{ fontWeight: 600, color: '#22c55e', marginBottom: '4px' }}>Import Successful!</div>
+                  <div style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>
+                    {importResult.imported || importResult.count || 0} prospects imported
                   </div>
-                </>
-              ) : (
-                <>
-                  <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 mt-1" />
-                  <div>
-                    <h3 className="font-semibold text-green-900 mb-2">✓ تم الاستيراد بنجاح</h3>
-                    <p className="text-green-700">
-                      تم استيراد {importResult.imported} عميل محتمل
-                    </p>
-                    {importResult.duplicates > 0 && (
-                      <p className="text-green-700 text-sm mt-2">
-                        تم تخطي {importResult.duplicates} عميل مكرر
-                      </p>
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
-          </Card>
+                </div>
+              </>
+            )}
+          </div>
         )}
-      </div>
+      </main>
     </div>
   );
 }

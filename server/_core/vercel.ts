@@ -8,6 +8,8 @@ import extensionRoutes from "./extensionRoutes";
 import clientRoutes from "./clientRoutes";
 import sequenceRoutes from "./sequenceRoutes";
 import adminRoutes from "./adminRoutes";
+import aiRoutes from "./aiRoutes";
+import stripeRoutes from "./stripeRoutes";
 import { appRouter } from "../routers";
 import { createContext, expressAuthMiddleware, requireRole } from "./context";
 
@@ -44,6 +46,12 @@ app.use("/api/ext", expressAuthMiddleware, extensionRoutes);
 
 // Sequence engine routes: JWT required (any authenticated user)
 app.use("/api/sequence", expressAuthMiddleware, sequenceRoutes);
+
+// AI message writer: JWT required
+app.use("/api/ai", expressAuthMiddleware, aiRoutes);
+
+// Stripe: webhook has NO auth (raw body needed), other routes need auth
+app.use("/api/stripe", stripeRoutes);
 
 // Health check endpoint
 app.get("/api/health", (_req: any, res: any) => {

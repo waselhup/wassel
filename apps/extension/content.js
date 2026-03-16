@@ -150,6 +150,14 @@
                     const name = nameEl?.innerText?.trim() || link.innerText?.trim() || '';
                     if (!name || name.length < 2) return;
 
+                    // Profile photo
+                    const photoEl = container?.querySelector(
+                        'img.presence-entity__image, img.EntityPhoto-circle-3, ' +
+                        'img[class*="profile-photo"], .ivm-image-view-model img, ' +
+                        'img.ivm-view-attr__img--centered'
+                    );
+                    const photoUrl = photoEl?.src || null;
+
                     allProspects.push({
                         id: idx++,
                         name,
@@ -157,6 +165,7 @@
                         title: titleEl?.innerText?.trim() || '',
                         company: companyEl?.innerText?.trim() || '',
                         location: '',
+                        photo_url: photoUrl,
                         selected: true,
                     });
                 });
@@ -203,6 +212,14 @@
                     const location = locationEl ? locationEl.textContent.trim() : '';
 
                     if (name && linkedinUrl) {
+                        // Profile photo
+                        const photoEl = card.querySelector(
+                            'img.presence-entity__image, img.EntityPhoto-circle-3, ' +
+                            'img[class*="profile-photo"], .ivm-image-view-model img, ' +
+                            'img.ivm-view-attr__img--centered'
+                        );
+                        const photoUrl = photoEl ? photoEl.src : null;
+
                         allProspects.push({
                             id: i,
                             name,
@@ -210,6 +227,7 @@
                             title,
                             company,
                             location,
+                            photo_url: photoUrl,
                             selected: true,
                         });
                     }

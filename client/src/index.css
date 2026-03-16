@@ -600,3 +600,129 @@ tbody tr:hover {
   0%   { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
+
+/* ─── Mobile Responsive ─── */
+@media (max-width: 768px) {
+  /* Sidebar becomes bottom navigation */
+  .client-nav-sidebar {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    width: 100% !important;
+    height: 64px !important;
+    flex-direction: row !important;
+    justify-content: space-around !important;
+    border-right: none !important;
+    border-inline-end: none !important;
+    border-top: 1px solid var(--border-subtle) !important;
+    padding: 0 !important;
+    z-index: 100;
+    overflow: hidden;
+  }
+
+  .client-nav-sidebar > div:first-child {
+    display: contents;
+  }
+
+  .client-nav-sidebar nav {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 0 !important;
+    padding: 0 !important;
+    width: 100%;
+    justify-content: space-around;
+    align-items: center;
+    height: 100%;
+  }
+
+  .client-nav-sidebar nav > a {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+  }
+
+  /* Nav items: icon-only on mobile */
+  .client-nav-sidebar .nav-item {
+    flex-direction: column !important;
+    padding: 8px 4px !important;
+    min-width: 48px;
+    justify-content: center;
+    align-items: center;
+    border: none !important;
+    background: transparent !important;
+    border-radius: 0 !important;
+    gap: 2px !important;
+    font-size: 10px !important;
+  }
+
+  /* Show only icons on mobile */
+  .client-nav-sidebar .nav-label {
+    font-size: 9px !important;
+    white-space: nowrap;
+  }
+
+  /* Hide desktop-only elements */
+  .desktop-only {
+    display: none !important;
+  }
+
+  /* Main content adjustments */
+  .main-content {
+    margin-left: 0 !important;
+    padding: 16px !important;
+    padding-bottom: 80px !important;
+  }
+
+  /* Stats grid stack */
+  .stats-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Tables scroll horizontally */
+  .prospects-table {
+    overflow-x: auto !important;
+    display: block !important;
+  }
+
+  /* Campaign wizard full screen */
+  .campaign-wizard {
+    padding: 16px !important;
+  }
+
+  /* Larger touch targets */
+  button {
+    min-height: 44px;
+  }
+
+  /* Prevent iOS zoom on input focus */
+  input, textarea, select {
+    font-size: 16px !important;
+  }
+
+  /* Mobile header bar */
+  .mobile-header {
+    display: flex !important;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border-subtle);
+    padding: 12px 16px;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  /* Cards responsive */
+  .card-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Desktop: hide mobile-only elements */
+@media (min-width: 769px) {
+  .mobile-only {
+    display: none !important;
+  }
+}

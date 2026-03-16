@@ -172,6 +172,7 @@ router.post('/import', async (req: Request, res: Response) => {
                 title,
                 company,
                 location,
+                photo_url: p.photo_url || p.photoUrl || null,
                 source_url: source_url || null,
                 status: 'imported',
             };

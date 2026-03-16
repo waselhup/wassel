@@ -151,40 +151,77 @@ function downloadProspectsCSV(prospects) {
 
 // ============================================================================
 // Rate limiting — stored daily in chrome.storage.local
+// Conservative limits to protect LinkedIn account
 // ============================================================================
+const DAILY_LIMITS = {
+    visit: 80,
+    invitation: 20,   // 20/day × 30 = 600/month — under LinkedIn's 800/month
+    message: 40,
+    follow: 20,
+};
+
 async function getDailyCounts() {
     const today = new Date().toISOString().split('T')[0];
-    const result = await chrome.storage.local.get(['rateLimitDate', 'inviteCount', 'messageCount']);
+    const result = await chrome.storage.local.get(['rateLimitDate', 'visitCount', 'inviteCount', 'messageCount', 'followCount']);
 
     if (result.rateLimitDate !== today) {
         await chrome.storage.local.set({
             rateLimitDate: today,
+            visitCount: 0,
             inviteCount: 0,
             messageCount: 0,
+            followCount: 0,
         });
-        return { inviteCount: 0, messageCount: 0 };
+        return { visitCount: 0, inviteCount: 0, messageCount: 0, followCount: 0 };
     }
 
     return {
+        visitCount: result.visitCount || 0,
         inviteCount: result.inviteCount || 0,
         messageCount: result.messageCount || 0,
+        followCount: result.followCount || 0,
     };
 }
 
 async function incrementCount(type) {
     const counts = await getDailyCounts();
-    if (type === 'invite' || type === 'invitation') {
+    if (type === 'visit') {
+        await chrome.storage.local.set({ visitCount: counts.visitCount + 1 });
+    } else if (type === 'invite' || type === 'invitation') {
         await chrome.storage.local.set({ inviteCount: counts.inviteCount + 1 });
     } else if (type === 'message') {
         await chrome.storage.local.set({ messageCount: counts.messageCount + 1 });
+    } else if (type === 'follow') {
+        await chrome.storage.local.set({ followCount: counts.followCount + 1 });
     }
 }
 
 async function canPerformAction(type) {
     const counts = await getDailyCounts();
-    if ((type === 'invite' || type === 'invitation') && counts.inviteCount >= 80) return false;
-    if (type === 'message' && counts.messageCount >= 100) return false;
+    if (type === 'visit' && counts.visitCount >= DAILY_LIMITS.visit) return false;
+    if ((type === 'invite' || type === 'invitation') && counts.inviteCount >= DAILY_LIMITS.invitation) return false;
+    if (type === 'message' && counts.messageCount >= DAILY_LIMITS.message) return false;
+    if (type === 'follow' && counts.followCount >= DAILY_LIMITS.follow) return false;
     return true;
+}
+
+// Time-aware automation: only run 8am - 8pm local time
+function isGoodTime() {
+    const h = new Date().getHours();
+    return h >= 8 && h < 20;
+}
+
+// Human-like delays per step type
+const STEP_DELAYS = {
+    visit:      { min: 30000,  max: 60000  },
+    invitation: { min: 60000,  max: 120000 },
+    message:    { min: 45000,  max: 90000  },
+    follow:     { min: 45000,  max: 90000  },
+};
+
+function getStepDelay(type) {
+    const d = STEP_DELAYS[type] || STEP_DELAYS.message;
+    return d.min + Math.random() * (d.max - d.min);
 }
 
 // ============================================================================
@@ -289,6 +326,12 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
 async function processQueue() {
     if (isProcessing || isPaused) return;
 
+    // Time-aware: only run 8am-8pm
+    if (!isGoodTime()) {
+        console.log('[Wassel] Outside working hours (8am-8pm), skipping');
+        return;
+    }
+
     const config = await getConfig();
     if (!config.apiToken) return;
 
@@ -307,7 +350,8 @@ async function processQueue() {
         const item = result.queue[0];
 
         if (!(await canPerformAction(item.step_type))) {
-            console.log(`[Wassel] Rate limit reached for ${item.step_type}. Skipping.`);
+            const counts = await getDailyCounts();
+            console.log(`[Wassel] ⚠️ Daily limit reached for ${item.step_type}. Counts:`, counts);
             isProcessing = false;
             return;
         }
@@ -317,13 +361,10 @@ async function processQueue() {
         // Execute actions directly from background script
         try {
             if (item.step_type === 'visit') {
-                // Visit: open tab, wait, close
                 await executeVisitAction(item);
             } else if (item.step_type === 'invitation') {
-                // Invite: needs content script on the profile page
                 await executeViaContentScript(item);
             } else if (item.step_type === 'message' || item.step_type === 'follow') {
-                // Message: needs content script on the profile page
                 await executeViaContentScript(item);
             } else {
                 console.log(`[Wassel] Unknown step_type: ${item.step_type}, marking complete`);
@@ -331,7 +372,8 @@ async function processQueue() {
             }
 
             await incrementCount(item.step_type);
-            console.log(`[Wassel] ✓ Completed: ${item.step_type} for ${item.name}`);
+            const counts = await getDailyCounts();
+            console.log(`[Wassel] ✓ Completed: ${item.step_type} for ${item.name} | Today: ${counts.inviteCount}/${DAILY_LIMITS.invitation} invites, ${counts.visitCount}/${DAILY_LIMITS.visit} visits`);
             chrome.action.setBadgeText({ text: '✓' });
             chrome.action.setBadgeBackgroundColor({ color: '#22c55e' });
             setTimeout(() => chrome.action.setBadgeText({ text: '' }), 5000);
@@ -340,7 +382,10 @@ async function processQueue() {
             await markStepComplete(item.prospectStepId, 'failed', actionError.message);
         }
 
-        await delayBetweenActions();
+        // Human-like delay based on step type
+        const delay = getStepDelay(item.step_type);
+        console.log(`[Wassel] Next action in ${Math.round(delay / 1000)}s`);
+        await new Promise(r => setTimeout(r, delay));
 
     } catch (e) {
         console.error('[Wassel] Queue processing error:', e);
