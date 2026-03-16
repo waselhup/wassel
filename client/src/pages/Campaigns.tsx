@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import ClientNav from '@/components/ClientNav';
 import { useAuth } from '@/contexts/AuthContext';
-import { Plus, ChevronRight, Loader2, Megaphone } from 'lucide-react';
+import { Plus, ChevronRight, Loader2, Megaphone, Trash2 } from 'lucide-react';
 
 export default function Campaigns() {
   const [, navigate] = useLocation();
@@ -11,6 +11,32 @@ export default function Campaigns() {
 
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [toast, setToast] = useState('');
+
+  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
+
+  const deleteCampaign = async (id: string) => {
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/sequence/campaigns/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      });
+      const data = await res.json();
+      if (data.success || data.deleted) {
+        setCampaigns(prev => prev.filter(c => c.id !== id));
+        showToast('Campaign deleted');
+      } else {
+        showToast('Delete failed: ' + (data.error || 'Unknown'));
+      }
+    } catch (e: any) {
+      showToast('Delete failed: ' + e.message);
+    }
+    setDeleting(false);
+    setDeleteId(null);
+  };
 
   useEffect(() => {
     if (!token) return;
@@ -99,14 +125,53 @@ export default function Campaigns() {
                           {c.type && <span style={{ color: '#64748b' }}>Type: {c.type}</span>}
                         </div>
                       </div>
-                      <ChevronRight size={18} style={{ color: '#475569', marginTop: 4 }} />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setDeleteId(c.id); }}
+                          title="Delete campaign"
+                          className="campaign-delete-btn"
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: '#475569', opacity: 0, transition: 'all 0.15s' }}
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                        <ChevronRight size={18} style={{ color: '#475569' }} />
+                      </div>
                     </div>
+                    {deleteId === c.id && (
+                      <div onClick={e => e.stopPropagation()} style={{
+                        marginTop: 10, padding: '10px 14px', borderRadius: 8,
+                        background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)',
+                        display: 'flex', alignItems: 'center', gap: 10,
+                      }}>
+                        <span style={{ color: '#fca5a5', fontSize: 12, flex: 1 }}>Delete "{c.name}"? This will remove all steps and prospect data.</span>
+                        <button onClick={() => setDeleteId(null)} style={{ background: 'rgba(255,255,255,0.06)', color: '#94a3b8', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '4px 12px', fontSize: 11, cursor: 'pointer' }}>Cancel</button>
+                        <button onClick={() => deleteCampaign(c.id)} disabled={deleting} style={{ background: '#ef4444', color: '#fff', border: 'none', borderRadius: 6, padding: '4px 12px', fontSize: 11, fontWeight: 600, cursor: 'pointer', opacity: deleting ? 0.6 : 1 }}>{deleting ? '...' : 'Delete'}</button>
+                      </div>
+                    )}
                   </div>
                 );
               })}
             </div>
           )}
         </div>
+
+        {/* Toast */}
+        {toast && (
+          <div style={{
+            position: 'fixed', bottom: 24, right: 24,
+            background: '#1e293b', border: '1px solid rgba(124,58,237,0.3)',
+            borderRadius: 10, padding: '12px 20px',
+            color: '#f1f5f9', fontSize: 13, fontWeight: 500,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.3)', zIndex: 1000,
+          }}>
+            {toast}
+          </div>
+        )}
+
+        <style>{`
+          .campaign-delete-btn:hover { opacity: 1 !important; color: #ef4444 !important; }
+          div[style*="cursor: pointer"]:hover .campaign-delete-btn { opacity: 0.7 !important; }
+        `}</style>
       </main>
     </div>
   );

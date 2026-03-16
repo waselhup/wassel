@@ -223,7 +223,7 @@ export default function Leads() {
                         </td>
                         <td style={{ padding: '10px 12px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <Avatar name={p.name || '?'} size="sm" />
+                            <Avatar name={p.name || '?'} size="sm" imageUrl={p.photo_url} />
                             <span style={{ color: '#f1f5f9', fontWeight: 500 }}>{p.name || '—'}</span>
                           </div>
                         </td>

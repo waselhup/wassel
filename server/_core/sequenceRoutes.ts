@@ -61,6 +61,37 @@ router.get('/campaigns/:id/steps', async (req: Request, res: Response) => {
 });
 
 // ============================================================================
+// DELETE /api/sequence/campaigns/:id — Delete campaign + related data
+// ============================================================================
+router.delete('/campaigns/:id', async (req: Request, res: Response) => {
+  try {
+    const teamId = getTeamId(req);
+    if (!teamId) return res.status(401).json({ error: 'Unauthorized' });
+
+    // Verify campaign belongs to team
+    const { data: campaign } = await supabase
+      .from('campaigns')
+      .select('id')
+      .eq('id', req.params.id)
+      .eq('team_id', teamId)
+      .single();
+
+    if (!campaign) return res.status(404).json({ error: 'Campaign not found' });
+
+    // Delete in order: prospect_step_status → campaign_steps → campaigns
+    await supabase.from('prospect_step_status').delete().eq('campaign_id', req.params.id);
+    await supabase.from('campaign_steps').delete().eq('campaign_id', req.params.id);
+    const { error } = await supabase.from('campaigns').delete().eq('id', req.params.id);
+
+    if (error) return res.status(500).json({ error: error.message });
+
+    res.json({ success: true, deleted: true });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ============================================================================
 // POST /api/sequence/campaigns/:id/steps — Save/update campaign steps (batch)
 // ============================================================================
 router.post('/campaigns/:id/steps', async (req: Request, res: Response) => {

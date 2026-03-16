@@ -316,6 +316,28 @@ export default function CampaignDetail() {
                 {saving ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Save className="w-4 h-4 mr-1" />}
                 حفظ
               </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  if (!confirm('Delete this campaign? This cannot be undone.')) return;
+                  try {
+                    const token = localStorage.getItem('supabase_token') || '';
+                    const res = await fetch(`/api/sequence/campaigns/${campaignId}`, {
+                      method: 'DELETE',
+                      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                    });
+                    const data = await res.json();
+                    if (data.success || data.deleted) {
+                      setLocation('/app/campaigns');
+                    }
+                  } catch {}
+                }}
+                className="text-red-600 border-red-300 hover:bg-red-50"
+              >
+                <Trash2 className="w-4 h-4 mr-1" />
+                🗑
+              </Button>
             </div>
           </div>
         </div>

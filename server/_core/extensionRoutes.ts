@@ -162,8 +162,8 @@ router.post('/import', async (req: Request, res: Response) => {
             .single();
 
         const plan = team?.plan || 'trial';
-        const PLAN_LIMITS: Record<string, number> = { trial: 100, starter: 500, growth: 2000, agency: 10000 };
-        const maxProspects = PLAN_LIMITS[plan] || 100;
+        const PLAN_LIMITS: Record<string, number> = { trial: 500, starter: 1000, growth: 5000, agency: 99999 };
+        const maxProspects = PLAN_LIMITS[plan] || 500;
 
         const { count: existingCount } = await supabase
             .from('prospects')
