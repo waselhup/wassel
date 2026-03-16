@@ -13,6 +13,7 @@ export default function Footer() {
         { label: 'Pricing', href: '/pricing' },
         { label: 'Extension', href: '/extension' },
         { label: 'Demo', href: '/demo' },
+        { label: 'Download Extension', href: '/extension-download' },
       ],
     },
     {

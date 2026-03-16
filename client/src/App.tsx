@@ -32,6 +32,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import CampaignDetail from "./pages/CampaignDetail";
 import CampaignWizard from "./pages/CampaignWizard";
+import ExtensionDownload from "./pages/ExtensionDownload";
 
 /**
  * Route guard: requires authenticated user (any role).
@@ -166,6 +167,7 @@ function Router() {
       <Route path={"/oauth/error"} component={OAuthError} />
       <Route path={"/forgot-password"} component={ForgotPassword} />
       <Route path={"/reset-password"} component={ResetPassword} />
+      <Route path={"/extension-download"} component={ExtensionDownload} />
 
       {/* Client dashboard routes (/app/*) — any authenticated user */}
       <Route path={/^\/app\/onboarding/} component={() => <ClientRoute component={Onboarding} />} />
