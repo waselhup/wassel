@@ -256,7 +256,13 @@ export default function CampaignWizard() {
     setError('');
     try {
       // 1. Create campaign
-      const campType = activeStepCount <= 1 ? 'visit_only' : activeStepCount === 2 ? 'invitation' : 'invitation_message';
+      // Derive type from enabled steps (must match backend enum)
+      let campType = 'combined';
+      if (enabledSteps.visit && !enabledSteps.invite && !enabledSteps.message && !enabledSteps.follow) campType = 'visit';
+      else if (!enabledSteps.visit && enabledSteps.invite && !enabledSteps.message) campType = 'invitation';
+      else if (enabledSteps.invite && !enabledSteps.message) campType = 'invitation';
+      else if (enabledSteps.invite && enabledSteps.message && !enabledSteps.follow) campType = 'invitation_message';
+      else campType = 'combined';
       const campRes = await apiFetch('/api/trpc/campaigns.create', token, {
         method: 'POST',
         body: JSON.stringify({ json: { name, description, type: campType } }),

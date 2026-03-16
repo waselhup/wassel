@@ -83,7 +83,7 @@ export const campaignsRouter = router({
       z.object({
         name: z.string().min(1, 'اسم الحملة مطلوب').max(255),
         description: z.string().optional(),
-        type: z.enum(['invitation', 'message', 'invitation_message', 'visit', 'email_finder', 'combined']),
+        type: z.string().default('combined'),
       })
     )
     .mutation(async ({ ctx, input }) => {
