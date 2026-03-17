@@ -199,17 +199,29 @@ router.post('/campaigns/:id/enroll', async (req: Request, res: Response) => {
       }
     }
 
-    const { data: inserted, error } = await supabase
-      .from('prospect_step_status')
-      .insert(statusRows)
-      .select();
+    // Insert in chunks of 50 to avoid timeouts with large batches
+    const chunkSize = 50;
+    let totalInserted = 0;
 
-    if (error) return res.status(500).json({ error: error.message });
+    for (let i = 0; i < statusRows.length; i += chunkSize) {
+      const chunk = statusRows.slice(i, i + chunkSize);
+      const { data: inserted, error } = await supabase
+        .from('prospect_step_status')
+        .insert(chunk)
+        .select();
+
+      if (error) {
+        console.error(`[Enroll] Chunk ${Math.floor(i/chunkSize)+1} error:`, error.message);
+        // Continue with remaining chunks instead of failing entirely
+        continue;
+      }
+      totalInserted += inserted?.length || 0;
+    }
 
     res.json({
       success: true,
       enrolled: prospect_ids.length,
-      steps_created: inserted?.length || 0,
+      steps_created: totalInserted,
     });
   } catch (e: any) {
     res.status(500).json({ error: e.message });

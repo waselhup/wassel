@@ -39,7 +39,7 @@ export default function ExtensionPairing() {
     setDisconnecting(false);
   };
 
-  const card = { background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', borderRadius: 12, padding: 20, marginBottom: 16 };
+  const card = { background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', borderRadius: 12, padding: 20, marginBottom: 16, boxShadow: 'var(--shadow-sm)' };
 
   return (
     <div className="flex min-h-screen" style={{ background: 'var(--bg-base)' }}>
@@ -48,7 +48,7 @@ export default function ExtensionPairing() {
         <div className="max-w-3xl">
           {/* Header */}
           <div className="mb-6">
-            <h2 className="text-2xl font-extrabold mb-1" style={{ fontFamily: "'Syne', sans-serif", color: 'var(--text-primary)' }}>
+            <h2 className="text-2xl font-extrabold mb-1" style={{ fontFamily: "'Outfit', sans-serif", color: 'var(--text-primary)' }}>
               Extension & LinkedIn
             </h2>
             <p style={{ color: 'var(--text-muted)' }}>Download the extension and connect your LinkedIn account.</p>
@@ -57,7 +57,7 @@ export default function ExtensionPairing() {
           {/* ═══ SECTION 1: Download Extension ═══ */}
           <div style={card}>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
-              <div style={{ width: 42, height: 42, borderRadius: 10, background: 'linear-gradient(135deg, #7c3aed, #ec4899)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <div style={{ width: 42, height: 42, borderRadius: 10, background: 'var(--gradient-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <Download size={20} color="#fff" />
               </div>
               <div style={{ flex: 1 }}>
