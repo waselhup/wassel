@@ -178,14 +178,14 @@ export default function Landing() {
           ====================================================== */}
       <nav
         className="fixed top-0 left-0 right-0 z-50"
-        style={{ background: 'rgba(10, 10, 18, 0.8)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderBottom: '1px solid var(--border-subtle)' }}
+        style={{ background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderBottom: '1px solid var(--border-subtle)' }}
       >
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           {/* Logo */}
           <Link href="/">
             <div className="flex items-center gap-2 cursor-pointer">
               <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm" style={{ background: 'var(--gradient-primary)' }}>W</div>
-              <span className="text-lg font-extrabold tracking-tight" style={{ fontFamily: "'Syne', sans-serif" }}>assel</span>
+              <span className="text-lg font-extrabold tracking-tight" style={{ fontFamily: "'Outfit', sans-serif", color: 'var(--text-primary)' }}>assel</span>
             </div>
           </Link>
 
@@ -219,7 +219,7 @@ export default function Landing() {
 
         {/* Mobile menu */}
         {mobileMenu && (
-          <div className="md:hidden px-4 pb-4 space-y-2" style={{ background: 'rgba(10, 10, 18, 0.95)' }}>
+          <div className="md:hidden px-4 pb-4 space-y-2" style={{ background: 'rgba(255,255,255,0.97)' }}>
             <button onClick={() => scrollTo('features')} className="block w-full text-left px-3 py-2 rounded text-sm" style={{ color: 'var(--text-secondary)' }}>{s.nav.features}</button>
             <button onClick={() => scrollTo('pricing')} className="block w-full text-left px-3 py-2 rounded text-sm" style={{ color: 'var(--text-secondary)' }}>{s.nav.pricing}</button>
             <button onClick={() => scrollTo('faq')} className="block w-full text-left px-3 py-2 rounded text-sm" style={{ color: 'var(--text-secondary)' }}>{s.nav.faq}</button>
@@ -237,7 +237,7 @@ export default function Landing() {
           ====================================================== */}
       <section ref={hero$.ref} style={hero$.style} className="pt-32 pb-20 px-4">
         <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold leading-tight mb-6" style={{ fontFamily: "'Syne', sans-serif", whiteSpace: 'pre-line' }}>
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold leading-tight mb-6" style={{ fontFamily: "'Outfit', sans-serif", whiteSpace: 'pre-line' }}>
             {s.hero.h1}
           </h1>
           <p className="text-lg sm:text-xl max-w-2xl mx-auto mb-10" style={{ color: 'var(--text-secondary)', lineHeight: 1.7 }}>
@@ -310,7 +310,7 @@ export default function Landing() {
           <p className="text-xs font-semibold uppercase tracking-widest mb-8" style={{ color: 'var(--text-muted)' }}>{s.logos}</p>
           <div className="flex flex-wrap items-center justify-center gap-8 sm:gap-12">
             {logos.map((name) => (
-              <span key={name} className="text-lg sm:text-xl font-bold tracking-wide" style={{ color: 'rgba(255,255,255,0.12)', fontFamily: "'Syne', sans-serif" }}>{name}</span>
+              <span key={name} className="text-lg sm:text-xl font-bold tracking-wide" style={{ color: 'rgba(0,0,0,0.10)', fontFamily: "'Outfit', sans-serif" }}>{name}</span>
             ))}
           </div>
         </div>
@@ -429,32 +429,13 @@ export default function Landing() {
       <div className="h-px max-w-4xl mx-auto" style={{ background: 'linear-gradient(90deg, transparent, rgba(124,58,237,0.2), transparent)' }}></div>
 
       {/* ======================================================
-          SECTION 7: TESTIMONIALS
+          SECTION 7: TESTIMONIALS — Coming soon (real reviews)
           ====================================================== */}
-      <section ref={test$.ref} style={test$.style} className="py-20 px-4">
-        <div className="max-w-5xl mx-auto">
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-center mb-4" style={{ fontFamily: "'Syne', sans-serif" }}>{s.testimonials.title}</h2>
-          <div className="h-1 w-16 mx-auto rounded-full mb-14" style={{ background: 'var(--gradient-primary)' }}></div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {testimonials.map((tm, i) => (
-              <div key={i} className="p-6 rounded-xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', backdropFilter: 'blur(12px)' }}>
-                <div className="flex gap-0.5 mb-4">
-                  {[1, 2, 3, 4, 5].map((s) => <span key={s} style={{ color: 'var(--warning)' }}>★</span>)}
-                </div>
-                <p className="text-sm leading-relaxed mb-5" style={{ color: 'var(--text-secondary)' }}>"{tm.text}"</p>
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ background: tm.color }}>
-                    {tm.name.split(' ').map(w => w[0]).join('')}
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold">{tm.name}</p>
-                    <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{tm.role}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+      <section ref={test$.ref} style={test$.style} className="py-16 px-4">
+        <div className="max-w-3xl mx-auto text-center">
+          <h2 className="text-3xl sm:text-4xl font-extrabold mb-4" style={{ fontFamily: "'Outfit', sans-serif" }}>{s.testimonials.title}</h2>
+          <div className="h-1 w-16 mx-auto rounded-full mb-6" style={{ background: 'var(--gradient-primary)' }}></div>
+          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Real testimonials from verified users — coming soon.</p>
         </div>
       </section>
 

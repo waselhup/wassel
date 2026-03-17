@@ -168,6 +168,7 @@ function Router() {
       <Route path={"/forgot-password"} component={ForgotPassword} />
       <Route path={"/reset-password"} component={ResetPassword} />
       <Route path={"/extension-download"} component={ExtensionDownload} />
+      <Route path={"/onboarding"} component={() => <ClientRoute component={Onboarding} />} />
 
       {/* Client dashboard routes (/app/*) — any authenticated user */}
       <Route path={/^\/app\/onboarding/} component={() => <ClientRoute component={Onboarding} />} />

@@ -50,7 +50,7 @@ export default function ClientNav() {
     const navItems = [
         { href: '/app', label: 'Overview', icon: LayoutDashboard, match: /^\/app\/?$/ },
         { href: '/app/campaigns', label: 'Campaigns', icon: Target, match: /^\/app\/campaigns/ },
-        { href: '/app/leads', label: 'Leads', icon: Users, match: /^\/app\/leads/ },
+        { href: '/app/leads', label: 'Prospects', icon: Users, match: /^\/app\/leads/ },
         { href: '/app/import', label: 'Import', icon: Download, match: /^\/app\/import/ },
         { href: '/app/extension', label: 'Extension', icon: Chrome, match: /^\/app\/extension/ },
     ];
