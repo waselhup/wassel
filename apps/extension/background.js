@@ -384,21 +384,55 @@ async function processQueue() {
     return;
   }
 
-  const token = await getToken();
+  let token = await getToken();
+
+  // No token — try syncing from dashboard
   if (!token) {
-    console.log('[Wassel] ❌ No token — open Wassel dashboard to sync');
-    return;
+    console.log('[Wassel] ❌ No token — attempting sync');
+    const syncResult = await syncTokenFromDashboard();
+    if (!syncResult?.synced) {
+      console.log('[Wassel] ❌ Sync failed:', syncResult?.reason);
+      return;
+    }
+    token = await getToken();
+    if (!token) return;
   }
 
   isProcessing = true;
 
   try {
-    const res = await fetch(`${API_BASE}/sequence/queue/active`, {
+    let res = await fetch(`${API_BASE}/sequence/queue/active`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
     });
+
+    // Handle 401 — token expired, resync and retry once
+    if (res.status === 401) {
+      console.log('[Wassel] ⚠️ Token expired (401) — resyncing...');
+      await chrome.storage.local.remove('wasselToken');
+      const syncResult = await syncTokenFromDashboard();
+      if (!syncResult?.synced) {
+        console.log('[Wassel] ❌ Resync failed — open dashboard');
+        return;
+      }
+      token = await getToken();
+      if (!token) return;
+
+      // Retry with fresh token
+      res = await fetch(`${API_BASE}/sequence/queue/active`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (res.status === 401) {
+        console.log('[Wassel] ❌ Still 401 after resync — token invalid');
+        return;
+      }
+    }
 
     if (!res.ok) {
       const text = await res.text();

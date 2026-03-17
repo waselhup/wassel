@@ -62,6 +62,17 @@ app.get("/api/health", (_req: any, res: any) => {
     res.json({ ok: true, timestamp: new Date().toISOString() });
 });
 
+// LinkedIn diagnostic — no auth required
+app.get("/api/linkedin-test", (_req: any, res: any) => {
+    res.json({
+        linkedinRoutes: 'ACTIVE ✅',
+        clientId: process.env.LINKEDIN_CLIENT_ID ? 'SET ✅' : 'MISSING ❌',
+        secret: process.env.LINKEDIN_CLIENT_SECRET ? 'SET ✅' : 'MISSING ❌',
+        redirectUri: process.env.LINKEDIN_REDIRECT_URI || 'MISSING ❌',
+        timestamp: new Date().toISOString(),
+    });
+});
+
 app.use(
     "/api/trpc",
     createExpressMiddleware({
