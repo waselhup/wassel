@@ -1,4 +1,4 @@
-// Wassel Extension — Popup (v2 — uses chrome.scripting for reliable scan)
+// Wassel Extension — Popup (v3 — multi-page collection + auth fix)
 document.addEventListener('DOMContentLoaded', () => {
   // ── Elements ──
   const statusBar  = document.getElementById('status');
@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const viewLogin     = document.getElementById('view-login');
   const viewConnected = document.getElementById('view-connected');
   const viewScan      = document.getElementById('view-scan');
+  const viewCollecting = document.getElementById('view-collecting');
 
   const scanResults   = document.getElementById('scan-results');
   const prospectList  = document.getElementById('prospect-list');
@@ -17,6 +18,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // ── State ──
   let prospects = [];
   let selected  = new Set();
+  let targetCount = 50;
+  let isCollecting = false;
 
   // ── Status helper ──
   function setStatus(type, text) {
@@ -51,9 +54,12 @@ document.addEventListener('DOMContentLoaded', () => {
   function showScanView() {
     hideAllViews();
     viewScan.classList.remove('hidden');
+    viewCollecting.classList.add('hidden');
+    scanResults.classList.add('hidden');
+    importResult.classList.add('hidden');
     badge.textContent = 'LinkedIn';
     badge.classList.remove('hidden');
-    setStatus('ok', '✅ Ready — click Scan Page');
+    setStatus('ok', '✅ Ready — select quantity & collect');
   }
 
   // ── Token helper ──
@@ -74,21 +80,96 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ══════════════════════════════════════════
-  //  SCAN — uses chrome.scripting.executeScript
+  //  QUANTITY SELECTOR
   // ══════════════════════════════════════════
+  document.querySelectorAll('.qty-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.qty-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      targetCount = parseInt(btn.dataset.count);
+    });
+  });
 
-  // This function is serialized and injected into the LinkedIn page
+  // ══════════════════════════════════════════
+  //  MULTI-PAGE COLLECTION
+  // ══════════════════════════════════════════
+  function updateProgress(collected, target, page) {
+    const pct = Math.min(100, Math.round((collected / target) * 100));
+    document.getElementById('progress-count').textContent = `${collected} / ${target}`;
+    document.getElementById('progress-fill').style.width = pct + '%';
+    document.getElementById('progress-status').textContent = collected >= target ? '✅ Complete!' : 'Scanning...';
+    document.getElementById('progress-pages').textContent = `Page ${page}`;
+  }
+
+  document.getElementById('btn-start-collect').addEventListener('click', async () => {
+    if (isCollecting) return;
+    isCollecting = true;
+
+    // Show progress UI
+    document.getElementById('btn-start-collect').classList.add('hidden');
+    document.querySelector('.qty-section').classList.add('hidden');
+    viewCollecting.classList.remove('hidden');
+    scanResults.classList.add('hidden');
+    importResult.classList.add('hidden');
+    updateProgress(0, targetCount, 1);
+    setStatus('info', `Collecting ${targetCount} prospects...`);
+
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+    // Send to background for multi-page collection
+    chrome.runtime.sendMessage({
+      type: 'START_COLLECTION',
+      targetCount,
+      tabId: tab.id
+    });
+  });
+
+  // Stop collecting
+  document.getElementById('btn-stop').addEventListener('click', () => {
+    chrome.runtime.sendMessage({ type: 'STOP_COLLECTION' });
+    isCollecting = false;
+    setStatus('warn', 'Collection stopped');
+  });
+
+  // Listen for messages from background
+  chrome.runtime.onMessage.addListener((msg) => {
+    if (msg.type === 'PROGRESS_UPDATE') {
+      updateProgress(msg.collected, msg.target, msg.page);
+    }
+    if (msg.type === 'COLLECTION_COMPLETE') {
+      isCollecting = false;
+      prospects = msg.prospects || [];
+      selected = new Set(prospects.map((_, i) => i));
+
+      // Reset UI
+      viewCollecting.classList.add('hidden');
+      document.getElementById('btn-start-collect').classList.remove('hidden');
+      document.querySelector('.qty-section').classList.remove('hidden');
+
+      if (prospects.length === 0) {
+        setStatus('warn', 'No prospects found. Scroll down and try again.');
+        return;
+      }
+
+      setStatus('found', `🎯 Found ${prospects.length} prospects`);
+      renderProspects();
+      scanResults.classList.remove('hidden');
+      updateSelection();
+    }
+  });
+
+  // ══════════════════════════════════════════
+  //  SCAN — single page fallback (extractProspects injected by background)
+  // ══════════════════════════════════════════
   function extractProspects() {
     const prospects = [];
     const seen = new Set();
-
     const links = document.querySelectorAll('a[href*="/in/"]');
 
     links.forEach(link => {
       try {
         const href = link.href || '';
         if (!href.includes('linkedin.com/in/')) return;
-
         const cleanUrl = href.split('?')[0];
         if (seen.has(cleanUrl)) return;
         const slug = cleanUrl.split('/in/')[1];
@@ -99,39 +180,20 @@ document.addEventListener('DOMContentLoaded', () => {
         const container = li || link.closest('[class*="result"]') || link.parentElement;
         if (!container) return;
 
-        // Name
         let name = '';
-        const nameSelectors = [
-          'span[aria-hidden="true"]',
-          '[class*="title"] span',
-          '[class*="name"]',
-          'span.t-16',
-          'span.t-bold',
-        ];
+        const nameSelectors = ['span[aria-hidden="true"]', '[class*="title"] span', '[class*="name"]', 'span.t-16', 'span.t-bold'];
         for (const sel of nameSelectors) {
           const el = container.querySelector(sel);
           const text = el?.innerText?.trim()?.split('\n')[0]?.trim();
-          if (text && text.length > 1 &&
-              !text.includes('·') &&
-              !text.toLowerCase().includes('connect') &&
-              !text.toLowerCase().includes('follow') &&
-              !text.toLowerCase().includes('message') &&
-              !text.toLowerCase().includes('pending')) {
+          if (text && text.length > 1 && !text.includes('·') && !text.toLowerCase().includes('connect') && !text.toLowerCase().includes('follow') && !text.toLowerCase().includes('message') && !text.toLowerCase().includes('pending')) {
             name = text;
             break;
           }
         }
         if (!name || name.length < 2) return;
 
-        // Title
-        const titleEl = container.querySelector(
-          '[class*="primary-subtitle"], [class*="subtitle"]:first-of-type, .entity-result__summary'
-        );
-
-        // Company
+        const titleEl = container.querySelector('[class*="primary-subtitle"], [class*="subtitle"]:first-of-type, .entity-result__summary');
         const companyEl = container.querySelector('[class*="secondary-subtitle"]');
-
-        // Photo
         const photoEl = container.querySelector('img');
         const photoSrc = photoEl?.src || '';
         const photoUrl = (photoSrc.includes('media') || photoSrc.includes('profile')) ? photoSrc : null;
@@ -145,57 +207,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
       } catch (e) { /* skip */ }
     });
-
     return prospects;
-  }
-
-  async function scanPage() {
-    const scanBtn = document.getElementById('btn-scan');
-    scanBtn.disabled = true;
-    scanBtn.innerHTML = '⏳ Scanning...';
-    setStatus('info', 'Scanning LinkedIn page...');
-    scanResults.classList.add('hidden');
-    importResult.classList.add('hidden');
-
-    try {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      if (!tab?.id) {
-        setStatus('err', 'No active tab found');
-        scanBtn.disabled = false;
-        scanBtn.innerHTML = '🔍 Scan Page';
-        return;
-      }
-
-      const results = await chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        func: extractProspects,
-      });
-
-      const found = results?.[0]?.result || [];
-      console.log('[Wassel] Found:', found.length, 'prospects');
-
-      if (found.length === 0) {
-        setStatus('warn', 'No prospects found. Scroll down and try again.');
-        scanBtn.disabled = false;
-        scanBtn.innerHTML = '🔍 Scan Page';
-        return;
-      }
-
-      prospects = found;
-      selected = new Set(prospects.map((_, i) => i));
-
-      setStatus('found', `🎯 Found ${prospects.length} prospects`);
-      renderProspects();
-      scanResults.classList.remove('hidden');
-      updateSelection();
-
-    } catch (err) {
-      console.error('[Wassel] Scan error:', err);
-      setStatus('err', 'Scan failed. Make sure you are on LinkedIn.');
-    }
-
-    scanBtn.disabled = false;
-    scanBtn.innerHTML = '🔍 Scan Page';
   }
 
   // ── Render prospect list ──
@@ -224,7 +236,6 @@ document.addEventListener('DOMContentLoaded', () => {
         toggleSelect(i);
       });
       div.querySelector('input').addEventListener('change', () => toggleSelect(i));
-
       prospectList.appendChild(div);
     });
   }
@@ -274,30 +285,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
     try {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      const res = await fetch('https://wassel-alpha.vercel.app/api/ext/import', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + token,
-        },
-        body: JSON.stringify({
-          prospects: items,
-          source_url: tab?.url || 'linkedin_search',
-        }),
-      });
 
-      const data = await res.json();
+      // Import in chunks of 50 to avoid timeouts
+      const chunkSize = 50;
+      let totalImported = 0;
 
-      if (res.ok) {
-        const count = data.imported || data.count || items.length;
-        importResult.innerHTML = `<div class="result-box success">✅ ${count} prospects imported successfully!</div>`;
-        setStatus('ok', `✅ ${count} imported`);
-        downloadCSV(items);
-      } else {
-        const errMsg = data.error || 'Import failed';
-        importResult.innerHTML = `<div class="result-box error">❌ ${errMsg}</div>`;
-        setStatus('err', errMsg);
+      for (let i = 0; i < items.length; i += chunkSize) {
+        const chunk = items.slice(i, i + chunkSize);
+        setStatus('info', `Importing batch ${Math.floor(i/chunkSize)+1}... (${i}/${items.length})`);
+
+        const res = await fetch('https://wassel-alpha.vercel.app/api/ext/import', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token,
+          },
+          body: JSON.stringify({
+            prospects: chunk,
+            source_url: tab?.url || 'linkedin_search',
+          }),
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          totalImported += data.imported || data.count || chunk.length;
+        }
       }
+
+      importResult.innerHTML = `<div class="result-box success">✅ ${totalImported} prospects imported successfully!</div>`;
+      setStatus('ok', `✅ ${totalImported} imported`);
+      downloadCSV(items);
+
     } catch (e) {
       importResult.innerHTML = `<div class="result-box error">❌ Network error: ${e.message}</div>`;
       setStatus('err', 'Connection error');
@@ -312,11 +330,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function downloadCSV(items) {
     const headers = ['Name','Title','Company','LinkedIn URL','Imported'];
     const rows = items.map(p => [
-      p.name || '',
-      p.title || '',
-      p.company || '',
-      p.linkedin_url || '',
-      new Date().toLocaleDateString(),
+      p.name || '', p.title || '', p.company || '', p.linkedin_url || '', new Date().toLocaleDateString(),
     ]);
     const csv = [
       headers.join(','),
@@ -335,16 +349,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // ══════════════════════════════════════════
   //  EVENT LISTENERS
   // ══════════════════════════════════════════
-
-  document.getElementById('btn-scan').addEventListener('click', scanPage);
-  document.getElementById('btn-rescan').addEventListener('click', scanPage);
-
   document.getElementById('btn-select-all').addEventListener('click', () => {
-    if (selected.size === prospects.length) {
-      selected.clear();
-    } else {
-      prospects.forEach((_, i) => selected.add(i));
-    }
+    if (selected.size === prospects.length) { selected.clear(); } else { prospects.forEach((_, i) => selected.add(i)); }
     updateSelection();
   });
 
@@ -378,34 +384,90 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.getElementById('btn-sync').addEventListener('click', async () => {
-    setStatus('info', 'Syncing...');
+    setStatus('info', '🔄 Syncing...');
     const result = await syncToken();
     if (result?.synced) await init();
     else showLogin(result?.reason || 'unknown');
   });
 
   document.getElementById('btn-resync').addEventListener('click', async () => {
-    setStatus('info', 'Refreshing...');
+    setStatus('info', '🔄 Refreshing...');
+    const btn = document.getElementById('btn-resync');
+    btn.disabled = true;
+    btn.textContent = '⏳ Syncing...';
+
     const result = await syncToken();
-    if (result?.synced) await init();
-    else showLogin(result?.reason || 'unknown');
+    if (result?.synced) {
+      btn.textContent = '✅ Connected!';
+      btn.style.background = 'rgba(34,197,94,.15)';
+      btn.style.color = '#86efac';
+      await init();
+    } else {
+      btn.textContent = '❌ Open Dashboard First';
+      btn.style.background = 'rgba(239,68,68,.15)';
+      btn.style.color = '#fca5a5';
+      showLogin(result?.reason || 'unknown');
+    }
+    setTimeout(() => {
+      btn.textContent = '🔄 Refresh Session';
+      btn.style.background = '';
+      btn.style.color = '';
+      btn.disabled = false;
+    }, 3000);
+  });
+
+  document.getElementById('btn-rescan').addEventListener('click', () => {
+    scanResults.classList.add('hidden');
+    importResult.classList.add('hidden');
+    prospects = [];
+    selected.clear();
+    showScanView();
   });
 
   // ══════════════════════════════════════════
   //  INIT — detect URL and show correct view
   // ══════════════════════════════════════════
-
   async function init() {
     setStatus('info', 'Connecting...');
 
-    const token = await getToken();
+    let token = await getToken();
 
     if (!token) {
+      // Try to sync from dashboard
       const result = await syncToken();
       if (!result?.synced) {
         showLogin(result?.reason || 'no_token');
         return;
       }
+      token = await getToken();
+      if (!token) {
+        showLogin('no_token');
+        return;
+      }
+    }
+
+    // Validate token is actually valid (quick check)
+    try {
+      const testRes = await fetch('https://wassel-alpha.vercel.app/api/health', {
+        headers: { 'Authorization': `Bearer ${token}` },
+        signal: AbortSignal.timeout(5000),
+      });
+
+      if (testRes.status === 401) {
+        // Token invalid — try resync once
+        console.log('[Wassel popup] Token invalid, resyncing...');
+        await new Promise(resolve => {
+          chrome.storage.local.remove('wasselToken', resolve);
+        });
+        const result = await syncToken();
+        if (!result?.synced) {
+          showLogin('token_expired');
+          return;
+        }
+      }
+    } catch (e) {
+      // Health check timeout — proceed anyway (server might be slow)
+      console.log('[Wassel popup] Health check timeout, proceeding:', e.message);
     }
 
     // We have a token — detect if on LinkedIn

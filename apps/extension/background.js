@@ -467,6 +467,157 @@ async function processQueue() {
 }
 
 // ============================================================================
+// PROSPECT EXTRACTION — injected into LinkedIn pages
+// ============================================================================
+function extractProspects() {
+  const prospects = [];
+  const seen = new Set();
+  const links = document.querySelectorAll('a[href*="/in/"]');
+
+  links.forEach(link => {
+    try {
+      const href = link.href || '';
+      if (!href.includes('linkedin.com/in/')) return;
+      const cleanUrl = href.split('?')[0];
+      if (seen.has(cleanUrl)) return;
+      const slug = cleanUrl.split('/in/')[1];
+      if (!slug || slug.replace(/\//g, '').length < 3) return;
+      seen.add(cleanUrl);
+
+      const li = link.closest('li');
+      const container = li || link.closest('[class*="result"]') || link.parentElement;
+      if (!container) return;
+
+      let name = '';
+      const nameSelectors = ['span[aria-hidden="true"]', '[class*="title"] span', '[class*="name"]', 'span.t-16', 'span.t-bold'];
+      for (const sel of nameSelectors) {
+        const el = container.querySelector(sel);
+        const text = el?.innerText?.trim()?.split('\n')[0]?.trim();
+        if (text && text.length > 1 && !text.includes('·') && !text.toLowerCase().includes('connect') && !text.toLowerCase().includes('follow') && !text.toLowerCase().includes('message') && !text.toLowerCase().includes('pending')) {
+          name = text;
+          break;
+        }
+      }
+      if (!name || name.length < 2) return;
+
+      const titleEl = container.querySelector('[class*="primary-subtitle"], [class*="subtitle"]:first-of-type, .entity-result__summary');
+      const companyEl = container.querySelector('[class*="secondary-subtitle"]');
+      const photoEl = container.querySelector('img');
+      const photoSrc = photoEl?.src || '';
+      const photoUrl = (photoSrc.includes('media') || photoSrc.includes('profile')) ? photoSrc : null;
+
+      prospects.push({
+        name: name.substring(0, 100),
+        title: (titleEl?.innerText?.trim() || '').substring(0, 150),
+        company: (companyEl?.innerText?.trim() || '').substring(0, 100),
+        linkedin_url: cleanUrl,
+        photo_url: photoUrl,
+      });
+    } catch (e) { /* skip */ }
+  });
+  return prospects;
+}
+
+// ============================================================================
+// MULTI-PAGE COLLECTION — collects prospects across multiple LinkedIn pages
+// ============================================================================
+let stopCollection = false;
+
+async function collectMultiPageProspects(targetCount, tabId) {
+  let allProspects = [];
+  let pageNum = 1;
+  const maxPages = Math.ceil(targetCount / 10) + 2;
+  stopCollection = false;
+
+  console.log(`[Wassel] 🎯 Starting collection: ${targetCount} prospects`);
+
+  while (allProspects.length < targetCount && pageNum <= maxPages && !stopCollection) {
+    console.log(`[Wassel] 📄 Scanning page ${pageNum}...`);
+
+    // Send progress to popup
+    try {
+      chrome.runtime.sendMessage({
+        type: 'PROGRESS_UPDATE',
+        collected: allProspects.length,
+        target: targetCount,
+        page: pageNum
+      });
+    } catch (e) { /* popup may be closed */ }
+
+    // Scan current page
+    try {
+      const results = await chrome.scripting.executeScript({
+        target: { tabId },
+        func: extractProspects,
+      });
+
+      const pageProspects = results?.[0]?.result || [];
+      console.log(`[Wassel] Found on page ${pageNum}: ${pageProspects.length}`);
+
+      // Add unique prospects
+      pageProspects.forEach(p => {
+        if (!allProspects.find(e => e.linkedin_url === p.linkedin_url)) {
+          allProspects.push(p);
+        }
+      });
+
+      console.log(`[Wassel] Total collected: ${allProspects.length}`);
+    } catch (e) {
+      console.error(`[Wassel] Scan error on page ${pageNum}:`, e.message);
+      break;
+    }
+
+    if (allProspects.length >= targetCount || stopCollection) break;
+
+    // Navigate to next page
+    try {
+      const nextResult = await chrome.scripting.executeScript({
+        target: { tabId },
+        func: () => {
+          const nextBtn = document.querySelector(
+            'button[aria-label="Next"], ' +
+            '.artdeco-pagination__button--next, ' +
+            'li.artdeco-pagination__indicator--number.active + li button'
+          );
+          if (nextBtn && !nextBtn.disabled) {
+            nextBtn.scrollIntoView({ behavior: 'smooth' });
+            setTimeout(() => nextBtn.click(), 300);
+            return true;
+          }
+          // Fallback: try page number link
+          const currentPage = document.querySelector('.artdeco-pagination__indicator--number.active button');
+          const nextPageNum = currentPage ? parseInt(currentPage.textContent) + 1 : null;
+          if (nextPageNum) {
+            const pageBtn = Array.from(document.querySelectorAll('.artdeco-pagination__indicator--number button'))
+              .find(b => parseInt(b.textContent) === nextPageNum);
+            if (pageBtn) { pageBtn.click(); return true; }
+          }
+          return false;
+        },
+      });
+
+      const hasNext = nextResult?.[0]?.result;
+      if (!hasNext) {
+        console.log('[Wassel] No more pages available');
+        break;
+      }
+
+      // Wait for next page to load
+      await sleep(3000 + Math.random() * 2000);
+      pageNum++;
+    } catch (e) {
+      console.error('[Wassel] Navigation error:', e.message);
+      break;
+    }
+  }
+
+  // Trim to target count
+  const finalProspects = allProspects.slice(0, targetCount);
+  console.log(`[Wassel] ✅ Collection complete: ${finalProspects.length} prospects`);
+  return finalProspects;
+}
+
+// ============================================================================
 // MESSAGE HANDLER — from popup and content scripts
 // ============================================================================
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -477,6 +628,28 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   if (message.type === 'SYNC_TOKEN') {
     syncTokenFromDashboard().then(sendResponse);
+    return true;
+  }
+
+  if (message.type === 'START_COLLECTION') {
+    const { targetCount, tabId } = message;
+    console.log(`[Wassel] 📥 Collection requested: ${targetCount} from tab ${tabId}`);
+    collectMultiPageProspects(targetCount, tabId).then(prospects => {
+      try {
+        chrome.runtime.sendMessage({
+          type: 'COLLECTION_COMPLETE',
+          prospects
+        });
+      } catch (e) { console.log('[Wassel] Popup closed, collection stored'); }
+    });
+    sendResponse({ started: true });
+    return true;
+  }
+
+  if (message.type === 'STOP_COLLECTION') {
+    stopCollection = true;
+    console.log('[Wassel] ⏹ Collection stop requested');
+    sendResponse({ stopped: true });
     return true;
   }
 

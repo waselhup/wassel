@@ -43,64 +43,67 @@
 }
 
 /* ============================================= */
-/* DARK GLASSMORPHISM THEME — WASSEL             */
+/* LIGHT PROFESSIONAL THEME — WASSEL             */
 /* ============================================= */
 
 :root {
-  /* Core palette */
-  --bg-base: #0a0a12;
-  --bg-surface: #0d0d1a;
-  --bg-card: rgba(255, 255, 255, 0.04);
-  --border-subtle: rgba(255, 255, 255, 0.08);
-  --border-accent: rgba(124, 58, 237, 0.4);
-  --accent-primary: #7c3aed;
-  --accent-secondary: #a855f7;
-  --accent-pink: #ec4899;
-  --gradient-primary: linear-gradient(135deg, #7c3aed, #ec4899);
-  --text-primary: #f1f5f9;
-  --text-secondary: #94a3b8;
-  --text-muted: #475569;
-  --success: #22c55e;
-  --warning: #f59e0b;
-  --danger: #ef4444;
+  /* Core palette — light & clean */
+  --bg-base: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f1f5f9;
+  --border-subtle: #e5e7eb;
+  --border-accent: #1a56db;
+  --accent-primary: #1a56db;
+  --accent-secondary: #3b82f6;
+  --accent-pink: #6366f1;
+  --gradient-primary: linear-gradient(135deg, #1a56db, #6366f1);
+  --text-primary: #111827;
+  --text-secondary: #4b5563;
+  --text-muted: #9ca3af;
+  --success: #059669;
+  --warning: #d97706;
+  --danger: #dc2626;
   --radius-card: 12px;
   --radius-btn: 8px;
-  --blur-glass: blur(12px);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+  --shadow-md: 0 4px 6px rgba(0,0,0,0.07);
+  --shadow-lg: 0 10px 15px rgba(0,0,0,0.08);
 
-  /* Tailwind/shadcn variable overrides for dark */
+  /* Tailwind/shadcn variable overrides for light */
   --radius: 0.65rem;
-  --primary: #7c3aed;
-  --primary-foreground: #f5f3ff;
-  --sidebar-primary: #a855f7;
-  --sidebar-primary-foreground: #faf5ff;
-  --background: #0a0a12;
-  --foreground: #f1f5f9;
-  --card: rgba(255, 255, 255, 0.04);
-  --card-foreground: #f1f5f9;
-  --popover: #0f0f1a;
-  --popover-foreground: #f1f5f9;
-  --secondary: rgba(255, 255, 255, 0.06);
-  --secondary-foreground: #94a3b8;
-  --muted: rgba(255, 255, 255, 0.06);
-  --muted-foreground: #94a3b8;
-  --accent: rgba(124, 58, 237, 0.15);
-  --accent-foreground: #a855f7;
-  --destructive: #ef4444;
-  --destructive-foreground: #fef2f2;
-  --border: rgba(255, 255, 255, 0.08);
-  --input: rgba(255, 255, 255, 0.06);
-  --ring: rgba(124, 58, 237, 0.4);
-  --chart-1: #a855f7;
-  --chart-2: #7c3aed;
-  --chart-3: #ec4899;
-  --chart-4: #22c55e;
-  --chart-5: #f59e0b;
-  --sidebar: #0d0d1a;
-  --sidebar-foreground: #f1f5f9;
-  --sidebar-accent: rgba(124, 58, 237, 0.15);
-  --sidebar-accent-foreground: #a855f7;
-  --sidebar-border: rgba(255, 255, 255, 0.08);
-  --sidebar-ring: rgba(124, 58, 237, 0.4);
+  --primary: #1a56db;
+  --primary-foreground: #ffffff;
+  --sidebar-primary: #1a56db;
+  --sidebar-primary-foreground: #ffffff;
+  --background: #f8fafc;
+  --foreground: #111827;
+  --card: #ffffff;
+  --card-foreground: #111827;
+  --popover: #ffffff;
+  --popover-foreground: #111827;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #4b5563;
+  --muted: #f3f4f6;
+  --muted-foreground: #6b7280;
+  --accent: #eff6ff;
+  --accent-foreground: #1a56db;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --border: #e5e7eb;
+  --input: #e5e7eb;
+  --ring: rgba(26, 86, 219, 0.3);
+  --chart-1: #3b82f6;
+  --chart-2: #1a56db;
+  --chart-3: #6366f1;
+  --chart-4: #059669;
+  --chart-5: #d97706;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #111827;
+  --sidebar-accent: #eff6ff;
+  --sidebar-accent-foreground: #1a56db;
+  --sidebar-border: #e5e7eb;
+  --sidebar-ring: rgba(26, 86, 219, 0.3);
 }
 
 @layer base {
@@ -111,7 +114,7 @@
   body {
     background: var(--bg-base);
     color: var(--text-primary);
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -131,7 +134,7 @@
   /* Force dark colors on all headings */
   h1, h2, h3, h4, h5, h6 {
     color: var(--text-primary);
-    font-family: 'Syne', 'Inter', sans-serif;
+    font-family: 'Outfit', 'Plus Jakarta Sans', 'Inter', sans-serif;
   }
 
   /* Links */
