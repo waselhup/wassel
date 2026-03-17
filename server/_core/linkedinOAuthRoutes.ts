@@ -207,4 +207,18 @@ router.post('/disconnect', async (req: Request, res: Response) => {
   }
 });
 
+// ============================================================================
+// GET /api/linkedin/test — Diagnostic endpoint
+// ============================================================================
+router.get('/test', (_req: Request, res: Response) => {
+  res.json({
+    linkedinRoutes: 'ACTIVE ✅',
+    clientId: LINKEDIN_CLIENT_ID ? 'SET ✅' : 'MISSING ❌',
+    secret: LINKEDIN_CLIENT_SECRET ? 'SET ✅' : 'MISSING ❌',
+    redirectUri: LINKEDIN_REDIRECT_URI || 'MISSING ❌',
+    dashboardUrl: DASHBOARD_URL,
+    timestamp: new Date().toISOString(),
+  });
+});
+
 export default router;
