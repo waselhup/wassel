@@ -3,6 +3,7 @@ import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
 import authRoutes from "./authRoutes";
 import linkedinAuthRoutes from "./linkedinAuth";
+import linkedinOAuthRoutes from "./linkedinOAuthRoutes";
 import inviteRoutes from "./inviteRoutes";
 import extensionRoutes from "./extensionRoutes";
 import clientRoutes from "./clientRoutes";
@@ -34,6 +35,9 @@ app.use((req, res, next) => {
 registerOAuthRoutes(app);
 app.use("/api/auth", authRoutes);
 app.use("/api/auth/linkedin", linkedinAuthRoutes);
+
+// LinkedIn OAuth routes (public — OAuth flow starts unauthenticated)
+app.use("/api/linkedin", linkedinOAuthRoutes);
 
 // Admin routes: JWT + super_admin role required
 app.use("/api/invites", expressAuthMiddleware, requireRole('super_admin'), inviteRoutes);

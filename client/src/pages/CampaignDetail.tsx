@@ -569,154 +569,54 @@ export default function CampaignDetail() {
       <div className="max-w-6xl mx-auto px-6 py-6">
         {/* ======= SEQUENCE TAB ======= */}
         {activeTab === 'sequence' && (
-          <div className="space-y-4">
-            {/* Default sequence button */}
-            {steps.length === 0 && stepsLoaded && (
-              <Card className="p-8 text-center bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
-                <Zap className="w-12 h-12 text-blue-500 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">ابدأ ببناء تسلسل الأتمتة</h3>
-                <p className="text-gray-600 mb-6 text-sm">أضف خطوات أو استخدم التسلسل الافتراضي (زيارة → دعوة → رسالة 1 → رسالة 2)</p>
-                <Button onClick={loadDefaultSequence} className="bg-blue-600 hover:bg-blue-700 text-white">
-                  <Zap className="w-4 h-4 mr-2" />
-                  تحميل التسلسل الافتراضي
-                </Button>
+          <div className="space-y-3">
+            {steps.length === 0 && stepsLoaded ? (
+              <Card className="p-8 text-center">
+                <Zap className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                <h3 className="text-base font-semibold text-gray-700 mb-1">No steps configured</h3>
+                <p className="text-gray-500 text-sm">This campaign has no sequence steps. Create a new campaign to set up steps.</p>
               </Card>
-            )}
-
-            {/* Steps flow */}
-            {steps.map((step, index) => {
-              const typeConfig = STEP_TYPES[step.step_type as keyof typeof STEP_TYPES];
-              const IconComponent = typeConfig?.icon || Eye;
-
-              return (
-                <div key={index}>
-                  {/* Delay connector */}
-                  {index > 0 && (
-                    <div className="flex items-center gap-2 py-2 px-6">
-                      <div className="w-0.5 h-6 bg-gray-300 mr-4"></div>
-                      <div className="flex items-center gap-2 bg-white rounded-full px-3 py-1 shadow-sm border">
-                        <Clock className="w-3.5 h-3.5 text-gray-400" />
-                        <select
-                          value={step.delay_days}
-                          onChange={e => updateStep(index, { delay_days: parseInt(e.target.value) })}
-                          className="text-xs bg-transparent border-none focus:outline-none text-gray-600 pr-4"
-                        >
-                          {[0,1,2,3,4,5,7,10,14].map(d => (
-                            <option key={d} value={d}>
-                              {d === 0 ? 'بدون تأخير' : `${d} ${d === 1 ? 'يوم' : 'أيام'}`}
-                            </option>
-                          ))}
-                        </select>
+            ) : (
+              steps.map((s, i) => {
+                const cfg = STEP_TYPES[s.step_type as keyof typeof STEP_TYPES];
+                const Icon = cfg?.icon || Eye;
+                return (
+                  <div key={i}>
+                    {i > 0 && (
+                      <div className="flex items-center gap-2 py-1 pl-6">
+                        <div className="w-0.5 h-5 bg-gray-200" />
+                        <span className="text-xs text-gray-400 flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {s.delay_days === 0 ? 'No delay' : `${s.delay_days} day${s.delay_days > 1 ? 's' : ''} delay`}
+                        </span>
                       </div>
-                    </div>
-                  )}
-
-                  {/* Step card */}
-                  <Card className="p-5 bg-white hover:shadow-md transition-shadow">
-                    <div className="flex items-start gap-4">
-                      {/* Step number + icon */}
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-sm ${
-                        step.step_type === 'visit' ? 'bg-blue-500' :
-                        step.step_type === 'invitation' ? 'bg-green-500' :
-                        'bg-purple-500'
-                      }`}>
-                        <IconComponent className="w-5 h-5" />
-                      </div>
-
-                      {/* Step content */}
-                      <div className="flex-1 space-y-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-gray-400 bg-gray-100 rounded-full w-6 h-6 flex items-center justify-center">
-                              {index + 1}
-                            </span>
-                            <Input
-                              value={step.name}
-                              onChange={e => updateStep(index, { name: e.target.value })}
-                              className="font-semibold text-gray-900 border-none bg-transparent p-0 h-auto text-base focus-visible:ring-0"
-                              placeholder="اسم الخطوة"
-                            />
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Button variant="ghost" size="sm" onClick={() => moveStep(index, 'up')} disabled={index === 0} className="h-8 w-8 p-0">
-                              <ChevronUp className="w-4 h-4" />
-                            </Button>
-                            <Button variant="ghost" size="sm" onClick={() => moveStep(index, 'down')} disabled={index === steps.length - 1} className="h-8 w-8 p-0">
-                              <ChevronDown className="w-4 h-4" />
-                            </Button>
-                            <Button variant="ghost" size="sm" onClick={() => removeStep(index)} className="h-8 w-8 p-0 text-red-500 hover:text-red-700">
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
+                    )}
+                    <Card className="p-4 bg-white">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-white shrink-0 ${
+                          s.step_type === 'visit' ? 'bg-blue-500' :
+                          s.step_type === 'invitation' ? 'bg-green-500' : 'bg-purple-500'
+                        }`}>
+                          <Icon className="w-4 h-4" />
                         </div>
-
-                        {/* Message template (for invitation and message steps) */}
-                        {(step.step_type === 'invitation' || step.step_type === 'message') && (
-                          <div>
-                            <div className="flex items-center justify-between mb-1">
-                              <label className="text-xs font-medium text-gray-500">
-                                {step.step_type === 'invitation' ? 'ملاحظة الدعوة (300 حرف)' : 'نص الرسالة'}
-                              </label>
-                              <span className={`text-xs ${
-                                step.step_type === 'invitation' && (step.message_template?.length || 0) > 300
-                                  ? 'text-red-500 font-semibold' : 'text-gray-400'
-                              }`}>
-                                {step.message_template?.length || 0}{step.step_type === 'invitation' ? '/300' : ''}
-                              </span>
-                            </div>
-                            <textarea
-                              value={step.message_template}
-                              onChange={e => updateStep(index, { message_template: e.target.value })}
-                              maxLength={step.step_type === 'invitation' ? 300 : undefined}
-                              placeholder="اكتب رسالتك هنا..."
-                              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent resize-none bg-gray-50"
-                              rows={3}
-                            />
-                            {/* Variable chips */}
-                            <div className="flex flex-wrap gap-1.5 mt-2">
-                              {['firstName', 'lastName', 'company', 'jobTitle'].map(v => (
-                                <button
-                                  key={v}
-                                  type="button"
-                                  onClick={() => {
-                                    const newTemplate = (step.message_template || '') + `{{${v}}}`;
-                                    updateStep(index, { message_template: newTemplate });
-                                  }}
-                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 text-xs font-medium hover:bg-blue-100 transition-colors"
-                                >
-                                  <Plus className="w-3 h-3" />
-                                  {v}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {step.step_type === 'visit' && (
-                          <p className="text-xs text-gray-500">سيتم فتح ملف LinkedIn وزيارته تلقائياً (4-7 ثوانٍ)</p>
-                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-gray-800">{s.name}</p>
+                          {s.message_template && (
+                            <p className="text-xs text-gray-500 truncate mt-0.5">{s.message_template}</p>
+                          )}
+                          {s.step_type === 'visit' && (
+                            <p className="text-xs text-gray-400 mt-0.5">Auto-visits LinkedIn profile (4-7 seconds)</p>
+                          )}
+                        </div>
+                        <span className="text-xs text-gray-400 bg-gray-50 rounded-full px-2 py-0.5 shrink-0">
+                          Step {i + 1}
+                        </span>
                       </div>
-                    </div>
-                  </Card>
-                </div>
-              );
-            })}
-
-            {/* Add step buttons */}
-            <div className="flex items-center gap-2 pt-2">
-              {Object.entries(STEP_TYPES).map(([type, config]) => (
-                <Button
-                  key={type}
-                  variant="outline"
-                  size="sm"
-                  onClick={() => addStep(type)}
-                  className="text-gray-600 hover:text-gray-900"
-                >
-                  <Plus className="w-3.5 h-3.5 mr-1" />
-                  {config.emoji} {config.label}
-                </Button>
-              ))}
-            </div>
+                    </Card>
+                  </div>
+                );
+              })
+            )}
           </div>
         )}
 
