@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { useAuth } from '@/contexts/AuthContext';
 import { Link } from 'wouter';
+import { CheckCircle, Circle, Download } from 'lucide-react';
 
 export default function Onboarding() {
   const { user } = useAuth();
@@ -12,14 +13,16 @@ export default function Onboarding() {
   // Check if extension is installed
   useEffect(() => {
     let timer: any;
+    let checkInterval: any;
+
     const checkExtension = () => {
-      // Try to detect extension via chrome.runtime
       const w = window as any;
       if (w.chrome?.runtime) {
         try {
           w.chrome.runtime.sendMessage('wassel-extension', { type: 'PING' }, (response: any) => {
             if (response) {
               setExtensionDetected(true);
+              localStorage.setItem('wassel_onboarding_done', 'true');
               setTimeout(() => navigate('/app'), 1500);
             }
           });
@@ -29,15 +32,17 @@ export default function Onboarding() {
       }
     };
 
-    // Check every 3 seconds for 30 seconds
     checkExtension();
-    timer = setInterval(checkExtension, 3000);
-    setTimeout(() => {
+    checkInterval = setInterval(checkExtension, 3000);
+    timer = setTimeout(() => {
       setChecking(false);
-      clearInterval(timer);
+      clearInterval(checkInterval);
     }, 30000);
 
-    return () => clearInterval(timer);
+    return () => {
+      clearInterval(checkInterval);
+      clearTimeout(timer);
+    };
   }, [navigate]);
 
   const skipOnboarding = () => {
@@ -52,17 +57,39 @@ export default function Onboarding() {
       <div className="flex-1 lg:w-[60%] flex items-center justify-center p-6 sm:p-10 lg:p-16">
         <div className="w-full max-w-lg">
           {/* Logo */}
-          <div className="flex items-center gap-2 mb-10">
+          <div className="flex items-center gap-2 mb-12">
             <div className="w-9 h-9 rounded-lg flex items-center justify-center text-white font-bold text-sm" style={{ background: 'var(--gradient-primary)' }}>W</div>
             <span className="text-xl font-extrabold tracking-tight" style={{ fontFamily: "'Outfit', sans-serif", color: 'var(--text-primary)' }}>assel</span>
           </div>
 
           <h1 className="text-3xl sm:text-4xl font-extrabold mb-3" style={{ fontFamily: "'Outfit', sans-serif", color: 'var(--text-primary)' }}>
-            One last step to go! 🎉
+            One last step! 🎉
           </h1>
           <p className="text-base mb-8 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-            Your account is ready. Now install the Wassel extension to start importing prospects from LinkedIn.
+            Your account is ready. Add Wassel to Chrome to start importing prospects from LinkedIn.
           </p>
+
+          {/* Progress Steps */}
+          <div className="space-y-3 mb-8">
+            <div className="flex items-center gap-3 px-4 py-3 rounded-xl" style={{ background: '#ecfdf5', border: '1px solid #a7f3d0' }}>
+              <CheckCircle className="w-5 h-5 flex-shrink-0" style={{ color: '#059669' }} />
+              <span className="text-sm font-medium" style={{ color: '#065f46' }}>Account created</span>
+            </div>
+            <div className="flex items-center gap-3 px-4 py-3 rounded-xl" style={{ background: extensionDetected ? '#ecfdf5' : '#eff6ff', border: extensionDetected ? '1px solid #a7f3d0' : '1px solid #bfdbfe' }}>
+              {extensionDetected ? (
+                <CheckCircle className="w-5 h-5 flex-shrink-0" style={{ color: '#059669' }} />
+              ) : (
+                <div className="w-5 h-5 rounded-full border-2 border-blue-400 border-t-transparent animate-spin flex-shrink-0"></div>
+              )}
+              <span className="text-sm font-medium" style={{ color: extensionDetected ? '#065f46' : '#1e40af' }}>
+                {extensionDetected ? 'Extension installed!' : 'Install Chrome Extension'}
+              </span>
+            </div>
+            <div className="flex items-center gap-3 px-4 py-3 rounded-xl" style={{ background: '#f3f4f6', border: '1px solid #e5e7eb' }}>
+              <Circle className="w-5 h-5 flex-shrink-0" style={{ color: '#9ca3af' }} />
+              <span className="text-sm font-medium" style={{ color: '#6b7280' }}>Start importing prospects</span>
+            </div>
+          </div>
 
           {extensionDetected ? (
             <div className="flex items-center gap-3 px-6 py-4 rounded-xl" style={{ background: '#ecfdf5', border: '1px solid #a7f3d0' }}>
@@ -76,48 +103,44 @@ export default function Onboarding() {
             <>
               <Link href="/app/extension">
                 <button
-                  className="w-full flex items-center justify-center gap-3 py-4 px-6 rounded-xl text-base font-semibold text-white transition-all hover:scale-[1.02] hover:shadow-lg"
+                  className="w-full flex items-center justify-center gap-3 py-4 px-6 rounded-xl text-base font-semibold text-white transition-all hover:scale-[1.01] hover:shadow-lg"
                   style={{ background: 'var(--gradient-primary)', boxShadow: '0 4px 20px rgba(26,86,219,0.3)' }}
                 >
-                  ⚡ Add Wassel to Chrome
+                  <Download className="w-5 h-5" />
+                  Add Wassel to Chrome — Free
                 </button>
               </Link>
 
-              <p className="text-center text-xs mt-3 mb-8" style={{ color: 'var(--text-muted)' }}>
+              <p className="text-center text-xs mt-3 mb-6" style={{ color: 'var(--text-muted)' }}>
                 Free Chrome extension · 2-minute setup
               </p>
 
-              {!checking && (
-                <button
-                  onClick={skipOnboarding}
-                  className="w-full text-center text-sm font-medium transition-all hover:underline"
-                  style={{ color: 'var(--text-muted)' }}
-                >
-                  I'll do this later →
-                </button>
-              )}
-
-              {checking && (
-                <button
-                  onClick={skipOnboarding}
-                  className="w-full text-center text-sm font-medium transition-all hover:underline"
-                  style={{ color: 'var(--text-muted)' }}
-                >
-                  Skip for now →
-                </button>
-              )}
+              <button
+                onClick={skipOnboarding}
+                className="w-full text-center text-sm font-medium transition-all hover:underline"
+                style={{ color: 'var(--text-muted)' }}
+              >
+                Already installed? Skip →
+              </button>
             </>
           )}
         </div>
       </div>
 
-      {/* RIGHT SIDE — Dark mockup */}
+      {/* RIGHT SIDE — Dark panel */}
       <div className="hidden lg:flex lg:w-[40%] items-center justify-center p-10 relative overflow-hidden" style={{ background: '#0f172a' }}>
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 rounded-full" style={{ background: 'radial-gradient(circle, rgba(26,86,219,0.2) 0%, transparent 70%)' }}></div>
 
         <div className="relative z-10 w-full max-w-sm">
+          {/* Extension preview mockup */}
           <div className="rounded-2xl p-6" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(12px)' }}>
-            <p className="text-white text-sm font-semibold mb-4">What you'll be able to do:</p>
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold" style={{ background: 'var(--gradient-primary)' }}>W</div>
+              <div>
+                <p className="text-white text-sm font-semibold">Wassel Extension</p>
+                <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.5)' }}>Chrome Extension</p>
+              </div>
+            </div>
             <div className="space-y-3">
               {[
                 { icon: '🔍', text: 'Scan LinkedIn search results' },
