@@ -8,8 +8,8 @@ const t = {
   en: {
     nav: { features: 'Features', pricing: 'Pricing', faq: 'FAQ', login: 'Login', trial: 'Start Free Trial' },
     hero: {
-      h1: 'Automate Your LinkedIn Outreach.\nClose More Deals.',
-      sub: 'Wassel runs your entire LinkedIn sequence — visit, connect, message, follow up — while you focus on closing.',
+      h1: 'LinkedIn Outreach\nWithout the Complexity.',
+      sub: 'Send personalized invitations and follow-ups automatically. No confusing add-ons. No hidden fees. Just results.',
       cta1: 'Start Free Trial', cta2: 'Watch Demo',
       proof: 'Join 500+ sales teams, recruiters & founders',
       badge: '12 connections accepted today',
@@ -48,8 +48,8 @@ const t = {
   ar: {
     nav: { features: 'المميزات', pricing: 'الأسعار', faq: 'الأسئلة', login: 'تسجيل الدخول', trial: 'ابدأ مجاناً' },
     hero: {
-      h1: 'أتمتة تواصلك على لينكدإن.\nأغلق صفقات أكثر.',
-      sub: 'وصل يدير تسلسل لينكدإن بالكامل — زيارة، اتصال، رسالة، متابعة — بينما تركز أنت على الإغلاق.',
+      h1: 'تواصل على لينكدإن\nبدون تعقيد.',
+      sub: 'أرسل دعوات متابعة مخصصة تلقائياً. بدون إضافات مربكة. بدون رسوم مخفية. فقط نتائج.',
       cta1: 'ابدأ مجاناً', cta2: 'شاهد العرض',
       proof: 'انضم لأكثر من 500 فريق مبيعات وتوظيف',
       badge: '12 اتصال تم قبوله اليوم',
@@ -89,16 +89,16 @@ const t = {
 
 const pricingPlans = [
   {
-    name: 'Starter', price: '$29', period: '/month', popular: false,
-    features: ['1 LinkedIn account', '500 prospects/month', '3 active campaigns', 'Basic analytics', 'Email support'],
+    name: 'Free Starter', price: '$0', period: '/month', popular: false,
+    features: ['100 prospects/month', '1 active campaign', 'Basic analytics', 'Email support'],
   },
   {
-    name: 'Growth', price: '$79', period: '/month', popular: true,
-    features: ['3 LinkedIn accounts', '2,000 prospects/month', 'Unlimited campaigns', 'Full analytics + reply tracking', 'Priority support', 'Team seats: up to 3'],
+    name: 'Professional', price: '$39', period: '/month', popular: true,
+    features: ['2,000 prospects/month', 'Unlimited campaigns', 'Full analytics + AI writer', 'Priority support', 'Multi-page scraping (up to 500)'],
   },
   {
-    name: 'Agency', price: '$199', period: '/month', popular: false,
-    features: ['10 LinkedIn accounts', 'Unlimited prospects', 'Unlimited campaigns', 'Advanced analytics', 'Dedicated support', 'Unlimited team seats', 'White-label ready'],
+    name: 'Team', price: '$99', period: '/month', popular: false,
+    features: ['10,000 prospects/month', 'Everything in Professional', '5 LinkedIn accounts', 'Team dashboard', 'Dedicated support'],
   },
 ];
 
@@ -192,6 +192,7 @@ export default function Landing() {
           {/* Desktop nav */}
           <div className="hidden md:flex items-center gap-6">
             <button onClick={() => scrollTo('features')} className="text-sm hover:opacity-80 transition" style={{ color: 'var(--text-secondary)' }}>{s.nav.features}</button>
+            <Link href="/safety"><span className="text-sm cursor-pointer hover:opacity-80 transition" style={{ color: 'var(--text-secondary)' }}>Safety</span></Link>
             <button onClick={() => scrollTo('pricing')} className="text-sm hover:opacity-80 transition" style={{ color: 'var(--text-secondary)' }}>{s.nav.pricing}</button>
             <button onClick={() => scrollTo('faq')} className="text-sm hover:opacity-80 transition" style={{ color: 'var(--text-secondary)' }}>{s.nav.faq}</button>
             <button onClick={toggleLang} className="text-xs px-2.5 py-1 rounded-md transition" style={{ border: '1px solid var(--border-subtle)', color: 'var(--text-muted)' }}>
@@ -200,7 +201,7 @@ export default function Landing() {
             <Link href="/login">
               <button className="text-sm px-4 py-2 rounded-lg transition" style={{ border: '1px solid var(--border-accent)', color: 'var(--accent-secondary)' }}>{s.nav.login}</button>
             </Link>
-            <Link href="/signup">
+            <Link href="/login">
               <button className="text-sm px-5 py-2 rounded-lg font-semibold text-white" style={{ background: 'var(--gradient-primary)', boxShadow: '0 0 20px rgba(124,58,237,0.3)' }}>
                 {s.nav.trial}
               </button>

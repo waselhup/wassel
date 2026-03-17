@@ -153,10 +153,10 @@ export default function ClientDashboard() {
                             {/* 4 Metric Cards */}
                             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                                 {[
-                                    { label: 'Total Campaigns', value: campaigns.length, icon: Target, color: '#1a56db', bg: '#eff6ff' },
-                                    { label: 'Prospects', value: prospects.length, icon: Users, color: '#059669', bg: '#ecfdf5' },
-                                    { label: 'Active', value: activeCampaigns, icon: Zap, color: '#d97706', bg: '#fffbeb' },
-                                    { label: 'Queued', value: queueCount, icon: BarChart3, color: '#6366f1', bg: '#eef2ff' },
+                                    { label: 'Active Sequences', value: campaigns.length, icon: Target, color: '#1a56db', bg: '#eff6ff' },
+                                    { label: 'Prospects in Pipeline', value: prospects.length, icon: Users, color: '#059669', bg: '#ecfdf5' },
+                                    { label: 'Running Now', value: activeCampaigns, icon: Zap, color: '#d97706', bg: '#fffbeb' },
+                                    { label: 'Intelligent Queue', value: queueCount, icon: BarChart3, color: '#6366f1', bg: '#eef2ff' },
                                 ].map((stat, i) => (
                                     <div key={i} className="p-4" style={{ ...card }}>
                                         <div className="flex items-center justify-between mb-3">

@@ -33,6 +33,10 @@ import ResetPassword from "./pages/ResetPassword";
 import CampaignDetail from "./pages/CampaignDetail";
 import CampaignWizard from "./pages/CampaignWizard";
 import ExtensionDownload from "./pages/ExtensionDownload";
+import Safety from "./pages/Safety";
+import Features from "./pages/Features";
+import Comparison from "./pages/Comparison";
+import Blog, { BlogArticle } from "./pages/Blog";
 
 /**
  * Route guard: requires authenticated user (any role).
@@ -169,6 +173,11 @@ function Router() {
       <Route path={"/reset-password"} component={ResetPassword} />
       <Route path={"/extension-download"} component={ExtensionDownload} />
       <Route path={"/onboarding"} component={() => <ClientRoute component={Onboarding} />} />
+      <Route path={"/safety"} component={Safety} />
+      <Route path={"/features"} component={Features} />
+      <Route path={"/compare/wassel-vs-waalaxy"} component={Comparison} />
+      <Route path={"/blog"} component={Blog} />
+      <Route path="/blog/:slug">{(params: any) => <BlogArticle slug={params.slug} />}</Route>
 
       {/* Client dashboard routes (/app/*) — any authenticated user */}
       <Route path={/^\/app\/onboarding/} component={() => <ClientRoute component={Onboarding} />} />

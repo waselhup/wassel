@@ -63,7 +63,7 @@ export default function Login() {
             Welcome to Wassel!
           </h1>
           <p className="text-base mb-10 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-            Set up your account instantly with LinkedIn.
+            The transparent LinkedIn automation platform. Set up your account instantly with LinkedIn.
           </p>
 
           {/* LinkedIn Button — PRIMARY CTA */}

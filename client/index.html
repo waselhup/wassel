@@ -3,22 +3,60 @@
 
   <head>
     <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1" />
-    <title>وصل | Wassel</title>    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+    <title>Wassel — LinkedIn Automation Made Simple</title>
+    <meta name="description" content="Automate your LinkedIn outreach. Send personalized invitations, follow-ups, and messages automatically. Safer than Chrome extensions. The transparent LinkedIn automation platform." />
+    <meta name="keywords" content="LinkedIn automation, LinkedIn outreach, Waalaxy alternative, LinkedIn prospecting tool, LinkedIn campaign management, LinkedIn invitation tool" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Wassel — LinkedIn Automation Made Simple" />
+    <meta property="og:description" content="Automate your LinkedIn outreach. Send personalized invitations, follow-ups, and messages automatically. Safer than Chrome extensions." />
+    <meta property="og:url" content="https://wassel-alpha.vercel.app" />
+    <meta property="og:site_name" content="Wassel" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Wassel — LinkedIn Automation Made Simple" />
+    <meta name="twitter:description" content="Automate your LinkedIn outreach. Send personalized invitations, follow-ups, and messages automatically." />
+
+    <!-- Schema markup -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "Wassel",
+      "applicationCategory": "BusinessApplication",
+      "description": "LinkedIn automation and outreach platform. Send personalized invitations, follow-ups, and messages automatically.",
+      "operatingSystem": "Web",
+      "offers": {
+        "@type": "AggregateOffer",
+        "lowPrice": "0",
+        "highPrice": "99",
+        "priceCurrency": "USD",
+        "offerCount": "3"
+      }
+    }
+    </script>
+
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+    <!-- GA4 placeholder — replace G-XXXXXXXXXX with real ID -->
+    <!-- <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-XXXXXXXXXX');
+    </script> -->
   </head>
 
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-    <script
-      defer
-      src="%VITE_ANALYTICS_ENDPOINT%/umami"
-      data-website-id="%VITE_ANALYTICS_WEBSITE_ID%"></script>
   </body>
 
 </html>
