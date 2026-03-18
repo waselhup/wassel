@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import Avatar from '@/components/Avatar';
 import {
@@ -6,6 +5,7 @@ import {
     LogOut, Globe
 } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Client navigation sidebar for /app/* pages.
@@ -15,10 +15,8 @@ import { Link, useLocation } from 'wouter';
  */
 export default function ClientNav() {
     const { user, signOut } = useAuth();
+    const { t, i18n } = useTranslation();
     const [location] = useLocation();
-    const [lang, setLang] = useState(
-        localStorage.getItem('wassel_lang') || 'en'
-    );
 
     const handleLogout = async () => {
         try {
@@ -26,7 +24,6 @@ export default function ClientNav() {
             localStorage.removeItem('supabase_token');
             localStorage.removeItem('wassel_admin_key');
             localStorage.removeItem('wassel_user');
-            localStorage.removeItem('wassel_lang');
             Object.keys(localStorage).forEach(key => {
                 if (key.startsWith('sb-') || key.startsWith('supabase')) {
                     localStorage.removeItem(key);
@@ -40,19 +37,16 @@ export default function ClientNav() {
     };
 
     const toggleLang = () => {
-        const newLang = lang === 'en' ? 'ar' : 'en';
-        setLang(newLang);
-        localStorage.setItem('wassel_lang', newLang);
-        document.documentElement.dir = newLang === 'ar' ? 'rtl' : 'ltr';
-        window.location.reload();
+        const newLang = i18n.language === 'ar' ? 'en' : 'ar';
+        i18n.changeLanguage(newLang);
     };
 
     const navItems = [
-        { href: '/app', label: 'Overview', icon: LayoutDashboard, match: /^\/app\/?$/ },
-        { href: '/app/campaigns', label: 'Campaigns', icon: Target, match: /^\/app\/campaigns/ },
-        { href: '/app/leads', label: 'Prospects', icon: Users, match: /^\/app\/leads/ },
-        { href: '/app/import', label: 'Import', icon: Download, match: /^\/app\/import/ },
-        { href: '/app/extension', label: 'Extension', icon: Chrome, match: /^\/app\/extension/ },
+        { href: '/app', label: t('nav.dashboard'), icon: LayoutDashboard, match: /^\/app\/?$/ },
+        { href: '/app/campaigns', label: t('nav.campaigns'), icon: Target, match: /^\/app\/campaigns/ },
+        { href: '/app/leads', label: t('nav.prospects'), icon: Users, match: /^\/app\/leads/ },
+        { href: '/app/import', label: t('nav.extension'), icon: Download, match: /^\/app\/import/ },
+        { href: '/app/extension', label: t('nav.extension'), icon: Chrome, match: /^\/app\/extension/ },
     ];
 
     const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
@@ -130,10 +124,10 @@ export default function ClientNav() {
                     >
                         <span className="flex items-center gap-2">
                             <Globe className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />
-                            {lang === 'en' ? '🌐 العربية' : '🌐 English'}
+                            {i18n.language === 'en' ? '🌐 العربية' : '🌐 English'}
                         </span>
                         <span style={{ opacity: 0.5, fontSize: '11px' }}>
-                            {lang === 'en' ? 'EN' : 'AR'}
+                            {i18n.language === 'en' ? 'EN' : 'AR'}
                         </span>
                     </button>
                 </div>

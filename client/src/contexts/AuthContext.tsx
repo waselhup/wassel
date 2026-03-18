@@ -14,6 +14,8 @@ export type AuthUser = {
   role: UserRole;
   teamId?: string | null;
   user_metadata?: Record<string, any>;
+  extensionInstalled?: boolean;
+  linkedinConnected?: boolean;
 };
 
 type AuthContextType = {
@@ -67,7 +69,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Fetch profile with role
       let { data: profile } = await supabase
         .from('profiles')
-        .select('role')
+        .select('role, extension_installed')
         .eq('id', supabaseUser.id)
         .single();
 
@@ -80,11 +82,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           full_name: fullName,
           role: 'client_user',
         }, { onConflict: 'id' });
-        profile = { role: 'client_user' };
+        profile = { role: 'client_user', extension_installed: false };
       }
 
       if (profile?.role === 'super_admin') {
         baseUser.role = 'super_admin';
+      }
+
+      // Extension installed flag
+      baseUser.extensionInstalled = !!(profile as any)?.extension_installed;
+
+      // Check LinkedIn connection
+      try {
+        const { data: linkedinConn } = await supabase
+          .from('linkedin_connections')
+          .select('oauth_connected, status')
+          .eq('user_id', supabaseUser.id)
+          .eq('oauth_connected', true)
+          .eq('status', 'connected')
+          .limit(1)
+          .maybeSingle();
+        baseUser.linkedinConnected = !!linkedinConn;
+      } catch {
+        baseUser.linkedinConnected = false;
       }
 
       // Fetch team membership

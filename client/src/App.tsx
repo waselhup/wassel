@@ -37,6 +37,7 @@ import Safety from "./pages/Safety";
 import Features from "./pages/Features";
 import Comparison from "./pages/Comparison";
 import Blog, { BlogArticle } from "./pages/Blog";
+import OnboardingExtension from "./pages/OnboardingExtension";
 
 /**
  * Route guard: requires authenticated user (any role).
@@ -117,6 +118,23 @@ function ClientRoute({ component: Component }: { component: React.ComponentType 
     window.location.href = '/login';
     return null;
   }
+  // Onboarding guard: check LinkedIn + extension
+  // Skip checks for admin users and for the onboarding pages themselves
+  if (user.role !== 'super_admin') {
+    const currentPath = window.location.pathname;
+    const isOnboardingPage = currentPath.startsWith('/onboarding');
+    
+    if (!isOnboardingPage) {
+      if (!user.linkedinConnected) {
+        window.location.href = '/login';
+        return null;
+      }
+      if (!user.extensionInstalled) {
+        window.location.href = '/onboarding/extension';
+        return null;
+      }
+    }
+  }
 
   return <Component />;
 }
@@ -173,6 +191,7 @@ function Router() {
       <Route path={"/reset-password"} component={ResetPassword} />
       <Route path={"/extension-download"} component={ExtensionDownload} />
       <Route path={"/onboarding"} component={() => <ClientRoute component={Onboarding} />} />
+      <Route path={"/onboarding/extension"} component={() => <ClientRoute component={OnboardingExtension} />} />
       <Route path={"/safety"} component={Safety} />
       <Route path={"/features"} component={Features} />
       <Route path={"/compare/linkedin-automation-tools"} component={Comparison} />

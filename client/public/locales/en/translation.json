@@ -1,0 +1,161 @@
+{
+  "nav": {
+    "features": "Features",
+    "pricing": "Pricing",
+    "safety": "Safety",
+    "faq": "FAQ",
+    "login": "Login",
+    "trial": "Start Free Trial",
+    "dashboard": "Dashboard",
+    "campaigns": "Campaigns",
+    "prospects": "Prospects",
+    "queue": "Queue",
+    "templates": "Templates",
+    "extension": "Extension",
+    "settings": "Settings",
+    "logout": "Logout"
+  },
+  "login": {
+    "welcome": "Welcome to Wassel!",
+    "subtitle": "The transparent LinkedIn automation platform. Set up your account instantly with LinkedIn.",
+    "continueLinkedin": "Continue with LinkedIn",
+    "secured": "🔒 100% secured by LinkedIn",
+    "alreadyAccount": "Already have an account?",
+    "signIn": "Sign in →",
+    "terms": "Terms",
+    "privacy": "Privacy",
+    "adminAccess": "Admin access",
+    "adminSignIn": "Admin Sign In",
+    "signingIn": "Signing in...",
+    "errors": {
+      "linkedin_denied": "LinkedIn access was denied. Please try again.",
+      "token_failed": "Could not connect to LinkedIn. Please try again.",
+      "callback_failed": "Something went wrong. Please try again.",
+      "no_code": "LinkedIn authorization failed. Please try again.",
+      "connection": "Connection error. Please try again."
+    }
+  },
+  "onboarding": {
+    "title": "One last step! 🎉",
+    "subtitle": "Your account is ready. Add Wassel to Chrome to start importing prospects from LinkedIn.",
+    "addChrome": "⚡ Add Wassel to Chrome — Free",
+    "chromeSetup": "Free Chrome extension · 2-minute setup",
+    "alreadyInstalled": "Already installed? Skip →",
+    "extensionDetected": "Extension detected!",
+    "redirecting": "Redirecting to dashboard...",
+    "steps": {
+      "accountCreated": "Account created",
+      "installExtension": "Install Chrome Extension",
+      "extensionInstalled": "Extension installed!",
+      "startImporting": "Start importing prospects"
+    },
+    "extensionPage": {
+      "title": "Install Wassel Chrome Extension",
+      "subtitle": "The Chrome extension is required to import prospects from LinkedIn and run campaigns.",
+      "downloadBtn": "Download Extension",
+      "installed": "I've installed it ✅",
+      "howTo": "How to install:",
+      "step1": "Download the extension file",
+      "step2": "Open chrome://extensions",
+      "step3": "Enable \"Developer mode\"",
+      "step4": "Drag and drop the file",
+      "step5": "Done! ✅"
+    },
+    "features": {
+      "scan": "🔍 Scan LinkedIn search results",
+      "import": "📥 Import 500+ prospects at once",
+      "autoSend": "🚀 Auto-send invites & messages",
+      "track": "📊 Track campaign performance"
+    }
+  },
+  "dashboard": {
+    "greeting": "Hello {{name}},",
+    "subtitle": "Here's an overview of your campaigns and outreach activity.",
+    "connectLinkedin": "Connect your LinkedIn account to start sending invitations automatically.",
+    "connectBtn": "Connect LinkedIn",
+    "stats": {
+      "sequences": "Active Sequences",
+      "prospects": "Prospects in Pipeline",
+      "running": "Running Now",
+      "queue": "Intelligent Queue"
+    },
+    "campaigns": "Your Campaigns",
+    "noCampaigns": "No campaigns yet.",
+    "createFirst": "Create your first campaign",
+    "recentProspects": "Recent Prospects",
+    "noProspects": "No prospects imported yet.",
+    "importFirst": "Import from LinkedIn",
+    "prospectingStatus": "Prospecting Status",
+    "activeCampaigns": "Active campaigns",
+    "queuedActions": "Queued actions",
+    "quickActions": "Quick Actions",
+    "startCampaign": "Start a campaign",
+    "setupExtension": "Setup extension",
+    "viewProspects": "View prospects",
+    "extensionCta": "Setup Extension",
+    "extensionCtaDesc": "Install the Chrome extension to start importing prospects from LinkedIn."
+  },
+  "landing": {
+    "hero": {
+      "h1": "LinkedIn Outreach\nWithout the Complexity.",
+      "sub": "Send personalized invitations and follow-ups automatically. No confusing add-ons. No hidden fees. Just results.",
+      "cta1": "Start Free Trial",
+      "cta2": "Watch Demo",
+      "proof": "Join 500+ sales teams, recruiters & founders",
+      "badge": "12 connections accepted today"
+    },
+    "logos": "Trusted by teams at:",
+    "features": {
+      "title": "Everything you need to scale outreach",
+      "items": {
+        "sequences": { "name": "Smart Sequences", "desc": "Build multi-step campaigns: visit, invite, message, follow up — fully automated." },
+        "import": { "name": "Prospect Import", "desc": "Import leads directly from LinkedIn search in one click via our Chrome extension." },
+        "analytics": { "name": "Real-Time Analytics", "desc": "Track acceptance rates, reply rates, and funnel drop-off across every campaign." },
+        "safe": { "name": "Safe Automation", "desc": "Built-in rate limits and human-like delays keep your LinkedIn account protected." },
+        "sync": { "name": "Connection Sync", "desc": "Auto-detects when invites are accepted and unlocks the next message instantly." },
+        "team": { "name": "Team Management", "desc": "Invite your team, manage seats, and monitor all campaigns from one admin view." }
+      }
+    },
+    "how": {
+      "title": "Up and running in 3 steps",
+      "steps": {
+        "s1": { "name": "Install the Extension", "desc": "Add Wassel to Chrome. Connect your LinkedIn account in one click." },
+        "s2": { "name": "Build Your Sequence", "desc": "Set up your visit → invite → message flow. Customize templates with personalization." },
+        "s3": { "name": "Launch & Watch", "desc": "Start your campaign. Wassel runs automatically while you track results live." }
+      }
+    },
+    "pricing": {
+      "title": "Simple, transparent pricing",
+      "sub": "No setup fees. Cancel anytime.",
+      "note": "All plans include 7-day free trial. No credit card required.",
+      "getStarted": "Get Started Free",
+      "startTrial": "Start Free Trial"
+    },
+    "faqTitle": "Frequently asked questions",
+    "cta": {
+      "h": "Ready to scale your LinkedIn outreach?",
+      "sub": "Start your free 7-day trial today.",
+      "btn": "Start Free Trial →"
+    },
+    "footer": {
+      "tagline": "Automate your LinkedIn outreach.",
+      "copy": "© 2025 Wassel. All rights reserved."
+    }
+  },
+  "common": {
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "search": "Search",
+    "back": "Back",
+    "next": "Next",
+    "status": "Status",
+    "active": "Active",
+    "paused": "Paused",
+    "draft": "Draft",
+    "completed": "Completed"
+  }
+}
