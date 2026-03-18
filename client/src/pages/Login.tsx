@@ -32,10 +32,12 @@ export default function Login() {
     }
   }, []);
 
-  // If already logged in, redirect based on role
+  // If already logged in, redirect based on role and onboarding status
   if (user) {
     if (user.role === 'super_admin') {
       window.location.href = '/admin';
+    } else if (!user.extensionInstalled) {
+      window.location.href = '/onboarding/extension';
     } else {
       window.location.href = '/app';
     }

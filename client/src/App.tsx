@@ -118,21 +118,16 @@ function ClientRoute({ component: Component }: { component: React.ComponentType 
     window.location.href = '/login';
     return null;
   }
-  // Onboarding guard: check LinkedIn + extension
+  // Onboarding guard: check extension installed
   // Skip checks for admin users and for the onboarding pages themselves
+  // LinkedIn connection is handled via dashboard prompt, not a hard redirect
   if (user.role !== 'super_admin') {
     const currentPath = window.location.pathname;
     const isOnboardingPage = currentPath.startsWith('/onboarding');
     
-    if (!isOnboardingPage) {
-      if (!user.linkedinConnected) {
-        window.location.href = '/login';
-        return null;
-      }
-      if (!user.extensionInstalled) {
-        window.location.href = '/onboarding/extension';
-        return null;
-      }
+    if (!isOnboardingPage && !user.extensionInstalled) {
+      window.location.href = '/onboarding/extension';
+      return null;
     }
   }
 
