@@ -69,7 +69,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Fetch profile with role
       let { data: profile } = await supabase
         .from('profiles')
-        .select('role, extension_installed')
+        .select('role, extension_installed, linkedin_connected')
         .eq('id', supabaseUser.id)
         .single();
 
@@ -82,7 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           full_name: fullName,
           role: 'client_user',
         }, { onConflict: 'id' });
-        profile = { role: 'client_user', extension_installed: false };
+        profile = { role: 'client_user', extension_installed: false, linkedin_connected: false };
       }
 
       if (profile?.role === 'super_admin') {
@@ -92,20 +92,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Extension installed flag
       baseUser.extensionInstalled = !!(profile as any)?.extension_installed;
 
-      // Check LinkedIn connection
-      try {
-        const { data: linkedinConn } = await supabase
-          .from('linkedin_connections')
-          .select('oauth_connected, status')
-          .eq('user_id', supabaseUser.id)
-          .eq('oauth_connected', true)
-          .eq('status', 'connected')
-          .limit(1)
-          .maybeSingle();
-        baseUser.linkedinConnected = !!linkedinConn;
-      } catch {
-        baseUser.linkedinConnected = false;
-      }
+      // LinkedIn connected flag (set by OAuth callback)
+      baseUser.linkedinConnected = !!(profile as any)?.linkedin_connected;
 
       // Fetch team membership
       let { data: membership } = await supabase

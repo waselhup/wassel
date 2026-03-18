@@ -1,43 +1,92 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocation, Link } from 'wouter';
 import { useAuth, supabase } from '@/contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
-import { Download, CheckCircle, Monitor, ArrowRight } from 'lucide-react';
+import { Download, CheckCircle, Monitor, ArrowRight, Loader2 } from 'lucide-react';
 
 export default function OnboardingExtension() {
   const { user } = useAuth();
   const [, navigate] = useLocation();
   const { t } = useTranslation();
+  const [extensionDetected, setExtensionDetected] = useState(false);
   const [marking, setMarking] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleInstalled = async () => {
+  // STEP 1: Auto-detect extension via data attribute
+  useEffect(() => {
+    const checkExtension = () => {
+      const isInstalled = document.documentElement.getAttribute('data-wassel-extension') === 'true';
+      if (isInstalled && !extensionDetected) {
+        setExtensionDetected(true);
+      }
+    };
+
+    // Check immediately
+    checkExtension();
+
+    // Also listen for postMessage from extension
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'WASSEL_EXTENSION_INSTALLED') {
+        setExtensionDetected(true);
+      }
+    };
+    window.addEventListener('message', handleMessage);
+
+    // Poll every 1.5s
+    const interval = setInterval(checkExtension, 1500);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('message', handleMessage);
+    };
+  }, [extensionDetected]);
+
+  // STEP 3: On button click — update profile and redirect
+  const handleContinue = async () => {
     if (!user) return;
     setMarking(true);
+    setError('');
+
     try {
-      await supabase.from('profiles').update({ extension_installed: true }).eq('id', user.id);
-      // Update local cache
-      const cached = localStorage.getItem('wassel_user_cache');
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        parsed.extensionInstalled = true;
-        parsed.cachedAt = Date.now();
-        localStorage.setItem('wassel_user_cache', JSON.stringify(parsed));
+      // Update Supabase profile directly
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ extension_installed: true })
+        .eq('id', user.id);
+
+      if (updateError) {
+        console.error('Profile update error:', updateError);
+        setError('Failed to update profile. Please try again.');
+        setMarking(false);
+        return;
       }
-      navigate('/app');
-      window.location.reload(); // Force refresh to pick up new state
+
+      // Update local cache
+      try {
+        const cached = localStorage.getItem('wassel_user_cache');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          parsed.extensionInstalled = true;
+          parsed.cachedAt = Date.now();
+          localStorage.setItem('wassel_user_cache', JSON.stringify(parsed));
+        }
+      } catch { /* ignore */ }
+
+      // Redirect to dashboard
+      window.location.href = '/app';
     } catch (err) {
       console.error('Failed to update extension status:', err);
-    } finally {
+      setError('Something went wrong. Please try again.');
       setMarking(false);
     }
   };
 
   const steps = [
-    { num: '1', text: t('onboarding.extensionPage.step1') },
-    { num: '2', text: t('onboarding.extensionPage.step2') },
-    { num: '3', text: t('onboarding.extensionPage.step3') },
-    { num: '4', text: t('onboarding.extensionPage.step4') },
-    { num: '5', text: t('onboarding.extensionPage.step5') },
+    t('onboarding.extensionPage.step1'),
+    t('onboarding.extensionPage.step2'),
+    t('onboarding.extensionPage.step3'),
+    t('onboarding.extensionPage.step4'),
+    t('onboarding.extensionPage.step5'),
   ];
 
   return (
@@ -51,6 +100,23 @@ export default function OnboardingExtension() {
             <span className="text-xl font-extrabold tracking-tight" style={{ fontFamily: "'Outfit', sans-serif", color: 'var(--text-primary)' }}>assel</span>
           </div>
 
+          {/* Progress steps */}
+          <div className="flex items-center gap-3 mb-8">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{ background: '#059669' }}>✓</div>
+              <span className="text-sm font-medium" style={{ color: '#059669' }}>{t('onboarding.steps.accountCreated')}</span>
+            </div>
+            <div className="w-8 h-px" style={{ background: 'var(--border-subtle)' }}></div>
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{ background: extensionDetected ? '#059669' : 'var(--accent-primary)' }}>
+                {extensionDetected ? '✓' : '2'}
+              </div>
+              <span className="text-sm font-medium" style={{ color: extensionDetected ? '#059669' : 'var(--accent-primary)' }}>
+                {extensionDetected ? t('onboarding.steps.extensionInstalled') : t('onboarding.steps.installExtension')}
+              </span>
+            </div>
+          </div>
+
           <h1 className="text-3xl sm:text-4xl font-extrabold mb-3" style={{ fontFamily: "'Outfit', sans-serif", color: 'var(--text-primary)' }}>
             {t('onboarding.extensionPage.title')}
           </h1>
@@ -58,40 +124,87 @@ export default function OnboardingExtension() {
             {t('onboarding.extensionPage.subtitle')}
           </p>
 
-          {/* Download Button */}
-          <Link href="/extension-download">
-            <button
-              className="w-full flex items-center justify-center gap-3 py-4 px-6 rounded-xl text-base font-semibold text-white transition-all hover:scale-[1.01] hover:shadow-lg mb-4"
-              style={{ background: 'var(--gradient-primary)', boxShadow: '0 4px 20px rgba(26,86,219,0.3)' }}
-            >
-              <Download className="w-5 h-5" />
-              {t('onboarding.extensionPage.downloadBtn')}
-            </button>
-          </Link>
-
-          {/* How to install */}
-          <div className="rounded-xl p-5 mb-6" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
-            <p className="font-semibold text-sm mb-3" style={{ color: 'var(--text-primary)' }}>{t('onboarding.extensionPage.howTo')}</p>
-            <div className="space-y-2">
-              {steps.map((s) => (
-                <div key={s.num} className="flex items-center gap-3 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                  <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ background: 'var(--accent-primary)' }}>{s.num}</span>
-                  <span>{s.text}</span>
-                </div>
-              ))}
+          {/* Success banner when detected */}
+          {extensionDetected && (
+            <div className="flex items-center gap-3 p-4 rounded-xl mb-6" style={{ background: '#ecfdf5', border: '1px solid #a7f3d0' }}>
+              <CheckCircle className="w-5 h-5 flex-shrink-0" style={{ color: '#059669' }} />
+              <div>
+                <p className="text-sm font-semibold" style={{ color: '#059669' }}>{t('onboarding.extensionDetected')}</p>
+                <p className="text-xs mt-0.5" style={{ color: '#047857' }}>Wassel Chrome Extension v1.1.0</p>
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* I've installed it */}
+          {/* Error banner */}
+          {error && (
+            <div className="p-3 rounded-xl mb-4" style={{ background: '#fef2f2', border: '1px solid #fecaca' }}>
+              <p className="text-sm" style={{ color: '#991b1b' }}>{error}</p>
+            </div>
+          )}
+
+          {/* Download Button — only show if not detected */}
+          {!extensionDetected && (
+            <>
+              <Link href="/extension-download">
+                <button
+                  className="w-full flex items-center justify-center gap-3 py-4 px-6 rounded-xl text-base font-semibold text-white transition-all hover:scale-[1.01] hover:shadow-lg mb-4"
+                  style={{ background: 'var(--gradient-primary)', boxShadow: '0 4px 20px rgba(26,86,219,0.3)' }}
+                >
+                  <Download className="w-5 h-5" />
+                  {t('onboarding.extensionPage.downloadBtn')}
+                </button>
+              </Link>
+
+              {/* How to install */}
+              <div className="rounded-xl p-5 mb-6" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
+                <p className="font-semibold text-sm mb-3" style={{ color: 'var(--text-primary)' }}>{t('onboarding.extensionPage.howTo')}</p>
+                <div className="space-y-2">
+                  {steps.map((text, i) => (
+                    <div key={i} className="flex items-center gap-3 text-sm" style={{ color: 'var(--text-secondary)' }}>
+                      <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ background: 'var(--accent-primary)' }}>{i + 1}</span>
+                      <span>{text}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Continue / I've installed it button */}
           <button
-            onClick={handleInstalled}
+            onClick={handleContinue}
             disabled={marking}
-            className="w-full flex items-center justify-center gap-2 py-3.5 px-6 rounded-xl text-base font-semibold transition-all hover:scale-[1.01]"
-            style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', color: '#059669' }}
+            className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-xl text-base font-semibold transition-all hover:scale-[1.01]"
+            style={extensionDetected
+              ? { background: '#059669', color: 'white', boxShadow: '0 4px 14px rgba(5,150,105,0.3)' }
+              : { background: '#ecfdf5', border: '1px solid #a7f3d0', color: '#059669' }
+            }
           >
-            <CheckCircle className="w-5 h-5" />
-            {marking ? '...' : t('onboarding.extensionPage.installed')}
+            {marking ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                {t('common.loading')}
+              </>
+            ) : extensionDetected ? (
+              <>
+                <CheckCircle className="w-5 h-5" />
+                ✅ {t('onboarding.extensionDetected')} — {t('common.next')}
+                <ArrowRight className="w-4 h-4" />
+              </>
+            ) : (
+              <>
+                <CheckCircle className="w-5 h-5" />
+                {t('onboarding.extensionPage.installed')}
+              </>
+            )}
           </button>
+
+          {/* Scanning indicator */}
+          {!extensionDetected && (
+            <p className="text-center text-xs mt-4" style={{ color: 'var(--text-muted)' }}>
+              🔍 Checking for extension... (auto-detects when installed)
+            </p>
+          )}
         </div>
       </div>
 
@@ -108,7 +221,12 @@ export default function OnboardingExtension() {
               </div>
             </div>
             <div className="space-y-3">
-              {Object.values(t('onboarding.features', { returnObjects: true }) as Record<string, string>).map((text, i) => (
+              {[
+                t('onboarding.features.scan'),
+                t('onboarding.features.import'),
+                t('onboarding.features.autoSend'),
+                t('onboarding.features.track'),
+              ].map((text, i) => (
                 <div key={i} className="flex items-center gap-3 px-4 py-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
                   <span className="text-sm" style={{ color: 'rgba(255,255,255,0.8)' }}>{text}</span>
                 </div>

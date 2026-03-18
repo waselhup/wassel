@@ -166,6 +166,12 @@ router.get('/callback', async (req: Request, res: Response) => {
 
     console.log('[LinkedIn OAuth] Token saved to DB');
 
+    // Also mark linkedin_connected on profile
+    await supabase
+      .from('profiles')
+      .update({ linkedin_connected: true })
+      .eq('id', userId);
+
     // 5. Generate magic link for auto-login
     const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
       type: 'magiclink',
