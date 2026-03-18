@@ -38,6 +38,7 @@ import Features from "./pages/Features";
 import Comparison from "./pages/Comparison";
 import Blog, { BlogArticle } from "./pages/Blog";
 import OnboardingExtension from "./pages/OnboardingExtension";
+import OnboardingLinkedIn from "./pages/OnboardingLinkedIn";
 
 /**
  * Route guard: requires authenticated user (any role).
@@ -118,16 +119,21 @@ function ClientRoute({ component: Component }: { component: React.ComponentType 
     window.location.href = '/login';
     return null;
   }
-  // Onboarding guard: check extension installed
-  // Skip checks for admin users and for the onboarding pages themselves
-  // LinkedIn connection is handled via dashboard prompt, not a hard redirect
+  // Onboarding guard: enforce linear journey
+  // Skip for admin users and onboarding pages themselves
   if (user.role !== 'super_admin') {
     const currentPath = window.location.pathname;
     const isOnboardingPage = currentPath.startsWith('/onboarding');
     
-    if (!isOnboardingPage && !user.extensionInstalled) {
-      window.location.href = '/onboarding/extension';
-      return null;
+    if (!isOnboardingPage) {
+      if (!user.linkedinConnected) {
+        window.location.href = '/onboarding/linkedin';
+        return null;
+      }
+      if (!user.extensionInstalled) {
+        window.location.href = '/onboarding/extension';
+        return null;
+      }
     }
   }
 
@@ -186,7 +192,8 @@ function Router() {
       <Route path={"/reset-password"} component={ResetPassword} />
       <Route path={"/extension-download"} component={ExtensionDownload} />
       <Route path={"/onboarding"} component={() => <ClientRoute component={Onboarding} />} />
-      <Route path={"/onboarding/extension"} component={() => <ClientRoute component={OnboardingExtension} />} />
+      <Route path={"/onboarding/linkedin"} component={() => <ProtectedRoute component={OnboardingLinkedIn} />} />
+      <Route path={"/onboarding/extension"} component={() => <ProtectedRoute component={OnboardingExtension} />} />
       <Route path={"/safety"} component={Safety} />
       <Route path={"/features"} component={Features} />
       <Route path={"/compare/linkedin-automation-tools"} component={Comparison} />

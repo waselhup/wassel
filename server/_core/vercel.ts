@@ -57,6 +57,10 @@ app.use("/api/ai", expressAuthMiddleware, aiRoutes);
 // Stripe: webhook has NO auth (raw body needed), other routes need auth
 app.use("/api/stripe", stripeRoutes);
 
+// User profile routes: self-auth via JWT in Authorization header
+import userRoutes from "./userRoutes";
+app.use("/api/user", userRoutes);
+
 // Health check endpoint
 app.get("/api/health", (_req: any, res: any) => {
     res.json({ ok: true, timestamp: new Date().toISOString() });

@@ -36,6 +36,8 @@ export default function Login() {
   if (user) {
     if (user.role === 'super_admin') {
       window.location.href = '/admin';
+    } else if (!user.linkedinConnected) {
+      window.location.href = '/onboarding/linkedin';
     } else if (!user.extensionInstalled) {
       window.location.href = '/onboarding/extension';
     } else {

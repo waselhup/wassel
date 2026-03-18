@@ -1,18 +1,31 @@
 import { useState, useEffect } from 'react';
-import { useLocation, Link } from 'wouter';
-import { useAuth, supabase } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { Download, CheckCircle, Monitor, ArrowRight, Loader2 } from 'lucide-react';
+import { Link } from 'wouter';
 
 export default function OnboardingExtension() {
-  const { user } = useAuth();
-  const [, navigate] = useLocation();
+  const { user, accessToken } = useAuth();
   const { t } = useTranslation();
   const [extensionDetected, setExtensionDetected] = useState(false);
   const [marking, setMarking] = useState(false);
   const [error, setError] = useState('');
 
-  // STEP 1: Auto-detect extension via data attribute
+  // If user hasn't connected LinkedIn, redirect to that step first
+  useEffect(() => {
+    if (user && !user.linkedinConnected) {
+      window.location.href = '/onboarding/linkedin';
+    }
+  }, [user]);
+
+  // If already installed, go to dashboard
+  useEffect(() => {
+    if (user?.extensionInstalled) {
+      window.location.href = '/app';
+    }
+  }, [user]);
+
+  // STEP 1: Auto-detect extension via data attribute — poll every 1500ms
   useEffect(() => {
     const checkExtension = () => {
       const isInstalled = document.documentElement.getAttribute('data-wassel-extension') === 'true';
@@ -21,10 +34,8 @@ export default function OnboardingExtension() {
       }
     };
 
-    // Check immediately
     checkExtension();
 
-    // Also listen for postMessage from extension
     const handleMessage = (event: MessageEvent) => {
       if (event.data?.type === 'WASSEL_EXTENSION_INSTALLED') {
         setExtensionDetected(true);
@@ -32,7 +43,6 @@ export default function OnboardingExtension() {
     };
     window.addEventListener('message', handleMessage);
 
-    // Poll every 1.5s
     const interval = setInterval(checkExtension, 1500);
 
     return () => {
@@ -41,22 +51,36 @@ export default function OnboardingExtension() {
     };
   }, [extensionDetected]);
 
-  // STEP 3: On button click — update profile and redirect
+  // STEP 3: On button click → PATCH /api/user/profile with auth header
   const handleContinue = async () => {
     if (!user) return;
     setMarking(true);
     setError('');
 
     try {
-      // Update Supabase profile directly
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ extension_installed: true })
-        .eq('id', user.id);
+      const token = accessToken || localStorage.getItem('supabase_token');
+      console.log('[OnboardingExtension] Updating profile, token present:', !!token);
 
-      if (updateError) {
-        console.error('Profile update error:', updateError);
-        setError('Failed to update profile. Please try again.');
+      if (!token) {
+        setError('No authentication token found. Please log in again.');
+        setMarking(false);
+        return;
+      }
+
+      const res = await fetch('/api/user/profile', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ extension_installed: true }),
+      });
+
+      const data = await res.json();
+      console.log('[OnboardingExtension] API response:', res.status, data);
+
+      if (!res.ok) {
+        setError(`Failed: ${data.error || 'Unknown error'} (${res.status})`);
         setMarking(false);
         return;
       }
@@ -74,9 +98,9 @@ export default function OnboardingExtension() {
 
       // Redirect to dashboard
       window.location.href = '/app';
-    } catch (err) {
-      console.error('Failed to update extension status:', err);
-      setError('Something went wrong. Please try again.');
+    } catch (err: any) {
+      console.error('[OnboardingExtension] Error:', err);
+      setError('Network error: ' + err.message);
       setMarking(false);
     }
   };
@@ -101,19 +125,24 @@ export default function OnboardingExtension() {
           </div>
 
           {/* Progress steps */}
-          <div className="flex items-center gap-3 mb-8">
+          <div className="flex items-center gap-3 mb-8 flex-wrap">
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{ background: '#059669' }}>✓</div>
-              <span className="text-sm font-medium" style={{ color: '#059669' }}>{t('onboarding.steps.accountCreated')}</span>
+              <span className="text-sm font-medium" style={{ color: '#059669' }}>ربط LinkedIn</span>
             </div>
             <div className="w-8 h-px" style={{ background: 'var(--border-subtle)' }}></div>
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{ background: extensionDetected ? '#059669' : 'var(--accent-primary)' }}>
                 {extensionDetected ? '✓' : '2'}
               </div>
-              <span className="text-sm font-medium" style={{ color: extensionDetected ? '#059669' : 'var(--accent-primary)' }}>
-                {extensionDetected ? t('onboarding.steps.extensionInstalled') : t('onboarding.steps.installExtension')}
+              <span className="text-sm font-semibold" style={{ color: extensionDetected ? '#059669' : 'var(--accent-primary)' }}>
+                {extensionDetected ? 'تم تثبيت الإضافة!' : 'تثبيت الإضافة'}
               </span>
+            </div>
+            <div className="w-8 h-px" style={{ background: 'var(--border-subtle)' }}></div>
+            <div className="flex items-center gap-2 opacity-40">
+              <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold" style={{ background: '#e2e8f0', color: '#94a3b8' }}>3</div>
+              <span className="text-sm" style={{ color: '#94a3b8' }}>لوحة التحكم</span>
             </div>
           </div>
 
@@ -126,10 +155,10 @@ export default function OnboardingExtension() {
 
           {/* Success banner when detected */}
           {extensionDetected && (
-            <div className="flex items-center gap-3 p-4 rounded-xl mb-6" style={{ background: '#ecfdf5', border: '1px solid #a7f3d0' }}>
+            <div className="flex items-center gap-3 p-4 rounded-xl mb-6 animate-in" style={{ background: '#ecfdf5', border: '1px solid #a7f3d0' }}>
               <CheckCircle className="w-5 h-5 flex-shrink-0" style={{ color: '#059669' }} />
               <div>
-                <p className="text-sm font-semibold" style={{ color: '#059669' }}>{t('onboarding.extensionDetected')}</p>
+                <p className="text-sm font-semibold" style={{ color: '#059669' }}>تم تثبيت إضافة Wassel بنجاح ✅</p>
                 <p className="text-xs mt-0.5" style={{ color: '#047857' }}>Wassel Chrome Extension v1.1.0</p>
               </div>
             </div>
@@ -138,7 +167,7 @@ export default function OnboardingExtension() {
           {/* Error banner */}
           {error && (
             <div className="p-3 rounded-xl mb-4" style={{ background: '#fef2f2', border: '1px solid #fecaca' }}>
-              <p className="text-sm" style={{ color: '#991b1b' }}>{error}</p>
+              <p className="text-sm" style={{ color: '#991b1b' }}>❌ {error}</p>
             </div>
           )}
 
@@ -170,7 +199,7 @@ export default function OnboardingExtension() {
             </>
           )}
 
-          {/* Continue / I've installed it button */}
+          {/* Continue button */}
           <button
             onClick={handleContinue}
             disabled={marking}
@@ -183,12 +212,12 @@ export default function OnboardingExtension() {
             {marking ? (
               <>
                 <Loader2 className="w-5 h-5 animate-spin" />
-                {t('common.loading')}
+                جاري التحديث...
               </>
             ) : extensionDetected ? (
               <>
                 <CheckCircle className="w-5 h-5" />
-                ✅ {t('onboarding.extensionDetected')} — {t('common.next')}
+                ✅ تم اكتشاف الإضافة — متابعة
                 <ArrowRight className="w-4 h-4" />
               </>
             ) : (
@@ -202,7 +231,7 @@ export default function OnboardingExtension() {
           {/* Scanning indicator */}
           {!extensionDetected && (
             <p className="text-center text-xs mt-4" style={{ color: 'var(--text-muted)' }}>
-              🔍 Checking for extension... (auto-detects when installed)
+              🔍 جاري البحث عن الإضافة... (يتم الاكتشاف تلقائياً عند التثبيت)
             </p>
           )}
         </div>

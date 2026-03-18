@@ -177,7 +177,7 @@ router.get('/callback', async (req: Request, res: Response) => {
       type: 'magiclink',
       email: linkedinEmail,
       options: {
-        redirectTo: `${DASHBOARD_URL}/app`,
+        redirectTo: `${DASHBOARD_URL}/onboarding/extension`,
       },
     });
 
