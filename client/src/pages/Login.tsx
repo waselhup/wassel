@@ -1,9 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { AlertCircle, Loader2, Mail, Lock, Linkedin } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 import { useAuth } from '@/contexts/AuthContext';
+
+const errorMessages: Record<string, string> = {
+  linkedin_denied: 'LinkedIn access was denied. Please try again.',
+  token_failed: 'Could not connect to LinkedIn. Please try again.',
+  callback_failed: 'Something went wrong. Please try again.',
+  no_code: 'LinkedIn authorization failed. Please try again.',
+};
 
 export default function Login() {
   const [showAdmin, setShowAdmin] = useState(false);
@@ -13,6 +20,17 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const { signIn, user } = useAuth();
   const [, navigate] = useLocation();
+
+  // Check for OAuth error params in URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const urlError = params.get('error');
+    if (urlError && errorMessages[urlError]) {
+      setError(errorMessages[urlError]);
+      // Clean up URL
+      window.history.replaceState({}, '', '/login');
+    }
+  }, []);
 
   // If already logged in, redirect based on role
   if (user) {
@@ -65,6 +83,14 @@ export default function Login() {
           <p className="text-base mb-10 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
             The transparent LinkedIn automation platform. Set up your account instantly with LinkedIn.
           </p>
+
+          {/* OAuth error message */}
+          {error && (
+            <div className="flex items-start gap-2.5 p-3 rounded-xl mb-4" style={{ background: '#fef2f2', border: '1px solid #fecaca' }}>
+              <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: '#dc2626' }} />
+              <p className="text-sm" style={{ color: '#991b1b' }}>{error}</p>
+            </div>
+          )}
 
           {/* LinkedIn Button — PRIMARY CTA */}
           <button

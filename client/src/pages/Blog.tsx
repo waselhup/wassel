@@ -3,17 +3,17 @@ import { ArrowRight } from 'lucide-react';
 
 const articles = [
   {
-    slug: 'waalaxy-alternatives',
-    title: 'Top 5 Waalaxy Alternatives for 2026',
-    excerpt: 'Looking for a Waalaxy alternative? Compare the best LinkedIn automation tools on pricing, features, and safety.',
+    slug: 'linkedin-automation-alternatives',
+    title: 'Top 5 LinkedIn Automation Alternatives for 2026',
+    excerpt: 'Looking for a LinkedIn automation tool? Compare the best options on pricing, features, and safety.',
     date: 'March 2026',
     readTime: '6 min read',
     content: `
-# Top 5 Waalaxy Alternatives for 2026
+# Top 5 LinkedIn Automation Alternatives for 2026
 
-LinkedIn automation tools have become essential for sales teams and recruiters. While Waalaxy is a popular choice, several alternatives offer better value, simpler pricing, or unique features. Here's our honest comparison.
+LinkedIn automation tools have become essential for sales teams and recruiters. With so many options available, choosing the right one can be overwhelming. Here's our honest comparison of the top tools.
 
-## 1. Wassel — Best for Simplicity
+## 1. Wassel — Best for Simplicity & Transparency
 
 Wassel focuses on doing LinkedIn outreach right, without the complexity. Starting at $0/month with a free tier, it's the most accessible option for individuals and small teams.
 
@@ -52,13 +52,13 @@ Expandi focuses on agencies managing multiple LinkedIn accounts. It offers advan
 
 ## Comparison Table
 
-| Feature | Wassel | Waalaxy | Lemlist | Dux-Soup |
-|---------|--------|---------|---------|----------|
-| Free Tier | ✓ | ✓ (limited) | ✗ | ✗ |
-| Starting Price | $0 | $21 | $59 | $14.99 |
-| AI Writing | Claude AI | Basic | ✓ | ✗ |
+| Feature | Wassel | Lemlist | Dux-Soup | Expandi |
+|---------|--------|---------|----------|---------|
+| Free Tier | ✓ | ✗ | ✗ | ✗ |
+| Starting Price | $0 | $59 | $14.99 | $99 |
+| AI Writing | Claude AI | ✓ | ✗ | Basic |
 | Arabic Support | ✓ | ✗ | ✗ | ✗ |
-| No Extension Needed | ✓ (optional) | ✗ | ✓ | ✗ |
+| No Extension Needed | ✓ (optional) | ✓ | ✗ | ✓ |
 
 ## Conclusion
 
@@ -240,7 +240,6 @@ export default function Blog() {
   );
 }
 
-// Individual article component
 export function BlogArticle({ slug }: { slug: string }) {
   const article = articles.find(a => a.slug === slug);
   if (!article) return <div className="min-h-screen flex items-center justify-center">Article not found</div>;
@@ -274,7 +273,7 @@ export function BlogArticle({ slug }: { slug: string }) {
               if (line.startsWith('> ')) return <blockquote key={i} className="border-l-4 pl-4 my-3 italic text-sm" style={{ borderColor: 'var(--accent-primary)' }}>{line.slice(2)}</blockquote>;
               if (line.startsWith('**') && line.endsWith('**')) return <p key={i} className="font-bold text-sm mt-3 mb-1" style={{ color: 'var(--text-primary)' }}>{line.slice(2, -2)}</p>;
               if (line.trim() === '') return <br key={i} />;
-              if (line.startsWith('|')) return null; // Skip table lines for now
+              if (line.startsWith('|')) return null;
               return <p key={i} className="text-sm mb-2">{line}</p>;
             })}
           </div>

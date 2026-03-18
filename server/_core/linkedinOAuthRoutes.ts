@@ -43,16 +43,18 @@ router.get('/callback', async (req: Request, res: Response) => {
   try {
     const { code, state, error: oauthError } = req.query;
 
+    console.log('[LinkedIn OAuth] Callback received', { code: !!code, error: oauthError });
+
     if (oauthError) {
       console.error('[LinkedIn OAuth] Error:', oauthError);
-      return res.redirect(`${DASHBOARD_URL}/app/extension?linkedin=error&reason=${oauthError}`);
+      return res.redirect(`${DASHBOARD_URL}/login?error=linkedin_denied`);
     }
 
     if (!code) {
-      return res.redirect(`${DASHBOARD_URL}/app/extension?linkedin=error&reason=no_code`);
+      return res.redirect(`${DASHBOARD_URL}/login?error=no_code`);
     }
 
-    // Exchange code for access token
+    // 1. Exchange code for access token
     const tokenRes = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -66,31 +68,91 @@ router.get('/callback', async (req: Request, res: Response) => {
     });
 
     const tokenData = await tokenRes.json();
+    console.log('[LinkedIn OAuth] Token received:', !!tokenData.access_token);
 
     if (!tokenData.access_token) {
       console.error('[LinkedIn OAuth] Token exchange failed:', tokenData);
-      return res.redirect(`${DASHBOARD_URL}/app/extension?linkedin=error&reason=token_failed`);
+      return res.redirect(`${DASHBOARD_URL}/login?error=token_failed`);
     }
 
-    // Get LinkedIn profile info
+    // 2. Get LinkedIn profile info
     const profileRes = await fetch('https://api.linkedin.com/v2/userinfo', {
       headers: { Authorization: `Bearer ${tokenData.access_token}` },
     });
     const profile = await profileRes.json();
+    console.log('[LinkedIn OAuth] Profile:', profile.email, profile.name);
 
     const linkedinName = profile.name || profile.given_name || 'LinkedIn User';
-    const linkedinEmail = profile.email || '';
+    const linkedinEmail = profile.email || `linkedin_${profile.sub}@wassel.app`;
     const linkedinSub = profile.sub || '';
+    const linkedinPicture = profile.picture || '';
 
-    // Find team from cookie/session — for now, extract from query state
-    // In production, the state UUID would map to a stored user session
-    // Simple approach: save to linkedin_connections and let user link it later
+    // 3. Find or create Supabase user
+    const { data: userList } = await supabase.auth.admin.listUsers();
+    const existingUser = userList?.users?.find(
+      (u: any) => u.email === linkedinEmail
+    );
+
+    let userId: string;
+
+    if (existingUser) {
+      userId = existingUser.id;
+      console.log('[LinkedIn OAuth] Existing user found:', userId);
+    } else {
+      // Create new user
+      const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
+        email: linkedinEmail,
+        email_confirm: true,
+        user_metadata: {
+          full_name: linkedinName,
+          avatar_url: linkedinPicture,
+          linkedin_id: linkedinSub,
+          provider: 'linkedin',
+        },
+      });
+
+      if (createError) {
+        console.error('[LinkedIn OAuth] User creation failed:', createError);
+        return res.redirect(`${DASHBOARD_URL}/login?error=callback_failed`);
+      }
+
+      userId = newUser.user!.id;
+      console.log('[LinkedIn OAuth] New user created:', userId);
+
+      // Create profile
+      await supabase.from('profiles').upsert({
+        id: userId,
+        email: linkedinEmail,
+        full_name: linkedinName,
+        role: 'client',
+      });
+
+      // Create team
+      try {
+        const { data: team } = await supabase
+          .from('teams')
+          .insert({ name: linkedinName + "'s Team", plan: 'trial' })
+          .select()
+          .single();
+
+        if (team) {
+          await supabase.from('team_members').insert({
+            team_id: team.id,
+            user_id: userId,
+            role: 'owner',
+          });
+        }
+      } catch (teamErr) {
+        console.warn('[LinkedIn OAuth] Team creation skipped:', teamErr);
+      }
+    }
+
+    // 4. Save LinkedIn token to linkedin_connections
     const expiresAt = new Date(Date.now() + (tokenData.expires_in || 5184000) * 1000).toISOString();
-
-    // Upsert into linkedin_connections
-    const { error: dbError } = await supabase
+    await supabase
       .from('linkedin_connections')
       .upsert({
+        user_id: userId,
         linkedin_member_id: linkedinSub,
         access_token: tokenData.access_token,
         refresh_token: tokenData.refresh_token || null,
@@ -100,17 +162,30 @@ router.get('/callback', async (req: Request, res: Response) => {
         oauth_connected: true,
         status: 'connected',
         updated_at: new Date().toISOString(),
-      }, { onConflict: 'linkedin_member_id' });
+      }, { onConflict: 'user_id' });
 
-    if (dbError) {
-      console.error('[LinkedIn OAuth] DB error:', dbError);
+    console.log('[LinkedIn OAuth] Token saved to DB');
+
+    // 5. Generate magic link for auto-login
+    const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
+      type: 'magiclink',
+      email: linkedinEmail,
+      options: {
+        redirectTo: `${DASHBOARD_URL}/app`,
+      },
+    });
+
+    if (linkData?.properties?.action_link) {
+      console.log('[LinkedIn OAuth] Redirecting via magic link');
+      return res.redirect(linkData.properties.action_link);
     }
 
-    // Redirect back to extension page with success
-    res.redirect(`${DASHBOARD_URL}/app/extension?linkedin=connected&name=${encodeURIComponent(linkedinName)}`);
+    // Fallback: redirect to login with success message
+    console.warn('[LinkedIn OAuth] Magic link failed, fallback redirect', linkError);
+    return res.redirect(`${DASHBOARD_URL}/login?linkedin=connected`);
   } catch (e: any) {
     console.error('[LinkedIn OAuth] Callback error:', e);
-    res.redirect(`${DASHBOARD_URL}/app/extension?linkedin=error&reason=server_error`);
+    return res.redirect(`${DASHBOARD_URL}/login?error=callback_failed`);
   }
 });
 

@@ -175,7 +175,7 @@ function Router() {
       <Route path={"/onboarding"} component={() => <ClientRoute component={Onboarding} />} />
       <Route path={"/safety"} component={Safety} />
       <Route path={"/features"} component={Features} />
-      <Route path={"/compare/wassel-vs-waalaxy"} component={Comparison} />
+      <Route path={"/compare/linkedin-automation-tools"} component={Comparison} />
       <Route path={"/blog"} component={Blog} />
       <Route path="/blog/:slug">{(params: any) => <BlogArticle slug={params.slug} />}</Route>
 
