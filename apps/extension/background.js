@@ -534,14 +534,12 @@ async function collectMultiPageProspects(targetCount, tabId) {
   while (allProspects.length < targetCount && pageNum <= maxPages && !stopCollection) {
     console.log(`[Wassel] 📄 Scanning page ${pageNum}...`);
 
-    // Send progress to popup
+    // Send progress to content script sidebar and popup
     try {
-      chrome.runtime.sendMessage({
-        type: 'PROGRESS_UPDATE',
-        collected: allProspects.length,
-        target: targetCount,
-        page: pageNum
-      });
+      if (tabId) chrome.tabs.sendMessage(tabId, { type: 'PROGRESS_UPDATE', collected: allProspects.length, target: targetCount, page: pageNum });
+    } catch (e) { /* tab may not be ready */ }
+    try {
+      chrome.runtime.sendMessage({ type: 'PROGRESS_UPDATE', collected: allProspects.length, target: targetCount, page: pageNum });
     } catch (e) { /* popup may be closed */ }
 
     // Scan current page
@@ -632,15 +630,20 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   if (message.type === 'START_COLLECTION') {
-    const { targetCount, tabId } = message;
+    const targetCount = message.targetCount;
+    const tabId = message.tabId || sender.tab?.id;
     console.log(`[Wassel] 📥 Collection requested: ${targetCount} from tab ${tabId}`);
     collectMultiPageProspects(targetCount, tabId).then(prospects => {
+      // Send to the content script tab (sidebar is in the tab, not the popup)
+      if (tabId) {
+        try {
+          chrome.tabs.sendMessage(tabId, { type: 'COLLECTION_COMPLETE', prospects });
+        } catch (e) { console.log('[Wassel] Tab message failed:', e.message); }
+      }
+      // Also broadcast to popup if open
       try {
-        chrome.runtime.sendMessage({
-          type: 'COLLECTION_COMPLETE',
-          prospects
-        });
-      } catch (e) { console.log('[Wassel] Popup closed, collection stored'); }
+        chrome.runtime.sendMessage({ type: 'COLLECTION_COMPLETE', prospects });
+      } catch (e) { /* popup may be closed */ }
     });
     sendResponse({ started: true });
     return true;

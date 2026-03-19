@@ -43,10 +43,21 @@
       </div>
       <div class="wassel-body">
         <div id="wassel-status" class="wassel-status wassel-status-info">
-          Click "Scan Page" to find prospects on this page.
+          Select a count and click "Start Collecting", or scan the current page.
         </div>
+        <div class="wassel-collect-section">
+          <select id="wassel-count-select" class="wassel-select">
+            <option value="25">25 prospects</option>
+            <option value="50">50 prospects</option>
+            <option value="100">100 prospects</option>
+            <option value="200">200 prospects</option>
+            <option value="500">500 prospects</option>
+          </select>
+          <button id="wassel-collect" class="wassel-btn wassel-btn-primary">🚀 Start Collecting</button>
+        </div>
+        <div id="wassel-progress" class="wassel-hidden wassel-status wassel-status-info"></div>
         <div class="wassel-actions">
-          <button id="wassel-scan" class="wassel-btn wassel-btn-primary">🔍 Scan Page</button>
+          <button id="wassel-scan" class="wassel-btn wassel-btn-secondary">🔍 Scan Page</button>
           <button id="wassel-select-all" class="wassel-btn wassel-btn-secondary wassel-hidden">☑ Select All</button>
         </div>
         <div id="wassel-prospects" class="wassel-prospects"></div>
@@ -69,6 +80,9 @@
     const importBtn = document.getElementById('wassel-import');
     const statusEl = document.getElementById('wassel-status');
     const resultEl = document.getElementById('wassel-result');
+    const collectBtn = document.getElementById('wassel-collect');
+    const countSelect = document.getElementById('wassel-count-select');
+    const progressEl = document.getElementById('wassel-progress');
 
     // Toggle sidebar
     fab.addEventListener('click', () => {
@@ -83,8 +97,56 @@
         fab.style.display = 'flex';
     });
 
+    // Auto-scroll to load lazy-rendered LinkedIn results
+    function scrollToLoadAll() {
+        return new Promise((resolve) => {
+            statusEl.textContent = 'Scrolling to load results...';
+            let scrollCount = 0;
+            const maxScrolls = 15;
+            const interval = setInterval(() => {
+                window.scrollBy(0, 600);
+                scrollCount++;
+                if (scrollCount >= maxScrolls || window.scrollY + window.innerHeight >= document.body.scrollHeight - 200) {
+                    clearInterval(interval);
+                    // Scroll back to top so user sees the sidebar
+                    window.scrollTo(0, 0);
+                    setTimeout(resolve, 800);
+                }
+            }, 350);
+        });
+    }
+
+    // "Start Collecting" — multi-page auto-scroll via background.js
+    collectBtn.addEventListener('click', () => {
+        const targetCount = parseInt(countSelect.value) || 25;
+        collectBtn.disabled = true;
+        collectBtn.textContent = '⏳ Collecting...';
+        allProspects = [];
+        selectedProspects = [];
+        prospectsEl.innerHTML = '';
+        selectAllBtn.classList.add('wassel-hidden');
+        importSection.classList.add('wassel-hidden');
+        progressEl.textContent = `Collecting ${targetCount} prospects... 0 / ${targetCount}`;
+        progressEl.classList.remove('wassel-hidden');
+        statusEl.className = 'wassel-status wassel-status-info';
+
+        chrome.runtime.sendMessage({
+            type: 'START_COLLECTION',
+            targetCount,
+        }, (response) => {
+            if (!response?.started) {
+                progressEl.textContent = 'Failed to start collection.';
+                collectBtn.disabled = false;
+                collectBtn.textContent = '🚀 Start Collecting';
+            }
+        });
+    });
+
     // Scan page for prospects — 5-strategy fallback
-    scanBtn.addEventListener('click', () => {
+    scanBtn.addEventListener('click', async () => {
+        statusEl.textContent = 'Scrolling to load results...';
+        statusEl.className = 'wassel-status wassel-status-info';
+        await scrollToLoadAll();
         statusEl.textContent = 'Scanning...';
         statusEl.className = 'wassel-status wassel-status-info';
         allProspects = [];
@@ -323,6 +385,7 @@
 
             chrome.runtime.sendMessage({
                 type: 'IMPORT_PROSPECTS',
+                token: config.apiToken,
                 campaignId: null,
                 sourceUrl: window.location.href,
                 prospects: selectedProspects.map(p => ({
@@ -393,6 +456,37 @@
                 .catch(err => sendResponse({ status: 'pending', error: err.message }));
 
             return true; // async response
+        }
+
+        // Progress update from background during multi-page collection
+        if (message.type === 'PROGRESS_UPDATE') {
+            progressEl.textContent = `Collecting... ${message.collected} / ${message.target} (page ${message.page})`;
+            progressEl.classList.remove('wassel-hidden');
+            return false;
+        }
+
+        // Collection complete — populate sidebar with collected prospects
+        if (message.type === 'COLLECTION_COMPLETE') {
+            const collected = message.prospects || [];
+            allProspects = collected.map((p, i) => ({ ...p, id: i, selected: true }));
+            selectedProspects = [...allProspects];
+
+            collectBtn.disabled = false;
+            collectBtn.textContent = '🚀 Start Collecting';
+            progressEl.classList.add('wassel-hidden');
+
+            if (allProspects.length === 0) {
+                statusEl.textContent = 'No prospects found. Make sure you are on a LinkedIn People search page.';
+                statusEl.className = 'wassel-status wassel-status-warn';
+            } else {
+                statusEl.textContent = `Collected ${allProspects.length} prospects`;
+                statusEl.className = 'wassel-status wassel-status-ok';
+                selectAllBtn.classList.remove('wassel-hidden');
+                importSection.classList.remove('wassel-hidden');
+                updateImportBtn();
+                renderProspects();
+            }
+            return false;
         }
 
         return false;
