@@ -12,28 +12,38 @@ const errorMessages: Record<string, string> = {
   no_code: 'LinkedIn authorization failed. Please try again.',
 };
 
+const successMessages: Record<string, string> = {
+  linkedin_connected: 'LinkedIn connected! Completing sign in...',
+};
+
 export default function Login() {
   const [showAdmin, setShowAdmin] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signIn, user } = useAuth();
+  const { signIn, user, loading: authLoading } = useAuth();
   const [, navigate] = useLocation();
 
-  // Check for OAuth error params in URL
+  // Check for OAuth error/success params in URL
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const urlError = params.get('error');
+    const urlSuccess = params.get('linkedin');
     if (urlError && errorMessages[urlError]) {
       setError(errorMessages[urlError]);
-      // Clean up URL
+      window.history.replaceState({}, '', '/login');
+    }
+    if (urlSuccess && successMessages[urlSuccess]) {
+      setSuccessMsg(successMessages[urlSuccess]);
       window.history.replaceState({}, '', '/login');
     }
   }, []);
 
   // If already logged in, redirect based on role and onboarding status
-  if (user) {
+  // Wait for auth to finish loading before redirecting to avoid stale-cache misdirects
+  if (!authLoading && user) {
     if (user.role === 'super_admin') {
       window.location.href = '/admin';
     } else if (!user.linkedinConnected) {
@@ -46,8 +56,9 @@ export default function Login() {
     return null;
   }
 
+  // Use relative URL so it works on any domain (wassel-alpha.vercel.app, wassel.io, localhost)
   const handleLinkedInLogin = () => {
-    window.location.href = 'https://wassel-alpha.vercel.app/api/linkedin/connect';
+    window.location.href = '/api/linkedin/connect';
   };
 
   const handleAdminLogin = async (e: React.FormEvent) => {
@@ -93,6 +104,13 @@ export default function Login() {
             <div className="flex items-start gap-2.5 p-3 rounded-xl mb-4" style={{ background: '#fef2f2', border: '1px solid #fecaca' }}>
               <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: '#dc2626' }} />
               <p className="text-sm" style={{ color: '#991b1b' }}>{error}</p>
+            </div>
+          )}
+
+          {/* OAuth success message (e.g. LinkedIn connected, magic link fallback) */}
+          {successMsg && (
+            <div className="flex items-start gap-2.5 p-3 rounded-xl mb-4" style={{ background: '#ecfdf5', border: '1px solid #a7f3d0' }}>
+              <p className="text-sm" style={{ color: '#065f46' }}>✅ {successMsg}</p>
             </div>
           )}
 

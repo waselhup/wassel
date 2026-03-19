@@ -13,51 +13,67 @@ export default function AuthCallback() {
   const [isProcessing, setIsProcessing] = useState(true);
 
   useEffect(() => {
+    let handled = false;
+
+    const finish = (destination: string) => {
+      if (handled) return;
+      handled = true;
+      window.location.href = destination;
+    };
+
+    const fail = (msg: string) => {
+      if (handled) return;
+      handled = true;
+      setError(msg);
+      setIsProcessing(false);
+    };
+
     const handleCallback = async () => {
       try {
-        // Read the intended destination from ?next= query param
         const params = new URLSearchParams(window.location.search);
         const next = params.get('next') || '/app';
 
-        // Give Supabase time to process the hash fragment (#access_token=...)
-        // onAuthStateChange will fire when the session is established
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(
-          async (_event, session) => {
-            subscription.unsubscribe();
+        // Step 1: check if Supabase already processed the hash (fast path)
+        const { data: { session: existing } } = await supabase.auth.getSession();
+        if (existing?.user) {
+          finish(next);
+          return;
+        }
 
+        // Step 2: subscribe BEFORE we might miss the event
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+          (_event, session) => {
+            subscription.unsubscribe();
             if (session?.user) {
-              // Session established — navigate to intended destination
-              window.location.href = next;
+              finish(next);
             } else {
-              // No session came through — check manually one more time
-              const { data: { session: currentSession } } = await supabase.auth.getSession();
-              if (currentSession?.user) {
-                window.location.href = next;
-              } else {
-                setError('لم نتمكن من إنشاء جلسة. الرجاء محاولة تسجيل الدخول مرة أخرى.');
-                setIsProcessing(false);
-              }
+              fail('لم نتمكن من إنشاء جلسة. الرجاء محاولة تسجيل الدخول مرة أخرى.');
             }
           }
         );
 
-        // Fallback: if onAuthStateChange doesn't fire within 5s, check session directly
+        // Step 3: poll fallback — onAuthStateChange can fire before subscribe in some Supabase versions
+        // so we check again after a short delay
         setTimeout(async () => {
-          subscription.unsubscribe();
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session?.user) {
-            const next2 = new URLSearchParams(window.location.search).get('next') || '/app';
-            window.location.href = next2;
-          } else if (isProcessing) {
-            setError('انتهت مهلة التحقق. الرجاء محاولة تسجيل الدخول مرة أخرى.');
-            setIsProcessing(false);
+          if (handled) return;
+          const { data: { session: retrySession } } = await supabase.auth.getSession();
+          if (retrySession?.user) {
+            subscription.unsubscribe();
+            finish(next);
           }
-        }, 5000);
+        }, 1500);
+
+        // Step 4: hard timeout — if nothing worked in 8s, show error
+        setTimeout(() => {
+          if (!handled) {
+            subscription.unsubscribe();
+            fail('انتهت مهلة التحقق. الرجاء المحاولة مرة أخرى.');
+          }
+        }, 8000);
 
       } catch (err) {
-        console.error('Callback handling failed:', err);
-        setError('حدث خطأ غير متوقع. الرجاء محاولة تسجيل الدخول مرة أخرى.');
-        setIsProcessing(false);
+        console.error('[AuthCallback] error:', err);
+        fail('حدث خطأ غير متوقع. الرجاء محاولة تسجيل الدخول مرة أخرى.');
       }
     };
 
@@ -68,8 +84,8 @@ export default function AuthCallback() {
     return (
       <div className="min-h-screen flex items-center justify-center p-4" style={{ background: '#f8fafc' }}>
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-6"></div>
-          <p className="font-medium mb-2" style={{ color: 'var(--text-primary)' }}>جاري تسجيل دخولك...</p>
+          <div className="w-14 h-14 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-6"></div>
+          <p className="font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>جاري تسجيل دخولك...</p>
           <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>يرجى الانتظار قليلاً</p>
         </div>
       </div>
@@ -82,22 +98,19 @@ export default function AuthCallback() {
         <div className="w-full max-w-md">
           <div className="rounded-2xl p-8" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
             <div className="flex justify-center mb-6">
-              <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: '#fef2f2' }}>
-                <AlertCircle className="w-8 h-8" style={{ color: '#dc2626' }} />
+              <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ background: '#fef2f2' }}>
+                <AlertCircle className="w-7 h-7" style={{ color: '#dc2626' }} />
               </div>
             </div>
-
             <h1 className="text-xl font-bold text-center mb-3" style={{ color: 'var(--text-primary)' }}>
               حدث خطأ في تسجيل الدخول
             </h1>
-
             <p className="text-center mb-8 text-sm" style={{ color: 'var(--text-secondary)' }}>
               {error}
             </p>
-
             <Button
               onClick={() => { window.location.href = '/login'; }}
-              className="w-full text-white font-semibold py-2.5"
+              className="w-full text-white font-semibold"
               style={{ background: 'var(--gradient-primary)' }}
             >
               العودة إلى تسجيل الدخول
