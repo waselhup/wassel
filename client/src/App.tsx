@@ -100,8 +100,8 @@ function AdminRoute({ component: Component }: { component: React.ComponentType }
 }
 
 /**
- * Route guard: requires client_user or super_admin with full onboarding complete.
- * Enforces: logged in → LinkedIn connected → extension installed → /app
+ * Route guard: requires authenticated user (client_user or super_admin).
+ * Onboarding is suggested but NOT enforced — user can access /app freely.
  */
 function ClientRoute({ component: Component }: { component: React.ComponentType }) {
   const { user, loading } = useAuth();
@@ -120,17 +120,6 @@ function ClientRoute({ component: Component }: { component: React.ComponentType 
   if (!user) {
     window.location.href = '/';
     return null;
-  }
-
-  if (user.role !== 'super_admin') {
-    if (!user.linkedinConnected) {
-      window.location.href = '/onboarding/linkedin';
-      return null;
-    }
-    if (!user.extensionInstalled) {
-      window.location.href = '/onboarding/extension';
-      return null;
-    }
   }
 
   return <Component />;
