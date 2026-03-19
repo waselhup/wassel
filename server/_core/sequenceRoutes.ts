@@ -354,97 +354,6 @@ router.get('/campaigns/:id/queue', async (req: Request, res: Response) => {
   }
 });
 
-// ============================================================================
-// GET /api/sequence/queue/active — Global queue: next pending actions across ALL active campaigns
-// Used by extension automation loop
-// ============================================================================
-router.get('/queue/active', async (req: Request, res: Response) => {
-  try {
-    const teamId = getTeamId(req);
-    if (!teamId) return res.status(401).json({ error: 'Unauthorized' });
-
-    // Get all pending steps across active campaigns for this team
-    const { data: queueItems, error } = await supabase
-      .from('prospect_step_status')
-      .select(`
-        id,
-        prospect_id,
-        step_id,
-        campaign_id,
-        status,
-        scheduled_at,
-        campaign_steps!inner (
-          step_type,
-          step_number,
-          message_template,
-          name
-        ),
-        prospects!inner (
-          linkedin_url,
-          name,
-          title,
-          company
-        )
-      `)
-      .eq('status', 'pending')
-      .lte('scheduled_at', new Date().toISOString())
-      .order('scheduled_at', { ascending: true })
-      .limit(10);
-
-    if (error) {
-      console.error('[Queue/Active] Query error:', error.message);
-      return res.status(500).json({ error: error.message });
-    }
-
-    // Filter to only active campaigns belonging to this team
-    const filteredItems: any[] = [];
-    if (queueItems && queueItems.length > 0) {
-      const campaignIds = [...new Set(queueItems.map((i: any) => i.campaign_id))];
-      const { data: activeCampaigns } = await supabase
-        .from('campaigns')
-        .select('id')
-        .in('id', campaignIds)
-        .eq('team_id', teamId)
-        .in('status', ['active', 'draft']); // draft too since wizard creates as draft
-
-      const activeIds = new Set((activeCampaigns || []).map((c: any) => c.id));
-
-      for (const item of queueItems) {
-        if (activeIds.has(item.campaign_id)) {
-          filteredItems.push(item);
-        }
-      }
-    }
-
-    // Format response
-    const queue = filteredItems.map((item: any) => {
-      const step = item.campaign_steps;
-      const prospect = item.prospects;
-      return {
-        id: item.id,
-        prospectStepId: item.id,
-        prospectId: item.prospect_id,
-        stepId: item.step_id,
-        campaignId: item.campaign_id,
-        step_type: step?.step_type,
-        stepNumber: step?.step_number,
-        stepName: step?.name,
-        linkedin_url: prospect?.linkedin_url,
-        name: prospect?.name || 'Unknown',
-        title: prospect?.title || '',
-        company: prospect?.company || '',
-        message_template: replaceVariables(step?.message_template, prospect),
-        scheduledAt: item.scheduled_at,
-      };
-    });
-
-    console.log(`[Queue/Active] team=${teamId} pending=${queue.length}`);
-    res.json({ success: true, queue });
-  } catch (e: any) {
-    console.error('[Queue/Active] Error:', e.message);
-    res.status(500).json({ error: e.message });
-  }
-});
 
 // ============================================================================
 // POST /api/sequence/step/complete — Mark step as completed/failed → unlock next
@@ -1450,7 +1359,7 @@ router.post('/prospects/:id/mark-replied', async (req: Request, res: Response) =
 
 // ============================================================================
 // GET /api/sequence/queue/active — Global queue for extension automation
-// FIXED: Uses 2-step approach to avoid PostgREST nested filter issues
+// 2-step: get active campaign IDs first, then fetch pending steps
 // ============================================================================
 router.get('/queue/active', async (req: Request, res: Response) => {
   try {
