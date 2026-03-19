@@ -8,6 +8,10 @@
     // Prevent double injection
     if (document.getElementById('wassel-sidebar-root')) return;
 
+    // Set detection attribute for the web app
+    document.documentElement.setAttribute('data-wassel-extension', 'true');
+    window.postMessage({ type: 'WASSEL_EXTENSION_INSTALLED', version: '1.1.0' }, '*');
+
     // Marker for detection by the web app
     const marker = document.createElement('div');
     marker.id = 'wassel-extension-marker';
