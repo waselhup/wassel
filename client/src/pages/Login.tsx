@@ -41,18 +41,9 @@ export default function Login() {
     }
   }, []);
 
-  // If already logged in, redirect based on role and onboarding status
-  // Wait for auth to finish loading before redirecting to avoid stale-cache misdirects
+  // If already logged in, send to dashboard — ClientRoute handles onboarding guards
   if (!authLoading && user) {
-    if (user.role === 'super_admin') {
-      window.location.href = '/admin';
-    } else if (!user.linkedinConnected) {
-      window.location.href = '/onboarding/linkedin';
-    } else if (!user.extensionInstalled) {
-      window.location.href = '/onboarding/extension';
-    } else {
-      window.location.href = '/app';
-    }
+    window.location.href = user.role === 'super_admin' ? '/admin' : '/app';
     return null;
   }
 
@@ -67,10 +58,15 @@ export default function Login() {
     setLoading(true);
     try {
       const result = await signIn(email, password);
-      if (result.error) setError(result.error);
+      if (result.error) {
+        setError(result.error);
+        setLoading(false);
+        return;
+      }
+      // Navigate immediately — session is in localStorage, ClientRoute handles onboarding guards
+      window.location.href = '/app';
     } catch {
       setError('Connection error. Please try again.');
-    } finally {
       setLoading(false);
     }
   };
@@ -128,11 +124,15 @@ export default function Login() {
             🔒 100% secured by LinkedIn
           </p>
 
-          {/* Already have account */}
+          {/* Already have account — toggle email/password form */}
           <p className="text-center text-sm" style={{ color: 'var(--text-secondary)' }}>
-            Already have an account?{' '}
-            <button onClick={handleLinkedInLogin} className="font-semibold hover:underline" style={{ color: '#0077b5' }}>
-              Sign in →
+            Already signed up?{' '}
+            <button
+              onClick={() => setShowAdmin(true)}
+              className="font-semibold hover:underline"
+              style={{ color: '#0077b5' }}
+            >
+              Sign in with email →
             </button>
           </p>
 
@@ -143,7 +143,7 @@ export default function Login() {
             <Link href="/privacy" className="hover:underline">Privacy</Link>
           </p>
 
-          {/* Hidden admin access */}
+          {/* Email/password sign-in form — shown when user clicks "Already signed up?" or "Admin access" */}
           <div className="mt-8 text-center">
             <button
               onClick={() => setShowAdmin(!showAdmin)}
@@ -159,7 +159,7 @@ export default function Login() {
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--text-muted)' }} />
                   <Input
                     type="email"
-                    placeholder="admin@wassel.com"
+                    placeholder="Email address"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     disabled={loading}
