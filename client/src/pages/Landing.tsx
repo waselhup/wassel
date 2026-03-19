@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'wouter';
+import { useAuth } from '@/contexts/AuthContext';
 
 /* ============================================================
    i18n — bilingual strings (en / ar)
@@ -50,7 +51,7 @@ const t = {
     hero: {
       h1: 'تواصل على لينكدإن\nبدون تعقيد.',
       sub: 'أرسل دعوات متابعة مخصصة تلقائياً. بدون إضافات مربكة. بدون رسوم مخفية. فقط نتائج.',
-      cta1: 'ابدأ مجاناً', cta2: 'شاهد العرض',
+      cta1: 'ابدأ التجربة المجانية', cta2: 'شاهد العرض',
       proof: 'انضم لأكثر من 500 فريق مبيعات وتوظيف',
       badge: '12 اتصال تم قبوله اليوم',
     },
@@ -160,6 +161,17 @@ export default function Landing() {
     setMobileMenu(false);
   };
 
+  // Redirect logged-in users to the correct step
+  const { user, loading: authLoading } = useAuth();
+  useEffect(() => {
+    if (!authLoading && user) {
+      if (user.role === 'super_admin') { window.location.href = '/admin'; return; }
+      if (!user.linkedinConnected) { window.location.href = '/onboarding/linkedin'; return; }
+      if (!user.extensionInstalled) { window.location.href = '/onboarding/extension'; return; }
+      window.location.href = '/app';
+    }
+  }, [authLoading, user]);
+
   // Section reveal hooks
   const hero$ = useScrollReveal();
   const logos$ = useScrollReveal();
@@ -227,7 +239,7 @@ export default function Landing() {
             <button onClick={toggleLang} className="block w-full text-left px-3 py-2 rounded text-sm" style={{ color: 'var(--text-muted)' }}>{lang === 'en' ? 'العربية' : 'English'}</button>
             <div className="flex gap-2 pt-2">
               <Link href="/login"><button className="flex-1 text-sm py-2 rounded-lg" style={{ border: '1px solid var(--border-accent)', color: 'var(--accent-secondary)' }}>{s.nav.login}</button></Link>
-              <Link href="/signup"><button className="flex-1 text-sm py-2 rounded-lg font-semibold text-white" style={{ background: 'var(--gradient-primary)' }}>{s.nav.trial}</button></Link>
+              <Link href="/login"><button className="flex-1 text-sm py-2 rounded-lg font-semibold text-white" style={{ background: 'var(--gradient-primary)' }}>{s.nav.trial}</button></Link>
             </div>
           </div>
         )}
@@ -247,7 +259,7 @@ export default function Landing() {
 
           {/* CTA buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
-            <Link href="/signup">
+            <Link href="/login">
               <button className="px-8 py-3.5 rounded-xl text-base font-semibold text-white transition-all hover:scale-105" style={{ background: 'var(--gradient-primary)', boxShadow: '0 0 30px rgba(124,58,237,0.3)' }}>
                 {s.hero.cta1}
               </button>

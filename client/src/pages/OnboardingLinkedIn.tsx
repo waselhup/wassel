@@ -1,21 +1,31 @@
+import { useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useTranslation } from 'react-i18next';
-import { Linkedin, Shield, ArrowRight } from 'lucide-react';
-import { Link } from 'wouter';
+import { Linkedin, Shield } from 'lucide-react';
 
 export default function OnboardingLinkedIn() {
-  const { user } = useAuth();
-  const { t } = useTranslation();
+  const { user, loading } = useAuth();
 
-  // If already connected, redirect to next step
-  if (user?.linkedinConnected) {
-    window.location.href = '/onboarding/extension';
-    return null;
-  }
+  useEffect(() => {
+    if (loading) return;
+    if (!user) { window.location.href = '/'; return; }
+    if (user.linkedinConnected) { window.location.href = '/onboarding/extension'; return; }
+  }, [loading, user]);
 
   const handleConnect = () => {
     window.location.href = '/api/linkedin/connect';
   };
+
+  // Show spinner while auth loads or while redirecting
+  if (loading || !user || user.linkedinConnected) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#f8fafc' }}>
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+          <p style={{ color: 'var(--text-secondary)' }}>جاري التحميل...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row" style={{ background: '#f8fafc' }}>
@@ -25,7 +35,7 @@ export default function OnboardingLinkedIn() {
           {/* Logo */}
           <div className="flex items-center gap-2 mb-10">
             <div className="w-9 h-9 rounded-lg flex items-center justify-center text-white font-bold text-sm" style={{ background: 'var(--gradient-primary)' }}>W</div>
-            <span className="text-xl font-extrabold tracking-tight" style={{ fontFamily: "'Outfit', sans-serif", color: 'var(--text-primary)' }}>assel</span>
+            <span className="text-xl font-extrabold tracking-tight" style={{ fontFamily: "'Outfit', sans-serif", color: 'var(--text-primary)' }}>اssel</span>
           </div>
 
           {/* Progress steps */}
@@ -53,7 +63,6 @@ export default function OnboardingLinkedIn() {
             نحتاج الوصول إلى حسابك على LinkedIn لإرسال الدعوات والرسائل تلقائياً. بياناتك مؤمنة 100%.
           </p>
 
-          {/* LinkedIn Connect Button */}
           <button
             onClick={handleConnect}
             className="w-full flex items-center justify-center gap-3 py-4 px-6 rounded-xl text-base font-semibold text-white transition-all hover:scale-[1.01] hover:shadow-lg mb-4"
@@ -67,7 +76,6 @@ export default function OnboardingLinkedIn() {
             🔒 مؤمن 100% عبر LinkedIn OAuth — لا نحفظ كلمة المرور
           </p>
 
-          {/* Why we need LinkedIn */}
           <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
             <p className="font-semibold text-sm mb-3" style={{ color: 'var(--text-primary)' }}>لماذا نحتاج ربط LinkedIn؟</p>
             <div className="space-y-2.5">
@@ -85,7 +93,6 @@ export default function OnboardingLinkedIn() {
             </div>
           </div>
 
-          {/* Skip warning */}
           <div className="mt-6 p-3 rounded-lg text-center" style={{ background: '#fefce8', border: '1px solid #fef08a' }}>
             <p className="text-xs" style={{ color: '#92400e' }}>
               ⚠️ يجب ربط LinkedIn أولاً لاستخدام المنصة

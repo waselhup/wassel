@@ -100,8 +100,8 @@ function AdminRoute({ component: Component }: { component: React.ComponentType }
 }
 
 /**
- * Route guard: requires client_user or super_admin.
- * Unauthenticated users get redirected to /login.
+ * Route guard: requires client_user or super_admin with full onboarding complete.
+ * Enforces: logged in → LinkedIn connected → extension installed → /app
  */
 function ClientRoute({ component: Component }: { component: React.ComponentType }) {
   const { user, loading } = useAuth();
@@ -118,25 +118,18 @@ function ClientRoute({ component: Component }: { component: React.ComponentType 
   }
 
   if (!user) {
-    // Unauthenticated visitors always start at the landing page
     window.location.href = '/';
     return null;
   }
-  // Onboarding guard: enforce linear journey
-  // Skip for admin users and onboarding pages themselves
+
   if (user.role !== 'super_admin') {
-    const currentPath = window.location.pathname;
-    const isOnboardingPage = currentPath.startsWith('/onboarding');
-    
-    if (!isOnboardingPage) {
-      if (!user.linkedinConnected) {
-        window.location.href = '/onboarding/linkedin';
-        return null;
-      }
-      if (!user.extensionInstalled) {
-        window.location.href = '/onboarding/extension';
-        return null;
-      }
+    if (!user.linkedinConnected) {
+      window.location.href = '/onboarding/linkedin';
+      return null;
+    }
+    if (!user.extensionInstalled) {
+      window.location.href = '/onboarding/extension';
+      return null;
     }
   }
 

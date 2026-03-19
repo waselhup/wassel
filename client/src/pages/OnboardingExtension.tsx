@@ -1,24 +1,25 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
-import { Download, CheckCircle, Monitor, ArrowRight, Loader2 } from 'lucide-react';
+import { Download, CheckCircle, Monitor, Loader2 } from 'lucide-react';
 import { Link } from 'wouter';
 
 export default function OnboardingExtension() {
-  const { user, accessToken } = useAuth();
+  const { user, loading, accessToken } = useAuth();
   const { t } = useTranslation();
   const [extensionDetected, setExtensionDetected] = useState(false);
   const [marking, setMarking] = useState(false);
   const [error, setError] = useState('');
 
-  // If already installed, go to dashboard
+  // Guard: redirect to correct step based on auth state
   useEffect(() => {
-    if (user?.extensionInstalled) {
-      window.location.href = '/app';
-    }
-  }, [user]);
+    if (loading) return;
+    if (!user) { window.location.href = '/'; return; }
+    if (!user.linkedinConnected) { window.location.href = '/onboarding/linkedin'; return; }
+    if (user.extensionInstalled) { window.location.href = '/app'; return; }
+  }, [loading, user]);
 
-  // Auto-detect extension via data attribute set by wassel_detect.js
+  // Auto-detect extension every 2 seconds
   useEffect(() => {
     const checkExtension = () => {
       const isInstalled = document.documentElement.getAttribute('data-wassel-extension') === 'true';
@@ -27,15 +28,15 @@ export default function OnboardingExtension() {
       }
     };
 
-    checkExtension();
-
     const handleMessage = (event: MessageEvent) => {
       if (event.data?.type === 'WASSEL_EXTENSION_INSTALLED') {
         setExtensionDetected(true);
       }
     };
+
+    checkExtension();
     window.addEventListener('message', handleMessage);
-    const interval = setInterval(checkExtension, 1500);
+    const interval = setInterval(checkExtension, 2000);
 
     return () => {
       clearInterval(interval);
@@ -43,14 +44,12 @@ export default function OnboardingExtension() {
     };
   }, [extensionDetected]);
 
-  // On button click: mark extension installed then navigate to /app immediately.
-  // IMPORTANT: never call supabase.auth.getSession() here — it races with
-  // onAuthStateChange processing the magic-link hash and causes the lock error.
+  // On button click: mark installed in DB then navigate to /app immediately
   const handleContinue = async () => {
     setMarking(true);
     setError('');
 
-    // Read token from React state or from localStorage directly — no supabase.auth calls.
+    // Read token without calling supabase.auth (avoids lock conflict)
     const token: string | null = accessToken
       || localStorage.getItem('supabase_token')
       || (() => {
@@ -66,7 +65,7 @@ export default function OnboardingExtension() {
         return null;
       })();
 
-    // Update local cache immediately so ClientRoute sees extensionInstalled:true on /app load
+    // Update cache immediately so ClientRoute passes on /app
     try {
       const raw = localStorage.getItem('wassel_user_cache');
       if (raw) {
@@ -77,19 +76,15 @@ export default function OnboardingExtension() {
       }
     } catch { /* ignore */ }
 
+    // Fire PATCH fire-and-forget
     if (token) {
-      // Fire PATCH to persist in DB — don't await so navigation is never blocked
       fetch('/api/user/profile', {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ extension_installed: true }),
-      }).catch(() => { /* fire-and-forget */ });
+      }).catch(() => {});
     }
 
-    // Navigate immediately — the cache update above ensures ClientRoute passes
     window.location.href = '/app';
   };
 
@@ -100,6 +95,18 @@ export default function OnboardingExtension() {
     t('onboarding.extensionPage.step4'),
     t('onboarding.extensionPage.step5'),
   ];
+
+  // Show spinner while auth loads or while auto-redirecting
+  if (loading || !user || !user.linkedinConnected || user.extensionInstalled) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#f8fafc' }}>
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+          <p style={{ color: 'var(--text-secondary)' }}>جاري التحميل...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row" style={{ background: '#f8fafc' }}>
@@ -183,42 +190,33 @@ export default function OnboardingExtension() {
                   ))}
                 </div>
               </div>
+
+              <p className="text-center text-xs mt-2" style={{ color: 'var(--text-muted)' }}>
+                🔍 جاري البحث عن الإضافة تلقائياً كل ثانيتين...
+              </p>
             </>
           )}
 
-          {/* Main CTA button — always clickable, works with or without extension detection */}
-          <button
-            onClick={handleContinue}
-            disabled={marking}
-            className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-xl text-base font-semibold transition-all hover:scale-[1.01]"
-            style={extensionDetected
-              ? { background: '#059669', color: 'white', boxShadow: '0 4px 14px rgba(5,150,105,0.3)' }
-              : { background: '#ecfdf5', border: '1px solid #a7f3d0', color: '#059669' }
-            }
-          >
-            {marking ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                جاري التحديث...
-              </>
-            ) : extensionDetected ? (
-              <>
-                <CheckCircle className="w-5 h-5" />
-                تم اكتشاف الإضافة — متابعة للوحة التحكم
-                <ArrowRight className="w-4 h-4" />
-              </>
-            ) : (
-              <>
-                <CheckCircle className="w-5 h-5" />
-                {t('onboarding.extensionPage.installed')}
-              </>
-            )}
-          </button>
-
-          {!extensionDetected && (
-            <p className="text-center text-xs mt-4" style={{ color: 'var(--text-muted)' }}>
-              🔍 جاري البحث عن الإضافة... (يتم الاكتشاف تلقائياً عند التثبيت)
-            </p>
+          {/* Green CTA — only shown and clickable after extension is detected */}
+          {extensionDetected && (
+            <button
+              onClick={handleContinue}
+              disabled={marking}
+              className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-xl text-base font-semibold transition-all hover:scale-[1.01]"
+              style={{ background: '#059669', color: 'white', boxShadow: '0 4px 14px rgba(5,150,105,0.3)' }}
+            >
+              {marking ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  جاري التحديث...
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="w-5 h-5" />
+                  تم اكتشاف الإضافة — متابعة للوحة التحكم
+                </>
+              )}
+            </button>
           )}
         </div>
       </div>

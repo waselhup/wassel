@@ -50,7 +50,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const cachedToken = localStorage.getItem(TOKEN_KEY) || null;
 
   const [user, setUser] = useState<AuthUser | null>(cached);
-  const [loading, setLoading] = useState(!cached); // No loading if cache exists
+  const [loading, setLoading] = useState(true); // always wait for fresh profile from DB
   const [accessToken, setAccessToken] = useState<string | null>(cachedToken);
 
   /**
