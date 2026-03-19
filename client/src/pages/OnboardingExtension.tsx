@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useAuth, supabase } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { Download, CheckCircle, Monitor, ArrowRight, Loader2 } from 'lucide-react';
 import { Link } from 'wouter';
@@ -43,73 +43,54 @@ export default function OnboardingExtension() {
     };
   }, [extensionDetected]);
 
-  // On button click: mark extension installed in DB then go to /app
+  // On button click: mark extension installed then navigate to /app immediately.
+  // IMPORTANT: never call supabase.auth.getSession() here — it races with
+  // onAuthStateChange processing the magic-link hash and causes the lock error.
   const handleContinue = async () => {
     setMarking(true);
     setError('');
 
-    try {
-      // Get the freshest possible token — try session first, fall back to state/localStorage
-      let token: string | null = null;
-
-      const { data: { session } } = await supabase.auth.getSession();
-      token = session?.access_token || accessToken || localStorage.getItem('supabase_token');
-
-      // If the magic-link session hasn't established yet, wait up to 4s for onAuthStateChange
-      if (!token) {
-        token = await new Promise<string | null>((resolve) => {
-          const timeout = setTimeout(() => resolve(null), 4000);
-          const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
-            if (s?.access_token) {
-              clearTimeout(timeout);
-              subscription.unsubscribe();
-              resolve(s.access_token);
+    // Read token from React state or from localStorage directly — no supabase.auth calls.
+    const token: string | null = accessToken
+      || localStorage.getItem('supabase_token')
+      || (() => {
+        try {
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i) || '';
+            if (key.startsWith('sb-') && key.endsWith('-auth-token')) {
+              const val = JSON.parse(localStorage.getItem(key) || '');
+              return val?.access_token || null;
             }
-          });
-        });
-      }
+          }
+        } catch { /* ignore */ }
+        return null;
+      })();
 
-      if (!token) {
-        setError('لم يتم العثور على جلسة. الرجاء العودة للصفحة الرئيسية وتسجيل الدخول من جديد.');
-        setMarking(false);
-        return;
+    // Update local cache immediately so ClientRoute sees extensionInstalled:true on /app load
+    try {
+      const raw = localStorage.getItem('wassel_user_cache');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        parsed.extensionInstalled = true;
+        parsed.cachedAt = Date.now();
+        localStorage.setItem('wassel_user_cache', JSON.stringify(parsed));
       }
+    } catch { /* ignore */ }
 
-      const res = await fetch('/api/user/profile', {
+    if (token) {
+      // Fire PATCH to persist in DB — don't await so navigation is never blocked
+      fetch('/api/user/profile', {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({ extension_installed: true }),
-      });
-
-      const data = await res.json();
-      console.log('[OnboardingExtension] PATCH response:', res.status, data);
-
-      if (!res.ok) {
-        setError(`فشل التحديث: ${data.error || 'خطأ غير معروف'} (${res.status})`);
-        setMarking(false);
-        return;
-      }
-
-      // Update local cache so ClientRoute doesn't re-check and redirect back
-      try {
-        const cached = localStorage.getItem('wassel_user_cache');
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          parsed.extensionInstalled = true;
-          parsed.cachedAt = Date.now();
-          localStorage.setItem('wassel_user_cache', JSON.stringify(parsed));
-        }
-      } catch { /* ignore */ }
-
-      window.location.href = '/app';
-    } catch (err: any) {
-      console.error('[OnboardingExtension] Error:', err);
-      setError('خطأ في الشبكة: ' + err.message);
-      setMarking(false);
+      }).catch(() => { /* fire-and-forget */ });
     }
+
+    // Navigate immediately — the cache update above ensures ClientRoute passes
+    window.location.href = '/app';
   };
 
   const steps = [

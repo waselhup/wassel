@@ -158,6 +158,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        // If the URL has a magic link hash (#access_token=...), do NOT call getSession().
+        // getSession() and onAuthStateChange both try to acquire the Supabase storage lock
+        // simultaneously, causing "Lock broken by another request with the 'steal' option".
+        // Let onAuthStateChange be the sole handler for hash-based sessions.
+        const hasPendingHash = typeof window !== 'undefined' &&
+          (window.location.hash.includes('access_token=') || window.location.hash.includes('type=magiclink'));
+
+        if (hasPendingHash) {
+          setLoading(false); // stop spinner — onAuthStateChange will set the user
+          return;
+        }
+
         const { data: { session } } = await supabase.auth.getSession();
 
         if (session?.user) {
@@ -175,19 +187,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             await handleSession(session);
           }
         } else {
-          // Check if there's a pending hash session (magic link redirect)
-          // If so, don't clear — onAuthStateChange will fire when Supabase processes the hash
-          const hasPendingHash = typeof window !== 'undefined' &&
-            (window.location.hash.includes('access_token=') || window.location.hash.includes('type=magiclink'));
-
-          if (!hasPendingHash) {
-            // No session and no pending hash — clear everything
-            setUser(null);
-            setAccessToken(null);
-            localStorage.removeItem(CACHE_KEY);
-            localStorage.removeItem(TOKEN_KEY);
-          }
-          // If hasPendingHash: wait for onAuthStateChange to fire
+          // No session and no pending hash — clear everything
+          setUser(null);
+          setAccessToken(null);
+          localStorage.removeItem(CACHE_KEY);
+          localStorage.removeItem(TOKEN_KEY);
         }
       } catch (error) {
         console.error('Auth check failed:', error);
