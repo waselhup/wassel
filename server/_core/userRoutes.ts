@@ -3,15 +3,18 @@ import { createClient } from '@supabase/supabase-js';
 
 const router = Router();
 
-const supabase = createClient(
-  process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-);
+function getSupabase() {
+  return createClient(
+    process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '',
+    process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+  );
+}
 
 // ============================================================
 // PATCH /api/user/profile — Update user profile fields
 // ============================================================
 router.patch('/profile', async (req: Request, res: Response) => {
+  const supabase = getSupabase();
   try {
     // 1. Extract JWT from Authorization header
     const authHeader = req.headers.authorization;
@@ -75,6 +78,7 @@ router.patch('/profile', async (req: Request, res: Response) => {
 // GET /api/user/profile — Get current user profile
 // ============================================================
 router.get('/profile', async (req: Request, res: Response) => {
+  const supabase = getSupabase();
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader?.startsWith('Bearer ')) {

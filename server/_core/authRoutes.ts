@@ -3,18 +3,20 @@ import { createClient } from '@supabase/supabase-js';
 
 const router = Router();
 
-const supabaseUrl = process.env.SUPABASE_URL || '';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-
-const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-  auth: { autoRefreshToken: false, persistSession: false },
-});
+function getSupabase() {
+  return createClient(
+    process.env.SUPABASE_URL || '',
+    process.env.SUPABASE_SERVICE_ROLE_KEY || '',
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  );
+}
 
 /**
  * POST /api/auth/magic-link
  * Request magic link for email
  */
 router.post('/magic-link', async (req, res) => {
+  const supabase = getSupabase();
   try {
     const { email } = req.body;
 
@@ -61,6 +63,7 @@ router.post('/magic-link', async (req, res) => {
  * Verify OTP token from magic link
  */
 router.post('/verify-otp', async (req, res) => {
+  const supabase = getSupabase();
   try {
     const { email, token, type = 'magiclink' } = req.body;
 
@@ -110,6 +113,7 @@ router.post('/verify-otp', async (req, res) => {
  * Returns: { token, expiresAt, userId, role, teamId }
  */
 router.post('/extension-token', async (req, res) => {
+  const supabase = getSupabase();
   try {
     // Extract user from JWT
     const authHeader = req.headers.authorization;

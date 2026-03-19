@@ -38436,8 +38436,8 @@ function applySettingDefaults(options, defaults2) {
   else delete result.accessToken;
   return result;
 }
-function validateSupabaseUrl(supabaseUrl3) {
-  const trimmedUrl = supabaseUrl3 === null || supabaseUrl3 === void 0 ? void 0 : supabaseUrl3.trim();
+function validateSupabaseUrl(supabaseUrl2) {
+  const trimmedUrl = supabaseUrl2 === null || supabaseUrl2 === void 0 ? void 0 : supabaseUrl2.trim();
   if (!trimmedUrl) throw new Error("supabaseUrl is required.");
   if (!trimmedUrl.match(/^https?:\/\//i)) throw new Error("Invalid supabaseUrl: Must be a valid HTTP or HTTPS URL.");
   try {
@@ -38527,11 +38527,11 @@ var init_dist4 = __esm({
       * const { data } = await supabase.from('profiles').select('*')
       * ```
       */
-      constructor(supabaseUrl3, supabaseKey, options) {
+      constructor(supabaseUrl2, supabaseKey, options) {
         var _settings$auth$storag, _settings$global$head;
-        this.supabaseUrl = supabaseUrl3;
+        this.supabaseUrl = supabaseUrl2;
         this.supabaseKey = supabaseKey;
-        const baseUrl = validateSupabaseUrl(supabaseUrl3);
+        const baseUrl = validateSupabaseUrl(supabaseUrl2);
         if (!supabaseKey) throw new Error("supabaseKey is required.");
         this.realtimeUrl = new URL("realtime/v1", baseUrl);
         this.realtimeUrl.protocol = this.realtimeUrl.protocol.replace("http", "ws");
@@ -38709,8 +38709,8 @@ var init_dist4 = __esm({
         }
       }
     };
-    createClient = (supabaseUrl3, supabaseKey, options) => {
-      return new SupabaseClient(supabaseUrl3, supabaseKey, options);
+    createClient = (supabaseUrl2, supabaseKey, options) => {
+      return new SupabaseClient(supabaseUrl2, supabaseKey, options);
     };
     if (shouldShowDeprecationWarning()) console.warn("\u26A0\uFE0F  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217");
   }
@@ -51910,12 +51910,15 @@ function registerOAuthRoutes(app2) {
 var import_express = __toESM(require_express2(), 1);
 init_dist4();
 var router = (0, import_express.Router)();
-var supabaseUrl = process.env.SUPABASE_URL || "";
-var supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
-var supabase = createClient(supabaseUrl, supabaseServiceKey, {
-  auth: { autoRefreshToken: false, persistSession: false }
-});
+function getSupabase() {
+  return createClient(
+    process.env.SUPABASE_URL || "",
+    process.env.SUPABASE_SERVICE_ROLE_KEY || "",
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  );
+}
 router.post("/magic-link", async (req, res) => {
+  const supabase3 = getSupabase();
   try {
     const { email: email3 } = req.body;
     if (!email3 || typeof email3 !== "string") {
@@ -51923,7 +51926,7 @@ router.post("/magic-link", async (req, res) => {
     }
     const origin2 = req.get("origin") || process.env.VITE_FRONTEND_URL || process.env.APP_URL || "https://wassel-alpha.vercel.app";
     const redirectUrl = `${origin2}/auth/callback`;
-    const { error: error48 } = await supabase.auth.signInWithOtp({
+    const { error: error48 } = await supabase3.auth.signInWithOtp({
       email: email3,
       options: {
         emailRedirectTo: redirectUrl
@@ -51947,12 +51950,13 @@ router.post("/magic-link", async (req, res) => {
   }
 });
 router.post("/verify-otp", async (req, res) => {
+  const supabase3 = getSupabase();
   try {
     const { email: email3, token, type = "magiclink" } = req.body;
     if (!email3 || !token) {
       return res.status(400).json({ error: "\u0627\u0644\u0628\u0631\u064A\u062F \u0627\u0644\u0625\u0644\u0643\u062A\u0631\u0648\u0646\u064A \u0648\u0627\u0644\u0631\u0645\u0632 \u0645\u0637\u0644\u0648\u0628\u0627\u0646" });
     }
-    const { data, error: error48 } = await supabase.auth.verifyOtp({
+    const { data, error: error48 } = await supabase3.auth.verifyOtp({
       email: email3,
       token,
       type: type === "magiclink" ? "magiclink" : "email"
@@ -51981,19 +51985,20 @@ router.post("/verify-otp", async (req, res) => {
   }
 });
 router.post("/extension-token", async (req, res) => {
+  const supabase3 = getSupabase();
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader?.startsWith("Bearer ")) {
       return res.status(401).json({ error: "Authentication required" });
     }
     const jwt3 = authHeader.replace("Bearer ", "");
-    const { data: { user: authUser }, error: authError } = await supabase.auth.getUser(jwt3);
+    const { data: { user: authUser }, error: authError } = await supabase3.auth.getUser(jwt3);
     if (authError || !authUser) {
       return res.status(401).json({ error: "Invalid or expired session" });
     }
-    const { data: profile } = await supabase.from("profiles").select("role").eq("id", authUser.id).single();
+    const { data: profile } = await supabase3.from("profiles").select("role").eq("id", authUser.id).single();
     const role = profile?.role || "client_user";
-    const { data: membership } = await supabase.from("team_members").select("team_id").eq("user_id", authUser.id).limit(1).single();
+    const { data: membership } = await supabase3.from("team_members").select("team_id").eq("user_id", authUser.id).limit(1).single();
     const teamId = membership?.team_id || null;
     const { target_client_id } = req.body || {};
     if (target_client_id && role !== "super_admin") {
@@ -52037,12 +52042,12 @@ var import_crypto3 = require("crypto");
 
 // server/supabase.ts
 init_dist4();
-var supabaseUrl2 = process.env.SUPABASE_URL || "";
-var supabaseServiceKey2 = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
-if (!supabaseUrl2 || !supabaseServiceKey2) {
-  console.warn("[Supabase] Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
+var supabaseUrl = process.env.SUPABASE_URL || "https://placeholder.supabase.co";
+var supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "placeholder-service-key";
+if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  console.warn("[Supabase] Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY \u2014 using placeholders");
 }
-var supabase2 = createClient(supabaseUrl2, supabaseServiceKey2, {
+var supabase = createClient(supabaseUrl, supabaseServiceKey, {
   auth: {
     autoRefreshToken: false,
     persistSession: false
@@ -52123,7 +52128,7 @@ router2.get("/start", async (req, res) => {
     if (!inviteToken) {
       return res.status(400).json({ error: "invite parameter required" });
     }
-    const { data: invite, error: inviteError } = await supabase2.from("client_invites").select("id, client_id, expires_at, used_at").eq("token", inviteToken).single();
+    const { data: invite, error: inviteError } = await supabase.from("client_invites").select("id, client_id, expires_at, used_at").eq("token", inviteToken).single();
     if (inviteError || !invite) {
       return res.status(404).json({ error: "Invalid invite token" });
     }
@@ -52135,7 +52140,7 @@ router2.get("/start", async (req, res) => {
     }
     const state = (0, import_crypto3.randomBytes)(32).toString("hex");
     const expiresAt = new Date(Date.now() + STATE_TTL_MINUTES * 60 * 1e3).toISOString();
-    const { error: insertError } = await supabase2.from("oauth_states").insert({
+    const { error: insertError } = await supabase.from("oauth_states").insert({
       state,
       invite_token: inviteToken,
       client_id: invite.client_id,
@@ -52205,7 +52210,7 @@ router2.get("/callback", async (req, res) => {
     }
     const stateTail = state.slice(-4);
     console.log(`[LinkedIn OAuth] CALLBACK_START state_tail=${stateTail} state_len=${state.length}`);
-    const { data: stateRows, error: stateQueryError } = await supabase2.from("oauth_states").select("id, invite_token, client_id, expires_at").eq("state", state).limit(1);
+    const { data: stateRows, error: stateQueryError } = await supabase.from("oauth_states").select("id, invite_token, client_id, expires_at").eq("state", state).limit(1);
     if (stateQueryError) {
       console.error(`[LinkedIn OAuth] STATE_QUERY_ERROR state_tail=${stateTail} error=`, JSON.stringify(stateQueryError));
       return res.redirect(302, `${appUrl}/oauth/error?reason=state_query_error`);
@@ -52219,10 +52224,10 @@ router2.get("/callback", async (req, res) => {
     const inviteSuffix = oauthState.invite_token ? `&invite=${oauthState.invite_token}` : "";
     if (new Date(oauthState.expires_at) < /* @__PURE__ */ new Date()) {
       console.log(`[LinkedIn OAuth] STATE_EXPIRED state_tail=${stateTail} expires=${oauthState.expires_at}`);
-      await supabase2.from("oauth_states").delete().eq("id", oauthState.id);
+      await supabase.from("oauth_states").delete().eq("id", oauthState.id);
       return res.redirect(302, `${appUrl}/oauth/error?reason=state_expired${inviteSuffix}`);
     }
-    const { error: deleteError } = await supabase2.from("oauth_states").delete().eq("id", oauthState.id);
+    const { error: deleteError } = await supabase.from("oauth_states").delete().eq("id", oauthState.id);
     if (deleteError) {
       console.error(`[LinkedIn OAuth] STATE_DELETE_FAIL state_tail=${stateTail}`, deleteError);
       return res.redirect(302, `${appUrl}/oauth/error?reason=state_claim_failed${inviteSuffix}`);
@@ -52283,7 +52288,7 @@ router2.get("/callback", async (req, res) => {
     }
     const tokenExpiresAt = tokenData.expires_in ? new Date(Date.now() + tokenData.expires_in * 1e3).toISOString() : null;
     try {
-      const { error: upsertError } = await supabase2.from("linkedin_connections").upsert(
+      const { error: upsertError } = await supabase.from("linkedin_connections").upsert(
         {
           client_id: oauthState.client_id,
           linkedin_member_id: linkedinProfile.sub,
@@ -52306,13 +52311,13 @@ router2.get("/callback", async (req, res) => {
       return res.redirect(302, `${appUrl}/oauth/error?reason=db_store_failed`);
     }
     try {
-      await supabase2.from("client_invites").update({ used_at: (/* @__PURE__ */ new Date()).toISOString() }).eq("token", oauthState.invite_token);
+      await supabase.from("client_invites").update({ used_at: (/* @__PURE__ */ new Date()).toISOString() }).eq("token", oauthState.invite_token);
       console.log(`[LinkedIn OAuth] INVITE_MARKED_USED state_tail=${stateTail}`);
     } catch (e) {
       console.error(`[LinkedIn OAuth] INVITE_UPDATE_FAIL (non-fatal) error=${e.message}`);
     }
     try {
-      await supabase2.from("clients").update({ status: "connected", updated_at: (/* @__PURE__ */ new Date()).toISOString() }).eq("id", oauthState.client_id);
+      await supabase.from("clients").update({ status: "connected", updated_at: (/* @__PURE__ */ new Date()).toISOString() }).eq("id", oauthState.client_id);
       console.log(`[LinkedIn OAuth] CLIENT_CONNECTED state_tail=${stateTail}`);
     } catch (e) {
       console.error(`[LinkedIn OAuth] CLIENT_UPDATE_FAIL (non-fatal) error=${e.message}`);
@@ -52330,7 +52335,7 @@ router2.get("/debug/state/:stateId", async (req, res) => {
     return res.status(401).json({ error: "Admin key required" });
   }
   const stateId = req.params.stateId;
-  const { data, error: error48 } = await supabase2.from("oauth_states").select("id, state, invite_token, client_id, expires_at, created_at").or(`id.eq.${stateId},state.eq.${stateId}`).limit(1);
+  const { data, error: error48 } = await supabase.from("oauth_states").select("id, state, invite_token, client_id, expires_at, created_at").or(`id.eq.${stateId},state.eq.${stateId}`).limit(1);
   if (error48) return res.json({ error: error48.message });
   if (!data || data.length === 0) return res.json({ found: false });
   const row = data[0];
@@ -52353,7 +52358,7 @@ var import_express3 = __toESM(require_express2(), 1);
 init_dist4();
 var import_crypto4 = __toESM(require("crypto"), 1);
 var router3 = (0, import_express3.Router)();
-function getSupabase() {
+function getSupabase2() {
   const url3 = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "";
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
   if (!url3 || !key) throw new Error("Missing Supabase env vars (SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY)");
@@ -52377,7 +52382,7 @@ router3.get("/connect", (req, res) => {
 });
 router3.get("/callback", async (req, res) => {
   const { LINKEDIN_CLIENT_ID, LINKEDIN_CLIENT_SECRET, LINKEDIN_REDIRECT_URI, DASHBOARD_URL } = getConfig2();
-  const supabase5 = getSupabase();
+  const supabase3 = getSupabase2();
   try {
     const { code, state, error: oauthError } = req.query;
     console.log("[LinkedIn OAuth] Callback received", { code: !!code, error: oauthError });
@@ -52414,7 +52419,7 @@ router3.get("/callback", async (req, res) => {
     const linkedinEmail = profile.email || `linkedin_${profile.sub}@wassel.app`;
     const linkedinSub = profile.sub || "";
     const linkedinPicture = profile.picture || "";
-    const { data: userList } = await supabase5.auth.admin.listUsers();
+    const { data: userList } = await supabase3.auth.admin.listUsers();
     const existingUser = userList?.users?.find(
       (u) => u.email === linkedinEmail
     );
@@ -52423,7 +52428,7 @@ router3.get("/callback", async (req, res) => {
       userId = existingUser.id;
       console.log("[LinkedIn OAuth] Existing user found:", userId);
     } else {
-      const { data: newUser, error: createError } = await supabase5.auth.admin.createUser({
+      const { data: newUser, error: createError } = await supabase3.auth.admin.createUser({
         email: linkedinEmail,
         email_confirm: true,
         user_metadata: {
@@ -52439,16 +52444,16 @@ router3.get("/callback", async (req, res) => {
       }
       userId = newUser.user.id;
       console.log("[LinkedIn OAuth] New user created:", userId);
-      await supabase5.from("profiles").upsert({
+      await supabase3.from("profiles").upsert({
         id: userId,
         email: linkedinEmail,
         full_name: linkedinName,
         role: "client_user"
       });
       try {
-        const { data: team } = await supabase5.from("teams").insert({ name: linkedinName + "'s Team", plan: "trial" }).select().single();
+        const { data: team } = await supabase3.from("teams").insert({ name: linkedinName + "'s Team", plan: "trial" }).select().single();
         if (team) {
-          await supabase5.from("team_members").insert({
+          await supabase3.from("team_members").insert({
             team_id: team.id,
             user_id: userId,
             role: "owner"
@@ -52459,7 +52464,7 @@ router3.get("/callback", async (req, res) => {
       }
     }
     const expiresAt = new Date(Date.now() + (tokenData.expires_in || 5184e3) * 1e3).toISOString();
-    await supabase5.from("linkedin_connections").upsert({
+    await supabase3.from("linkedin_connections").upsert({
       user_id: userId,
       linkedin_member_id: linkedinSub,
       access_token: tokenData.access_token,
@@ -52472,8 +52477,8 @@ router3.get("/callback", async (req, res) => {
       updated_at: (/* @__PURE__ */ new Date()).toISOString()
     }, { onConflict: "user_id" });
     console.log("[LinkedIn OAuth] Token saved to DB");
-    await supabase5.from("profiles").update({ linkedin_connected: true }).eq("id", userId);
-    const { data: linkData, error: linkError } = await supabase5.auth.admin.generateLink({
+    await supabase3.from("profiles").update({ linkedin_connected: true }).eq("id", userId);
+    const { data: linkData, error: linkError } = await supabase3.auth.admin.generateLink({
       type: "magiclink",
       email: linkedinEmail,
       options: {
@@ -52492,9 +52497,9 @@ router3.get("/callback", async (req, res) => {
   }
 });
 router3.get("/status", async (req, res) => {
-  const supabase5 = getSupabase();
+  const supabase3 = getSupabase2();
   try {
-    const { data: connections } = await supabase5.from("linkedin_connections").select("linkedin_name, linkedin_email, linkedin_member_id, oauth_connected, status, expires_at").eq("oauth_connected", true).eq("status", "connected").limit(1);
+    const { data: connections } = await supabase3.from("linkedin_connections").select("linkedin_name, linkedin_email, linkedin_member_id, oauth_connected, status, expires_at").eq("oauth_connected", true).eq("status", "connected").limit(1);
     if (connections && connections.length > 0) {
       const conn = connections[0];
       const expired = new Date(conn.expires_at) < /* @__PURE__ */ new Date();
@@ -52513,13 +52518,13 @@ router3.get("/status", async (req, res) => {
   }
 });
 router3.post("/send-invite", async (req, res) => {
-  const supabase5 = getSupabase();
+  const supabase3 = getSupabase2();
   try {
     const { linkedinProfileUrl, message: message2 } = req.body;
     if (!linkedinProfileUrl) {
       return res.status(400).json({ error: "linkedinProfileUrl required" });
     }
-    const { data: connections } = await supabase5.from("linkedin_connections").select("access_token, expires_at").eq("oauth_connected", true).eq("status", "connected").limit(1);
+    const { data: connections } = await supabase3.from("linkedin_connections").select("access_token, expires_at").eq("oauth_connected", true).eq("status", "connected").limit(1);
     if (!connections || connections.length === 0) {
       return res.status(400).json({ error: "No LinkedIn account connected. Connect via /app/extension." });
     }
@@ -52538,9 +52543,9 @@ router3.post("/send-invite", async (req, res) => {
   }
 });
 router3.post("/disconnect", async (req, res) => {
-  const supabase5 = getSupabase();
+  const supabase3 = getSupabase2();
   try {
-    const { error: error48 } = await supabase5.from("linkedin_connections").update({ oauth_connected: false, status: "disconnected", access_token: null }).eq("oauth_connected", true);
+    const { error: error48 } = await supabase3.from("linkedin_connections").update({ oauth_connected: false, status: "disconnected", access_token: null }).eq("oauth_connected", true);
     if (error48) return res.status(500).json({ error: error48.message });
     res.json({ success: true });
   } catch (e) {
@@ -52573,14 +52578,14 @@ router4.post("/send", async (req, res) => {
     }
     const teamId = req.user?.teamId || process.env.DEFAULT_TEAM_ID || "00000000-0000-0000-0000-000000000001";
     let clientId;
-    const { data: existingClient } = await supabase2.from("clients").select("id, status").eq("email", email3).eq("team_id", teamId).single();
+    const { data: existingClient } = await supabase.from("clients").select("id, status").eq("email", email3).eq("team_id", teamId).single();
     if (existingClient) {
       clientId = existingClient.id;
       if (existingClient.status === "connected") {
         return res.status(400).json({ error: "Client already connected" });
       }
     } else {
-      const { data: newClient, error: createError } = await supabase2.from("clients").insert({ team_id: teamId, email: email3, name: name || null, status: "pending" }).select("id").single();
+      const { data: newClient, error: createError } = await supabase.from("clients").insert({ team_id: teamId, email: email3, name: name || null, status: "pending" }).select("id").single();
       if (createError || !newClient) {
         console.error("[Invite] Failed to create client:", createError);
         return res.status(500).json({ error: "Failed to create client" });
@@ -52589,12 +52594,12 @@ router4.post("/send", async (req, res) => {
     }
     const inviteToken = (0, import_crypto5.randomBytes)(32).toString("hex");
     const expiresAt = new Date(Date.now() + INVITE_EXPIRY_HOURS * 60 * 60 * 1e3).toISOString();
-    const { error: inviteError } = await supabase2.from("client_invites").insert({ client_id: clientId, token: inviteToken, expires_at: expiresAt });
+    const { error: inviteError } = await supabase.from("client_invites").insert({ client_id: clientId, token: inviteToken, expires_at: expiresAt });
     if (inviteError) {
       console.error("[Invite] Failed to create invite:", inviteError);
       return res.status(500).json({ error: "Failed to create invite" });
     }
-    await supabase2.from("clients").update({ status: "invited", updated_at: (/* @__PURE__ */ new Date()).toISOString() }).eq("id", clientId);
+    await supabase.from("clients").update({ status: "invited", updated_at: (/* @__PURE__ */ new Date()).toISOString() }).eq("id", clientId);
     const appUrl = process.env.APP_URL || "https://wassel-alpha.vercel.app";
     const inviteUrl = `${appUrl}/invite/${inviteToken}`;
     const resendApiKey = process.env.RESEND_API_KEY;
@@ -52661,7 +52666,7 @@ router4.post("/send", async (req, res) => {
 router4.get("/validate/:token", async (req, res) => {
   try {
     const { token } = req.params;
-    const { data: invite, error: error48 } = await supabase2.from("client_invites").select("id, client_id, expires_at, used_at, clients(email, name, status)").eq("token", token).single();
+    const { data: invite, error: error48 } = await supabase.from("client_invites").select("id, client_id, expires_at, used_at, clients(email, name, status)").eq("token", token).single();
     if (error48 || !invite) {
       return res.status(404).json({ error: "Invalid invite token", valid: false });
     }
@@ -52684,7 +52689,7 @@ router4.get("/validate/:token", async (req, res) => {
 router4.get("/status", async (req, res) => {
   try {
     const teamId = req.user?.teamId || process.env.DEFAULT_TEAM_ID || "00000000-0000-0000-0000-000000000001";
-    const { data: clients, error: clientsError } = await supabase2.from("clients").select(`
+    const { data: clients, error: clientsError } = await supabase.from("clients").select(`
         id,
         email,
         name,
@@ -52707,7 +52712,7 @@ router4.get("/latest", async (req, res) => {
   try {
     const teamId = req.user?.teamId || process.env.DEFAULT_TEAM_ID || "00000000-0000-0000-0000-000000000001";
     const appUrl = process.env.APP_URL || "https://wassel-alpha.vercel.app";
-    const { data: invites, error: error48 } = await supabase2.from("client_invites").select(`
+    const { data: invites, error: error48 } = await supabase.from("client_invites").select(`
                 id,
                 token,
                 expires_at,
@@ -52741,11 +52746,11 @@ router4.post("/:id/disconnect", async (req, res) => {
   try {
     const clientId = req.params.id;
     console.log(`[Clients] DISCONNECT_START client_id=${clientId.substring(0, 8)}...`);
-    const { error: delError } = await supabase2.from("linkedin_connections").delete().eq("client_id", clientId);
+    const { error: delError } = await supabase.from("linkedin_connections").delete().eq("client_id", clientId);
     if (delError) {
       console.warn(`[Clients] DISCONNECT linkedin_connections delete warning:`, delError.message);
     }
-    const { error: updateError } = await supabase2.from("clients").update({ status: "invited", updated_at: (/* @__PURE__ */ new Date()).toISOString() }).eq("id", clientId);
+    const { error: updateError } = await supabase.from("clients").update({ status: "invited", updated_at: (/* @__PURE__ */ new Date()).toISOString() }).eq("id", clientId);
     if (updateError) {
       console.error(`[Clients] DISCONNECT status update fail:`, updateError.message);
       return res.status(500).json({ error: "Failed to update client status" });
@@ -52761,17 +52766,17 @@ router4.delete("/:id", async (req, res) => {
   try {
     const clientId = req.params.id;
     console.log(`[Clients] DELETE_START client_id=${clientId.substring(0, 8)}...`);
-    const { error: e1 } = await supabase2.from("prospects").delete().eq("client_id", clientId);
+    const { error: e1 } = await supabase.from("prospects").delete().eq("client_id", clientId);
     if (e1) console.warn(`[Clients] DELETE prospects warn:`, e1.message);
-    const { error: e2 } = await supabase2.from("prospect_import_jobs").delete().eq("client_id", clientId);
+    const { error: e2 } = await supabase.from("prospect_import_jobs").delete().eq("client_id", clientId);
     if (e2) console.warn(`[Clients] DELETE import_jobs warn:`, e2.message);
-    const { error: e3 } = await supabase2.from("linkedin_connections").delete().eq("client_id", clientId);
+    const { error: e3 } = await supabase.from("linkedin_connections").delete().eq("client_id", clientId);
     if (e3) console.warn(`[Clients] DELETE linkedin_connections warn:`, e3.message);
-    const { error: e4 } = await supabase2.from("client_invites").delete().eq("client_id", clientId);
+    const { error: e4 } = await supabase.from("client_invites").delete().eq("client_id", clientId);
     if (e4) console.warn(`[Clients] DELETE invites warn:`, e4.message);
-    const { error: e5 } = await supabase2.from("oauth_states").delete().eq("client_id", clientId);
+    const { error: e5 } = await supabase.from("oauth_states").delete().eq("client_id", clientId);
     if (e5) console.warn(`[Clients] DELETE oauth_states warn:`, e5.message);
-    const { error: e6 } = await supabase2.from("clients").delete().eq("id", clientId);
+    const { error: e6 } = await supabase.from("clients").delete().eq("id", clientId);
     if (e6) {
       console.error(`[Clients] DELETE client fail:`, e6.message);
       return res.status(500).json({ error: "Failed to delete client record" });
@@ -52787,7 +52792,7 @@ router4.delete("/:id", async (req, res) => {
   try {
     const inviteId = req.params.id;
     console.log(`[Invites] DELETE invite_id=${inviteId.substring(0, 8)}...`);
-    const { error: error48 } = await supabase2.from("client_invites").delete().eq("id", inviteId);
+    const { error: error48 } = await supabase.from("client_invites").delete().eq("id", inviteId);
     if (error48) {
       console.error(`[Invites] DELETE fail:`, error48.message);
       return res.status(500).json({ error: "Failed to delete invite" });
@@ -52821,7 +52826,7 @@ router5.get("/bootstrap", async (req, res) => {
     if (!clientId) {
       return res.status(400).json({ error: "client_id required" });
     }
-    const { data: client, error: error48 } = await supabase2.from("clients").select("id, email, name, status").eq("id", clientId).eq("team_id", teamId).single();
+    const { data: client, error: error48 } = await supabase.from("clients").select("id, email, name, status").eq("id", clientId).eq("team_id", teamId).single();
     if (error48 || !client) {
       return res.status(404).json({ error: "Client not found" });
     }
@@ -52846,7 +52851,7 @@ router5.get("/campaigns", async (req, res) => {
     if (!teamId) {
       return res.status(401).json({ error: "No team associated with user" });
     }
-    const { data: campaigns, error: error48 } = await supabase2.from("campaigns").select("id, name, status, created_at").eq("team_id", teamId).order("created_at", { ascending: false });
+    const { data: campaigns, error: error48 } = await supabase.from("campaigns").select("id, name, status, created_at").eq("team_id", teamId).order("created_at", { ascending: false });
     if (error48) {
       console.log("[Extension] Campaigns query error:", error48.message);
       return res.json({
@@ -52881,7 +52886,7 @@ router5.post("/import", async (req, res) => {
     }
     let resolvedTeamId = getTeamId(req);
     if (!resolvedTeamId) {
-      const { data: membership, error: memberError } = await supabase2.from("team_members").select("team_id").eq("user_id", userId).single();
+      const { data: membership, error: memberError } = await supabase.from("team_members").select("team_id").eq("user_id", userId).single();
       if (memberError || !membership?.team_id) {
         console.error("[Import] NO_TEAM user:", userId, memberError?.message);
         return res.status(400).json({ error: "No team associated with user", userId });
@@ -52894,11 +52899,11 @@ router5.post("/import", async (req, res) => {
       console.error("[Import] VALIDATION_FAIL body:", JSON.stringify(req.body).substring(0, 500));
       return res.status(400).json({ error: "prospects array is required and must not be empty" });
     }
-    const { data: team } = await supabase2.from("teams").select("plan").eq("id", resolvedTeamId).single();
+    const { data: team } = await supabase.from("teams").select("plan").eq("id", resolvedTeamId).single();
     const plan = team?.plan || "trial";
     const PLAN_LIMITS = { trial: 500, starter: 1e3, growth: 5e3, agency: 99999 };
     const maxProspects = PLAN_LIMITS[plan] || 500;
-    const { count: existingCount } = await supabase2.from("prospects").select("id", { count: "exact", head: true }).eq("team_id", resolvedTeamId);
+    const { count: existingCount } = await supabase.from("prospects").select("id", { count: "exact", head: true }).eq("team_id", resolvedTeamId);
     const currentCount = existingCount || 0;
     if (currentCount + prospects.length > maxProspects) {
       const remaining = Math.max(0, maxProspects - currentCount);
@@ -52931,11 +52936,11 @@ router5.post("/import", async (req, res) => {
       };
     });
     console.log("[Import] Sample record:", JSON.stringify(prospectRecords[0]));
-    const { data: inserted, error: insertError } = await supabase2.from("prospects").upsert(prospectRecords, { onConflict: "linkedin_url,team_id", ignoreDuplicates: true }).select("id");
+    const { data: inserted, error: insertError } = await supabase.from("prospects").upsert(prospectRecords, { onConflict: "linkedin_url,team_id", ignoreDuplicates: true }).select("id");
     if (insertError) {
       console.error(`[Import] INSERT_FAIL team_id=${resolvedTeamId} error=`, insertError.message || insertError);
       console.error("[Import] INSERT_FAIL detail:", JSON.stringify(insertError));
-      const { data: inserted2, error: insertError2 } = await supabase2.from("prospects").insert(prospectRecords).select("id");
+      const { data: inserted2, error: insertError2 } = await supabase.from("prospects").insert(prospectRecords).select("id");
       if (insertError2) {
         console.error("[Import] FALLBACK_INSERT_FAIL:", insertError2.message);
         return res.status(500).json({ error: "Failed to import prospects", detail: insertError2.message });
@@ -52946,7 +52951,7 @@ router5.post("/import", async (req, res) => {
     }
     const importedCount = inserted?.length || prospects.length;
     try {
-      await supabase2.from("prospect_import_jobs").insert({
+      await supabase.from("prospect_import_jobs").insert({
         client_id: client_id || resolvedTeamId,
         campaign_id: campaign_id || null,
         source_url: source_url || null,
@@ -52976,7 +52981,7 @@ router5.get("/prospects", async (req, res) => {
       return res.status(401).json({ error: "No team associated with user" });
     }
     const clientId = req.query.client_id;
-    let query = supabase2.from("prospects").select("id, linkedin_url, name, title, company, location, source_url, status, created_at").eq("team_id", teamId).order("created_at", { ascending: false }).limit(100);
+    let query = supabase.from("prospects").select("id, linkedin_url, name, title, company, location, source_url, status, created_at").eq("team_id", teamId).order("created_at", { ascending: false }).limit(100);
     if (clientId) {
       query = query.eq("client_id", clientId);
     }
@@ -53004,13 +53009,13 @@ router5.delete("/prospects", async (req, res) => {
     if (!prospectIds || !Array.isArray(prospectIds) || prospectIds.length === 0) {
       return res.status(400).json({ error: "prospectIds array is required" });
     }
-    const { data: owned } = await supabase2.from("prospects").select("id").eq("team_id", teamId).in("id", prospectIds);
+    const { data: owned } = await supabase.from("prospects").select("id").eq("team_id", teamId).in("id", prospectIds);
     const ownedIds = (owned || []).map((p) => p.id);
     if (ownedIds.length === 0) {
       return res.status(404).json({ error: "No matching prospects found" });
     }
-    await supabase2.from("prospect_step_status").delete().in("prospect_id", ownedIds);
-    const { error: deleteError } = await supabase2.from("prospects").delete().in("id", ownedIds);
+    await supabase.from("prospect_step_status").delete().in("prospect_id", ownedIds);
+    const { error: deleteError } = await supabase.from("prospects").delete().in("id", ownedIds);
     if (deleteError) {
       console.error("[Extension] Delete prospects error:", deleteError);
       return res.status(500).json({ error: "Failed to delete prospects" });
@@ -53031,11 +53036,11 @@ router6.post("/:id/disconnect", async (req, res) => {
   try {
     const clientId = req.params.id;
     console.log(`[Clients] DISCONNECT_START client_id=${clientId.substring(0, 8)}...`);
-    const { error: delError } = await supabase2.from("linkedin_connections").delete().eq("client_id", clientId);
+    const { error: delError } = await supabase.from("linkedin_connections").delete().eq("client_id", clientId);
     if (delError) {
       console.warn(`[Clients] DISCONNECT linkedin_connections delete warning:`, delError.message);
     }
-    const { error: updateError } = await supabase2.from("clients").update({ status: "invited", updated_at: (/* @__PURE__ */ new Date()).toISOString() }).eq("id", clientId);
+    const { error: updateError } = await supabase.from("clients").update({ status: "invited", updated_at: (/* @__PURE__ */ new Date()).toISOString() }).eq("id", clientId);
     if (updateError) {
       console.error(`[Clients] DISCONNECT status update fail:`, updateError.message);
       return res.status(500).json({ error: "Failed to update client status" });
@@ -53051,17 +53056,17 @@ router6.delete("/:id", async (req, res) => {
   try {
     const clientId = req.params.id;
     console.log(`[Clients] DELETE_START client_id=${clientId.substring(0, 8)}...`);
-    const { error: e1 } = await supabase2.from("prospects").delete().eq("client_id", clientId);
+    const { error: e1 } = await supabase.from("prospects").delete().eq("client_id", clientId);
     if (e1) console.warn(`[Clients] DELETE prospects warn:`, e1.message);
-    const { error: e2 } = await supabase2.from("prospect_import_jobs").delete().eq("client_id", clientId);
+    const { error: e2 } = await supabase.from("prospect_import_jobs").delete().eq("client_id", clientId);
     if (e2) console.warn(`[Clients] DELETE import_jobs warn:`, e2.message);
-    const { error: e3 } = await supabase2.from("linkedin_connections").delete().eq("client_id", clientId);
+    const { error: e3 } = await supabase.from("linkedin_connections").delete().eq("client_id", clientId);
     if (e3) console.warn(`[Clients] DELETE linkedin_connections warn:`, e3.message);
-    const { error: e4 } = await supabase2.from("client_invites").delete().eq("client_id", clientId);
+    const { error: e4 } = await supabase.from("client_invites").delete().eq("client_id", clientId);
     if (e4) console.warn(`[Clients] DELETE invites warn:`, e4.message);
-    const { error: e5 } = await supabase2.from("oauth_states").delete().eq("client_id", clientId);
+    const { error: e5 } = await supabase.from("oauth_states").delete().eq("client_id", clientId);
     if (e5) console.warn(`[Clients] DELETE oauth_states warn:`, e5.message);
-    const { error: e6 } = await supabase2.from("clients").delete().eq("id", clientId);
+    const { error: e6 } = await supabase.from("clients").delete().eq("id", clientId);
     if (e6) {
       console.error(`[Clients] DELETE client fail:`, e6.message);
       return res.status(500).json({ error: "Failed to delete client record" });
@@ -53094,9 +53099,9 @@ router7.get("/campaigns/:id/steps", async (req, res) => {
   try {
     const teamId = getTeamId2(req);
     if (!teamId) return res.status(401).json({ error: "Unauthorized" });
-    const { data: campaign } = await supabase2.from("campaigns").select("id").eq("id", req.params.id).eq("team_id", teamId).single();
+    const { data: campaign } = await supabase.from("campaigns").select("id").eq("id", req.params.id).eq("team_id", teamId).single();
     if (!campaign) return res.status(404).json({ error: "Campaign not found" });
-    const { data: steps, error: error48 } = await supabase2.from("campaign_steps").select("*").eq("campaign_id", req.params.id).order("step_number", { ascending: true });
+    const { data: steps, error: error48 } = await supabase.from("campaign_steps").select("*").eq("campaign_id", req.params.id).order("step_number", { ascending: true });
     if (error48) return res.status(500).json({ error: error48.message });
     res.json({ success: true, data: steps || [] });
   } catch (e) {
@@ -53107,11 +53112,11 @@ router7.delete("/campaigns/:id", async (req, res) => {
   try {
     const teamId = getTeamId2(req);
     if (!teamId) return res.status(401).json({ error: "Unauthorized" });
-    const { data: campaign } = await supabase2.from("campaigns").select("id").eq("id", req.params.id).eq("team_id", teamId).single();
+    const { data: campaign } = await supabase.from("campaigns").select("id").eq("id", req.params.id).eq("team_id", teamId).single();
     if (!campaign) return res.status(404).json({ error: "Campaign not found" });
-    await supabase2.from("prospect_step_status").delete().eq("campaign_id", req.params.id);
-    await supabase2.from("campaign_steps").delete().eq("campaign_id", req.params.id);
-    const { error: error48 } = await supabase2.from("campaigns").delete().eq("id", req.params.id);
+    await supabase.from("prospect_step_status").delete().eq("campaign_id", req.params.id);
+    await supabase.from("campaign_steps").delete().eq("campaign_id", req.params.id);
+    const { error: error48 } = await supabase.from("campaigns").delete().eq("id", req.params.id);
     if (error48) return res.status(500).json({ error: error48.message });
     res.json({ success: true, deleted: true });
   } catch (e) {
@@ -53122,7 +53127,7 @@ router7.post("/campaigns/:id/steps", async (req, res) => {
   try {
     const teamId = getTeamId2(req);
     if (!teamId) return res.status(401).json({ error: "Unauthorized" });
-    const { data: campaign } = await supabase2.from("campaigns").select("id").eq("id", req.params.id).eq("team_id", teamId).single();
+    const { data: campaign } = await supabase.from("campaigns").select("id").eq("id", req.params.id).eq("team_id", teamId).single();
     if (!campaign) return res.status(404).json({ error: "Campaign not found" });
     const { steps } = req.body;
     if (!Array.isArray(steps)) return res.status(400).json({ error: "steps array required" });
@@ -53140,7 +53145,7 @@ router7.post("/campaigns/:id/steps", async (req, res) => {
       "follow_up_message": "follow",
       "followup": "follow"
     };
-    await supabase2.from("campaign_steps").delete().eq("campaign_id", req.params.id);
+    await supabase.from("campaign_steps").delete().eq("campaign_id", req.params.id);
     const stepsToInsert = steps.map((step, index) => ({
       campaign_id: req.params.id,
       step_number: index + 1,
@@ -53150,7 +53155,7 @@ router7.post("/campaigns/:id/steps", async (req, res) => {
       message_template: step.message_template || null,
       delay_days: step.delay_days || 0
     }));
-    const { data: inserted, error: error48 } = await supabase2.from("campaign_steps").insert(stepsToInsert).select();
+    const { data: inserted, error: error48 } = await supabase.from("campaign_steps").insert(stepsToInsert).select();
     if (error48) return res.status(500).json({ error: error48.message });
     res.json({ success: true, data: inserted });
   } catch (e) {
@@ -53161,13 +53166,13 @@ router7.post("/campaigns/:id/enroll", async (req, res) => {
   try {
     const teamId = getTeamId2(req);
     if (!teamId) return res.status(401).json({ error: "Unauthorized" });
-    const { data: campaign } = await supabase2.from("campaigns").select("id").eq("id", req.params.id).eq("team_id", teamId).single();
+    const { data: campaign } = await supabase.from("campaigns").select("id").eq("id", req.params.id).eq("team_id", teamId).single();
     if (!campaign) return res.status(404).json({ error: "Campaign not found" });
     const { prospect_ids } = req.body;
     if (!Array.isArray(prospect_ids) || prospect_ids.length === 0) {
       return res.status(400).json({ error: "prospect_ids array required" });
     }
-    const { data: steps } = await supabase2.from("campaign_steps").select("id, step_number, step_type, delay_days").eq("campaign_id", req.params.id).order("step_number", { ascending: true });
+    const { data: steps } = await supabase.from("campaign_steps").select("id, step_number, step_type, delay_days").eq("campaign_id", req.params.id).order("step_number", { ascending: true });
     if (!steps || steps.length === 0) {
       return res.status(400).json({ error: "Campaign has no steps configured" });
     }
@@ -53188,7 +53193,7 @@ router7.post("/campaigns/:id/enroll", async (req, res) => {
     let totalInserted = 0;
     for (let i = 0; i < statusRows.length; i += chunkSize) {
       const chunk = statusRows.slice(i, i + chunkSize);
-      const { data: inserted, error: error48 } = await supabase2.from("prospect_step_status").insert(chunk).select();
+      const { data: inserted, error: error48 } = await supabase.from("prospect_step_status").insert(chunk).select();
       if (error48) {
         console.error(`[Enroll] Chunk ${Math.floor(i / chunkSize) + 1} error:`, error48.message);
         continue;
@@ -53208,9 +53213,9 @@ router7.get("/campaigns/:id/activity", async (req, res) => {
   try {
     const teamId = getTeamId2(req);
     if (!teamId) return res.status(401).json({ error: "Unauthorized" });
-    const { data: campaign } = await supabase2.from("campaigns").select("id").eq("id", req.params.id).eq("team_id", teamId).single();
+    const { data: campaign } = await supabase.from("campaigns").select("id").eq("id", req.params.id).eq("team_id", teamId).single();
     if (!campaign) return res.status(404).json({ error: "Campaign not found" });
-    const { data: items, error: error48 } = await supabase2.from("prospect_step_status").select(`
+    const { data: items, error: error48 } = await supabase.from("prospect_step_status").select(`
         id,
         status,
         executed_at,
@@ -53237,9 +53242,9 @@ router7.get("/campaigns/:id/queue", async (req, res) => {
   try {
     const teamId = getTeamId2(req);
     if (!teamId) return res.status(401).json({ error: "Unauthorized" });
-    const { data: campaign } = await supabase2.from("campaigns").select("id").eq("id", req.params.id).eq("team_id", teamId).single();
+    const { data: campaign } = await supabase.from("campaigns").select("id").eq("id", req.params.id).eq("team_id", teamId).single();
     if (!campaign) return res.status(404).json({ error: "Campaign not found" });
-    const { data: queueItems, error: error48 } = await supabase2.from("prospect_step_status").select(`
+    const { data: queueItems, error: error48 } = await supabase.from("prospect_step_status").select(`
         id,
         prospect_id,
         step_id,
@@ -53293,7 +53298,7 @@ router7.post("/step/complete", async (req, res) => {
     if (!["completed", "failed"].includes(status)) {
       return res.status(400).json({ error: "status must be completed or failed" });
     }
-    const { data: currentStep, error: fetchError } = await supabase2.from("prospect_step_status").select(`
+    const { data: currentStep, error: fetchError } = await supabase.from("prospect_step_status").select(`
         id,
         prospect_id,
         campaign_id,
@@ -53306,10 +53311,10 @@ router7.post("/step/complete", async (req, res) => {
     if (fetchError || !currentStep) {
       return res.status(404).json({ error: "Step status not found" });
     }
-    const { data: campaign } = await supabase2.from("campaigns").select("id").eq("id", currentStep.campaign_id).eq("team_id", teamId).single();
+    const { data: campaign } = await supabase.from("campaigns").select("id").eq("id", currentStep.campaign_id).eq("team_id", teamId).single();
     if (!campaign) return res.status(403).json({ error: "Forbidden" });
     const now = (/* @__PURE__ */ new Date()).toISOString();
-    await supabase2.from("prospect_step_status").update({
+    await supabase.from("prospect_step_status").update({
       status,
       executed_at: now,
       error_message: errorMessage || null
@@ -53318,20 +53323,20 @@ router7.post("/step/complete", async (req, res) => {
       const currentStepData = currentStep.campaign_steps;
       const currentStepNumber = currentStepData.step_number;
       const currentStepType = currentStepData.step_type;
-      const { data: nextStepDef } = await supabase2.from("campaign_steps").select("id, step_type, delay_days").eq("campaign_id", currentStep.campaign_id).eq("step_number", currentStepNumber + 1).single();
+      const { data: nextStepDef } = await supabase.from("campaign_steps").select("id, step_type, delay_days").eq("campaign_id", currentStep.campaign_id).eq("step_number", currentStepNumber + 1).single();
       if (nextStepDef) {
-        const { data: nextStepStatus } = await supabase2.from("prospect_step_status").select("id").eq("prospect_id", currentStep.prospect_id).eq("campaign_id", currentStep.campaign_id).eq("step_id", nextStepDef.id).single();
+        const { data: nextStepStatus } = await supabase.from("prospect_step_status").select("id").eq("prospect_id", currentStep.prospect_id).eq("campaign_id", currentStep.campaign_id).eq("step_id", nextStepDef.id).single();
         if (nextStepStatus) {
           const nextStepType = nextStepDef.step_type;
           const delayDays = nextStepDef.delay_days || 0;
           if (currentStepType === "invitation" || currentStepType === "invite") {
             if (nextStepType === "message") {
-              const { data: connection } = await supabase2.from("linkedin_connections").select("connection_status").eq("prospect_id", currentStep.prospect_id).single();
+              const { data: connection } = await supabase.from("linkedin_connections").select("connection_status").eq("prospect_id", currentStep.prospect_id).single();
               if (connection?.connection_status === "accepted") {
                 const scheduledAt = delayDays > 0 ? new Date(Date.now() + delayDays * 864e5).toISOString() : now;
-                await supabase2.from("prospect_step_status").update({ status: "pending", scheduled_at: scheduledAt }).eq("id", nextStepStatus.id);
+                await supabase.from("prospect_step_status").update({ status: "pending", scheduled_at: scheduledAt }).eq("id", nextStepStatus.id);
               } else {
-                await supabase2.from("acceptance_check_jobs").insert({
+                await supabase.from("acceptance_check_jobs").insert({
                   prospect_step_status_id: nextStepStatus.id,
                   prospect_id: currentStep.prospect_id,
                   campaign_id: currentStep.campaign_id,
@@ -53343,11 +53348,11 @@ router7.post("/step/complete", async (req, res) => {
               }
             } else {
               const scheduledAt = delayDays > 0 ? new Date(Date.now() + delayDays * 864e5).toISOString() : now;
-              await supabase2.from("prospect_step_status").update({ status: "pending", scheduled_at: scheduledAt }).eq("id", nextStepStatus.id);
+              await supabase.from("prospect_step_status").update({ status: "pending", scheduled_at: scheduledAt }).eq("id", nextStepStatus.id);
             }
           } else {
             const scheduledAt = delayDays > 0 ? new Date(Date.now() + delayDays * 864e5).toISOString() : now;
-            await supabase2.from("prospect_step_status").update({ status: "pending", scheduled_at: scheduledAt }).eq("id", nextStepStatus.id);
+            await supabase.from("prospect_step_status").update({ status: "pending", scheduled_at: scheduledAt }).eq("id", nextStepStatus.id);
           }
         }
       }
@@ -53361,9 +53366,9 @@ router7.get("/campaigns/:id/stats", async (req, res) => {
   try {
     const teamId = getTeamId2(req);
     if (!teamId) return res.status(401).json({ error: "Unauthorized" });
-    const { data: campaign } = await supabase2.from("campaigns").select("id").eq("id", req.params.id).eq("team_id", teamId).single();
+    const { data: campaign } = await supabase.from("campaigns").select("id").eq("id", req.params.id).eq("team_id", teamId).single();
     if (!campaign) return res.status(404).json({ error: "Campaign not found" });
-    const { data: statuses, error: error48 } = await supabase2.from("prospect_step_status").select(`
+    const { data: statuses, error: error48 } = await supabase.from("prospect_step_status").select(`
         step_id,
         status,
         campaign_steps!inner (
@@ -53405,7 +53410,7 @@ router7.get("/campaigns/:id/stats", async (req, res) => {
     if (inviteCompleted > 0) {
       const prospectIds = Array.from(new Set(inviteSteps.filter((s) => s.status === "completed").map((s) => s.prospect_id || "")));
       if (prospectIds.length > 0) {
-        const { count } = await supabase2.from("prospects").select("id", { count: "exact", head: true }).in("id", prospectIds).eq("connection_status", "accepted");
+        const { count } = await supabase.from("prospects").select("id", { count: "exact", head: true }).in("id", prospectIds).eq("connection_status", "accepted");
         accepted = count || 0;
       }
     }
@@ -53425,9 +53430,9 @@ router7.get("/campaigns/:id/prospect-status", async (req, res) => {
   try {
     const teamId = getTeamId2(req);
     if (!teamId) return res.status(401).json({ error: "Unauthorized" });
-    const { data: campaign } = await supabase2.from("campaigns").select("id").eq("id", req.params.id).eq("team_id", teamId).single();
+    const { data: campaign } = await supabase.from("campaigns").select("id").eq("id", req.params.id).eq("team_id", teamId).single();
     if (!campaign) return res.status(404).json({ error: "Campaign not found" });
-    const { data: statuses, error: error48 } = await supabase2.from("prospect_step_status").select(`
+    const { data: statuses, error: error48 } = await supabase.from("prospect_step_status").select(`
         id,
         prospect_id,
         step_id,
@@ -53448,7 +53453,7 @@ router7.get("/campaigns/:id/prospect-status", async (req, res) => {
         )
       `).eq("campaign_id", req.params.id).order("created_at", { ascending: true });
     if (error48) return res.status(500).json({ error: error48.message });
-    const { data: checkJobs } = await supabase2.from("acceptance_check_jobs").select("prospect_id, last_checked_at").eq("campaign_id", req.params.id);
+    const { data: checkJobs } = await supabase.from("acceptance_check_jobs").select("prospect_id, last_checked_at").eq("campaign_id", req.params.id);
     const lastCheckedMap = {};
     for (const job of checkJobs || []) {
       lastCheckedMap[job.prospect_id] = job.last_checked_at;
@@ -53489,7 +53494,7 @@ router7.get("/pending-acceptance-checks", async (req, res) => {
     if (!teamId) return res.status(401).json({ error: "Unauthorized" });
     const sixHoursAgo = new Date(Date.now() - 6 * 36e5).toISOString();
     const fourteenDaysAgo = new Date(Date.now() - 14 * 864e5).toISOString();
-    const { data: jobs, error: error48 } = await supabase2.from("acceptance_check_jobs").select(`
+    const { data: jobs, error: error48 } = await supabase.from("acceptance_check_jobs").select(`
         id,
         prospect_id,
         prospect_step_status_id,
@@ -53503,13 +53508,13 @@ router7.get("/pending-acceptance-checks", async (req, res) => {
       return res.json({ success: true, data: [] });
     }
     const prospectIds = jobs.map((j) => j.prospect_id);
-    const { data: prospects } = await supabase2.from("prospects").select("id, linkedin_url, name, company, connection_status").in("id", prospectIds);
+    const { data: prospects } = await supabase.from("prospects").select("id, linkedin_url, name, company, connection_status").in("id", prospectIds);
     const prospectMap = {};
     for (const p of prospects || []) {
       prospectMap[p.id] = p;
     }
     const campaignIds = Array.from(new Set(jobs.map((j) => j.campaign_id)));
-    const { data: campaigns } = await supabase2.from("campaigns").select("id").in("id", campaignIds).eq("team_id", teamId);
+    const { data: campaigns } = await supabase.from("campaigns").select("id").in("id", campaignIds).eq("team_id", teamId);
     const validCampaignIds = new Set((campaigns || []).map((c) => c.id));
     const result = jobs.filter((j) => validCampaignIds.has(j.campaign_id)).map((j) => ({
       jobId: j.id,
@@ -53539,43 +53544,43 @@ router7.post("/update-connection-status", async (req, res) => {
       return res.status(400).json({ error: "status must be accepted, pending, or withdrawn" });
     }
     const now = (/* @__PURE__ */ new Date()).toISOString();
-    await supabase2.from("prospects").update({ connection_status: status }).eq("id", prospectId);
-    const { data: existingConn } = await supabase2.from("linkedin_connections").select("id").eq("prospect_id", prospectId).single();
+    await supabase.from("prospects").update({ connection_status: status }).eq("id", prospectId);
+    const { data: existingConn } = await supabase.from("linkedin_connections").select("id").eq("prospect_id", prospectId).single();
     if (existingConn) {
-      await supabase2.from("linkedin_connections").update({ connection_status: status }).eq("prospect_id", prospectId);
+      await supabase.from("linkedin_connections").update({ connection_status: status }).eq("prospect_id", prospectId);
     }
     if (status === "accepted") {
-      const { data: job } = jobId ? await supabase2.from("acceptance_check_jobs").select("*").eq("id", jobId).single() : await supabase2.from("acceptance_check_jobs").select("*").eq("prospect_id", prospectId).limit(1).single();
+      const { data: job } = jobId ? await supabase.from("acceptance_check_jobs").select("*").eq("id", jobId).single() : await supabase.from("acceptance_check_jobs").select("*").eq("prospect_id", prospectId).limit(1).single();
       if (job) {
-        const { data: pss } = await supabase2.from("prospect_step_status").select("step_id, campaign_steps!inner(delay_days)").eq("id", job.prospect_step_status_id).single();
+        const { data: pss } = await supabase.from("prospect_step_status").select("step_id, campaign_steps!inner(delay_days)").eq("id", job.prospect_step_status_id).single();
         const delayDays = pss?.campaign_steps?.delay_days || 0;
         const scheduledAt = delayDays > 0 ? new Date(Date.now() + delayDays * 864e5).toISOString() : now;
-        await supabase2.from("prospect_step_status").update({ status: "pending", scheduled_at: scheduledAt }).eq("id", job.prospect_step_status_id);
-        await supabase2.from("acceptance_check_jobs").delete().eq("id", job.id);
+        await supabase.from("prospect_step_status").update({ status: "pending", scheduled_at: scheduledAt }).eq("id", job.prospect_step_status_id);
+        await supabase.from("acceptance_check_jobs").delete().eq("id", job.id);
         console.log(`[ConnSync] \u2713 ${prospectId} accepted \u2192 Message 1 unlocked`);
       }
       res.json({ success: true, action: "unlocked_message", prospectId });
     } else if (status === "withdrawn") {
-      const { data: job } = jobId ? await supabase2.from("acceptance_check_jobs").select("*").eq("id", jobId).single() : await supabase2.from("acceptance_check_jobs").select("*").eq("prospect_id", prospectId).limit(1).single();
+      const { data: job } = jobId ? await supabase.from("acceptance_check_jobs").select("*").eq("id", jobId).single() : await supabase.from("acceptance_check_jobs").select("*").eq("prospect_id", prospectId).limit(1).single();
       if (job) {
-        await supabase2.from("prospect_step_status").update({ status: "skipped", error_message: "Connection withdrawn/expired" }).eq("id", job.prospect_step_status_id);
-        const { data: laterSteps } = await supabase2.from("prospect_step_status").select("id").eq("prospect_id", prospectId).eq("campaign_id", job.campaign_id).eq("status", "waiting");
+        await supabase.from("prospect_step_status").update({ status: "skipped", error_message: "Connection withdrawn/expired" }).eq("id", job.prospect_step_status_id);
+        const { data: laterSteps } = await supabase.from("prospect_step_status").select("id").eq("prospect_id", prospectId).eq("campaign_id", job.campaign_id).eq("status", "waiting");
         if (laterSteps && laterSteps.length > 0) {
-          await supabase2.from("prospect_step_status").update({ status: "skipped", error_message: "Connection not established" }).in("id", laterSteps.map((s) => s.id));
+          await supabase.from("prospect_step_status").update({ status: "skipped", error_message: "Connection not established" }).in("id", laterSteps.map((s) => s.id));
         }
-        await supabase2.from("acceptance_check_jobs").delete().eq("id", job.id);
+        await supabase.from("acceptance_check_jobs").delete().eq("id", job.id);
         console.log(`[ConnSync] \u2717 ${prospectId} withdrawn \u2192 steps skipped`);
       }
       res.json({ success: true, action: "skipped", prospectId });
     } else {
       if (jobId) {
-        const { data: job } = await supabase2.from("acceptance_check_jobs").select("checks_remaining").eq("id", jobId).single();
-        await supabase2.from("acceptance_check_jobs").update({
+        const { data: job } = await supabase.from("acceptance_check_jobs").select("checks_remaining").eq("id", jobId).single();
+        await supabase.from("acceptance_check_jobs").update({
           last_checked_at: now,
           checks_remaining: (job?.checks_remaining || 56) - 1
         }).eq("id", jobId);
       } else {
-        await supabase2.from("acceptance_check_jobs").update({ last_checked_at: now }).eq("prospect_id", prospectId);
+        await supabase.from("acceptance_check_jobs").update({ last_checked_at: now }).eq("prospect_id", prospectId);
       }
       res.json({ success: true, action: "still_pending", prospectId });
     }
@@ -53589,7 +53594,7 @@ router7.post("/campaigns/pause", async (req, res) => {
     if (!teamId) return res.status(401).json({ error: "Unauthorized" });
     const { campaignId, reason } = req.body;
     if (!campaignId) return res.status(400).json({ error: "campaignId required" });
-    const { error: error48 } = await supabase2.from("campaigns").update({ status: "paused" }).eq("id", campaignId).eq("team_id", teamId);
+    const { error: error48 } = await supabase.from("campaigns").update({ status: "paused" }).eq("id", campaignId).eq("team_id", teamId);
     if (error48) return res.status(500).json({ error: error48.message });
     console.log(`[Sequence] Campaign ${campaignId} paused. Reason: ${reason || "unknown"}`);
     res.json({ success: true, message: "Campaign paused" });
@@ -53601,26 +53606,26 @@ router7.post("/check-acceptances", async (req, res) => {
   try {
     const teamId = getTeamId2(req);
     if (!teamId) return res.status(401).json({ error: "Unauthorized" });
-    const { data: jobs, error: error48 } = await supabase2.from("acceptance_check_jobs").select("*").lte("next_check_at", (/* @__PURE__ */ new Date()).toISOString()).gt("checks_remaining", 0).limit(50);
+    const { data: jobs, error: error48 } = await supabase.from("acceptance_check_jobs").select("*").lte("next_check_at", (/* @__PURE__ */ new Date()).toISOString()).gt("checks_remaining", 0).limit(50);
     if (error48) return res.status(500).json({ error: error48.message });
     let unlocked = 0;
     let expired = 0;
     let deferred = 0;
     for (const job of jobs || []) {
-      const { data: connection } = await supabase2.from("linkedin_connections").select("connection_status").eq("prospect_id", job.prospect_id).single();
+      const { data: connection } = await supabase.from("linkedin_connections").select("connection_status").eq("prospect_id", job.prospect_id).single();
       if (connection?.connection_status === "accepted") {
-        const { data: pss } = await supabase2.from("prospect_step_status").select("step_id, campaign_steps!inner(delay_days)").eq("id", job.prospect_step_status_id).single();
+        const { data: pss } = await supabase.from("prospect_step_status").select("step_id, campaign_steps!inner(delay_days)").eq("id", job.prospect_step_status_id).single();
         const delayDays = pss?.campaign_steps?.delay_days || 0;
         const scheduledAt = delayDays > 0 ? new Date(Date.now() + delayDays * 864e5).toISOString() : (/* @__PURE__ */ new Date()).toISOString();
-        await supabase2.from("prospect_step_status").update({ status: "pending", scheduled_at: scheduledAt }).eq("id", job.prospect_step_status_id);
-        await supabase2.from("acceptance_check_jobs").delete().eq("id", job.id);
+        await supabase.from("prospect_step_status").update({ status: "pending", scheduled_at: scheduledAt }).eq("id", job.prospect_step_status_id);
+        await supabase.from("acceptance_check_jobs").delete().eq("id", job.id);
         unlocked++;
       } else if (job.checks_remaining <= 1) {
-        await supabase2.from("prospect_step_status").update({ status: "skipped", error_message: "Connection not accepted within 14 days" }).eq("id", job.prospect_step_status_id);
-        await supabase2.from("acceptance_check_jobs").delete().eq("id", job.id);
+        await supabase.from("prospect_step_status").update({ status: "skipped", error_message: "Connection not accepted within 14 days" }).eq("id", job.prospect_step_status_id);
+        await supabase.from("acceptance_check_jobs").delete().eq("id", job.id);
         expired++;
       } else {
-        await supabase2.from("acceptance_check_jobs").update({
+        await supabase.from("acceptance_check_jobs").update({
           next_check_at: new Date(Date.now() + 6 * 36e5).toISOString(),
           checks_remaining: job.checks_remaining - 1
         }).eq("id", job.id);
@@ -53637,9 +53642,9 @@ router7.get("/campaigns/:id/analytics", async (req, res) => {
     const teamId = getTeamId2(req);
     if (!teamId) return res.status(401).json({ error: "Unauthorized" });
     const campaignId = req.params.id;
-    const { data: campaign } = await supabase2.from("campaigns").select("id, created_at, status").eq("id", campaignId).eq("team_id", teamId).single();
+    const { data: campaign } = await supabase.from("campaigns").select("id, created_at, status").eq("id", campaignId).eq("team_id", teamId).single();
     if (!campaign) return res.status(404).json({ error: "Campaign not found" });
-    const { data: statuses } = await supabase2.from("prospect_step_status").select(`
+    const { data: statuses } = await supabase.from("prospect_step_status").select(`
         prospect_id,
         status,
         executed_at,
@@ -53652,7 +53657,7 @@ router7.get("/campaigns/:id/analytics", async (req, res) => {
     const prospectIds = Array.from(new Set((statuses || []).map((s) => s.prospect_id)));
     let prospects = [];
     if (prospectIds.length > 0) {
-      const { data } = await supabase2.from("prospects").select("id, connection_status, replied_at, reply_detected").in("id", prospectIds);
+      const { data } = await supabase.from("prospects").select("id, connection_status, replied_at, reply_detected").in("id", prospectIds);
       prospects = data || [];
     }
     const prospectMap = {};
@@ -53710,7 +53715,7 @@ router7.get("/campaigns/:id/analytics", async (req, res) => {
     const remainingProspects = enrolled - visited;
     const prospectsPerDay = daysRunning > 0 ? visited / daysRunning : 0;
     const estimatedDaysLeft = prospectsPerDay > 0 ? Math.ceil(remainingProspects / prospectsPerDay) : null;
-    const { data: snapshots } = await supabase2.from("campaign_analytics_snapshots").select("*").eq("campaign_id", campaignId).order("snapshot_date", { ascending: true }).limit(14);
+    const { data: snapshots } = await supabase.from("campaign_analytics_snapshots").select("*").eq("campaign_id", campaignId).order("snapshot_date", { ascending: true }).limit(14);
     res.json({
       success: true,
       data: {
@@ -53738,9 +53743,9 @@ router7.post("/campaigns/:id/snapshot", async (req, res) => {
     const teamId = getTeamId2(req);
     if (!teamId) return res.status(401).json({ error: "Unauthorized" });
     const campaignId = req.params.id;
-    const { data: campaign } = await supabase2.from("campaigns").select("id").eq("id", campaignId).eq("team_id", teamId).single();
+    const { data: campaign } = await supabase.from("campaigns").select("id").eq("id", campaignId).eq("team_id", teamId).single();
     if (!campaign) return res.status(404).json({ error: "Campaign not found" });
-    const { data: statuses } = await supabase2.from("prospect_step_status").select("prospect_id, status, campaign_steps!inner(step_type, step_number)").eq("campaign_id", campaignId);
+    const { data: statuses } = await supabase.from("prospect_step_status").select("prospect_id, status, campaign_steps!inner(step_type, step_number)").eq("campaign_id", campaignId);
     const prospectIds = Array.from(new Set((statuses || []).map((s) => s.prospect_id)));
     let visitsD = 0, invitesD = 0, messagesD = 0, followUpsD = 0;
     const messageNums = (statuses || []).filter((s) => s.campaign_steps.step_type === "message").map((s) => s.campaign_steps.step_number).sort((a, b) => a - b);
@@ -53757,15 +53762,15 @@ router7.post("/campaigns/:id/snapshot", async (req, res) => {
     }
     let acceptedD = 0, repliesD = 0;
     if (prospectIds.length > 0) {
-      const { count: ac } = await supabase2.from("prospects").select("id", { count: "exact", head: true }).in("id", prospectIds).eq("connection_status", "accepted");
+      const { count: ac } = await supabase.from("prospects").select("id", { count: "exact", head: true }).in("id", prospectIds).eq("connection_status", "accepted");
       acceptedD = ac || 0;
-      const { count: rc } = await supabase2.from("prospects").select("id", { count: "exact", head: true }).in("id", prospectIds).eq("reply_detected", true);
+      const { count: rc } = await supabase.from("prospects").select("id", { count: "exact", head: true }).in("id", prospectIds).eq("reply_detected", true);
       repliesD = rc || 0;
     }
     const today = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
-    const { data: existing } = await supabase2.from("campaign_analytics_snapshots").select("id").eq("campaign_id", campaignId).eq("snapshot_date", today).single();
+    const { data: existing } = await supabase.from("campaign_analytics_snapshots").select("id").eq("campaign_id", campaignId).eq("snapshot_date", today).single();
     if (existing) {
-      await supabase2.from("campaign_analytics_snapshots").update({
+      await supabase.from("campaign_analytics_snapshots").update({
         enrolled: prospectIds.length,
         visits_done: visitsD,
         invites_sent: invitesD,
@@ -53775,7 +53780,7 @@ router7.post("/campaigns/:id/snapshot", async (req, res) => {
         replies: repliesD
       }).eq("id", existing.id);
     } else {
-      await supabase2.from("campaign_analytics_snapshots").insert({
+      await supabase.from("campaign_analytics_snapshots").insert({
         campaign_id: campaignId,
         snapshot_date: today,
         enrolled: prospectIds.length,
@@ -53798,12 +53803,12 @@ router7.post("/prospects/:id/mark-replied", async (req, res) => {
     if (!teamId) return res.status(401).json({ error: "Unauthorized" });
     const prospectId = req.params.id;
     const now = (/* @__PURE__ */ new Date()).toISOString();
-    const { data: pss } = await supabase2.from("prospect_step_status").select("campaign_id").eq("prospect_id", prospectId).limit(1).single();
+    const { data: pss } = await supabase.from("prospect_step_status").select("campaign_id").eq("prospect_id", prospectId).limit(1).single();
     if (!pss) return res.status(404).json({ error: "Prospect not found in any campaign" });
-    const { data: campaign } = await supabase2.from("campaigns").select("id").eq("id", pss.campaign_id).eq("team_id", teamId).single();
+    const { data: campaign } = await supabase.from("campaigns").select("id").eq("id", pss.campaign_id).eq("team_id", teamId).single();
     if (!campaign) return res.status(403).json({ error: "Forbidden" });
-    await supabase2.from("prospects").update({ replied_at: now, reply_detected: true }).eq("id", prospectId);
-    const { data: waitingSteps } = await supabase2.from("prospect_step_status").select("id, step_id, campaign_steps!inner(step_type, step_number)").eq("prospect_id", prospectId).eq("status", "waiting");
+    await supabase.from("prospects").update({ replied_at: now, reply_detected: true }).eq("id", prospectId);
+    const { data: waitingSteps } = await supabase.from("prospect_step_status").select("id, step_id, campaign_steps!inner(step_type, step_number)").eq("prospect_id", prospectId).eq("status", "waiting");
     const messageSteps = (waitingSteps || []).filter(
       (s) => s.campaign_steps.step_type === "message"
     );
@@ -53811,7 +53816,7 @@ router7.post("/prospects/:id/mark-replied", async (req, res) => {
       const nextStep = messageSteps.sort(
         (a, b) => a.campaign_steps.step_number - b.campaign_steps.step_number
       )[0];
-      await supabase2.from("prospect_step_status").update({ status: "pending", scheduled_at: now }).eq("id", nextStep.id);
+      await supabase.from("prospect_step_status").update({ status: "pending", scheduled_at: now }).eq("id", nextStep.id);
       console.log(`[Analytics] \u2713 ${prospectId} replied \u2192 Follow-up unlocked`);
     }
     res.json({ success: true, prospectId, repliedAt: now });
@@ -53823,7 +53828,7 @@ router7.get("/queue/active", async (req, res) => {
   try {
     const teamId = getTeamId2(req);
     if (!teamId) return res.status(401).json({ error: "Unauthorized" });
-    const { data: activeCampaigns, error: campError } = await supabase2.from("campaigns").select("id").eq("team_id", teamId).in("status", ["active"]);
+    const { data: activeCampaigns, error: campError } = await supabase.from("campaigns").select("id").eq("team_id", teamId).in("status", ["active"]);
     if (campError || !activeCampaigns || activeCampaigns.length === 0) {
       console.log(`[Queue] No active campaigns for team=${teamId}`);
       return res.json({ success: true, queue: [], count: 0 });
@@ -53831,7 +53836,7 @@ router7.get("/queue/active", async (req, res) => {
     const campaignIds = activeCampaigns.map((c) => c.id);
     console.log(`[Queue] Active campaigns: ${campaignIds.length} for team=${teamId}`);
     const now = (/* @__PURE__ */ new Date()).toISOString();
-    const { data: items, error: qError } = await supabase2.from("prospect_step_status").select(`
+    const { data: items, error: qError } = await supabase.from("prospect_step_status").select(`
         id,
         status,
         scheduled_at,
@@ -53892,7 +53897,7 @@ router7.get("/queue/active", async (req, res) => {
 });
 router7.get("/debug/queue", async (_req, res) => {
   try {
-    const { data, error: error48 } = await supabase2.from("prospect_step_status").select(`
+    const { data, error: error48 } = await supabase.from("prospect_step_status").select(`
         id,
         status,
         scheduled_at,
@@ -53906,7 +53911,7 @@ router7.get("/debug/queue", async (_req, res) => {
     if (error48) {
       return res.json({ error: error48.message, hint: error48.hint });
     }
-    const { data: counts } = await supabase2.from("prospect_step_status").select("status").limit(100);
+    const { data: counts } = await supabase.from("prospect_step_status").select("status").limit(100);
     const statusCounts = {};
     (counts || []).forEach((r) => {
       statusCounts[r.status] = (statusCounts[r.status] || 0) + 1;
@@ -53930,14 +53935,14 @@ router7.post("/step/complete", async (req, res) => {
       return res.status(400).json({ error: "prospectStepId and status required" });
     }
     const now = (/* @__PURE__ */ new Date()).toISOString();
-    const { data: currentStep } = await supabase2.from("prospect_step_status").select(`
+    const { data: currentStep } = await supabase.from("prospect_step_status").select(`
         id, prospect_id, campaign_id, step_id,
         campaign_steps!inner (step_number, step_type)
       `).eq("id", prospectStepId).single();
     if (!currentStep) {
       return res.status(404).json({ error: "Step status not found" });
     }
-    await supabase2.from("prospect_step_status").update({
+    await supabase.from("prospect_step_status").update({
       status,
       completed_at: status === "completed" ? now : null,
       error_message: errorMessage || null
@@ -53945,14 +53950,14 @@ router7.post("/step/complete", async (req, res) => {
     if (status === "completed") {
       const stepData = currentStep.campaign_steps;
       const nextStepNumber = stepData.step_number + 1;
-      const { data: nextStepDef } = await supabase2.from("campaign_steps").select("id, step_type, delay_days, step_number").eq("campaign_id", currentStep.campaign_id).eq("step_number", nextStepNumber).single();
+      const { data: nextStepDef } = await supabase.from("campaign_steps").select("id, step_type, delay_days, step_number").eq("campaign_id", currentStep.campaign_id).eq("step_number", nextStepNumber).single();
       if (nextStepDef) {
-        const { data: nextPSS } = await supabase2.from("prospect_step_status").select("id").eq("prospect_id", currentStep.prospect_id).eq("step_id", nextStepDef.id).eq("campaign_id", currentStep.campaign_id).single();
+        const { data: nextPSS } = await supabase.from("prospect_step_status").select("id").eq("prospect_id", currentStep.prospect_id).eq("step_id", nextStepDef.id).eq("campaign_id", currentStep.campaign_id).single();
         if (nextPSS) {
           if (nextStepDef.step_type === "follow" || nextStepDef.step_type === "message" && nextStepDef.step_number >= 4) {
-            const { data: prospect } = await supabase2.from("prospects").select("reply_detected").eq("id", currentStep.prospect_id).single();
+            const { data: prospect } = await supabase.from("prospects").select("reply_detected").eq("id", currentStep.prospect_id).single();
             if (prospect?.reply_detected) {
-              await supabase2.from("prospect_step_status").update({
+              await supabase.from("prospect_step_status").update({
                 status: "skipped",
                 error_message: "Replied \u2014 follow-up skipped"
               }).eq("id", nextPSS.id);
@@ -53962,7 +53967,7 @@ router7.post("/step/complete", async (req, res) => {
           }
           const scheduledAt = /* @__PURE__ */ new Date();
           scheduledAt.setDate(scheduledAt.getDate() + (nextStepDef.delay_days || 0));
-          await supabase2.from("prospect_step_status").update({
+          await supabase.from("prospect_step_status").update({
             status: "pending",
             scheduled_at: scheduledAt.toISOString()
           }).eq("id", nextPSS.id);
@@ -53985,7 +53990,7 @@ var import_express8 = __toESM(require_express2(), 1);
 init_dist4();
 var import_jsonwebtoken = __toESM(require_jsonwebtoken(), 1);
 var router8 = (0, import_express8.Router)();
-function supabase3() {
+function supabase2() {
   return createClient(
     process.env.SUPABASE_URL || "",
     process.env.SUPABASE_SERVICE_ROLE_KEY || "",
@@ -53993,7 +53998,7 @@ function supabase3() {
   );
 }
 async function logAction(adminId, action, targetUserId, metadata) {
-  await supabase3().from("admin_activity_log").insert({
+  await supabase2().from("admin_activity_log").insert({
     admin_id: adminId,
     action,
     target_user_id: targetUserId || null,
@@ -54002,7 +54007,7 @@ async function logAction(adminId, action, targetUserId, metadata) {
 }
 router8.get("/overview", async (req, res) => {
   try {
-    const sb = supabase3();
+    const sb = supabase2();
     const { count: totalTeams } = await sb.from("teams").select("*", { count: "exact", head: true });
     const weekAgo = new Date(Date.now() - 7 * 864e5).toISOString();
     const { count: activeWeek } = await sb.from("teams").select("*", { count: "exact", head: true }).gte("last_active_at", weekAgo);
@@ -54039,7 +54044,7 @@ router8.get("/overview", async (req, res) => {
 });
 router8.get("/customers", async (req, res) => {
   try {
-    const sb = supabase3();
+    const sb = supabase2();
     const { data: teams } = await sb.from("teams").select("id, name, created_at, plan, status, last_active_at").order("created_at", { ascending: false });
     if (!teams) return res.json({ customers: [] });
     const teamIds = teams.map((t2) => t2.id);
@@ -54082,7 +54087,7 @@ router8.get("/customers", async (req, res) => {
 });
 router8.get("/customers/:id", async (req, res) => {
   try {
-    const sb = supabase3();
+    const sb = supabase2();
     const teamId = req.params.id;
     const { data: team } = await sb.from("teams").select("*").eq("id", teamId).single();
     if (!team) return res.status(404).json({ error: "Team not found" });
@@ -54114,7 +54119,7 @@ router8.get("/customers/:id", async (req, res) => {
 });
 router8.post("/customers/:id/suspend", async (req, res) => {
   try {
-    const sb = supabase3();
+    const sb = supabase2();
     const teamId = req.params.id;
     const adminId = req.user?.id;
     const { data: team } = await sb.from("teams").select("status").eq("id", teamId).single();
@@ -54129,7 +54134,7 @@ router8.post("/customers/:id/suspend", async (req, res) => {
 });
 router8.post("/impersonate", async (req, res) => {
   try {
-    const sb = supabase3();
+    const sb = supabase2();
     const adminId = req.user?.id;
     const { targetUserId } = req.body;
     if (!targetUserId) return res.status(400).json({ error: "targetUserId required" });
@@ -54167,7 +54172,7 @@ router8.post("/impersonate", async (req, res) => {
 });
 router8.get("/stats", async (req, res) => {
   try {
-    const sb = supabase3();
+    const sb = supabase2();
     const thirtyDaysAgo = new Date(Date.now() - 30 * 864e5).toISOString();
     const { data: recentProfiles } = await sb.from("profiles").select("created_at").gte("created_at", thirtyDaysAgo);
     const signupsByDay = /* @__PURE__ */ new Map();
@@ -59771,11 +59776,11 @@ router10.post("/webhook", async (req, res) => {
       const { teamId, plan } = session.metadata || {};
       if (teamId && plan) {
         const { createClient: createClient2 } = await Promise.resolve().then(() => (init_dist4(), dist_exports));
-        const supabase5 = createClient2(
+        const supabase3 = createClient2(
           process.env.SUPABASE_URL || "",
           process.env.SUPABASE_SERVICE_KEY || ""
         );
-        await supabase5.from("teams").update({
+        await supabase3.from("teams").update({
           plan,
           stripe_customer_id: session.customer,
           stripe_subscription_id: session.subscription
@@ -73715,7 +73720,7 @@ var systemRouter = router11({
 // server/db.ts
 async function getUserTeamId(userId) {
   try {
-    const { data, error: error48 } = await supabase2.from("team_members").select("team_id").eq("user_id", userId).limit(1).single();
+    const { data, error: error48 } = await supabase.from("team_members").select("team_id").eq("user_id", userId).limit(1).single();
     if (error48) {
       console.warn("[Database] Failed to get user team:", error48);
       return null;
@@ -73737,7 +73742,7 @@ var authRouter = router11({
   me: publicProcedure.query(async ({ ctx }) => {
     if (!ctx.user?.id) return null;
     try {
-      const { data: profile } = await supabase2.from("profiles").select("*").eq("id", ctx.user.id).single();
+      const { data: profile } = await supabase.from("profiles").select("*").eq("id", ctx.user.id).single();
       return profile || null;
     } catch (error48) {
       console.error("Failed to fetch user profile:", error48);
@@ -73757,12 +73762,12 @@ var authRouter = router11({
     }
     const userId = ctx.user.id;
     try {
-      const { data: existingProfile } = await supabase2.from("profiles").select("id").eq("id", userId).single();
+      const { data: existingProfile } = await supabase.from("profiles").select("id").eq("id", userId).single();
       if (existingProfile) {
-        const { data: profile2 } = await supabase2.from("profiles").select("*").eq("id", userId).single();
+        const { data: profile2 } = await supabase.from("profiles").select("*").eq("id", userId).single();
         return { profile: profile2, team: null, isNewUser: false };
       }
-      const { error: profileError } = await supabase2.from("profiles").insert({
+      const { error: profileError } = await supabase.from("profiles").insert({
         id: userId,
         email: input.email,
         full_name: input.fullName || "\u0645\u0633\u062A\u062E\u062F\u0645 \u062C\u062F\u064A\u062F",
@@ -73777,7 +73782,7 @@ var authRouter = router11({
         throw new Error(`Failed to create profile: ${profileError.message}`);
       }
       const teamId = (0, import_crypto6.randomUUID)();
-      const { error: teamError } = await supabase2.from("teams").insert({
+      const { error: teamError } = await supabase.from("teams").insert({
         id: teamId,
         name: "\u0641\u0631\u064A\u0642\u064A \u0627\u0644\u0627\u0641\u062A\u0631\u0627\u0636\u064A",
         slug: `team-${userId.slice(0, 8)}-${Date.now()}`,
@@ -73788,7 +73793,7 @@ var authRouter = router11({
       if (teamError) {
         throw new Error(`Failed to create team: ${teamError.message}`);
       }
-      const { error: memberError } = await supabase2.from("team_members").insert({
+      const { error: memberError } = await supabase.from("team_members").insert({
         id: (0, import_crypto6.randomUUID)(),
         team_id: teamId,
         user_id: userId,
@@ -73797,8 +73802,8 @@ var authRouter = router11({
       if (memberError) {
         throw new Error(`Failed to add user to team: ${memberError.message}`);
       }
-      const { data: profile } = await supabase2.from("profiles").select("*").eq("id", userId).single();
-      const { data: team } = await supabase2.from("teams").select("*").eq("id", teamId).single();
+      const { data: profile } = await supabase.from("profiles").select("*").eq("id", userId).single();
+      const { data: team } = await supabase.from("teams").select("*").eq("id", teamId).single();
       return {
         profile,
         team,
@@ -73815,9 +73820,9 @@ var authRouter = router11({
   getTeam: protectedProcedure.query(async ({ ctx }) => {
     if (!ctx.user?.id) return null;
     try {
-      const { data: teamMember } = await supabase2.from("team_members").select("team_id").eq("user_id", ctx.user.id).limit(1).single();
+      const { data: teamMember } = await supabase.from("team_members").select("team_id").eq("user_id", ctx.user.id).limit(1).single();
       if (!teamMember) return null;
-      const { data: team } = await supabase2.from("teams").select("*").eq("id", teamMember.team_id).single();
+      const { data: team } = await supabase.from("teams").select("*").eq("id", teamMember.team_id).single();
       return team || null;
     } catch (error48) {
       console.error("Failed to fetch team:", error48);
@@ -73853,7 +73858,7 @@ var demoRouter = router11({
         throw new Error("User has no team");
       }
       const campaignId = (0, import_crypto7.randomUUID)();
-      const { data: campaign, error: error48 } = await supabase2.from("campaigns").insert({
+      const { data: campaign, error: error48 } = await supabase.from("campaigns").insert({
         id: campaignId,
         team_id: teamId,
         name: "\u062D\u0645\u0644\u0629 LinkedIn \u0627\u0644\u062A\u062C\u0631\u064A\u0628\u064A\u0629 - Q1 2026",
@@ -73894,7 +73899,7 @@ var demoRouter = router11({
       if (!teamId) {
         throw new Error("User has no team");
       }
-      const { data: campaigns } = await supabase2.from("campaigns").select("id").eq("team_id", teamId).limit(1);
+      const { data: campaigns } = await supabase.from("campaigns").select("id").eq("team_id", teamId).limit(1);
       const campaignId = campaigns?.[0]?.id || (0, import_crypto7.randomUUID)();
       const demoLeads = [
         {
@@ -73961,7 +73966,7 @@ var demoRouter = router11({
           }
         }
       ];
-      const { data: leads, error: error48 } = await supabase2.from("leads").insert(demoLeads).select();
+      const { data: leads, error: error48 } = await supabase.from("leads").insert(demoLeads).select();
       if (error48) {
         throw new Error(`Failed to create leads: ${error48.message}`);
       }
@@ -73983,8 +73988,8 @@ var demoRouter = router11({
       if (!teamId) {
         throw new Error("User has no team");
       }
-      const { data: campaigns } = await supabase2.from("campaigns").select("id").eq("team_id", teamId).limit(1);
-      const { data: leads } = await supabase2.from("leads").select("id").eq("team_id", teamId).limit(3);
+      const { data: campaigns } = await supabase.from("campaigns").select("id").eq("team_id", teamId).limit(1);
+      const { data: leads } = await supabase.from("leads").select("id").eq("team_id", teamId).limit(3);
       if (!campaigns || !leads || campaigns.length === 0 || leads.length === 0) {
         throw new Error("No campaigns or leads found");
       }
@@ -74028,7 +74033,7 @@ var demoRouter = router11({
           status: "pending"
         }
       ];
-      const { data: items, error: error48 } = await supabase2.from("action_queue").insert(queueItems).select();
+      const { data: items, error: error48 } = await supabase.from("action_queue").insert(queueItems).select();
       if (error48) {
         throw new Error(`Failed to create queue items: ${error48.message}`);
       }
@@ -74050,7 +74055,7 @@ var campaignsRouter = router11({
     if (!ctx.user?.id) return [];
     const teamId = await getUserTeamId(ctx.user.id);
     if (!teamId) return [];
-    const { data } = await supabase2.from("campaigns").select("client_id, client_name").eq("team_id", teamId).not("client_id", "is", null).order("client_name", { ascending: true });
+    const { data } = await supabase.from("campaigns").select("client_id, client_name").eq("team_id", teamId).not("client_id", "is", null).order("client_name", { ascending: true });
     const clientMap = /* @__PURE__ */ new Map();
     (data || []).forEach((item) => {
       if (item.client_id && !clientMap.has(item.client_id)) {
@@ -74074,7 +74079,7 @@ var campaignsRouter = router11({
       if (!teamId) {
         return [];
       }
-      let query = supabase2.from("campaigns").select("*").eq("team_id", teamId);
+      let query = supabase.from("campaigns").select("*").eq("team_id", teamId);
       if (input?.clientId) {
         query = query.eq("client_id", input.clientId);
       }
@@ -74108,7 +74113,7 @@ var campaignsRouter = router11({
         throw new Error("\u0644\u0645 \u064A\u062A\u0645 \u0627\u0644\u0639\u062B\u0648\u0631 \u0639\u0644\u0649 \u0641\u0631\u064A\u0642");
       }
       const campaignId = (0, import_crypto8.randomUUID)();
-      const { data, error: error48 } = await supabase2.from("campaigns").insert({
+      const { data, error: error48 } = await supabase.from("campaigns").insert({
         id: campaignId,
         team_id: teamId,
         name: input.name,
@@ -74137,7 +74142,7 @@ var campaignsRouter = router11({
       if (!teamId) {
         return null;
       }
-      const { data, error: error48 } = await supabase2.from("campaigns").select("*").eq("id", input.id).eq("team_id", teamId).single();
+      const { data, error: error48 } = await supabase.from("campaigns").select("*").eq("id", input.id).eq("team_id", teamId).single();
       if (error48) {
         return null;
       }
@@ -74164,7 +74169,7 @@ var campaignsRouter = router11({
       if (!teamId) {
         throw new Error("\u0644\u0645 \u064A\u062A\u0645 \u0627\u0644\u0639\u062B\u0648\u0631 \u0639\u0644\u0649 \u0641\u0631\u064A\u0642");
       }
-      const { data, error: error48 } = await supabase2.from("campaigns").update({ status: input.status }).eq("id", input.id).eq("team_id", teamId).select().single();
+      const { data, error: error48 } = await supabase.from("campaigns").update({ status: input.status }).eq("id", input.id).eq("team_id", teamId).select().single();
       if (error48) {
         throw new Error(`\u0641\u0634\u0644 \u062A\u062D\u062F\u064A\u062B \u0627\u0644\u062D\u0645\u0644\u0629: ${error48.message}`);
       }
@@ -74186,7 +74191,7 @@ var campaignsRouter = router11({
       if (!teamId) {
         throw new Error("\u0644\u0645 \u064A\u062A\u0645 \u0627\u0644\u0639\u062B\u0648\u0631 \u0639\u0644\u0649 \u0641\u0631\u064A\u0642");
       }
-      const { error: error48 } = await supabase2.from("campaigns").delete().eq("id", input.id).eq("team_id", teamId);
+      const { error: error48 } = await supabase.from("campaigns").delete().eq("id", input.id).eq("team_id", teamId);
       if (error48) {
         throw new Error(`\u0641\u0634\u0644 \u062D\u0630\u0641 \u0627\u0644\u062D\u0645\u0644\u0629: ${error48.message}`);
       }
@@ -74204,7 +74209,7 @@ var leadsRouter = router11({
     if (!ctx.user?.id) return [];
     const teamId = await getUserTeamId(ctx.user.id);
     if (!teamId) return [];
-    let query = supabase2.from("leads").select("*").eq("team_id", teamId);
+    let query = supabase.from("leads").select("*").eq("team_id", teamId);
     if (input?.campaignId) {
       query = query.eq("campaign_id", input.campaignId);
     }
@@ -74233,7 +74238,7 @@ var leadsRouter = router11({
     if (!teamId) {
       throw new Error("\u0641\u0631\u064A\u0642 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F");
     }
-    const { data: campaign } = await supabase2.from("campaigns").select("id").eq("id", input.campaignId).eq("team_id", teamId).single();
+    const { data: campaign } = await supabase.from("campaigns").select("id").eq("id", input.campaignId).eq("team_id", teamId).single();
     if (!campaign) {
       throw new Error("\u0627\u0644\u062D\u0645\u0644\u0629 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F\u0629");
     }
@@ -74255,7 +74260,7 @@ var leadsRouter = router11({
       imported_by: ctx.user.id,
       imported_at: (/* @__PURE__ */ new Date()).toISOString()
     }));
-    const { data: inserted, error: error48 } = await supabase2.from("leads").upsert(leadsToInsert, {
+    const { data: inserted, error: error48 } = await supabase.from("leads").upsert(leadsToInsert, {
       onConflict: "team_id,linkedin_url"
     }).select();
     if (error48) {
@@ -74273,11 +74278,11 @@ var leadsRouter = router11({
         requires_approval: true,
         created_at: (/* @__PURE__ */ new Date()).toISOString()
       }));
-      await supabase2.from("action_queue").insert(queueItems);
+      await supabase.from("action_queue").insert(queueItems);
     }
-    const { data: stats } = await supabase2.from("leads").select("id", { count: "exact" }).eq("campaign_id", input.campaignId);
+    const { data: stats } = await supabase.from("leads").select("id", { count: "exact" }).eq("campaign_id", input.campaignId);
     if (stats) {
-      await supabase2.from("campaigns").update({
+      await supabase.from("campaigns").update({
         stats: {
           total_leads: stats.length || 0,
           completed: 0,
@@ -74297,14 +74302,14 @@ var leadsRouter = router11({
     if (!ctx.user?.id) return null;
     const teamId = await getUserTeamId(ctx.user.id);
     if (!teamId) return null;
-    const { data } = await supabase2.from("leads").update({ status: input.status, updated_at: (/* @__PURE__ */ new Date()).toISOString() }).eq("id", input.leadId).eq("team_id", teamId).select().single();
+    const { data } = await supabase.from("leads").update({ status: input.status, updated_at: (/* @__PURE__ */ new Date()).toISOString() }).eq("id", input.leadId).eq("team_id", teamId).select().single();
     return data || null;
   }),
   delete: protectedProcedure.input(external_exports.object({ leadId: external_exports.string() })).mutation(async ({ ctx, input }) => {
     if (!ctx.user?.id) return null;
     const teamId = await getUserTeamId(ctx.user.id);
     if (!teamId) return null;
-    const { data } = await supabase2.from("leads").delete().eq("id", input.leadId).eq("team_id", teamId).select().single();
+    const { data } = await supabase.from("leads").delete().eq("id", input.leadId).eq("team_id", teamId).select().single();
     return data || null;
   })
 });
@@ -74315,7 +74320,7 @@ var templatesRouter = router11({
     if (!ctx.user?.id) return [];
     const teamId = await getUserTeamId(ctx.user.id);
     if (!teamId) return [];
-    const { data } = await supabase2.from("message_templates").select("*").eq("team_id", teamId).order("created_at", { ascending: false });
+    const { data } = await supabase.from("message_templates").select("*").eq("team_id", teamId).order("created_at", { ascending: false });
     return data || [];
   }),
   create: protectedProcedure.input(
@@ -74342,7 +74347,7 @@ var templatesRouter = router11({
         variables.push(match[1]);
       }
     }
-    const { data, error: error48 } = await supabase2.from("message_templates").insert({
+    const { data, error: error48 } = await supabase.from("message_templates").insert({
       team_id: teamId,
       name: input.name,
       category: input.category || "\u0639\u0627\u0645",
@@ -74373,7 +74378,7 @@ var templatesRouter = router11({
     if (!teamId) {
       throw new Error("\u0641\u0631\u064A\u0642 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F");
     }
-    const { data: template } = await supabase2.from("message_templates").select("id").eq("id", input.templateId).eq("team_id", teamId).single();
+    const { data: template } = await supabase.from("message_templates").select("id").eq("id", input.templateId).eq("team_id", teamId).single();
     if (!template) {
       throw new Error("\u0627\u0644\u0642\u0627\u0644\u0628 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F");
     }
@@ -74393,7 +74398,7 @@ var templatesRouter = router11({
     if (input.subject) updateData.subject = input.subject;
     if (input.content) updateData.content = input.content;
     if (variables.length > 0) updateData.variables = variables;
-    const { data, error: error48 } = await supabase2.from("message_templates").update(updateData).eq("id", input.templateId).eq("team_id", teamId).select().single();
+    const { data, error: error48 } = await supabase.from("message_templates").update(updateData).eq("id", input.templateId).eq("team_id", teamId).select().single();
     if (error48) {
       throw new Error(`\u062E\u0637\u0623 \u0641\u064A \u062A\u062D\u062F\u064A\u062B \u0627\u0644\u0642\u0627\u0644\u0628: ${error48.message}`);
     }
@@ -74407,7 +74412,7 @@ var templatesRouter = router11({
     if (!teamId) {
       throw new Error("\u0641\u0631\u064A\u0642 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F");
     }
-    const { data, error: error48 } = await supabase2.from("message_templates").delete().eq("id", input.templateId).eq("team_id", teamId).select().single();
+    const { data, error: error48 } = await supabase.from("message_templates").delete().eq("id", input.templateId).eq("team_id", teamId).select().single();
     if (error48) {
       throw new Error(`\u062E\u0637\u0623 \u0641\u064A \u062D\u0630\u0641 \u0627\u0644\u0642\u0627\u0644\u0628: ${error48.message}`);
     }
@@ -74441,17 +74446,17 @@ var templatesRouter = router11({
     if (!teamId) {
       throw new Error("\u0641\u0631\u064A\u0642 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F");
     }
-    const { data: template } = await supabase2.from("message_templates").select("id").eq("id", input.templateId).eq("team_id", teamId).single();
+    const { data: template } = await supabase.from("message_templates").select("id").eq("id", input.templateId).eq("team_id", teamId).single();
     if (!template) {
       throw new Error("\u0627\u0644\u0642\u0627\u0644\u0628 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F");
     }
-    const { data: campaign } = await supabase2.from("campaigns").select("id, configuration").eq("id", input.campaignId).eq("team_id", teamId).single();
+    const { data: campaign } = await supabase.from("campaigns").select("id, configuration").eq("id", input.campaignId).eq("team_id", teamId).single();
     if (!campaign) {
       throw new Error("\u0627\u0644\u062D\u0645\u0644\u0629 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F\u0629");
     }
     const config2 = campaign.configuration || {};
     config2.template_id = input.templateId;
-    const { data, error: error48 } = await supabase2.from("campaigns").update({
+    const { data, error: error48 } = await supabase.from("campaigns").update({
       configuration: config2,
       updated_at: (/* @__PURE__ */ new Date()).toISOString()
     }).eq("id", input.campaignId).select().single();
@@ -74473,7 +74478,7 @@ var extensionRouter = router11({
     if (!teamId) {
       throw new Error("\u0641\u0631\u064A\u0642 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F");
     }
-    const { data } = await supabase2.from("campaigns").select("id, name, type, status, stats, created_at, updated_at").eq("team_id", teamId).order("created_at", { ascending: false });
+    const { data } = await supabase.from("campaigns").select("id, name, type, status, stats, created_at, updated_at").eq("team_id", teamId).order("created_at", { ascending: false });
     return {
       success: true,
       data: data || []
@@ -74494,7 +74499,7 @@ var extensionRouter = router11({
     if (!teamId) {
       throw new Error("\u0641\u0631\u064A\u0642 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F");
     }
-    const { data, error: error48 } = await supabase2.from("campaigns").insert({
+    const { data, error: error48 } = await supabase.from("campaigns").insert({
       team_id: teamId,
       name: input.name,
       type: input.type,
@@ -74518,7 +74523,7 @@ var extensionRouter = router11({
     if (!teamId) {
       throw new Error("\u0641\u0631\u064A\u0642 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F");
     }
-    const { data } = await supabase2.from("campaigns").select("*").eq("id", input.campaignId).eq("team_id", teamId);
+    const { data } = await supabase.from("campaigns").select("*").eq("id", input.campaignId).eq("team_id", teamId);
     if (!data) {
       throw new Error("\u0627\u0644\u062D\u0645\u0644\u0629 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F\u0629");
     }
@@ -74536,7 +74541,7 @@ var extensionRouter = router11({
     if (!teamId) {
       throw new Error("\u0641\u0631\u064A\u0642 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F");
     }
-    const { data } = await supabase2.from("leads").select("id, first_name, last_name, company, headline, linkedin_url, status, created_at").eq("campaign_id", input.campaignId).eq("team_id", teamId).order("created_at", { ascending: false });
+    const { data } = await supabase.from("leads").select("id, first_name, last_name, company, headline, linkedin_url, status, created_at").eq("campaign_id", input.campaignId).eq("team_id", teamId).order("created_at", { ascending: false });
     return {
       success: true,
       data: data || []
@@ -74560,11 +74565,11 @@ var extensionRouter = router11({
     if (!teamId) {
       throw new Error("\u0641\u0631\u064A\u0642 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F");
     }
-    const { data: campaign } = await supabase2.from("campaigns").select("id").eq("id", input.campaignId).eq("team_id", teamId);
+    const { data: campaign } = await supabase.from("campaigns").select("id").eq("id", input.campaignId).eq("team_id", teamId);
     if (!campaign) {
       throw new Error("\u0627\u0644\u062D\u0645\u0644\u0629 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F\u0629");
     }
-    const { data: leadArray, error: error48 } = await supabase2.from("leads").insert({
+    const { data: leadArray, error: error48 } = await supabase.from("leads").insert({
       team_id: teamId,
       campaign_id: input.campaignId,
       linkedin_url: input.linkedin_url,
@@ -74588,7 +74593,7 @@ var extensionRouter = router11({
     if (!lead) {
       throw new Error("\u0641\u0634\u0644 \u0625\u0646\u0634\u0627\u0621 \u0627\u0644\u0639\u0645\u064A\u0644");
     }
-    await supabase2.from("action_queue").insert({
+    await supabase.from("action_queue").insert({
       team_id: teamId,
       campaign_id: input.campaignId,
       lead_id: lead.id,
@@ -74611,7 +74616,7 @@ var extensionRouter = router11({
     if (!teamId) {
       throw new Error("\u0641\u0631\u064A\u0642 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F");
     }
-    let query = supabase2.from("action_queue").select("id, campaign_id, lead_id, action_type, status, requires_approval, created_at, approved_at").eq("team_id", teamId);
+    let query = supabase.from("action_queue").select("id, campaign_id, lead_id, action_type, status, requires_approval, created_at, approved_at").eq("team_id", teamId);
     if (input?.status) {
       query = query.eq("status", input.status);
     }
@@ -74630,7 +74635,7 @@ var extensionRouter = router11({
     if (!teamId) {
       throw new Error("\u0641\u0631\u064A\u0642 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F");
     }
-    const { data, error: error48 } = await supabase2.from("action_queue").update({
+    const { data, error: error48 } = await supabase.from("action_queue").update({
       status: "approved",
       approved_by: ctx.user.id,
       approved_at: (/* @__PURE__ */ new Date()).toISOString(),
@@ -74653,7 +74658,7 @@ var extensionRouter = router11({
     if (!teamId) {
       throw new Error("\u0641\u0631\u064A\u0642 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F");
     }
-    const { data, error: error48 } = await supabase2.from("action_queue").update({
+    const { data, error: error48 } = await supabase.from("action_queue").update({
       status: "rejected",
       updated_at: (/* @__PURE__ */ new Date()).toISOString()
     }).eq("id", input.itemId).eq("team_id", teamId).select("id, status, updated_at");
@@ -74674,7 +74679,7 @@ var extensionRouter = router11({
     if (!teamId) {
       throw new Error("\u0641\u0631\u064A\u0642 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F");
     }
-    const { data } = await supabase2.from("message_templates").select("id, name, category, subject, content, variables, created_at").eq("team_id", teamId).order("created_at", { ascending: false });
+    const { data } = await supabase.from("message_templates").select("id, name, category, subject, content, variables, created_at").eq("team_id", teamId).order("created_at", { ascending: false });
     return {
       success: true,
       data: data || []
@@ -74689,7 +74694,7 @@ var extensionRouter = router11({
     if (!teamId) {
       throw new Error("\u0641\u0631\u064A\u0642 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F");
     }
-    const { data } = await supabase2.from("message_templates").select("*").eq("id", input.templateId).eq("team_id", teamId);
+    const { data } = await supabase.from("message_templates").select("*").eq("id", input.templateId).eq("team_id", teamId);
     if (!data) {
       throw new Error("\u0627\u0644\u0642\u0627\u0644\u0628 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F");
     }
@@ -74837,12 +74842,12 @@ var billingRouter = router11({
           remainingLeads: 100
         };
       }
-      const { data: team } = await supabase2.from("teams").select("plan").eq("id", teamId).single();
+      const { data: team } = await supabase.from("teams").select("plan").eq("id", teamId).single();
       const planId = team?.plan || "starter";
       const plan = getPlan(planId);
       const now = /* @__PURE__ */ new Date();
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-      const { data: leads } = await supabase2.from("leads").select("id").eq("team_id", teamId).gte("created_at", monthStart);
+      const { data: leads } = await supabase.from("leads").select("id").eq("team_id", teamId).gte("created_at", monthStart);
       const usedLeads = leads?.length || 0;
       const percentageUsed = getUsagePercentage(usedLeads, plan);
       const remainingLeads = getRemainingLeads(usedLeads, plan);
@@ -74872,12 +74877,12 @@ var billingRouter = router11({
     try {
       const teamId = await getUserTeamId(ctx.user.id);
       if (!teamId) return false;
-      const { data: team } = await supabase2.from("teams").select("plan").eq("id", teamId).single();
+      const { data: team } = await supabase.from("teams").select("plan").eq("id", teamId).single();
       const planId = team?.plan || "starter";
       const plan = getPlan(planId);
       const now = /* @__PURE__ */ new Date();
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-      const { data: leads } = await supabase2.from("leads").select("id").eq("team_id", teamId).gte("created_at", monthStart);
+      const { data: leads } = await supabase.from("leads").select("id").eq("team_id", teamId).gte("created_at", monthStart);
       const usedLeads = leads?.length || 0;
       return usedLeads < plan.monthlyLeadLimit;
     } catch (error48) {
@@ -74958,7 +74963,7 @@ var appRouter = router11({
       if (!ctx.user?.id) return [];
       const teamId = await getUserTeamId(ctx.user.id);
       if (!teamId) return [];
-      let query = supabase2.from("action_queue").select(`
+      let query = supabase.from("action_queue").select(`
             id,
             lead_id,
             campaign_id,
@@ -74981,7 +74986,7 @@ var appRouter = router11({
       if (!ctx.user?.id) return null;
       const teamId = await getUserTeamId(ctx.user.id);
       if (!teamId) return null;
-      const { data } = await supabase2.from("action_queue").update({
+      const { data } = await supabase.from("action_queue").update({
         status: "ready",
         approved_by: ctx.user.id,
         approved_at: (/* @__PURE__ */ new Date()).toISOString(),
@@ -74993,7 +74998,7 @@ var appRouter = router11({
       if (!ctx.user?.id) return null;
       const teamId = await getUserTeamId(ctx.user.id);
       if (!teamId) return null;
-      const { data } = await supabase2.from("action_queue").update({
+      const { data } = await supabase.from("action_queue").update({
         status: "skipped",
         updated_at: (/* @__PURE__ */ new Date()).toISOString()
       }).eq("id", input.itemId).eq("team_id", teamId).select().single();
@@ -75004,7 +75009,7 @@ var appRouter = router11({
       if (!ctx.user?.id || input.itemIds.length === 0) return null;
       const teamId = await getUserTeamId(ctx.user.id);
       if (!teamId) return null;
-      const { data } = await supabase2.from("action_queue").update({
+      const { data } = await supabase.from("action_queue").update({
         status: "ready",
         approved_by: ctx.user.id,
         approved_at: (/* @__PURE__ */ new Date()).toISOString(),
@@ -75016,7 +75021,7 @@ var appRouter = router11({
       if (!ctx.user?.id || input.itemIds.length === 0) return null;
       const teamId = await getUserTeamId(ctx.user.id);
       if (!teamId) return null;
-      const { data } = await supabase2.from("action_queue").update({
+      const { data } = await supabase.from("action_queue").update({
         status: "skipped",
         updated_at: (/* @__PURE__ */ new Date()).toISOString()
       }).in("id", input.itemIds).eq("team_id", teamId).select();
@@ -75028,9 +75033,9 @@ var appRouter = router11({
 // server/_core/context.ts
 init_dist4();
 function getServiceSupabase() {
-  const supabaseUrl3 = process.env.SUPABASE_URL || "";
-  const supabaseServiceKey3 = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
-  return createClient(supabaseUrl3, supabaseServiceKey3, {
+  const supabaseUrl2 = process.env.SUPABASE_URL || "";
+  const supabaseServiceKey2 = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+  return createClient(supabaseUrl2, supabaseServiceKey2, {
     auth: { autoRefreshToken: false, persistSession: false }
   });
 }
@@ -75040,18 +75045,18 @@ async function getSupabaseUser(authHeader) {
   }
   const token = authHeader.slice(7);
   try {
-    const supabase5 = getServiceSupabase();
-    const { data: { user }, error: error48 } = await supabase5.auth.getUser(token);
+    const supabase3 = getServiceSupabase();
+    const { data: { user }, error: error48 } = await supabase3.auth.getUser(token);
     if (error48 || !user) {
       return null;
     }
     let role = "client_user";
-    const { data: profile } = await supabase5.from("profiles").select("role").eq("id", user.id).single();
+    const { data: profile } = await supabase3.from("profiles").select("role").eq("id", user.id).single();
     if (profile?.role === "super_admin") {
       role = "super_admin";
     }
     let teamId = null;
-    const { data: membership } = await supabase5.from("team_members").select("team_id").eq("user_id", user.id).limit(1).single();
+    const { data: membership } = await supabase3.from("team_members").select("team_id").eq("user_id", user.id).limit(1).single();
     if (membership?.team_id) {
       teamId = membership.team_id;
     }
@@ -75130,11 +75135,14 @@ function requireRole(role) {
 var import_express11 = __toESM(require_express2(), 1);
 init_dist4();
 var router12 = (0, import_express11.Router)();
-var supabase4 = createClient(
-  process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "",
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ""
-);
+function getSupabase3() {
+  return createClient(
+    process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "",
+    process.env.SUPABASE_SERVICE_ROLE_KEY || ""
+  );
+}
 router12.patch("/profile", async (req, res) => {
+  const supabase3 = getSupabase3();
   try {
     const authHeader = req.headers.authorization;
     console.log("[UserProfile] PATCH /profile called, auth header present:", !!authHeader);
@@ -75143,7 +75151,7 @@ router12.patch("/profile", async (req, res) => {
       return res.status(401).json({ error: "Missing authorization header" });
     }
     const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: authError } = await supabase4.auth.getUser(token);
+    const { data: { user }, error: authError } = await supabase3.auth.getUser(token);
     if (authError || !user) {
       console.error("[UserProfile] Auth error:", authError?.message || "No user found");
       return res.status(401).json({ error: "Invalid token: " + (authError?.message || "user not found") });
@@ -75160,7 +75168,7 @@ router12.patch("/profile", async (req, res) => {
       return res.status(400).json({ error: "No valid fields to update. Allowed: " + allowedFields.join(", ") });
     }
     console.log("[UserProfile] Updating fields:", JSON.stringify(updates), "for user:", user.id);
-    const { data, error: updateError } = await supabase4.from("profiles").update(updates).eq("id", user.id).select().single();
+    const { data, error: updateError } = await supabase3.from("profiles").update(updates).eq("id", user.id).select().single();
     if (updateError) {
       console.error("[UserProfile] Supabase update error:", updateError);
       return res.status(500).json({ error: "Database update failed: " + updateError.message });
@@ -75173,17 +75181,18 @@ router12.patch("/profile", async (req, res) => {
   }
 });
 router12.get("/profile", async (req, res) => {
+  const supabase3 = getSupabase3();
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader?.startsWith("Bearer ")) {
       return res.status(401).json({ error: "Missing authorization header" });
     }
     const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: error48 } = await supabase4.auth.getUser(token);
+    const { data: { user }, error: error48 } = await supabase3.auth.getUser(token);
     if (error48 || !user) {
       return res.status(401).json({ error: "Invalid token" });
     }
-    const { data: profile } = await supabase4.from("profiles").select("*").eq("id", user.id).single();
+    const { data: profile } = await supabase3.from("profiles").select("*").eq("id", user.id).single();
     return res.json({ profile });
   } catch (err) {
     return res.status(500).json({ error: err.message });
