@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls:*)",
+      "Bash(cmd /c \"npx esbuild server/_core/vercel.ts --platform=node --packages=external --bundle --format=esm --outfile=dist/api/index.js 2>&1\")",
+      "Bash(cmd /c \"npx esbuild server/_core/vercel.ts --platform=node --packages=external --bundle --format=esm --outfile=dist/api/index.js\")",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(npx esbuild:*)",
+      "Bash(npx vite:*)",
+      "Bash(cmd /c \"npx esbuild server/_core/vercel.ts --bundle --platform=node --target=node18 --outfile=api/index.js --external:pg-native --external:bufferutil --external:utf-8-validate 2>&1\")",
+      "Bash(cmd /c \"npx vite build 2>&1\")",
+      "Bash(cmd /c \"npx esbuild server/_core/vercel.ts --bundle --platform=node --target=node18 --outfile=api/index.js --external:pg-native --external:bufferutil --external:utf-8-validate 2>&1 && npx vite build 2>&1\")",
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(echo \"ESBUILD_EXIT:$?\")",
+      "Bash(echo \"VITE_EXIT:$?\")",
+      "Bash(grep -l \"createClient\" *.ts)",
+      "Bash(curl -s \"https://wassel-alpha.vercel.app/api/health\")",
+      "Bash(curl -s \"https://wassel-alpha.vercel.app/api/linkedin-test\")",
+      "Bash(npx vercel:*)",
+      "Bash(node -e \"require\\(''''./api/index.js''''\\)\")",
+      "Bash(curl -sv \"https://wassel-alpha.vercel.app/api/health\")",
+      "Bash(timeout 5 node -e \":*)",
+      "Bash(node -e \":*)",
+      "Bash(node --input-type=commonjs -e \"try { const m = require\\(''''./api/index.js''''\\); console.log\\(''''loaded, type:'''', typeof m\\); } catch\\(e\\) { console.log\\(''''ERR:'''', e.code, e.message.substring\\(0,100\\)\\); }\")",
+      "Bash(node -e \"import\\(''''./api/index.js''''\\).then\\(m => { console.log\\(''''keys:'''', Object.keys\\(m\\)\\); console.log\\(''''default type:'''', typeof m.default\\); }\\).catch\\(e => console.log\\(''''ERR:'''', e.code, e.message.substring\\(0, 100\\)\\)\\)\")",
+      "Bash(node -e \"import\\(''''./api/index.js''''\\).then\\(m => { console.log\\(''''keys:'''', Object.keys\\(m\\)\\); console.log\\(''''default type:'''', typeof m.default\\); console.log\\(''''default.listen?'''', typeof \\(m.default && m.default.listen\\)\\); }\\).catch\\(e => console.log\\(''''ERR:'''', e.code, e.message.substring\\(0,100\\)\\)\\)\")",
+      "Bash(node -e \"import\\(''''./api/index.js''''\\).then\\(m => { const app = m.default; console.log\\(''''app type:'''', typeof app\\); console.log\\(''''app.default type:'''', typeof app.default\\); console.log\\(''''app.default.listen?'''', typeof \\(app.default && app.default.listen\\)\\); }\\).catch\\(e => console.log\\(''''ERR:'''', e.message\\)\\)\")",
+      "Bash(timeout 8 node --input-type=module -e \":*)",
+      "Bash(node --input-type=module -e \":*)"
+    ]
+  }
+}
