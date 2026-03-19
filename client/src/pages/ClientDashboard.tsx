@@ -120,17 +120,35 @@ export default function ClientDashboard() {
 
                     {/* ══ Connect LinkedIn Banner ══ */}
                     {!linkedinConnected && (
-                        <div className="flex items-center justify-between px-5 py-4 rounded-xl mb-6" style={{ background: '#eff6ff', border: '1px solid #bfdbfe' }}>
+                        <div className="flex items-center justify-between px-5 py-4 rounded-xl mb-4" style={{ background: '#eff6ff', border: '1px solid #bfdbfe' }}>
                             <div className="flex items-center gap-3">
                                 <Linkedin className="w-5 h-5" style={{ color: '#1a56db' }} />
                                 <div>
-                                    <p className="text-sm font-semibold" style={{ color: '#1e40af' }}>Connect your LinkedIn account</p>
-                                    <p className="text-xs" style={{ color: '#3b82f6' }}>Allow Wassel to show your LinkedIn stats and automate outreach.</p>
+                                    <p className="text-sm font-semibold" style={{ color: '#1e40af' }}>ربط حساب LinkedIn</p>
+                                    <p className="text-xs" style={{ color: '#3b82f6' }}>اربط حسابك لتفعيل الأتمتة وإرسال الدعوات والرسائل.</p>
                                 </div>
                             </div>
-                            <Link href="/app/extension">
-                                <button className="px-4 py-2 rounded-lg text-sm font-semibold text-white" style={{ background: 'var(--gradient-primary)' }}>
-                                    Connect LinkedIn
+                            <a href="/api/linkedin/connect">
+                                <button className="px-4 py-2 rounded-lg text-sm font-semibold text-white" style={{ background: '#0077b5' }}>
+                                    ربط LinkedIn
+                                </button>
+                            </a>
+                        </div>
+                    )}
+
+                    {/* ══ Extension Download Banner ══ */}
+                    {!user?.extensionInstalled && (
+                        <div className="flex items-center justify-between px-5 py-4 rounded-xl mb-6" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
+                            <div className="flex items-center gap-3">
+                                <Download className="w-5 h-5" style={{ color: '#059669' }} />
+                                <div>
+                                    <p className="text-sm font-semibold" style={{ color: '#065f46' }}>تثبيت إضافة Wassel</p>
+                                    <p className="text-xs" style={{ color: '#059669' }}>ثبّت الإضافة لاستيراد العملاء من LinkedIn مباشرة.</p>
+                                </div>
+                            </div>
+                            <Link href="/extension-download">
+                                <button className="px-4 py-2 rounded-lg text-sm font-semibold text-white" style={{ background: '#059669' }}>
+                                    تحميل الإضافة
                                 </button>
                             </Link>
                         </div>
