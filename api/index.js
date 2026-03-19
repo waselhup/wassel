@@ -52353,15 +52353,22 @@ var import_express3 = __toESM(require_express2(), 1);
 init_dist4();
 var import_crypto4 = __toESM(require("crypto"), 1);
 var router3 = (0, import_express3.Router)();
-var supabase3 = createClient(
-  process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "",
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ""
-);
-var LINKEDIN_CLIENT_ID = process.env.LINKEDIN_CLIENT_ID || "";
-var LINKEDIN_CLIENT_SECRET = process.env.LINKEDIN_CLIENT_SECRET || "";
-var LINKEDIN_REDIRECT_URI = process.env.LINKEDIN_REDIRECT_URI || "https://wassel-alpha.vercel.app/api/linkedin/callback";
-var DASHBOARD_URL = process.env.DASHBOARD_ORIGIN || "https://wassel-alpha.vercel.app";
+function getSupabase() {
+  const url3 = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "";
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+  if (!url3 || !key) throw new Error("Missing Supabase env vars (SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY)");
+  return createClient(url3, key, { auth: { autoRefreshToken: false, persistSession: false } });
+}
+function getConfig2() {
+  return {
+    LINKEDIN_CLIENT_ID: process.env.LINKEDIN_CLIENT_ID || "",
+    LINKEDIN_CLIENT_SECRET: process.env.LINKEDIN_CLIENT_SECRET || "",
+    LINKEDIN_REDIRECT_URI: process.env.LINKEDIN_REDIRECT_URI || "https://wassel-alpha.vercel.app/api/linkedin/callback",
+    DASHBOARD_URL: process.env.DASHBOARD_ORIGIN || "https://wassel-alpha.vercel.app"
+  };
+}
 router3.get("/connect", (req, res) => {
+  const { LINKEDIN_CLIENT_ID, LINKEDIN_REDIRECT_URI } = getConfig2();
   const state = import_crypto4.default.randomUUID();
   res.cookie("linkedin_oauth_state", state, { httpOnly: true, maxAge: 6e5, sameSite: "lax" });
   const scopes = ["openid", "profile", "email", "w_member_social"].join("%20");
@@ -52369,6 +52376,8 @@ router3.get("/connect", (req, res) => {
   res.redirect(authUrl);
 });
 router3.get("/callback", async (req, res) => {
+  const { LINKEDIN_CLIENT_ID, LINKEDIN_CLIENT_SECRET, LINKEDIN_REDIRECT_URI, DASHBOARD_URL } = getConfig2();
+  const supabase5 = getSupabase();
   try {
     const { code, state, error: oauthError } = req.query;
     console.log("[LinkedIn OAuth] Callback received", { code: !!code, error: oauthError });
@@ -52405,7 +52414,7 @@ router3.get("/callback", async (req, res) => {
     const linkedinEmail = profile.email || `linkedin_${profile.sub}@wassel.app`;
     const linkedinSub = profile.sub || "";
     const linkedinPicture = profile.picture || "";
-    const { data: userList } = await supabase3.auth.admin.listUsers();
+    const { data: userList } = await supabase5.auth.admin.listUsers();
     const existingUser = userList?.users?.find(
       (u) => u.email === linkedinEmail
     );
@@ -52414,7 +52423,7 @@ router3.get("/callback", async (req, res) => {
       userId = existingUser.id;
       console.log("[LinkedIn OAuth] Existing user found:", userId);
     } else {
-      const { data: newUser, error: createError } = await supabase3.auth.admin.createUser({
+      const { data: newUser, error: createError } = await supabase5.auth.admin.createUser({
         email: linkedinEmail,
         email_confirm: true,
         user_metadata: {
@@ -52430,16 +52439,16 @@ router3.get("/callback", async (req, res) => {
       }
       userId = newUser.user.id;
       console.log("[LinkedIn OAuth] New user created:", userId);
-      await supabase3.from("profiles").upsert({
+      await supabase5.from("profiles").upsert({
         id: userId,
         email: linkedinEmail,
         full_name: linkedinName,
         role: "client_user"
       });
       try {
-        const { data: team } = await supabase3.from("teams").insert({ name: linkedinName + "'s Team", plan: "trial" }).select().single();
+        const { data: team } = await supabase5.from("teams").insert({ name: linkedinName + "'s Team", plan: "trial" }).select().single();
         if (team) {
-          await supabase3.from("team_members").insert({
+          await supabase5.from("team_members").insert({
             team_id: team.id,
             user_id: userId,
             role: "owner"
@@ -52450,7 +52459,7 @@ router3.get("/callback", async (req, res) => {
       }
     }
     const expiresAt = new Date(Date.now() + (tokenData.expires_in || 5184e3) * 1e3).toISOString();
-    await supabase3.from("linkedin_connections").upsert({
+    await supabase5.from("linkedin_connections").upsert({
       user_id: userId,
       linkedin_member_id: linkedinSub,
       access_token: tokenData.access_token,
@@ -52463,8 +52472,8 @@ router3.get("/callback", async (req, res) => {
       updated_at: (/* @__PURE__ */ new Date()).toISOString()
     }, { onConflict: "user_id" });
     console.log("[LinkedIn OAuth] Token saved to DB");
-    await supabase3.from("profiles").update({ linkedin_connected: true }).eq("id", userId);
-    const { data: linkData, error: linkError } = await supabase3.auth.admin.generateLink({
+    await supabase5.from("profiles").update({ linkedin_connected: true }).eq("id", userId);
+    const { data: linkData, error: linkError } = await supabase5.auth.admin.generateLink({
       type: "magiclink",
       email: linkedinEmail,
       options: {
@@ -52483,8 +52492,9 @@ router3.get("/callback", async (req, res) => {
   }
 });
 router3.get("/status", async (req, res) => {
+  const supabase5 = getSupabase();
   try {
-    const { data: connections } = await supabase3.from("linkedin_connections").select("linkedin_name, linkedin_email, linkedin_member_id, oauth_connected, status, expires_at").eq("oauth_connected", true).eq("status", "connected").limit(1);
+    const { data: connections } = await supabase5.from("linkedin_connections").select("linkedin_name, linkedin_email, linkedin_member_id, oauth_connected, status, expires_at").eq("oauth_connected", true).eq("status", "connected").limit(1);
     if (connections && connections.length > 0) {
       const conn = connections[0];
       const expired = new Date(conn.expires_at) < /* @__PURE__ */ new Date();
@@ -52503,12 +52513,13 @@ router3.get("/status", async (req, res) => {
   }
 });
 router3.post("/send-invite", async (req, res) => {
+  const supabase5 = getSupabase();
   try {
     const { linkedinProfileUrl, message: message2 } = req.body;
     if (!linkedinProfileUrl) {
       return res.status(400).json({ error: "linkedinProfileUrl required" });
     }
-    const { data: connections } = await supabase3.from("linkedin_connections").select("access_token, expires_at").eq("oauth_connected", true).eq("status", "connected").limit(1);
+    const { data: connections } = await supabase5.from("linkedin_connections").select("access_token, expires_at").eq("oauth_connected", true).eq("status", "connected").limit(1);
     if (!connections || connections.length === 0) {
       return res.status(400).json({ error: "No LinkedIn account connected. Connect via /app/extension." });
     }
@@ -52527,8 +52538,9 @@ router3.post("/send-invite", async (req, res) => {
   }
 });
 router3.post("/disconnect", async (req, res) => {
+  const supabase5 = getSupabase();
   try {
-    const { error: error48 } = await supabase3.from("linkedin_connections").update({ oauth_connected: false, status: "disconnected", access_token: null }).eq("oauth_connected", true);
+    const { error: error48 } = await supabase5.from("linkedin_connections").update({ oauth_connected: false, status: "disconnected", access_token: null }).eq("oauth_connected", true);
     if (error48) return res.status(500).json({ error: error48.message });
     res.json({ success: true });
   } catch (e) {
@@ -52536,6 +52548,7 @@ router3.post("/disconnect", async (req, res) => {
   }
 });
 router3.get("/test", (_req, res) => {
+  const { LINKEDIN_CLIENT_ID, LINKEDIN_CLIENT_SECRET, LINKEDIN_REDIRECT_URI, DASHBOARD_URL } = getConfig2();
   res.json({
     linkedinRoutes: "ACTIVE \u2705",
     clientId: LINKEDIN_CLIENT_ID ? "SET \u2705" : "MISSING \u274C",
@@ -53972,7 +53985,7 @@ var import_express8 = __toESM(require_express2(), 1);
 init_dist4();
 var import_jsonwebtoken = __toESM(require_jsonwebtoken(), 1);
 var router8 = (0, import_express8.Router)();
-function supabase4() {
+function supabase3() {
   return createClient(
     process.env.SUPABASE_URL || "",
     process.env.SUPABASE_SERVICE_ROLE_KEY || "",
@@ -53980,7 +53993,7 @@ function supabase4() {
   );
 }
 async function logAction(adminId, action, targetUserId, metadata) {
-  await supabase4().from("admin_activity_log").insert({
+  await supabase3().from("admin_activity_log").insert({
     admin_id: adminId,
     action,
     target_user_id: targetUserId || null,
@@ -53989,7 +54002,7 @@ async function logAction(adminId, action, targetUserId, metadata) {
 }
 router8.get("/overview", async (req, res) => {
   try {
-    const sb = supabase4();
+    const sb = supabase3();
     const { count: totalTeams } = await sb.from("teams").select("*", { count: "exact", head: true });
     const weekAgo = new Date(Date.now() - 7 * 864e5).toISOString();
     const { count: activeWeek } = await sb.from("teams").select("*", { count: "exact", head: true }).gte("last_active_at", weekAgo);
@@ -54026,7 +54039,7 @@ router8.get("/overview", async (req, res) => {
 });
 router8.get("/customers", async (req, res) => {
   try {
-    const sb = supabase4();
+    const sb = supabase3();
     const { data: teams } = await sb.from("teams").select("id, name, created_at, plan, status, last_active_at").order("created_at", { ascending: false });
     if (!teams) return res.json({ customers: [] });
     const teamIds = teams.map((t2) => t2.id);
@@ -54069,7 +54082,7 @@ router8.get("/customers", async (req, res) => {
 });
 router8.get("/customers/:id", async (req, res) => {
   try {
-    const sb = supabase4();
+    const sb = supabase3();
     const teamId = req.params.id;
     const { data: team } = await sb.from("teams").select("*").eq("id", teamId).single();
     if (!team) return res.status(404).json({ error: "Team not found" });
@@ -54101,7 +54114,7 @@ router8.get("/customers/:id", async (req, res) => {
 });
 router8.post("/customers/:id/suspend", async (req, res) => {
   try {
-    const sb = supabase4();
+    const sb = supabase3();
     const teamId = req.params.id;
     const adminId = req.user?.id;
     const { data: team } = await sb.from("teams").select("status").eq("id", teamId).single();
@@ -54116,7 +54129,7 @@ router8.post("/customers/:id/suspend", async (req, res) => {
 });
 router8.post("/impersonate", async (req, res) => {
   try {
-    const sb = supabase4();
+    const sb = supabase3();
     const adminId = req.user?.id;
     const { targetUserId } = req.body;
     if (!targetUserId) return res.status(400).json({ error: "targetUserId required" });
@@ -54154,7 +54167,7 @@ router8.post("/impersonate", async (req, res) => {
 });
 router8.get("/stats", async (req, res) => {
   try {
-    const sb = supabase4();
+    const sb = supabase3();
     const thirtyDaysAgo = new Date(Date.now() - 30 * 864e5).toISOString();
     const { data: recentProfiles } = await sb.from("profiles").select("created_at").gte("created_at", thirtyDaysAgo);
     const signupsByDay = /* @__PURE__ */ new Map();
@@ -59758,11 +59771,11 @@ router10.post("/webhook", async (req, res) => {
       const { teamId, plan } = session.metadata || {};
       if (teamId && plan) {
         const { createClient: createClient2 } = await Promise.resolve().then(() => (init_dist4(), dist_exports));
-        const supabase6 = createClient2(
+        const supabase5 = createClient2(
           process.env.SUPABASE_URL || "",
           process.env.SUPABASE_SERVICE_KEY || ""
         );
-        await supabase6.from("teams").update({
+        await supabase5.from("teams").update({
           plan,
           stripe_customer_id: session.customer,
           stripe_subscription_id: session.subscription
@@ -75027,18 +75040,18 @@ async function getSupabaseUser(authHeader) {
   }
   const token = authHeader.slice(7);
   try {
-    const supabase6 = getServiceSupabase();
-    const { data: { user }, error: error48 } = await supabase6.auth.getUser(token);
+    const supabase5 = getServiceSupabase();
+    const { data: { user }, error: error48 } = await supabase5.auth.getUser(token);
     if (error48 || !user) {
       return null;
     }
     let role = "client_user";
-    const { data: profile } = await supabase6.from("profiles").select("role").eq("id", user.id).single();
+    const { data: profile } = await supabase5.from("profiles").select("role").eq("id", user.id).single();
     if (profile?.role === "super_admin") {
       role = "super_admin";
     }
     let teamId = null;
-    const { data: membership } = await supabase6.from("team_members").select("team_id").eq("user_id", user.id).limit(1).single();
+    const { data: membership } = await supabase5.from("team_members").select("team_id").eq("user_id", user.id).limit(1).single();
     if (membership?.team_id) {
       teamId = membership.team_id;
     }
@@ -75117,7 +75130,7 @@ function requireRole(role) {
 var import_express11 = __toESM(require_express2(), 1);
 init_dist4();
 var router12 = (0, import_express11.Router)();
-var supabase5 = createClient(
+var supabase4 = createClient(
   process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "",
   process.env.SUPABASE_SERVICE_ROLE_KEY || ""
 );
@@ -75130,7 +75143,7 @@ router12.patch("/profile", async (req, res) => {
       return res.status(401).json({ error: "Missing authorization header" });
     }
     const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: authError } = await supabase5.auth.getUser(token);
+    const { data: { user }, error: authError } = await supabase4.auth.getUser(token);
     if (authError || !user) {
       console.error("[UserProfile] Auth error:", authError?.message || "No user found");
       return res.status(401).json({ error: "Invalid token: " + (authError?.message || "user not found") });
@@ -75147,7 +75160,7 @@ router12.patch("/profile", async (req, res) => {
       return res.status(400).json({ error: "No valid fields to update. Allowed: " + allowedFields.join(", ") });
     }
     console.log("[UserProfile] Updating fields:", JSON.stringify(updates), "for user:", user.id);
-    const { data, error: updateError } = await supabase5.from("profiles").update(updates).eq("id", user.id).select().single();
+    const { data, error: updateError } = await supabase4.from("profiles").update(updates).eq("id", user.id).select().single();
     if (updateError) {
       console.error("[UserProfile] Supabase update error:", updateError);
       return res.status(500).json({ error: "Database update failed: " + updateError.message });
@@ -75166,11 +75179,11 @@ router12.get("/profile", async (req, res) => {
       return res.status(401).json({ error: "Missing authorization header" });
     }
     const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: error48 } = await supabase5.auth.getUser(token);
+    const { data: { user }, error: error48 } = await supabase4.auth.getUser(token);
     if (error48 || !user) {
       return res.status(401).json({ error: "Invalid token" });
     }
-    const { data: profile } = await supabase5.from("profiles").select("*").eq("id", user.id).single();
+    const { data: profile } = await supabase4.from("profiles").select("*").eq("id", user.id).single();
     return res.json({ profile });
   } catch (err) {
     return res.status(500).json({ error: err.message });

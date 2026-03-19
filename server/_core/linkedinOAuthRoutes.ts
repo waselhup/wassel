@@ -4,15 +4,25 @@ import crypto from 'crypto';
 
 const router = Router();
 
-const supabase = createClient(
-  process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-);
+// Lazy Supabase client — avoids module-level createClient('','') crash when env vars are missing.
+// @supabase/supabase-js v2 throws "supabaseUrl and supabaseKey are required" on empty strings,
+// which kills the entire serverless function at import time.
+function getSupabase() {
+  const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+  if (!url || !key) throw new Error('Missing Supabase env vars (SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY)');
+  return createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
+}
 
-const LINKEDIN_CLIENT_ID = process.env.LINKEDIN_CLIENT_ID || '';
-const LINKEDIN_CLIENT_SECRET = process.env.LINKEDIN_CLIENT_SECRET || '';
-const LINKEDIN_REDIRECT_URI = process.env.LINKEDIN_REDIRECT_URI || 'https://wassel-alpha.vercel.app/api/linkedin/callback';
-const DASHBOARD_URL = process.env.DASHBOARD_ORIGIN || 'https://wassel-alpha.vercel.app';
+// Read at request time so hot-reloads / Vercel env injection work correctly
+function getConfig() {
+  return {
+    LINKEDIN_CLIENT_ID: process.env.LINKEDIN_CLIENT_ID || '',
+    LINKEDIN_CLIENT_SECRET: process.env.LINKEDIN_CLIENT_SECRET || '',
+    LINKEDIN_REDIRECT_URI: process.env.LINKEDIN_REDIRECT_URI || 'https://wassel-alpha.vercel.app/api/linkedin/callback',
+    DASHBOARD_URL: process.env.DASHBOARD_ORIGIN || 'https://wassel-alpha.vercel.app',
+  };
+}
 
 // Helper to get team_id from JWT
 function getTeamId(req: Request): string | null {
@@ -26,6 +36,7 @@ function getUserId(req: Request): string | null {
 // GET /api/linkedin/connect — Start OAuth flow
 // ============================================================================
 router.get('/connect', (req: Request, res: Response) => {
+  const { LINKEDIN_CLIENT_ID, LINKEDIN_REDIRECT_URI } = getConfig();
   const state = crypto.randomUUID();
   // Store state in cookie for verification (simple approach)
   res.cookie('linkedin_oauth_state', state, { httpOnly: true, maxAge: 600000, sameSite: 'lax' });
@@ -40,6 +51,8 @@ router.get('/connect', (req: Request, res: Response) => {
 // GET /api/linkedin/callback — Handle OAuth callback from LinkedIn
 // ============================================================================
 router.get('/callback', async (req: Request, res: Response) => {
+  const { LINKEDIN_CLIENT_ID, LINKEDIN_CLIENT_SECRET, LINKEDIN_REDIRECT_URI, DASHBOARD_URL } = getConfig();
+  const supabase = getSupabase();
   try {
     const { code, state, error: oauthError } = req.query;
 
@@ -199,6 +212,7 @@ router.get('/callback', async (req: Request, res: Response) => {
 // GET /api/linkedin/status — Check if user has LinkedIn connected
 // ============================================================================
 router.get('/status', async (req: Request, res: Response) => {
+  const supabase = getSupabase();
   try {
     const { data: connections } = await supabase
       .from('linkedin_connections')
@@ -229,6 +243,7 @@ router.get('/status', async (req: Request, res: Response) => {
 // POST /api/linkedin/send-invite — Send invite via LinkedIn API
 // ============================================================================
 router.post('/send-invite', async (req: Request, res: Response) => {
+  const supabase = getSupabase();
   try {
     const { linkedinProfileUrl, message } = req.body;
 
@@ -275,6 +290,7 @@ router.post('/send-invite', async (req: Request, res: Response) => {
 // POST /api/linkedin/disconnect — Disconnect LinkedIn OAuth
 // ============================================================================
 router.post('/disconnect', async (req: Request, res: Response) => {
+  const supabase = getSupabase();
   try {
     const { error } = await supabase
       .from('linkedin_connections')
@@ -292,6 +308,7 @@ router.post('/disconnect', async (req: Request, res: Response) => {
 // GET /api/linkedin/test — Diagnostic endpoint
 // ============================================================================
 router.get('/test', (_req: Request, res: Response) => {
+  const { LINKEDIN_CLIENT_ID, LINKEDIN_CLIENT_SECRET, LINKEDIN_REDIRECT_URI, DASHBOARD_URL } = getConfig();
   res.json({
     linkedinRoutes: 'ACTIVE ✅',
     clientId: LINKEDIN_CLIENT_ID ? 'SET ✅' : 'MISSING ❌',
