@@ -1,12 +1,10 @@
 import { useEffect, useState } from 'react';
-import { createClient } from '@supabase/supabase-js';
 import { AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
-
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// IMPORTANT: always use the shared client — never create a second createClient()
+// Multiple Supabase instances on the same page cause "Lock broken by another
+// request with the 'steal' option" errors that corrupt the session.
+import { supabase } from '@/contexts/AuthContext';
 
 export default function AuthCallback() {
   const [error, setError] = useState<string | null>(null);
@@ -33,14 +31,14 @@ export default function AuthCallback() {
         const params = new URLSearchParams(window.location.search);
         const next = params.get('next') || '/app';
 
-        // Step 1: check if Supabase already processed the hash (fast path)
+        // Step 1: fast path — session may already be stored from the hash
         const { data: { session: existing } } = await supabase.auth.getSession();
         if (existing?.user) {
           finish(next);
           return;
         }
 
-        // Step 2: subscribe BEFORE we might miss the event
+        // Step 2: subscribe to catch the SIGNED_IN event from hash processing
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
           (_event, session) => {
             subscription.unsubscribe();
@@ -52,18 +50,14 @@ export default function AuthCallback() {
           }
         );
 
-        // Step 3: poll fallback — onAuthStateChange can fire before subscribe in some Supabase versions
-        // so we check again after a short delay
+        // Step 3: poll at 1.5s — covers the case where the event fired before subscribe
         setTimeout(async () => {
           if (handled) return;
-          const { data: { session: retrySession } } = await supabase.auth.getSession();
-          if (retrySession?.user) {
-            subscription.unsubscribe();
-            finish(next);
-          }
+          const { data: { session: s } } = await supabase.auth.getSession();
+          if (s?.user) { subscription.unsubscribe(); finish(next); }
         }, 1500);
 
-        // Step 4: hard timeout — if nothing worked in 8s, show error
+        // Step 4: hard timeout at 8s
         setTimeout(() => {
           if (!handled) {
             subscription.unsubscribe();

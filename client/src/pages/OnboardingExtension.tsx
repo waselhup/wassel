@@ -18,7 +18,7 @@ export default function OnboardingExtension() {
     }
   }, [user]);
 
-  // STEP 1: Auto-detect extension via data attribute — poll every 1500ms
+  // Auto-detect extension via data attribute set by wassel_detect.js
   useEffect(() => {
     const checkExtension = () => {
       const isInstalled = document.documentElement.getAttribute('data-wassel-extension') === 'true';
@@ -35,7 +35,6 @@ export default function OnboardingExtension() {
       }
     };
     window.addEventListener('message', handleMessage);
-
     const interval = setInterval(checkExtension, 1500);
 
     return () => {
@@ -44,19 +43,34 @@ export default function OnboardingExtension() {
     };
   }, [extensionDetected]);
 
-  // STEP 3: On button click → PATCH /api/user/profile with auth header
+  // On button click: mark extension installed in DB then go to /app
   const handleContinue = async () => {
     setMarking(true);
     setError('');
 
     try {
-      // Always get a fresh token from the active session to avoid stale state issues
+      // Get the freshest possible token — try session first, fall back to state/localStorage
+      let token: string | null = null;
+
       const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token || accessToken || localStorage.getItem('supabase_token');
-      console.log('[OnboardingExtension] Updating profile, token present:', !!token, 'user:', session?.user?.id);
+      token = session?.access_token || accessToken || localStorage.getItem('supabase_token');
+
+      // If the magic-link session hasn't established yet, wait up to 4s for onAuthStateChange
+      if (!token) {
+        token = await new Promise<string | null>((resolve) => {
+          const timeout = setTimeout(() => resolve(null), 4000);
+          const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
+            if (s?.access_token) {
+              clearTimeout(timeout);
+              subscription.unsubscribe();
+              resolve(s.access_token);
+            }
+          });
+        });
+      }
 
       if (!token) {
-        setError('لم يتم العثور على جلسة. الرجاء تسجيل الدخول مجدداً.');
+        setError('لم يتم العثور على جلسة. الرجاء العودة للصفحة الرئيسية وتسجيل الدخول من جديد.');
         setMarking(false);
         return;
       }
@@ -71,15 +85,15 @@ export default function OnboardingExtension() {
       });
 
       const data = await res.json();
-      console.log('[OnboardingExtension] API response:', res.status, data);
+      console.log('[OnboardingExtension] PATCH response:', res.status, data);
 
       if (!res.ok) {
-        setError(`Failed: ${data.error || 'Unknown error'} (${res.status})`);
+        setError(`فشل التحديث: ${data.error || 'خطأ غير معروف'} (${res.status})`);
         setMarking(false);
         return;
       }
 
-      // Update local cache
+      // Update local cache so ClientRoute doesn't re-check and redirect back
       try {
         const cached = localStorage.getItem('wassel_user_cache');
         if (cached) {
@@ -90,11 +104,10 @@ export default function OnboardingExtension() {
         }
       } catch { /* ignore */ }
 
-      // Redirect to dashboard
       window.location.href = '/app';
     } catch (err: any) {
       console.error('[OnboardingExtension] Error:', err);
-      setError('Network error: ' + err.message);
+      setError('خطأ في الشبكة: ' + err.message);
       setMarking(false);
     }
   };
@@ -147,9 +160,9 @@ export default function OnboardingExtension() {
             {t('onboarding.extensionPage.subtitle')}
           </p>
 
-          {/* Success banner when detected */}
+          {/* Extension detected banner */}
           {extensionDetected && (
-            <div className="flex items-center gap-3 p-4 rounded-xl mb-6 animate-in" style={{ background: '#ecfdf5', border: '1px solid #a7f3d0' }}>
+            <div className="flex items-center gap-3 p-4 rounded-xl mb-6" style={{ background: '#ecfdf5', border: '1px solid #a7f3d0' }}>
               <CheckCircle className="w-5 h-5 flex-shrink-0" style={{ color: '#059669' }} />
               <div>
                 <p className="text-sm font-semibold" style={{ color: '#059669' }}>تم تثبيت إضافة Wassel بنجاح ✅</p>
@@ -165,7 +178,7 @@ export default function OnboardingExtension() {
             </div>
           )}
 
-          {/* Download Button — only show if not detected */}
+          {/* Download instructions — only show if extension not yet detected */}
           {!extensionDetected && (
             <>
               <Link href="/extension-download">
@@ -178,7 +191,6 @@ export default function OnboardingExtension() {
                 </button>
               </Link>
 
-              {/* How to install */}
               <div className="rounded-xl p-5 mb-6" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
                 <p className="font-semibold text-sm mb-3" style={{ color: 'var(--text-primary)' }}>{t('onboarding.extensionPage.howTo')}</p>
                 <div className="space-y-2">
@@ -193,7 +205,7 @@ export default function OnboardingExtension() {
             </>
           )}
 
-          {/* Continue button */}
+          {/* Main CTA button — always clickable, works with or without extension detection */}
           <button
             onClick={handleContinue}
             disabled={marking}
@@ -211,7 +223,7 @@ export default function OnboardingExtension() {
             ) : extensionDetected ? (
               <>
                 <CheckCircle className="w-5 h-5" />
-                ✅ تم اكتشاف الإضافة — متابعة
+                تم اكتشاف الإضافة — متابعة للوحة التحكم
                 <ArrowRight className="w-4 h-4" />
               </>
             ) : (
@@ -222,7 +234,6 @@ export default function OnboardingExtension() {
             )}
           </button>
 
-          {/* Scanning indicator */}
           {!extensionDetected && (
             <p className="text-center text-xs mt-4" style={{ color: 'var(--text-muted)' }}>
               🔍 جاري البحث عن الإضافة... (يتم الاكتشاف تلقائياً عند التثبيت)
