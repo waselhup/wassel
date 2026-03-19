@@ -59,7 +59,8 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
   }
 
   if (!user) {
-    window.location.href = '/login';
+    // Unauthenticated visitors always start at the landing page
+    window.location.href = '/';
     return null;
   }
 
@@ -85,7 +86,8 @@ function AdminRoute({ component: Component }: { component: React.ComponentType }
   }
 
   if (!user) {
-    window.location.href = '/login';
+    // Unauthenticated visitors always start at the landing page
+    window.location.href = '/';
     return null;
   }
 
@@ -116,7 +118,8 @@ function ClientRoute({ component: Component }: { component: React.ComponentType 
   }
 
   if (!user) {
-    window.location.href = '/login';
+    // Unauthenticated visitors always start at the landing page
+    window.location.href = '/';
     return null;
   }
   // Onboarding guard: enforce linear journey
@@ -158,7 +161,7 @@ function LegacyRedirect() {
   }
 
   if (!user) {
-    window.location.href = '/login';
+    window.location.href = '/';
     return null;
   }
 

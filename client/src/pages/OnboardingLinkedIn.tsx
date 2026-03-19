@@ -14,7 +14,7 @@ export default function OnboardingLinkedIn() {
   }
 
   const handleConnect = () => {
-    window.location.href = 'https://wassel-alpha.vercel.app/api/linkedin/connect';
+    window.location.href = '/api/linkedin/connect';
   };
 
   return (
