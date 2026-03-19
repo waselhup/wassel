@@ -3,6 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { Download, CheckCircle, Monitor, Loader2 } from 'lucide-react';
 import { Link } from 'wouter';
+import OnboardingNav from '@/components/OnboardingNav';
 
 export default function OnboardingExtension() {
   const { user, loading, accessToken } = useAuth();
@@ -119,27 +120,9 @@ export default function OnboardingExtension() {
             <span className="text-xl font-extrabold tracking-tight" style={{ fontFamily: "'Outfit', sans-serif", color: 'var(--text-primary)' }}>assel</span>
           </div>
 
-          {/* Progress steps */}
-          <div className="flex items-center gap-3 mb-8 flex-wrap">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{ background: '#059669' }}>✓</div>
-              <span className="text-sm font-medium" style={{ color: '#059669' }}>ربط LinkedIn</span>
-            </div>
-            <div className="w-8 h-px" style={{ background: 'var(--border-subtle)' }}></div>
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{ background: extensionDetected ? '#059669' : 'var(--accent-primary)' }}>
-                {extensionDetected ? '✓' : '2'}
-              </div>
-              <span className="text-sm font-semibold" style={{ color: extensionDetected ? '#059669' : 'var(--accent-primary)' }}>
-                {extensionDetected ? 'تم تثبيت الإضافة!' : 'تثبيت الإضافة'}
-              </span>
-            </div>
-            <div className="w-8 h-px" style={{ background: 'var(--border-subtle)' }}></div>
-            <div className="flex items-center gap-2 opacity-40">
-              <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold" style={{ background: '#e2e8f0', color: '#94a3b8' }}>3</div>
-              <span className="text-sm" style={{ color: '#94a3b8' }}>لوحة التحكم</span>
-            </div>
-          </div>
+          {/* Progress steps + navigation */}
+          <OnboardingNav />
+          <div className="mb-8" />
 
           <h1 className="text-3xl sm:text-4xl font-extrabold mb-3" style={{ fontFamily: "'Outfit', sans-serif", color: 'var(--text-primary)' }}>
             {t('onboarding.extensionPage.title')}
@@ -218,6 +201,9 @@ export default function OnboardingExtension() {
               )}
             </button>
           )}
+
+          {/* Bottom navigation */}
+          <OnboardingNav />
         </div>
       </div>
 

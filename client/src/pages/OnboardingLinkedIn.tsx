@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Linkedin, Shield } from 'lucide-react';
+import OnboardingNav from '@/components/OnboardingNav';
 
 export default function OnboardingLinkedIn() {
   const { user, loading } = useAuth();
@@ -38,23 +39,9 @@ export default function OnboardingLinkedIn() {
             <span className="text-xl font-extrabold tracking-tight" style={{ fontFamily: "'Outfit', sans-serif", color: 'var(--text-primary)' }}>اssel</span>
           </div>
 
-          {/* Progress steps */}
-          <div className="flex items-center gap-3 mb-8 flex-wrap">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{ background: 'var(--accent-primary)' }}>1</div>
-              <span className="text-sm font-semibold" style={{ color: 'var(--accent-primary)' }}>ربط LinkedIn</span>
-            </div>
-            <div className="w-8 h-px" style={{ background: 'var(--border-subtle)' }}></div>
-            <div className="flex items-center gap-2 opacity-40">
-              <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold" style={{ background: '#e2e8f0', color: '#94a3b8' }}>2</div>
-              <span className="text-sm" style={{ color: '#94a3b8' }}>تثبيت الإضافة</span>
-            </div>
-            <div className="w-8 h-px" style={{ background: 'var(--border-subtle)' }}></div>
-            <div className="flex items-center gap-2 opacity-40">
-              <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold" style={{ background: '#e2e8f0', color: '#94a3b8' }}>3</div>
-              <span className="text-sm" style={{ color: '#94a3b8' }}>لوحة التحكم</span>
-            </div>
-          </div>
+          {/* Progress steps + navigation */}
+          <OnboardingNav />
+          <div className="mb-8" />
 
           <h1 className="text-3xl sm:text-4xl font-extrabold mb-3" style={{ fontFamily: "'Outfit', sans-serif", color: 'var(--text-primary)' }}>
             اربط حسابك على LinkedIn
@@ -98,6 +85,9 @@ export default function OnboardingLinkedIn() {
               ⚠️ يجب ربط LinkedIn أولاً لاستخدام المنصة
             </p>
           </div>
+
+          {/* Bottom navigation */}
+          <OnboardingNav />
         </div>
       </div>
 

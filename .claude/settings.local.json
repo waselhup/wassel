@@ -26,7 +26,8 @@
       "Bash(node -e \"import\\(''''./api/index.js''''\\).then\\(m => { console.log\\(''''keys:'''', Object.keys\\(m\\)\\); console.log\\(''''default type:'''', typeof m.default\\); console.log\\(''''default.listen?'''', typeof \\(m.default && m.default.listen\\)\\); }\\).catch\\(e => console.log\\(''''ERR:'''', e.code, e.message.substring\\(0,100\\)\\)\\)\")",
       "Bash(node -e \"import\\(''''./api/index.js''''\\).then\\(m => { const app = m.default; console.log\\(''''app type:'''', typeof app\\); console.log\\(''''app.default type:'''', typeof app.default\\); console.log\\(''''app.default.listen?'''', typeof \\(app.default && app.default.listen\\)\\); }\\).catch\\(e => console.log\\(''''ERR:'''', e.message\\)\\)\")",
       "Bash(timeout 8 node --input-type=module -e \":*)",
-      "Bash(node --input-type=module -e \":*)"
+      "Bash(node --input-type=module -e \":*)",
+      "Bash(curl -sI \"https://wassel-alpha.vercel.app/api/linkedin/connect\")"
     ]
   }
 }
