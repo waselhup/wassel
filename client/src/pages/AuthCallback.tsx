@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { useLocation } from 'wouter';
 import { createClient } from '@supabase/supabase-js';
 import { AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -10,50 +9,68 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export default function AuthCallback() {
-  const [, navigate] = useLocation();
   const [error, setError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(true);
 
   useEffect(() => {
     const handleCallback = async () => {
       try {
-        // Give Supabase a moment to process the callback
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Read the intended destination from ?next= query param
+        const params = new URLSearchParams(window.location.search);
+        const next = params.get('next') || '/app';
 
-        // Supabase automatically handles the callback from the URL
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        // Give Supabase time to process the hash fragment (#access_token=...)
+        // onAuthStateChange will fire when the session is established
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+          async (_event, session) => {
+            subscription.unsubscribe();
 
-        if (sessionError) {
-          console.error('Auth callback error:', sessionError);
-          setError('فشل التحقق من جلستك. الرجاء محاولة تسجيل الدخول مرة أخرى.');
-          setIsProcessing(false);
-          return;
-        }
+            if (session?.user) {
+              // Session established — navigate to intended destination
+              window.location.href = next;
+            } else {
+              // No session came through — check manually one more time
+              const { data: { session: currentSession } } = await supabase.auth.getSession();
+              if (currentSession?.user) {
+                window.location.href = next;
+              } else {
+                setError('لم نتمكن من إنشاء جلسة. الرجاء محاولة تسجيل الدخول مرة أخرى.');
+                setIsProcessing(false);
+              }
+            }
+          }
+        );
 
-        if (session?.user) {
-          // Session is established, redirect to dashboard
-          navigate('/dashboard');
-        } else {
-          setError('لم نتمكن من إنشاء جلسة. الرجاء محاولة تسجيل الدخول مرة أخرى.');
-          setIsProcessing(false);
-        }
-      } catch (error) {
-        console.error('Callback handling failed:', error);
+        // Fallback: if onAuthStateChange doesn't fire within 5s, check session directly
+        setTimeout(async () => {
+          subscription.unsubscribe();
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.user) {
+            const next2 = new URLSearchParams(window.location.search).get('next') || '/app';
+            window.location.href = next2;
+          } else if (isProcessing) {
+            setError('انتهت مهلة التحقق. الرجاء محاولة تسجيل الدخول مرة أخرى.');
+            setIsProcessing(false);
+          }
+        }, 5000);
+
+      } catch (err) {
+        console.error('Callback handling failed:', err);
         setError('حدث خطأ غير متوقع. الرجاء محاولة تسجيل الدخول مرة أخرى.');
         setIsProcessing(false);
       }
     };
 
     handleCallback();
-  }, [navigate]);
+  }, []);
 
   if (isProcessing && !error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center p-4">
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: '#f8fafc' }}>
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-6"></div>
-          <p className="text-gray-700 font-medium mb-2">جاري تسجيل دخولك...</p>
-          <p className="text-sm text-gray-500">يرجى الانتظار قليلاً</p>
+          <p className="font-medium mb-2" style={{ color: 'var(--text-primary)' }}>جاري تسجيل دخولك...</p>
+          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>يرجى الانتظار قليلاً</p>
         </div>
       </div>
     );
@@ -61,33 +78,30 @@ export default function AuthCallback() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center p-4">
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: '#f8fafc' }}>
         <div className="w-full max-w-md">
-          <div className="bg-white rounded-lg shadow-lg p-8">
+          <div className="rounded-2xl p-8" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
             <div className="flex justify-center mb-6">
-              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
-                <AlertCircle className="w-8 h-8 text-red-600" />
+              <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: '#fef2f2' }}>
+                <AlertCircle className="w-8 h-8" style={{ color: '#dc2626' }} />
               </div>
             </div>
 
-            <h1 className="text-2xl font-bold text-gray-900 text-center mb-3">
+            <h1 className="text-xl font-bold text-center mb-3" style={{ color: 'var(--text-primary)' }}>
               حدث خطأ في تسجيل الدخول
             </h1>
 
-            <p className="text-gray-600 text-center mb-8">
+            <p className="text-center mb-8 text-sm" style={{ color: 'var(--text-secondary)' }}>
               {error}
             </p>
 
             <Button
-              onClick={() => navigate('/login')}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5"
+              onClick={() => { window.location.href = '/login'; }}
+              className="w-full text-white font-semibold py-2.5"
+              style={{ background: 'var(--gradient-primary)' }}
             >
               العودة إلى تسجيل الدخول
             </Button>
-
-            <p className="text-center text-xs text-gray-500 mt-6">
-              إذا استمرت المشكلة، يرجى التواصل مع الدعم
-            </p>
           </div>
         </div>
       </div>

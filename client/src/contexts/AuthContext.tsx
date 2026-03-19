@@ -175,11 +175,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             await handleSession(session);
           }
         } else {
-          // No session — clear everything
-          setUser(null);
-          setAccessToken(null);
-          localStorage.removeItem(CACHE_KEY);
-          localStorage.removeItem(TOKEN_KEY);
+          // Check if there's a pending hash session (magic link redirect)
+          // If so, don't clear — onAuthStateChange will fire when Supabase processes the hash
+          const hasPendingHash = typeof window !== 'undefined' &&
+            (window.location.hash.includes('access_token=') || window.location.hash.includes('type=magiclink'));
+
+          if (!hasPendingHash) {
+            // No session and no pending hash — clear everything
+            setUser(null);
+            setAccessToken(null);
+            localStorage.removeItem(CACHE_KEY);
+            localStorage.removeItem(TOKEN_KEY);
+          }
+          // If hasPendingHash: wait for onAuthStateChange to fire
         }
       } catch (error) {
         console.error('Auth check failed:', error);
@@ -192,8 +200,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Listen for auth changes (login/logout/token refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      async (event, session) => {
         if (session?.user) {
+          // On a fresh sign-in, always bust the stale cache so linkedinConnected/extensionInstalled
+          // are re-read from DB (not from a potentially stale 24h localStorage cache)
+          if (event === 'SIGNED_IN') {
+            localStorage.removeItem(CACHE_KEY);
+          }
           setAccessToken(session.access_token);
           localStorage.setItem(TOKEN_KEY, session.access_token);
           const enriched = await loadUserProfile(session.user, session.access_token);

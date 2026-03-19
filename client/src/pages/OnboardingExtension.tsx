@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth, supabase } from '@/contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { Download, CheckCircle, Monitor, ArrowRight, Loader2 } from 'lucide-react';
 import { Link } from 'wouter';
@@ -10,13 +10,6 @@ export default function OnboardingExtension() {
   const [extensionDetected, setExtensionDetected] = useState(false);
   const [marking, setMarking] = useState(false);
   const [error, setError] = useState('');
-
-  // If user hasn't connected LinkedIn, redirect to that step first
-  useEffect(() => {
-    if (user && !user.linkedinConnected) {
-      window.location.href = '/onboarding/linkedin';
-    }
-  }, [user]);
 
   // If already installed, go to dashboard
   useEffect(() => {
@@ -53,16 +46,17 @@ export default function OnboardingExtension() {
 
   // STEP 3: On button click → PATCH /api/user/profile with auth header
   const handleContinue = async () => {
-    if (!user) return;
     setMarking(true);
     setError('');
 
     try {
-      const token = accessToken || localStorage.getItem('supabase_token');
-      console.log('[OnboardingExtension] Updating profile, token present:', !!token);
+      // Always get a fresh token from the active session to avoid stale state issues
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token || accessToken || localStorage.getItem('supabase_token');
+      console.log('[OnboardingExtension] Updating profile, token present:', !!token, 'user:', session?.user?.id);
 
       if (!token) {
-        setError('No authentication token found. Please log in again.');
+        setError('لم يتم العثور على جلسة. الرجاء تسجيل الدخول مجدداً.');
         setMarking(false);
         return;
       }
