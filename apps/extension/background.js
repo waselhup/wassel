@@ -14,6 +14,63 @@ const DASHBOARD_ORIGIN = 'https://wassel-alpha.vercel.app';
 console.log('[Wassel] 🚀 Background loaded!', new Date().toLocaleTimeString());
 
 // ============================================================================
+// SAFE MESSAGE SENDING — prevents "Receiving end does not exist" crashes
+// ============================================================================
+async function safeSendMessage(tabId, message) {
+  try {
+    const tab = await chrome.tabs.get(tabId);
+    if (!tab) return null;
+    if (tab.status !== 'complete') {
+      // Wait for tab to finish loading
+      await new Promise((resolve) => {
+        const listener = (id, changeInfo) => {
+          if (id === tabId && changeInfo.status === 'complete') {
+            chrome.tabs.onUpdated.removeListener(listener);
+            resolve();
+          }
+        };
+        chrome.tabs.onUpdated.addListener(listener);
+        // Timeout after 10 seconds
+        setTimeout(() => {
+          chrome.tabs.onUpdated.removeListener(listener);
+          resolve();
+        }, 10000);
+      });
+    }
+    return await chrome.tabs.sendMessage(tabId, message);
+  } catch (error) {
+    // Content script not available on this tab — safe to ignore
+    console.warn('[Wassel] safeSendMessage failed:', error.message, 'tabId:', tabId);
+    return null;
+  }
+}
+
+async function isContentScriptReady(tabId) {
+  try {
+    const response = await chrome.tabs.sendMessage(tabId, { type: 'PING' });
+    return response?.status === 'alive';
+  } catch {
+    return false;
+  }
+}
+
+async function ensureContentScript(tabId) {
+  const ready = await isContentScriptReady(tabId);
+  if (!ready) {
+    try {
+      await chrome.scripting.executeScript({
+        target: { tabId },
+        files: ['content.js']
+      });
+      // Wait 1 second for content.js to initialize
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    } catch (injectError) {
+      console.warn('[Wassel] Could not inject content script:', injectError.message);
+    }
+  }
+}
+
+// ============================================================================
 // TOKEN MANAGEMENT
 // ============================================================================
 async function getToken() {
@@ -628,9 +685,7 @@ async function collectMultiPageProspects(targetCount, tabId) {
     console.log(`[Wassel] 📄 Scanning page ${pageNum}...`);
 
     // Send progress to content script sidebar and popup
-    try {
-      if (tabId) chrome.tabs.sendMessage(tabId, { type: 'PROGRESS_UPDATE', collected: allProspects.length, target: targetCount, page: pageNum });
-    } catch (e) { /* tab may not be ready */ }
+    if (tabId) await safeSendMessage(tabId, { type: 'PROGRESS_UPDATE', collected: allProspects.length, target: targetCount, page: pageNum });
     try {
       chrome.runtime.sendMessage({ type: 'PROGRESS_UPDATE', collected: allProspects.length, target: targetCount, page: pageNum });
     } catch (e) { /* popup may be closed */ }
@@ -726,12 +781,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     const targetCount = message.targetCount;
     const tabId = message.tabId || sender.tab?.id;
     console.log(`[Wassel] 📥 Collection requested: ${targetCount} from tab ${tabId}`);
-    collectMultiPageProspects(targetCount, tabId).then(prospects => {
+    collectMultiPageProspects(targetCount, tabId).then(async (prospects) => {
       // Send to the content script tab (sidebar is in the tab, not the popup)
       if (tabId) {
-        try {
-          chrome.tabs.sendMessage(tabId, { type: 'COLLECTION_COMPLETE', prospects });
-        } catch (e) { console.log('[Wassel] Tab message failed:', e.message); }
+        await ensureContentScript(tabId);
+        await safeSendMessage(tabId, { type: 'COLLECTION_COMPLETE', prospects });
       }
       // Also broadcast to popup if open
       try {

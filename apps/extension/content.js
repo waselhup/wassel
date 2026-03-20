@@ -446,6 +446,12 @@
     // AUTOMATION: Listen for messages from background.js
     // ========================================================================
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+        // Health check — background.js pings to verify content script is alive
+        if (message.type === 'PING') {
+            sendResponse({ status: 'alive' });
+            return true;
+        }
+
         if (message.type === 'EXECUTE_STEP') {
             const { data } = message;
             // Normalize field names (global queue uses snake_case, per-campaign uses camelCase)

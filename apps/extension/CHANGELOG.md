@@ -1,5 +1,10 @@
 # Wassel Extension Changelog
 
+## v1.1.3 — 2026-03-20
+- Fixed Could not establish connection - Receiving end does not exist. Added safeSendMessage wrapper, PING health check, and programmatic content script injection.
+- Files modified: background.js, content.js, manifest.json
+
+
 ## v1.1.2 — 2026-03-20
 - Fixed Not authenticated import error - added postMessage token bridge from web app to extension. Fixed No prospects found - replaced single-selector extractProspects with 5-strategy fallback
 - Files modified: background.js, content.js, popup.js, manifest.json, AuthContext.tsx
