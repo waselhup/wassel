@@ -80,9 +80,12 @@
 </head>
 <body>
   <div class="header">
-    <div>
-      <h1>⚡ Wassel</h1>
-      <p>LinkedIn Prospect Importer</p>
+    <div style="display:flex;align-items:center;gap:10px">
+      <img src="icons/icon48.png" alt="Wassel" style="width:32px;height:32px;border-radius:50%;">
+      <div>
+        <h1>Wassel</h1>
+        <p>LinkedIn Prospect Importer</p>
+      </div>
     </div>
     <span id="badge" class="badge hidden"></span>
   </div>
@@ -110,6 +113,7 @@
         <button class="btn btn-primary" id="btn-linkedin">🔍 Open LinkedIn Search</button>
         <button class="btn btn-secondary" id="btn-test">🔌 Test Connection</button>
         <button class="btn btn-secondary" id="btn-dashboard">📊 Open Dashboard</button>
+        <p id="loading-msg" style="display:none;font-size:11px;color:#fcd34d;margin-top:8px;text-align:center;"></p>
       </div>
       <div class="divider"></div>
       <button class="btn btn-secondary" id="btn-resync">🔄 Refresh Session</button>

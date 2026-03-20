@@ -366,7 +366,22 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.getElementById('btn-dashboard').addEventListener('click', () => {
-    chrome.tabs.create({ url: 'https://wassel-alpha.vercel.app/app' });
+    const loadingMsg = document.getElementById('loading-msg');
+    chrome.tabs.create({ url: 'https://wassel-alpha.vercel.app/app' }, (tab) => {
+      const timeout = setTimeout(() => {
+        if (loadingMsg) {
+          loadingMsg.innerHTML = 'Taking too long? <a href="https://wassel-alpha.vercel.app/app" target="_blank" style="color:#a855f7;text-decoration:underline;">Open dashboard directly →</a>';
+          loadingMsg.style.display = 'block';
+        }
+      }, 8000);
+      chrome.tabs.onUpdated.addListener(function listener(tabId, changeInfo) {
+        if (tabId === tab.id && changeInfo.status === 'complete') {
+          clearTimeout(timeout);
+          chrome.tabs.onUpdated.removeListener(listener);
+          if (loadingMsg) loadingMsg.style.display = 'none';
+        }
+      });
+    });
   });
 
   document.getElementById('btn-scan-dash').addEventListener('click', () => {

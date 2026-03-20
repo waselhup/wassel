@@ -1,5 +1,10 @@
 # Wassel Extension Changelog
 
+## v1.1.4 — 2026-03-20
+- New icon: custom illustrated avatar. Fixed infinite loading on dashboard redirect. Added 8s timeout fallback in popup.
+- Files modified: manifest.json, popup.html, popup.js, background.js, icons/*
+
+
 ## v1.1.3 — 2026-03-20
 - Fixed Could not establish connection - Receiving end does not exist. Added safeSendMessage wrapper, PING health check, and programmatic content script injection.
 - Files modified: background.js, content.js, manifest.json
