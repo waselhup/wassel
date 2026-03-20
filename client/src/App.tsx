@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
@@ -105,8 +106,14 @@ function AdminRoute({ component: Component }: { component: React.ComponentType }
  */
 function ClientRoute({ component: Component }: { component: React.ComponentType }) {
   const { user, loading } = useAuth();
+  const [forceReady, setForceReady] = useState(false);
 
-  if (loading) {
+  useEffect(() => {
+    const t = setTimeout(() => setForceReady(true), 6000);
+    return () => clearTimeout(t);
+  }, []);
+
+  if (loading && !forceReady) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
         <div className="text-center">
@@ -117,7 +124,13 @@ function ClientRoute({ component: Component }: { component: React.ComponentType 
     );
   }
 
-  if (!user) {
+  if (!user && !forceReady) {
+    window.location.href = '/onboarding/linkedin';
+    return null;
+  }
+
+  // After 6s timeout, if still no user, redirect
+  if (!user && forceReady) {
     window.location.href = '/onboarding/linkedin';
     return null;
   }

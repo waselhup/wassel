@@ -229,14 +229,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               source: 'wassel-web'
             }, '*');
           } catch { /* iframe sandbox — ignore */ }
-          const enriched = await loadUserProfile(session.user, session.access_token);
-          setUser(enriched);
-          cacheUser(enriched);
+          try {
+            const enriched = await loadUserProfile(session.user, session.access_token);
+            setUser(enriched);
+            cacheUser(enriched);
+          } catch (err) {
+            console.error('[Auth] onAuthStateChange profile load failed:', err);
+            // Set a basic user so the dashboard still renders
+            setUser({
+              id: session.user.id,
+              email: session.user.email,
+              role: 'client_user',
+              teamId: null,
+              user_metadata: session.user.user_metadata,
+            });
+          } finally {
+            setLoading(false);
+          }
         } else {
           setUser(null);
           setAccessToken(null);
           localStorage.removeItem(CACHE_KEY);
           localStorage.removeItem(TOKEN_KEY);
+          setLoading(false);
         }
       }
     );
