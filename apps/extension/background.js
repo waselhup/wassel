@@ -431,6 +431,9 @@ async function executeAction(item) {
   console.log(`[Wassel] 🎯 Executing: ${stepType} for ${name}`);
   await updateStepStatus(stepId, 'in_progress');
 
+  let actionStatus = 'success';
+  let actionError = null;
+
   try {
     if (stepType === 'visit') {
       await doVisit(url, stepId, name);
@@ -439,18 +442,47 @@ async function executeAction(item) {
       if (limits.invites >= 20) {
         console.log('[Wassel] 🛑 Daily invite limit (20) reached');
         await updateStepStatus(stepId, 'pending');
-        return;
+        actionStatus = 'skipped';
+        actionError = 'Daily invite limit reached';
+        // still log it below
+      } else {
+        await doInvite(url, message, stepId, name);
       }
-      await doInvite(url, message, stepId, name);
     } else if (stepType === 'message' || stepType === 'follow' || stepType === 'follow_up') {
       await doMessage(url, message, stepId, name);
     } else {
       console.log(`[Wassel] ⚠️ Unknown step type: ${stepType}`);
       await updateStepStatus(stepId, 'failed', `Unknown: ${stepType}`);
+      actionStatus = 'failed';
+      actionError = `Unknown step type: ${stepType}`;
     }
   } catch (err) {
     console.error(`[Wassel] ❌ Execute failed:`, err.message);
     await updateStepStatus(stepId, 'failed', err.message);
+    actionStatus = 'failed';
+    actionError = err.message;
+  }
+
+  // ── Log activity to server for dashboard feed ──
+  try {
+    const tokenData = await chrome.storage.local.get('wassel_token');
+    const token = tokenData.wassel_token;
+    if (token) {
+      await fetch('https://wassel-alpha.vercel.app/api/activity-log', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action_type: stepType === 'invitation' || stepType === 'invite' || stepType === 'connection_request' ? 'connect' : stepType,
+          status: actionStatus,
+          prospect_name: name,
+          linkedin_url: url,
+          campaign_id: item.campaign_id || item.campaignId || null,
+          error_message: actionError
+        })
+      });
+    }
+  } catch (logErr) {
+    console.warn('[Wassel] Activity log failed (non-fatal):', logErr.message);
   }
 }
 

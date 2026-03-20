@@ -1,5 +1,10 @@
 # Wassel Extension Changelog
 
+## v1.1.5 — 2026-03-20
+- Added activity log reporting after each action execution
+- Files modified: background.js
+
+
 ## v1.1.4 — 2026-03-20
 - New icon: custom illustrated avatar. Fixed infinite loading on dashboard redirect. Added 8s timeout fallback in popup.
 - Files modified: manifest.json, popup.html, popup.js, background.js, icons/*

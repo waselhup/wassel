@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import {
     Loader2, Linkedin, Target, Users, ExternalLink,
-    ChevronRight, Download, CheckCircle, Zap, BarChart3, UserCheck, MessageSquare, ArrowUpRight
+    ChevronRight, Download, CheckCircle, Zap, BarChart3, UserCheck, MessageSquare, ArrowUpRight, RefreshCw
 } from 'lucide-react';
 import { Link } from 'wouter';
 import ClientNav from '@/components/ClientNav';
@@ -29,12 +29,44 @@ export default function ClientDashboard() {
     const [loading, setLoading] = useState(true);
     const [queueCount, setQueueCount] = useState(0);
     const [linkedinConnected, setLinkedinConnected] = useState(false);
+    const [activityLogs, setActivityLogs] = useState<any[]>([]);
+    const [activityLoading, setActivityLoading] = useState(false);
 
-    const firstName = user?.email?.split('@')[0]?.split('.')[0] || 'there';
+    const firstName = user?.user_metadata?.given_name ||
+        user?.user_metadata?.name?.split(' ')[0] ||
+        user?.email?.split('@')[0]?.split('.')[0] || 'there';
     const capitalName = firstName.charAt(0).toUpperCase() + firstName.slice(1);
+    const photoUrl = user?.photoUrl || user?.user_metadata?.picture || user?.user_metadata?.avatar_url || null;
+
+    function formatTimeAgo(dateStr: string): string {
+        const diff = Date.now() - new Date(dateStr).getTime();
+        const mins = Math.floor(diff / 60000);
+        if (mins < 1) return 'just now';
+        if (mins < 60) return `${mins}m ago`;
+        const hrs = Math.floor(mins / 60);
+        if (hrs < 24) return `${hrs}h ago`;
+        return `${Math.floor(hrs / 24)}d ago`;
+    }
+
+    const fetchActivityLogs = async () => {
+        setActivityLoading(true);
+        try {
+            const res = await fetch('/api/activity-log?limit=50', { headers: authHeaders() });
+            if (res.ok) {
+                const data = await res.json();
+                setActivityLogs(data.logs || []);
+            }
+        } catch {} finally { setActivityLoading(false); }
+    };
 
     useEffect(() => {
         fetchData();
+        fetchActivityLogs();
+        // Poll activity logs every 10 seconds (only when tab is visible)
+        const interval = setInterval(() => {
+            if (!document.hidden) fetchActivityLogs();
+        }, 10000);
+        return () => clearInterval(interval);
     }, []);
 
     const fetchData = async () => {
@@ -156,11 +188,25 @@ export default function ClientDashboard() {
 
                     {/* ══ Greeting ══ */}
                     <div className="mb-6 flex items-start justify-between">
-                        <div>
-                            <h2 className="text-2xl sm:text-3xl font-extrabold mb-1" style={{ fontFamily: "'Outfit', sans-serif", color: 'var(--text-primary)' }}>
-                                Hello {capitalName},
-                            </h2>
-                            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Here's your campaign overview for the last 30 days.</p>
+                        <div className="flex items-center gap-4">
+                            {photoUrl ? (
+                                <img
+                                    src={photoUrl}
+                                    alt={capitalName}
+                                    className="w-14 h-14 rounded-full object-cover border-2 border-white shadow-md"
+                                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                />
+                            ) : (
+                                <div className="w-14 h-14 rounded-full flex items-center justify-center text-xl font-bold text-white" style={{ background: 'var(--gradient-primary)' }}>
+                                    {capitalName.charAt(0)}
+                                </div>
+                            )}
+                            <div>
+                                <h2 className="text-2xl sm:text-3xl font-extrabold mb-1" style={{ fontFamily: "'Outfit', sans-serif", color: 'var(--text-primary)' }}>
+                                    Hello {capitalName},
+                                </h2>
+                                <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Here's your campaign overview for the last 30 days.</p>
+                            </div>
                         </div>
                         {user?.role === 'super_admin' && (
                             <Link href="/admin">
@@ -306,6 +352,46 @@ export default function ClientDashboard() {
                                         </div>
                                         <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Queued actions</p>
                                     </div>
+                                </div>
+                            </div>
+
+                            {/* ══ Recent Activity Feed ══ */}
+                            <div style={{ ...card, overflow: 'hidden' }}>
+                                <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                                    <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Recent Activity</p>
+                                    <button onClick={fetchActivityLogs} className="p-1 rounded hover:bg-gray-100 transition" title="Refresh">
+                                        <RefreshCw className={`w-3 h-3 ${activityLoading ? 'animate-spin' : ''}`} style={{ color: 'var(--text-muted)' }} />
+                                    </button>
+                                </div>
+                                <div className="px-4 py-2" style={{ maxHeight: 300, overflowY: 'auto' }}>
+                                    {activityLogs.length === 0 ? (
+                                        <div className="py-6 text-center">
+                                            <Zap className="w-6 h-6 mx-auto mb-2" style={{ color: 'var(--text-muted)' }} />
+                                            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>No activity yet. Keep Chrome open with extension active for automation to run.</p>
+                                        </div>
+                                    ) : (
+                                        activityLogs.map((entry: any) => (
+                                            <div key={entry.id} className="flex items-start gap-2.5 py-2.5" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                                                <span className="text-base mt-0.5">
+                                                    {entry.action_type === 'visit' ? '👁' :
+                                                     entry.action_type === 'connect' || entry.action_type === 'invitation' ? '🤝' :
+                                                     entry.action_type === 'message' ? '💬' : '⚡'}
+                                                </span>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-xs font-medium truncate" style={{ color: 'var(--text-primary)' }}>
+                                                        {entry.prospect_name || 'Unknown prospect'}
+                                                    </p>
+                                                    <p className="text-[10px] truncate" style={{ color: 'var(--text-muted)' }}>
+                                                        {entry.action_type}{' '}
+                                                        {entry.status === 'success' ? '✅' : entry.status === 'failed' ? '❌' : '⏳'}
+                                                    </p>
+                                                    <p className="text-[10px]" style={{ color: 'var(--text-muted)', opacity: 0.6 }}>
+                                                        {formatTimeAgo(entry.executed_at || entry.created_at)}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
                                 </div>
                             </div>
 

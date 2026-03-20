@@ -16,6 +16,7 @@ export type AuthUser = {
   user_metadata?: Record<string, any>;
   extensionInstalled?: boolean;
   linkedinConnected?: boolean;
+  photoUrl?: string | null;
 };
 
 type AuthContextType = {
@@ -63,6 +64,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       role: 'client_user',
       teamId: null,
       user_metadata: supabaseUser.user_metadata,
+      photoUrl: supabaseUser.user_metadata?.picture ||
+               supabaseUser.user_metadata?.avatar_url ||
+               supabaseUser.user_metadata?.profile_picture ||
+               null,
     };
 
     try {

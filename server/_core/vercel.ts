@@ -9,6 +9,7 @@ import extensionRoutes from "./extensionRoutes";
 import clientRoutes from "./clientRoutes";
 import sequenceRoutes from "./sequenceRoutes";
 import adminRoutes from "./adminRoutes";
+import activityRoutes from "./activityRoutes";
 import aiRoutes from "./aiRoutes";
 import stripeRoutes from "./stripeRoutes";
 import { appRouter } from "../routers";
@@ -50,6 +51,9 @@ app.use("/api/ext", expressAuthMiddleware, extensionRoutes);
 
 // Sequence engine routes: JWT required (any authenticated user)
 app.use("/api/sequence", expressAuthMiddleware, sequenceRoutes);
+
+// Activity log routes: JWT required (any authenticated user)
+app.use("/api/activity-log", expressAuthMiddleware, activityRoutes);
 
 // AI message writer: JWT required
 app.use("/api/ai", expressAuthMiddleware, aiRoutes);
