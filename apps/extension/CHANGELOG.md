@@ -1,5 +1,10 @@
 # Wassel Extension Changelog
 
+## v1.1.6 — 2026-03-20
+- Fixed: activity log token retrieval and POST reliability
+- Files modified: background.js
+
+
 ## v1.1.5 — 2026-03-20
 - Added activity log reporting after each action execution
 - Files modified: background.js

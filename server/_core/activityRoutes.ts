@@ -22,6 +22,7 @@ function getTeamId(req: any): string | null {
 router.post('/', async (req: Request, res: Response) => {
     try {
         const userId = (req as any).user?.id;
+        console.log('[ActivityLog] POST received:', { userId, body: req.body });
         if (!userId) {
             return res.status(401).json({ error: 'Not authenticated' });
         }
@@ -76,6 +77,7 @@ router.post('/', async (req: Request, res: Response) => {
 router.get('/', async (req: Request, res: Response) => {
     try {
         const userId = (req as any).user?.id;
+        console.log('[ActivityLog] GET requested by user:', userId);
         if (!userId) {
             return res.status(401).json({ error: 'Not authenticated' });
         }

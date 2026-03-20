@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import ClientNav from '@/components/ClientNav';
 import { useAuth } from '@/contexts/AuthContext';
 import Avatar from '@/components/Avatar';
-import { Search, Trash2, X, Loader2, Users, ExternalLink } from 'lucide-react';
+import { Search, Trash2, X, Loader2, Users, ExternalLink, Download } from 'lucide-react';
 
 function getToken() {
   return localStorage.getItem('supabase_token') || '';
@@ -83,6 +83,49 @@ export default function Leads() {
     setShowConfirm(false);
   };
 
+  // ── CSV Export with BOM + proper formatting ──
+  const exportToCSV = () => {
+    if (filtered.length === 0) { showToast('No prospects to export'); return; }
+
+    const headers = ['Name', 'Title', 'Company', 'Location', 'LinkedIn URL', 'Status', 'Imported At'];
+
+    const escape = (val: any) => {
+      const str = String(val ?? '').trim();
+      if (str.includes(',') || str.includes('\n') || str.includes('"')) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    };
+
+    const rows = filtered.map(p => [
+      p.name || '',
+      p.title || '',
+      p.company || '',
+      p.location || '',
+      p.linkedin_url || '',
+      p.status || '',
+      p.created_at ? new Date(p.created_at).toLocaleDateString('en-GB') : ''
+    ]);
+
+    const csvContent = [
+      headers.map(escape).join(','),
+      ...rows.map(row => row.map(escape).join(','))
+    ].join('\r\n');
+
+    // BOM prefix for Excel Arabic/Unicode compatibility
+    const BOM = '\uFEFF';
+    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `wassel-prospects-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    showToast(`Exported ${filtered.length} prospects to CSV`);
+  };
+
   const deleteSingle = async (id: string) => {
     setChecked(new Set([id]));
     setDeleting(true);
@@ -115,6 +158,20 @@ export default function Leads() {
               <h2 style={{ fontSize: 22, fontWeight: 800, color: '#f1f5f9', fontFamily: "'Syne', sans-serif", marginBottom: 4 }}>Leads</h2>
               <p style={{ color: '#64748b', fontSize: 13 }}>{prospects.length} prospects imported</p>
             </div>
+            {prospects.length > 0 && (
+              <button
+                onClick={exportToCSV}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  background: 'rgba(124,58,237,0.12)', color: '#c4b5fd',
+                  border: '1px solid rgba(124,58,237,0.3)', borderRadius: 8,
+                  padding: '8px 16px', fontSize: 13, fontWeight: 600,
+                  cursor: 'pointer', transition: 'all 0.15s',
+                }}
+              >
+                <Download size={14} /> Export CSV
+              </button>
+            )}
           </div>
 
           {/* Search */}

@@ -465,10 +465,11 @@ async function executeAction(item) {
 
   // ── Log activity to server for dashboard feed ──
   try {
-    const tokenData = await chrome.storage.local.get('wassel_token');
-    const token = tokenData.wassel_token;
+    const tokenData = await chrome.storage.local.get(['wasselToken', 'authToken', 'token', 'wassel_token']);
+    const token = tokenData.wasselToken || tokenData.authToken || tokenData.token || tokenData.wassel_token;
+    console.log('[Wassel] 📝 Activity log — token found:', !!token, '| action:', stepType, '| status:', actionStatus);
     if (token) {
-      await fetch('https://wassel-alpha.vercel.app/api/activity-log', {
+      const resp = await fetch('https://wassel-alpha.vercel.app/api/activity-log', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -480,6 +481,10 @@ async function executeAction(item) {
           error_message: actionError
         })
       });
+      const result = await resp.json().catch(() => ({}));
+      console.log('[Wassel] 📝 Activity logged:', resp.status, result);
+    } else {
+      console.warn('[Wassel] ⚠️ Activity log skipped — no auth token in storage');
     }
   } catch (logErr) {
     console.warn('[Wassel] Activity log failed (non-fatal):', logErr.message);
