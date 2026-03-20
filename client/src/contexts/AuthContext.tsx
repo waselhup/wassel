@@ -148,6 +148,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(enrichedUser);
       setAccessToken(session.access_token);
       cacheUser(enrichedUser);
+      // Broadcast token to Wassel extension via postMessage bridge
+      try {
+        window.postMessage({
+          type: 'WASSEL_AUTH_TOKEN',
+          token: session.access_token,
+          source: 'wassel-web'
+        }, '*');
+      } catch { /* iframe sandbox — ignore */ }
     } else {
       setUser(null);
       setAccessToken(null);
@@ -213,6 +221,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
           setAccessToken(session.access_token);
           localStorage.setItem(TOKEN_KEY, session.access_token);
+          // Broadcast token to Wassel extension via postMessage bridge
+          try {
+            window.postMessage({
+              type: 'WASSEL_AUTH_TOKEN',
+              token: session.access_token,
+              source: 'wassel-web'
+            }, '*');
+          } catch { /* iframe sandbox — ignore */ }
           const enriched = await loadUserProfile(session.user, session.access_token);
           setUser(enriched);
           cacheUser(enriched);

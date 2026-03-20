@@ -503,49 +503,111 @@ async function processQueue() {
 function extractProspects() {
   const prospects = [];
   const seen = new Set();
-  const links = document.querySelectorAll('a[href*="/in/"]');
 
-  links.forEach(link => {
-    try {
-      const href = link.href || '';
-      if (!href.includes('linkedin.com/in/')) return;
-      const cleanUrl = href.split('?')[0];
-      if (seen.has(cleanUrl)) return;
-      const slug = cleanUrl.split('/in/')[1];
-      if (!slug || slug.replace(/\//g, '').length < 3) return;
-      seen.add(cleanUrl);
-
-      const li = link.closest('li');
-      const container = li || link.closest('[class*="result"]') || link.parentElement;
-      if (!container) return;
-
-      let name = '';
-      const nameSelectors = ['span[aria-hidden="true"]', '[class*="title"] span', '[class*="name"]', 'span.t-16', 'span.t-bold'];
-      for (const sel of nameSelectors) {
-        const el = container.querySelector(sel);
-        const text = el?.innerText?.trim()?.split('\n')[0]?.trim();
-        if (text && text.length > 1 && !text.includes('·') && !text.toLowerCase().includes('connect') && !text.toLowerCase().includes('follow') && !text.toLowerCase().includes('message') && !text.toLowerCase().includes('pending')) {
-          name = text;
-          break;
-        }
+  // Helper to extract name from a container element
+  function extractName(container) {
+    const nameSelectors = [
+      '.entity-result__title-text a span[aria-hidden="true"]',
+      '.entity-result__title-line a span[dir="ltr"] span[aria-hidden="true"]',
+      '.app-aware-link span[aria-hidden="true"]',
+      '.artdeco-entity-lockup__title span',
+      '[data-anonymize="person-name"]',
+      'span[aria-hidden="true"]',
+      '[class*="title"] span',
+      '[class*="name"]',
+      'span.t-16',
+      'span.t-bold',
+    ];
+    for (const sel of nameSelectors) {
+      const el = container.querySelector(sel);
+      const text = el?.innerText?.trim()?.split('\n')[0]?.trim();
+      if (text && text.length > 1 && !text.includes('·') &&
+          !text.toLowerCase().includes('connect') &&
+          !text.toLowerCase().includes('follow') &&
+          !text.toLowerCase().includes('message') &&
+          !text.toLowerCase().includes('pending')) {
+        return text.substring(0, 100);
       }
-      if (!name || name.length < 2) return;
+    }
+    return '';
+  }
 
-      const titleEl = container.querySelector('[class*="primary-subtitle"], [class*="subtitle"]:first-of-type, .entity-result__summary');
-      const companyEl = container.querySelector('[class*="secondary-subtitle"]');
-      const photoEl = container.querySelector('img');
-      const photoSrc = photoEl?.src || '';
-      const photoUrl = (photoSrc.includes('media') || photoSrc.includes('profile')) ? photoSrc : null;
+  // Helper to add a prospect
+  function addProspect(name, linkedinUrl, container) {
+    if (!name || name.length < 2 || !linkedinUrl || !linkedinUrl.includes('/in/')) return;
+    const cleanUrl = linkedinUrl.split('?')[0];
+    if (seen.has(cleanUrl)) return;
+    const slug = cleanUrl.split('/in/')[1];
+    if (!slug || slug.replace(/\//g, '').length < 3) return;
+    seen.add(cleanUrl);
 
-      prospects.push({
-        name: name.substring(0, 100),
-        title: (titleEl?.innerText?.trim() || '').substring(0, 150),
-        company: (companyEl?.innerText?.trim() || '').substring(0, 100),
-        linkedin_url: cleanUrl,
-        photo_url: photoUrl,
-      });
-    } catch (e) { /* skip */ }
-  });
+    const titleEl = container?.querySelector(
+      '.entity-result__primary-subtitle, .entity-result__summary, ' +
+      '.artdeco-entity-lockup__subtitle, [class*="primary-subtitle"], ' +
+      '[class*="subtitle"]:first-of-type'
+    );
+    const companyEl = container?.querySelector(
+      '.entity-result__secondary-subtitle, [class*="secondary-subtitle"]'
+    );
+    const photoEl = container?.querySelector(
+      'img.presence-entity__image, img.EntityPhoto-circle-3, ' +
+      'img[class*="profile-photo"], .ivm-image-view-model img, ' +
+      'img.ivm-view-attr__img--centered, img'
+    );
+    const photoSrc = photoEl?.src || '';
+    const photoUrl = (photoSrc.includes('media') || photoSrc.includes('profile')) ? photoSrc : null;
+
+    prospects.push({
+      name: name,
+      title: (titleEl?.innerText?.trim() || '').substring(0, 150),
+      company: (companyEl?.innerText?.trim() || '').substring(0, 100),
+      linkedin_url: cleanUrl,
+      photo_url: photoUrl,
+    });
+  }
+
+  // ── Strategy 1: data-view-name attribute (newest LinkedIn) ──
+  let cards = document.querySelectorAll('[data-view-name="search-entity-result-universal-template"]');
+  if (cards.length === 0) {
+    // Strategy 2: search-results-container li
+    cards = document.querySelectorAll('.search-results-container ul > li');
+  }
+  if (cards.length === 0) {
+    // Strategy 3: reusable-search / entity-result classes
+    cards = document.querySelectorAll('.reusable-search__result-container, .entity-result');
+  }
+  if (cards.length === 0) {
+    // Strategy 4: any li with /in/ links
+    cards = Array.from(document.querySelectorAll('li')).filter(li => li.querySelector('a[href*="/in/"]'));
+  }
+
+  if (cards.length > 0) {
+    cards.forEach(card => {
+      try {
+        const name = extractName(card);
+        const linkEl = card.querySelector('a[href*="/in/"], a.app-aware-link[href*="/in/"]');
+        const linkedinUrl = linkEl ? linkEl.href.split('?')[0] : '';
+        addProspect(name, linkedinUrl, card);
+      } catch (e) { /* skip */ }
+    });
+  }
+
+  // ── Strategy 5: fallback — scrape all /in/ links on the page ──
+  if (prospects.length === 0) {
+    const links = document.querySelectorAll('a[href*="/in/"]');
+    links.forEach(link => {
+      try {
+        const href = link.href || '';
+        if (!href.includes('linkedin.com/in/')) return;
+        const li = link.closest('li');
+        const container = li || link.closest('[class*="result"]') || link.parentElement;
+        if (!container) return;
+        const name = extractName(container);
+        addProspect(name, href, container);
+      } catch (e) { /* skip */ }
+    });
+  }
+
   return prospects;
 }
 

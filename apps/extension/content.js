@@ -17,13 +17,24 @@
 
     // Set detection attribute for the web app
     document.documentElement.setAttribute('data-wassel-extension', 'true');
-    window.postMessage({ type: 'WASSEL_EXTENSION_INSTALLED', version: '1.1.0' }, '*');
+    window.postMessage({ type: 'WASSEL_EXTENSION_INSTALLED', version: '1.1.2' }, '*');
 
     // Marker for detection by the web app
     const marker = document.createElement('div');
     marker.id = 'wassel-extension-marker';
     marker.style.display = 'none';
     document.body.appendChild(marker);
+
+    // ── Token bridge: receive auth token from Wassel web app via postMessage ──
+    // This allows the extension to get the token even without a dashboard tab open
+    window.addEventListener('message', (event) => {
+        if (event.data?.source === 'wassel-web' &&
+            event.data?.type === 'WASSEL_AUTH_TOKEN' &&
+            event.data?.token) {
+            chrome.storage.local.set({ wasselToken: event.data.token });
+            console.log('[Wassel] 🔑 Token received via postMessage bridge');
+        }
+    });
 
     // State
     let isOpen = false;
