@@ -42,7 +42,7 @@ export default function OnboardingExtension() {
   };
 
   const handleSkip = () => {
-    window.location.href = '/app';
+    window.location.href = '/login';
   };
 
   const handleContinue = () => {

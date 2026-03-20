@@ -41,9 +41,9 @@ export default function Login() {
     }
   }, []);
 
-  // If already logged in, send to onboarding extension step (skip LinkedIn since they're already logged in)
+  // If already logged in, send to dashboard
   if (!authLoading && user) {
-    window.location.href = '/onboarding/extension';
+    window.location.href = '/app';
     return null;
   }
 
