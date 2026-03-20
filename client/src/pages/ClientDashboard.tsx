@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'wouter';
 import ClientNav from '@/components/ClientNav';
+import ProfileHeroCard from '@/components/ProfileHeroCard';
 
 function getAuthToken(): string {
     return localStorage.getItem('supabase_token') || '';
@@ -31,6 +32,7 @@ export default function ClientDashboard() {
     const [linkedinConnected, setLinkedinConnected] = useState(false);
     const [activityLogs, setActivityLogs] = useState<any[]>([]);
     const [activityLoading, setActivityLoading] = useState(false);
+    const [liProfile, setLiProfile] = useState<{ photoUrl: string | null; headline: string | null; fullName: string | null } | null>(null);
 
     const firstName = user?.user_metadata?.given_name ||
         user?.user_metadata?.name?.split(' ')[0] ||
@@ -67,6 +69,18 @@ export default function ClientDashboard() {
             if (!document.hidden) fetchActivityLogs();
         }, 10000);
         return () => clearInterval(interval);
+    }, []);
+
+    // Fetch LinkedIn profile (non-blocking for hero card)
+    useEffect(() => {
+        fetch('/api/linkedin/profile', { headers: authHeaders() })
+            .then(r => r.json())
+            .then(data => {
+                if (data && (data.photoUrl || data.fullName || data.headline)) {
+                    setLiProfile(data);
+                }
+            })
+            .catch(() => {}); // silent fail — use fallback data
     }, []);
 
     const fetchData = async () => {
@@ -186,35 +200,25 @@ export default function ClientDashboard() {
                         </div>
                     )}
 
-                    {/* ══ Greeting ══ */}
-                    <div className="mb-6 flex items-start justify-between">
-                        <div className="flex items-center gap-4">
-                            {photoUrl ? (
-                                <img
-                                    src={photoUrl}
-                                    alt={capitalName}
-                                    className="w-14 h-14 rounded-full object-cover border-2 border-white shadow-md"
-                                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                                />
-                            ) : (
-                                <div className="w-14 h-14 rounded-full flex items-center justify-center text-xl font-bold text-white" style={{ background: 'var(--gradient-primary)' }}>
-                                    {capitalName.charAt(0)}
-                                </div>
-                            )}
-                            <div>
-                                <h2 className="text-2xl sm:text-3xl font-extrabold mb-1" style={{ fontFamily: "'Outfit', sans-serif", color: 'var(--text-primary)' }}>
-                                    Hello {capitalName},
-                                </h2>
-                                <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Here's your campaign overview for the last 30 days.</p>
-                            </div>
+                    {/* ══ Profile Hero Card ══ */}
+                    <div className="mb-6 flex items-start justify-between gap-4">
+                        <div style={{ flex: 1, minWidth: 0, maxWidth: 360 }}>
+                            <ProfileHeroCard
+                                photoUrl={liProfile?.photoUrl || photoUrl}
+                                fullName={liProfile?.fullName || capitalName}
+                                headline={liProfile?.headline || null}
+                                isOnline={true}
+                            />
                         </div>
-                        {user?.role === 'super_admin' && (
-                            <Link href="/admin">
-                                <span className="text-xs px-3 py-1.5 rounded-lg hover:bg-gray-100 transition cursor-pointer" style={{ color: 'var(--text-muted)', border: '1px solid var(--border-subtle)' }}>
-                                    لوحة الإدارة →
-                                </span>
-                            </Link>
-                        )}
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8, paddingTop: 8 }}>
+                            {user?.role === 'super_admin' && (
+                                <Link href="/admin">
+                                    <span className="text-xs px-3 py-1.5 rounded-lg hover:bg-gray-100 transition cursor-pointer" style={{ color: 'var(--text-muted)', border: '1px solid var(--border-subtle)' }}>
+                                        لوحة الإدارة →
+                                    </span>
+                                </Link>
+                            )}
+                        </div>
                     </div>
 
                     {/* ══ Main grid: stats + sidebar ══ */}

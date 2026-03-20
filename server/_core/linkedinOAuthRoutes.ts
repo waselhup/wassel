@@ -172,6 +172,8 @@ router.get('/callback', async (req: Request, res: Response) => {
         expires_at: expiresAt,
         linkedin_name: linkedinName,
         linkedin_email: linkedinEmail,
+        profile_picture_url: linkedinPicture || null,
+        headline: (profile as any).headline || null,
         oauth_connected: true,
         status: 'connected',
         updated_at: new Date().toISOString(),
@@ -205,6 +207,52 @@ router.get('/callback', async (req: Request, res: Response) => {
   } catch (e: any) {
     console.error('[LinkedIn OAuth] Callback error:', e);
     return res.redirect(`${DASHBOARD_URL}/login?error=callback_failed`);
+  }
+});
+
+// ============================================================================
+// GET /api/linkedin/profile — Return LinkedIn profile data for hero card
+// ============================================================================
+router.get('/profile', async (req: Request, res: Response) => {
+  const supabase = getSupabase();
+  try {
+    const userId = getUserId(req);
+
+    // Try fetching from linkedin_connections by user_id
+    let photoUrl: string | null = null;
+    let headline: string | null = null;
+    let fullName: string | null = null;
+
+    if (userId) {
+      const { data: conn } = await supabase
+        .from('linkedin_connections')
+        .select('linkedin_name, linkedin_email, profile_picture_url, headline')
+        .eq('user_id', userId)
+        .eq('oauth_connected', true)
+        .limit(1)
+        .single();
+
+      if (conn) {
+        photoUrl = conn.profile_picture_url || null;
+        headline = conn.headline || null;
+        fullName = conn.linkedin_name || null;
+      }
+    }
+
+    // If no connection found, try user_metadata via Supabase auth
+    if (!photoUrl && userId) {
+      const { data: userData } = await supabase.auth.admin.getUserById(userId);
+      if (userData?.user) {
+        const meta = userData.user.user_metadata || {};
+        photoUrl = meta.picture || meta.avatar_url || meta.profile_picture || null;
+        fullName = fullName || meta.full_name || meta.name || null;
+      }
+    }
+
+    res.json({ photoUrl, headline, fullName });
+  } catch (e: any) {
+    console.error('[LinkedIn] Profile fetch error:', e.message);
+    res.json({ photoUrl: null, headline: null, fullName: null });
   }
 });
 
