@@ -41,9 +41,9 @@ export default function Login() {
     }
   }, []);
 
-  // If already logged in, send to dashboard — ClientRoute handles onboarding guards
+  // If already logged in, send to onboarding extension step (skip LinkedIn since they're already logged in)
   if (!authLoading && user) {
-    window.location.href = user.role === 'super_admin' ? '/admin' : '/app';
+    window.location.href = '/onboarding/extension';
     return null;
   }
 

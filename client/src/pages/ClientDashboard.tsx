@@ -155,11 +155,20 @@ export default function ClientDashboard() {
                     )}
 
                     {/* ══ Greeting ══ */}
-                    <div className="mb-6">
-                        <h2 className="text-2xl sm:text-3xl font-extrabold mb-1" style={{ fontFamily: "'Outfit', sans-serif", color: 'var(--text-primary)' }}>
-                            Hello {capitalName},
-                        </h2>
-                        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Here's your campaign overview for the last 30 days.</p>
+                    <div className="mb-6 flex items-start justify-between">
+                        <div>
+                            <h2 className="text-2xl sm:text-3xl font-extrabold mb-1" style={{ fontFamily: "'Outfit', sans-serif", color: 'var(--text-primary)' }}>
+                                Hello {capitalName},
+                            </h2>
+                            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Here's your campaign overview for the last 30 days.</p>
+                        </div>
+                        {user?.role === 'super_admin' && (
+                            <Link href="/admin">
+                                <span className="text-xs px-3 py-1.5 rounded-lg hover:bg-gray-100 transition cursor-pointer" style={{ color: 'var(--text-muted)', border: '1px solid var(--border-subtle)' }}>
+                                    لوحة الإدارة →
+                                </span>
+                            </Link>
+                        )}
                     </div>
 
                     {/* ══ Main grid: stats + sidebar ══ */}

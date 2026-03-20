@@ -101,7 +101,7 @@ function AdminRoute({ component: Component }: { component: React.ComponentType }
 
 /**
  * Route guard: requires authenticated user (client_user or super_admin).
- * Onboarding is suggested but NOT enforced — user can access /app freely.
+ * Unauthenticated users are sent to /onboarding/linkedin to start the journey.
  */
 function ClientRoute({ component: Component }: { component: React.ComponentType }) {
   const { user, loading } = useAuth();
@@ -118,7 +118,7 @@ function ClientRoute({ component: Component }: { component: React.ComponentType 
   }
 
   if (!user) {
-    window.location.href = '/';
+    window.location.href = '/onboarding/linkedin';
     return null;
   }
 
@@ -177,8 +177,8 @@ function Router() {
       <Route path={"/reset-password"} component={ResetPassword} />
       <Route path={"/extension-download"} component={ExtensionDownload} />
       <Route path={"/onboarding"} component={() => <ClientRoute component={Onboarding} />} />
-      <Route path={"/onboarding/linkedin"} component={() => <ProtectedRoute component={OnboardingLinkedIn} />} />
-      <Route path={"/onboarding/extension"} component={() => <ProtectedRoute component={OnboardingExtension} />} />
+      <Route path={"/onboarding/linkedin"} component={OnboardingLinkedIn} />
+      <Route path={"/onboarding/extension"} component={OnboardingExtension} />
       <Route path={"/safety"} component={Safety} />
       <Route path={"/features"} component={Features} />
       <Route path={"/compare/linkedin-automation-tools"} component={Comparison} />
