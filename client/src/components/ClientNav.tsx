@@ -1,7 +1,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import Avatar from '@/components/Avatar';
 import {
-    LayoutDashboard, Target, Users, Download, Chrome,
+    LayoutDashboard, Target, Users, FileText, Chrome,
     LogOut, Globe
 } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
@@ -45,7 +45,7 @@ export default function ClientNav() {
         { href: '/app', label: t('nav.dashboard'), icon: LayoutDashboard, match: /^\/app\/?$/ },
         { href: '/app/campaigns', label: t('nav.campaigns'), icon: Target, match: /^\/app\/campaigns/ },
         { href: '/app/leads', label: t('nav.prospects'), icon: Users, match: /^\/app\/leads/ },
-        { href: '/app/import', label: t('nav.extension'), icon: Download, match: /^\/app\/import/ },
+        { href: '/app/posts', label: t('nav.posts'), icon: FileText, match: /^\/app\/posts/ },
         { href: '/app/extension', label: t('nav.extension'), icon: Chrome, match: /^\/app\/extension/ },
     ];
 

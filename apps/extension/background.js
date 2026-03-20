@@ -930,3 +930,50 @@ chrome.runtime.onStartup.addListener(async () => {
     }
   }
 })();
+
+// ─── PUBLISH_POST: Forward from web app to content.js on LinkedIn tab ───
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === 'PUBLISH_POST' && message.content) {
+    console.log('[Wassel] 📝 PUBLISH_POST received in background, forwarding to LinkedIn tab');
+
+    (async () => {
+      try {
+        // Find an open LinkedIn feed tab
+        const tabs = await chrome.tabs.query({ url: '*://*.linkedin.com/*' });
+        let targetTab = tabs.find(t => t.url && t.url.includes('/feed'));
+
+        if (!targetTab && tabs.length > 0) {
+          targetTab = tabs[0];
+        }
+
+        if (targetTab && targetTab.id) {
+          // Forward to content.js on that tab
+          await safeSendMessage(targetTab.id, {
+            type: 'PUBLISH_POST',
+            content: message.content,
+            postId: message.postId,
+          });
+          sendResponse({ ok: true, tabId: targetTab.id });
+        } else {
+          // No LinkedIn tab — open one
+          const newTab = await chrome.tabs.create({ url: 'https://www.linkedin.com/feed/' });
+          // Wait for tab to load
+          await new Promise(r => setTimeout(r, 4000));
+          if (newTab.id) {
+            await safeSendMessage(newTab.id, {
+              type: 'PUBLISH_POST',
+              content: message.content,
+              postId: message.postId,
+            });
+          }
+          sendResponse({ ok: true, tabId: newTab.id });
+        }
+      } catch (err) {
+        console.error('[Wassel] PUBLISH_POST forward error:', err);
+        sendResponse({ ok: false, error: err.message });
+      }
+    })();
+
+    return true; // async
+  }
+});

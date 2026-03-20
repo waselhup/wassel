@@ -281,7 +281,7 @@ export default function Leads() {
                         <td style={{ padding: '10px 12px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                             <Avatar name={p.name || '?'} size="sm" imageUrl={p.photo_url} />
-                            <span style={{ color: '#f1f5f9', fontWeight: 500 }}>{p.name || '—'}</span>
+                            <span style={{ color: '#f1f5f9', fontWeight: 500 }}>{(p.name || p.full_name || '—')?.split('•')[0]?.split('\n')[0]?.trim() || '—'}</span>
                           </div>
                         </td>
                         <td style={{ padding: '10px 12px', color: '#94a3b8' }}>{p.title || '—'}</td>

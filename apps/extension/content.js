@@ -934,5 +934,112 @@
             return true; // async
         }
     });
+
+    // ─── PUBLISH_POST: User-assisted LinkedIn post publishing ───
+    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+        if (message.type === 'PUBLISH_POST' && message.content) {
+            console.log('[Wassel] 📝 PUBLISH_POST received, content length:', message.content.length);
+            doLinkedInPost(message.content, message.postId);
+            sendResponse({ ok: true });
+            return true;
+        }
+    });
+
+    async function doLinkedInPost(content, postId) {
+        try {
+            // Step 1: Click "Start a post" button
+            const startPostBtn = document.querySelector(
+                'button.share-box-feed-entry__trigger, ' +
+                'button[class*="share-box"], ' +
+                '.share-box-feed-entry__closed-share-box button, ' +
+                'button[aria-label*="Start a post"], ' +
+                'button[aria-label*="Create a post"], ' +
+                '[data-control-name="share-box-feed-entry__trigger"]'
+            );
+
+            if (startPostBtn) {
+                startPostBtn.click();
+                console.log('[Wassel] ✅ Clicked "Start a post" button');
+            } else {
+                console.warn('[Wassel] ⚠ Could not find "Start a post" button — trying fallback');
+                // Try the share box text area directly
+            }
+
+            // Step 2: Wait 2 seconds for modal to open
+            await new Promise(r => setTimeout(r, 2500));
+
+            // Step 3: Find the contenteditable post area and fill the text
+            const editor = document.querySelector(
+                '.ql-editor[contenteditable="true"], ' +
+                'div[role="textbox"][contenteditable="true"], ' +
+                '.share-creation-state__text-editor .ql-editor, ' +
+                '.editor-content [contenteditable="true"], ' +
+                '[data-placeholder*="What do you want to talk about"]'
+            );
+
+            if (editor) {
+                // Clear existing content
+                editor.innerHTML = '';
+
+                // Use execCommand for proper event triggering
+                editor.focus();
+                document.execCommand('insertText', false, content);
+
+                // Also set directly as fallback
+                if (!editor.textContent || editor.textContent.length < 10) {
+                    editor.innerHTML = content.split('\n').map(line => `<p>${line || '<br>'}</p>`).join('');
+                    // Trigger input event
+                    editor.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+
+                console.log('[Wassel] ✅ Post content filled, length:', content.length);
+
+                // Step 4: Highlight the Post button visually (DO NOT click it)
+                await new Promise(r => setTimeout(r, 500));
+                const postBtn = document.querySelector(
+                    'button.share-actions__primary-action, ' +
+                    'button[class*="share-actions__primary"], ' +
+                    'button[aria-label*="Post"]'
+                );
+
+                if (postBtn) {
+                    postBtn.style.boxShadow = '0 0 20px 5px rgba(124, 58, 237, 0.6), 0 0 40px 10px rgba(236, 72, 153, 0.3)';
+                    postBtn.style.animation = 'pulse 1.5s infinite';
+                    postBtn.style.border = '2px solid #7c3aed';
+                    postBtn.style.transform = 'scale(1.05)';
+                    postBtn.style.transition = 'all 0.3s ease';
+
+                    // Add pulsing animation via style tag
+                    if (!document.getElementById('wassel-pulse-style')) {
+                        const style = document.createElement('style');
+                        style.id = 'wassel-pulse-style';
+                        style.textContent = `
+                            @keyframes wassel-pulse {
+                                0%, 100% { box-shadow: 0 0 20px 5px rgba(124, 58, 237, 0.6); }
+                                50% { box-shadow: 0 0 30px 10px rgba(124, 58, 237, 0.8), 0 0 50px 15px rgba(236, 72, 153, 0.4); }
+                            }
+                        `;
+                        document.head.appendChild(style);
+                    }
+                    postBtn.style.animation = 'wassel-pulse 1.5s infinite';
+
+                    console.log('[Wassel] ✅ Post button highlighted — user should click it');
+                }
+
+                // Show a floating notification
+                const notif = document.createElement('div');
+                notif.style.cssText = 'position:fixed;top:20px;right:20px;z-index:999999;background:linear-gradient(135deg,#7c3aed,#ec4899);color:white;padding:14px 20px;border-radius:12px;font-family:sans-serif;font-size:14px;font-weight:600;box-shadow:0 8px 30px rgba(124,58,237,0.4);display:flex;align-items:center;gap:8px;';
+                notif.innerHTML = '✅ Wassel: Post ready! Click the <strong>Post</strong> button to publish.';
+                document.body.appendChild(notif);
+                setTimeout(() => notif.remove(), 8000);
+
+            } else {
+                console.error('[Wassel] ❌ Could not find post editor');
+            }
+        } catch (err) {
+            console.error('[Wassel] ❌ doLinkedInPost error:', err);
+        }
+    }
 })();
+
 

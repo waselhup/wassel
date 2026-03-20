@@ -31,7 +31,7 @@ const applyDirection = (lang: string) => {
   document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
   document.documentElement.lang = lang;
   document.body.style.fontFamily = lang === 'ar'
-    ? "'Cairo', 'Plus Jakarta Sans', sans-serif"
+    ? "'IBM Plex Sans Arabic', 'Segoe UI', system-ui, sans-serif"
     : "'Plus Jakarta Sans', 'Inter', sans-serif";
 };
 

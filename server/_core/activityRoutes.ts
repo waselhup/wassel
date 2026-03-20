@@ -124,4 +124,44 @@ router.get('/', async (req: Request, res: Response) => {
     }
 });
 
+/**
+ * GET /api/activity-log/debug
+ * Diagnostic endpoint — returns table existence, row count, last entry.
+ */
+router.get('/debug', async (req: Request, res: Response) => {
+    try {
+        const userId = (req as any).user?.id;
+        let teamId = getTeamId(req);
+        if (!teamId && userId) {
+            const { data: membership } = await supabase
+                .from('team_members')
+                .select('team_id')
+                .eq('user_id', userId)
+                .single();
+            teamId = membership?.team_id || null;
+        }
+
+        // Check if table exists by querying it
+        const { data, error, count } = await supabase
+            .from('activity_logs')
+            .select('*', { count: 'exact' })
+            .eq('team_id', teamId || '')
+            .order('created_at', { ascending: false })
+            .limit(1);
+
+        const tableExists = !error || error.code !== '42P01';
+        res.json({
+            tableExists,
+            rowCount: count || 0,
+            lastEntry: data?.[0] || null,
+            teamId,
+            userId,
+            error: error?.message || null,
+            errorCode: error?.code || null,
+        });
+    } catch (err: any) {
+        res.json({ tableExists: false, error: err.message });
+    }
+});
+
 export default router;

@@ -16,6 +16,7 @@ import Campaigns from "./pages/Campaigns";
 import Leads from "./pages/Leads";
 import Queue from "./pages/Queue";
 import LeadImport from "./pages/LeadImport";
+import Posts from "./pages/Posts";
 import Templates from "./pages/Templates";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
@@ -200,7 +201,7 @@ function Router() {
 
       {/* Client dashboard routes (/app/*) — any authenticated user */}
       <Route path={/^\/app\/onboarding/} component={() => <ClientRoute component={Onboarding} />} />
-      <Route path={/^\/app\/import/} component={() => <ClientRoute component={LeadImport} />} />
+      <Route path={/^\/app\/posts/} component={() => <ClientRoute component={Posts} />} />
       <Route path={/^\/app\/extension/} component={() => <ClientRoute component={ExtensionPairing} />} />
       <Route path={/^\/app\/templates/} component={() => <ClientRoute component={Templates} />} />
       <Route path={/^\/app\/leads/} component={() => <ClientRoute component={Leads} />} />

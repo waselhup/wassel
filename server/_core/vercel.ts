@@ -11,6 +11,7 @@ import sequenceRoutes from "./sequenceRoutes";
 import adminRoutes from "./adminRoutes";
 import activityRoutes from "./activityRoutes";
 import aiRoutes from "./aiRoutes";
+import postRoutes from "./postRoutes";
 import stripeRoutes from "./stripeRoutes";
 import { appRouter } from "../routers";
 import { createContext, expressAuthMiddleware, requireRole } from "./context";
@@ -57,6 +58,9 @@ app.use("/api/activity-log", expressAuthMiddleware, activityRoutes);
 
 // AI message writer: JWT required
 app.use("/api/ai", expressAuthMiddleware, aiRoutes);
+
+// Posts routes: JWT required
+app.use("/api/posts", expressAuthMiddleware, postRoutes);
 
 // Stripe: webhook has NO auth (raw body needed), other routes need auth
 app.use("/api/stripe", stripeRoutes);
