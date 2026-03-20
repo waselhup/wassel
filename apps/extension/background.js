@@ -1,3 +1,10 @@
+// ============================================================
+// WASSEL EXTENSION — DEVELOPER NOTICE
+// Before committing any changes to this file or any file in
+// apps/extension/, run: npm run ext:version
+// This bumps the version in manifest.json and logs the change.
+// ============================================================
+
 // Wassel Extension — Background Service Worker v3
 // Handles: token sync, automation queue polling, action execution, rate limiting
 
@@ -336,9 +343,33 @@ async function doMessage(url, message, stepId, name) {
 async function executeAction(item) {
   const stepId = item.prospectStepId || item.id;
   const stepType = item.step_type || item.stepType;
-  const url = item.linkedin_url || item.linkedinUrl;
+  let url = item.linkedin_url || item.linkedinUrl;
   const message = item.message || item.message_template || '';
   const name = item.name || 'Unknown';
+
+  // ── URL validation & normalization ──────────────────────────
+  // If url is undefined/null/empty, fail immediately
+  if (!url || typeof url !== 'string' || url.trim() === '') {
+    console.error(`[Wassel] ❌ No LinkedIn URL for ${name} — skipping`);
+    await updateStepStatus(stepId, 'failed', 'Missing LinkedIn URL');
+    return;
+  }
+
+  url = url.trim();
+
+  // Normalize relative paths like "/in/john" → full LinkedIn URL
+  if (url.startsWith('/in/') || url.startsWith('/in?')) {
+    url = 'https://www.linkedin.com' + url;
+    console.log(`[Wassel] 🔧 Normalized relative URL → ${url}`);
+  }
+
+  // Ensure URL starts with https:// (reject chrome-extension://, file://, etc.)
+  if (!url.startsWith('https://')) {
+    console.error(`[Wassel] ❌ Invalid URL for ${name}: ${url}`);
+    await updateStepStatus(stepId, 'failed', `Invalid URL: ${url}`);
+    return;
+  }
+  // ────────────────────────────────────────────────────────────
 
   console.log(`[Wassel] 🎯 Executing: ${stepType} for ${name}`);
   await updateStepStatus(stepId, 'in_progress');

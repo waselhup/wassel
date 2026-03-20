@@ -1,3 +1,10 @@
+// ============================================================
+// WASSEL EXTENSION — DEVELOPER NOTICE
+// Before committing any changes to this file or any file in
+// apps/extension/, run: npm run ext:version
+// This bumps the version in manifest.json and logs the change.
+// ============================================================
+
 // Wassel Extension — Content Script
 // Injected on LinkedIn search result pages
 // Adds a floating "Import to Wassel" sidebar

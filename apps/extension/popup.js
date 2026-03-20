@@ -1,5 +1,10 @@
 // Wassel Extension — Popup (v3 — multi-page collection + auth fix)
 document.addEventListener('DOMContentLoaded', () => {
+  // Show current version in popup footer
+  const manifest = chrome.runtime.getManifest();
+  const versionEl = document.getElementById('ext-version');
+  if (versionEl) versionEl.textContent = manifest.version;
+
   // ── Elements ──
   const statusBar  = document.getElementById('status');
   const statusText = document.getElementById('status-text');
