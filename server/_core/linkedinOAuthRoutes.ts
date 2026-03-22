@@ -111,6 +111,23 @@ router.get('/callback', async (req: Request, res: Response) => {
     if (existingUser) {
       userId = existingUser.id;
       console.log('[LinkedIn OAuth] Existing user found:', userId);
+
+      // Update user metadata with latest LinkedIn photo/name
+      try {
+        const existingMeta = existingUser.user_metadata || {};
+        await supabase.auth.admin.updateUserById(userId, {
+          user_metadata: {
+            ...existingMeta,
+            avatar_url: linkedinPicture || existingMeta.avatar_url,
+            picture: linkedinPicture || existingMeta.picture,
+            full_name: linkedinName || existingMeta.full_name,
+            linkedin_id: linkedinSub || existingMeta.linkedin_id,
+          },
+        });
+        console.log('[LinkedIn OAuth] Updated user metadata with LinkedIn photo');
+      } catch (metaErr: any) {
+        console.warn('[LinkedIn OAuth] Metadata update skipped:', metaErr.message);
+      }
     } else {
       // Create new user
       const { data: newUser, error: createError } = await supabase.auth.admin.createUser({

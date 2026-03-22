@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ── State ──
   let prospects = [];
   let selected  = new Set();
-  let targetCount = 50;
+  let targetCount = 100;
   let isCollecting = false;
 
   // ── Status helper ──
@@ -71,7 +71,23 @@ document.addEventListener('DOMContentLoaded', () => {
   function getToken() {
     return new Promise(resolve => {
       chrome.runtime.sendMessage({ type: 'GET_CONFIG' }, config => {
-        resolve(config?.apiToken || null);
+        if (config?.apiToken) {
+          resolve(config.apiToken);
+          return;
+        }
+        // Fallback: check storage directly for multiple key names
+        chrome.storage.local.get(
+          ['wasselToken', 'authToken', 'token', 'accessToken'],
+          (stored) => {
+            resolve(
+              stored.wasselToken ||
+              stored.authToken ||
+              stored.token ||
+              stored.accessToken ||
+              null
+            );
+          }
+        );
       });
     });
   }

@@ -36,6 +36,81 @@
         }
     });
 
+    // ── Message handler: responds to background.js / popup.js messages ──
+    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+        // PING — heartbeat check from background.js isContentScriptReady()
+        if (message.type === 'PING') {
+            sendResponse({ status: 'alive' });
+            return true;
+        }
+
+        // PROGRESS_UPDATE — show collection progress in sidebar
+        if (message.type === 'PROGRESS_UPDATE') {
+            const progressEl = document.getElementById('wassel-scan-progress');
+            if (progressEl) {
+                progressEl.textContent = `Collecting... ${message.collected}/${message.target} (page ${message.page})`;
+                progressEl.style.display = 'block';
+            }
+            sendResponse({ ok: true });
+            return true;
+        }
+
+        // COLLECTION_COMPLETE — results from multi-page collection
+        if (message.type === 'COLLECTION_COMPLETE') {
+            console.log(`[Wassel] Collection complete: ${message.prospects?.length || 0} prospects`);
+            sendResponse({ ok: true });
+            return true;
+        }
+
+        // PUBLISH_POST — user-assisted LinkedIn publishing
+        if (message.type === 'PUBLISH_POST' && message.content) {
+            console.log('[Wassel] 📝 PUBLISH_POST received in content.js');
+            doLinkedInPost(message.content, message.postId);
+            sendResponse({ ok: true });
+            return true;
+        }
+    });
+
+    // ── LinkedIn post helper (user-assisted publish) ──
+    async function doLinkedInPost(content, postId) {
+        try {
+            // Click "Start a post" button
+            const startPostBtn = document.querySelector('[class*="share-box"] button, [data-control-name="share.main-feed-card"]') ||
+                Array.from(document.querySelectorAll('button')).find(b =>
+                    (b.textContent || '').toLowerCase().includes('start a post') ||
+                    (b.getAttribute('aria-label') || '').toLowerCase().includes('start a post')
+                );
+            if (startPostBtn) {
+                startPostBtn.click();
+                await new Promise(r => setTimeout(r, 2000));
+            }
+
+            // Find the contenteditable post area and fill text
+            const postArea = document.querySelector('[role="textbox"][contenteditable="true"]') ||
+                document.querySelector('.ql-editor') ||
+                document.querySelector('[contenteditable="true"]');
+            if (postArea) {
+                postArea.focus();
+                postArea.innerHTML = `<p>${content.replace(/\n/g, '</p><p>')}</p>`;
+                postArea.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+
+            // Highlight the Post button visually (do NOT auto-click)
+            await new Promise(r => setTimeout(r, 1000));
+            const postBtn = Array.from(document.querySelectorAll('button')).find(b =>
+                (b.textContent || '').trim() === 'Post' ||
+                (b.getAttribute('aria-label') || '').includes('Post')
+            );
+            if (postBtn) {
+                postBtn.style.boxShadow = '0 0 12px #7c3aed, 0 0 24px #ec4899';
+                postBtn.style.border = '2px solid #7c3aed';
+                postBtn.style.animation = 'pulse 1.5s infinite';
+            }
+        } catch (err) {
+            console.error('[Wassel] Post helper error:', err);
+        }
+    }
+
     // State
     let isOpen = false;
     let selectedProspects = [];

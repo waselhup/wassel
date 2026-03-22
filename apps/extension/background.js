@@ -20,6 +20,11 @@ async function safeSendMessage(tabId, message) {
   try {
     const tab = await chrome.tabs.get(tabId);
     if (!tab) return null;
+    // Only send to LinkedIn or Wassel tabs — ignore all others
+    if (!tab.url?.includes('linkedin.com') &&
+        !tab.url?.includes('wassel-alpha.vercel.app')) {
+      return null;
+    }
     if (tab.status !== 'complete') {
       // Wait for tab to finish loading
       await new Promise((resolve) => {
@@ -40,14 +45,15 @@ async function safeSendMessage(tabId, message) {
     return await chrome.tabs.sendMessage(tabId, message);
   } catch (error) {
     // Content script not available on this tab — safe to ignore
-    console.warn('[Wassel] safeSendMessage failed:', error.message, 'tabId:', tabId);
+    // Do NOT log as error — this is expected for tabs without content.js
     return null;
   }
 }
 
 async function isContentScriptReady(tabId) {
   try {
-    const response = await chrome.tabs.sendMessage(tabId, { type: 'PING' });
+    // Use safeSendMessage to avoid 'Receiving end does not exist' errors
+    const response = await safeSendMessage(tabId, { type: 'PING' });
     return response?.status === 'alive';
   } catch {
     return false;
