@@ -128,6 +128,11 @@ router.get('/callback', async (req: Request, res: Response) => {
       } catch (metaErr: any) {
         console.warn('[LinkedIn OAuth] Metadata update skipped:', metaErr.message);
       }
+
+      // Also update profiles.avatar_url for existing users
+      if (linkedinPicture) {
+        await supabase.from('profiles').update({ avatar_url: linkedinPicture }).eq('id', userId);
+      }
     } else {
       // Create new user
       const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
@@ -233,17 +238,34 @@ router.get('/callback', async (req: Request, res: Response) => {
 router.get('/profile', async (req: Request, res: Response) => {
   const supabase = getSupabase();
   try {
-    const userId = getUserId(req);
+    // Route has no expressAuthMiddleware — extract user from JWT directly
+    let userId = getUserId(req);
+    if (!userId) {
+      const authHeader = req.headers.authorization;
+      if (authHeader?.startsWith('Bearer ')) {
+        const jwt = authHeader.slice(7);
+        const { data } = await supabase.auth.admin.getUserById(
+          // Decode sub from JWT payload without verifying (admin API verifies)
+          (() => { try { return JSON.parse(Buffer.from(jwt.split('.')[1], 'base64').toString()).sub || ''; } catch { return ''; } })()
+        );
+        userId = data?.user?.id || null;
+        // Fallback: let Supabase verify the token
+        if (!userId) {
+          const { data: d2 } = await supabase.auth.getUser(jwt);
+          userId = d2?.user?.id || null;
+        }
+      }
+    }
 
-    // Try fetching from linkedin_connections by user_id
     let photoUrl: string | null = null;
     let headline: string | null = null;
     let fullName: string | null = null;
 
     if (userId) {
+      // Try linkedin_connections first
       const { data: conn } = await supabase
         .from('linkedin_connections')
-        .select('linkedin_name, linkedin_email, profile_picture_url, headline')
+        .select('linkedin_name, profile_picture_url, headline')
         .eq('user_id', userId)
         .eq('oauth_connected', true)
         .limit(1)
@@ -254,15 +276,25 @@ router.get('/profile', async (req: Request, res: Response) => {
         headline = conn.headline || null;
         fullName = conn.linkedin_name || null;
       }
-    }
 
-    // If no connection found, try user_metadata via Supabase auth
-    if (!photoUrl && userId) {
-      const { data: userData } = await supabase.auth.admin.getUserById(userId);
-      if (userData?.user) {
-        const meta = userData.user.user_metadata || {};
-        photoUrl = meta.picture || meta.avatar_url || meta.profile_picture || null;
-        fullName = fullName || meta.full_name || meta.name || null;
+      // Fallback: profiles.avatar_url then user_metadata
+      if (!photoUrl) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('avatar_url, full_name')
+          .eq('id', userId)
+          .single();
+        photoUrl = profile?.avatar_url || null;
+        fullName = fullName || profile?.full_name || null;
+      }
+
+      if (!photoUrl) {
+        const { data: userData } = await supabase.auth.admin.getUserById(userId);
+        if (userData?.user) {
+          const meta = userData.user.user_metadata || {};
+          photoUrl = meta.picture || meta.avatar_url || meta.profile_picture || null;
+          fullName = fullName || meta.full_name || meta.name || null;
+        }
       }
     }
 

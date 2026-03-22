@@ -15,9 +15,14 @@ export default function ProfileHeroCard({
 }: ProfileHeroCardProps) {
   const { t } = useTranslation();
 
-  // Proxy LinkedIn photos to avoid CORS/referrer blocks
+  // Proxy external photos to avoid CORS/referrer blocks
+  const needsProxy = photoUrl && (
+    photoUrl.includes('licdn.com') ||
+    photoUrl.includes('linkedin.com') ||
+    photoUrl.includes('googleusercontent.com')
+  );
   const proxiedPhoto = photoUrl
-    ? (photoUrl.includes('licdn.com') || photoUrl.includes('linkedin.com'))
+    ? needsProxy
       ? `/api/proxy-image?url=${encodeURIComponent(photoUrl)}`
       : photoUrl
     : null;

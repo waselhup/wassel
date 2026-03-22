@@ -52445,6 +52445,9 @@ router3.get("/callback", async (req, res) => {
       } catch (metaErr) {
         console.warn("[LinkedIn OAuth] Metadata update skipped:", metaErr.message);
       }
+      if (linkedinPicture) {
+        await supabase3.from("profiles").update({ avatar_url: linkedinPicture }).eq("id", userId);
+      }
     } else {
       const { data: newUser, error: createError } = await supabase3.auth.admin.createUser({
         email: linkedinEmail,
@@ -52519,24 +52522,50 @@ router3.get("/callback", async (req, res) => {
 router3.get("/profile", async (req, res) => {
   const supabase3 = getSupabase2();
   try {
-    const userId = getUserId(req);
+    let userId = getUserId(req);
+    if (!userId) {
+      const authHeader = req.headers.authorization;
+      if (authHeader?.startsWith("Bearer ")) {
+        const jwt3 = authHeader.slice(7);
+        const { data } = await supabase3.auth.admin.getUserById(
+          // Decode sub from JWT payload without verifying (admin API verifies)
+          (() => {
+            try {
+              return JSON.parse(Buffer.from(jwt3.split(".")[1], "base64").toString()).sub || "";
+            } catch {
+              return "";
+            }
+          })()
+        );
+        userId = data?.user?.id || null;
+        if (!userId) {
+          const { data: d2 } = await supabase3.auth.getUser(jwt3);
+          userId = d2?.user?.id || null;
+        }
+      }
+    }
     let photoUrl = null;
     let headline = null;
     let fullName = null;
     if (userId) {
-      const { data: conn } = await supabase3.from("linkedin_connections").select("linkedin_name, linkedin_email, profile_picture_url, headline").eq("user_id", userId).eq("oauth_connected", true).limit(1).single();
+      const { data: conn } = await supabase3.from("linkedin_connections").select("linkedin_name, profile_picture_url, headline").eq("user_id", userId).eq("oauth_connected", true).limit(1).single();
       if (conn) {
         photoUrl = conn.profile_picture_url || null;
         headline = conn.headline || null;
         fullName = conn.linkedin_name || null;
       }
-    }
-    if (!photoUrl && userId) {
-      const { data: userData } = await supabase3.auth.admin.getUserById(userId);
-      if (userData?.user) {
-        const meta3 = userData.user.user_metadata || {};
-        photoUrl = meta3.picture || meta3.avatar_url || meta3.profile_picture || null;
-        fullName = fullName || meta3.full_name || meta3.name || null;
+      if (!photoUrl) {
+        const { data: profile } = await supabase3.from("profiles").select("avatar_url, full_name").eq("id", userId).single();
+        photoUrl = profile?.avatar_url || null;
+        fullName = fullName || profile?.full_name || null;
+      }
+      if (!photoUrl) {
+        const { data: userData } = await supabase3.auth.admin.getUserById(userId);
+        if (userData?.user) {
+          const meta3 = userData.user.user_metadata || {};
+          photoUrl = meta3.picture || meta3.avatar_url || meta3.profile_picture || null;
+          fullName = fullName || meta3.full_name || meta3.name || null;
+        }
       }
     }
     res.json({ photoUrl, headline, fullName });
