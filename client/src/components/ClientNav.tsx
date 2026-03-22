@@ -2,7 +2,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import Avatar from '@/components/Avatar';
 import {
     LayoutDashboard, Target, Users, FileText, Chrome,
-    LogOut, Globe
+    LogOut, Globe, MessageSquare
 } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 import { useTranslation } from 'react-i18next';
@@ -46,6 +46,7 @@ export default function ClientNav() {
         { href: '/app/campaigns', label: t('nav.campaigns'), icon: Target, match: /^\/app\/campaigns/ },
         { href: '/app/leads', label: t('nav.prospects'), icon: Users, match: /^\/app\/leads/ },
         { href: '/app/posts', label: t('nav.posts'), icon: FileText, match: /^\/app\/posts/ },
+        { href: '/app/messages', label: t('nav.messages') || 'الرسائل', icon: MessageSquare, match: /^\/app\/messages/ },
         { href: '/app/extension', label: t('nav.extension'), icon: Chrome, match: /^\/app\/extension/ },
     ];
 

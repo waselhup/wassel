@@ -15,6 +15,13 @@ export default function ProfileHeroCard({
 }: ProfileHeroCardProps) {
   const { t } = useTranslation();
 
+  // Proxy LinkedIn photos to avoid CORS/referrer blocks
+  const proxiedPhoto = photoUrl
+    ? (photoUrl.includes('licdn.com') || photoUrl.includes('linkedin.com'))
+      ? `/api/proxy-image?url=${encodeURIComponent(photoUrl)}`
+      : photoUrl
+    : null;
+
   return (
     <div
       style={{
@@ -30,9 +37,9 @@ export default function ProfileHeroCard({
       }}
     >
       {/* Background — photo or gradient fallback */}
-      {photoUrl ? (
+      {proxiedPhoto ? (
         <img
-          src={photoUrl}
+          src={proxiedPhoto}
           alt={fullName}
           style={{
             position: 'absolute',
@@ -60,7 +67,7 @@ export default function ProfileHeroCard({
           position: 'absolute',
           inset: 0,
           background: 'linear-gradient(135deg, #7c3aed 0%, #6366f1 40%, #ec4899 100%)',
-          display: photoUrl ? 'none' : 'flex',
+          display: proxiedPhoto ? 'none' : 'flex',
           alignItems: 'center',
           justifyContent: 'center',
         }}

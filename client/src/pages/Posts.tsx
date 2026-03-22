@@ -8,12 +8,18 @@ import {
   CheckCircle, XCircle, FileText, RefreshCw,
 } from 'lucide-react';
 
+import { toast } from 'sonner';
+
 async function apiFetch(path: string, token: string, options?: RequestInit) {
   const res = await fetch(path, {
     ...options,
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...(options?.headers || {}) },
   });
-  return res.json();
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || data.message || `API error ${res.status}`);
+  }
+  return data;
 }
 
 type PostStatus = 'all' | 'draft' | 'scheduled' | 'published' | 'failed';
@@ -70,9 +76,11 @@ export default function Posts() {
         body: JSON.stringify({ content: content.trim() }),
       });
       setContent('');
+      toast.success(t('posts.draftSaved') || 'Draft saved ✅');
       fetchPosts();
     } catch (e: any) {
       console.error('[Posts] save error:', e);
+      toast.error(e.message || 'Failed to save draft');
     } finally {
       setSaving(false);
     }
@@ -89,9 +97,11 @@ export default function Posts() {
       });
       setContent('');
       setScheduleDate('');
+      toast.success(t('posts.postScheduled') || 'Post scheduled ✅');
       fetchPosts();
     } catch (e: any) {
       console.error('[Posts] schedule error:', e);
+      toast.error(e.message || 'Failed to schedule post');
     } finally {
       setSaving(false);
     }
@@ -111,13 +121,12 @@ export default function Posts() {
       if (!postId) throw new Error('Failed to create post');
 
       // 2. Call publish endpoint which returns extension action
-      const publishRes = await apiFetch(`/api/posts/${postId}/publish`, token, { method: 'POST' });
+      await apiFetch(`/api/posts/${postId}/publish`, token, { method: 'POST' });
 
       // 3. Send message to extension to open LinkedIn and fill the post
       const w = window as any;
       if (typeof w.chrome !== 'undefined' && w.chrome?.runtime?.sendMessage) {
         try {
-          // Try to reach extension
           w.chrome.runtime.sendMessage(
             { type: 'PUBLISH_POST', postId, content: content.trim() },
             (response: any) => {
@@ -133,9 +142,11 @@ export default function Posts() {
       window.open('https://www.linkedin.com/feed/', '_blank');
 
       setContent('');
+      toast.success('Opening LinkedIn — click Post to publish ✅');
       fetchPosts();
     } catch (e: any) {
       console.error('[Posts] publish error:', e);
+      toast.error(e.message || 'Failed to publish');
     } finally {
       setPublishing(false);
     }
@@ -146,12 +157,13 @@ export default function Posts() {
     try {
       await apiFetch(`/api/posts/${id}`, token, { method: 'DELETE' });
       setPosts(posts.filter(p => p.id !== id));
+      toast.success('Post deleted');
     } catch (e: any) {
       console.error('[Posts] delete error:', e);
     }
   };
 
-  // AI generate handler
+  // AI generate handler — THE CRITICAL FIX
   const handleAIGenerate = async (config: AIMessageConfig) => {
     setAiGenerating(true);
     try {
@@ -170,9 +182,13 @@ export default function Posts() {
       if (res.message) {
         setContent(res.message);
         setShowAI(false);
+        toast.success('تم توليد المحتوى ✨');
+      } else {
+        toast.error('لم يتم إرجاع محتوى من الذكاء الاصطناعي');
       }
     } catch (e: any) {
       console.error('[Posts] AI error:', e);
+      toast.error(e.message || 'فشل توليد الرسالة — حاول مرة أخرى');
     } finally {
       setAiGenerating(false);
     }

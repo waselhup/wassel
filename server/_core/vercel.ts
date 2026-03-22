@@ -12,6 +12,7 @@ import adminRoutes from "./adminRoutes";
 import activityRoutes from "./activityRoutes";
 import aiRoutes from "./aiRoutes";
 import postRoutes from "./postRoutes";
+import messageRoutes from "./messageRoutes";
 import stripeRoutes from "./stripeRoutes";
 import { appRouter } from "../routers";
 import { createContext, expressAuthMiddleware, requireRole } from "./context";
@@ -62,6 +63,9 @@ app.use("/api/ai", expressAuthMiddleware, aiRoutes);
 // Posts routes: JWT required
 app.use("/api/posts", expressAuthMiddleware, postRoutes);
 
+// Messages routes: JWT required
+app.use("/api/messages", expressAuthMiddleware, messageRoutes);
+
 // Stripe: webhook has NO auth (raw body needed), other routes need auth
 app.use("/api/stripe", stripeRoutes);
 
@@ -72,6 +76,27 @@ app.use("/api/user", userRoutes);
 // Health check endpoint
 app.get("/api/health", (_req: any, res: any) => {
     res.json({ ok: true, timestamp: new Date().toISOString() });
+});
+
+// Image proxy — avoids CORS/referrer blocks for LinkedIn photos (Bug 3)
+app.get("/api/proxy-image", async (req: any, res: any) => {
+    const url = req.query.url as string;
+    if (!url || (!url.includes('licdn.com') && !url.includes('linkedin.com') && !url.includes('lnkd.in'))) {
+        return res.status(400).json({ error: 'Invalid or disallowed URL' });
+    }
+    try {
+        const imgRes = await fetch(url, {
+            headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': 'image/*' },
+        });
+        if (!imgRes.ok) return res.status(imgRes.status).end();
+        const contentType = imgRes.headers.get('content-type') || 'image/jpeg';
+        res.setHeader('Content-Type', contentType);
+        res.setHeader('Cache-Control', 'public, max-age=86400');
+        const buffer = Buffer.from(await imgRes.arrayBuffer());
+        res.send(buffer);
+    } catch (e: any) {
+        res.status(500).json({ error: e.message });
+    }
 });
 
 // LinkedIn diagnostic — no auth required

@@ -3,7 +3,8 @@ import { useLocation } from 'wouter';
 import ClientNav from '@/components/ClientNav';
 import { useAuth } from '@/contexts/AuthContext';
 import Avatar from '@/components/Avatar';
-import { ChevronRight, ChevronLeft, Rocket, CheckCircle, Search, Users, Loader2, Lock, Sparkles } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Rocket, CheckCircle, Search, Users, Loader2, Lock, Sparkles, FileText } from 'lucide-react';
+import { toast } from 'sonner';
 
 // Fetch helper
 async function apiFetch(path: string, token: string, options?: RequestInit) {
@@ -120,6 +121,27 @@ export default function CampaignWizard() {
   const inviteRef = useRef<HTMLTextAreaElement>(null);
   const msg1Ref = useRef<HTMLTextAreaElement>(null);
   const followRef = useRef<HTMLTextAreaElement>(null);
+
+  // Templates from Messages library
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [showTemplatePicker, setShowTemplatePicker] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (token) {
+      apiFetch('/api/messages', token)
+        .then(data => setTemplates(data.messages || []))
+        .catch(() => {});
+    }
+  }, [token]);
+
+  const applyTemplate = (template: any, setter: (v: string) => void, maxLen: number) => {
+    const text = template.content.substring(0, maxLen);
+    setter(text);
+    setShowTemplatePicker(null);
+    // Increment usage count
+    apiFetch(`/api/messages/${template.id}/use`, token, { method: 'POST' }).catch(() => {});
+    toast.success('Template applied ✅');
+  };
 
   // AI Writer state
   const [aiTarget, setAiTarget] = useState<'invite' | 'message' | 'follow_up' | null>(null);
@@ -479,6 +501,26 @@ export default function CampaignWizard() {
                       <VariableChips textareaRef={inviteRef} value={inviteNote} onChange={setInviteNote} />
                       <span style={{ color: '#475569', fontSize: 11 }}>{inviteNote.length}/300</span>
                     </div>
+                    {/* Template picker */}
+                    {templates.filter(t => t.message_type === 'connection_note').length > 0 && (
+                      <div style={{ position: 'relative', marginTop: 8 }}>
+                        <button type="button" onClick={() => setShowTemplatePicker(showTemplatePicker === 'invite' ? null : 'invite')}
+                          style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border-subtle, rgba(255,255,255,0.08))', borderRadius: 8, padding: '6px 12px', color: '#94a3b8', fontSize: 12, cursor: 'pointer' }}>
+                          <FileText size={13} /> 📋 Use Template
+                        </button>
+                        {showTemplatePicker === 'invite' && (
+                          <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, background: 'var(--bg-card, #1e293b)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: 6, zIndex: 50, maxHeight: 200, overflowY: 'auto' }}>
+                            {templates.filter(t => t.message_type === 'connection_note').map(t => (
+                              <button key={t.id} type="button" onClick={() => applyTemplate(t, setInviteNote, 300)}
+                                style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', borderRadius: 6, border: 'none', background: 'transparent', color: '#e2e8f0', fontSize: 12, cursor: 'pointer', marginBottom: 2 }}>
+                                <strong>{t.name}</strong>
+                                <span style={{ display: 'block', color: '#64748b', fontSize: 11, marginTop: 2 }}>{t.content.substring(0, 60)}...</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
                     {/* AI Writer */}
                     {aiTarget !== 'invite' ? (
                       <button type="button" onClick={() => { setAiTarget('invite'); setAiResult(''); }}

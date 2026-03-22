@@ -760,17 +760,28 @@ async function collectMultiPageProspects(targetCount, tabId) {
 
     // Navigate to next page
     try {
+      // Scroll to bottom first so pagination is visible
+      await chrome.scripting.executeScript({
+        target: { tabId },
+        func: () => { window.scrollTo(0, document.body.scrollHeight); },
+      });
+      await sleep(1500);
+
+      const prevCount = allProspects.length;
+
       const nextResult = await chrome.scripting.executeScript({
         target: { tabId },
         func: () => {
           const nextBtn = document.querySelector(
             'button[aria-label="Next"], ' +
+            'button[aria-label="التالي"], ' +
             '.artdeco-pagination__button--next, ' +
+            'button[aria-label*="next" i], ' +
             'li.artdeco-pagination__indicator--number.active + li button'
           );
           if (nextBtn && !nextBtn.disabled) {
-            nextBtn.scrollIntoView({ behavior: 'smooth' });
-            setTimeout(() => nextBtn.click(), 300);
+            nextBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            setTimeout(() => nextBtn.click(), 500);
             return true;
           }
           // Fallback: try page number link
@@ -791,8 +802,31 @@ async function collectMultiPageProspects(targetCount, tabId) {
         break;
       }
 
-      // Wait for next page to load
-      await sleep(3000 + Math.random() * 2000);
+      // Wait for next page to load — minimum 4 seconds + random jitter
+      await sleep(4000 + Math.random() * 2000);
+
+      // Wait for new results to appear (up to 10 seconds)
+      await chrome.scripting.executeScript({
+        target: { tabId },
+        func: () => {
+          return new Promise(resolve => {
+            let checks = 0;
+            const interval = setInterval(() => {
+              checks++;
+              const results = document.querySelectorAll(
+                '[data-view-name="search-entity-result-universal-template"], ' +
+                '.search-results-container ul > li, ' +
+                '.entity-result'
+              );
+              if (results.length > 0 || checks >= 20) {
+                clearInterval(interval);
+                resolve(true);
+              }
+            }, 500);
+          });
+        },
+      });
+
       pageNum++;
     } catch (e) {
       console.error('[Wassel] Navigation error:', e.message);
