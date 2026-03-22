@@ -18834,17 +18834,17 @@ var require_router = __commonJS({
     var toString3 = Object.prototype.toString;
     var proto = module2.exports = function(options) {
       var opts = options || {};
-      function router13(req, res, next) {
-        router13.handle(req, res, next);
+      function router16(req, res, next) {
+        router16.handle(req, res, next);
       }
-      setPrototypeOf(router13, proto);
-      router13.params = {};
-      router13._params = [];
-      router13.caseSensitive = opts.caseSensitive;
-      router13.mergeParams = opts.mergeParams;
-      router13.strict = opts.strict;
-      router13.stack = [];
-      return router13;
+      setPrototypeOf(router16, proto);
+      router16.params = {};
+      router16._params = [];
+      router16.caseSensitive = opts.caseSensitive;
+      router16.mergeParams = opts.mergeParams;
+      router16.strict = opts.strict;
+      router16.stack = [];
+      return router16;
     };
     proto.param = function param(name, fn) {
       if (typeof name === "function") {
@@ -21860,7 +21860,7 @@ var require_application = __commonJS({
   "node_modules/express/lib/application.js"(exports2, module2) {
     "use strict";
     var finalhandler = require_finalhandler();
-    var Router12 = require_router();
+    var Router15 = require_router();
     var methods = require_methods();
     var middleware = require_init();
     var query = require_query();
@@ -21925,7 +21925,7 @@ var require_application = __commonJS({
     };
     app2.lazyrouter = function lazyrouter() {
       if (!this._router) {
-        this._router = new Router12({
+        this._router = new Router15({
           caseSensitive: this.enabled("case sensitive routing"),
           strict: this.enabled("strict routing")
         });
@@ -21934,17 +21934,17 @@ var require_application = __commonJS({
       }
     };
     app2.handle = function handle(req, res, callback) {
-      var router13 = this._router;
+      var router16 = this._router;
       var done = callback || finalhandler(req, res, {
         env: this.get("env"),
         onerror: logerror.bind(this)
       });
-      if (!router13) {
+      if (!router16) {
         debug("no routes defined on app");
         done();
         return;
       }
-      router13.handle(req, res, done);
+      router16.handle(req, res, done);
     };
     app2.use = function use(fn) {
       var offset = 0;
@@ -21964,15 +21964,15 @@ var require_application = __commonJS({
         throw new TypeError("app.use() requires a middleware function");
       }
       this.lazyrouter();
-      var router13 = this._router;
+      var router16 = this._router;
       fns.forEach(function(fn2) {
         if (!fn2 || !fn2.handle || !fn2.set) {
-          return router13.use(path, fn2);
+          return router16.use(path, fn2);
         }
         debug(".use app under %s", path);
         fn2.mountpath = path;
         fn2.parent = this;
-        router13.use(path, function mounted_app(req, res, next) {
+        router16.use(path, function mounted_app(req, res, next) {
           var orig = req.app;
           fn2.handle(req, res, function(err) {
             setPrototypeOf(req, orig.request);
@@ -23789,7 +23789,7 @@ var require_express = __commonJS({
     var mixin = require_merge_descriptors();
     var proto = require_application();
     var Route = require_route();
-    var Router12 = require_router();
+    var Router15 = require_router();
     var req = require_request();
     var res = require_response();
     exports2 = module2.exports = createApplication;
@@ -23812,7 +23812,7 @@ var require_express = __commonJS({
     exports2.request = req;
     exports2.response = res;
     exports2.Route = Route;
-    exports2.Router = Router12;
+    exports2.Router = Router15;
     exports2.json = bodyParser.json;
     exports2.query = require_query();
     exports2.raw = bodyParser.raw;
@@ -43745,7 +43745,7 @@ __export(vercel_exports, {
   default: () => vercel_default
 });
 module.exports = __toCommonJS(vercel_exports);
-var import_express12 = __toESM(require_express2(), 1);
+var import_express15 = __toESM(require_express2(), 1);
 
 // node_modules/@trpc/server/dist/codes-DagpWZLc.mjs
 function mergeWithoutOverrides(obj1, ...objs) {
@@ -44186,19 +44186,19 @@ function createRouterFactory(config2) {
       procedures,
       lazy: lazy$1
     }, emptyRouter), {}, { record: record2 });
-    const router13 = (0, import_objectSpread22.default)((0, import_objectSpread22.default)({}, record2), {}, {
+    const router16 = (0, import_objectSpread22.default)((0, import_objectSpread22.default)({}, record2), {}, {
       _def,
       createCaller: createCallerFactory()({ _def })
     });
-    return router13;
+    return router16;
   }
   return createRouterInner;
 }
 function isProcedure(procedureOrRouter) {
   return typeof procedureOrRouter === "function";
 }
-async function getProcedureAtPath(router13, path) {
-  const { _def } = router13;
+async function getProcedureAtPath(router16, path) {
+  const { _def } = router16;
   let procedure = _def.procedures[path];
   while (!procedure) {
     const key = Object.keys(_def.lazy).find((key$1) => path.startsWith(key$1));
@@ -44210,14 +44210,14 @@ async function getProcedureAtPath(router13, path) {
   return procedure;
 }
 function createCallerFactory() {
-  return function createCallerInner(router13) {
-    const { _def } = router13;
+  return function createCallerInner(router16) {
+    const { _def } = router16;
     return function createCaller(ctxOrCallback, opts) {
       return createRecursiveProxy(async (innerOpts) => {
         const { path, args } = innerOpts;
         const fullPath = path.join(".");
         if (path.length === 1 && path[0] === "_def") return _def;
-        const procedure = await getProcedureAtPath(router13, fullPath);
+        const procedure = await getProcedureAtPath(router16, fullPath);
         let ctx = void 0;
         try {
           if (!procedure) throw new TRPCError({
@@ -44265,7 +44265,7 @@ function mergeRouters(...routerList) {
     }
     return prev;
   }, defaultTransformer);
-  const router13 = createRouterFactory({
+  const router16 = createRouterFactory({
     errorFormatter,
     transformer,
     isDev: routerList.every((r) => r._def._config.isDev),
@@ -44274,7 +44274,7 @@ function mergeRouters(...routerList) {
     $types: (_routerList$ = routerList[0]) === null || _routerList$ === void 0 ? void 0 : _routerList$._def._config.$types,
     sse: (_routerList$2 = routerList[0]) === null || _routerList$2 === void 0 ? void 0 : _routerList$2._def._config.sse
   })(record2);
-  return router13;
+  return router16;
 }
 var trackedSymbol = Symbol();
 function isTrackedEnvelope(value) {
@@ -45624,7 +45624,7 @@ function initResponse(initOpts) {
   return { status };
 }
 function caughtErrorToData(cause, errorOpts) {
-  const { router: router13, req, onError } = errorOpts.opts;
+  const { router: router16, req, onError } = errorOpts.opts;
   const error48 = getTRPCErrorFromUnknown(cause);
   onError === null || onError === void 0 || onError({
     error: error48,
@@ -45635,14 +45635,14 @@ function caughtErrorToData(cause, errorOpts) {
     req
   });
   const untransformedJSON = { error: getErrorShape({
-    config: router13._def._config,
+    config: router16._def._config,
     error: error48,
     type: errorOpts.type,
     path: errorOpts.path,
     input: errorOpts.input,
     ctx: errorOpts.ctx
   }) };
-  const transformedJSON = transformTRPCResponse(router13._def._config, untransformedJSON);
+  const transformedJSON = transformTRPCResponse(router16._def._config, untransformedJSON);
   const body = JSON.stringify(transformedJSON);
   return {
     error: error48,
@@ -45657,9 +45657,9 @@ function isDataStream(v) {
 }
 async function resolveResponse(opts) {
   var _ref, _opts$allowBatching, _opts$batching, _opts$allowMethodOver, _config$sse$enabled, _config$sse;
-  const { router: router13, req } = opts;
+  const { router: router16, req } = opts;
   const headers = new Headers([["vary", "trpc-accept"]]);
-  const config2 = router13._def._config;
+  const config2 = router16._def._config;
   const url3 = new URL(req.url);
   if (req.method === "HEAD") return new Response(null, { status: 204 });
   const allowBatching = (_ref = (_opts$allowBatching = opts.allowBatching) !== null && _opts$allowBatching !== void 0 ? _opts$allowBatching : (_opts$batching = opts.batching) === null || _opts$batching === void 0 ? void 0 : _opts$batching.enabled) !== null && _ref !== void 0 ? _ref : true;
@@ -45669,7 +45669,7 @@ async function resolveResponse(opts) {
       return [void 0, await getRequestInfo({
         req,
         path: decodeURIComponent(opts.path),
-        router: router13,
+        router: router16,
         searchParams: url3.searchParams,
         headers: opts.req.headers,
         url: url3
@@ -49499,9 +49499,9 @@ var trackStream = (stream4, chunkSize, onProgress, onFinish) => {
 // node_modules/axios/lib/adapters/fetch.js
 var DEFAULT_CHUNK_SIZE = 64 * 1024;
 var { isFunction: isFunction3 } = utils_default;
-var globalFetchAPI = (({ Request: Request12, Response: Response12 }) => ({
-  Request: Request12,
-  Response: Response12
+var globalFetchAPI = (({ Request: Request15, Response: Response15 }) => ({
+  Request: Request15,
+  Response: Response15
 }))(utils_default.global);
 var { ReadableStream: ReadableStream2, TextEncoder: TextEncoder2 } = utils_default.global;
 var test = (fn, ...args) => {
@@ -49519,18 +49519,18 @@ var factory = (env) => {
     globalFetchAPI,
     env
   );
-  const { fetch: envFetch, Request: Request12, Response: Response12 } = env;
+  const { fetch: envFetch, Request: Request15, Response: Response15 } = env;
   const isFetchSupported = envFetch ? isFunction3(envFetch) : typeof fetch === "function";
-  const isRequestSupported = isFunction3(Request12);
-  const isResponseSupported = isFunction3(Response12);
+  const isRequestSupported = isFunction3(Request15);
+  const isResponseSupported = isFunction3(Response15);
   if (!isFetchSupported) {
     return false;
   }
   const isReadableStreamSupported = isFetchSupported && isFunction3(ReadableStream2);
-  const encodeText = isFetchSupported && (typeof TextEncoder2 === "function" ? /* @__PURE__ */ ((encoder2) => (str) => encoder2.encode(str))(new TextEncoder2()) : async (str) => new Uint8Array(await new Request12(str).arrayBuffer()));
+  const encodeText = isFetchSupported && (typeof TextEncoder2 === "function" ? /* @__PURE__ */ ((encoder2) => (str) => encoder2.encode(str))(new TextEncoder2()) : async (str) => new Uint8Array(await new Request15(str).arrayBuffer()));
   const supportsRequestStream = isRequestSupported && isReadableStreamSupported && test(() => {
     let duplexAccessed = false;
-    const hasContentType = new Request12(platform_default.origin, {
+    const hasContentType = new Request15(platform_default.origin, {
       body: new ReadableStream2(),
       method: "POST",
       get duplex() {
@@ -49540,7 +49540,7 @@ var factory = (env) => {
     }).headers.has("Content-Type");
     return duplexAccessed && !hasContentType;
   });
-  const supportsResponseStream = isResponseSupported && isReadableStreamSupported && test(() => utils_default.isReadableStream(new Response12("").body));
+  const supportsResponseStream = isResponseSupported && isReadableStreamSupported && test(() => utils_default.isReadableStream(new Response15("").body));
   const resolvers = {
     stream: supportsResponseStream && ((res) => res.body)
   };
@@ -49567,7 +49567,7 @@ var factory = (env) => {
       return body.size;
     }
     if (utils_default.isSpecCompliantForm(body)) {
-      const _request = new Request12(platform_default.origin, {
+      const _request = new Request15(platform_default.origin, {
         method: "POST",
         body
       });
@@ -49615,7 +49615,7 @@ var factory = (env) => {
     let requestContentLength;
     try {
       if (onUploadProgress && supportsRequestStream && method !== "get" && method !== "head" && (requestContentLength = await resolveBodyLength(headers, data)) !== 0) {
-        let _request = new Request12(url3, {
+        let _request = new Request15(url3, {
           method: "POST",
           body: data,
           duplex: "half"
@@ -49635,7 +49635,7 @@ var factory = (env) => {
       if (!utils_default.isString(withCredentials)) {
         withCredentials = withCredentials ? "include" : "omit";
       }
-      const isCredentialsSupported = isRequestSupported && "credentials" in Request12.prototype;
+      const isCredentialsSupported = isRequestSupported && "credentials" in Request15.prototype;
       const resolvedOptions = {
         ...fetchOptions,
         signal: composedSignal,
@@ -49645,7 +49645,7 @@ var factory = (env) => {
         duplex: "half",
         credentials: isCredentialsSupported ? withCredentials : void 0
       };
-      request = isRequestSupported && new Request12(url3, resolvedOptions);
+      request = isRequestSupported && new Request15(url3, resolvedOptions);
       let response = await (isRequestSupported ? _fetch(request, fetchOptions) : _fetch(url3, resolvedOptions));
       const isStreamResponse = supportsResponseStream && (responseType === "stream" || responseType === "response");
       if (supportsResponseStream && (onDownloadProgress || isStreamResponse && unsubscribe)) {
@@ -49658,7 +49658,7 @@ var factory = (env) => {
           responseContentLength,
           progressEventReducer(asyncDecorator(onDownloadProgress), true)
         ) || [];
-        response = new Response12(
+        response = new Response15(
           trackStream(response.body, DEFAULT_CHUNK_SIZE, onProgress, () => {
             flush && flush();
             unsubscribe && unsubscribe();
@@ -49705,8 +49705,8 @@ var factory = (env) => {
 var seedCache = /* @__PURE__ */ new Map();
 var getFetch = (config2) => {
   let env = config2 && config2.env || {};
-  const { fetch: fetch2, Request: Request12, Response: Response12 } = env;
-  const seeds = [Request12, Response12, fetch2];
+  const { fetch: fetch2, Request: Request15, Response: Response15 } = env;
+  const seeds = [Request15, Response15, fetch2];
   let len = seeds.length, i = len, seed, target, map2 = seedCache;
   while (i--) {
     seed = seeds[i];
@@ -52372,6 +52372,9 @@ function getConfig2() {
     DASHBOARD_URL: process.env.DASHBOARD_ORIGIN || "https://wassel-alpha.vercel.app"
   };
 }
+function getUserId(req) {
+  return req.userId || req.user?.id || null;
+}
 router3.get("/connect", (req, res) => {
   const { LINKEDIN_CLIENT_ID, LINKEDIN_REDIRECT_URI } = getConfig2();
   const state = import_crypto4.default.randomUUID();
@@ -52427,6 +52430,21 @@ router3.get("/callback", async (req, res) => {
     if (existingUser) {
       userId = existingUser.id;
       console.log("[LinkedIn OAuth] Existing user found:", userId);
+      try {
+        const existingMeta = existingUser.user_metadata || {};
+        await supabase3.auth.admin.updateUserById(userId, {
+          user_metadata: {
+            ...existingMeta,
+            avatar_url: linkedinPicture || existingMeta.avatar_url,
+            picture: linkedinPicture || existingMeta.picture,
+            full_name: linkedinName || existingMeta.full_name,
+            linkedin_id: linkedinSub || existingMeta.linkedin_id
+          }
+        });
+        console.log("[LinkedIn OAuth] Updated user metadata with LinkedIn photo");
+      } catch (metaErr) {
+        console.warn("[LinkedIn OAuth] Metadata update skipped:", metaErr.message);
+      }
     } else {
       const { data: newUser, error: createError } = await supabase3.auth.admin.createUser({
         email: linkedinEmail,
@@ -52472,6 +52490,8 @@ router3.get("/callback", async (req, res) => {
       expires_at: expiresAt,
       linkedin_name: linkedinName,
       linkedin_email: linkedinEmail,
+      profile_picture_url: linkedinPicture || null,
+      headline: profile.headline || null,
       oauth_connected: true,
       status: "connected",
       updated_at: (/* @__PURE__ */ new Date()).toISOString()
@@ -52482,7 +52502,7 @@ router3.get("/callback", async (req, res) => {
       type: "magiclink",
       email: linkedinEmail,
       options: {
-        redirectTo: `${DASHBOARD_URL}/onboarding/linkedin`
+        redirectTo: `${DASHBOARD_URL}/onboarding/extension`
       }
     });
     if (linkData?.properties?.action_link) {
@@ -52494,6 +52514,35 @@ router3.get("/callback", async (req, res) => {
   } catch (e) {
     console.error("[LinkedIn OAuth] Callback error:", e);
     return res.redirect(`${DASHBOARD_URL}/login?error=callback_failed`);
+  }
+});
+router3.get("/profile", async (req, res) => {
+  const supabase3 = getSupabase2();
+  try {
+    const userId = getUserId(req);
+    let photoUrl = null;
+    let headline = null;
+    let fullName = null;
+    if (userId) {
+      const { data: conn } = await supabase3.from("linkedin_connections").select("linkedin_name, linkedin_email, profile_picture_url, headline").eq("user_id", userId).eq("oauth_connected", true).limit(1).single();
+      if (conn) {
+        photoUrl = conn.profile_picture_url || null;
+        headline = conn.headline || null;
+        fullName = conn.linkedin_name || null;
+      }
+    }
+    if (!photoUrl && userId) {
+      const { data: userData } = await supabase3.auth.admin.getUserById(userId);
+      if (userData?.user) {
+        const meta3 = userData.user.user_metadata || {};
+        photoUrl = meta3.picture || meta3.avatar_url || meta3.profile_picture || null;
+        fullName = fullName || meta3.full_name || meta3.name || null;
+      }
+    }
+    res.json({ photoUrl, headline, fullName });
+  } catch (e) {
+    console.error("[LinkedIn] Profile fetch error:", e.message);
+    res.json({ photoUrl: null, headline: null, fullName: null });
   }
 });
 router3.get("/status", async (req, res) => {
@@ -52981,7 +53030,7 @@ router5.get("/prospects", async (req, res) => {
       return res.status(401).json({ error: "No team associated with user" });
     }
     const clientId = req.query.client_id;
-    let query = supabase.from("prospects").select("id, linkedin_url, name, title, company, location, source_url, status, created_at").eq("team_id", teamId).order("created_at", { ascending: false }).limit(100);
+    let query = supabase.from("prospects").select("id, linkedin_url, name, title, company, location, source_url, status, created_at").eq("team_id", teamId).order("created_at", { ascending: false }).limit(1e3);
     if (clientId) {
       query = query.eq("client_id", clientId);
     }
@@ -54221,9 +54270,116 @@ router8.get("/stats", async (req, res) => {
 });
 var adminRoutes_default = router8;
 
-// server/_core/aiRoutes.ts
+// server/_core/activityRoutes.ts
 var import_express9 = __toESM(require_express2(), 1);
 var router9 = (0, import_express9.Router)();
+function getTeamId3(req) {
+  const user = req.user;
+  if (!user) return null;
+  if (user.role === "super_admin" && req.query.target_team_id) {
+    return req.query.target_team_id;
+  }
+  return user.teamId || null;
+}
+router9.post("/", async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    console.log("[ActivityLog] POST received:", { userId, body: req.body });
+    if (!userId) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    let teamId = getTeamId3(req);
+    if (!teamId) {
+      const { data: membership } = await supabase.from("team_members").select("team_id").eq("user_id", userId).single();
+      teamId = membership?.team_id || null;
+    }
+    if (!teamId) {
+      return res.status(400).json({ error: "No team associated" });
+    }
+    const { action_type, status, prospect_name, linkedin_url, campaign_id, error_message } = req.body;
+    if (!action_type || !status) {
+      return res.status(400).json({ error: "action_type and status are required" });
+    }
+    const { error: error48 } = await supabase.from("activity_logs").insert({
+      team_id: teamId,
+      campaign_id: campaign_id || null,
+      action_type,
+      status,
+      prospect_name: prospect_name || null,
+      linkedin_url: linkedin_url || null,
+      error_message: error_message || null,
+      executed_at: (/* @__PURE__ */ new Date()).toISOString()
+    });
+    if (error48) {
+      console.error("[ActivityLog] Insert error:", error48.message);
+      return res.status(500).json({ error: "Failed to log activity" });
+    }
+    res.json({ success: true });
+  } catch (err) {
+    console.error("[ActivityLog] POST error:", err.message);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+router9.get("/", async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    console.log("[ActivityLog] GET requested by user:", userId);
+    if (!userId) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    let teamId = getTeamId3(req);
+    if (!teamId) {
+      const { data: membership } = await supabase.from("team_members").select("team_id").eq("user_id", userId).single();
+      teamId = membership?.team_id || null;
+    }
+    if (!teamId) {
+      return res.json({ logs: [] });
+    }
+    const limit = parseInt(req.query.limit) || 50;
+    const campaignId = req.query.campaign_id;
+    let query = supabase.from("activity_logs").select("id, action_type, status, prospect_name, linkedin_url, error_message, executed_at, created_at").eq("team_id", teamId).order("created_at", { ascending: false }).limit(limit);
+    if (campaignId) {
+      query = query.eq("campaign_id", campaignId);
+    }
+    const { data: logs, error: error48 } = await query;
+    if (error48) {
+      console.error("[ActivityLog] GET error:", error48.message);
+      return res.json({ logs: [] });
+    }
+    res.json({ logs: logs || [] });
+  } catch (err) {
+    console.error("[ActivityLog] GET error:", err.message);
+    res.json({ logs: [] });
+  }
+});
+router9.get("/debug", async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    let teamId = getTeamId3(req);
+    if (!teamId && userId) {
+      const { data: membership } = await supabase.from("team_members").select("team_id").eq("user_id", userId).single();
+      teamId = membership?.team_id || null;
+    }
+    const { data, error: error48, count } = await supabase.from("activity_logs").select("*", { count: "exact" }).eq("team_id", teamId || "").order("created_at", { ascending: false }).limit(1);
+    const tableExists = !error48 || error48.code !== "42P01";
+    res.json({
+      tableExists,
+      rowCount: count || 0,
+      lastEntry: data?.[0] || null,
+      teamId,
+      userId,
+      error: error48?.message || null,
+      errorCode: error48?.code || null
+    });
+  } catch (err) {
+    res.json({ tableExists: false, error: err.message });
+  }
+});
+var activityRoutes_default = router9;
+
+// server/_core/aiRoutes.ts
+var import_express10 = __toESM(require_express2(), 1);
+var router10 = (0, import_express10.Router)();
 var systemPrompts = {
   invite: `You are an expert LinkedIn copywriter.
 Write a connection request note.
@@ -54245,26 +54401,85 @@ MAX 500 characters. Use {{firstName}}.
 Use a different angle. Add value or an insight.
 Short and punchy.
 NOT "just following up" or "circling back".
-Return ONLY the message text, nothing else.`
+Return ONLY the message text, nothing else.`,
+  post: `You are an expert LinkedIn content writer.
+Write a LinkedIn post.
+MAX 3000 characters.
+Make it engaging and authentic.
+Use short paragraphs and line breaks.
+End with a call-to-action or thought-provoking question.
+Return ONLY the post text, nothing else.`
 };
 var tones = {
   professional: "Professional, polished tone.",
   friendly: "Warm, conversational, human tone.",
   direct: "Direct and concise. Get to the point fast.",
+  casual: "Casual, relaxed, conversational.",
   arabic: "Write entirely in Arabic. Professional tone."
 };
-router9.post("/generate-message", async (req, res) => {
+var purposes = {
+  sales: "Selling a product or service. Focus on value proposition.",
+  job_search: "Looking for a job opportunity. Show enthusiasm and relevance.",
+  recruiting: "Recruiting talent. Highlight the opportunity.",
+  hiring: "Hiring for a specific role. Attract top candidates.",
+  networking: "Building professional connections. Be genuine.",
+  partnership: "Exploring business partnership. Highlight mutual benefits."
+};
+router10.post("/generate-message", async (req, res) => {
   try {
-    const { stepType, goal, tone } = req.body;
-    if (!stepType || !goal) {
-      return res.status(400).json({ error: "stepType and goal are required" });
-    }
+    const {
+      // Old field names (CampaignWizard sends these)
+      stepType,
+      goal,
+      // New field names (AISurveyModal sends these)
+      purpose,
+      senderContext,
+      specificGoal,
+      // Shared fields
+      tone,
+      prospectName,
+      prospectTitle,
+      prospectCompany,
+      language,
+      postType,
+      messageType
+    } = req.body;
+    const resolvedStepType = stepType || messageType || (postType ? "post" : null) || purpose || "message";
+    const resolvedGoal = specificGoal || goal || "";
+    const resolvedPurpose = purpose || stepType || "networking";
+    const resolvedTone = tone || "professional";
+    console.log("[AI] Request:", { resolvedStepType, resolvedPurpose, resolvedTone, resolvedGoal });
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
-      return res.status(500).json({ error: "AI service not configured" });
+      return res.status(503).json({ error: "AI service not configured \u2014 set ANTHROPIC_API_KEY in Vercel" });
     }
-    const systemPrompt = systemPrompts[stepType] || systemPrompts.message;
-    const toneDesc = tones[tone] || tones.professional;
+    let systemPrompt = systemPrompts[resolvedStepType] || systemPrompts.message;
+    const toneDesc = tones[resolvedTone] || tones.professional;
+    const purposeDesc = resolvedPurpose ? purposes[resolvedPurpose] || "" : "";
+    const contextLines = [];
+    if (resolvedPurpose) contextLines.push(`Message purpose: ${resolvedPurpose} \u2014 ${purposeDesc}`);
+    if (senderContext) contextLines.push(`Sender context: ${senderContext}`);
+    if (resolvedGoal) contextLines.push(`Specific goal: ${resolvedGoal}`);
+    if (prospectName) contextLines.push(`Prospect name: ${prospectName}`);
+    if (prospectTitle) contextLines.push(`Prospect title: ${prospectTitle}`);
+    if (prospectCompany) contextLines.push(`Prospect company: ${prospectCompany}`);
+    if (postType) contextLines.push(`Post type: ${postType}`);
+    if (language === "ar") contextLines.push("Write the message entirely in Arabic.");
+    if (contextLines.length > 0) {
+      systemPrompt += "\n\nAdditional context:\n" + contextLines.join("\n");
+    }
+    systemPrompt += `
+Tone: ${toneDesc}`;
+    systemPrompt += '\n\nRules:\n- Sound human and genuine, not templated\n- Do not use generic phrases like "I came across your profile"\n- Match the tone specified';
+    if (prospectName) {
+      systemPrompt += `
+- Start with the prospect's first name (${prospectName.split(" ")[0]})`;
+    }
+    const userMessage = resolvedGoal ? `Goal: ${resolvedGoal}
+Tone: ${toneDesc}
+Write the message:` : `Purpose: ${purposeDesc || "general outreach"}
+Tone: ${toneDesc}
+Write the message:`;
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -54273,14 +54488,12 @@ router9.post("/generate-message", async (req, res) => {
         "anthropic-version": "2023-06-01"
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 200,
+        model: "claude-sonnet-4-6",
+        max_tokens: resolvedStepType === "post" ? 800 : 200,
         system: systemPrompt,
         messages: [{
           role: "user",
-          content: `Goal: ${goal}
-Tone: ${toneDesc}
-Write the message:`
+          content: userMessage
         }]
       })
     });
@@ -54291,7 +54504,7 @@ Write the message:`
     }
     const data = await response.json();
     const generated = (data.content?.[0]?.text || "").trim();
-    const maxChars = stepType === "invite" ? 300 : 500;
+    const maxChars = resolvedStepType === "invite" ? 300 : resolvedStepType === "post" ? 3e3 : 500;
     res.json({
       message: generated.substring(0, maxChars),
       charCount: Math.min(generated.length, maxChars)
@@ -54301,10 +54514,260 @@ Write the message:`
     res.status(500).json({ error: e.message || "AI generation failed" });
   }
 });
-var aiRoutes_default = router9;
+var aiRoutes_default = router10;
+
+// server/_core/postRoutes.ts
+var import_express11 = __toESM(require_express2(), 1);
+var router11 = (0, import_express11.Router)();
+function getTeamId4(req) {
+  const user = req.user;
+  if (!user) return null;
+  return user.teamId || null;
+}
+async function resolveTeamId(req) {
+  let teamId = getTeamId4(req);
+  if (!teamId) {
+    const userId = req.user?.id;
+    if (!userId) return null;
+    const { data: membership } = await supabase.from("team_members").select("team_id").eq("user_id", userId).single();
+    teamId = membership?.team_id || null;
+  }
+  return teamId;
+}
+router11.get("/", async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ error: "Not authenticated" });
+    const teamId = await resolveTeamId(req);
+    if (!teamId) return res.json({ posts: [] });
+    const status = req.query.status;
+    let query = supabase.from("posts").select("*").eq("team_id", teamId).order("created_at", { ascending: false });
+    if (status && status !== "all") {
+      query = query.eq("status", status);
+    }
+    const { data: posts, error: error48 } = await query.limit(100);
+    if (error48) {
+      console.error("[Posts] GET error:", error48.message);
+      return res.json({ posts: [] });
+    }
+    res.json({ posts: posts || [] });
+  } catch (err) {
+    console.error("[Posts] GET error:", err.message);
+    res.json({ posts: [] });
+  }
+});
+router11.post("/", async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ error: "Not authenticated" });
+    const teamId = await resolveTeamId(req);
+    if (!teamId) return res.status(400).json({ error: "No team associated" });
+    const { content, scheduled_at } = req.body;
+    if (!content || !content.trim()) {
+      return res.status(400).json({ error: "Content is required" });
+    }
+    const status = scheduled_at ? "scheduled" : "draft";
+    const { data: post2, error: error48 } = await supabase.from("posts").insert({
+      team_id: teamId,
+      user_id: userId,
+      content: content.trim(),
+      status,
+      scheduled_at: scheduled_at || null
+    }).select().single();
+    if (error48) {
+      console.error("[Posts] INSERT error:", error48.message);
+      return res.status(500).json({ error: "Failed to create post" });
+    }
+    res.json({ post: post2 });
+  } catch (err) {
+    console.error("[Posts] POST error:", err.message);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+router11.put("/:id", async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ error: "Not authenticated" });
+    const { id } = req.params;
+    const { content, scheduled_at, status } = req.body;
+    const updates = { updated_at: (/* @__PURE__ */ new Date()).toISOString() };
+    if (content !== void 0) updates.content = content.trim();
+    if (scheduled_at !== void 0) updates.scheduled_at = scheduled_at;
+    if (status !== void 0) updates.status = status;
+    const { data: post2, error: error48 } = await supabase.from("posts").update(updates).eq("id", id).select().single();
+    if (error48) {
+      console.error("[Posts] UPDATE error:", error48.message);
+      return res.status(500).json({ error: "Failed to update post" });
+    }
+    res.json({ post: post2 });
+  } catch (err) {
+    console.error("[Posts] PUT error:", err.message);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+router11.delete("/:id", async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ error: "Not authenticated" });
+    const { id } = req.params;
+    const { error: error48 } = await supabase.from("posts").delete().eq("id", id);
+    if (error48) {
+      console.error("[Posts] DELETE error:", error48.message);
+      return res.status(500).json({ error: "Failed to delete post" });
+    }
+    res.json({ success: true });
+  } catch (err) {
+    console.error("[Posts] DELETE error:", err.message);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+router11.post("/:id/publish", async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ error: "Not authenticated" });
+    const { id } = req.params;
+    const { data: post2, error: fetchError } = await supabase.from("posts").select("*").eq("id", id).single();
+    if (fetchError || !post2) {
+      return res.status(404).json({ error: "Post not found" });
+    }
+    const { error: updateError } = await supabase.from("posts").update({
+      status: "published",
+      published_at: (/* @__PURE__ */ new Date()).toISOString(),
+      updated_at: (/* @__PURE__ */ new Date()).toISOString()
+    }).eq("id", id);
+    if (updateError) {
+      console.error("[Posts] Publish error:", updateError.message);
+      return res.status(500).json({ error: "Failed to publish post" });
+    }
+    res.json({
+      success: true,
+      post: { ...post2, status: "published" },
+      publishAction: {
+        type: "PUBLISH_POST",
+        postId: id,
+        content: post2.content
+      }
+    });
+  } catch (err) {
+    console.error("[Posts] Publish error:", err.message);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+var postRoutes_default = router11;
+
+// server/_core/messageRoutes.ts
+var import_express12 = __toESM(require_express2(), 1);
+var router12 = (0, import_express12.Router)();
+function getUserId2(req) {
+  return req.user?.id || req.user?.sub || null;
+}
+function getTeamId5(req) {
+  const user = req.user;
+  if (!user) return null;
+  if (user.role === "super_admin" && req.query.target_team_id) {
+    return req.query.target_team_id;
+  }
+  return user.teamId || null;
+}
+router12.get("/", async (req, res) => {
+  try {
+    const teamId = getTeamId5(req);
+    if (!teamId) return res.status(401).json({ error: "No team" });
+    const type = req.query.type;
+    let query = supabase.from("messages").select("*").eq("team_id", teamId).order("created_at", { ascending: false });
+    if (type && type !== "all") {
+      query = query.eq("message_type", type);
+    }
+    const { data, error: error48 } = await query;
+    if (error48) {
+      console.error("[Messages] List error:", error48.message);
+      return res.json({ messages: [] });
+    }
+    res.json({ messages: data || [] });
+  } catch (e) {
+    console.error("[Messages] Error:", e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+router12.post("/", async (req, res) => {
+  try {
+    const teamId = getTeamId5(req);
+    const userId = getUserId2(req);
+    if (!teamId) return res.status(401).json({ error: "No team" });
+    const { name, content, message_type, purpose, tone, variables } = req.body;
+    if (!name || !content) {
+      return res.status(400).json({ error: "name and content required" });
+    }
+    const { data, error: error48 } = await supabase.from("messages").insert({
+      team_id: teamId,
+      user_id: userId,
+      name,
+      content,
+      message_type: message_type || "connection_note",
+      purpose: purpose || null,
+      tone: tone || null,
+      variables: variables || []
+    }).select().single();
+    if (error48) {
+      console.error("[Messages] Create error:", error48.message);
+      return res.status(500).json({ error: error48.message });
+    }
+    res.json({ message: data });
+  } catch (e) {
+    console.error("[Messages] Error:", e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+router12.put("/:id", async (req, res) => {
+  try {
+    const teamId = getTeamId5(req);
+    if (!teamId) return res.status(401).json({ error: "No team" });
+    const { name, content, message_type, purpose, tone, variables } = req.body;
+    const { data, error: error48 } = await supabase.from("messages").update({
+      name,
+      content,
+      message_type,
+      purpose,
+      tone,
+      variables,
+      updated_at: (/* @__PURE__ */ new Date()).toISOString()
+    }).eq("id", req.params.id).eq("team_id", teamId).select().single();
+    if (error48) {
+      return res.status(500).json({ error: error48.message });
+    }
+    res.json({ message: data });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+router12.delete("/:id", async (req, res) => {
+  try {
+    const teamId = getTeamId5(req);
+    if (!teamId) return res.status(401).json({ error: "No team" });
+    const { error: error48 } = await supabase.from("messages").delete().eq("id", req.params.id).eq("team_id", teamId);
+    if (error48) {
+      return res.status(500).json({ error: error48.message });
+    }
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+router12.post("/:id/use", async (req, res) => {
+  try {
+    const teamId = getTeamId5(req);
+    if (!teamId) return res.status(401).json({ error: "No team" });
+    const { data: msg } = await supabase.from("messages").select("usage_count").eq("id", req.params.id).eq("team_id", teamId).single();
+    await supabase.from("messages").update({ usage_count: (msg?.usage_count || 0) + 1 }).eq("id", req.params.id).eq("team_id", teamId);
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+var messageRoutes_default = router12;
 
 // server/_core/stripeRoutes.ts
-var import_express10 = __toESM(require_express2(), 1);
+var import_express13 = __toESM(require_express2(), 1);
 
 // node_modules/stripe/esm/platform/NodePlatformFunctions.js
 var crypto5 = __toESM(require("crypto"), 1);
@@ -59730,7 +60193,7 @@ var Stripe = createStripe(new NodePlatformFunctions());
 var stripe_esm_node_default = Stripe;
 
 // server/_core/stripeRoutes.ts
-var router10 = (0, import_express10.Router)();
+var router13 = (0, import_express13.Router)();
 var stripeKey = process.env.STRIPE_SECRET_KEY || "";
 var stripe = stripeKey ? new stripe_esm_node_default(stripeKey) : null;
 var PRICE_IDS = {
@@ -59738,7 +60201,7 @@ var PRICE_IDS = {
   growth: process.env.STRIPE_GROWTH_PRICE_ID || "",
   agency: process.env.STRIPE_AGENCY_PRICE_ID || ""
 };
-router10.post("/create-checkout", async (req, res) => {
+router13.post("/create-checkout", async (req, res) => {
   try {
     if (!stripe) return res.status(500).json({ error: "Stripe not configured" });
     const { plan } = req.body;
@@ -59759,7 +60222,7 @@ router10.post("/create-checkout", async (req, res) => {
     res.status(500).json({ error: e.message });
   }
 });
-router10.post("/webhook", async (req, res) => {
+router13.post("/webhook", async (req, res) => {
   try {
     if (!stripe) return res.status(500).json({ error: "Stripe not configured" });
     const sig = req.headers["stripe-signature"];
@@ -59794,7 +60257,7 @@ router10.post("/webhook", async (req, res) => {
     res.status(500).json({ error: e.message });
   }
 });
-router10.get("/portal", async (req, res) => {
+router13.get("/portal", async (req, res) => {
   try {
     if (!stripe) return res.status(500).json({ error: "Stripe not configured" });
     const customerId = req.stripeCustomerId;
@@ -59809,7 +60272,7 @@ router10.get("/portal", async (req, res) => {
     res.status(500).json({ error: e.message });
   }
 });
-var stripeRoutes_default = router10;
+var stripeRoutes_default = router13;
 
 // node_modules/zod/v4/classic/external.js
 var external_exports = {};
@@ -73665,7 +74128,7 @@ var import_superjson = __toESM(require_dist2(), 1);
 var t = initTRPC.context().create({
   transformer: import_superjson.default
 });
-var router11 = t.router;
+var router14 = t.router;
 var publicProcedure = t.procedure;
 var requireUser = t.middleware(async (opts) => {
   const { ctx, next } = opts;
@@ -73696,7 +74159,7 @@ var adminProcedure = t.procedure.use(
 );
 
 // server/_core/systemRouter.ts
-var systemRouter = router11({
+var systemRouter = router14({
   health: publicProcedure.input(
     external_exports.object({
       timestamp: external_exports.number().min(0, "timestamp cannot be negative")
@@ -73734,7 +74197,7 @@ async function getUserTeamId(userId) {
 
 // server/routers/auth.ts
 var import_crypto6 = require("crypto");
-var authRouter = router11({
+var authRouter = router14({
   /**
    * Get current user from Supabase Auth
    * Returns null if not authenticated
@@ -73844,7 +74307,7 @@ var authRouter = router11({
 
 // server/routers/demo.ts
 var import_crypto7 = require("crypto");
-var demoRouter = router11({
+var demoRouter = router14({
   /**
    * Create demo campaign for the user's team
    */
@@ -74047,7 +74510,7 @@ var demoRouter = router11({
 
 // server/routers/campaigns.ts
 var import_crypto8 = require("crypto");
-var campaignsRouter = router11({
+var campaignsRouter = router14({
   /**
    * Get all unique clients for the user's team
    */
@@ -74204,7 +74667,7 @@ var campaignsRouter = router11({
 });
 
 // server/routers/leads.ts
-var leadsRouter = router11({
+var leadsRouter = router14({
   list: protectedProcedure.input(external_exports.object({ campaignId: external_exports.string().optional() }).optional()).query(async ({ ctx, input }) => {
     if (!ctx.user?.id) return [];
     const teamId = await getUserTeamId(ctx.user.id);
@@ -74315,7 +74778,7 @@ var leadsRouter = router11({
 });
 
 // server/routers/templates.ts
-var templatesRouter = router11({
+var templatesRouter = router14({
   list: protectedProcedure.query(async ({ ctx }) => {
     if (!ctx.user?.id) return [];
     const teamId = await getUserTeamId(ctx.user.id);
@@ -74468,7 +74931,7 @@ var templatesRouter = router11({
 });
 
 // server/routers/extension.ts
-var extensionRouter = router11({
+var extensionRouter = router14({
   // Campaign: list all campaigns for team
   campaignsList: protectedProcedure.query(async ({ ctx }) => {
     if (!ctx.user?.id) {
@@ -74817,7 +75280,7 @@ function getUsagePercentage(usedLeads, plan) {
 }
 
 // server/routers/billing.ts
-var billingRouter = router11({
+var billingRouter = router14({
   /**
    * Get current plan and usage for user's team
    */
@@ -74949,7 +75412,7 @@ var billingRouter = router11({
 });
 
 // server/routers.ts
-var appRouter = router11({
+var appRouter = router14({
   system: systemRouter,
   auth: authRouter,
   demo: demoRouter,
@@ -74958,7 +75421,7 @@ var appRouter = router11({
   templates: templatesRouter,
   extension: extensionRouter,
   billing: billingRouter,
-  queue: router11({
+  queue: router14({
     list: protectedProcedure.input(external_exports.object({ status: external_exports.enum(["all", "new", "approved"]).optional() }).optional()).query(async ({ ctx, input }) => {
       if (!ctx.user?.id) return [];
       const teamId = await getUserTeamId(ctx.user.id);
@@ -75132,16 +75595,16 @@ function requireRole(role) {
 }
 
 // server/_core/userRoutes.ts
-var import_express11 = __toESM(require_express2(), 1);
+var import_express14 = __toESM(require_express2(), 1);
 init_dist4();
-var router12 = (0, import_express11.Router)();
+var router15 = (0, import_express14.Router)();
 function getSupabase3() {
   return createClient(
     process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "",
     process.env.SUPABASE_SERVICE_ROLE_KEY || ""
   );
 }
-router12.patch("/profile", async (req, res) => {
+router15.patch("/profile", async (req, res) => {
   const supabase3 = getSupabase3();
   try {
     const authHeader = req.headers.authorization;
@@ -75180,7 +75643,7 @@ router12.patch("/profile", async (req, res) => {
     return res.status(500).json({ error: "Server error: " + err.message });
   }
 });
-router12.get("/profile", async (req, res) => {
+router15.get("/profile", async (req, res) => {
   const supabase3 = getSupabase3();
   try {
     const authHeader = req.headers.authorization;
@@ -75198,12 +75661,12 @@ router12.get("/profile", async (req, res) => {
     return res.status(500).json({ error: err.message });
   }
 });
-var userRoutes_default = router12;
+var userRoutes_default = router15;
 
 // server/_core/vercel.ts
-var app = (0, import_express12.default)();
-app.use(import_express12.default.json({ limit: "50mb" }));
-app.use(import_express12.default.urlencoded({ limit: "50mb", extended: true }));
+var app = (0, import_express15.default)();
+app.use(import_express15.default.json({ limit: "50mb" }));
+app.use(import_express15.default.urlencoded({ limit: "50mb", extended: true }));
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", process.env.VITE_FRONTEND_URL || "*");
   res.header("Access-Control-Allow-Credentials", "true");
@@ -75224,11 +75687,33 @@ app.use("/api/admin/clients", expressAuthMiddleware, requireRole("super_admin"),
 app.use("/api/admin", expressAuthMiddleware, requireRole("super_admin"), adminRoutes_default);
 app.use("/api/ext", expressAuthMiddleware, extensionRoutes_default);
 app.use("/api/sequence", expressAuthMiddleware, sequenceRoutes_default);
+app.use("/api/activity-log", expressAuthMiddleware, activityRoutes_default);
 app.use("/api/ai", expressAuthMiddleware, aiRoutes_default);
+app.use("/api/posts", expressAuthMiddleware, postRoutes_default);
+app.use("/api/messages", expressAuthMiddleware, messageRoutes_default);
 app.use("/api/stripe", stripeRoutes_default);
 app.use("/api/user", userRoutes_default);
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
+});
+app.get("/api/proxy-image", async (req, res) => {
+  const url3 = req.query.url;
+  if (!url3 || !url3.includes("licdn.com") && !url3.includes("linkedin.com") && !url3.includes("lnkd.in")) {
+    return res.status(400).json({ error: "Invalid or disallowed URL" });
+  }
+  try {
+    const imgRes = await fetch(url3, {
+      headers: { "User-Agent": "Mozilla/5.0", "Accept": "image/*" }
+    });
+    if (!imgRes.ok) return res.status(imgRes.status).end();
+    const contentType = imgRes.headers.get("content-type") || "image/jpeg";
+    res.setHeader("Content-Type", contentType);
+    res.setHeader("Cache-Control", "public, max-age=86400");
+    const buffer = Buffer.from(await imgRes.arrayBuffer());
+    res.send(buffer);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 app.get("/api/linkedin-test", (_req, res) => {
   res.json({

@@ -641,13 +641,26 @@ function extractProspects() {
     if (!slug || slug.replace(/\//g, '').length < 3) return;
     seen.add(cleanUrl);
 
+    // Title: job title / headline
     const titleEl = container?.querySelector(
-      '.entity-result__primary-subtitle, .entity-result__summary, ' +
-      '.artdeco-entity-lockup__subtitle, [class*="primary-subtitle"], ' +
-      '[class*="subtitle"]:first-of-type'
+      '.entity-result__primary-subtitle, ' +
+      '.artdeco-entity-lockup__subtitle, ' +
+      '[data-anonymize="title"], ' +
+      '.entity-result__summary, ' +
+      '[class*="primary-subtitle"]'
     );
+    // Company: secondary subtitle
     const companyEl = container?.querySelector(
-      '.entity-result__secondary-subtitle, [class*="secondary-subtitle"]'
+      '.entity-result__secondary-subtitle, ' +
+      '[class*="secondary-subtitle"]'
+    );
+    // Location: tertiary subtitle or location field
+    const locationEl = container?.querySelector(
+      '.entity-result__tertiary-subtitle, ' +
+      '.entity-result__location, ' +
+      '[data-anonymize="location"], ' +
+      '[class*="tertiary-subtitle"], ' +
+      '[class*="location"]'
     );
     const photoEl = container?.querySelector(
       'img.presence-entity__image, img.EntityPhoto-circle-3, ' +
@@ -661,6 +674,7 @@ function extractProspects() {
       name: name,
       title: (titleEl?.innerText?.trim() || '').substring(0, 150),
       company: (companyEl?.innerText?.trim() || '').substring(0, 100),
+      location: (locationEl?.innerText?.trim() || '').substring(0, 100),
       linkedin_url: cleanUrl,
       photo_url: photoUrl,
     });
@@ -781,7 +795,7 @@ async function collectMultiPageProspects(targetCount, tabId) {
           );
           if (nextBtn && !nextBtn.disabled) {
             nextBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            setTimeout(() => nextBtn.click(), 500);
+            nextBtn.click();
             return true;
           }
           // Fallback: try page number link

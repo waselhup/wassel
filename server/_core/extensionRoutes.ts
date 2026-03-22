@@ -282,7 +282,7 @@ router.get('/prospects', async (req: Request, res: Response) => {
             .select('id, linkedin_url, name, title, company, location, source_url, status, created_at')
             .eq('team_id', teamId)
             .order('created_at', { ascending: false })
-            .limit(100);
+            .limit(1000);
 
         if (clientId) {
             query = query.eq('client_id', clientId);
