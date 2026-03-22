@@ -140,11 +140,11 @@
         </div>
         <div class="wassel-collect-section">
           <select id="wassel-count-select" class="wassel-select">
-            <option value="25">25 prospects</option>
             <option value="50">50 prospects</option>
             <option value="100">100 prospects</option>
             <option value="200">200 prospects</option>
             <option value="500">500 prospects</option>
+            <option value="1000">1000 prospects</option>
           </select>
           <button id="wassel-collect" class="wassel-btn wassel-btn-primary">🚀 Start Collecting</button>
         </div>

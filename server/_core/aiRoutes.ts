@@ -63,31 +63,39 @@ const purposes: Record<string, string> = {
 router.post('/generate-message', async (req: Request, res: Response) => {
   try {
     const {
-      stepType, goal, tone,
+      // Old field names (CampaignWizard sends these)
+      stepType, goal,
+      // New field names (AISurveyModal sends these)
       purpose, senderContext, specificGoal,
+      // Shared fields
+      tone,
       prospectName, prospectTitle, prospectCompany,
-      language, postType,
+      language, postType, messageType,
     } = req.body;
 
-    if (!stepType) {
-      return res.status(400).json({ error: 'stepType is required' });
-    }
+    // Resolve field names flexibly — accept both patterns
+    const resolvedStepType = stepType || messageType || (postType ? 'post' : null) || purpose || 'message';
+    const resolvedGoal = specificGoal || goal || '';
+    const resolvedPurpose = purpose || stepType || 'networking';
+    const resolvedTone = tone || 'professional';
+
+    console.log('[AI] Request:', { resolvedStepType, resolvedPurpose, resolvedTone, resolvedGoal });
 
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
-      return res.status(500).json({ error: 'AI service not configured' });
+      return res.status(503).json({ error: 'AI service not configured — set ANTHROPIC_API_KEY in Vercel' });
     }
 
     // Build enhanced system prompt with survey context
-    let systemPrompt = systemPrompts[stepType] || systemPrompts.message;
-    const toneDesc = tones[tone] || tones.professional;
-    const purposeDesc = purpose ? (purposes[purpose] || '') : '';
+    let systemPrompt = systemPrompts[resolvedStepType] || systemPrompts.message;
+    const toneDesc = tones[resolvedTone] || tones.professional;
+    const purposeDesc = resolvedPurpose ? (purposes[resolvedPurpose] || '') : '';
 
     // Add survey context to system prompt if provided
     const contextLines: string[] = [];
-    if (purpose) contextLines.push(`Message purpose: ${purpose} — ${purposeDesc}`);
+    if (resolvedPurpose) contextLines.push(`Message purpose: ${resolvedPurpose} — ${purposeDesc}`);
     if (senderContext) contextLines.push(`Sender context: ${senderContext}`);
-    if (specificGoal) contextLines.push(`Specific goal: ${specificGoal}`);
+    if (resolvedGoal) contextLines.push(`Specific goal: ${resolvedGoal}`);
     if (prospectName) contextLines.push(`Prospect name: ${prospectName}`);
     if (prospectTitle) contextLines.push(`Prospect title: ${prospectTitle}`);
     if (prospectCompany) contextLines.push(`Prospect company: ${prospectCompany}`);
@@ -106,8 +114,8 @@ router.post('/generate-message', async (req: Request, res: Response) => {
     }
 
     // Build user message
-    const userMessage = goal
-      ? `Goal: ${goal}\nTone: ${toneDesc}\nWrite the message:`
+    const userMessage = resolvedGoal
+      ? `Goal: ${resolvedGoal}\nTone: ${toneDesc}\nWrite the message:`
       : `Purpose: ${purposeDesc || 'general outreach'}\nTone: ${toneDesc}\nWrite the message:`;
 
     // Call Anthropic API directly via fetch (avoid SDK dependency issues)
@@ -120,7 +128,7 @@ router.post('/generate-message', async (req: Request, res: Response) => {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: stepType === 'post' ? 800 : 200,
+        max_tokens: resolvedStepType === 'post' ? 800 : 200,
         system: systemPrompt,
         messages: [{
           role: 'user',
@@ -137,7 +145,7 @@ router.post('/generate-message', async (req: Request, res: Response) => {
 
     const data = await response.json();
     const generated = (data.content?.[0]?.text || '').trim();
-    const maxChars = stepType === 'invite' ? 300 : stepType === 'post' ? 3000 : 500;
+    const maxChars = resolvedStepType === 'invite' ? 300 : resolvedStepType === 'post' ? 3000 : 500;
 
     res.json({
       message: generated.substring(0, maxChars),

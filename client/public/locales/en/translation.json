@@ -13,6 +13,7 @@
     "templates": "Templates",
     "extension": "Extension",
     "posts": "Posts",
+    "messages": "Messages",
     "settings": "Settings",
     "logout": "Logout"
   },
