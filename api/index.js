@@ -54323,7 +54323,7 @@ router9.post("/", async (req, res) => {
       teamId = membership?.team_id || null;
     }
     if (!teamId) {
-      return res.status(400).json({ error: "No team associated" });
+      teamId = userId;
     }
     const { action_type, status, prospect_name, linkedin_url, campaign_id, error_message } = req.body;
     if (!action_type || !status) {
@@ -54362,7 +54362,7 @@ router9.get("/", async (req, res) => {
       teamId = membership?.team_id || null;
     }
     if (!teamId) {
-      return res.json({ logs: [] });
+      teamId = userId;
     }
     const limit = parseInt(req.query.limit) || 50;
     const campaignId = req.query.campaign_id;

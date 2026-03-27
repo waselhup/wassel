@@ -142,7 +142,7 @@ export default function Posts() {
       window.open('https://www.linkedin.com/feed/', '_blank');
 
       setContent('');
-      toast.success('Opening LinkedIn — click Post to publish ✅');
+      toast.success(t('posts.openLinkedIn'));
       fetchPosts();
     } catch (e: any) {
       console.error('[Posts] publish error:', e);
@@ -157,7 +157,7 @@ export default function Posts() {
     try {
       await apiFetch(`/api/posts/${id}`, token, { method: 'DELETE' });
       setPosts(posts.filter(p => p.id !== id));
-      toast.success('Post deleted');
+      toast.success(t('posts.deleted'));
     } catch (e: any) {
       console.error('[Posts] delete error:', e);
     }

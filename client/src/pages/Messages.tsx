@@ -119,7 +119,7 @@ export default function Messages() {
     try {
       await apiFetch(`/api/messages/${id}`, token, { method: 'DELETE' });
       setTemplates(templates.filter(t => t.id !== id));
-      toast.success('Deleted');
+      toast.success(t('messages.deleted'));
     } catch (e: any) {
       toast.error(e.message);
     }
@@ -435,10 +435,10 @@ export default function Messages() {
                             <Edit3 size={11} /> {t('common.edit') || 'تعديل'}
                           </button>
                           <button
-                            onClick={() => { navigator.clipboard.writeText(tmpl.content); toast.success('Copied!'); }}
+                            onClick={() => { navigator.clipboard.writeText(tmpl.content); toast.success(t('messages.copied')); }}
                             style={{ padding: '4px 10px', borderRadius: 6, fontSize: 11, background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3 }}
                           >
-                            <Copy size={11} /> {t('common.copy') || 'نسخ'}
+                            <Copy size={11} /> {t('common.copy')}
                           </button>
                           <button
                             onClick={() => deleteTemplate(tmpl.id)}
