@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
 import {
     Loader2, Linkedin, Target, Users, ExternalLink,
     ChevronRight, Download, CheckCircle, Zap, BarChart3, UserCheck, MessageSquare, ArrowUpRight, RefreshCw
@@ -25,6 +26,7 @@ type Campaign = {
 
 export default function ClientDashboard() {
     const { user } = useAuth();
+    const { t, i18n } = useTranslation();
     const [campaigns, setCampaigns] = useState<Campaign[]>([]);
     const [prospects, setProspects] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -50,6 +52,14 @@ export default function ClientDashboard() {
         return `${Math.floor(hrs / 24)}d ago`;
     }
 
+    function formatDate(dateStr: string): string {
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return '';
+        return d.toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : 'en-US', {
+            year: 'numeric', month: 'short', day: 'numeric',
+        });
+    }
+
     const fetchActivityLogs = async () => {
         setActivityLoading(true);
         try {
@@ -64,10 +74,10 @@ export default function ClientDashboard() {
     useEffect(() => {
         fetchData();
         fetchActivityLogs();
-        // Poll activity logs every 10 seconds (only when tab is visible)
+        // Poll activity logs every 5 seconds (only when tab is visible)
         const interval = setInterval(() => {
             if (!document.hidden) fetchActivityLogs();
-        }, 10000);
+        }, 5000);
         return () => clearInterval(interval);
     }, []);
 
@@ -170,13 +180,12 @@ export default function ClientDashboard() {
                             <div className="flex items-center gap-3">
                                 <Linkedin className="w-5 h-5" style={{ color: '#1a56db' }} />
                                 <div>
-                                    <p className="text-sm font-semibold" style={{ color: '#1e40af' }}>ربط حساب LinkedIn</p>
-                                    <p className="text-xs" style={{ color: '#3b82f6' }}>اربط حسابك لتفعيل الأتمتة وإرسال الدعوات والرسائل.</p>
+                                    <p className="text-sm font-semibold" style={{ color: '#1e40af' }}>{t('dashboard.connectLinkedin')}</p>
                                 </div>
                             </div>
                             <a href="/api/linkedin/connect">
                                 <button className="px-4 py-2 rounded-lg text-sm font-semibold text-white" style={{ background: '#0077b5' }}>
-                                    ربط LinkedIn
+                                    {t('dashboard.connectBtn')}
                                 </button>
                             </a>
                         </div>
@@ -188,13 +197,13 @@ export default function ClientDashboard() {
                             <div className="flex items-center gap-3">
                                 <Download className="w-5 h-5" style={{ color: '#059669' }} />
                                 <div>
-                                    <p className="text-sm font-semibold" style={{ color: '#065f46' }}>تثبيت إضافة Wassel</p>
-                                    <p className="text-xs" style={{ color: '#059669' }}>ثبّت الإضافة لاستيراد العملاء من LinkedIn مباشرة.</p>
+                                    <p className="text-sm font-semibold" style={{ color: '#065f46' }}>{t('onboarding.extensionPage.title')}</p>
+                                    <p className="text-xs" style={{ color: '#059669' }}>{t('onboarding.extensionPage.subtitle')}</p>
                                 </div>
                             </div>
                             <Link href="/extension-download">
                                 <button className="px-4 py-2 rounded-lg text-sm font-semibold text-white" style={{ background: '#059669' }}>
-                                    تحميل الإضافة
+                                    {t('onboarding.extensionPage.downloadBtn')}
                                 </button>
                             </Link>
                         </div>
@@ -230,10 +239,10 @@ export default function ClientDashboard() {
                             {/* 4 Metric Cards */}
                             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                                 {[
-                                    { label: 'Active Sequences', value: campaigns.length, icon: Target, color: '#1a56db', bg: '#eff6ff' },
-                                    { label: 'Prospects in Pipeline', value: prospects.length, icon: Users, color: '#059669', bg: '#ecfdf5' },
-                                    { label: 'Running Now', value: activeCampaigns, icon: Zap, color: '#d97706', bg: '#fffbeb' },
-                                    { label: 'Intelligent Queue', value: queueCount, icon: BarChart3, color: '#6366f1', bg: '#eef2ff' },
+                                    { label: t('dashboard.stats.sequences'), value: campaigns.length, icon: Target, color: '#1a56db', bg: '#eff6ff' },
+                                    { label: t('dashboard.stats.prospects'), value: prospects.length, icon: Users, color: '#059669', bg: '#ecfdf5' },
+                                    { label: t('dashboard.stats.running'), value: activeCampaigns, icon: Zap, color: '#d97706', bg: '#fffbeb' },
+                                    { label: t('dashboard.stats.queue'), value: queueCount, icon: BarChart3, color: '#6366f1', bg: '#eef2ff' },
                                 ].map((stat, i) => (
                                     <div key={i} className="p-4" style={{ ...card }}>
                                         <div className="flex items-center justify-between mb-3">
@@ -250,10 +259,10 @@ export default function ClientDashboard() {
                             {/* Campaigns List */}
                             <div className="mb-6" style={{ ...card, overflow: 'hidden' }}>
                                 <div className="px-5 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                                    <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Your Campaigns</h3>
+                                    <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{t('dashboard.campaigns')}</h3>
                                     <Link href="/app/campaigns">
                                         <button className="text-xs font-medium flex items-center gap-1" style={{ color: 'var(--accent-primary)' }}>
-                                            View all <ChevronRight className="w-3 h-3" />
+                                            {t('dashboard.viewAll')} <ChevronRight className="w-3 h-3" />
                                         </button>
                                     </Link>
                                 </div>
@@ -261,10 +270,10 @@ export default function ClientDashboard() {
                                     {campaigns.length === 0 ? (
                                         <div className="p-8 text-center">
                                             <Target className="w-8 h-8 mx-auto mb-3" style={{ color: 'var(--text-muted)' }} />
-                                            <p className="text-sm mb-3" style={{ color: 'var(--text-muted)' }}>No campaigns yet.</p>
+                                            <p className="text-sm mb-3" style={{ color: 'var(--text-muted)' }}>{t('dashboard.noCampaigns')}</p>
                                             <Link href="/app/campaigns/new">
                                                 <button className="px-4 py-2 rounded-lg text-sm font-semibold text-white" style={{ background: 'var(--gradient-primary)' }}>
-                                                    + Start a Campaign
+                                                    + {t('dashboard.startCampaign')}
                                                 </button>
                                             </Link>
                                         </div>
@@ -274,14 +283,16 @@ export default function ClientDashboard() {
                                                 <div className="px-5 py-3.5 flex items-center justify-between transition-colors" style={{ borderBottom: '1px solid var(--border-subtle)', cursor: 'pointer' }}>
                                                     <div>
                                                         <p className="font-medium text-sm" style={{ color: 'var(--text-primary)' }}>{c.name}</p>
-                                                        <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Created {new Date(c.created_at).toLocaleDateString()}</p>
+                                                        <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
+                                                            {t('campaigns.created')} {formatDate(c.created_at)}
+                                                        </p>
                                                     </div>
                                                     <span className="text-[10px] font-bold uppercase px-2.5 py-1 rounded-full"
                                                         style={{
                                                             background: c.status === 'active' ? '#ecfdf5' : c.status === 'paused' ? '#fffbeb' : '#f3f4f6',
                                                             color: c.status === 'active' ? '#059669' : c.status === 'paused' ? '#d97706' : '#6b7280',
                                                         }}>
-                                                        {c.status}
+                                                        {c.status === 'active' ? t('common.active') : c.status === 'paused' ? t('common.paused') : c.status === 'draft' ? t('common.draft') : c.status}
                                                     </span>
                                                 </div>
                                             </Link>
@@ -293,10 +304,10 @@ export default function ClientDashboard() {
                             {/* Recent prospects */}
                             <div style={{ ...card, overflow: 'hidden' }}>
                                 <div className="px-5 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                                    <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Recent Prospects</h3>
+                                    <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{t('dashboard.recentProspects')}</h3>
                                     <Link href="/app/leads">
                                         <button className="text-xs font-medium flex items-center gap-1" style={{ color: 'var(--accent-primary)' }}>
-                                            View all <ChevronRight className="w-3 h-3" />
+                                            {t('dashboard.viewAll')} <ChevronRight className="w-3 h-3" />
                                         </button>
                                     </Link>
                                 </div>
@@ -304,7 +315,7 @@ export default function ClientDashboard() {
                                     {prospects.length === 0 ? (
                                         <div className="p-8 text-center">
                                             <Download className="w-8 h-8 mx-auto mb-3" style={{ color: 'var(--text-muted)' }} />
-                                            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No prospects yet. Use the extension to import from LinkedIn.</p>
+                                            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{t('dashboard.noProspects')}</p>
                                         </div>
                                     ) : (
                                         prospects.slice(0, 5).map((p) => (
@@ -336,9 +347,9 @@ export default function ClientDashboard() {
                             {/* Prospecting Status */}
                             <div className="p-5" style={{ ...card }}>
                                 <div className="flex items-center justify-between mb-4">
-                                    <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Prospecting Status</p>
+                                    <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>{t('dashboard.prospectingStatus')}</p>
                                     <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full" style={{ background: activeCampaigns > 0 ? '#ecfdf5' : '#f3f4f6', color: activeCampaigns > 0 ? '#059669' : '#6b7280' }}>
-                                        {activeCampaigns > 0 ? 'Active' : 'Idle'}
+                                        {activeCampaigns > 0 ? t('common.active') : t('dashboard.idle')}
                                     </span>
                                 </div>
                                 <div className="flex gap-4">
@@ -347,14 +358,14 @@ export default function ClientDashboard() {
                                             <Zap className="w-3.5 h-3.5" style={{ color: '#d97706' }} />
                                             <span className="text-lg font-bold">{activeCampaigns}</span>
                                         </div>
-                                        <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Active campaigns</p>
+                                        <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{t('dashboard.activeCampaigns')}</p>
                                     </div>
                                     <div>
                                         <div className="flex items-center gap-1.5 mb-1">
                                             <BarChart3 className="w-3.5 h-3.5" style={{ color: '#6366f1' }} />
                                             <span className="text-lg font-bold">{queueCount}</span>
                                         </div>
-                                        <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Queued actions</p>
+                                        <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{t('dashboard.queuedActions')}</p>
                                     </div>
                                 </div>
                             </div>
@@ -362,7 +373,7 @@ export default function ClientDashboard() {
                             {/* ══ Recent Activity Feed ══ */}
                             <div style={{ ...card, overflow: 'hidden' }}>
                                 <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                                    <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Recent Activity</p>
+                                    <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>{t('dashboard.recentActivity')}</p>
                                     <button onClick={fetchActivityLogs} className="p-1 rounded hover:bg-gray-100 transition" title="Refresh">
                                         <RefreshCw className={`w-3 h-3 ${activityLoading ? 'animate-spin' : ''}`} style={{ color: 'var(--text-muted)' }} />
                                     </button>
@@ -371,7 +382,8 @@ export default function ClientDashboard() {
                                     {activityLogs.length === 0 ? (
                                         <div className="py-6 text-center">
                                             <Zap className="w-6 h-6 mx-auto mb-2" style={{ color: 'var(--text-muted)' }} />
-                                            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>No activity yet. Keep Chrome open with extension active for automation to run.</p>
+                                            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{t('dashboard.noActivity')}</p>
+                                            <p className="text-xs mt-1" style={{ color: 'var(--text-muted)', opacity: 0.7 }}>{t('dashboard.keepChromeOpen')}</p>
                                         </div>
                                     ) : (
                                         activityLogs.map((entry: any) => (
@@ -401,26 +413,26 @@ export default function ClientDashboard() {
 
                             {/* Quick Actions */}
                             <div className="p-5" style={{ ...card }}>
-                                <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: 'var(--text-muted)' }}>Quick Actions</p>
+                                <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: 'var(--text-muted)' }}>{t('dashboard.quickActions')}</p>
                                 <div className="space-y-2">
                                     <Link href="/app/campaigns/new">
                                         <button className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium text-left transition-colors" style={{ background: 'var(--bg-card-hover, #f1f5f9)' }}>
                                             <Target className="w-4 h-4" style={{ color: 'var(--accent-primary)' }} />
-                                            <span>Start a Campaign</span>
+                                            <span>{t('dashboard.startCampaign')}</span>
                                             <ArrowUpRight className="w-3 h-3 ml-auto" style={{ color: 'var(--text-muted)' }} />
                                         </button>
                                     </Link>
                                     <Link href="/app/extension">
                                         <button className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium text-left transition-colors" style={{ background: 'var(--bg-card-hover, #f1f5f9)' }}>
                                             <Download className="w-4 h-4" style={{ color: 'var(--accent-primary)' }} />
-                                            <span>Extension Setup</span>
+                                            <span>{t('dashboard.setupExtension')}</span>
                                             <ArrowUpRight className="w-3 h-3 ml-auto" style={{ color: 'var(--text-muted)' }} />
                                         </button>
                                     </Link>
                                     <Link href="/app/leads">
                                         <button className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium text-left transition-colors" style={{ background: 'var(--bg-card-hover, #f1f5f9)' }}>
                                             <Users className="w-4 h-4" style={{ color: 'var(--accent-primary)' }} />
-                                            <span>View Prospects</span>
+                                            <span>{t('dashboard.viewProspects')}</span>
                                             <ArrowUpRight className="w-3 h-3 ml-auto" style={{ color: 'var(--text-muted)' }} />
                                         </button>
                                     </Link>
@@ -435,12 +447,12 @@ export default function ClientDashboard() {
                                     </div>
                                     <div>
                                         <p className="text-sm font-semibold" style={{ color: '#1e40af' }}>Chrome Extension</p>
-                                        <p className="text-[10px]" style={{ color: '#3b82f6' }}>Import from LinkedIn</p>
+                                        <p className="text-[10px]" style={{ color: '#3b82f6' }}>{t('onboarding.features.import')}</p>
                                     </div>
                                 </div>
                                 <Link href="/app/extension">
                                     <button className="w-full py-2 rounded-lg text-sm font-semibold text-white" style={{ background: 'var(--gradient-primary)' }}>
-                                        Setup Extension
+                                        {t('dashboard.setupExtension')}
                                     </button>
                                 </Link>
                             </div>

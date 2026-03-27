@@ -35,7 +35,8 @@
       "Bash(python3 -c \":*)",
       "Bash(node:*)",
       "Bash(SUPABASE_URL=\"https://hiqotmimlgsrsnovtopd.supabase.co\" SUPABASE_SERVICE_ROLE_KEY=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhpcW90bWltbGdzcnNub3Z0b3BkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MjE0ODA4NywiZXhwIjoyMDg3NzI0MDg3fQ.8FrY-dp6uBa7-UkkXybJyNi_7y4irhrThTR33VFDtAA\" node -e \":*)",
-      "Bash(cmd /c \"git add dist/api/index.js dist/public client/src/components/ProfileHeroCard.tsx server/_core/activityRoutes.ts && git commit -m \"\"fix: profile photo Google URL proxy + activity logs team_id fallback\"\" && git push origin master 2>&1\")"
+      "Bash(cmd /c \"git add dist/api/index.js dist/public client/src/components/ProfileHeroCard.tsx server/_core/activityRoutes.ts && git commit -m \"\"fix: profile photo Google URL proxy + activity logs team_id fallback\"\" && git push origin master 2>&1\")",
+      "Bash(cmd /c \"npx esbuild server/_core/vercel.ts --platform=node --packages=external --bundle --format=esm --outfile=dist/api/index.js 2>&1 && echo SERVER_OK\")"
     ]
   }
 }

@@ -90,7 +90,7 @@
     "createFirst": "أنشئ حملتك الأولى",
     "viewAll": "عرض الكل",
     "recentProspects": "العملاء الأخيرون",
-    "noProspects": "لم يتم استيراد عملاء محتملين بعد.",
+    "noProspects": "لا يوجد عملاء بعد. استخدم الإضافة للاستيراد من LinkedIn.",
     "importFirst": "استيراد من لينكدإن",
     "prospectingStatus": "حالة التنقيب",
     "activeCampaigns": "الحملات النشطة",
@@ -120,6 +120,19 @@
     "actionPending": "إجراء معلق",
     "extensionWillExecute": "ستنفذ الإضافة خلال ~60 ثانية"
   },
+  "campaigns": {
+    "title": "الحملات",
+    "manage": "إدارة تسلسلات التواصل الخاصة بك.",
+    "new": "حملة جديدة",
+    "noCampaigns": "لا توجد حملات بعد",
+    "noCampaignsDesc": "أنشئ أول حملة تواصل لبدء التواصل مع العملاء المحتملين.",
+    "createFirst": "أنشئ أول حملة",
+    "created": "أُنشئت",
+    "type": "النوع",
+    "deleteConfirm": "حذف \"{{name}}\"؟ سيتم حذف جميع الخطوات وبيانات العملاء.",
+    "deleted": "تم حذف الحملة",
+    "deleteFailed": "فشل الحذف"
+  },
   "leads": {
     "title": "العملاء المحتملين",
     "exportCSV": "تصدير CSV",
@@ -136,7 +149,8 @@
     "deleteSelected": "حذف المحدد",
     "deleteConfirm": "حذف {{count}} عميل؟ لا يمكن التراجع.",
     "deleted": "تم حذف {{count}} عميل",
-    "importBtn": "استيراد"
+    "importBtn": "استيراد",
+    "deleteFailed": "فشل الحذف"
   },
   "import": {
     "title": "استيراد العملاء",
@@ -194,7 +208,31 @@
     "contentPreview": "معاينة المحتوى",
     "scheduledFor": "مجدول لـ",
     "publishedAt": "نُشر في",
-    "createdAt": "أُنشئ في"
+    "createdAt": "أُنشئ في",
+    "draftSaved": "تم حفظ المسودة ✅",
+    "postScheduled": "تم جدولة المنشور ✅"
+  },
+  "messages": {
+    "title": "الرسائل",
+    "subtitle": "إنشاء وإدارة قوالب الرسائل لحملات LinkedIn",
+    "createTemplate": "إنشاء قالب جديد",
+    "editTemplate": "تعديل القالب",
+    "templateName": "اسم القالب",
+    "writeMessage": "اكتب رسالتك هنا...",
+    "writeWithAI": "✨ كتابة بالذكاء الاصطناعي",
+    "preview": "معاينة",
+    "saveTemplate": "حفظ القالب",
+    "updateTemplate": "تحديث القالب",
+    "templateLibrary": "مكتبة القوالب",
+    "search": "بحث...",
+    "noTemplates": "لا توجد قوالب بعد",
+    "connectionNote": "ملاحظة الاتصال",
+    "followUp": "متابعة",
+    "inmail": "InMail",
+    "all": "الكل",
+    "nameAndContentRequired": "الاسم والمحتوى مطلوبان",
+    "templateSaved": "تم حفظ القالب ✅",
+    "templateUpdated": "تم تحديث القالب ✅"
   },
   "ai": {
     "modalTitle": "✨ وصل AI — اكتب رسالة مخصصة",
@@ -283,6 +321,12 @@
     "paused": "متوقف",
     "draft": "مسودة",
     "completed": "مكتمل",
-    "refresh": "تحديث"
+    "refresh": "تحديث",
+    "viewAll": "عرض الكل",
+    "copy": "نسخ",
+    "online": "متصل",
+    "deleting": "جاري الحذف...",
+    "success": "تم بنجاح",
+    "error": "خطأ"
   }
 }

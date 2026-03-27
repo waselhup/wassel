@@ -1,8 +1,45 @@
 @import "tailwindcss";
 @import "tw-animate-css";
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap');
 
 @custom-variant dark (&:is(.dark *));
+
+/* ── Bilingual Font System ── */
+:root {
+  --font-arabic: 'Cairo', sans-serif;
+  --font-english: 'Inter', 'Plus Jakarta Sans', sans-serif;
+  --line-height-arabic: 1.8;
+  --line-height-english: 1.6;
+}
+
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+html[dir="rtl"] {
+  font-family: var(--font-arabic);
+  line-height: var(--line-height-arabic);
+}
+
+html[dir="ltr"] {
+  font-family: var(--font-english);
+  line-height: var(--line-height-english);
+}
+
+html[dir="rtl"] button,
+html[dir="rtl"] input,
+html[dir="rtl"] textarea,
+html[dir="rtl"] select {
+  font-family: var(--font-arabic);
+}
+
+html[dir="ltr"] button,
+html[dir="ltr"] input,
+html[dir="ltr"] textarea,
+html[dir="ltr"] select {
+  font-family: var(--font-english);
+}
 
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);

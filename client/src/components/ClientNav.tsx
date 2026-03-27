@@ -149,7 +149,7 @@ export default function ClientNav() {
                             </p>
                             <div className="flex items-center gap-1.5 mt-0.5">
                                 <div className="online-dot"></div>
-                                <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Online</span>
+                                <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{t('common.online')}</span>
                             </div>
                         </div>
                         <button

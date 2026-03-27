@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
+import { useTranslation } from 'react-i18next';
 import ClientNav from '@/components/ClientNav';
 import { useAuth } from '@/contexts/AuthContext';
 import { Plus, ChevronRight, Loader2, Megaphone, Trash2 } from 'lucide-react';
 
 export default function Campaigns() {
   const [, navigate] = useLocation();
+  const { t, i18n } = useTranslation();
   const { accessToken } = useAuth();
   const token = accessToken || localStorage.getItem('supabase_token') || '';
 
@@ -17,6 +19,14 @@ export default function Campaigns() {
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
+  function formatDate(dateStr: string): string {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : 'en-US', {
+      year: 'numeric', month: 'short', day: 'numeric',
+    });
+  }
+
   const deleteCampaign = async (id: string) => {
     setDeleting(true);
     try {
@@ -27,12 +37,12 @@ export default function Campaigns() {
       const data = await res.json();
       if (data.success || data.deleted) {
         setCampaigns(prev => prev.filter(c => c.id !== id));
-        showToast('Campaign deleted');
+        showToast(t('campaigns.deleted'));
       } else {
-        showToast('Delete failed: ' + (data.error || 'Unknown'));
+        showToast(t('campaigns.deleteFailed') + ': ' + (data.error || ''));
       }
     } catch (e: any) {
-      showToast('Delete failed: ' + e.message);
+      showToast(t('campaigns.deleteFailed') + ': ' + e.message);
     }
     setDeleting(false);
     setDeleteId(null);
@@ -60,6 +70,14 @@ export default function Campaigns() {
     completed: { dot: '#3b82f6', bg: 'rgba(59,130,246,0.1)', text: '#93c5fd' },
   };
 
+  function statusLabel(status: string): string {
+    if (status === 'active') return t('common.active');
+    if (status === 'paused') return t('common.paused');
+    if (status === 'draft') return t('common.draft');
+    if (status === 'completed') return t('common.completed');
+    return status;
+  }
+
   return (
     <div className="flex min-h-screen" style={{ background: 'var(--bg-base)' }}>
       <ClientNav />
@@ -68,12 +86,12 @@ export default function Campaigns() {
           {/* Header */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
             <div>
-              <h2 style={{ fontSize: 22, fontWeight: 800, color: '#f1f5f9', fontFamily: "'Syne', sans-serif", marginBottom: 4 }}>Campaigns</h2>
-              <p style={{ color: '#64748b', fontSize: 13 }}>Manage your outreach sequences.</p>
+              <h2 style={{ fontSize: 22, fontWeight: 800, color: '#f1f5f9', fontFamily: "'Syne', sans-serif", marginBottom: 4 }}>{t('campaigns.title')}</h2>
+              <p style={{ color: '#64748b', fontSize: 13 }}>{t('campaigns.manage')}</p>
             </div>
             <button onClick={() => navigate('/app/campaigns/new')}
               style={{ background: 'linear-gradient(135deg,#7c3aed,#ec4899)', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 20px', fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Plus size={16} /> New Campaign
+              <Plus size={16} /> {t('campaigns.new')}
             </button>
           </div>
 
@@ -94,11 +112,11 @@ export default function Campaigns() {
           ) : campaigns.length === 0 ? (
             <div style={{ textAlign: 'center', padding: 60, background: 'var(--bg-card)', borderRadius: 16, border: '1px solid var(--border-subtle)' }}>
               <Megaphone size={40} style={{ color: '#475569', margin: '0 auto 16px' }} />
-              <h3 style={{ color: '#f1f5f9', fontSize: 18, fontWeight: 700, marginBottom: 8 }}>No campaigns yet</h3>
-              <p style={{ color: '#64748b', fontSize: 14, marginBottom: 20 }}>Create your first outreach campaign to start connecting with prospects.</p>
+              <h3 style={{ color: '#f1f5f9', fontSize: 18, fontWeight: 700, marginBottom: 8 }}>{t('campaigns.noCampaigns')}</h3>
+              <p style={{ color: '#64748b', fontSize: 14, marginBottom: 20 }}>{t('campaigns.noCampaignsDesc')}</p>
               <button onClick={() => navigate('/app/campaigns/new')}
                 style={{ background: 'linear-gradient(135deg,#7c3aed,#ec4899)', color: '#fff', border: 'none', borderRadius: 8, padding: '12px 24px', fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                <Plus size={16} /> Create your first campaign
+                <Plus size={16} /> {t('campaigns.createFirst')}
               </button>
             </div>
           ) : (
@@ -116,19 +134,19 @@ export default function Campaigns() {
                           <div style={{ width: 8, height: 8, borderRadius: '50%', background: st.dot }} />
                           <h3 style={{ color: '#f1f5f9', fontSize: 16, fontWeight: 700, margin: 0 }}>{c.name}</h3>
                           <span style={{ background: st.bg, color: st.text, padding: '2px 8px', borderRadius: 12, fontSize: 11, fontWeight: 600, textTransform: 'uppercase' }}>
-                            {c.status}
+                            {statusLabel(c.status)}
                           </span>
                         </div>
                         {c.description && <p style={{ color: '#64748b', fontSize: 12, marginBottom: 8 }}>{c.description}</p>}
                         <div style={{ display: 'flex', gap: 16, color: '#475569', fontSize: 12 }}>
-                          <span>Created {new Date(c.created_at).toLocaleDateString()}</span>
-                          {c.type && <span style={{ color: '#64748b' }}>Type: {c.type}</span>}
+                          <span>{t('campaigns.created')} {formatDate(c.created_at)}</span>
+                          {c.type && <span style={{ color: '#64748b' }}>{t('campaigns.type')}: {c.type}</span>}
                         </div>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <button
                           onClick={(e) => { e.stopPropagation(); setDeleteId(c.id); }}
-                          title="Delete campaign"
+                          title={t('common.delete')}
                           className="campaign-delete-btn"
                           style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: '#475569', opacity: 0, transition: 'all 0.15s' }}
                         >
@@ -143,9 +161,9 @@ export default function Campaigns() {
                         background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)',
                         display: 'flex', alignItems: 'center', gap: 10,
                       }}>
-                        <span style={{ color: '#fca5a5', fontSize: 12, flex: 1 }}>Delete "{c.name}"? This will remove all steps and prospect data.</span>
-                        <button onClick={() => setDeleteId(null)} style={{ background: 'rgba(255,255,255,0.06)', color: '#94a3b8', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '4px 12px', fontSize: 11, cursor: 'pointer' }}>Cancel</button>
-                        <button onClick={() => deleteCampaign(c.id)} disabled={deleting} style={{ background: '#ef4444', color: '#fff', border: 'none', borderRadius: 6, padding: '4px 12px', fontSize: 11, fontWeight: 600, cursor: 'pointer', opacity: deleting ? 0.6 : 1 }}>{deleting ? '...' : 'Delete'}</button>
+                        <span style={{ color: '#fca5a5', fontSize: 12, flex: 1 }}>{t('campaigns.deleteConfirm', { name: c.name })}</span>
+                        <button onClick={() => setDeleteId(null)} style={{ background: 'rgba(255,255,255,0.06)', color: '#94a3b8', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '4px 12px', fontSize: 11, cursor: 'pointer' }}>{t('common.cancel')}</button>
+                        <button onClick={() => deleteCampaign(c.id)} disabled={deleting} style={{ background: '#ef4444', color: '#fff', border: 'none', borderRadius: 6, padding: '4px 12px', fontSize: 11, fontWeight: 600, cursor: 'pointer', opacity: deleting ? 0.6 : 1 }}>{deleting ? '...' : t('common.delete')}</button>
                       </div>
                     )}
                   </div>

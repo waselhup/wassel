@@ -90,20 +90,20 @@
     "createFirst": "Create your first campaign",
     "viewAll": "View all",
     "recentProspects": "Recent Prospects",
-    "noProspects": "No prospects imported yet.",
+    "noProspects": "No prospects yet. Use the extension to import from LinkedIn.",
     "importFirst": "Import from LinkedIn",
     "prospectingStatus": "Prospecting Status",
     "activeCampaigns": "Active campaigns",
     "queuedActions": "Queued actions",
     "quickActions": "Quick Actions",
-    "startCampaign": "Start a campaign",
-    "setupExtension": "Setup extension",
-    "viewProspects": "View prospects",
-    "extensionCta": "Setup Extension",
+    "startCampaign": "Start a Campaign",
+    "setupExtension": "Extension Setup",
+    "viewProspects": "View Prospects",
+    "extensionCta": "Chrome Extension",
     "extensionCtaDesc": "Install the Chrome extension to start importing prospects from LinkedIn.",
     "recentActivity": "Recent Activity",
     "noActivity": "No activity yet",
-    "keepChromeOpen": "Keep Chrome open with extension active",
+    "keepChromeOpen": "Keep Chrome open with extension active for automation to run.",
     "campaignRunning": "Campaign Running",
     "extensionExecuting": "Wassel extension is executing actions",
     "keepLinkedInOpen": "Keep a LinkedIn tab open",
@@ -119,6 +119,19 @@
     "queueLabel": "Queue:",
     "actionPending": "action pending",
     "extensionWillExecute": "Extension will execute in ~60 seconds"
+  },
+  "campaigns": {
+    "title": "Campaigns",
+    "manage": "Manage your outreach sequences.",
+    "new": "New Campaign",
+    "noCampaigns": "No campaigns yet",
+    "noCampaignsDesc": "Create your first outreach campaign to start connecting with prospects.",
+    "createFirst": "Create your first campaign",
+    "created": "Created",
+    "type": "Type",
+    "deleteConfirm": "Delete \"{{name}}\"? This will remove all steps and prospect data.",
+    "deleted": "Campaign deleted",
+    "deleteFailed": "Delete failed"
   },
   "leads": {
     "title": "Leads",
@@ -136,7 +149,8 @@
     "deleteSelected": "Delete Selected",
     "deleteConfirm": "Delete {{count}} prospect(s)? This cannot be undone.",
     "deleted": "{{count}} prospect(s) deleted",
-    "importBtn": "Import"
+    "importBtn": "Import",
+    "deleteFailed": "Delete failed"
   },
   "import": {
     "title": "Import Prospects",
@@ -194,7 +208,31 @@
     "contentPreview": "Content Preview",
     "scheduledFor": "Scheduled for",
     "publishedAt": "Published at",
-    "createdAt": "Created at"
+    "createdAt": "Created at",
+    "draftSaved": "Draft saved ✅",
+    "postScheduled": "Post scheduled ✅"
+  },
+  "messages": {
+    "title": "Messages",
+    "subtitle": "Create and manage message templates for LinkedIn campaigns",
+    "createTemplate": "Create New Template",
+    "editTemplate": "Edit Template",
+    "templateName": "Template name",
+    "writeMessage": "Write your message here...",
+    "writeWithAI": "✨ Write with AI",
+    "preview": "Preview",
+    "saveTemplate": "Save Template",
+    "updateTemplate": "Update Template",
+    "templateLibrary": "Template Library",
+    "search": "Search...",
+    "noTemplates": "No templates yet",
+    "connectionNote": "Connection Note",
+    "followUp": "Follow-up",
+    "inmail": "InMail",
+    "all": "All",
+    "nameAndContentRequired": "Name and content are required",
+    "templateSaved": "Template saved ✅",
+    "templateUpdated": "Template updated ✅"
   },
   "ai": {
     "modalTitle": "✨ Wassel AI — Write a personalized message",
@@ -283,6 +321,12 @@
     "paused": "Paused",
     "draft": "Draft",
     "completed": "Completed",
-    "refresh": "Refresh"
+    "refresh": "Refresh",
+    "viewAll": "View all",
+    "copy": "Copy",
+    "online": "Online",
+    "deleting": "Deleting...",
+    "success": "Success",
+    "error": "Error"
   }
 }

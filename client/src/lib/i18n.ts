@@ -26,20 +26,19 @@ i18n
     },
   });
 
-// Apply RTL direction on language change
-const applyDirection = (lang: string) => {
-  document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+// Apply RTL direction and font on language change
+function applyLanguageSettings(lang: string) {
+  const isArabic = lang === 'ar';
+  document.documentElement.dir = isArabic ? 'rtl' : 'ltr';
   document.documentElement.lang = lang;
-  document.body.style.fontFamily = lang === 'ar'
-    ? "'IBM Plex Sans Arabic', 'Segoe UI', system-ui, sans-serif"
-    : "'Plus Jakarta Sans', 'Inter', sans-serif";
-};
-
-applyDirection(i18n.language);
-
-i18n.on('languageChanged', (lang) => {
+  document.body.style.fontFamily = isArabic
+    ? "'Cairo', sans-serif"
+    : "'Inter', 'Plus Jakarta Sans', sans-serif";
   localStorage.setItem('wassel_lang', lang);
-  applyDirection(lang);
-});
+}
+
+applyLanguageSettings(i18n.language);
+
+i18n.on('languageChanged', applyLanguageSettings);
 
 export default i18n;

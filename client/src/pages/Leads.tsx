@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import ClientNav from '@/components/ClientNav';
 import { useAuth } from '@/contexts/AuthContext';
 import Avatar from '@/components/Avatar';
@@ -9,6 +10,7 @@ function getToken() {
 }
 
 export default function Leads() {
+  const { t } = useTranslation();
   const { accessToken } = useAuth();
   const token = accessToken || getToken();
 
@@ -69,15 +71,14 @@ export default function Leads() {
       });
       const data = await res.json();
       if (data.success || data.deleted) {
-        // Optimistic remove
         setProspects(prev => prev.filter(p => !checked.has(p.id)));
-        showToast(`${checked.size} prospect${checked.size > 1 ? 's' : ''} deleted`);
+        showToast(t('leads.deleted', { count: checked.size }));
         setChecked(new Set());
       } else {
-        showToast('Delete failed: ' + (data.error || 'Unknown error'));
+        showToast(t('leads.deleteFailed') + ': ' + (data.error || ''));
       }
     } catch (e: any) {
-      showToast('Delete failed: ' + e.message);
+      showToast(t('leads.deleteFailed') + ': ' + e.message);
     }
     setDeleting(false);
     setShowConfirm(false);
@@ -85,9 +86,9 @@ export default function Leads() {
 
   // ── CSV Export with BOM + proper formatting ──
   const exportToCSV = () => {
-    if (filtered.length === 0) { showToast('No prospects to export'); return; }
+    if (filtered.length === 0) { showToast(t('leads.noProspects')); return; }
 
-    const headers = ['Name', 'Title', 'Company', 'Location', 'LinkedIn URL', 'Status', 'Imported At'];
+    const headers = [t('leads.name'), t('leads.titleCol'), t('leads.company'), 'Location', 'LinkedIn URL', 'Status', 'Imported At'];
 
     const escape = (val: any) => {
       const str = String(val ?? '').trim();
@@ -112,7 +113,6 @@ export default function Leads() {
       ...rows.map(row => row.map(escape).join(','))
     ].join('\r\n');
 
-    // BOM prefix for Excel Arabic/Unicode compatibility
     const BOM = '\uFEFF';
     const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -123,7 +123,7 @@ export default function Leads() {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    showToast(`Exported ${filtered.length} prospects to CSV`);
+    showToast(t('leads.deleted', { count: filtered.length }));
   };
 
   const deleteSingle = async (id: string) => {
@@ -138,7 +138,7 @@ export default function Leads() {
       const data = await res.json();
       if (data.success || data.deleted) {
         setProspects(prev => prev.filter(p => p.id !== id));
-        showToast('1 prospect deleted');
+        showToast(t('leads.deleted', { count: 1 }));
       }
     } catch {}
     setDeleting(false);
@@ -155,8 +155,8 @@ export default function Leads() {
           {/* Header */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
             <div>
-              <h2 style={{ fontSize: 22, fontWeight: 800, color: '#f1f5f9', fontFamily: "'Syne', sans-serif", marginBottom: 4 }}>Leads</h2>
-              <p style={{ color: '#64748b', fontSize: 13 }}>{prospects.length} prospects imported</p>
+              <h2 style={{ fontSize: 22, fontWeight: 800, color: '#f1f5f9', fontFamily: "'Syne', sans-serif", marginBottom: 4 }}>{t('leads.title')}</h2>
+              <p style={{ color: '#64748b', fontSize: 13 }}>{prospects.length} {t('leads.prospectsImported')}</p>
             </div>
             {prospects.length > 0 && (
               <button
@@ -169,7 +169,7 @@ export default function Leads() {
                   cursor: 'pointer', transition: 'all 0.15s',
                 }}
               >
-                <Download size={14} /> Export CSV
+                <Download size={14} /> {t('leads.exportCSV')}
               </button>
             )}
           </div>
@@ -180,7 +180,7 @@ export default function Leads() {
             <input
               value={search}
               onChange={e => setSearch(e.target.value)}
-              placeholder="Search by name, title, or company..."
+              placeholder={t('leads.searchPlaceholder')}
               style={{
                 width: '100%', padding: '10px 14px 10px 34px', borderRadius: 8,
                 border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.04)',
@@ -196,7 +196,7 @@ export default function Leads() {
               background: 'rgba(124,58,237,0.08)', border: '1px solid rgba(124,58,237,0.3)',
               borderRadius: 10, padding: '10px 16px',
             }}>
-              <span style={{ color: '#c4b5fd', fontWeight: 600, fontSize: 13 }}>{checked.size} selected</span>
+              <span style={{ color: '#c4b5fd', fontWeight: 600, fontSize: 13 }}>{checked.size} {t('leads.selected')}</span>
               <button
                 onClick={() => setShowConfirm(true)}
                 style={{
@@ -205,7 +205,7 @@ export default function Leads() {
                   display: 'flex', alignItems: 'center', gap: 4,
                 }}
               >
-                <Trash2 size={13} /> Delete Selected
+                <Trash2 size={13} /> {t('leads.deleteSelected')}
               </button>
               <button
                 onClick={() => setChecked(new Set())}
@@ -224,15 +224,15 @@ export default function Leads() {
               display: 'flex', alignItems: 'center', gap: 12,
             }}>
               <span style={{ color: '#fca5a5', fontSize: 13, flex: 1 }}>
-                Delete {checked.size} prospect{checked.size > 1 ? 's' : ''}? This cannot be undone.
+                {t('leads.deleteConfirm', { count: checked.size })}
               </span>
               <button onClick={() => setShowConfirm(false)}
                 style={{ background: 'rgba(255,255,255,0.06)', color: '#94a3b8', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '5px 14px', fontSize: 12, cursor: 'pointer' }}>
-                Cancel
+                {t('common.cancel')}
               </button>
               <button onClick={deleteSelected} disabled={deleting}
                 style={{ background: '#ef4444', color: '#fff', border: 'none', borderRadius: 6, padding: '5px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', opacity: deleting ? 0.6 : 1 }}>
-                {deleting ? 'Deleting...' : 'Delete'}
+                {deleting ? t('common.deleting') : t('common.delete')}
               </button>
             </div>
           )}
@@ -253,8 +253,8 @@ export default function Leads() {
             ) : prospects.length === 0 ? (
               <div style={{ textAlign: 'center', padding: 48 }}>
                 <Users size={36} style={{ color: '#475569', margin: '0 auto 12px' }} />
-                <h3 style={{ color: '#f1f5f9', fontSize: 16, fontWeight: 700, marginBottom: 8 }}>No prospects yet</h3>
-                <p style={{ color: '#64748b', fontSize: 13, marginBottom: 16 }}>Import prospects using the Wassel extension on LinkedIn.</p>
+                <h3 style={{ color: '#f1f5f9', fontSize: 16, fontWeight: 700, marginBottom: 8 }}>{t('leads.noProspects')}</h3>
+                <p style={{ color: '#64748b', fontSize: 13, marginBottom: 16 }}>{t('leads.noProspectsDesc')}</p>
               </div>
             ) : (
               <div style={{ overflowX: 'auto' }}>
@@ -264,10 +264,10 @@ export default function Leads() {
                       <th style={{ padding: '10px 12px', textAlign: 'left', width: 36 }}>
                         <input type="checkbox" checked={checked.size === filtered.length && filtered.length > 0} onChange={toggleAll} style={{ accentColor: '#7c3aed' }} />
                       </th>
-                      <th style={{ padding: '10px 12px', textAlign: 'left', color: '#64748b', fontWeight: 500 }}>Name</th>
-                      <th style={{ padding: '10px 12px', textAlign: 'left', color: '#64748b', fontWeight: 500 }}>Title</th>
-                      <th style={{ padding: '10px 12px', textAlign: 'left', color: '#64748b', fontWeight: 500 }}>Company</th>
-                      <th style={{ padding: '10px 12px', textAlign: 'left', color: '#64748b', fontWeight: 500 }}>LinkedIn</th>
+                      <th style={{ padding: '10px 12px', textAlign: 'left', color: '#64748b', fontWeight: 500 }}>{t('leads.name')}</th>
+                      <th style={{ padding: '10px 12px', textAlign: 'left', color: '#64748b', fontWeight: 500 }}>{t('leads.titleCol')}</th>
+                      <th style={{ padding: '10px 12px', textAlign: 'left', color: '#64748b', fontWeight: 500 }}>{t('leads.company')}</th>
+                      <th style={{ padding: '10px 12px', textAlign: 'left', color: '#64748b', fontWeight: 500 }}>{t('leads.linkedin')}</th>
                       <th style={{ padding: '10px 12px', width: 40 }} />
                     </tr>
                   </thead>
@@ -290,14 +290,14 @@ export default function Leads() {
                           {p.linkedin_url ? (
                             <a href={p.linkedin_url} target="_blank" rel="noopener noreferrer" style={{ color: '#60a5fa', display: 'flex', alignItems: 'center', gap: 4 }}
                               onClick={e => e.stopPropagation()}>
-                              <ExternalLink size={12} /> Profile
+                              <ExternalLink size={12} /> {t('leads.profile')}
                             </a>
                           ) : <span style={{ color: '#475569' }}>—</span>}
                         </td>
                         <td style={{ padding: '10px 12px' }}>
                           <button
                             onClick={(e) => { e.stopPropagation(); deleteSingle(p.id); }}
-                            title="Delete prospect"
+                            title={t('common.delete')}
                             className="leads-delete-btn"
                             style={{
                               background: 'none', border: 'none', cursor: 'pointer', padding: 4,
