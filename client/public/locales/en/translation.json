@@ -179,7 +179,15 @@
       "paused": "Paused",
       "draft": "Draft",
       "completed": "Completed"
-    }
+    },
+    "pausedDesc": "Automation is paused. Resume to continue outreach.",
+    "draftDesc": "Add steps and enroll prospects, then launch the campaign.",
+    "completedDesc": "All steps have been executed for all enrolled prospects.",
+    "possibleReasons": "Possible reasons",
+    "allContacted": "All prospects already contacted",
+    "justLaunched": "Campaign just launched (wait 1 min)",
+    "noProspects": "No prospects enrolled",
+    "noStepsDesc": "This campaign has no sequence steps. Create a new campaign to set up steps."
   },
   "wizard": {
     "createCampaign": "Create Campaign",
@@ -448,5 +456,28 @@
     "deleting": "Deleting...",
     "success": "Success",
     "error": "Error"
+  },
+  "campaign": {
+    "running": "Campaign Running",
+    "paused": "Campaign Paused",
+    "draft": "Draft — Not Yet Launched",
+    "completed": "Campaign Complete",
+    "extensionExecuting": "Wassel extension is executing actions",
+    "keepLinkedIn": "Keep a LinkedIn tab open",
+    "automationStatus": "Automation Status",
+    "testAutomation": "Test Automation",
+    "checking": "Checking...",
+    "working": "Automation is working! ✅",
+    "queue": "Queue:",
+    "actionPending": "action(s) pending",
+    "executeSoon": "Extension will execute in ~60 seconds",
+    "queueEmpty": "Queue is empty ⚠️",
+    "noActivity": "No activity yet.",
+    "keepChrome": "Keep Chrome open with extension active for automation to run.",
+    "recentActivity": "Recent Activity",
+    "live": "Live",
+    "noSteps": "No steps configured",
+    "launchNow": "🚀 Launch Now",
+    "resume": "▶ Resume"
   }
 }

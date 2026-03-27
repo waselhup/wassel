@@ -1,5 +1,10 @@
 # Wassel Extension Changelog
 
+## v1.2.1 — 2026-03-27
+- Fixed: activity log, safety limits, translations
+- Files modified: background.js
+
+
 ## v1.1.7 — 2026-03-20
 - Posts publishing, Arabic UI, AI survey, typography fixes
 - Files modified: background.js, content.js

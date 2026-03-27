@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Wassel Assistant",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Import LinkedIn prospects into Wassel campaigns",
   "permissions": [
     "storage",

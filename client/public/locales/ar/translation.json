@@ -162,7 +162,15 @@
       "paused": "متوقف",
       "draft": "مسودة",
       "completed": "مكتمل"
-    }
+    },
+    "pausedDesc": "الأتمتة موقوفة. استأنف للمتابعة.",
+    "draftDesc": "أضف خطوات وسجّل عملاء محتملين، ثم أطلق الحملة.",
+    "completedDesc": "تم تنفيذ كل الخطوات لجميع العملاء المسجلين.",
+    "possibleReasons": "أسباب محتملة",
+    "allContacted": "تم التواصل مع جميع العملاء",
+    "justLaunched": "الحملة أُطلقت للتو (انتظر دقيقة)",
+    "noProspects": "لا يوجد عملاء مسجلون",
+    "noStepsDesc": "لا توجد خطوات في هذه الحملة. أنشئ حملة جديدة لإعداد الخطوات."
   },
   "wizard": {
     "createCampaign": "إنشاء حملة",
@@ -431,5 +439,28 @@
     "deleting": "جاري الحذف...",
     "success": "تم بنجاح",
     "error": "خطأ"
+  },
+  "campaign": {
+    "running": "الحملة تعمل",
+    "paused": "الحملة موقوفة",
+    "draft": "مسودة — لم تُطلق بعد",
+    "completed": "الحملة مكتملة",
+    "extensionExecuting": "إضافة وصل تنفذ الإجراءات",
+    "keepLinkedIn": "أبق تبويب LinkedIn مفتوحاً",
+    "automationStatus": "حالة الأتمتة",
+    "testAutomation": "اختبار الأتمتة",
+    "checking": "جاري الفحص...",
+    "working": "الأتمتة تعمل ✅",
+    "queue": "الطابور:",
+    "actionPending": "إجراء معلق",
+    "executeSoon": "ستنفذ الإضافة خلال ~60 ثانية",
+    "queueEmpty": "الطابور فارغ ⚠️",
+    "noActivity": "لا يوجد نشاط بعد",
+    "keepChrome": "أبق Chrome مفتوحاً مع تفعيل الإضافة",
+    "recentActivity": "النشاط الأخير",
+    "live": "مباشر",
+    "noSteps": "لا توجد خطوات مضافة",
+    "launchNow": "🚀 إطلاق الآن",
+    "resume": "▶ استئناف"
   }
 }

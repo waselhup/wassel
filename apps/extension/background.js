@@ -141,6 +141,34 @@ async function syncTokenFromDashboard() {
 // ============================================================================
 // RATE LIMITING — Daily limits stored in chrome.storage
 // ============================================================================
+const DAILY_LIMITS = {
+  visit: 80,
+  connect: 20,
+  message: 30
+};
+
+async function checkDailyLimit(actionType) {
+  const today = new Date().toDateString();
+  const key = 'daily_' + actionType;
+  const stored = await chrome.storage.local.get([key, key + '_date']);
+
+  if (stored[key + '_date'] !== today) {
+    await chrome.storage.local.set({ [key]: 0, [key + '_date']: today });
+    return true;
+  }
+
+  const count = stored[key] || 0;
+  const limit = DAILY_LIMITS[actionType] || 50;
+
+  if (count >= limit) {
+    console.warn('[Wassel] Daily limit reached for:', actionType, count + '/' + limit);
+    return false;
+  }
+
+  await chrome.storage.local.set({ [key]: count + 1 });
+  return true;
+}
+
 async function getDailyLimits() {
   const d = await chrome.storage.local.get('dailyLimits');
   const today = new Date().toDateString();
@@ -442,20 +470,35 @@ async function executeAction(item) {
 
   try {
     if (stepType === 'visit') {
-      await doVisit(url, stepId, name);
+      const allowed = await checkDailyLimit('visit');
+      if (!allowed) {
+        console.warn('[Wassel] Skipping visit - daily limit reached (' + DAILY_LIMITS.visit + ')');
+        await updateStepStatus(stepId, 'pending');
+        actionStatus = 'skipped';
+        actionError = 'Daily visit limit reached';
+      } else {
+        await doVisit(url, stepId, name);
+      }
     } else if (stepType === 'invitation' || stepType === 'invite' || stepType === 'connection_request') {
-      const limits = await getDailyLimits();
-      if (limits.invites >= 20) {
-        console.log('[Wassel] 🛑 Daily invite limit (20) reached');
+      const allowed = await checkDailyLimit('connect');
+      if (!allowed) {
+        console.warn('[Wassel] Skipping invite - daily limit reached (' + DAILY_LIMITS.connect + ')');
         await updateStepStatus(stepId, 'pending');
         actionStatus = 'skipped';
         actionError = 'Daily invite limit reached';
-        // still log it below
       } else {
         await doInvite(url, message, stepId, name);
       }
     } else if (stepType === 'message' || stepType === 'follow' || stepType === 'follow_up') {
-      await doMessage(url, message, stepId, name);
+      const allowed = await checkDailyLimit('message');
+      if (!allowed) {
+        console.warn('[Wassel] Skipping message - daily limit reached (' + DAILY_LIMITS.message + ')');
+        await updateStepStatus(stepId, 'pending');
+        actionStatus = 'skipped';
+        actionError = 'Daily message limit reached';
+      } else {
+        await doMessage(url, message, stepId, name);
+      }
     } else {
       console.log(`[Wassel] ⚠️ Unknown step type: ${stepType}`);
       await updateStepStatus(stepId, 'failed', `Unknown: ${stepType}`);

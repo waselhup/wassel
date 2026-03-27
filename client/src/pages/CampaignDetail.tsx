@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -66,6 +67,7 @@ type Step = {
 };
 
 export default function CampaignDetail() {
+  const { t } = useTranslation();
   // Extract campaign ID from URL
   const [, params] = useRoute('/app/campaigns/:id');
   const [location, setLocation] = useLocation();
@@ -117,21 +119,35 @@ export default function CampaignDetail() {
   const [testResult, setTestResult] = useState<any>(null);
   const [testLoading, setTestLoading] = useState(false);
 
-  // Load recent activity
+  // Load recent activity from activity-log endpoint
   const loadActivity = useCallback(async () => {
     if (!campaignId) return;
     setLoadingActivity(true);
     try {
-      const res = await seqApi(`/campaigns/${campaignId}/activity`);
-      if (res.success) setActivity(res.activity || []);
+      const token = localStorage.getItem('supabase_token') || localStorage.getItem('supabase_access_token') || '';
+      const res = await fetch(`${API_BASE}/activity-log?campaign_id=${campaignId}&limit=20`, {
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        // Normalize field names: activity-log uses snake_case, map to camelCase for UI
+        const logs = (data.logs || []).map((l: any) => ({
+          id: l.id,
+          stepType: l.action_type,
+          status: l.status,
+          prospectName: l.prospect_name,
+          executedAt: l.executed_at || l.created_at,
+        }));
+        setActivity(logs);
+      }
     } catch {}
     setLoadingActivity(false);
   }, [campaignId]);
 
-  // Auto-refresh activity every 30s
+  // Auto-refresh activity every 8s
   useEffect(() => {
     loadActivity();
-    const interval = setInterval(loadActivity, 30000);
+    const interval = setInterval(loadActivity, 8000);
     return () => clearInterval(interval);
   }, [loadActivity]);
 
@@ -401,10 +417,10 @@ export default function CampaignDetail() {
         {(() => {
           const s = campaign.status;
           const banners: Record<string, { bg: string; border: string; icon: string; color: string; title: string; desc: string }> = {
-            active: { bg: 'bg-green-50', border: 'border-green-200', icon: '🟢', color: 'text-green-800', title: 'Campaign Running', desc: 'Wassel extension is executing actions. Keep a LinkedIn tab open.' },
-            paused: { bg: 'bg-amber-50', border: 'border-amber-200', icon: '⏸', color: 'text-amber-800', title: 'Campaign Paused', desc: 'Automation is paused. Resume to continue outreach.' },
-            draft: { bg: 'bg-gray-50', border: 'border-gray-200', icon: '📝', color: 'text-gray-700', title: 'Draft — Not Yet Launched', desc: 'Add steps and enroll prospects, then launch the campaign.' },
-            completed: { bg: 'bg-blue-50', border: 'border-blue-200', icon: '✅', color: 'text-blue-800', title: 'Campaign Complete', desc: 'All steps have been executed for all enrolled prospects.' },
+            active: { bg: 'bg-green-50', border: 'border-green-200', icon: '🟢', color: 'text-green-800', title: t('campaign.running'), desc: `${t('campaign.extensionExecuting')}. ${t('campaign.keepLinkedIn')}.` },
+            paused: { bg: 'bg-amber-50', border: 'border-amber-200', icon: '⏸', color: 'text-amber-800', title: t('campaign.paused'), desc: t('campaigns.pausedDesc') },
+            draft: { bg: 'bg-gray-50', border: 'border-gray-200', icon: '📝', color: 'text-gray-700', title: t('campaign.draft'), desc: t('campaigns.draftDesc') },
+            completed: { bg: 'bg-blue-50', border: 'border-blue-200', icon: '✅', color: 'text-blue-800', title: t('campaign.completed'), desc: t('campaigns.completedDesc') },
           };
           const b = banners[s] || banners.draft;
           return (
@@ -451,20 +467,20 @@ export default function CampaignDetail() {
             <Card className="p-4">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-                  Recent Activity
+                  {t('campaign.recentActivity')}
                   {campaign?.status === 'active' && (
                     <span className="inline-flex items-center gap-1 text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
                       <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-                      Live
+                      {t('campaign.live')}
                     </span>
                   )}
                 </h3>
-                <button onClick={loadActivity} className="text-xs text-gray-400 hover:text-gray-600">↻ Refresh</button>
+                <button onClick={loadActivity} className="text-xs text-gray-400 hover:text-gray-600">↻ {t('common.refresh')}</button>
               </div>
               {activity.length === 0 ? (
                 <div className="text-center py-8">
-                  <p className="text-gray-400 text-sm">No activity yet.</p>
-                  <p className="text-gray-400 text-xs mt-1">Keep Chrome open with extension active for automation to run.</p>
+                  <p className="text-gray-400 text-sm">{t('campaign.noActivity')}</p>
+                  <p className="text-gray-400 text-xs mt-1">{t('campaign.keepChrome')}</p>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -496,7 +512,7 @@ export default function CampaignDetail() {
           {campaign?.status === 'active' && (
             <div className="lg:col-span-1">
               <Card className="p-4">
-                <h3 className="text-sm font-semibold text-gray-800 mb-3">Automation Status</h3>
+                <h3 className="text-sm font-semibold text-gray-800 mb-3">{t('campaign.automationStatus')}</h3>
                 <Button
                   size="sm"
                   variant="outline"
@@ -505,7 +521,7 @@ export default function CampaignDetail() {
                   className="w-full mb-3"
                 >
                   {testLoading ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : '🧪'}
-                  {testLoading ? 'Checking...' : 'Test Automation'}
+                  {testLoading ? t('campaign.checking') : t('campaign.testAutomation')}
                 </Button>
                 {testResult && (
                   <div className={`text-xs rounded-lg p-3 ${
@@ -517,19 +533,19 @@ export default function CampaignDetail() {
                       <p>❌ Error: {testResult.error}</p>
                     ) : testResult.queue?.length > 0 ? (
                       <>
-                        <p className="font-semibold">✅ Automation is working!</p>
+                        <p className="font-semibold">{t('campaign.working')}</p>
                         <p className="mt-1">Next: {testResult.queue[0]?.step_type} for {testResult.queue[0]?.name}</p>
-                        <p>Queue: {testResult.queue.length} action{testResult.queue.length > 1 ? 's' : ''} pending</p>
-                        <p className="mt-1 text-green-600">Extension will execute in ~60 seconds</p>
+                        <p>{t('campaign.queue')} {testResult.queue.length} {t('campaign.actionPending')}</p>
+                        <p className="mt-1 text-green-600">{t('campaign.executeSoon')}</p>
                       </>
                     ) : (
                       <>
-                        <p className="font-semibold">⚠️ Queue is empty</p>
-                        <p className="mt-1">Possible reasons:</p>
+                        <p className="font-semibold">{t('campaign.queueEmpty')}</p>
+                        <p className="mt-1">{t('campaigns.possibleReasons')}:</p>
                         <ul className="list-disc ml-4 mt-0.5">
-                          <li>All prospects already contacted</li>
-                          <li>Campaign just launched (wait 1 min)</li>
-                          <li>No prospects enrolled</li>
+                          <li>{t('campaigns.allContacted')}</li>
+                          <li>{t('campaigns.justLaunched')}</li>
+                          <li>{t('campaigns.noProspects')}</li>
                         </ul>
                       </>
                     )}
@@ -573,8 +589,8 @@ export default function CampaignDetail() {
             {steps.length === 0 && stepsLoaded ? (
               <Card className="p-8 text-center">
                 <Zap className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                <h3 className="text-base font-semibold text-gray-700 mb-1">No steps configured</h3>
-                <p className="text-gray-500 text-sm">This campaign has no sequence steps. Create a new campaign to set up steps.</p>
+                <h3 className="text-base font-semibold text-gray-700 mb-1">{t('campaign.noSteps')}</h3>
+                <p className="text-gray-500 text-sm">{t('campaigns.noStepsDesc')}</p>
               </Card>
             ) : (
               steps.map((s, i) => {
