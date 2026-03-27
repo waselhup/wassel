@@ -16,10 +16,10 @@ export default function ProfileHeroCard({
   const { t } = useTranslation();
 
   // Proxy external photos to avoid CORS/referrer blocks
+  // Note: googleusercontent.com (Google auth photos) are publicly accessible — no proxy needed
   const needsProxy = photoUrl && (
     photoUrl.includes('licdn.com') ||
-    photoUrl.includes('linkedin.com') ||
-    photoUrl.includes('googleusercontent.com')
+    photoUrl.includes('linkedin.com')
   );
   const proxiedPhoto = photoUrl
     ? needsProxy

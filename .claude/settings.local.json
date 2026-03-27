@@ -27,7 +27,15 @@
       "Bash(node -e \"import\\(''''./api/index.js''''\\).then\\(m => { const app = m.default; console.log\\(''''app type:'''', typeof app\\); console.log\\(''''app.default type:'''', typeof app.default\\); console.log\\(''''app.default.listen?'''', typeof \\(app.default && app.default.listen\\)\\); }\\).catch\\(e => console.log\\(''''ERR:'''', e.message\\)\\)\")",
       "Bash(timeout 8 node --input-type=module -e \":*)",
       "Bash(node --input-type=module -e \":*)",
-      "Bash(curl -sI \"https://wassel-alpha.vercel.app/api/linkedin/connect\")"
+      "Bash(curl -sI \"https://wassel-alpha.vercel.app/api/linkedin/connect\")",
+      "Bash(curl -sI \"https://wassel-alpha.vercel.app/\")",
+      "Bash(curl -sI \"https://wassel-alpha.vercel.app/login\")",
+      "Bash(curl -s -X POST https://wassel-alpha.vercel.app/api/ai/generate-message -H \"Content-Type: application/json\" -H \"Authorization: Bearer test\" -d '{\"\"purpose\"\":\"\"sales\"\",\"\"tone\"\":\"\"professional\"\"}')",
+      "Bash(cd:*)",
+      "Bash(python3 -c \":*)",
+      "Bash(node:*)",
+      "Bash(SUPABASE_URL=\"https://hiqotmimlgsrsnovtopd.supabase.co\" SUPABASE_SERVICE_ROLE_KEY=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhpcW90bWltbGdzcnNub3Z0b3BkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MjE0ODA4NywiZXhwIjoyMDg3NzI0MDg3fQ.8FrY-dp6uBa7-UkkXybJyNi_7y4irhrThTR33VFDtAA\" node -e \":*)",
+      "Bash(cmd /c \"git add dist/api/index.js dist/public client/src/components/ProfileHeroCard.tsx server/_core/activityRoutes.ts && git commit -m \"\"fix: profile photo Google URL proxy + activity logs team_id fallback\"\" && git push origin master 2>&1\")"
     ]
   }
 }

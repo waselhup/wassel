@@ -37,8 +37,9 @@ router.post('/', async (req: Request, res: Response) => {
             teamId = membership?.team_id || null;
         }
 
+        // Fallback: use userId as personal team_id for solo users without team membership
         if (!teamId) {
-            return res.status(400).json({ error: 'No team associated' });
+            teamId = userId;
         }
 
         const { action_type, status, prospect_name, linkedin_url, campaign_id, error_message } = req.body;
@@ -92,8 +93,9 @@ router.get('/', async (req: Request, res: Response) => {
             teamId = membership?.team_id || null;
         }
 
+        // Fallback: use userId as personal team_id for solo users without team membership
         if (!teamId) {
-            return res.json({ logs: [] });
+            teamId = userId;
         }
 
         const limit = parseInt(req.query.limit as string) || 50;
