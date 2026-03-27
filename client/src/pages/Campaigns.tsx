@@ -89,7 +89,7 @@ export default function Campaigns() {
               <h2 style={{ fontSize: 22, fontWeight: 800, color: '#f1f5f9', fontFamily: "'Syne', sans-serif", marginBottom: 4 }}>{t('campaigns.title')}</h2>
               <p style={{ color: '#64748b', fontSize: 13 }}>{t('campaigns.manage')}</p>
             </div>
-            <button onClick={() => navigate('/app/campaigns/new')}
+            <button onClick={() => navigate('/app/campaigns/templates')}
               style={{ background: 'linear-gradient(135deg,#7c3aed,#ec4899)', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 20px', fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
               <Plus size={16} /> {t('campaigns.new')}
             </button>
@@ -114,7 +114,7 @@ export default function Campaigns() {
               <Megaphone size={40} style={{ color: '#475569', margin: '0 auto 16px' }} />
               <h3 style={{ color: '#f1f5f9', fontSize: 18, fontWeight: 700, marginBottom: 8 }}>{t('campaigns.noCampaigns')}</h3>
               <p style={{ color: '#64748b', fontSize: 14, marginBottom: 20 }}>{t('campaigns.noCampaignsDesc')}</p>
-              <button onClick={() => navigate('/app/campaigns/new')}
+              <button onClick={() => navigate('/app/campaigns/templates')}
                 style={{ background: 'linear-gradient(135deg,#7c3aed,#ec4899)', color: '#fff', border: 'none', borderRadius: 8, padding: '12px 24px', fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                 <Plus size={16} /> {t('campaigns.createFirst')}
               </button>
