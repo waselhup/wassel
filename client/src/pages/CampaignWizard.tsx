@@ -6,6 +6,7 @@ import Avatar from '@/components/Avatar';
 import { ChevronRight, ChevronLeft, Rocket, Search, Users, Loader2, Lock, Sparkles, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
+import { CAMPAIGN_PRESETS } from '@/data/presetData';
 
 // Fetch helper
 async function apiFetch(path: string, token: string, options?: RequestInit) {
@@ -116,6 +117,24 @@ export default function CampaignWizard() {
   const [enabledSteps, setEnabledSteps] = useState<Record<StepKey, boolean>>({
     visit: true, invite: true, message: true, follow: true,
   });
+
+  // Pre-populate from preset query param
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const presetId = params.get('preset');
+    if (!presetId) return;
+    const preset = CAMPAIGN_PRESETS.find(p => p.id === presetId);
+    if (!preset) return;
+    const actions = preset.wizardSteps.map(s => s.action);
+    const hasVisit = actions.includes('visit');
+    const hasConnect = actions.includes('connect');
+    const messages = preset.wizardSteps.filter(s => s.action === 'message');
+    const hasMsg = messages.length >= 1;
+    const hasFollow = messages.length >= 2;
+    setEnabledSteps({ visit: hasVisit, invite: hasConnect, message: hasMsg, follow: hasFollow });
+    if (hasMsg && messages[0]) setMsg1Delay(messages[0].delay);
+    if (hasFollow && messages[1]) setFollowDelay(messages[1].delay);
+  }, []);
 
   // Step 2 state
   const [inviteDelay, setInviteDelay] = useState(0);
