@@ -447,63 +447,6 @@ export default function CampaignWizard() {
                 </div>
               </div>
 
-              <div style={card}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                  <h3 style={{ color: '#f1f5f9', fontSize: 16, fontWeight: 700 }}>{t('wizard.chooseSteps')}</h3>
-                  <span style={{
-                    background: 'linear-gradient(135deg,rgba(124,58,237,0.2),rgba(236,72,153,0.2))',
-                    color: '#c4b5fd', padding: '4px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600,
-                    border: '1px solid rgba(124,58,237,0.3)',
-                  }}>
-                    {getCampaignTypeLabel(enabledSteps, t)}
-                  </span>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
-                  {STEP_DEFS.map(sd => {
-                    const on = enabledSteps[sd.key];
-                    const canClick = (sd as any).locked ? false : canToggle(sd.key);
-                    const tooltip = (sd as any).locked
-                      ? t('wizard.visitRequired')
-                      : !on && !canClick
-                        ? t('wizard.enableFirst')
-                        : undefined;
-                    return (
-                      <button
-                        key={sd.key}
-                        type="button"
-                        title={tooltip}
-                        onClick={() => !(sd as any).locked && canClick && toggleStep(sd.key)}
-                        style={{
-                          background: on ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.01)',
-                          border: on ? '1px solid rgba(124,58,237,0.4)' : '1px solid rgba(255,255,255,0.06)',
-                          borderRadius: 10, padding: '14px 8px', textAlign: 'center',
-                          cursor: (sd as any).locked ? 'default' : canClick ? 'pointer' : 'not-allowed',
-                          opacity: on ? 1 : 0.4, transition: 'all 0.2s',
-                        }}
-                      >
-                        <div style={{ fontSize: 22, marginBottom: 6, filter: on ? 'none' : 'grayscale(1)' }}>{sd.emoji}</div>
-                        <div style={{ color: on ? '#f1f5f9' : '#475569', fontSize: 12, fontWeight: 600, marginBottom: 2 }}>{sd.label}</div>
-                        <div style={{ color: '#64748b', fontSize: 10, marginBottom: 8 }}>{sd.desc}</div>
-                        {(sd as any).locked ? (
-                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 3, background: 'rgba(34,197,94,0.15)', color: '#86efac', borderRadius: 6, padding: '2px 8px', fontSize: 10, fontWeight: 600 }}>
-                            <Lock size={9} /> ON
-                          </div>
-                        ) : (
-                          <div style={{
-                            display: 'inline-flex', alignItems: 'center', gap: 3,
-                            background: on ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.04)',
-                            color: on ? '#86efac' : '#475569',
-                            borderRadius: 6, padding: '2px 8px', fontSize: 10, fontWeight: 600,
-                          }}>
-                            {on ? '✓ ON' : 'OFF'}
-                          </div>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
             </div>
           )}
 
