@@ -176,10 +176,19 @@ export default function CampaignWizard() {
   const generateAI = async (stepType: string) => {
     setAiLoading(true);
     setAiResult('');
+    // Pick first selected prospect for style detection
+    const firstSelected = prospects.find(p => selected.has(p.id)) || prospects[0] || null;
     try {
       const res = await apiFetch('/api/ai/generate-message', token, {
         method: 'POST',
-        body: JSON.stringify({ stepType, goal: aiGoal || 'LinkedIn outreach', tone: aiTone }),
+        body: JSON.stringify({
+          stepType,
+          goal: aiGoal || 'LinkedIn outreach',
+          tone: aiTone,
+          prospectName: firstSelected?.name || '',
+          prospectTitle: firstSelected?.title || '',
+          prospectCompany: firstSelected?.company || '',
+        }),
       });
       setAiResult(res.message || t('wizard.aiGenerationFailed'));
     } catch (e: any) {
