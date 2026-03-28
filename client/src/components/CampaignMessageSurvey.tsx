@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface CampaignMessageSurveyProps {
   isOpen: boolean;
@@ -35,6 +36,7 @@ export default function CampaignMessageSurvey({
   messageType, prospectName, prospectTitle,
 }: CampaignMessageSurveyProps) {
   const { i18n } = useTranslation();
+  const { accessToken } = useAuth();
   const lang = i18n.language === 'ar' ? 'ar' : 'en';
   const isAr = lang === 'ar';
 
@@ -42,6 +44,7 @@ export default function CampaignMessageSurvey({
   const [tone, setTone] = useState('');
   const [context, setContext] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [senderProfile, setSenderProfile] = useState<{ name: string; headline: string; photoUrl: string } | null>(null);
 
   useEffect(() => {
     if (!isOpen) {
@@ -49,8 +52,16 @@ export default function CampaignMessageSurvey({
       setTone('');
       setContext('');
       setIsGenerating(false);
+      return;
     }
-  }, [isOpen]);
+    if (!accessToken) return;
+    fetch('/api/linkedin/profile', { headers: { Authorization: `Bearer ${accessToken}` } })
+      .then(r => r.json())
+      .then(d => {
+        if (d.fullName) setSenderProfile({ name: d.fullName, headline: d.headline || '', photoUrl: d.photoUrl || '' });
+      })
+      .catch(() => {});
+  }, [isOpen, accessToken]);
 
   const handleGenerate = async () => {
     if (!purpose || !tone) return;
@@ -90,6 +101,31 @@ export default function CampaignMessageSurvey({
               <X className="w-4 h-4 text-gray-500" />
             </button>
           </div>
+
+          {/* Sender profile card */}
+          {senderProfile && (
+            <div className="bg-gray-50 rounded-xl px-3 py-2 mb-3 flex items-center gap-2.5">
+              {senderProfile.photoUrl ? (
+                <img
+                  src={`/api/proxy-image?url=${encodeURIComponent(senderProfile.photoUrl)}`}
+                  alt=""
+                  className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                  onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                  {senderProfile.name.charAt(0)}
+                </div>
+              )}
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold text-gray-800 truncate">{senderProfile.name}</p>
+                {senderProfile.headline && (
+                  <p className="text-xs text-gray-500 truncate">{senderProfile.headline}</p>
+                )}
+              </div>
+              <span className="text-xs text-blue-500 font-medium flex-shrink-0">in</span>
+            </div>
+          )}
 
           {/* Prospect pill */}
           {prospectName && (

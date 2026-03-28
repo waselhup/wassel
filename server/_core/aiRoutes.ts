@@ -1,6 +1,68 @@
 import { Router, Request, Response } from 'express';
+import { supabase } from '../supabase';
 
 const router = Router();
+
+// ─── User ID Extractor ───────────────────────────────────────
+function getUserId(req: Request): string | null {
+  return (req as any).userId || (req as any).user?.id || null;
+}
+
+// ─── Gender Detector from Name ───────────────────────────────
+function detectGenderFromName(name: string): 'male' | 'female' | 'unknown' {
+  if (!name) return 'unknown';
+  const first = name.trim().split(/\s+/)[0].toLowerCase();
+
+  const femaleNames = new Set([
+    // Arabic female names
+    'سارة','نورة','نوف','ريم','مريم','فاطمة','هند','لطيفة','أميرة','عائشة',
+    'خديجة','زينب','رنا','ليلى','دانا','رهف','غدير','منى','أسماء','جواهر',
+    'نجلاء','حياة','وفاء','سمر','شيماء','إيمان','إسراء','هيا','بدرية','لمياء',
+    'ملاك','شهد','يارا','جود','تالا','دلال','رشا','ميساء','هديل','أروى','لين',
+    'بيان','مها','سلمى','ولاء','آمال','آلاء','أريج','أفنان','صفاء','نهى',
+    // English female names
+    'sara','sarah','emma','olivia','ava','isabella','sophia','mia','charlotte',
+    'amelia','harper','evelyn','abigail','emily','elizabeth','mila','ella',
+    'avery','sofia','camila','aria','scarlett','victoria','madison','luna','grace',
+    'chloe','penelope','layla','riley','zoey','nora','lily','eleanor','hannah',
+    'lillian','addison','aubrey','ellie','stella','natalie','zoe','leah','hazel',
+    'violet','aurora','savannah','audrey','brooklyn','bella','claire','skylar',
+    'lucy','paisley','anna','caroline','nova','emilia','kennedy','samantha','maya',
+    'willow','naomi','aaliyah','elena','ariana','allison','alexa','jennifer',
+    'jasmine','alice','julia','jessica','ashley','amanda','stephanie','melissa',
+    'nicole','amber','linda','danielle','rebecca','michelle','sandra','heather',
+    'rachel','diana','andrea','amy','karen','lisa','patricia','fatima','noura',
+  ]);
+
+  const maleNames = new Set([
+    // Arabic male names
+    'محمد','أحمد','علي','عمر','خالد','عبدالله','سعد','فيصل','بندر','تركي',
+    'سلطان','ناصر','يوسف','إبراهيم','عبدالرحمن','عبدالعزيز','حمد','زياد',
+    'صالح','عادل','طارق','رامي','باسم','وليد','هاني','أيمن','كريم','شريف',
+    'حسام','تامر','محمود','مصطفى','ماجد','سامي','نادر','عبدالكريم','منصور',
+    'عمرو','مازن','وائل','أسامة','زكريا','معتز','عزيز','حاتم','جلال','جمال',
+    // English male names
+    'james','john','robert','michael','william','david','richard','joseph','thomas',
+    'charles','christopher','daniel','matthew','anthony','mark','donald','steven',
+    'paul','andrew','joshua','kenneth','kevin','brian','george','timothy','ronald',
+    'edward','jason','jeffrey','ryan','jacob','gary','nicholas','eric','jonathan',
+    'stephen','larry','justin','scott','brandon','benjamin','samuel','raymond',
+    'frank','gregory','alexander','patrick','jack','dennis','tyler','aaron','jose',
+    'henry','adam','douglas','nathan','peter','zachary','kyle','noah','ethan',
+    'mason','liam','oliver','elijah','aiden','lucas','jackson','logan','caleb',
+    'jayden','grayson','sebastian','mateo','owen','muhammad','omar','ali','ahmed',
+    'hassan','walid','faisal','khalid','nasser','yusuf','ibrahim','tariq','sami',
+  ]);
+
+  if (femaleNames.has(first)) return 'female';
+  if (maleNames.has(first)) return 'male';
+
+  // Arabic: names ending in تاء مربوطة are typically female
+  const firstWord = name.trim().split(/\s+/)[0];
+  if (/[ةه]$/.test(firstWord) && firstWord.length > 2) return 'female';
+
+  return 'unknown';
+}
 
 // ─── Smart Style Detector ───────────────────────────────────
 function detectStyleFromProfile(profile: {
@@ -64,7 +126,8 @@ function buildSystemPrompt(
   purpose: string,
   style: ReturnType<typeof detectStyleFromProfile>,
   language: string,
-  stepType: string
+  stepType: string,
+  senderGender: 'male' | 'female' | 'unknown' = 'unknown'
 ) {
   const styleGuides: Record<string, string> = {
     executive: `Write as peer-to-peer executive communication.
@@ -112,9 +175,17 @@ Very formal Arabic. No casual language.`,
     ? `You are writing TO:\nName: ${prospectProfile.name || 'the recipient'}\nTitle: ${prospectProfile.title || ''}\nCompany: ${prospectProfile.company || ''}\n\n`
     : '';
 
+  const genderBlock = language === 'ar' ? (
+    senderGender === 'female'
+      ? `SENDER GRAMMAR (Arabic): Sender is female — use feminine forms when sender refers to themselves:\n  متخصصة، مهتمة، سعيدة، متحمسة، أعمل في (unchanged), أنا (unchanged)\n  Example: "أنا متخصصة في..." not "متخصص"\n\n`
+      : senderGender === 'male'
+      ? `SENDER GRAMMAR (Arabic): Sender is male — use masculine forms:\n  متخصص، مهتم، سعيد، متحمس\n\n`
+      : ''
+  ) : '';
+
   return `You are an expert LinkedIn copywriter specializing in ${language === 'ar' ? 'Arabic' : 'English'} outreach.
 
-${senderBlock}${recipientBlock}PURPOSE: ${purpose}
+${senderBlock}${recipientBlock}${genderBlock}PURPOSE: ${purpose}
 MESSAGE TYPE: ${stepType}
 MAX LENGTH: ${maxLen}
 
@@ -201,10 +272,32 @@ router.post('/generate-message', async (req: Request, res: Response) => {
     if (resolvedTone === 'casual' || resolvedTone === 'friendly') style.formality = 'friendly';
     if (resolvedTone === 'direct') style.formality = 'formal';
 
-    // Sender context (from AISurveyModal)
+    // Fetch sender's LinkedIn profile for gender detection + context
+    let senderName = '';
+    let senderHeadline = senderContext || '';
+    let senderGender: 'male' | 'female' | 'unknown' = 'unknown';
+
+    const userId = getUserId(req);
+    if (userId) {
+      try {
+        const { data: conn } = await supabase
+          .from('linkedin_connections')
+          .select('linkedin_name, headline')
+          .eq('user_id', userId)
+          .eq('oauth_connected', true)
+          .limit(1)
+          .single();
+        if (conn) {
+          senderName = conn.linkedin_name || '';
+          senderHeadline = senderContext || conn.headline || '';
+          senderGender = detectGenderFromName(senderName);
+        }
+      } catch (_) { /* non-critical */ }
+    }
+
     const userContext = {
-      name: '',
-      headline: senderContext || '',
+      name: senderName,
+      headline: senderHeadline,
       company: '',
     };
 
@@ -232,7 +325,8 @@ Return ONLY the post text, nothing else.`;
         `${resolvedPurpose}${resolvedGoal ? ` — ${resolvedGoal}` : ''}`,
         style,
         resolvedLang,
-        resolvedStepType
+        resolvedStepType,
+        senderGender
       );
     }
 

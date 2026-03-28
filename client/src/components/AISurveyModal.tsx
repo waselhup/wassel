@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X, Loader2 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 type Purpose = 'sales' | 'job_search' | 'recruiting' | 'hiring' | 'networking' | 'partnership';
 type Tone = 'professional' | 'friendly' | 'casual';
@@ -55,11 +56,23 @@ export default function AISurveyModal({
   showPostType = false,
 }: AISurveyModalProps) {
   const { t } = useTranslation();
+  const { accessToken } = useAuth();
   const [purpose, setPurpose] = useState<Purpose | null>(null);
   const [tone, setTone] = useState<Tone | null>(null);
   const [senderContext, setSenderContext] = useState('');
   const [specificGoal, setSpecificGoal] = useState('');
   const [postType, setPostType] = useState<PostType | null>(null);
+  const [senderProfile, setSenderProfile] = useState<{ name: string; headline: string; photoUrl: string } | null>(null);
+
+  useEffect(() => {
+    if (!isOpen || !accessToken) return;
+    fetch('/api/linkedin/profile', { headers: { Authorization: `Bearer ${accessToken}` } })
+      .then(r => r.json())
+      .then(d => {
+        if (d.fullName) setSenderProfile({ name: d.fullName, headline: d.headline || '', photoUrl: d.photoUrl || '' });
+      })
+      .catch(() => {});
+  }, [isOpen, accessToken]);
 
   if (!isOpen) return null;
 
@@ -127,6 +140,44 @@ export default function AISurveyModal({
             <X size={18} />
           </button>
         </div>
+
+        {/* Sender profile card */}
+        {senderProfile && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 10,
+            background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border-subtle)',
+            borderRadius: 10, padding: '8px 12px', marginBottom: 16,
+          }}>
+            {senderProfile.photoUrl ? (
+              <img
+                src={`/api/proxy-image?url=${encodeURIComponent(senderProfile.photoUrl)}`}
+                alt=""
+                style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
+                onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+              />
+            ) : (
+              <div style={{
+                width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+                background: 'linear-gradient(135deg, #3b82f6, #7c3aed)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 12, fontWeight: 700, color: '#fff',
+              }}>
+                {senderProfile.name.charAt(0)}
+              </div>
+            )}
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {senderProfile.name}
+              </div>
+              {senderProfile.headline && (
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {senderProfile.headline}
+                </div>
+              )}
+            </div>
+            <span style={{ fontSize: 11, color: '#0a66c2', fontWeight: 700, flexShrink: 0 }}>in</span>
+          </div>
+        )}
 
         {/* Q1 — Purpose */}
         <div style={{ marginBottom: 18 }}>
