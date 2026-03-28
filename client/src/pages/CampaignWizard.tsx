@@ -7,6 +7,7 @@ import { ChevronRight, ChevronLeft, Rocket, Search, Users, Loader2, Lock, Sparkl
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { CAMPAIGN_PRESETS } from '@/data/presetData';
+import CampaignMessageSurvey from '@/components/CampaignMessageSurvey';
 
 // Fetch helper
 async function apiFetch(path: string, token: string, options?: RequestInit) {
@@ -104,7 +105,7 @@ export default function CampaignWizard() {
   const [, navigate] = useLocation();
   const { accessToken } = useAuth();
   const token = accessToken || localStorage.getItem('supabase_token') || '';
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const [step, setStep] = useState(0);
   const [launching, setLaunching] = useState(false);
@@ -172,6 +173,35 @@ export default function CampaignWizard() {
   const [aiTone, setAiTone] = useState('professional');
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResult, setAiResult] = useState('');
+
+  // Campaign message survey modals
+  const [showSurveyInvite, setShowSurveyInvite] = useState(false);
+  const [showSurveyMsg1, setShowSurveyMsg1] = useState(false);
+  const [showSurveyFollow, setShowSurveyFollow] = useState(false);
+
+  // Shared survey generate handler
+  const handleSurveyGenerate = async (
+    config: { purpose: string; tone: string; context: string },
+    setter: (v: string) => void,
+    maxLen: number
+  ) => {
+    const firstSelected = prospects.find(p => selected.has(p.id)) || prospects[0] || null;
+    const res = await apiFetch('/api/ai/generate-message', token, {
+      method: 'POST',
+      body: JSON.stringify({
+        purpose: config.purpose,
+        tone: config.tone,
+        senderContext: config.context,
+        stepType: 'message',
+        language: i18n.language || 'ar',
+        prospectName: firstSelected?.name || '',
+        prospectTitle: firstSelected?.title || '',
+        prospectCompany: firstSelected?.company || '',
+      }),
+    });
+    const msg = res.message || res.content || '';
+    if (msg) setter(msg.slice(0, maxLen));
+  };
 
   const generateAI = async (stepType: string) => {
     setAiLoading(true);
@@ -513,7 +543,18 @@ export default function CampaignWizard() {
                         )}
                       </div>
                     )}
-                    {renderAIWriter('invite', setInviteNote)}
+                    <button type="button" onClick={() => setShowSurveyInvite(true)}
+                      style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 6, background: 'linear-gradient(135deg,rgba(124,58,237,0.12),rgba(236,72,153,0.12))', border: '1px solid rgba(124,58,237,0.25)', borderRadius: 8, padding: '8px 14px', color: '#c4b5fd', fontSize: 13, fontWeight: 600, cursor: 'pointer', width: '100%', justifyContent: 'center' }}>
+                      <Sparkles size={14} /> {t('wizard.writeAI')}
+                    </button>
+                    <CampaignMessageSurvey
+                      isOpen={showSurveyInvite}
+                      onClose={() => setShowSurveyInvite(false)}
+                      messageType="connection_note"
+                      prospectName={prospects.find(p => selected.has(p.id))?.name}
+                      prospectTitle={prospects.find(p => selected.has(p.id))?.title}
+                      onGenerate={async (config) => handleSurveyGenerate(config, setInviteNote, 300)}
+                    />
                   </div>
                 </>
               )}
@@ -538,7 +579,18 @@ export default function CampaignWizard() {
                       <VariableChips textareaRef={msg1Ref} value={msg1} onChange={setMsg1} />
                       <span style={{ color: '#475569', fontSize: 11 }}>{msg1.length}/500</span>
                     </div>
-                    {renderAIWriter('message', setMsg1)}
+                    <button type="button" onClick={() => setShowSurveyMsg1(true)}
+                      style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 6, background: 'linear-gradient(135deg,rgba(124,58,237,0.12),rgba(236,72,153,0.12))', border: '1px solid rgba(124,58,237,0.25)', borderRadius: 8, padding: '8px 14px', color: '#c4b5fd', fontSize: 13, fontWeight: 600, cursor: 'pointer', width: '100%', justifyContent: 'center' }}>
+                      <Sparkles size={14} /> {t('wizard.writeAI')}
+                    </button>
+                    <CampaignMessageSurvey
+                      isOpen={showSurveyMsg1}
+                      onClose={() => setShowSurveyMsg1(false)}
+                      messageType="follow_up"
+                      prospectName={prospects.find(p => selected.has(p.id))?.name}
+                      prospectTitle={prospects.find(p => selected.has(p.id))?.title}
+                      onGenerate={async (config) => handleSurveyGenerate(config, setMsg1, 500)}
+                    />
                   </div>
                 </>
               )}
@@ -563,7 +615,18 @@ export default function CampaignWizard() {
                       <VariableChips textareaRef={followRef} value={followUp} onChange={setFollowUp} />
                       <span style={{ color: '#475569', fontSize: 11 }}>{followUp.length}/500</span>
                     </div>
-                    {renderAIWriter('follow_up', setFollowUp)}
+                    <button type="button" onClick={() => setShowSurveyFollow(true)}
+                      style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 6, background: 'linear-gradient(135deg,rgba(124,58,237,0.12),rgba(236,72,153,0.12))', border: '1px solid rgba(124,58,237,0.25)', borderRadius: 8, padding: '8px 14px', color: '#c4b5fd', fontSize: 13, fontWeight: 600, cursor: 'pointer', width: '100%', justifyContent: 'center' }}>
+                      <Sparkles size={14} /> {t('wizard.writeAI')}
+                    </button>
+                    <CampaignMessageSurvey
+                      isOpen={showSurveyFollow}
+                      onClose={() => setShowSurveyFollow(false)}
+                      messageType="follow_up"
+                      prospectName={prospects.find(p => selected.has(p.id))?.name}
+                      prospectTitle={prospects.find(p => selected.has(p.id))?.title}
+                      onGenerate={async (config) => handleSurveyGenerate(config, setFollowUp, 500)}
+                    />
                   </div>
                 </>
               )}
