@@ -93,7 +93,7 @@ export default function ProspectDiscovery() {
   const [industries, setIndustries] = useState<string[]>([]);
   const [companySizes, setCompanySizes] = useState<string[]>([]);
   const [keywords, setKeywords] = useState('');
-  const [limit, setLimit] = useState(25);
+  const [limit, setLimit] = useState(50);
 
   // Results
   const [prospects, setProspects] = useState<any[]>([]);
@@ -134,8 +134,13 @@ export default function ProspectDiscovery() {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
         body: JSON.stringify({ jobTitles, locations, industries, companySizes, keywords, limit }),
       });
+      if (!res.ok) {
+        const text = await res.text();
+        let msg = isAr ? 'فشل البحث' : 'Search failed';
+        try { msg = JSON.parse(text).error || msg; } catch { msg = `Server error (${res.status})`; }
+        throw new Error(msg);
+      }
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Search failed');
       setProspects(data.prospects || []);
       setTotal(data.total || 0);
     } catch (err: any) {
@@ -156,8 +161,13 @@ export default function ProspectDiscovery() {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
         body: JSON.stringify({ prospects: toImport }),
       });
+      if (!res.ok) {
+        const text = await res.text();
+        let msg = isAr ? 'فشل الاستيراد' : 'Import failed';
+        try { msg = JSON.parse(text).error || msg; } catch { msg = `Server error (${res.status})`; }
+        throw new Error(msg);
+      }
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Import failed');
       setImportedCount(data.imported || 0);
       setSelected(new Set());
     } catch (err: any) {
@@ -256,9 +266,9 @@ export default function ProspectDiscovery() {
             <label className="text-xs font-semibold uppercase tracking-wide block mb-1.5" style={{ color: 'var(--text-muted)' }}>
               {isAr ? `عدد النتائج: ${limit}` : `Results: ${limit}`}
             </label>
-            <input type="range" min={10} max={100} step={5} value={limit} onChange={e => setLimit(Number(e.target.value))} className="w-full accent-indigo-500" />
+            <input type="range" min={10} max={500} step={10} value={limit} onChange={e => setLimit(Number(e.target.value))} className="w-full accent-indigo-500" />
             <div className="flex justify-between text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-              <span>10</span><span>100</span>
+              <span>10</span><span>500</span>
             </div>
           </div>
 
