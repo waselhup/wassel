@@ -2,7 +2,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import Avatar from '@/components/Avatar';
 import {
     LayoutDashboard, Target, Users, FileText, Chrome,
-    LogOut, Globe, MessageSquare, Zap
+    LogOut, Globe, MessageSquare, Search
 } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 import { useTranslation } from 'react-i18next';
@@ -48,7 +48,7 @@ export default function ClientNav() {
         { href: '/app/posts', label: t('nav.posts'), icon: FileText, match: /^\/app\/posts/ },
         { href: '/app/messages', label: t('nav.messages') || 'الرسائل', icon: MessageSquare, match: /^\/app\/messages/ },
         { href: '/app/extension', label: t('nav.extension'), icon: Chrome, match: /^\/app\/extension/ },
-        { href: '/app/apollo-search', label: 'بحث Apollo', icon: Zap, match: /^\/app\/apollo-search/ },
+        { href: '/app/discover', label: t('nav.discover'), icon: Search, match: /^\/app\/discover/ },
     ];
 
     const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
