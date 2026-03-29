@@ -46,6 +46,24 @@ import CampaignTemplates from "./pages/CampaignTemplates";
 import ProspectDiscovery from "./pages/ProspectDiscovery";
 import StagingBanner from "./components/StagingBanner";
 
+function WasselLoader() {
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24 }}>
+        <div style={{ width: 80, height: 80, background: 'rgba(255,255,255,0.15)', borderRadius: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,255,255,0.25)', boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}>
+          <span style={{ fontSize: 36, fontWeight: 900, color: 'white', fontFamily: 'Cairo, sans-serif' }}>و</span>
+        </div>
+        <div style={{ textAlign: 'center' }}>
+          <h1 style={{ fontSize: 32, fontWeight: 800, color: 'white', margin: 0, fontFamily: 'Cairo, sans-serif' }}>وصل</h1>
+          <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.75)', margin: '6px 0 0 0', fontFamily: 'Cairo, sans-serif' }}>LinkedIn Automation Platform</p>
+        </div>
+        <div style={{ width: 40, height: 40, border: '3px solid rgba(255,255,255,0.3)', borderTopColor: 'white', borderRadius: '50%', animation: 'wassel-spin 0.8s linear infinite' }} />
+      </div>
+      <style>{`@keyframes wassel-spin{to{transform:rotate(360deg)}}`}</style>
+    </div>
+  );
+}
+
 /**
  * Route guard: requires authenticated user (any role).
  * Redirects to /login if not authenticated.
@@ -55,12 +73,7 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Verifying session...</p>
-        </div>
-      </div>
+      <WasselLoader />
     );
   }
 
@@ -82,12 +95,7 @@ function AdminRoute({ component: Component }: { component: React.ComponentType }
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Verifying admin access...</p>
-        </div>
-      </div>
+      <WasselLoader />
     );
   }
 
@@ -120,12 +128,7 @@ function ClientRoute({ component: Component }: { component: React.ComponentType 
 
   if (loading && !forceReady) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your workspace...</p>
-        </div>
-      </div>
+      <WasselLoader />
     );
   }
 
@@ -151,12 +154,7 @@ function LegacyRedirect() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Redirecting...</p>
-        </div>
-      </div>
+      <WasselLoader />
     );
   }
 

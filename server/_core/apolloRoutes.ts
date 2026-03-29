@@ -1,3 +1,4 @@
+// Vercel env var needed: APIFY_API_TOKEN
 import { Router, Request, Response } from 'express';
 import { supabase } from '../supabase';
 
@@ -7,103 +8,150 @@ function getUserId(req: Request): string | null {
   return (req as any).userId || (req as any).user?.id || null;
 }
 
+const LOCATION_GEO_IDS: Record<string, string> = {
+  'Saudi Arabia': '101452733',
+  'UAE': '104305776',
+  'Kuwait': '101355337',
+  'Qatar': '103600532',
+  'Bahrain': '100446943',
+  'Oman': '102713980',
+  'Egypt': '106112106',
+  'Jordan': '100218280',
+  'Lebanon': '100377861',
+  'Morocco': '102787409',
+};
+
+function buildLinkedInSearchUrl(filters: {
+  jobTitles: string[];
+  locations: string[];
+  keywords: string;
+}): string {
+  const urlParams = new URLSearchParams();
+
+  const kw = [
+    ...(filters.jobTitles || []),
+    filters.keywords || '',
+  ].filter(Boolean).join(' OR ');
+
+  if (kw) urlParams.set('keywords', kw);
+
+  const geoIds = (filters.locations || [])
+    .map(l => LOCATION_GEO_IDS[l])
+    .filter(Boolean);
+
+  if (geoIds.length) {
+    urlParams.set('geoUrn', `["${geoIds.join('","')}"]`);
+  }
+
+  urlParams.set('origin', 'FACETED_SEARCH');
+  return 'https://www.linkedin.com/search/results/people/?' + urlParams.toString();
+}
+
 // POST /api/prospects/search
 router.post('/search', async (req: Request, res: Response) => {
   try {
     const {
-      jobTitles,
-      locations,
-      industries,
-      companySizes,
-      keywords,
-      limit,
+      jobTitles = [],
+      locations = [],
+      industries = [],
+      companySizes = [],
+      keywords = '',
+      limit = 25,
     } = req.body;
 
-    const apiKey = process.env.APOLLO_API_KEY;
-    if (!apiKey) {
+    const apifyToken = process.env.APIFY_API_TOKEN;
+    if (!apifyToken) {
       return res.status(503).json({ error: 'Service temporarily unavailable' });
     }
 
-    const query: any = {
-      page: 1,
-      per_page: Math.min(limit || 25, 100),
-      person_titles: jobTitles || [],
-      person_locations: locations || [],
-      q_keywords: keywords || undefined,
-    };
+    const searchUrl = buildLinkedInSearchUrl({ jobTitles, locations, keywords });
+    const maxProfiles = Math.min(Number(limit) || 25, 100);
 
-    const industryMap: Record<string, string> = {
-      'Oil & Gas': 'oil_and_gas',
-      'Technology': 'information_technology_and_services',
-      'Healthcare': 'hospital_and_health_care',
-      'Finance': 'financial_services',
-      'Real Estate': 'real_estate',
-      'Construction': 'construction',
-      'Education': 'education_management',
-      'Retail': 'retail',
-      'Manufacturing': 'mechanical_or_industrial_engineering',
-      'Government': 'government_administration',
-    };
+    // Start Apify actor run
+    const startRes = await fetch(
+      'https://api.apify.com/v2/acts/dev_fusion~Linkedin-Profile-Scraper/runs',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apifyToken}`,
+        },
+        body: JSON.stringify({
+          searchUrl,
+          maxProfiles,
+          proxyConfiguration: { useApifyProxy: true },
+        }),
+      }
+    );
 
-    if (industries?.length > 0) {
-      const mapped = industries.map((i: string) => industryMap[i]).filter(Boolean);
-      if (mapped.length) query.organization_industry_tag_ids = mapped;
-    }
-
-    const sizeMap: Record<string, string> = {
-      '1-10': '1,10',
-      '11-50': '11,50',
-      '51-200': '51,200',
-      '201-500': '201,500',
-      '501-1000': '501,1000',
-      '1000+': '1001,10000',
-    };
-
-    if (companySizes?.length > 0) {
-      const mapped = companySizes.map((s: string) => sizeMap[s]).filter(Boolean);
-      if (mapped.length) query.organization_num_employees_ranges = mapped;
-    }
-
-    const response = await fetch('https://api.apollo.io/api/v1/mixed_people/search', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Cache-Control': 'no-cache',
-        'x-api-key': apiKey,
-      },
-      body: JSON.stringify(query),
-    });
-
-    if (!response.ok) {
-      const err = await response.text();
-      console.error('[ProspectSearch] API error:', response.status, err);
+    if (!startRes.ok) {
+      const err = await startRes.text();
+      console.error('[Prospects] Apify start error:', startRes.status, err);
       return res.status(502).json({ error: 'Search service error' });
     }
 
-    const data = await response.json();
-    const people = data.people || [];
+    const runData = await startRes.json();
+    const runId = runData.data?.id;
+    const datasetId = runData.data?.defaultDatasetId;
 
-    const prospects = people.map((p: any) => ({
-      name: [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Unknown',
-      first_name: p.first_name || '',
-      last_name: p.last_name || '',
-      title: p.title || '',
-      company: p.organization?.name || '',
-      location: [p.city, p.country].filter(Boolean).join(', ') || '',
-      linkedin_url: p.linkedin_url
-        ? (p.linkedin_url.startsWith('http') ? p.linkedin_url : `https://linkedin.com${p.linkedin_url}`)
-        : null,
-      industry: p.organization?.industry || '',
-      avatar_initials: ((p.first_name?.[0] || '') + (p.last_name?.[0] || '')).toUpperCase(),
-    }));
+    if (!runId) {
+      return res.status(502).json({ error: 'Failed to start search' });
+    }
 
-    res.json({
-      prospects,
-      total: data.pagination?.total_entries || prospects.length,
-      page: 1,
-    });
+    // Poll for completion (max 90s, 30 attempts × 3s)
+    let attempts = 0;
+    let runStatus = 'RUNNING';
+
+    while ((runStatus === 'RUNNING' || runStatus === 'READY') && attempts < 30) {
+      await new Promise(r => setTimeout(r, 3000));
+      attempts++;
+
+      const statusRes = await fetch(
+        `https://api.apify.com/v2/actor-runs/${runId}`,
+        { headers: { Authorization: `Bearer ${apifyToken}` } }
+      );
+      const statusData = await statusRes.json();
+      runStatus = statusData.data?.status || 'RUNNING';
+      console.log(`[Prospects] Run ${runId} status: ${runStatus} (attempt ${attempts})`);
+    }
+
+    if (runStatus !== 'SUCCEEDED') {
+      return res.status(202).json({
+        prospects: [],
+        total: 0,
+        message: 'Search is still processing, try again shortly',
+      });
+    }
+
+    // Fetch results from dataset
+    const resultsRes = await fetch(
+      `https://api.apify.com/v2/datasets/${datasetId}/items?limit=${maxProfiles}`,
+      { headers: { Authorization: `Bearer ${apifyToken}` } }
+    );
+    const items = await resultsRes.json();
+
+    const prospects = (Array.isArray(items) ? items : [])
+      .map((p: any) => ({
+        name: [p.firstName, p.lastName].filter(Boolean).join(' ') ||
+              p.fullName || p.name || 'Unknown',
+        first_name: p.firstName || '',
+        last_name: p.lastName || '',
+        title: p.headline || p.title || '',
+        company: p.currentCompany?.name || p.company || '',
+        location: p.location || p.city || '',
+        linkedin_url: p.linkedinUrl || p.url || null,
+        industry: p.industry || '',
+        avatar_url: p.profilePicture || p.photoUrl || null,
+        avatar_initials: (
+          (p.firstName?.[0] || '') + (p.lastName?.[0] || '')
+        ).toUpperCase() || '?',
+      }))
+      .filter((p: any) => p.name !== 'Unknown' || p.linkedin_url);
+
+    res.json({ prospects, total: prospects.length, page: 1 });
+
   } catch (err: any) {
-    console.error('[ProspectSearch] Error:', err.message);
+    console.error('[Prospects] Error:', err.message);
     res.status(500).json({ error: 'Search failed' });
   }
 });
@@ -140,18 +188,16 @@ router.post('/import', async (req: Request, res: Response) => {
     const BATCH = 50;
     let imported = 0;
     for (let i = 0; i < leads.length; i += BATCH) {
+      const batch = leads.slice(i, i + BATCH);
       const { error } = await supabase
         .from('leads')
-        .upsert(leads.slice(i, i + BATCH), {
-          onConflict: 'team_id,linkedin_url',
-          ignoreDuplicates: true,
-        });
-      if (!error) imported += leads.slice(i, i + BATCH).length;
+        .upsert(batch, { onConflict: 'team_id,linkedin_url', ignoreDuplicates: true });
+      if (!error) imported += batch.length;
     }
 
     res.json({ success: true, imported });
   } catch (err: any) {
-    console.error('[ProspectImport] Error:', err.message);
+    console.error('[Import] Error:', err.message);
     res.status(500).json({ error: 'Import failed' });
   }
 });

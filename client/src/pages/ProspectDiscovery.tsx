@@ -363,11 +363,19 @@ export default function ProspectDiscovery() {
           {/* Loading */}
           {loading && (
             <div className="h-full flex items-center justify-center">
-              <div className="text-center">
-                <Loader2 className="w-10 h-10 animate-spin mx-auto mb-3" style={{ color: '#6366F1' }} />
-                <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-                  {isAr ? 'جاري البحث في قاعدة البيانات...' : 'Searching database...'}
+              <div className="text-center max-w-xs">
+                <Loader2 className="w-10 h-10 animate-spin mx-auto mb-4" style={{ color: '#6366F1' }} />
+                <p className="font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
+                  {isAr ? 'جاري البحث عن عملائك...' : 'Finding your prospects...'}
                 </p>
+                <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+                  {isAr ? 'قد يستغرق هذا 30-60 ثانية' : 'This may take 30-60 seconds'}
+                </p>
+                <div className="mt-4 flex justify-center gap-1">
+                  {[0, 1, 2].map(i => (
+                    <div key={i} className="w-2 h-2 rounded-full animate-bounce" style={{ background: '#6366F1', animationDelay: `${i * 0.15}s` }} />
+                  ))}
+                </div>
               </div>
             </div>
           )}
@@ -426,9 +434,18 @@ export default function ProspectDiscovery() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2.5">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0 ${AVATAR_COLORS[idx % 5]}`}>
-                            {p.avatar_initials || p.name?.[0] || '?'}
-                          </div>
+                          {p.avatar_url ? (
+                            <img
+                              src={p.avatar_url}
+                              alt={p.name}
+                              className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                              onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                            />
+                          ) : (
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0 ${AVATAR_COLORS[idx % 5]}`}>
+                              {p.avatar_initials || p.name?.[0] || '?'}
+                            </div>
+                          )}
                           <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{p.name}</span>
                         </div>
                       </td>
