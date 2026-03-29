@@ -1,7 +1,7 @@
 {
     "version": 2,
     "installCommand": "npm install -g pnpm && pnpm install --no-frozen-lockfile",
-    "buildCommand": "npx vite build",
+    "buildCommand": "pnpm run build",
     "outputDirectory": "dist/public",
     "rewrites": [
         {
