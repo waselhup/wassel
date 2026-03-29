@@ -88,7 +88,7 @@ app.use("/api/user", userRoutes);
 
 // Health check endpoint
 app.get("/api/health", (_req: any, res: any) => {
-    res.json({ ok: true, timestamp: new Date().toISOString() });
+    res.json({ ok: true, version: "v2-2026-03-29", timestamp: new Date().toISOString() });
 });
 
 // Image proxy — avoids CORS/referrer blocks for LinkedIn photos (Bug 3)

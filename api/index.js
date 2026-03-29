@@ -5519,7 +5519,7 @@ app.use("/api/messages", expressAuthMiddleware, messageRoutes_default);
 app.use("/api/stripe", stripeRoutes_default);
 app.use("/api/user", userRoutes_default);
 app.get("/api/health", (_req, res) => {
-  res.json({ ok: true, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
+  res.json({ ok: true, version: "v2-2026-03-29", timestamp: (/* @__PURE__ */ new Date()).toISOString() });
 });
 app.get("/api/proxy-image", async (req, res) => {
   const url = req.query.url;
