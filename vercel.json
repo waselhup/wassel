@@ -1,13 +1,8 @@
 {
     "version": 2,
-    "installCommand": "npm install -g pnpm && pnpm install --no-frozen-lockfile",
-    "buildCommand": "pnpm run build && npx esbuild server/_core/vercel.ts --platform=node --bundle --format=cjs --outfile=api/index.js",
+    "installCommand": "npm install --legacy-peer-deps",
+    "buildCommand": "npx vite build && npx esbuild server/_core/vercel.ts --platform=node --packages=external --bundle --format=cjs --outfile=api/index.js",
     "outputDirectory": "dist/public",
-    "functions": {
-        "api/index.js": {
-            "includeFiles": "dist/api/**"
-        }
-    },
     "rewrites": [
         {
             "source": "/api/(.*)",
