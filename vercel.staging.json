@@ -1,0 +1,12 @@
+{
+  "name": "wassel-staging",
+  "alias": ["wassel-staging.vercel.app"],
+  "env": {
+    "VITE_APP_ENV": "staging"
+  },
+  "build": {
+    "env": {
+      "VITE_APP_ENV": "staging"
+    }
+  }
+}

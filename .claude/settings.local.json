@@ -38,7 +38,9 @@
       "Bash(cmd /c \"git add dist/api/index.js dist/public client/src/components/ProfileHeroCard.tsx server/_core/activityRoutes.ts && git commit -m \"\"fix: profile photo Google URL proxy + activity logs team_id fallback\"\" && git push origin master 2>&1\")",
       "Bash(cmd /c \"npx esbuild server/_core/vercel.ts --platform=node --packages=external --bundle --format=esm --outfile=dist/api/index.js 2>&1 && echo SERVER_OK\")",
       "Bash(cmd /c \"npx vite build\")",
-      "Bash(cmd /c \"npx vite build 2>&1 && echo BUILD_DONE\")"
+      "Bash(cmd /c \"npx vite build 2>&1 && echo BUILD_DONE\")",
+      "Bash(cmd /c \"git add server/_core/aiRoutes.ts client/src/components/CampaignMessageSurvey.tsx client/src/components/AISurveyModal.tsx dist/api/index.js dist/public/ 2>&1 && git commit -m \"\"feat: auto-detect gender from LinkedIn name, show sender profile in survey\"\" 2>&1\")",
+      "Bash(cmd /c \"npx esbuild server/_core/vercel.ts --platform=node --packages=external --bundle --format=esm --outfile=dist/api/index.js 2>&1 && echo SERVER_BUILD_OK\")"
     ]
   }
 }

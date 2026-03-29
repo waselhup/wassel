@@ -11,6 +11,7 @@ import sequenceRoutes from "./sequenceRoutes";
 import adminRoutes from "./adminRoutes";
 import activityRoutes from "./activityRoutes";
 import aiRoutes from "./aiRoutes";
+import apolloRoutes from "./apolloRoutes";
 import postRoutes from "./postRoutes";
 import messageRoutes from "./messageRoutes";
 import stripeRoutes from "./stripeRoutes";
@@ -59,6 +60,9 @@ app.use("/api/activity-log", expressAuthMiddleware, activityRoutes);
 
 // AI message writer: JWT required
 app.use("/api/ai", expressAuthMiddleware, aiRoutes);
+
+// Apollo.io integration: JWT required
+app.use("/api/apollo", expressAuthMiddleware, apolloRoutes);
 
 // Posts routes: JWT required
 app.use("/api/posts", expressAuthMiddleware, postRoutes);

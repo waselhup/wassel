@@ -43,6 +43,8 @@ import Blog, { BlogArticle } from "./pages/Blog";
 import OnboardingExtension from "./pages/OnboardingExtension";
 import OnboardingLinkedIn from "./pages/OnboardingLinkedIn";
 import CampaignTemplates from "./pages/CampaignTemplates";
+import ApolloSearch from "./pages/ApolloSearch";
+import StagingBanner from "./components/StagingBanner";
 
 /**
  * Route guard: requires authenticated user (any role).
@@ -209,6 +211,7 @@ function Router() {
       <Route path={/^\/app\/templates/} component={() => <ClientRoute component={Templates} />} />
       <Route path={/^\/app\/leads/} component={() => <ClientRoute component={Leads} />} />
       <Route path={/^\/app\/queue/} component={() => <ClientRoute component={Queue} />} />
+      <Route path="/app/apollo-search" component={() => <ClientRoute component={ApolloSearch} />} />
       <Route path="/app/campaigns/templates" component={() => <ClientRoute component={CampaignTemplates} />} />
       <Route path="/app/campaigns/new" component={() => <ClientRoute component={CampaignWizard} />} />
       <Route path="/app/campaigns/:id" component={() => <ClientRoute component={CampaignDetail} />} />
@@ -233,6 +236,7 @@ function App() {
   const lang = typeof window !== 'undefined' ? localStorage.getItem('wassel_lang') || 'en' : 'en';
   return (
     <div dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+      <StagingBanner />
       <ErrorBoundary>
         <ThemeProvider defaultTheme="light">
           <AuthProvider>
