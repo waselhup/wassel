@@ -18834,17 +18834,17 @@ var require_router = __commonJS({
     var toString3 = Object.prototype.toString;
     var proto = module2.exports = function(options) {
       var opts = options || {};
-      function router16(req, res, next) {
-        router16.handle(req, res, next);
+      function router17(req, res, next) {
+        router17.handle(req, res, next);
       }
-      setPrototypeOf(router16, proto);
-      router16.params = {};
-      router16._params = [];
-      router16.caseSensitive = opts.caseSensitive;
-      router16.mergeParams = opts.mergeParams;
-      router16.strict = opts.strict;
-      router16.stack = [];
-      return router16;
+      setPrototypeOf(router17, proto);
+      router17.params = {};
+      router17._params = [];
+      router17.caseSensitive = opts.caseSensitive;
+      router17.mergeParams = opts.mergeParams;
+      router17.strict = opts.strict;
+      router17.stack = [];
+      return router17;
     };
     proto.param = function param(name, fn) {
       if (typeof name === "function") {
@@ -21860,7 +21860,7 @@ var require_application = __commonJS({
   "node_modules/express/lib/application.js"(exports2, module2) {
     "use strict";
     var finalhandler = require_finalhandler();
-    var Router15 = require_router();
+    var Router16 = require_router();
     var methods = require_methods();
     var middleware = require_init();
     var query = require_query();
@@ -21925,7 +21925,7 @@ var require_application = __commonJS({
     };
     app2.lazyrouter = function lazyrouter() {
       if (!this._router) {
-        this._router = new Router15({
+        this._router = new Router16({
           caseSensitive: this.enabled("case sensitive routing"),
           strict: this.enabled("strict routing")
         });
@@ -21934,17 +21934,17 @@ var require_application = __commonJS({
       }
     };
     app2.handle = function handle(req, res, callback) {
-      var router16 = this._router;
+      var router17 = this._router;
       var done = callback || finalhandler(req, res, {
         env: this.get("env"),
         onerror: logerror.bind(this)
       });
-      if (!router16) {
+      if (!router17) {
         debug("no routes defined on app");
         done();
         return;
       }
-      router16.handle(req, res, done);
+      router17.handle(req, res, done);
     };
     app2.use = function use(fn) {
       var offset = 0;
@@ -21964,15 +21964,15 @@ var require_application = __commonJS({
         throw new TypeError("app.use() requires a middleware function");
       }
       this.lazyrouter();
-      var router16 = this._router;
+      var router17 = this._router;
       fns.forEach(function(fn2) {
         if (!fn2 || !fn2.handle || !fn2.set) {
-          return router16.use(path, fn2);
+          return router17.use(path, fn2);
         }
         debug(".use app under %s", path);
         fn2.mountpath = path;
         fn2.parent = this;
-        router16.use(path, function mounted_app(req, res, next) {
+        router17.use(path, function mounted_app(req, res, next) {
           var orig = req.app;
           fn2.handle(req, res, function(err) {
             setPrototypeOf(req, orig.request);
@@ -23789,7 +23789,7 @@ var require_express = __commonJS({
     var mixin = require_merge_descriptors();
     var proto = require_application();
     var Route = require_route();
-    var Router15 = require_router();
+    var Router16 = require_router();
     var req = require_request();
     var res = require_response();
     exports2 = module2.exports = createApplication;
@@ -23812,7 +23812,7 @@ var require_express = __commonJS({
     exports2.request = req;
     exports2.response = res;
     exports2.Route = Route;
-    exports2.Router = Router15;
+    exports2.Router = Router16;
     exports2.json = bodyParser.json;
     exports2.query = require_query();
     exports2.raw = bodyParser.raw;
@@ -43745,7 +43745,7 @@ __export(vercel_exports, {
   default: () => vercel_default
 });
 module.exports = __toCommonJS(vercel_exports);
-var import_express15 = __toESM(require_express2(), 1);
+var import_express16 = __toESM(require_express2(), 1);
 
 // node_modules/@trpc/server/dist/codes-DagpWZLc.mjs
 function mergeWithoutOverrides(obj1, ...objs) {
@@ -44186,19 +44186,19 @@ function createRouterFactory(config2) {
       procedures,
       lazy: lazy$1
     }, emptyRouter), {}, { record: record2 });
-    const router16 = (0, import_objectSpread22.default)((0, import_objectSpread22.default)({}, record2), {}, {
+    const router17 = (0, import_objectSpread22.default)((0, import_objectSpread22.default)({}, record2), {}, {
       _def,
       createCaller: createCallerFactory()({ _def })
     });
-    return router16;
+    return router17;
   }
   return createRouterInner;
 }
 function isProcedure(procedureOrRouter) {
   return typeof procedureOrRouter === "function";
 }
-async function getProcedureAtPath(router16, path) {
-  const { _def } = router16;
+async function getProcedureAtPath(router17, path) {
+  const { _def } = router17;
   let procedure = _def.procedures[path];
   while (!procedure) {
     const key = Object.keys(_def.lazy).find((key$1) => path.startsWith(key$1));
@@ -44210,14 +44210,14 @@ async function getProcedureAtPath(router16, path) {
   return procedure;
 }
 function createCallerFactory() {
-  return function createCallerInner(router16) {
-    const { _def } = router16;
+  return function createCallerInner(router17) {
+    const { _def } = router17;
     return function createCaller(ctxOrCallback, opts) {
       return createRecursiveProxy(async (innerOpts) => {
         const { path, args } = innerOpts;
         const fullPath = path.join(".");
         if (path.length === 1 && path[0] === "_def") return _def;
-        const procedure = await getProcedureAtPath(router16, fullPath);
+        const procedure = await getProcedureAtPath(router17, fullPath);
         let ctx = void 0;
         try {
           if (!procedure) throw new TRPCError({
@@ -44265,7 +44265,7 @@ function mergeRouters(...routerList) {
     }
     return prev;
   }, defaultTransformer);
-  const router16 = createRouterFactory({
+  const router17 = createRouterFactory({
     errorFormatter,
     transformer,
     isDev: routerList.every((r) => r._def._config.isDev),
@@ -44274,7 +44274,7 @@ function mergeRouters(...routerList) {
     $types: (_routerList$ = routerList[0]) === null || _routerList$ === void 0 ? void 0 : _routerList$._def._config.$types,
     sse: (_routerList$2 = routerList[0]) === null || _routerList$2 === void 0 ? void 0 : _routerList$2._def._config.sse
   })(record2);
-  return router16;
+  return router17;
 }
 var trackedSymbol = Symbol();
 function isTrackedEnvelope(value) {
@@ -45624,7 +45624,7 @@ function initResponse(initOpts) {
   return { status };
 }
 function caughtErrorToData(cause, errorOpts) {
-  const { router: router16, req, onError } = errorOpts.opts;
+  const { router: router17, req, onError } = errorOpts.opts;
   const error48 = getTRPCErrorFromUnknown(cause);
   onError === null || onError === void 0 || onError({
     error: error48,
@@ -45635,14 +45635,14 @@ function caughtErrorToData(cause, errorOpts) {
     req
   });
   const untransformedJSON = { error: getErrorShape({
-    config: router16._def._config,
+    config: router17._def._config,
     error: error48,
     type: errorOpts.type,
     path: errorOpts.path,
     input: errorOpts.input,
     ctx: errorOpts.ctx
   }) };
-  const transformedJSON = transformTRPCResponse(router16._def._config, untransformedJSON);
+  const transformedJSON = transformTRPCResponse(router17._def._config, untransformedJSON);
   const body = JSON.stringify(transformedJSON);
   return {
     error: error48,
@@ -45657,9 +45657,9 @@ function isDataStream(v) {
 }
 async function resolveResponse(opts) {
   var _ref, _opts$allowBatching, _opts$batching, _opts$allowMethodOver, _config$sse$enabled, _config$sse;
-  const { router: router16, req } = opts;
+  const { router: router17, req } = opts;
   const headers = new Headers([["vary", "trpc-accept"]]);
-  const config2 = router16._def._config;
+  const config2 = router17._def._config;
   const url3 = new URL(req.url);
   if (req.method === "HEAD") return new Response(null, { status: 204 });
   const allowBatching = (_ref = (_opts$allowBatching = opts.allowBatching) !== null && _opts$allowBatching !== void 0 ? _opts$allowBatching : (_opts$batching = opts.batching) === null || _opts$batching === void 0 ? void 0 : _opts$batching.enabled) !== null && _ref !== void 0 ? _ref : true;
@@ -45669,7 +45669,7 @@ async function resolveResponse(opts) {
       return [void 0, await getRequestInfo({
         req,
         path: decodeURIComponent(opts.path),
-        router: router16,
+        router: router17,
         searchParams: url3.searchParams,
         headers: opts.req.headers,
         url: url3
@@ -49499,9 +49499,9 @@ var trackStream = (stream4, chunkSize, onProgress, onFinish) => {
 // node_modules/axios/lib/adapters/fetch.js
 var DEFAULT_CHUNK_SIZE = 64 * 1024;
 var { isFunction: isFunction3 } = utils_default;
-var globalFetchAPI = (({ Request: Request15, Response: Response15 }) => ({
-  Request: Request15,
-  Response: Response15
+var globalFetchAPI = (({ Request: Request16, Response: Response16 }) => ({
+  Request: Request16,
+  Response: Response16
 }))(utils_default.global);
 var { ReadableStream: ReadableStream2, TextEncoder: TextEncoder2 } = utils_default.global;
 var test = (fn, ...args) => {
@@ -49519,18 +49519,18 @@ var factory = (env) => {
     globalFetchAPI,
     env
   );
-  const { fetch: envFetch, Request: Request15, Response: Response15 } = env;
+  const { fetch: envFetch, Request: Request16, Response: Response16 } = env;
   const isFetchSupported = envFetch ? isFunction3(envFetch) : typeof fetch === "function";
-  const isRequestSupported = isFunction3(Request15);
-  const isResponseSupported = isFunction3(Response15);
+  const isRequestSupported = isFunction3(Request16);
+  const isResponseSupported = isFunction3(Response16);
   if (!isFetchSupported) {
     return false;
   }
   const isReadableStreamSupported = isFetchSupported && isFunction3(ReadableStream2);
-  const encodeText = isFetchSupported && (typeof TextEncoder2 === "function" ? /* @__PURE__ */ ((encoder2) => (str) => encoder2.encode(str))(new TextEncoder2()) : async (str) => new Uint8Array(await new Request15(str).arrayBuffer()));
+  const encodeText = isFetchSupported && (typeof TextEncoder2 === "function" ? /* @__PURE__ */ ((encoder2) => (str) => encoder2.encode(str))(new TextEncoder2()) : async (str) => new Uint8Array(await new Request16(str).arrayBuffer()));
   const supportsRequestStream = isRequestSupported && isReadableStreamSupported && test(() => {
     let duplexAccessed = false;
-    const hasContentType = new Request15(platform_default.origin, {
+    const hasContentType = new Request16(platform_default.origin, {
       body: new ReadableStream2(),
       method: "POST",
       get duplex() {
@@ -49540,7 +49540,7 @@ var factory = (env) => {
     }).headers.has("Content-Type");
     return duplexAccessed && !hasContentType;
   });
-  const supportsResponseStream = isResponseSupported && isReadableStreamSupported && test(() => utils_default.isReadableStream(new Response15("").body));
+  const supportsResponseStream = isResponseSupported && isReadableStreamSupported && test(() => utils_default.isReadableStream(new Response16("").body));
   const resolvers = {
     stream: supportsResponseStream && ((res) => res.body)
   };
@@ -49567,7 +49567,7 @@ var factory = (env) => {
       return body.size;
     }
     if (utils_default.isSpecCompliantForm(body)) {
-      const _request = new Request15(platform_default.origin, {
+      const _request = new Request16(platform_default.origin, {
         method: "POST",
         body
       });
@@ -49615,7 +49615,7 @@ var factory = (env) => {
     let requestContentLength;
     try {
       if (onUploadProgress && supportsRequestStream && method !== "get" && method !== "head" && (requestContentLength = await resolveBodyLength(headers, data)) !== 0) {
-        let _request = new Request15(url3, {
+        let _request = new Request16(url3, {
           method: "POST",
           body: data,
           duplex: "half"
@@ -49635,7 +49635,7 @@ var factory = (env) => {
       if (!utils_default.isString(withCredentials)) {
         withCredentials = withCredentials ? "include" : "omit";
       }
-      const isCredentialsSupported = isRequestSupported && "credentials" in Request15.prototype;
+      const isCredentialsSupported = isRequestSupported && "credentials" in Request16.prototype;
       const resolvedOptions = {
         ...fetchOptions,
         signal: composedSignal,
@@ -49645,7 +49645,7 @@ var factory = (env) => {
         duplex: "half",
         credentials: isCredentialsSupported ? withCredentials : void 0
       };
-      request = isRequestSupported && new Request15(url3, resolvedOptions);
+      request = isRequestSupported && new Request16(url3, resolvedOptions);
       let response = await (isRequestSupported ? _fetch(request, fetchOptions) : _fetch(url3, resolvedOptions));
       const isStreamResponse = supportsResponseStream && (responseType === "stream" || responseType === "response");
       if (supportsResponseStream && (onDownloadProgress || isStreamResponse && unsubscribe)) {
@@ -49658,7 +49658,7 @@ var factory = (env) => {
           responseContentLength,
           progressEventReducer(asyncDecorator(onDownloadProgress), true)
         ) || [];
-        response = new Response15(
+        response = new Response16(
           trackStream(response.body, DEFAULT_CHUNK_SIZE, onProgress, () => {
             flush && flush();
             unsubscribe && unsubscribe();
@@ -49705,8 +49705,8 @@ var factory = (env) => {
 var seedCache = /* @__PURE__ */ new Map();
 var getFetch = (config2) => {
   let env = config2 && config2.env || {};
-  const { fetch: fetch2, Request: Request15, Response: Response15 } = env;
-  const seeds = [Request15, Response15, fetch2];
+  const { fetch: fetch2, Request: Request16, Response: Response16 } = env;
+  const seeds = [Request16, Response16, fetch2];
   let len = seeds.length, i = len, seed, target, map2 = seedCache;
   while (i--) {
     seed = seeds[i];
@@ -54409,36 +54409,427 @@ var activityRoutes_default = router9;
 // server/_core/aiRoutes.ts
 var import_express10 = __toESM(require_express2(), 1);
 var router10 = (0, import_express10.Router)();
-var systemPrompts = {
-  invite: `You are an expert LinkedIn copywriter.
-Write a connection request note.
-MAX 300 characters. Use {{firstName}} {{company}}.
-Sound human. No buzzwords. No "hope this finds you well".
-End with a soft question or reason to connect.
-Return ONLY the message text, nothing else.`,
-  message: `You are an expert LinkedIn copywriter.
-Write a first message after connecting.
-MAX 500 characters.
-Use {{firstName}} {{company}} {{jobTitle}}.
-Reference their role naturally.
-One value proposition. One soft call-to-action.
-Sound like a real person.
-Return ONLY the message text, nothing else.`,
-  follow_up: `You are an expert LinkedIn copywriter.
-Write a follow-up message \u2014 no reply was received to the first message.
-MAX 500 characters. Use {{firstName}}.
-Use a different angle. Add value or an insight.
-Short and punchy.
-NOT "just following up" or "circling back".
-Return ONLY the message text, nothing else.`,
-  post: `You are an expert LinkedIn content writer.
-Write a LinkedIn post.
-MAX 3000 characters.
-Make it engaging and authentic.
-Use short paragraphs and line breaks.
-End with a call-to-action or thought-provoking question.
-Return ONLY the post text, nothing else.`
-};
+function getUserId2(req) {
+  return req.userId || req.user?.id || null;
+}
+function detectGenderFromName(name) {
+  if (!name) return "unknown";
+  const first = name.trim().split(/\s+/)[0].toLowerCase();
+  const femaleNames = /* @__PURE__ */ new Set([
+    // Arabic female names
+    "\u0633\u0627\u0631\u0629",
+    "\u0646\u0648\u0631\u0629",
+    "\u0646\u0648\u0641",
+    "\u0631\u064A\u0645",
+    "\u0645\u0631\u064A\u0645",
+    "\u0641\u0627\u0637\u0645\u0629",
+    "\u0647\u0646\u062F",
+    "\u0644\u0637\u064A\u0641\u0629",
+    "\u0623\u0645\u064A\u0631\u0629",
+    "\u0639\u0627\u0626\u0634\u0629",
+    "\u062E\u062F\u064A\u062C\u0629",
+    "\u0632\u064A\u0646\u0628",
+    "\u0631\u0646\u0627",
+    "\u0644\u064A\u0644\u0649",
+    "\u062F\u0627\u0646\u0627",
+    "\u0631\u0647\u0641",
+    "\u063A\u062F\u064A\u0631",
+    "\u0645\u0646\u0649",
+    "\u0623\u0633\u0645\u0627\u0621",
+    "\u062C\u0648\u0627\u0647\u0631",
+    "\u0646\u062C\u0644\u0627\u0621",
+    "\u062D\u064A\u0627\u0629",
+    "\u0648\u0641\u0627\u0621",
+    "\u0633\u0645\u0631",
+    "\u0634\u064A\u0645\u0627\u0621",
+    "\u0625\u064A\u0645\u0627\u0646",
+    "\u0625\u0633\u0631\u0627\u0621",
+    "\u0647\u064A\u0627",
+    "\u0628\u062F\u0631\u064A\u0629",
+    "\u0644\u0645\u064A\u0627\u0621",
+    "\u0645\u0644\u0627\u0643",
+    "\u0634\u0647\u062F",
+    "\u064A\u0627\u0631\u0627",
+    "\u062C\u0648\u062F",
+    "\u062A\u0627\u0644\u0627",
+    "\u062F\u0644\u0627\u0644",
+    "\u0631\u0634\u0627",
+    "\u0645\u064A\u0633\u0627\u0621",
+    "\u0647\u062F\u064A\u0644",
+    "\u0623\u0631\u0648\u0649",
+    "\u0644\u064A\u0646",
+    "\u0628\u064A\u0627\u0646",
+    "\u0645\u0647\u0627",
+    "\u0633\u0644\u0645\u0649",
+    "\u0648\u0644\u0627\u0621",
+    "\u0622\u0645\u0627\u0644",
+    "\u0622\u0644\u0627\u0621",
+    "\u0623\u0631\u064A\u062C",
+    "\u0623\u0641\u0646\u0627\u0646",
+    "\u0635\u0641\u0627\u0621",
+    "\u0646\u0647\u0649",
+    // English female names
+    "sara",
+    "sarah",
+    "emma",
+    "olivia",
+    "ava",
+    "isabella",
+    "sophia",
+    "mia",
+    "charlotte",
+    "amelia",
+    "harper",
+    "evelyn",
+    "abigail",
+    "emily",
+    "elizabeth",
+    "mila",
+    "ella",
+    "avery",
+    "sofia",
+    "camila",
+    "aria",
+    "scarlett",
+    "victoria",
+    "madison",
+    "luna",
+    "grace",
+    "chloe",
+    "penelope",
+    "layla",
+    "riley",
+    "zoey",
+    "nora",
+    "lily",
+    "eleanor",
+    "hannah",
+    "lillian",
+    "addison",
+    "aubrey",
+    "ellie",
+    "stella",
+    "natalie",
+    "zoe",
+    "leah",
+    "hazel",
+    "violet",
+    "aurora",
+    "savannah",
+    "audrey",
+    "brooklyn",
+    "bella",
+    "claire",
+    "skylar",
+    "lucy",
+    "paisley",
+    "anna",
+    "caroline",
+    "nova",
+    "emilia",
+    "kennedy",
+    "samantha",
+    "maya",
+    "willow",
+    "naomi",
+    "aaliyah",
+    "elena",
+    "ariana",
+    "allison",
+    "alexa",
+    "jennifer",
+    "jasmine",
+    "alice",
+    "julia",
+    "jessica",
+    "ashley",
+    "amanda",
+    "stephanie",
+    "melissa",
+    "nicole",
+    "amber",
+    "linda",
+    "danielle",
+    "rebecca",
+    "michelle",
+    "sandra",
+    "heather",
+    "rachel",
+    "diana",
+    "andrea",
+    "amy",
+    "karen",
+    "lisa",
+    "patricia",
+    "fatima",
+    "noura"
+  ]);
+  const maleNames = /* @__PURE__ */ new Set([
+    // Arabic male names
+    "\u0645\u062D\u0645\u062F",
+    "\u0623\u062D\u0645\u062F",
+    "\u0639\u0644\u064A",
+    "\u0639\u0645\u0631",
+    "\u062E\u0627\u0644\u062F",
+    "\u0639\u0628\u062F\u0627\u0644\u0644\u0647",
+    "\u0633\u0639\u062F",
+    "\u0641\u064A\u0635\u0644",
+    "\u0628\u0646\u062F\u0631",
+    "\u062A\u0631\u0643\u064A",
+    "\u0633\u0644\u0637\u0627\u0646",
+    "\u0646\u0627\u0635\u0631",
+    "\u064A\u0648\u0633\u0641",
+    "\u0625\u0628\u0631\u0627\u0647\u064A\u0645",
+    "\u0639\u0628\u062F\u0627\u0644\u0631\u062D\u0645\u0646",
+    "\u0639\u0628\u062F\u0627\u0644\u0639\u0632\u064A\u0632",
+    "\u062D\u0645\u062F",
+    "\u0632\u064A\u0627\u062F",
+    "\u0635\u0627\u0644\u062D",
+    "\u0639\u0627\u062F\u0644",
+    "\u0637\u0627\u0631\u0642",
+    "\u0631\u0627\u0645\u064A",
+    "\u0628\u0627\u0633\u0645",
+    "\u0648\u0644\u064A\u062F",
+    "\u0647\u0627\u0646\u064A",
+    "\u0623\u064A\u0645\u0646",
+    "\u0643\u0631\u064A\u0645",
+    "\u0634\u0631\u064A\u0641",
+    "\u062D\u0633\u0627\u0645",
+    "\u062A\u0627\u0645\u0631",
+    "\u0645\u062D\u0645\u0648\u062F",
+    "\u0645\u0635\u0637\u0641\u0649",
+    "\u0645\u0627\u062C\u062F",
+    "\u0633\u0627\u0645\u064A",
+    "\u0646\u0627\u062F\u0631",
+    "\u0639\u0628\u062F\u0627\u0644\u0643\u0631\u064A\u0645",
+    "\u0645\u0646\u0635\u0648\u0631",
+    "\u0639\u0645\u0631\u0648",
+    "\u0645\u0627\u0632\u0646",
+    "\u0648\u0627\u0626\u0644",
+    "\u0623\u0633\u0627\u0645\u0629",
+    "\u0632\u0643\u0631\u064A\u0627",
+    "\u0645\u0639\u062A\u0632",
+    "\u0639\u0632\u064A\u0632",
+    "\u062D\u0627\u062A\u0645",
+    "\u062C\u0644\u0627\u0644",
+    "\u062C\u0645\u0627\u0644",
+    // English male names
+    "james",
+    "john",
+    "robert",
+    "michael",
+    "william",
+    "david",
+    "richard",
+    "joseph",
+    "thomas",
+    "charles",
+    "christopher",
+    "daniel",
+    "matthew",
+    "anthony",
+    "mark",
+    "donald",
+    "steven",
+    "paul",
+    "andrew",
+    "joshua",
+    "kenneth",
+    "kevin",
+    "brian",
+    "george",
+    "timothy",
+    "ronald",
+    "edward",
+    "jason",
+    "jeffrey",
+    "ryan",
+    "jacob",
+    "gary",
+    "nicholas",
+    "eric",
+    "jonathan",
+    "stephen",
+    "larry",
+    "justin",
+    "scott",
+    "brandon",
+    "benjamin",
+    "samuel",
+    "raymond",
+    "frank",
+    "gregory",
+    "alexander",
+    "patrick",
+    "jack",
+    "dennis",
+    "tyler",
+    "aaron",
+    "jose",
+    "henry",
+    "adam",
+    "douglas",
+    "nathan",
+    "peter",
+    "zachary",
+    "kyle",
+    "noah",
+    "ethan",
+    "mason",
+    "liam",
+    "oliver",
+    "elijah",
+    "aiden",
+    "lucas",
+    "jackson",
+    "logan",
+    "caleb",
+    "jayden",
+    "grayson",
+    "sebastian",
+    "mateo",
+    "owen",
+    "muhammad",
+    "omar",
+    "ali",
+    "ahmed",
+    "hassan",
+    "walid",
+    "faisal",
+    "khalid",
+    "nasser",
+    "yusuf",
+    "ibrahim",
+    "tariq",
+    "sami"
+  ]);
+  if (femaleNames.has(first)) return "female";
+  if (maleNames.has(first)) return "male";
+  const firstWord = name.trim().split(/\s+/)[0];
+  if (/[ةه]$/.test(firstWord) && firstWord.length > 2) return "female";
+  return "unknown";
+}
+function detectStyleFromProfile(profile) {
+  const title = (profile.title || "").toLowerCase();
+  const company = (profile.company || "").toLowerCase();
+  const isCLevel = /ceo|coo|cfo|cto|chief|رئيس|مدير عام/.test(title);
+  const isDirector = /director|vp|vice|مدير|قائد/.test(title);
+  const isManager = /manager|head|lead|مشرف/.test(title);
+  const isSpecialist = /specialist|engineer|analyst|متخصص|مهندس|محلل/.test(title);
+  const isOilGas = /aramco|sabic|saipem|oil|gas|drilling|petroleum|نفط|أرامكو/.test(company + title);
+  const isTech = /tech|software|digital|تقنية|برمجة|رقمي/.test(company + title);
+  const isHR = /hr|human resources|talent|recruitment|موارد بشرية|توظيف/.test(title);
+  const isFinance = /finance|bank|investment|مالية|بنك|استثمار/.test(company + title);
+  const isGovt = /ministry|government|وزارة|حكومة|هيئة/.test(company);
+  let formality = "professional";
+  let length = "medium";
+  let approach = "value-first";
+  if (isCLevel) {
+    formality = "executive";
+    length = "short";
+    approach = "peer-to-peer";
+  } else if (isDirector) {
+    formality = "formal";
+    length = "short";
+    approach = "results-focused";
+  } else if (isManager) {
+    formality = "professional";
+    length = "medium";
+    approach = "problem-solution";
+  } else if (isSpecialist) {
+    formality = "friendly";
+    length = "medium";
+    approach = "expertise-recognition";
+  }
+  if (isOilGas) approach = "industry-specific-oilgas";
+  if (isTech) approach = "innovation-focused";
+  if (isHR) approach = "talent-focused";
+  if (isGovt) {
+    formality = "very-formal";
+    approach = "vision2030-aligned";
+  }
+  return { formality, length, approach, isCLevel, isDirector, isOilGas, isTech, isHR, isGovt };
+}
+function buildSystemPrompt(userContext, prospectProfile, purpose, style, language, stepType, senderGender = "unknown") {
+  const styleGuides = {
+    executive: `Write as peer-to-peer executive communication.
+Ultra concise \u2014 2 sentences max.
+No pleasantries. Lead with the outcome/opportunity.
+Example: "\u0623\u0647\u0644\u0627\u064B [\u0627\u0644\u0627\u0633\u0645]\u060C \u0646\u0633\u0627\u0639\u062F \u0642\u0627\u062F\u0629 \u0645\u062B\u0644\u0643 \u0639\u0644\u0649 [\u0627\u0644\u0646\u062A\u064A\u062C\u0629]. \u0647\u0644 \u064A\u0646\u0627\u0633\u0628\u0643 10 \u062F\u0642\u0627\u0626\u0642\u061F"`,
+    formal: `Professional and respectful tone.
+3 sentences: Hook \u2192 Value \u2192 CTA.
+Reference their specific achievement or company.`,
+    professional: `Warm but professional. 3-4 sentences.
+Start with what you noticed about THEM specifically.
+End with a soft, low-commitment ask.`,
+    friendly: `Conversational and genuine. 3 sentences.
+Sound like a real person, not a template.
+Use their first name naturally.`,
+    "very-formal": `Use respectful honorifics.
+Reference Vision 2030 if relevant to their sector.
+Very formal Arabic. No casual language.`
+  };
+  const approachGuides = {
+    "value-first": "Lead with the value you bring, not who you are",
+    "peer-to-peer": "Speak as an equal, not a vendor",
+    "results-focused": "Mention a specific result/metric",
+    "problem-solution": "Name their likely pain point first",
+    "expertise-recognition": "Acknowledge their expertise first",
+    "industry-specific-oilgas": "Reference oil & gas sector challenges: operational efficiency, HSE, project timelines",
+    "innovation-focused": "Reference digital transformation, AI, or tech trends",
+    "talent-focused": "Frame around people, culture, or talent strategy",
+    "vision2030-aligned": "Connect to Vision 2030 goals when natural"
+  };
+  const maxLen = stepType === "invite" ? "300 characters (connection note limit)" : stepType === "post" ? "3000 characters" : "500 characters";
+  const senderBlock = userContext.name || userContext.headline ? `You are writing ON BEHALF of:
+Name: ${userContext.name || ""}
+Role: ${userContext.headline || ""}
+
+` : "";
+  const recipientBlock = prospectProfile.name || prospectProfile.title || prospectProfile.company ? `You are writing TO:
+Name: ${prospectProfile.name || "the recipient"}
+Title: ${prospectProfile.title || ""}
+Company: ${prospectProfile.company || ""}
+
+` : "";
+  const genderBlock = language === "ar" ? senderGender === "female" ? `SENDER GRAMMAR (Arabic): Sender is female \u2014 use feminine forms when sender refers to themselves:
+  \u0645\u062A\u062E\u0635\u0635\u0629\u060C \u0645\u0647\u062A\u0645\u0629\u060C \u0633\u0639\u064A\u062F\u0629\u060C \u0645\u062A\u062D\u0645\u0633\u0629\u060C \u0623\u0639\u0645\u0644 \u0641\u064A (unchanged), \u0623\u0646\u0627 (unchanged)
+  Example: "\u0623\u0646\u0627 \u0645\u062A\u062E\u0635\u0635\u0629 \u0641\u064A..." not "\u0645\u062A\u062E\u0635\u0635"
+
+` : senderGender === "male" ? `SENDER GRAMMAR (Arabic): Sender is male \u2014 use masculine forms:
+  \u0645\u062A\u062E\u0635\u0635\u060C \u0645\u0647\u062A\u0645\u060C \u0633\u0639\u064A\u062F\u060C \u0645\u062A\u062D\u0645\u0633
+
+` : "" : "";
+  return `You are an expert LinkedIn copywriter specializing in ${language === "ar" ? "Arabic" : "English"} outreach.
+
+${senderBlock}${recipientBlock}${genderBlock}PURPOSE: ${purpose}
+MESSAGE TYPE: ${stepType}
+MAX LENGTH: ${maxLen}
+
+STYLE GUIDE:
+${styleGuides[style.formality] || styleGuides["professional"]}
+
+APPROACH:
+${approachGuides[style.approach] || approachGuides["value-first"]}
+
+STRICT RULES:
+1. Start with ${language === "ar" ? '"\u0623\u0647\u0644\u0627\u064B [\u0627\u0644\u0627\u0633\u0645]"' : '"Hi [Name]"'} if prospect name is known
+2. ${style.length === "short" ? "2 sentences max" : "3-4 sentences total"}
+3. ONE specific detail about THEM (their company or role)
+4. ONE clear value proposition
+5. ONE soft CTA at the end
+6. ${stepType === "invite" ? "Max 280 characters for connection notes" : "Max 500 characters"}
+7. Never use: "\u0623\u062A\u0645\u0646\u0649 \u0623\u0646 \u062A\u0643\u0648\u0646 \u0628\u062E\u064A\u0631" or "I hope this finds you well"
+8. Never use: "\u0641\u0631\u064A\u0642 \u0631\u0627\u0626\u0639" or "amazing profile"
+9. Sound human \u2014 not like a template
+10. Return ONLY the message text, nothing else
+
+EXAMPLES BY PURPOSE:
+[Sales - Executive]: "\u0623\u0647\u0644\u0627\u064B \u062E\u0627\u0644\u062F\u060C \u0642\u064A\u0627\u062F\u062A\u0643 \u0644\u0639\u0645\u0644\u064A\u0627\u062A SABIC \u0627\u0644\u0631\u0642\u0645\u064A\u0629 \u0644\u0627\u0641\u062A\u0629. \u0646\u0633\u0627\u0639\u062F \u0645\u062F\u064A\u0631\u064A \u0627\u0644\u0639\u0645\u0644\u064A\u0627\u062A \u0639\u0644\u0649 \u062A\u0642\u0644\u064A\u0635 \u0648\u0642\u062A \u0627\u0644\u062A\u0642\u0627\u0631\u064A\u0631 40%. \u0647\u0644 \u062A\u0646\u0627\u0633\u0628\u0643 15 \u062F\u0642\u064A\u0642\u0629\u061F"
+[Recruiting - HR]: "\u0623\u0647\u0644\u0627\u064B \u0633\u0627\u0631\u0629\u060C \u062E\u0628\u0631\u062A\u0643 \u0641\u064A \u0628\u0646\u0627\u0621 \u062B\u0642\u0627\u0641\u0629 \u0627\u0644\u0645\u0648\u0627\u0647\u0628 \u0641\u064A \u0627\u0644\u0642\u0637\u0627\u0639 \u0627\u0644\u0635\u062D\u064A \u0645\u0645\u064A\u0632\u0629. \u0644\u062F\u064A\u0646\u0627 \u0641\u0631\u0635\u0629 \u0642\u064A\u0627\u062F\u064A\u0629 \u0641\u064A \u0634\u0631\u0643\u0629 \u062A\u0642\u0646\u064A\u0629 \u0628\u0631\u0624\u064A\u0629 \u0648\u0627\u0636\u062D\u0629. \u0647\u0644 \u0623\u0646\u062A\u0650 \u0645\u0646\u0641\u062A\u062D\u0629 \u0639\u0644\u0649 \u0646\u0642\u0627\u0634\u061F"
+[Networking - Oil & Gas]: "\u0623\u0647\u0644\u0627\u064B \u0645\u062D\u0645\u062F\u060C \u062A\u062C\u0631\u0628\u062A\u0643 \u0641\u064A \u0625\u062F\u0627\u0631\u0629 \u0645\u0634\u0627\u0631\u064A\u0639 \u0627\u0644\u062D\u0641\u0631 \u0628\u0623\u0631\u0627\u0645\u0643\u0648 \u062A\u062B\u064A\u0631 \u0627\u0647\u062A\u0645\u0627\u0645\u064A. \u0623\u0639\u0645\u0644 \u0641\u064A \u0645\u062C\u0627\u0644 \u0645\u0643\u0645\u0651\u0644 \u0648\u0623\u0631\u0649 \u0641\u0631\u0635\u0629 \u0644\u0644\u062A\u0628\u0627\u062F\u0644 \u0627\u0644\u0645\u0639\u0631\u0641\u064A. \u0647\u0644 \u062A\u0642\u0628\u0644 \u0627\u0644\u062A\u0648\u0627\u0635\u0644\u061F"
+[Partnership - Tech]: "Hi Ahmed, your work on digital transformation at STC is impressive. We're building complementary infrastructure in the fintech space. Would you be open to exploring synergies?"`;
+}
 var tones = {
   professional: "Professional, polished tone.",
   friendly: "Warm, conversational, human tone.",
@@ -54457,14 +54848,11 @@ var purposes = {
 router10.post("/generate-message", async (req, res) => {
   try {
     const {
-      // Old field names (CampaignWizard sends these)
       stepType,
       goal,
-      // New field names (AISurveyModal sends these)
       purpose,
       senderContext,
       specificGoal,
-      // Shared fields
       tone,
       prospectName,
       prospectTitle,
@@ -54477,37 +54865,67 @@ router10.post("/generate-message", async (req, res) => {
     const resolvedGoal = specificGoal || goal || "";
     const resolvedPurpose = purpose || stepType || "networking";
     const resolvedTone = tone || "professional";
-    console.log("[AI] Request:", { resolvedStepType, resolvedPurpose, resolvedTone, resolvedGoal });
+    const resolvedLang = language || "ar";
+    console.log("[AI] Request:", { resolvedStepType, resolvedPurpose, resolvedTone, prospectTitle, prospectCompany });
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
       return res.status(503).json({ error: "AI service not configured \u2014 set ANTHROPIC_API_KEY in Vercel" });
     }
-    let systemPrompt = systemPrompts[resolvedStepType] || systemPrompts.message;
-    const toneDesc = tones[resolvedTone] || tones.professional;
-    const purposeDesc = resolvedPurpose ? purposes[resolvedPurpose] || "" : "";
-    const contextLines = [];
-    if (resolvedPurpose) contextLines.push(`Message purpose: ${resolvedPurpose} \u2014 ${purposeDesc}`);
-    if (senderContext) contextLines.push(`Sender context: ${senderContext}`);
-    if (resolvedGoal) contextLines.push(`Specific goal: ${resolvedGoal}`);
-    if (prospectName) contextLines.push(`Prospect name: ${prospectName}`);
-    if (prospectTitle) contextLines.push(`Prospect title: ${prospectTitle}`);
-    if (prospectCompany) contextLines.push(`Prospect company: ${prospectCompany}`);
-    if (postType) contextLines.push(`Post type: ${postType}`);
-    if (language === "ar") contextLines.push("Write the message entirely in Arabic.");
-    if (contextLines.length > 0) {
-      systemPrompt += "\n\nAdditional context:\n" + contextLines.join("\n");
+    const prospectProfile = {
+      name: prospectName || "",
+      title: prospectTitle || "",
+      company: prospectCompany || ""
+    };
+    const style = detectStyleFromProfile(prospectProfile);
+    if (resolvedTone === "casual" || resolvedTone === "friendly") style.formality = "friendly";
+    if (resolvedTone === "direct") style.formality = "formal";
+    let senderName = "";
+    let senderHeadline = senderContext || "";
+    let senderGender = "unknown";
+    const userId = getUserId2(req);
+    if (userId) {
+      try {
+        const { data: conn } = await supabase.from("linkedin_connections").select("linkedin_name, headline").eq("user_id", userId).eq("oauth_connected", true).limit(1).single();
+        if (conn) {
+          senderName = conn.linkedin_name || "";
+          senderHeadline = senderContext || conn.headline || "";
+          senderGender = detectGenderFromName(senderName);
+        }
+      } catch (_) {
+      }
     }
-    systemPrompt += `
-Tone: ${toneDesc}`;
-    systemPrompt += '\n\nRules:\n- Sound human and genuine, not templated\n- Do not use generic phrases like "I came across your profile"\n- Match the tone specified';
-    if (prospectName) {
-      systemPrompt += `
-- Start with the prospect's first name (${prospectName.split(" ")[0]})`;
+    const userContext = {
+      name: senderName,
+      headline: senderHeadline,
+      company: ""
+    };
+    let systemPrompt;
+    if (resolvedStepType === "post") {
+      const toneDesc = tones[resolvedTone] || tones.professional;
+      const purposeDesc = purposes[resolvedPurpose] || "";
+      systemPrompt = `You are an expert LinkedIn content writer.
+Write a LinkedIn post. MAX 3000 characters.
+Make it engaging and authentic.
+Use short paragraphs and line breaks.
+End with a call-to-action or thought-provoking question.
+Tone: ${toneDesc}
+${purposeDesc ? `Purpose: ${purposeDesc}` : ""}
+${postType ? `Post type: ${postType}` : ""}
+${resolvedLang === "ar" ? "Write entirely in Arabic." : ""}
+Return ONLY the post text, nothing else.`;
+    } else {
+      systemPrompt = buildSystemPrompt(
+        userContext,
+        prospectProfile,
+        `${resolvedPurpose}${resolvedGoal ? ` \u2014 ${resolvedGoal}` : ""}`,
+        style,
+        resolvedLang,
+        resolvedStepType,
+        senderGender
+      );
     }
     const userMessage = resolvedGoal ? `Goal: ${resolvedGoal}
-Tone: ${toneDesc}
-Write the message:` : `Purpose: ${purposeDesc || "general outreach"}
-Tone: ${toneDesc}
+Write the message:` : `Purpose: ${purposes[resolvedPurpose] || "general outreach"}
 Write the message:`;
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -54520,10 +54938,7 @@ Write the message:`;
         model: "claude-sonnet-4-6",
         max_tokens: resolvedStepType === "post" ? 800 : 200,
         system: systemPrompt,
-        messages: [{
-          role: "user",
-          content: userMessage
-        }]
+        messages: [{ role: "user", content: userMessage }]
       })
     });
     if (!response.ok) {
@@ -54536,7 +54951,8 @@ Write the message:`;
     const maxChars = resolvedStepType === "invite" ? 300 : resolvedStepType === "post" ? 3e3 : 500;
     res.json({
       message: generated.substring(0, maxChars),
-      charCount: Math.min(generated.length, maxChars)
+      charCount: Math.min(generated.length, maxChars),
+      detectedStyle: style
     });
   } catch (e) {
     console.error("[AI] Error:", e);
@@ -54545,9 +54961,150 @@ Write the message:`;
 });
 var aiRoutes_default = router10;
 
-// server/_core/postRoutes.ts
+// server/_core/apolloRoutes.ts
 var import_express11 = __toESM(require_express2(), 1);
 var router11 = (0, import_express11.Router)();
+function getUserId3(req) {
+  return req.userId || req.user?.id || null;
+}
+function normalizeProspects(items) {
+  return items.map((p) => ({
+    name: [
+      p.firstName || p.first_name,
+      p.lastName || p.last_name
+    ].filter(Boolean).join(" ") || p.fullName || p.name || "",
+    first_name: p.firstName || p.first_name || "",
+    last_name: p.lastName || p.last_name || "",
+    title: p.headline || p.title || p.currentPositions?.[0]?.title || "",
+    company: p.currentPositions?.[0]?.companyName || p.currentCompany?.name || p.company || "",
+    location: p.location || p.city || "",
+    linkedin_url: p.linkedinUrl || p.profileUrl || p.url || null,
+    avatar_url: p.profilePicture || p.photoUrl || p.imageUrl || null,
+    avatar_initials: ((p.firstName?.[0] || p.first_name?.[0] || "") + (p.lastName?.[0] || p.last_name?.[0] || "")).toUpperCase() || "?"
+  })).filter((p) => p.name || p.linkedin_url);
+}
+router11.post("/search", async (req, res) => {
+  try {
+    const {
+      jobTitles = [],
+      locations = [],
+      keywords = "",
+      limit = 50
+    } = req.body;
+    const token = process.env.APIFY_API_TOKEN || "apify_api_CWdZMugTbgkgRByDMhsYDTAmCzez3g4EZ4S9";
+    const maxItems = Math.min(Number(limit) || 50, 500);
+    const kw = [
+      ...jobTitles || [],
+      keywords || ""
+    ].filter(Boolean).join(" ");
+    const geoMap = {
+      "Saudi Arabia": "101452733",
+      "UAE": "104305776",
+      "Kuwait": "101355337",
+      "Qatar": "103600532",
+      "Bahrain": "100446943",
+      "Oman": "102713980",
+      "Egypt": "106112106",
+      "Jordan": "100218280",
+      "Lebanon": "100377861",
+      "Morocco": "102787409"
+    };
+    const geoIds = (locations || []).map((l) => geoMap[l]).filter(Boolean);
+    const urlParams = new URLSearchParams();
+    if (kw) urlParams.set("keywords", kw);
+    if (geoIds.length) {
+      urlParams.set("geoUrn", JSON.stringify(geoIds));
+    }
+    urlParams.set("origin", "FACETED_SEARCH");
+    urlParams.set("sid", "abc");
+    const linkedinUrl = "https://www.linkedin.com/search/results/people/?" + urlParams.toString();
+    console.log("[Prospects] Search URL:", linkedinUrl);
+    console.log("[Prospects] Max items:", maxItems);
+    console.log("[Prospects] Token prefix:", token.slice(0, 20));
+    const apifyUrl = `https://api.apify.com/v2/acts/curious_coder~linkedin-people-search-scraper/run-sync-get-dataset-items?token=${token}&timeout=300&memory=1024`;
+    const body = {
+      searchTerms: kw ? [kw] : ["professional"],
+      locations: (locations || []).length > 0 ? locations : void 0,
+      maxResults: maxItems,
+      proxyConfiguration: { useApifyProxy: true }
+    };
+    console.log("[Prospects] Calling primary Apify actor...");
+    const apifyRes = await fetch(apifyUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(28e4)
+    });
+    console.log("[Prospects] Primary actor status:", apifyRes.status);
+    if (!apifyRes.ok) {
+      const errText = await apifyRes.text();
+      console.error("[Prospects] Primary failed:", apifyRes.status, errText.slice(0, 500));
+      console.log("[Prospects] Trying fallback actor...");
+      const fallbackUrl = `https://api.apify.com/v2/acts/bebity~linkedin-profile-scraper/run-sync-get-dataset-items?token=${token}&timeout=300&memory=1024`;
+      const fallbackRes = await fetch(fallbackUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          startUrls: [{ url: linkedinUrl }],
+          maxItems,
+          proxyConfiguration: { useApifyProxy: true }
+        }),
+        signal: AbortSignal.timeout(28e4)
+      });
+      if (!fallbackRes.ok) {
+        const fbErr = await fallbackRes.text();
+        console.error("[Prospects] Fallback failed:", fbErr.slice(0, 200));
+        return res.status(502).json({ error: "Search service error. Please try again." });
+      }
+      const fbItems = await fallbackRes.json();
+      const fbProspects = normalizeProspects(Array.isArray(fbItems) ? fbItems : []);
+      return res.json({ prospects: fbProspects, total: fbProspects.length });
+    }
+    const items = await apifyRes.json();
+    console.log("[Prospects] Got items:", Array.isArray(items) ? items.length : typeof items);
+    const prospects = normalizeProspects(Array.isArray(items) ? items : []);
+    res.json({ prospects, total: prospects.length });
+  } catch (err) {
+    console.error("[Prospects] Fatal:", err.message);
+    res.status(500).json({ error: "Search failed: " + err.message });
+  }
+});
+router11.post("/import", async (req, res) => {
+  try {
+    const userId = getUserId3(req);
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
+    const { prospects } = req.body;
+    if (!prospects?.length) return res.status(400).json({ error: "No prospects provided" });
+    const { data: member } = await supabase.from("team_members").select("team_id").eq("user_id", userId).limit(1).single();
+    if (!member?.team_id) return res.status(400).json({ error: "No team found" });
+    const leads = prospects.map((p) => ({
+      team_id: member.team_id,
+      name: p.name,
+      title: p.title || null,
+      company: p.company || null,
+      location: p.location || null,
+      linkedin_url: p.linkedin_url || null,
+      source: "discovery",
+      status: "new"
+    }));
+    const BATCH = 50;
+    let imported = 0;
+    for (let i = 0; i < leads.length; i += BATCH) {
+      const batch = leads.slice(i, i + BATCH);
+      const { error: error48 } = await supabase.from("leads").upsert(batch, { onConflict: "team_id,linkedin_url", ignoreDuplicates: true });
+      if (!error48) imported += batch.length;
+    }
+    res.json({ success: true, imported });
+  } catch (err) {
+    console.error("[Import] Error:", err.message);
+    res.status(500).json({ error: "Import failed" });
+  }
+});
+var apolloRoutes_default = router11;
+
+// server/_core/postRoutes.ts
+var import_express12 = __toESM(require_express2(), 1);
+var router12 = (0, import_express12.Router)();
 function getTeamId4(req) {
   const user = req.user;
   if (!user) return null;
@@ -54563,7 +55120,7 @@ async function resolveTeamId(req) {
   }
   return teamId;
 }
-router11.get("/", async (req, res) => {
+router12.get("/", async (req, res) => {
   try {
     const userId = req.user?.id;
     if (!userId) return res.status(401).json({ error: "Not authenticated" });
@@ -54585,7 +55142,7 @@ router11.get("/", async (req, res) => {
     res.json({ posts: [] });
   }
 });
-router11.post("/", async (req, res) => {
+router12.post("/", async (req, res) => {
   try {
     const userId = req.user?.id;
     if (!userId) return res.status(401).json({ error: "Not authenticated" });
@@ -54613,7 +55170,7 @@ router11.post("/", async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
-router11.put("/:id", async (req, res) => {
+router12.put("/:id", async (req, res) => {
   try {
     const userId = req.user?.id;
     if (!userId) return res.status(401).json({ error: "Not authenticated" });
@@ -54634,7 +55191,7 @@ router11.put("/:id", async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
-router11.delete("/:id", async (req, res) => {
+router12.delete("/:id", async (req, res) => {
   try {
     const userId = req.user?.id;
     if (!userId) return res.status(401).json({ error: "Not authenticated" });
@@ -54650,7 +55207,7 @@ router11.delete("/:id", async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
-router11.post("/:id/publish", async (req, res) => {
+router12.post("/:id/publish", async (req, res) => {
   try {
     const userId = req.user?.id;
     if (!userId) return res.status(401).json({ error: "Not authenticated" });
@@ -54682,12 +55239,12 @@ router11.post("/:id/publish", async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
-var postRoutes_default = router11;
+var postRoutes_default = router12;
 
 // server/_core/messageRoutes.ts
-var import_express12 = __toESM(require_express2(), 1);
-var router12 = (0, import_express12.Router)();
-function getUserId2(req) {
+var import_express13 = __toESM(require_express2(), 1);
+var router13 = (0, import_express13.Router)();
+function getUserId4(req) {
   return req.user?.id || req.user?.sub || null;
 }
 function getTeamId5(req) {
@@ -54698,7 +55255,7 @@ function getTeamId5(req) {
   }
   return user.teamId || null;
 }
-router12.get("/", async (req, res) => {
+router13.get("/", async (req, res) => {
   try {
     const teamId = getTeamId5(req);
     if (!teamId) return res.status(401).json({ error: "No team" });
@@ -54718,10 +55275,10 @@ router12.get("/", async (req, res) => {
     res.status(500).json({ error: e.message });
   }
 });
-router12.post("/", async (req, res) => {
+router13.post("/", async (req, res) => {
   try {
     const teamId = getTeamId5(req);
-    const userId = getUserId2(req);
+    const userId = getUserId4(req);
     if (!teamId) return res.status(401).json({ error: "No team" });
     const { name, content, message_type, purpose, tone, variables } = req.body;
     if (!name || !content) {
@@ -54747,7 +55304,7 @@ router12.post("/", async (req, res) => {
     res.status(500).json({ error: e.message });
   }
 });
-router12.put("/:id", async (req, res) => {
+router13.put("/:id", async (req, res) => {
   try {
     const teamId = getTeamId5(req);
     if (!teamId) return res.status(401).json({ error: "No team" });
@@ -54769,7 +55326,7 @@ router12.put("/:id", async (req, res) => {
     res.status(500).json({ error: e.message });
   }
 });
-router12.delete("/:id", async (req, res) => {
+router13.delete("/:id", async (req, res) => {
   try {
     const teamId = getTeamId5(req);
     if (!teamId) return res.status(401).json({ error: "No team" });
@@ -54782,7 +55339,7 @@ router12.delete("/:id", async (req, res) => {
     res.status(500).json({ error: e.message });
   }
 });
-router12.post("/:id/use", async (req, res) => {
+router13.post("/:id/use", async (req, res) => {
   try {
     const teamId = getTeamId5(req);
     if (!teamId) return res.status(401).json({ error: "No team" });
@@ -54793,10 +55350,10 @@ router12.post("/:id/use", async (req, res) => {
     res.status(500).json({ error: e.message });
   }
 });
-var messageRoutes_default = router12;
+var messageRoutes_default = router13;
 
 // server/_core/stripeRoutes.ts
-var import_express13 = __toESM(require_express2(), 1);
+var import_express14 = __toESM(require_express2(), 1);
 
 // node_modules/stripe/esm/platform/NodePlatformFunctions.js
 var crypto5 = __toESM(require("crypto"), 1);
@@ -60222,7 +60779,7 @@ var Stripe = createStripe(new NodePlatformFunctions());
 var stripe_esm_node_default = Stripe;
 
 // server/_core/stripeRoutes.ts
-var router13 = (0, import_express13.Router)();
+var router14 = (0, import_express14.Router)();
 var stripeKey = process.env.STRIPE_SECRET_KEY || "";
 var stripe = stripeKey ? new stripe_esm_node_default(stripeKey) : null;
 var PRICE_IDS = {
@@ -60230,7 +60787,7 @@ var PRICE_IDS = {
   growth: process.env.STRIPE_GROWTH_PRICE_ID || "",
   agency: process.env.STRIPE_AGENCY_PRICE_ID || ""
 };
-router13.post("/create-checkout", async (req, res) => {
+router14.post("/create-checkout", async (req, res) => {
   try {
     if (!stripe) return res.status(500).json({ error: "Stripe not configured" });
     const { plan } = req.body;
@@ -60251,7 +60808,7 @@ router13.post("/create-checkout", async (req, res) => {
     res.status(500).json({ error: e.message });
   }
 });
-router13.post("/webhook", async (req, res) => {
+router14.post("/webhook", async (req, res) => {
   try {
     if (!stripe) return res.status(500).json({ error: "Stripe not configured" });
     const sig = req.headers["stripe-signature"];
@@ -60286,7 +60843,7 @@ router13.post("/webhook", async (req, res) => {
     res.status(500).json({ error: e.message });
   }
 });
-router13.get("/portal", async (req, res) => {
+router14.get("/portal", async (req, res) => {
   try {
     if (!stripe) return res.status(500).json({ error: "Stripe not configured" });
     const customerId = req.stripeCustomerId;
@@ -60301,7 +60858,7 @@ router13.get("/portal", async (req, res) => {
     res.status(500).json({ error: e.message });
   }
 });
-var stripeRoutes_default = router13;
+var stripeRoutes_default = router14;
 
 // node_modules/zod/v4/classic/external.js
 var external_exports = {};
@@ -74157,7 +74714,7 @@ var import_superjson = __toESM(require_dist2(), 1);
 var t = initTRPC.context().create({
   transformer: import_superjson.default
 });
-var router14 = t.router;
+var router15 = t.router;
 var publicProcedure = t.procedure;
 var requireUser = t.middleware(async (opts) => {
   const { ctx, next } = opts;
@@ -74188,7 +74745,7 @@ var adminProcedure = t.procedure.use(
 );
 
 // server/_core/systemRouter.ts
-var systemRouter = router14({
+var systemRouter = router15({
   health: publicProcedure.input(
     external_exports.object({
       timestamp: external_exports.number().min(0, "timestamp cannot be negative")
@@ -74226,7 +74783,7 @@ async function getUserTeamId(userId) {
 
 // server/routers/auth.ts
 var import_crypto6 = require("crypto");
-var authRouter = router14({
+var authRouter = router15({
   /**
    * Get current user from Supabase Auth
    * Returns null if not authenticated
@@ -74336,7 +74893,7 @@ var authRouter = router14({
 
 // server/routers/demo.ts
 var import_crypto7 = require("crypto");
-var demoRouter = router14({
+var demoRouter = router15({
   /**
    * Create demo campaign for the user's team
    */
@@ -74539,7 +75096,7 @@ var demoRouter = router14({
 
 // server/routers/campaigns.ts
 var import_crypto8 = require("crypto");
-var campaignsRouter = router14({
+var campaignsRouter = router15({
   /**
    * Get all unique clients for the user's team
    */
@@ -74696,7 +75253,7 @@ var campaignsRouter = router14({
 });
 
 // server/routers/leads.ts
-var leadsRouter = router14({
+var leadsRouter = router15({
   list: protectedProcedure.input(external_exports.object({ campaignId: external_exports.string().optional() }).optional()).query(async ({ ctx, input }) => {
     if (!ctx.user?.id) return [];
     const teamId = await getUserTeamId(ctx.user.id);
@@ -74807,7 +75364,7 @@ var leadsRouter = router14({
 });
 
 // server/routers/templates.ts
-var templatesRouter = router14({
+var templatesRouter = router15({
   list: protectedProcedure.query(async ({ ctx }) => {
     if (!ctx.user?.id) return [];
     const teamId = await getUserTeamId(ctx.user.id);
@@ -74960,7 +75517,7 @@ var templatesRouter = router14({
 });
 
 // server/routers/extension.ts
-var extensionRouter = router14({
+var extensionRouter = router15({
   // Campaign: list all campaigns for team
   campaignsList: protectedProcedure.query(async ({ ctx }) => {
     if (!ctx.user?.id) {
@@ -75309,7 +75866,7 @@ function getUsagePercentage(usedLeads, plan) {
 }
 
 // server/routers/billing.ts
-var billingRouter = router14({
+var billingRouter = router15({
   /**
    * Get current plan and usage for user's team
    */
@@ -75441,7 +75998,7 @@ var billingRouter = router14({
 });
 
 // server/routers.ts
-var appRouter = router14({
+var appRouter = router15({
   system: systemRouter,
   auth: authRouter,
   demo: demoRouter,
@@ -75450,7 +76007,7 @@ var appRouter = router14({
   templates: templatesRouter,
   extension: extensionRouter,
   billing: billingRouter,
-  queue: router14({
+  queue: router15({
     list: protectedProcedure.input(external_exports.object({ status: external_exports.enum(["all", "new", "approved"]).optional() }).optional()).query(async ({ ctx, input }) => {
       if (!ctx.user?.id) return [];
       const teamId = await getUserTeamId(ctx.user.id);
@@ -75624,16 +76181,16 @@ function requireRole(role) {
 }
 
 // server/_core/userRoutes.ts
-var import_express14 = __toESM(require_express2(), 1);
+var import_express15 = __toESM(require_express2(), 1);
 init_dist4();
-var router15 = (0, import_express14.Router)();
+var router16 = (0, import_express15.Router)();
 function getSupabase3() {
   return createClient(
     process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "",
     process.env.SUPABASE_SERVICE_ROLE_KEY || ""
   );
 }
-router15.patch("/profile", async (req, res) => {
+router16.patch("/profile", async (req, res) => {
   const supabase3 = getSupabase3();
   try {
     const authHeader = req.headers.authorization;
@@ -75672,7 +76229,7 @@ router15.patch("/profile", async (req, res) => {
     return res.status(500).json({ error: "Server error: " + err.message });
   }
 });
-router15.get("/profile", async (req, res) => {
+router16.get("/profile", async (req, res) => {
   const supabase3 = getSupabase3();
   try {
     const authHeader = req.headers.authorization;
@@ -75690,12 +76247,19 @@ router15.get("/profile", async (req, res) => {
     return res.status(500).json({ error: err.message });
   }
 });
-var userRoutes_default = router15;
+var userRoutes_default = router16;
 
 // server/_core/vercel.ts
-var app = (0, import_express15.default)();
-app.use(import_express15.default.json({ limit: "50mb" }));
-app.use(import_express15.default.urlencoded({ limit: "50mb", extended: true }));
+var app = (0, import_express16.default)();
+app.use(import_express16.default.json({ limit: "50mb" }));
+app.use(import_express16.default.urlencoded({ limit: "50mb", extended: true }));
+app.get("/api/debug-env", (_req, res) => {
+  res.json({
+    hasApify: !!process.env.APIFY_API_TOKEN,
+    apifyPrefix: process.env.APIFY_API_TOKEN?.slice(0, 15) || "NOT SET",
+    nodeEnv: process.env.NODE_ENV
+  });
+});
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", process.env.VITE_FRONTEND_URL || "*");
   res.header("Access-Control-Allow-Credentials", "true");
@@ -75718,6 +76282,7 @@ app.use("/api/ext", expressAuthMiddleware, extensionRoutes_default);
 app.use("/api/sequence", expressAuthMiddleware, sequenceRoutes_default);
 app.use("/api/activity-log", expressAuthMiddleware, activityRoutes_default);
 app.use("/api/ai", expressAuthMiddleware, aiRoutes_default);
+app.use("/api/prospects", expressAuthMiddleware, apolloRoutes_default);
 app.use("/api/posts", expressAuthMiddleware, postRoutes_default);
 app.use("/api/messages", expressAuthMiddleware, messageRoutes_default);
 app.use("/api/stripe", stripeRoutes_default);
