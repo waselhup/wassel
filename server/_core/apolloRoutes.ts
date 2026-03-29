@@ -7,129 +7,32 @@ function getUserId(req: Request): string | null {
   return (req as any).userId || (req as any).user?.id || null;
 }
 
-const LOCATION_GEO_IDS: Record<string, string> = {
-  'Saudi Arabia': '101452733',
-  'UAE': '104305776',
-  'Kuwait': '101355337',
-  'Qatar': '103600532',
-  'Bahrain': '100446943',
-  'Oman': '102713980',
-  'Egypt': '106112106',
-  'Jordan': '100218280',
-  'Lebanon': '100377861',
-  'Morocco': '102787409',
-};
-
-function mapToProspects(items: any[]): any[] {
-  return (Array.isArray(items) ? items : [])
+function normalizeProspects(items: any[]): any[] {
+  return items
     .map((p: any) => ({
-      name: [p.firstName, p.lastName].filter(Boolean).join(' ') ||
-            p.fullName || p.name || 'Unknown',
-      first_name: p.firstName || '',
-      last_name: p.lastName || '',
-      title: p.headline || p.currentPositions?.[0]?.title || p.title || '',
-      company: p.currentPositions?.[0]?.companyName || p.currentCompany?.name || p.company || '',
+      name: [
+        p.firstName || p.first_name,
+        p.lastName || p.last_name,
+      ].filter(Boolean).join(' ') ||
+        p.fullName || p.name || '',
+      first_name: p.firstName || p.first_name || '',
+      last_name: p.lastName || p.last_name || '',
+      title: p.headline || p.title ||
+             p.currentPositions?.[0]?.title || '',
+      company: p.currentPositions?.[0]?.companyName ||
+               p.currentCompany?.name ||
+               p.company || '',
       location: p.location || p.city || '',
-      linkedin_url: p.linkedinUrl || p.profileUrl || p.url || null,
-      industry: p.industry || '',
-      avatar_url: p.profilePicture || p.photoUrl || null,
+      linkedin_url: p.linkedinUrl ||
+                    p.profileUrl || p.url || null,
+      avatar_url: p.profilePicture ||
+                  p.photoUrl || p.imageUrl || null,
       avatar_initials: (
-        (p.firstName?.[0] || '') + (p.lastName?.[0] || '')
+        (p.firstName?.[0] || p.first_name?.[0] || '') +
+        (p.lastName?.[0] || p.last_name?.[0] || '')
       ).toUpperCase() || '?',
     }))
-    .filter((p: any) => p.name !== 'Unknown' || p.linkedin_url);
-}
-
-async function searchWithPrimaryActor(
-  searchTerms: string,
-  maxItems: number,
-  token: string
-): Promise<any[] | null> {
-  const actorId = 'curious_coder~linkedin-people-search-scraper';
-  try {
-    const runRes = await fetch(
-      `https://api.apify.com/v2/acts/${actorId}/run-sync-get-dataset-items?token=${token}&timeout=120&memory=512`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          searchTerms: [searchTerms],
-          maxResults: maxItems,
-          searchType: 'people',
-          proxyConfiguration: { useApifyProxy: true },
-        }),
-      }
-    );
-
-    if (!runRes.ok) {
-      const errText = await runRes.text();
-      console.error('[Prospects] Primary actor error:', runRes.status, errText.slice(0, 200));
-      return null;
-    }
-
-    const items = await runRes.json();
-    console.log(`[Prospects] Primary actor returned ${Array.isArray(items) ? items.length : 0} items`);
-    return Array.isArray(items) ? items : null;
-  } catch (err: any) {
-    console.error('[Prospects] Primary actor exception:', err.message);
-    return null;
-  }
-}
-
-async function searchWithFallbackActor(
-  searchUrl: string,
-  maxItems: number,
-  token: string
-): Promise<any[]> {
-  const actorId = 'dev_fusion~Linkedin-Profile-Scraper';
-  const runRes = await fetch(
-    `https://api.apify.com/v2/acts/${actorId}/run-sync-get-dataset-items?token=${token}&timeout=120&memory=512`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        searchUrl,
-        maxProfiles: maxItems,
-        proxyConfiguration: { useApifyProxy: true },
-      }),
-    }
-  );
-
-  if (!runRes.ok) {
-    const errText = await runRes.text();
-    console.error('[Prospects] Fallback actor error:', runRes.status, errText.slice(0, 200));
-    throw new Error(`Fallback actor failed: ${runRes.status}`);
-  }
-
-  const items = await runRes.json();
-  console.log(`[Prospects] Fallback actor returned ${Array.isArray(items) ? items.length : 0} items`);
-  return Array.isArray(items) ? items : [];
-}
-
-function buildLinkedInSearchUrl(filters: {
-  jobTitles: string[];
-  locations: string[];
-  keywords: string;
-}): string {
-  const urlParams = new URLSearchParams();
-
-  const kw = [
-    ...(filters.jobTitles || []),
-    filters.keywords || '',
-  ].filter(Boolean).join(' OR ');
-
-  if (kw) urlParams.set('keywords', kw);
-
-  const geoIds = (filters.locations || [])
-    .map(l => LOCATION_GEO_IDS[l])
-    .filter(Boolean);
-
-  if (geoIds.length) {
-    urlParams.set('geoUrn', `["${geoIds.join('","')}"]`);
-  }
-
-  urlParams.set('origin', 'FACETED_SEARCH');
-  return 'https://www.linkedin.com/search/results/people/?' + urlParams.toString();
+    .filter(p => p.name || p.linkedin_url);
 }
 
 // POST /api/prospects/search
@@ -138,46 +41,115 @@ router.post('/search', async (req: Request, res: Response) => {
     const {
       jobTitles = [],
       locations = [],
-      industries = [],
-      companySizes = [],
       keywords = '',
       limit = 50,
     } = req.body;
 
-    const apifyToken = process.env.APIFY_API_TOKEN;
-    if (!apifyToken) {
-      console.error('[Prospects] APIFY_API_TOKEN not set');
-      return res.status(503).json({ error: 'Search service not configured' });
-    }
+    const token = process.env.APIFY_API_TOKEN ||
+      'apify_api_CWdZMugTbgkgRByDMhsYDTAmCzez3g4EZ4S9';
 
     const maxItems = Math.min(Number(limit) || 50, 500);
 
-    // Build search terms for primary actor
-    const searchTerms = [
+    // Build search keywords
+    const kw = [
       ...(jobTitles || []),
       keywords || '',
     ].filter(Boolean).join(' ');
 
-    if (!searchTerms && !locations.length) {
-      return res.status(400).json({ error: 'Provide at least one filter' });
+    // Build LinkedIn people search URL (for fallback)
+    const geoMap: Record<string, string> = {
+      'Saudi Arabia': '101452733',
+      'UAE': '104305776',
+      'Kuwait': '101355337',
+      'Qatar': '103600532',
+      'Bahrain': '100446943',
+      'Oman': '102713980',
+      'Egypt': '106112106',
+      'Jordan': '100218280',
+      'Lebanon': '100377861',
+      'Morocco': '102787409',
+    };
+
+    const geoIds = (locations || [])
+      .map((l: string) => geoMap[l])
+      .filter(Boolean);
+
+    const urlParams = new URLSearchParams();
+    if (kw) urlParams.set('keywords', kw);
+    if (geoIds.length) {
+      urlParams.set('geoUrn', JSON.stringify(geoIds));
+    }
+    urlParams.set('origin', 'FACETED_SEARCH');
+    urlParams.set('sid', 'abc');
+
+    const linkedinUrl =
+      'https://www.linkedin.com/search/results/people/?' +
+      urlParams.toString();
+
+    console.log('[Prospects] Search URL:', linkedinUrl);
+    console.log('[Prospects] Max items:', maxItems);
+    console.log('[Prospects] Token prefix:', token.slice(0, 20));
+
+    // Primary actor — run-sync
+    const apifyUrl = `https://api.apify.com/v2/acts/curious_coder~linkedin-people-search-scraper/run-sync-get-dataset-items?token=${token}&timeout=300&memory=1024`;
+
+    const body = {
+      searchTerms: kw ? [kw] : ['professional'],
+      locations: (locations || []).length > 0 ? locations : undefined,
+      maxResults: maxItems,
+      proxyConfiguration: { useApifyProxy: true },
+    };
+
+    console.log('[Prospects] Calling primary Apify actor...');
+
+    const apifyRes = await fetch(apifyUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(280000),
+    });
+
+    console.log('[Prospects] Primary actor status:', apifyRes.status);
+
+    if (!apifyRes.ok) {
+      const errText = await apifyRes.text();
+      console.error('[Prospects] Primary failed:', apifyRes.status, errText.slice(0, 500));
+
+      // Fallback actor
+      console.log('[Prospects] Trying fallback actor...');
+      const fallbackUrl = `https://api.apify.com/v2/acts/bebity~linkedin-profile-scraper/run-sync-get-dataset-items?token=${token}&timeout=300&memory=1024`;
+
+      const fallbackRes = await fetch(fallbackUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          startUrls: [{ url: linkedinUrl }],
+          maxItems,
+          proxyConfiguration: { useApifyProxy: true },
+        }),
+        signal: AbortSignal.timeout(280000),
+      });
+
+      if (!fallbackRes.ok) {
+        const fbErr = await fallbackRes.text();
+        console.error('[Prospects] Fallback failed:', fbErr.slice(0, 200));
+        return res.status(502).json({ error: 'Search service error. Please try again.' });
+      }
+
+      const fbItems = await fallbackRes.json();
+      const fbProspects = normalizeProspects(Array.isArray(fbItems) ? fbItems : []);
+      return res.json({ prospects: fbProspects, total: fbProspects.length });
     }
 
-    // Try primary actor first
-    let rawItems = await searchWithPrimaryActor(searchTerms || 'professional', maxItems, apifyToken);
+    const items = await apifyRes.json();
+    console.log('[Prospects] Got items:', Array.isArray(items) ? items.length : typeof items);
 
-    // Fallback if primary returned null or empty
-    if (!rawItems || rawItems.length === 0) {
-      console.log('[Prospects] Falling back to secondary actor');
-      const searchUrl = buildLinkedInSearchUrl({ jobTitles, locations, keywords });
-      rawItems = await searchWithFallbackActor(searchUrl, maxItems, apifyToken);
-    }
-
-    const prospects = mapToProspects(rawItems);
-    res.json({ prospects, total: prospects.length, page: 1 });
+    const prospects = normalizeProspects(Array.isArray(items) ? items : []);
+    res.json({ prospects, total: prospects.length });
 
   } catch (err: any) {
-    console.error('[Prospects] Error:', err.message);
-    res.status(500).json({ error: 'Search failed. Please try again.' });
+    console.error('[Prospects] Fatal:', err.message);
+    res.status(500).json({ error: 'Search failed: ' + err.message });
   }
 });
 

@@ -24,6 +24,15 @@ const app = express();
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
+// Debug env — no auth, must be before middleware
+app.get('/api/debug-env', (_req: any, res: any) => {
+  res.json({
+    hasApify: !!process.env.APIFY_API_TOKEN,
+    apifyPrefix: process.env.APIFY_API_TOKEN?.slice(0, 15) || 'NOT SET',
+    nodeEnv: process.env.NODE_ENV,
+  });
+});
+
 // Handle CORS for Vercel
 app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', process.env.VITE_FRONTEND_URL || '*');
