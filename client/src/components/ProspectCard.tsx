@@ -18,6 +18,7 @@ export interface ProspectCardProps {
   onToggleSelect?: () => void;
   showCheckbox?: boolean;
   showLinkedIn?: boolean;
+  imported?: boolean;
 }
 
 const AVATAR_COLORS = [
@@ -34,6 +35,7 @@ export default function ProspectCard({
   onToggleSelect,
   showCheckbox = false,
   showLinkedIn = false,
+  imported = false,
 }: ProspectCardProps) {
   const { i18n } = useTranslation();
   const isAr = i18n.language === 'ar';
@@ -55,13 +57,19 @@ export default function ProspectCard({
         isSelected
           ? 'bg-blue-50/50 border-blue-400 shadow-sm'
           : 'bg-white border-gray-100/80 hover:border-blue-200 hover:shadow-md'
-      }`}
+      } ${imported ? 'opacity-60' : ''}`}
       style={{
         borderWidth: '1px',
         borderStyle: 'solid',
         direction: isAr ? 'rtl' : 'ltr',
       }}
     >
+      {/* Imported badge */}
+      {imported && (
+        <div className={`absolute top-2 ${isAr ? 'right-2' : 'left-2'} bg-green-500 text-white text-xs px-2 py-0.5 rounded-full font-bold z-10`}>
+          ✓ {isAr ? 'تم الإضافة' : 'Added'}
+        </div>
+      )}
       {/* Optional Checkbox */}
       {showCheckbox && (
         <div className={`absolute top-4 ${isAr ? 'left-4' : 'right-4'}`}>

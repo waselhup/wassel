@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Search, Users, Plus, ChevronDown, Loader2, Check } from 'lucide-react';
+import { Search, Users, Plus, ChevronDown, Loader2, Check, X } from 'lucide-react';
 import ClientNav from '@/components/ClientNav';
 import ProspectCard from '@/components/ProspectCard';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/contexts/AuthContext';
 
 const JOB_TITLES = [
   'CEO', 'CFO', 'COO', 'CTO', 'CMO',
@@ -27,8 +28,6 @@ const INDUSTRIES = [
 ];
 
 const COMPANY_SIZES = ['1-10', '11-50', '51-200', '201-500', '501-1000', '1000+'];
-
-const AVATAR_COLORS = ['bg-blue-500', 'bg-purple-500', 'bg-green-500', 'bg-orange-500', 'bg-pink-500'];
 
 // ─── Multi-Select Dropdown ─────────────────────────────────────
 function MultiSelect({
@@ -82,6 +81,14 @@ function MultiSelect({
   );
 }
 
+type SearchHistoryEntry = {
+  id: string;
+  timestamp: string;
+  filters: { jobTitles: string[]; locations: string[]; keywords: string };
+  resultCount: number;
+  importedCount: number;
+};
+
 // ─── Main Page ────────────────────────────────────────────────
 export default function ProspectDiscovery() {
   const { i18n } = useTranslation();
@@ -107,6 +114,18 @@ export default function ProspectDiscovery() {
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [importing, setImporting] = useState(false);
   const [importedCount, setImportedCount] = useState(0);
+  const [importedProspects, setImportedProspects] = useState<Set<number>>(new Set());
+
+  // Search history
+  const [searchHistory, setSearchHistory] = useState<SearchHistoryEntry[]>([]);
+  const [currentSearchId, setCurrentSearchId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('wassel-search-history');
+    if (saved) {
+      try { setSearchHistory(JSON.parse(saved)); } catch {}
+    }
+  }, []);
 
   const toggleSelect = (idx: number) => {
     const next = new Set(selected);
@@ -129,6 +148,7 @@ export default function ProspectDiscovery() {
     setSearched(true);
     setSelected(new Set());
     setImportedCount(0);
+    setImportedProspects(new Set());
     try {
       const res = await fetch('/api/prospects/search', {
         method: 'POST',
@@ -142,8 +162,23 @@ export default function ProspectDiscovery() {
         throw new Error(msg);
       }
       const data = await res.json();
-      setProspects(data.prospects || []);
+      const found = data.prospects || [];
+      setProspects(found);
       setTotal(data.total || 0);
+
+      // Save to history
+      const newId = Date.now().toString();
+      setCurrentSearchId(newId);
+      const newEntry: SearchHistoryEntry = {
+        id: newId,
+        timestamp: new Date().toISOString(),
+        filters: { jobTitles, locations, keywords },
+        resultCount: found.length,
+        importedCount: 0,
+      };
+      const updated = [newEntry, ...searchHistory].slice(0, 20);
+      setSearchHistory(updated);
+      localStorage.setItem('wassel-search-history', JSON.stringify(updated));
     } catch (err: any) {
       setError(err.message);
       setProspects([]);
@@ -153,26 +188,67 @@ export default function ProspectDiscovery() {
   };
 
   const handleImport = async () => {
-    if (!selected.size) return;
+    if (selected.size === 0) return;
     setImporting(true);
+    setError('');
+
     try {
-      const toImport = Array.from(selected).map(i => prospects[i]);
+      const toImport = [...selected].map(i => prospects[i]);
+      console.log('[Import] Sending', toImport.length, 'prospects');
+
+      // Always get a fresh token from Supabase session
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token || accessToken || '';
+
       const res = await fetch('/api/prospects/import', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
-        body: JSON.stringify({ prospects: toImport }),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          prospects: toImport.map(p => ({
+            name: p.name,
+            title: p.title,
+            company: p.company,
+            location: p.location,
+            linkedin_url: p.linkedin_url,
+            avatar_url: p.avatar_url || p.profile_picture_url,
+          })),
+        }),
       });
+
       if (!res.ok) {
-        const text = await res.text();
-        let msg = isAr ? 'فشل الاستيراد' : 'Import failed';
-        try { msg = JSON.parse(text).error || msg; } catch { msg = `Server error (${res.status})`; }
-        throw new Error(msg);
+        const errText = await res.text();
+        console.error('[Import] Failed:', res.status, errText);
+        setError(isAr ? 'فشل الاستيراد — حاول مرة أخرى' : 'Import failed — please try again');
+        return;
       }
+
       const data = await res.json();
-      setImportedCount(data.imported || 0);
+      console.log('[Import] Success:', data);
+      const count = data.imported ?? toImport.length;
+      setImportedCount(count);
+
+      // Mark imported prospects with badge
+      const importedIds = new Set([...selected]);
+      setImportedProspects(prev => new Set([...prev, ...importedIds]));
       setSelected(new Set());
+
+      // Update history entry
+      if (currentSearchId) {
+        const updatedHistory = searchHistory.map(h =>
+          h.id === currentSearchId
+            ? { ...h, importedCount: h.importedCount + count }
+            : h
+        );
+        setSearchHistory(updatedHistory);
+        localStorage.setItem('wassel-search-history', JSON.stringify(updatedHistory));
+      }
+
     } catch (err: any) {
-      setError(err.message);
+      console.error('[Import] Error:', err);
+      setError(err.message || 'Import failed');
     } finally {
       setImporting(false);
     }
@@ -205,7 +281,6 @@ export default function ProspectDiscovery() {
         {/* Filters */}
         <div className="flex-1 overflow-y-auto px-5 py-4">
 
-          {/* Override MultiSelect styles to match dark theme when needed */}
           <style>{`
             .prospect-filter select, .prospect-filter input {
               color-scheme: light;
@@ -368,6 +443,50 @@ export default function ProspectDiscovery() {
               <p className="text-sm max-w-xs" style={{ color: 'var(--text-muted)' }}>
                 {isAr ? 'اختر الفلاتر من الشريط الجانبي واضغط بحث' : 'Select filters from the sidebar and click search'}
               </p>
+
+              {/* Search History in empty state */}
+              {searchHistory.length > 0 && (
+                <div className="mt-8 w-full max-w-2xl text-left">
+                  <h3 className="text-sm font-bold mb-3" style={{ color: 'var(--text-muted)' }}>
+                    {isAr ? 'سجل البحث' : 'Search History'}
+                  </h3>
+                  <div className="space-y-2">
+                    {searchHistory.map(h => (
+                      <div key={h.id} className="flex items-center justify-between rounded-xl px-4 py-3 text-sm" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
+                        <div>
+                          <span className="font-medium" style={{ color: 'var(--text-primary)' }}>
+                            {h.filters.jobTitles.join(', ') || h.filters.keywords || (isAr ? 'كل المسميات' : 'All')}
+                          </span>
+                          <span style={{ color: 'var(--text-muted)' }} className="mx-2">•</span>
+                          <span style={{ color: 'var(--text-muted)' }}>
+                            {h.filters.locations.join(', ') || (isAr ? 'عالمي' : 'Global')}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span style={{ color: 'var(--text-muted)' }}>{h.resultCount} {isAr ? 'نتيجة' : 'results'}</span>
+                          {h.importedCount > 0 && (
+                            <span className="text-green-600 font-medium">✓ {h.importedCount} {isAr ? 'مستورد' : 'imported'}</span>
+                          )}
+                          <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                            {new Date(h.timestamp).toLocaleDateString(isAr ? 'ar-SA' : 'en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                          <button
+                            onClick={() => {
+                              const rem = searchHistory.filter(x => x.id !== h.id);
+                              setSearchHistory(rem);
+                              localStorage.setItem('wassel-search-history', JSON.stringify(rem));
+                            }}
+                            className="transition-colors"
+                            style={{ color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -405,18 +524,65 @@ export default function ProspectDiscovery() {
 
           {/* Results grid */}
           {!loading && prospects.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3">
-              {prospects.map((p, idx) => (
-                <ProspectCard
-                  key={idx}
-                  prospect={p}
-                  isSelected={selected.has(idx)}
-                  onToggleSelect={() => toggleSelect(idx)}
-                  showCheckbox={true}
-                  showLinkedIn={true}
-                />
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3">
+                {prospects.map((p, idx) => (
+                  <ProspectCard
+                    key={idx}
+                    prospect={p}
+                    isSelected={selected.has(idx)}
+                    onToggleSelect={() => toggleSelect(idx)}
+                    showCheckbox={true}
+                    showLinkedIn={true}
+                    imported={importedProspects.has(idx)}
+                  />
+                ))}
+              </div>
+
+              {/* Search history below results */}
+              {searchHistory.length > 0 && (
+                <div className="mt-8 pt-6" style={{ borderTop: '1px solid var(--border-subtle)' }}>
+                  <h3 className="text-sm font-bold mb-3" style={{ color: 'var(--text-muted)' }}>
+                    {isAr ? 'سجل البحث' : 'Search History'}
+                  </h3>
+                  <div className="space-y-2">
+                    {searchHistory.map(h => (
+                      <div key={h.id} className="flex items-center justify-between rounded-xl px-4 py-3 text-sm" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
+                        <div>
+                          <span className="font-medium" style={{ color: 'var(--text-primary)' }}>
+                            {h.filters.jobTitles.join(', ') || h.filters.keywords || (isAr ? 'كل المسميات' : 'All')}
+                          </span>
+                          <span style={{ color: 'var(--text-muted)' }} className="mx-2">•</span>
+                          <span style={{ color: 'var(--text-muted)' }}>
+                            {h.filters.locations.join(', ') || (isAr ? 'عالمي' : 'Global')}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span style={{ color: 'var(--text-muted)' }}>{h.resultCount} {isAr ? 'نتيجة' : 'results'}</span>
+                          {h.importedCount > 0 && (
+                            <span className="text-green-600 font-medium">✓ {h.importedCount} {isAr ? 'مستورد' : 'imported'}</span>
+                          )}
+                          <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                            {new Date(h.timestamp).toLocaleDateString(isAr ? 'ar-SA' : 'en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                          <button
+                            onClick={() => {
+                              const rem = searchHistory.filter(x => x.id !== h.id);
+                              setSearchHistory(rem);
+                              localStorage.setItem('wassel-search-history', JSON.stringify(rem));
+                            }}
+                            className="transition-colors"
+                            style={{ color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
