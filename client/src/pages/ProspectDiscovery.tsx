@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Search, Users, Plus, ChevronDown, Loader2, Check } from 'lucide-react';
 import ClientNav from '@/components/ClientNav';
+import ProspectCard from '@/components/ProspectCard';
 import { useAuth } from '@/contexts/AuthContext';
 
 const JOB_TITLES = [
@@ -155,7 +156,7 @@ export default function ProspectDiscovery() {
     if (!selected.size) return;
     setImporting(true);
     try {
-      const toImport = [...selected].map(i => prospects[i]);
+      const toImport = Array.from(selected).map(i => prospects[i]);
       const res = await fetch('/api/prospects/import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
@@ -402,88 +403,19 @@ export default function ProspectDiscovery() {
             </div>
           )}
 
-          {/* Results table */}
+          {/* Results grid */}
           {!loading && prospects.length > 0 && (
-            <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }}>
-              <table className="w-full">
-                <thead style={{ background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid var(--border-subtle)' }}>
-                  <tr>
-                    <th className="w-10 px-4 py-3">
-                      <input
-                        type="checkbox"
-                        checked={selected.size === prospects.length && prospects.length > 0}
-                        onChange={e => e.target.checked ? selectAll() : clearAll()}
-                        className="rounded accent-indigo-500"
-                      />
-                    </th>
-                    {[
-                      isAr ? 'الاسم' : 'Name',
-                      isAr ? 'المسمى' : 'Title',
-                      isAr ? 'الشركة' : 'Company',
-                      isAr ? 'الموقع' : 'Location',
-                      'LinkedIn',
-                    ].map(h => (
-                      <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {prospects.map((p, idx) => (
-                    <tr
-                      key={idx}
-                      onClick={() => toggleSelect(idx)}
-                      className="cursor-pointer transition-colors"
-                      style={{ borderBottom: '1px solid var(--border-subtle)', background: selected.has(idx) ? 'rgba(99,102,241,0.08)' : 'transparent' }}
-                      onMouseEnter={e => { if (!selected.has(idx)) (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.02)'; }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = selected.has(idx) ? 'rgba(99,102,241,0.08)' : 'transparent'; }}
-                    >
-                      <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
-                        <input type="checkbox" checked={selected.has(idx)} onChange={() => toggleSelect(idx)} className="rounded accent-indigo-500" />
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2.5">
-                          {p.avatar_url ? (
-                            <img
-                              src={p.avatar_url}
-                              alt={p.name}
-                              className="w-8 h-8 rounded-full object-cover flex-shrink-0"
-                              onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                            />
-                          ) : (
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0 ${AVATAR_COLORS[idx % 5]}`}>
-                              {p.avatar_initials || p.name?.[0] || '?'}
-                            </div>
-                          )}
-                          <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{p.name}</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-sm" style={{ color: 'var(--text-secondary)' }}>{p.title || '—'}</td>
-                      <td className="px-4 py-3 text-sm" style={{ color: 'var(--text-secondary)' }}>{p.company || '—'}</td>
-                      <td className="px-4 py-3 text-sm" style={{ color: 'var(--text-muted)' }}>{p.location || '—'}</td>
-                      <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
-                        {p.linkedin_url ? (
-                          <a
-                            href={p.linkedin_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-1 text-xs font-medium"
-                            style={{ color: '#0A66C2', textDecoration: 'none' }}
-                          >
-                            <div className="w-5 h-5 rounded flex items-center justify-center" style={{ background: '#0A66C2' }}>
-                              <span className="text-white font-bold" style={{ fontSize: 8 }}>in</span>
-                            </div>
-                            Profile
-                          </a>
-                        ) : (
-                          <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>—</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3">
+              {prospects.map((p, idx) => (
+                <ProspectCard
+                  key={idx}
+                  prospect={p}
+                  isSelected={selected.has(idx)}
+                  onToggleSelect={() => toggleSelect(idx)}
+                  showCheckbox={true}
+                  showLinkedIn={true}
+                />
+              ))}
             </div>
           )}
         </div>

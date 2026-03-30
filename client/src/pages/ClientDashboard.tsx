@@ -8,6 +8,7 @@ import {
 import { Link } from 'wouter';
 import ClientNav from '@/components/ClientNav';
 import ProfileHeroCard from '@/components/ProfileHeroCard';
+import ProspectCard from '@/components/ProspectCard';
 
 function getAuthToken(): string {
     return localStorage.getItem('supabase_token') || '';
@@ -311,31 +312,30 @@ export default function ClientDashboard() {
                                         </button>
                                     </Link>
                                 </div>
-                                <div>
+                                <div className="p-4">
                                     {prospects.length === 0 ? (
                                         <div className="p-8 text-center">
                                             <Download className="w-8 h-8 mx-auto mb-3" style={{ color: 'var(--text-muted)' }} />
                                             <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{t('dashboard.noProspects')}</p>
                                         </div>
                                     ) : (
-                                        prospects.slice(0, 5).map((p) => (
-                                            <div key={p.id} className="px-5 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                                                <div className="flex items-center gap-3 min-w-0">
-                                                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0" style={{ background: 'var(--gradient-primary)' }}>
-                                                        {(p.name || '?')[0]}
-                                                    </div>
-                                                    <div className="min-w-0">
-                                                        <p className="font-medium text-sm truncate" style={{ color: 'var(--text-primary)' }}>{p.name || 'Unknown'}</p>
-                                                        <p className="text-[10px] truncate" style={{ color: 'var(--text-muted)' }}>{p.title || ''}{p.company ? ` at ${p.company}` : ''}</p>
-                                                    </div>
-                                                </div>
-                                                {p.linkedin_url && (
-                                                    <a href={p.linkedin_url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent-secondary)' }}>
-                                                        <ExternalLink className="w-3.5 h-3.5" />
-                                                    </a>
-                                                )}
-                                            </div>
-                                        ))
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            {prospects.slice(0, 4).map((p) => (
+                                                <ProspectCard
+                                                    key={p.id}
+                                                    prospect={{
+                                                        name: p.name || p.full_name || 'Unknown',
+                                                        title: p.title,
+                                                        company: p.company,
+                                                        location: p.location,
+                                                        linkedin_url: p.linkedin_url,
+                                                        profile_picture_url: p.profile_picture_url || p.photo_url || p.avatar_url,
+                                                    }}
+                                                    showCheckbox={false}
+                                                    showLinkedIn={false}
+                                                />
+                                            ))}
+                                        </div>
                                     )}
                                 </div>
                             </div>

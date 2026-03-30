@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import ClientNav from '@/components/ClientNav';
 import { useAuth } from '@/contexts/AuthContext';
-import Avatar from '@/components/Avatar';
+import ProspectCard from '@/components/ProspectCard';
 import { Search, Trash2, X, Loader2, Users, ExternalLink, Download } from 'lucide-react';
 
 function getToken() {
@@ -257,61 +257,32 @@ export default function Leads() {
                 <p style={{ color: '#64748b', fontSize: 13, marginBottom: 16 }}>{t('leads.noProspectsDesc')}</p>
               </div>
             ) : (
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                  <thead>
-                    <tr style={{ background: 'rgba(255,255,255,0.03)' }}>
-                      <th style={{ padding: '10px 12px', textAlign: 'left', width: 36 }}>
-                        <input type="checkbox" checked={checked.size === filtered.length && filtered.length > 0} onChange={toggleAll} style={{ accentColor: '#7c3aed' }} />
-                      </th>
-                      <th style={{ padding: '10px 12px', textAlign: 'left', color: '#64748b', fontWeight: 500 }}>{t('leads.name')}</th>
-                      <th style={{ padding: '10px 12px', textAlign: 'left', color: '#64748b', fontWeight: 500 }}>{t('leads.titleCol')}</th>
-                      <th style={{ padding: '10px 12px', textAlign: 'left', color: '#64748b', fontWeight: 500 }}>{t('leads.company')}</th>
-                      <th style={{ padding: '10px 12px', textAlign: 'left', color: '#64748b', fontWeight: 500 }}>{t('leads.linkedin')}</th>
-                      <th style={{ padding: '10px 12px', width: 40 }} />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filtered.map(p => (
-                      <tr key={p.id} style={{ borderTop: '1px solid rgba(255,255,255,0.04)', background: checked.has(p.id) ? 'rgba(124,58,237,0.06)' : 'transparent' }}
-                        className="leads-row">
-                        <td style={{ padding: '10px 12px' }}>
-                          <input type="checkbox" checked={checked.has(p.id)} onChange={() => toggleCheck(p.id)} style={{ accentColor: '#7c3aed' }} />
-                        </td>
-                        <td style={{ padding: '10px 12px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <Avatar name={p.name || '?'} size="sm" imageUrl={p.photo_url} />
-                            <span style={{ color: '#f1f5f9', fontWeight: 500 }}>{(p.name || p.full_name || '—')?.split('•')[0]?.split('\n')[0]?.trim() || '—'}</span>
-                          </div>
-                        </td>
-                        <td style={{ padding: '10px 12px', color: '#94a3b8' }}>{p.title || '—'}</td>
-                        <td style={{ padding: '10px 12px', color: '#94a3b8' }}>{p.company || '—'}</td>
-                        <td style={{ padding: '10px 12px' }}>
-                          {p.linkedin_url ? (
-                            <a href={p.linkedin_url} target="_blank" rel="noopener noreferrer" style={{ color: '#60a5fa', display: 'flex', alignItems: 'center', gap: 4 }}
-                              onClick={e => e.stopPropagation()}>
-                              <ExternalLink size={12} /> {t('leads.profile')}
-                            </a>
-                          ) : <span style={{ color: '#475569' }}>—</span>}
-                        </td>
-                        <td style={{ padding: '10px 12px' }}>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); deleteSingle(p.id); }}
-                            title={t('common.delete')}
-                            className="leads-delete-btn"
-                            style={{
-                              background: 'none', border: 'none', cursor: 'pointer', padding: 4,
-                              color: '#475569', opacity: 0,
-                              transition: 'opacity 0.15s, color 0.15s',
-                            }}
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 p-4">
+                {filtered.map(p => (
+                  <div key={p.id} className="relative group">
+                    <ProspectCard
+                      prospect={{
+                        name: p.name || p.full_name || 'Unknown',
+                        title: p.title,
+                        company: p.company,
+                        location: p.location,
+                        linkedin_url: p.linkedin_url,
+                        profile_picture_url: p.profile_picture_url || p.photo_url || p.avatar_url,
+                      }}
+                      showCheckbox={false}
+                      showLinkedIn={true}
+                    />
+                    {/* Delete overlay button */}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); deleteSingle(p.id); }}
+                      title={t('common.delete')}
+                      className="absolute top-4 right-4 p-1.5 rounded-md text-red-500 bg-white/80 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all border border-red-100 z-10"
+                      style={{ direction: 'ltr' }}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                ))}
               </div>
             )}
           </div>

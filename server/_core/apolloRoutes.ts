@@ -115,14 +115,16 @@ router.post('/import', async (req: Request, res: Response) => {
 
     const leads = prospects.map((p: any) => ({
       team_id: member.team_id,
-      name: p.name,
+      name: p.name || 'Unknown',
       title: p.title || null,
       company: p.company || null,
       location: p.location || null,
       linkedin_url: p.linkedin_url || null,
+      profile_picture_url: p.avatar_url || p.photo || null,
       source: 'discovery',
       status: 'new',
     }));
+
 
     const BATCH = 50;
     let imported = 0;

@@ -55038,11 +55038,12 @@ router11.post("/import", async (req, res) => {
     if (!member?.team_id) return res.status(400).json({ error: "No team found" });
     const leads = prospects.map((p) => ({
       team_id: member.team_id,
-      name: p.name,
+      name: p.name || "Unknown",
       title: p.title || null,
       company: p.company || null,
       location: p.location || null,
       linkedin_url: p.linkedin_url || null,
+      profile_picture_url: p.avatar_url || p.photo || null,
       source: "discovery",
       status: "new"
     }));
