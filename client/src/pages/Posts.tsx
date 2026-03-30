@@ -3,6 +3,7 @@ import ClientNav from '@/components/ClientNav';
 import { useAuth } from '@/contexts/AuthContext';
 import AISurveyModal, { AIMessageConfig } from '@/components/AISurveyModal';
 import { useTranslation } from 'react-i18next';
+import ExtensionRequiredModal from '@/components/ExtensionRequiredModal';
 import {
   Sparkles, Send, Clock, Save, Loader2, Trash2,
   CheckCircle, XCircle, FileText, RefreshCw,
@@ -48,6 +49,7 @@ export default function Posts() {
   const [scheduleDate, setScheduleDate] = useState('');
   const [showAI, setShowAI] = useState(false);
   const [aiGenerating, setAiGenerating] = useState(false);
+  const [showExtModal, setShowExtModal] = useState(false);
 
   const maxChars = 3000;
 
@@ -110,6 +112,11 @@ export default function Posts() {
   // Publish now (user-assisted via extension)
   const publishNow = async () => {
     if (!content.trim()) return;
+    // Check extension is installed
+    if (document.documentElement.getAttribute('data-wassel-extension') !== 'true') {
+      setShowExtModal(true);
+      return;
+    }
     setPublishing(true);
     try {
       // 1. Create the post
@@ -222,6 +229,7 @@ export default function Posts() {
   ];
 
   return (
+    <>
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-base)' }}>
       <ClientNav />
       <main className="main-content" style={{ flex: 1, padding: 32, overflowY: 'auto' }}>
@@ -437,6 +445,10 @@ export default function Posts() {
         isGenerating={aiGenerating}
         showPostType={true}
       />
+      {showExtModal && (
+        <ExtensionRequiredModal reason="post" onClose={() => setShowExtModal(false)} />
+      )}
     </div>
+    </>
   );
 }

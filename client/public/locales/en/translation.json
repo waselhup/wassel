@@ -106,10 +106,23 @@
       "step5": "Done! ✅"
     },
     "features": {
-      "scan": "🔍 Scan LinkedIn search results",
-      "import": "📥 Import 500+ prospects at once",
-      "autoSend": "🚀 Auto-send invites & messages",
-      "track": "📊 Track campaign performance"
+      "campaigns": "⚡ Execute campaigns automatically",
+      "invites": "🤝 Send invites & messages on your behalf",
+      "posts": "📝 Publish LinkedIn posts directly",
+      "sync": "🔄 Secure sync with your dashboard"
+    }
+  },
+  "extension": {
+    "requiredTitle": "Extension Required",
+    "requiredCampaign": "To launch a campaign, you need the Wassel Chrome Extension installed. It executes LinkedIn actions on your behalf.",
+    "requiredPost": "To publish a LinkedIn post, you need the Wassel Chrome Extension installed.",
+    "installNow": "Install Extension",
+    "alreadyInstalled": "I've already installed it",
+    "notRequired": "The extension is not required for prospect discovery. Apify handles that.",
+    "status": {
+      "connected": "✅ Extension connected",
+      "notInstalled": "Extension not installed",
+      "detecting": "Checking for extension..."
     }
   },
   "dashboard": {

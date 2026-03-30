@@ -42,7 +42,7 @@ export default function OnboardingExtension() {
   };
 
   const handleSkip = () => {
-    window.location.href = '/login';
+    window.location.href = '/app';
   };
 
   const handleContinue = () => {
@@ -183,10 +183,10 @@ export default function OnboardingExtension() {
             </div>
             <div className="space-y-3">
               {[
-                '🔍 مسح ملفات LinkedIn تلقائياً',
-                '📥 استيراد العملاء بنقرة واحدة',
-                '📤 إرسال دعوات ورسائل آلية',
-                '📊 تتبع النتائج مباشرة',
+                '⚡ تنفيذ حملات التواصل تلقائياً',
+                '🤝 إرسال دعوات ورسائل بالنيابة عنك',
+                '📝 نشر منشورات LinkedIn مباشرة',
+                '🔄 مزامنة آمنة مع لوحة التحكم',
               ].map((text, i) => (
                 <div key={i} className="flex items-center gap-3 px-4 py-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
                   <span className="text-sm" style={{ color: 'rgba(255,255,255,0.8)' }}>{text}</span>

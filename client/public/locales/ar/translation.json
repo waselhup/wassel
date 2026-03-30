@@ -89,10 +89,23 @@
       "step5": "تم! ✅"
     },
     "features": {
-      "scan": "🔍 فحص نتائج بحث لينكدإن",
-      "import": "📥 استيراد أكثر من 500 عميل محتمل",
-      "autoSend": "🚀 إرسال دعوات ورسائل تلقائياً",
-      "track": "📊 تتبع أداء الحملات"
+      "campaigns": "⚡ تنفيذ حملات التواصل تلقائياً",
+      "invites": "🤝 إرسال دعوات ورسائل بالنيابة عنك",
+      "posts": "📝 نشر منشورات LinkedIn مباشرة",
+      "sync": "🔄 مزامنة آمنة مع لوحة التحكم"
+    }
+  },
+  "extension": {
+    "requiredTitle": "الإضافة مطلوبة",
+    "requiredCampaign": "لإطلاق حملة، يجب تثبيت إضافة Wassel Chrome. الإضافة تنفذ إجراءات LinkedIn بالنيابة عنك.",
+    "requiredPost": "لنشر منشور على LinkedIn، يجب تثبيت إضافة Wassel Chrome.",
+    "installNow": "تثبيت الإضافة",
+    "alreadyInstalled": "لقد ثبّتتها",
+    "notRequired": "الإضافة غير مطلوبة للبحث عن عملاء. Apify يتولى ذلك.",
+    "status": {
+      "connected": "✅ الإضافة متصلة",
+      "notInstalled": "الإضافة غير مثبتة",
+      "detecting": "جاري فحص الإضافة..."
     }
   },
   "dashboard": {

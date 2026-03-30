@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { CAMPAIGN_PRESETS } from '@/data/presetData';
 import CampaignMessageSurvey from '@/components/CampaignMessageSurvey';
+import ExtensionRequiredModal from '@/components/ExtensionRequiredModal';
 
 // Fetch helper
 async function apiFetch(path: string, token: string, options?: RequestInit) {
@@ -109,6 +110,7 @@ export default function CampaignWizard() {
 
   const [step, setStep] = useState(0);
   const [launching, setLaunching] = useState(false);
+  const [showExtModal, setShowExtModal] = useState(false);
   const [launched, setLaunchedData] = useState<{ id: string; name: string; count: number } | null>(null);
   const [error, setError] = useState('');
 
@@ -316,6 +318,11 @@ export default function CampaignWizard() {
 
   // LAUNCH
   const launch = async () => {
+    // Check extension is installed before launching
+    if (document.documentElement.getAttribute('data-wassel-extension') !== 'true') {
+      setShowExtModal(true);
+      return;
+    }
     setLaunching(true);
     setError('');
     try {
@@ -456,6 +463,7 @@ export default function CampaignWizard() {
 
   // ─────────── WIZARD ──────────────────────────────────────
   return (
+    <>
     <div className="flex min-h-screen" style={{ background: 'var(--bg-base)' }}>
       <ClientNav />
       <main className="flex-1 overflow-y-auto p-6 lg:p-8" style={{ maxHeight: '100vh' }}>
@@ -766,5 +774,9 @@ export default function CampaignWizard() {
         </div>
       </main>
     </div>
+    {showExtModal && (
+      <ExtensionRequiredModal reason="campaign" onClose={() => setShowExtModal(false)} />
+    )}
+    </>
   );
 }
