@@ -18,15 +18,12 @@ function normalizeProspects(items: any[]): any[] {
       first_name: p.firstName || p.first_name || '',
       last_name: p.lastName || p.last_name || '',
       title: p.headline || p.title ||
-             p.currentPositions?.[0]?.title || '',
-      company: p.currentPositions?.[0]?.companyName ||
-               p.currentCompany?.name ||
+             p.currentPosition?.[0]?.position || '',
+      company: p.currentPosition?.[0]?.companyName ||
                p.company || '',
-      location: p.location || p.city || '',
-      linkedin_url: p.linkedinUrl ||
-                    p.profileUrl || p.url || null,
-      avatar_url: p.profilePicture ||
-                  p.photoUrl || p.imageUrl || null,
+      location: p.location?.linkedinText || p.location?.parsed?.text || p.location || p.city || '',
+      linkedin_url: p.linkedinUrl || p.profileUrl || p.url || null,
+      avatar_url: p.photo || p.profilePicture?.url || p.imageUrl || null,
       avatar_initials: (
         (p.firstName?.[0] || p.first_name?.[0] || '') +
         (p.lastName?.[0] || p.last_name?.[0] || '')
@@ -56,51 +53,20 @@ router.post('/search', async (req: Request, res: Response) => {
       keywords || '',
     ].filter(Boolean).join(' ');
 
-    // Build LinkedIn people search URL (for fallback)
-    const geoMap: Record<string, string> = {
-      'Saudi Arabia': '101452733',
-      'UAE': '104305776',
-      'Kuwait': '101355337',
-      'Qatar': '103600532',
-      'Bahrain': '100446943',
-      'Oman': '102713980',
-      'Egypt': '106112106',
-      'Jordan': '100218280',
-      'Lebanon': '100377861',
-      'Morocco': '102787409',
-    };
-
-    const geoIds = (locations || [])
-      .map((l: string) => geoMap[l])
-      .filter(Boolean);
-
-    const urlParams = new URLSearchParams();
-    if (kw) urlParams.set('keywords', kw);
-    if (geoIds.length) {
-      urlParams.set('geoUrn', JSON.stringify(geoIds));
-    }
-    urlParams.set('origin', 'FACETED_SEARCH');
-    urlParams.set('sid', 'abc');
-
-    const linkedinUrl =
-      'https://www.linkedin.com/search/results/people/?' +
-      urlParams.toString();
-
-    console.log('[Prospects] Search URL:', linkedinUrl);
+    console.log('[Prospects] Search keywords:', kw);
+    console.log('[Prospects] Locations:', locations);
     console.log('[Prospects] Max items:', maxItems);
-    console.log('[Prospects] Token prefix:', token.slice(0, 20));
 
     // Primary actor — run-sync
-    const apifyUrl = `https://api.apify.com/v2/acts/curious_coder~linkedin-people-search-scraper/run-sync-get-dataset-items?token=${token}&timeout=300&memory=1024`;
+    const apifyUrl = `https://api.apify.com/v2/acts/harvestapi~linkedin-profile-search/run-sync-get-dataset-items?token=${token}&timeout=300&memory=1024`;
 
     const body = {
-      searchTerms: kw ? [kw] : ['professional'],
+      searchQuery: kw || 'professional',
+      maxProfiles: maxItems,
       locations: (locations || []).length > 0 ? locations : undefined,
-      maxResults: maxItems,
-      proxyConfiguration: { useApifyProxy: true },
     };
 
-    console.log('[Prospects] Calling primary Apify actor...');
+    console.log('[Prospects] Calling harvestapi actor...');
 
     const apifyRes = await fetch(apifyUrl, {
       method: 'POST',
@@ -113,32 +79,8 @@ router.post('/search', async (req: Request, res: Response) => {
 
     if (!apifyRes.ok) {
       const errText = await apifyRes.text();
-      console.error('[Prospects] Primary failed:', apifyRes.status, errText.slice(0, 500));
-
-      // Fallback actor
-      console.log('[Prospects] Trying fallback actor...');
-      const fallbackUrl = `https://api.apify.com/v2/acts/bebity~linkedin-profile-scraper/run-sync-get-dataset-items?token=${token}&timeout=300&memory=1024`;
-
-      const fallbackRes = await fetch(fallbackUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          startUrls: [{ url: linkedinUrl }],
-          maxItems,
-          proxyConfiguration: { useApifyProxy: true },
-        }),
-        signal: AbortSignal.timeout(280000),
-      });
-
-      if (!fallbackRes.ok) {
-        const fbErr = await fallbackRes.text();
-        console.error('[Prospects] Fallback failed:', fbErr.slice(0, 200));
-        return res.status(502).json({ error: 'Search service error. Please try again.' });
-      }
-
-      const fbItems = await fallbackRes.json();
-      const fbProspects = normalizeProspects(Array.isArray(fbItems) ? fbItems : []);
-      return res.json({ prospects: fbProspects, total: fbProspects.length });
+      console.error('[Prospects] Search failed:', apifyRes.status, errText.slice(0, 500));
+      return res.status(502).json({ error: 'Search service error. Please try again.' });
     }
 
     const items = await apifyRes.json();
