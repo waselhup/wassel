@@ -113,27 +113,28 @@ router.post('/import', async (req: Request, res: Response) => {
 
     if (!member?.team_id) return res.status(400).json({ error: 'No team found' });
 
-    const leads = prospects.map((p: any) => ({
+    const records = prospects.map((p: any) => ({
       team_id: member.team_id,
+      client_id: member.team_id,
       name: p.name || 'Unknown',
       title: p.title || null,
       company: p.company || null,
       location: p.location || null,
       linkedin_url: p.linkedin_url || null,
-      profile_picture_url: p.avatar_url || p.photo || null,
-      source: 'discovery',
-      status: 'new',
+      photo_url: p.avatar_url || p.photo || null,
+      source_url: null,
+      status: 'imported',
     }));
-
 
     const BATCH = 50;
     let imported = 0;
-    for (let i = 0; i < leads.length; i += BATCH) {
-      const batch = leads.slice(i, i + BATCH);
-      const { error } = await supabase
-        .from('leads')
-        .upsert(batch, { onConflict: 'team_id,linkedin_url', ignoreDuplicates: true });
-      if (!error) imported += batch.length;
+    for (let i = 0; i < records.length; i += BATCH) {
+      const batch = records.slice(i, i + BATCH);
+      const { data: inserted, error } = await supabase
+        .from('prospects')
+        .upsert(batch, { onConflict: 'linkedin_url,team_id', ignoreDuplicates: true })
+        .select('id');
+      if (!error) imported += inserted?.length || batch.length;
     }
 
     res.json({ success: true, imported });

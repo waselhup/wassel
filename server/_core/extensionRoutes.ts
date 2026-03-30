@@ -279,7 +279,7 @@ router.get('/prospects', async (req: Request, res: Response) => {
 
         let query = supabase
             .from('prospects')
-            .select('id, linkedin_url, name, title, company, location, profile_picture_url, source_url, status, created_at')
+            .select('id, linkedin_url, name, title, company, location, photo_url, source_url, status, created_at')
             .eq('team_id', teamId)
             .order('created_at', { ascending: false })
             .limit(1000);
