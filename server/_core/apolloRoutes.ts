@@ -62,8 +62,8 @@ router.post('/search', async (req: Request, res: Response) => {
 
     const body = {
       searchQuery: kw || 'professional',
-      maxProfiles: maxItems,
-      locations: (locations || []).length > 0 ? locations : undefined,
+      maxItems: maxItems,
+      locations: (locations || []).length > 0 ? locations.map((l: string) => l.toUpperCase()) : undefined,
     };
 
     console.log('[Prospects] Calling harvestapi actor...');

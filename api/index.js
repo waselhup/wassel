@@ -55003,8 +55003,8 @@ router11.post("/search", async (req, res) => {
     const apifyUrl = `https://api.apify.com/v2/acts/harvestapi~linkedin-profile-search/run-sync-get-dataset-items?token=${token}&timeout=300&memory=1024`;
     const body = {
       searchQuery: kw || "professional",
-      maxProfiles: maxItems,
-      locations: (locations || []).length > 0 ? locations : void 0
+      maxItems,
+      locations: (locations || []).length > 0 ? locations.map((l) => l.toUpperCase()) : void 0
     };
     console.log("[Prospects] Calling harvestapi actor...");
     const apifyRes = await fetch(apifyUrl, {
