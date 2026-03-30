@@ -41,7 +41,17 @@
       "Bash(cmd /c \"npx vite build 2>&1 && echo BUILD_DONE\")",
       "Bash(cmd /c \"git add server/_core/aiRoutes.ts client/src/components/CampaignMessageSurvey.tsx client/src/components/AISurveyModal.tsx dist/api/index.js dist/public/ 2>&1 && git commit -m \"\"feat: auto-detect gender from LinkedIn name, show sender profile in survey\"\" 2>&1\")",
       "Bash(cmd /c \"npx esbuild server/_core/vercel.ts --platform=node --packages=external --bundle --format=esm --outfile=dist/api/index.js 2>&1 && echo SERVER_BUILD_OK\")",
-      "Bash(\"C:\\\\Users\\\\WIN11-24H2GPT\\\\Desktop\\\\New folder\\\\wassel\\\\.env.local\")"
+      "Bash(\"C:\\\\Users\\\\WIN11-24H2GPT\\\\Desktop\\\\New folder\\\\wassel\\\\.env.local\")",
+      "Bash(cmd /c \"npx esbuild server/_core/vercel.ts --platform=node --bundle --format=cjs --outfile=api/index.js\")",
+      "Bash(cmd /c \"npx esbuild server/_core/vercel.ts --platform=node --packages=external --bundle --format=cjs --outfile=api/index.js 2>&1\")",
+      "Bash(curl -s https://wassel-alpha.vercel.app/api/health)",
+      "Bash(curl -s https://wassel-alpha.vercel.app/api/debug-env)",
+      "Bash(curl -s https://wassel-alpha.vercel.app/api/prospects/search)",
+      "Bash(cmd /c \"gh api repos/waselhup/wassel/deployments\")",
+      "Bash(where gh:*)",
+      "Bash(cmd /c \"where gh\")",
+      "Bash(npm view:*)",
+      "Bash(curl -s https://wassel-alpha.vercel.app/api/trpc)"
     ]
   }
 }

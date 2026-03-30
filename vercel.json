@@ -1,7 +1,7 @@
 {
     "version": 2,
     "installCommand": "npm install -g pnpm && pnpm install --no-frozen-lockfile",
-    "buildCommand": "pnpm run build && npx esbuild server/_core/vercel.ts --platform=node --bundle --format=cjs --outfile=api/index.js",
+    "buildCommand": "pnpm run build",
     "outputDirectory": "dist/public",
     "rewrites": [
         {

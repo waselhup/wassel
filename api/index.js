@@ -76257,7 +76257,8 @@ app.get("/api/debug-env", (_req, res) => {
   res.json({
     hasApify: !!process.env.APIFY_API_TOKEN,
     apifyPrefix: process.env.APIFY_API_TOKEN?.slice(0, 15) || "NOT SET",
-    nodeEnv: process.env.NODE_ENV
+    nodeEnv: process.env.NODE_ENV,
+    version: "v3-2026-03-30"
   });
 });
 app.use((req, res, next) => {
@@ -76288,7 +76289,7 @@ app.use("/api/messages", expressAuthMiddleware, messageRoutes_default);
 app.use("/api/stripe", stripeRoutes_default);
 app.use("/api/user", userRoutes_default);
 app.get("/api/health", (_req, res) => {
-  res.json({ ok: true, version: "v2-2026-03-29", timestamp: (/* @__PURE__ */ new Date()).toISOString() });
+  res.json({ ok: true, version: "v3-2026-03-30", timestamp: (/* @__PURE__ */ new Date()).toISOString() });
 });
 app.get("/api/proxy-image", async (req, res) => {
   const url3 = req.query.url;

@@ -30,6 +30,7 @@ app.get('/api/debug-env', (_req: any, res: any) => {
     hasApify: !!process.env.APIFY_API_TOKEN,
     apifyPrefix: process.env.APIFY_API_TOKEN?.slice(0, 15) || 'NOT SET',
     nodeEnv: process.env.NODE_ENV,
+    version: 'v3-2026-03-30',
   });
 });
 
@@ -88,7 +89,7 @@ app.use("/api/user", userRoutes);
 
 // Health check endpoint
 app.get("/api/health", (_req: any, res: any) => {
-    res.json({ ok: true, version: "v2-2026-03-29", timestamp: new Date().toISOString() });
+    res.json({ ok: true, version: "v3-2026-03-30", timestamp: new Date().toISOString() });
 });
 
 // Image proxy — avoids CORS/referrer blocks for LinkedIn photos (Bug 3)
