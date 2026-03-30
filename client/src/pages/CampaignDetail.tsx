@@ -28,7 +28,7 @@ function getTimeAgo(dateStr: string): string {
 
 // API helper for sequence endpoints
 async function seqApi(path: string, options: RequestInit = {}) {
-  const token = localStorage.getItem('supabase_access_token') || '';
+  const token = localStorage.getItem('supabase_token') || localStorage.getItem('supabase_access_token') || '';
   const res = await fetch(`${API_BASE}/sequence${path}`, {
     ...options,
     headers: {

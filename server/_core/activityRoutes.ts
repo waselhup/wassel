@@ -36,11 +36,8 @@ router.post('/', async (req: Request, res: Response) => {
                 .single();
             teamId = membership?.team_id || null;
         }
-
-        // Fallback: use userId as personal team_id for solo users without team membership
-        if (!teamId) {
-            teamId = userId;
-        }
+        // Note: DO NOT fall back to userId as team_id — it violates the FK constraint.
+        // Use user_id column instead for solo users.
 
         const { action_type, status, prospect_name, linkedin_url, campaign_id, error_message } = req.body;
 
@@ -49,7 +46,8 @@ router.post('/', async (req: Request, res: Response) => {
         }
 
         const { error } = await supabase.from('activity_logs').insert({
-            team_id: teamId,
+            user_id: userId,
+            team_id: teamId || null,
             campaign_id: campaign_id || null,
             action_type,
             status,
@@ -93,20 +91,21 @@ router.get('/', async (req: Request, res: Response) => {
             teamId = membership?.team_id || null;
         }
 
-        // Fallback: use userId as personal team_id for solo users without team membership
-        if (!teamId) {
-            teamId = userId;
-        }
-
         const limit = parseInt(req.query.limit as string) || 50;
         const campaignId = req.query.campaign_id as string;
 
+        // Filter by team_id if available, else by user_id (solo users)
         let query = supabase
             .from('activity_logs')
             .select('id, action_type, status, prospect_name, linkedin_url, error_message, executed_at, created_at')
-            .eq('team_id', teamId)
             .order('created_at', { ascending: false })
             .limit(limit);
+
+        if (teamId) {
+            query = query.eq('team_id', teamId);
+        } else {
+            query = query.eq('user_id', userId);
+        }
 
         if (campaignId) {
             query = query.eq('campaign_id', campaignId);
@@ -144,12 +143,17 @@ router.get('/debug', async (req: Request, res: Response) => {
         }
 
         // Check if table exists by querying it
-        const { data, error, count } = await supabase
+        let debugQuery = supabase
             .from('activity_logs')
             .select('*', { count: 'exact' })
-            .eq('team_id', teamId || '')
             .order('created_at', { ascending: false })
             .limit(1);
+        if (teamId) {
+            debugQuery = debugQuery.eq('team_id', teamId);
+        } else if (userId) {
+            debugQuery = debugQuery.eq('user_id', userId);
+        }
+        const { data, error, count } = await debugQuery;
 
         const tableExists = !error || error.code !== '42P01';
         res.json({
