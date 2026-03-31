@@ -51,6 +51,12 @@ export default function Messages() {
   const [filterType, setFilterType] = useState<string>('all');
   const [search, setSearch] = useState('');
 
+  // Quick Send state
+  const [quickUrl, setQuickUrl] = useState('');
+  const [quickTemplateId, setQuickTemplateId] = useState('');
+  const [quickCustomMsg, setQuickCustomMsg] = useState('');
+  const [quickSending, setQuickSending] = useState(false);
+
   // Form state
   const [editId, setEditId] = useState<string | null>(null);
   const [name, setName] = useState('');
@@ -194,6 +200,17 @@ export default function Messages() {
     inmail: { bg: 'rgba(34,197,94,0.12)', color: '#86efac' },
   };
 
+  const handleQuickSend = () => {
+    if (!quickUrl.trim()) { toast.error('أدخل رابط الملف الشخصي على LinkedIn'); return; }
+    const tpl = templates.find(t => t.id === quickTemplateId);
+    const msgText = tpl ? tpl.content : quickCustomMsg;
+    if (!msgText.trim()) { toast.error('اختر قالبًا أو اكتب رسالة'); return; }
+    setQuickSending(true);
+    window.postMessage({ type: 'WASSEL_SEND_MESSAGE', source: 'wassel-web', profileUrl: quickUrl.trim(), message: msgText }, '*');
+    toast.success('✅ تم إرسال طلب الرسالة — سيفتح LinkedIn تلقائيًا');
+    setTimeout(() => setQuickSending(false), 2000);
+  };
+
   const card: React.CSSProperties = {
     background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)',
     borderRadius: 12, padding: 24,
@@ -215,6 +232,85 @@ export default function Messages() {
           <p style={{ color: 'var(--text-secondary)', fontSize: 14, marginBottom: 24 }}>
             {t('messages.subtitle') || 'إنشاء وإدارة قوالب الرسائل لحملات LinkedIn'}
           </p>
+
+          {/* ── Quick Send ── */}
+          <div style={{ ...card, marginBottom: 24, background: 'linear-gradient(135deg,rgba(124,58,237,0.08),rgba(59,130,246,0.06))', border: '1px solid rgba(124,58,237,0.2)' }}>
+            <h2 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Send size={15} style={{ color: '#c4b5fd' }} />
+              إرسال رسالة سريعة
+            </h2>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 10, alignItems: 'end' }}>
+              {/* LinkedIn URL */}
+              <div>
+                <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>رابط الملف الشخصي</label>
+                <input
+                  value={quickUrl}
+                  onChange={e => setQuickUrl(e.target.value)}
+                  placeholder="https://linkedin.com/in/..."
+                  dir="ltr"
+                  style={{
+                    width: '100%', padding: '9px 12px', borderRadius: 8,
+                    border: '1px solid var(--border-subtle)', background: 'rgba(255,255,255,0.05)',
+                    color: 'var(--text-primary)', fontSize: 13, outline: 'none',
+                  }}
+                />
+              </div>
+              {/* Template or custom */}
+              <div>
+                <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>القالب (أو اكتب رسالة أدناه)</label>
+                <select
+                  value={quickTemplateId}
+                  onChange={e => setQuickTemplateId(e.target.value)}
+                  style={{
+                    width: '100%', padding: '9px 12px', borderRadius: 8,
+                    border: '1px solid var(--border-subtle)', background: 'rgba(255,255,255,0.05)',
+                    color: 'var(--text-primary)', fontSize: 13, outline: 'none',
+                  }}
+                >
+                  <option value="">— رسالة مخصصة —</option>
+                  {templates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                </select>
+              </div>
+              {/* Send button */}
+              <button
+                onClick={handleQuickSend}
+                disabled={quickSending}
+                style={{
+                  padding: '9px 20px', borderRadius: 8, fontSize: 13, fontWeight: 700,
+                  background: 'var(--gradient-primary)', border: 'none', color: '#fff',
+                  cursor: quickSending ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 6,
+                  opacity: quickSending ? 0.7 : 1,
+                }}
+              >
+                {quickSending ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+                إرسال
+              </button>
+            </div>
+            {/* Custom message (shown when no template selected) */}
+            {!quickTemplateId && (
+              <textarea
+                value={quickCustomMsg}
+                onChange={e => setQuickCustomMsg(e.target.value.slice(0, 500))}
+                placeholder="اكتب رسالتك المخصصة هنا..."
+                rows={3}
+                style={{
+                  width: '100%', padding: '10px 12px', borderRadius: 8, marginTop: 10,
+                  border: '1px solid var(--border-subtle)', background: 'rgba(255,255,255,0.04)',
+                  color: 'var(--text-primary)', fontSize: 13, resize: 'vertical',
+                  fontFamily: 'inherit', outline: 'none',
+                }}
+              />
+            )}
+            {/* Preview selected template */}
+            {quickTemplateId && templates.find(t => t.id === quickTemplateId) && (
+              <div style={{ marginTop: 10, padding: 10, borderRadius: 8, background: 'rgba(255,255,255,0.02)', border: '1px dashed var(--border-subtle)' }}>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>معاينة</div>
+                <p style={{ fontSize: 12, color: 'var(--text-primary)', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+                  {previewContent(templates.find(t => t.id === quickTemplateId)!.content)}
+                </p>
+              </div>
+            )}
+          </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '55% 1fr', gap: 20, alignItems: 'start' }}>
             {/* LEFT — Create/Edit Template */}

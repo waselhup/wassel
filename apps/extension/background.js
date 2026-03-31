@@ -284,72 +284,40 @@ async function doInvite(url, note, stepId, name) {
   try {
     const tab = await chrome.tabs.create({ url, active: true });
     tabId = tab.id;
-    await sleep(5000);
 
-    // Click Connect button
-    const result = await chrome.scripting.executeScript({
-      target: { tabId },
-      func: () => {
-        const allBtns = Array.from(document.querySelectorAll('button'));
-        const connectBtn = allBtns.find(b => {
-          const text = (b.innerText || '').trim();
-          const label = b.getAttribute('aria-label') || '';
-          return text === 'Connect' || label.includes('Connect') || text.includes('Connect');
-        });
-        if (connectBtn) { connectBtn.click(); return { found: true }; }
-        // Try "More" dropdown first
-        const moreBtn = allBtns.find(b => (b.innerText || '').trim() === 'More');
-        if (moreBtn) { moreBtn.click(); return { found: false, moreClicked: true }; }
-        return { found: false, buttons: allBtns.slice(0, 10).map(b => (b.innerText || '').trim()).filter(Boolean) };
-      },
+    // Wait for page to fully load (up to 15s)
+    await new Promise(resolve => {
+      const listener = (id, changeInfo) => {
+        if (id === tabId && changeInfo.status === 'complete') {
+          chrome.tabs.onUpdated.removeListener(listener);
+          resolve();
+        }
+      };
+      chrome.tabs.onUpdated.addListener(listener);
+      setTimeout(() => { chrome.tabs.onUpdated.removeListener(listener); resolve(); }, 15000);
     });
 
-    let r = result?.[0]?.result;
-    console.log('[Wassel] Connect click result:', JSON.stringify(r));
+    await ensureContentScript(tabId);
 
-    // If "More" was clicked, wait and try Connect again from dropdown
-    if (r?.moreClicked) {
-      await sleep(1500);
-      const retry = await chrome.scripting.executeScript({
-        target: { tabId },
-        func: () => {
-          const items = Array.from(document.querySelectorAll('[role="menuitem"], button, li'));
-          const connectItem = items.find(el => (el.innerText || '').trim().includes('Connect'));
-          if (connectItem) { connectItem.click(); return { found: true }; }
-          return { found: false };
-        },
-      });
-      r = retry?.[0]?.result;
-      console.log('[Wassel] Retry Connect from More:', JSON.stringify(r));
+    // Delegate to content.js which has robust multi-method Connect detection
+    const result = await chrome.tabs.sendMessage(tabId, { type: 'SEND_INVITE', note: note || '' });
+    console.log('[Wassel] SEND_INVITE result:', JSON.stringify(result));
+
+    if (result?.ok) {
+      await incrementLimit('invites');
+      await updateStepStatus(stepId, 'completed');
+      console.log(`[Wassel] ✅ Invite sent to: ${name}`);
+      return { ok: true };
+    } else {
+      const errMsg = result?.error || 'Connect button not found';
+      await updateStepStatus(stepId, 'failed', errMsg);
+      console.warn(`[Wassel] ⚠️ Invite failed for ${name}:`, errMsg);
+      return { ok: false, error: errMsg };
     }
-
-    if (!r?.found) {
-      await updateStepStatus(stepId, 'failed', 'Connect button not found');
-      return;
-    }
-
-    await sleep(2000);
-
-    // Click Send (with or without note)
-    await chrome.scripting.executeScript({
-      target: { tabId },
-      func: () => {
-        const btns = Array.from(document.querySelectorAll('button'));
-        const sendBtn = btns.find(b => {
-          const text = (b.innerText || '').trim();
-          return text.includes('Send') || text.includes('without');
-        });
-        if (sendBtn) sendBtn.click();
-      },
-    });
-
-    await sleep(2000);
-    await incrementLimit('invites');
-    await updateStepStatus(stepId, 'completed');
-    console.log(`[Wassel] ✅ Invite sent to: ${name}`);
   } catch (e) {
     console.error(`[Wassel] Invite error for ${name}:`, e.message);
     await updateStepStatus(stepId, 'failed', e.message);
+    return { ok: false, error: e.message };
   } finally {
     await sleep(1000);
     if (tabId) { try { await chrome.tabs.remove(tabId); } catch {} }
@@ -362,66 +330,39 @@ async function doMessage(url, message, stepId, name) {
   try {
     const tab = await chrome.tabs.create({ url, active: true });
     tabId = tab.id;
-    await sleep(5000);
 
-    const result = await chrome.scripting.executeScript({
-      target: { tabId },
-      func: (msgText) => {
-        const btns = Array.from(document.querySelectorAll('button'));
-        const msgBtn = btns.find(b => {
-          const text = (b.innerText || '').trim();
-          return text === 'Message' || text.includes('Message');
-        });
-        if (!msgBtn) return { success: false, error: 'Message button not found' };
-        msgBtn.click();
-        return { success: true };
-      },
-      args: [message],
-    });
-
-    const r = result?.[0]?.result;
-    if (!r?.success) {
-      await updateStepStatus(stepId, 'failed', r?.error || 'Message button not found');
-      return;
-    }
-
-    await sleep(2000);
-
-    // Type message in the messaging box
-    await chrome.scripting.executeScript({
-      target: { tabId },
-      func: (msgText) => {
-        const box = document.querySelector('[role="textbox"]') ||
-                    document.querySelector('.msg-form__contenteditable') ||
-                    document.querySelector('[contenteditable="true"]');
-        if (box) {
-          box.focus();
-          box.innerHTML = `<p>${msgText}</p>`;
-          box.dispatchEvent(new Event('input', { bubbles: true }));
+    // Wait for page to fully load (up to 15s)
+    await new Promise(resolve => {
+      const listener = (id, changeInfo) => {
+        if (id === tabId && changeInfo.status === 'complete') {
+          chrome.tabs.onUpdated.removeListener(listener);
+          resolve();
         }
-      },
-      args: [message],
+      };
+      chrome.tabs.onUpdated.addListener(listener);
+      setTimeout(() => { chrome.tabs.onUpdated.removeListener(listener); resolve(); }, 15000);
     });
 
-    await sleep(1500);
+    await ensureContentScript(tabId);
 
-    // Click Send
-    await chrome.scripting.executeScript({
-      target: { tabId },
-      func: () => {
-        const btns = Array.from(document.querySelectorAll('button'));
-        const send = btns.find(b => (b.innerText || '').trim() === 'Send' || b.getAttribute('type') === 'submit');
-        if (send) send.click();
-      },
-    });
+    // Delegate to content.js which handles clicking Message, typing, and sending
+    const result = await chrome.tabs.sendMessage(tabId, { type: 'SEND_MESSAGE', content: message });
+    console.log('[Wassel] SEND_MESSAGE result:', JSON.stringify(result));
 
-    await sleep(2000);
-    await incrementLimit('messages');
-    await updateStepStatus(stepId, 'completed');
-    console.log(`[Wassel] ✅ Message sent to: ${name}`);
+    if (result?.ok) {
+      await incrementLimit('messages');
+      await updateStepStatus(stepId, 'completed');
+      console.log(`[Wassel] ✅ Message sent to: ${name}`);
+      return { ok: true };
+    } else {
+      const errMsg = result?.error || 'Message failed';
+      await updateStepStatus(stepId, 'failed', errMsg);
+      return { ok: false, error: errMsg };
+    }
   } catch (e) {
     console.error(`[Wassel] Message error for ${name}:`, e.message);
     await updateStepStatus(stepId, 'failed', e.message);
+    return { ok: false, error: e.message };
   } finally {
     await sleep(1000);
     if (tabId) { try { await chrome.tabs.remove(tabId); } catch {} }
@@ -487,7 +428,8 @@ async function executeAction(item) {
         actionStatus = 'skipped';
         actionError = 'Daily invite limit reached';
       } else {
-        await doInvite(url, message, stepId, name);
+        const inviteResult = await doInvite(url, message, stepId, name);
+        if (!inviteResult?.ok) { actionStatus = 'failed'; actionError = inviteResult?.error || 'Invite failed'; }
       }
     } else if (stepType === 'message' || stepType === 'follow' || stepType === 'follow_up') {
       const allowed = await checkDailyLimit('message');
@@ -497,7 +439,8 @@ async function executeAction(item) {
         actionStatus = 'skipped';
         actionError = 'Daily message limit reached';
       } else {
-        await doMessage(url, message, stepId, name);
+        const msgResult = await doMessage(url, message, stepId, name);
+        if (!msgResult?.ok) { actionStatus = 'failed'; actionError = msgResult?.error || 'Message failed'; }
       }
     } else {
       console.log(`[Wassel] ⚠️ Unknown step type: ${stepType}`);
@@ -1038,32 +981,27 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         // Find an open LinkedIn feed tab
         const tabs = await chrome.tabs.query({ url: '*://*.linkedin.com/*' });
         let targetTab = tabs.find(t => t.url && t.url.includes('/feed'));
-
-        if (!targetTab && tabs.length > 0) {
-          targetTab = tabs[0];
-        }
+        if (!targetTab && tabs.length > 0) targetTab = tabs[0];
 
         if (targetTab && targetTab.id) {
-          // Forward to content.js on that tab
-          await safeSendMessage(targetTab.id, {
-            type: 'PUBLISH_POST',
+          await ensureContentScript(targetTab.id);
+          // Use DO_LINKEDIN_POST to avoid triggering this same handler on the content side
+          const r = await safeSendMessage(targetTab.id, {
+            type: 'DO_LINKEDIN_POST',
             content: message.content,
             postId: message.postId,
           });
-          sendResponse({ ok: true, tabId: targetTab.id });
+          sendResponse({ ok: true, tabId: targetTab.id, result: r });
         } else {
-          // No LinkedIn tab — open one
+          // No LinkedIn tab open — create one (safeSendMessage waits for load)
           const newTab = await chrome.tabs.create({ url: 'https://www.linkedin.com/feed/' });
-          // Wait for tab to load
-          await new Promise(r => setTimeout(r, 4000));
-          if (newTab.id) {
-            await safeSendMessage(newTab.id, {
-              type: 'PUBLISH_POST',
-              content: message.content,
-              postId: message.postId,
-            });
-          }
-          sendResponse({ ok: true, tabId: newTab.id });
+          await ensureContentScript(newTab.id);
+          const r = await safeSendMessage(newTab.id, {
+            type: 'DO_LINKEDIN_POST',
+            content: message.content,
+            postId: message.postId,
+          });
+          sendResponse({ ok: true, tabId: newTab.id, result: r });
         }
       } catch (err) {
         console.error('[Wassel] PUBLISH_POST forward error:', err);
@@ -1072,5 +1010,41 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     })();
 
     return true; // async
+  }
+});
+
+// ─── SEND_MESSAGE_TO_PROSPECT: Open profile and send direct message ───
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === 'SEND_MESSAGE_TO_PROSPECT' && message.profileUrl) {
+    console.log('[Wassel] 📨 SEND_MESSAGE_TO_PROSPECT:', message.profileUrl);
+
+    (async () => {
+      try {
+        const tab = await chrome.tabs.create({ url: message.profileUrl, active: true });
+        // Wait for page load
+        await new Promise(resolve => {
+          const listener = (id, changeInfo) => {
+            if (id === tab.id && changeInfo.status === 'complete') {
+              chrome.tabs.onUpdated.removeListener(listener);
+              resolve();
+            }
+          };
+          chrome.tabs.onUpdated.addListener(listener);
+          setTimeout(() => { chrome.tabs.onUpdated.removeListener(listener); resolve(); }, 15000);
+        });
+        await ensureContentScript(tab.id);
+        const r = await chrome.tabs.sendMessage(tab.id, {
+          type: 'SEND_DIRECT_MESSAGE',
+          profileUrl: message.profileUrl,
+          message: message.message,
+        });
+        sendResponse({ ok: true, result: r });
+      } catch (err) {
+        console.error('[Wassel] SEND_MESSAGE_TO_PROSPECT error:', err);
+        sendResponse({ ok: false, error: err.message });
+      }
+    })();
+
+    return true;
   }
 });

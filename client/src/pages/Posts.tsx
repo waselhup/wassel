@@ -145,9 +145,7 @@ export default function Posts() {
         }
       }
 
-      // 4. Open LinkedIn in a new tab so the extension can fill the post
-      window.open('https://www.linkedin.com/feed/', '_blank');
-
+      // Background.js opens the LinkedIn tab automatically — no need to open here
       setContent('');
       toast.success(t('posts.openLinkedIn'));
       fetchPosts();
