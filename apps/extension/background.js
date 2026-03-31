@@ -518,12 +518,25 @@ async function processQueue() {
   isProcessing = true;
 
   try {
-    let res = await fetch(`${API_BASE}/sequence/queue/active`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
+    let res;
+    try {
+      res = await fetch(`${API_BASE}/sequence/queue/active`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+    } catch (fetchErr) {
+      // Service worker wake-up can cause "Failed to fetch" — retry once after 3s
+      console.warn('[Wassel] ⚠️ Fetch failed, retrying in 3s...', fetchErr.message);
+      await new Promise(r => setTimeout(r, 3000));
+      res = await fetch(`${API_BASE}/sequence/queue/active`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+    }
 
     // Handle 401 — token expired, resync and retry once
     if (res.status === 401) {

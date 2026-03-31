@@ -230,7 +230,7 @@
                 });
 
             if (!msgBtn) return { ok: false, error: 'Message button not found' };
-            (msgBtn as HTMLElement).click();
+            msgBtn.click();
             await sleep(2000);
 
             // Find message input box
@@ -241,7 +241,7 @@
 
             if (!msgBox) return { ok: false, error: 'Message box not found' };
 
-            (msgBox as HTMLElement).focus();
+            msgBox.focus();
             msgBox.innerHTML = '';
             document.execCommand('insertText', false, content);
             msgBox.dispatchEvent(new Event('input', { bubbles: true }));
@@ -255,14 +255,14 @@
                     (b.getAttribute('type') === 'submit' && (b.textContent || '').toLowerCase().includes('send'))
                 );
 
-            if (submitBtn && !(submitBtn as HTMLButtonElement).disabled) {
-                (submitBtn as HTMLElement).click();
+            if (submitBtn && !submitBtn.disabled) {
+                submitBtn.click();
                 return { ok: true };
             }
             return { ok: false, error: 'Submit button not found or disabled' };
         } catch (err) {
             console.error('[Wassel] Message error:', err);
-            return { ok: false, error: (err as Error).message };
+            return { ok: false, error: err.message };
         }
     }
 
@@ -361,7 +361,7 @@
                 });
 
             if (!msgBtn) return { ok: false, error: 'Message button not found on profile' };
-            (msgBtn as HTMLElement).click();
+            msgBtn.click();
             await sleep(3000);
 
             // Find message input
@@ -372,7 +372,7 @@
 
             if (!msgInput) return { ok: false, error: 'Message input not found' };
 
-            (msgInput as HTMLElement).focus();
+            msgInput.focus();
             msgInput.innerHTML = '';
             document.execCommand('insertText', false, message);
             msgInput.dispatchEvent(new Event('input', { bubbles: true }));
@@ -383,8 +383,8 @@
                 document.querySelector('.msg-form__send-button') ||
                 document.querySelector('button[type="submit"].msg-form__send-button');
 
-            if (sendBtn && !(sendBtn as HTMLButtonElement).disabled) {
-                (sendBtn as HTMLElement).click();
+            if (sendBtn && !sendBtn.disabled) {
+                sendBtn.click();
                 showNotification('✅ تم إرسال الرسالة', 'success');
                 return { ok: true };
             }
@@ -394,7 +394,7 @@
             return { ok: true, manual: true };
         } catch (err) {
             console.error('[Wassel] sendDirectMessage error:', err);
-            return { ok: false, error: (err as Error).message };
+            return { ok: false, error: err.message };
         }
     }
 
