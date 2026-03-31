@@ -102,113 +102,117 @@
         }
     });
 
-    // ── LinkedIn: click "Connect" button on a profile page ──
+    // ── LinkedIn 2026: click "Connect" button on a profile page ──
     async function doSendInvite(note) {
         try {
-            await sleep(2000); // Wait for page to fully settle
+            await sleep(3000); // Wait for profile to fully load
 
+            // STEP 1: Find Connect button
             let connectBtn = null;
+            const allButtons = Array.from(document.querySelectorAll('button'));
 
-            // Method 1: aria-label with "Invite" or "Connect"
-            connectBtn =
-                document.querySelector('button[aria-label*="Invite"][aria-label*="connect" i]') ||
-                document.querySelector('button.pvs-profile-actions__action[aria-label*="Connect" i]') ||
-                document.querySelector('button.artdeco-button--primary[aria-label*="Connect" i]');
-
-            // Method 2: Button text === "Connect" (exact match)
-            if (!connectBtn) {
-                const buttons = Array.from(document.querySelectorAll('button'));
-                connectBtn = buttons.find(b => {
-                    const text = (b.innerText || b.textContent || '').trim();
-                    return text === 'Connect' || text === 'اتصال';
-                }) || null;
+            // Pattern A: scan all buttons for Connect text/aria-label
+            for (const btn of allButtons) {
+                const label = (btn.getAttribute('aria-label') || '').toLowerCase();
+                const text = (btn.textContent || '').trim().toLowerCase();
+                if ((label.includes('connect') && !label.includes('disconnect')) ||
+                    text === 'connect' || text === 'اتصال') {
+                    connectBtn = btn;
+                    break;
+                }
             }
 
-            // Method 3: "More" dropdown → Connect
+            // Pattern B: "More" dropdown → Connect
             if (!connectBtn) {
-                const moreBtn =
-                    document.querySelector('button[aria-label="More actions"]') ||
-                    document.querySelector('button[aria-label*="More" i][aria-label*="action" i]') ||
-                    Array.from(document.querySelectorAll('button')).find(b =>
-                        (b.innerText || '').trim() === 'More'
-                    );
+                const moreBtn = allButtons.find(btn => {
+                    const label = (btn.getAttribute('aria-label') || '').toLowerCase();
+                    return label.includes('more action') || label.includes('المزيد');
+                }) || allButtons.find(btn => (btn.textContent || '').trim() === 'More');
 
                 if (moreBtn) {
                     moreBtn.click();
-                    await sleep(1200);
-                    // Find Connect in dropdown
-                    const menuItems = Array.from(document.querySelectorAll(
-                        '[role="menuitem"], .artdeco-dropdown__content-inner li, [role="option"]'
-                    ));
-                    const connectItem = menuItems.find(el =>
-                        (el.textContent || '').toLowerCase().includes('connect') ||
-                        (el.textContent || '').includes('اتصال')
+                    await sleep(1500);
+                    const dropdownItems = Array.from(
+                        document.querySelectorAll('[role="menuitem"], .artdeco-dropdown__item, .artdeco-dropdown__content-inner li')
                     );
-                    if (connectItem) {
-                        (connectItem as HTMLElement).click();
-                        connectBtn = connectItem as HTMLElement;
+                    for (const item of dropdownItems) {
+                        const text = (item.textContent || '').toLowerCase();
+                        if (text.includes('connect') || text.includes('اتصال')) {
+                            connectBtn = item;
+                            break;
+                        }
                     }
                 }
             }
 
             if (!connectBtn) {
-                console.log('[Wassel] Connect button not found — may already be connected');
-                return { ok: false, error: 'Connect button not found' };
+                console.log('[Wassel] No Connect button — possibly already connected');
+                return { ok: false, error: 'no_connect_button' };
             }
 
-            // Only click if not already clicked via More menu
-            if (!connectBtn.closest('[role="menu"]')) {
-                connectBtn.click();
-            }
+            console.log('[Wassel] Found Connect button, clicking...');
+            connectBtn.click();
+            await sleep(2500);
 
-            await sleep(2000);
-
-            // Handle invite note
-            if (note) {
-                const addNoteBtn = Array.from(document.querySelectorAll('button')).find(b =>
-                    (b.textContent || '').toLowerCase().includes('add a note') ||
-                    (b.getAttribute('aria-label') || '').toLowerCase().includes('add a note')
-                );
+            // STEP 2: Handle the modal — "Add a note" or direct send
+            if (note && note.trim()) {
+                const addNoteBtn = Array.from(document.querySelectorAll('button')).find(btn => {
+                    const label = (btn.getAttribute('aria-label') || '').toLowerCase();
+                    const text = (btn.textContent || '').trim().toLowerCase();
+                    return label.includes('add a note') || text.includes('add a note') ||
+                           text.includes('إضافة ملاحظة');
+                });
                 if (addNoteBtn) {
                     addNoteBtn.click();
-                    await sleep(1000);
-                    const noteArea =
-                        document.querySelector('textarea[name="message"]') ||
-                        document.querySelector('#custom-message') ||
-                        document.querySelector('textarea.connect-button-send-invite__custom-message');
-                    if (noteArea) {
-                        (noteArea as HTMLTextAreaElement).value = '';
-                        (noteArea as HTMLTextAreaElement).focus();
-                        document.execCommand('insertText', false, note);
-                        noteArea.dispatchEvent(new Event('input', { bubbles: true }));
+                    await sleep(1500);
+                    const textarea = document.querySelector(
+                        'textarea[name="message"], textarea#custom-message, ' +
+                        'textarea.connect-button-send-invite__custom-message, ' +
+                        '.artdeco-modal textarea'
+                    );
+                    if (textarea) {
+                        textarea.focus();
+                        textarea.value = '';
+                        textarea.value = note;
+                        textarea.dispatchEvent(new Event('input', { bubbles: true }));
+                        textarea.dispatchEvent(new Event('change', { bubbles: true }));
                         await sleep(500);
                     }
                 }
             }
 
+            // STEP 3: Click Send
             await sleep(1000);
-
-            // Click Send / Send without a note / Send now
-            const sendBtn =
-                document.querySelector('button[aria-label="Send now"]') ||
-                document.querySelector('button[aria-label="Send without a note"]') ||
-                document.querySelector('button.artdeco-button--primary[aria-label*="Send" i]') ||
-                Array.from(document.querySelectorAll('button.artdeco-button--primary')).find(b =>
-                    (b.textContent || '').trim().toLowerCase().includes('send') ||
-                    (b.textContent || '').includes('إرسال')
-                );
+            const sendBtn = Array.from(document.querySelectorAll('button')).find(btn => {
+                const label = (btn.getAttribute('aria-label') || '').toLowerCase();
+                const text = (btn.textContent || '').trim().toLowerCase();
+                return label.includes('send') || text === 'send' ||
+                       text === 'send without a note' || text === 'إرسال' ||
+                       text === 'send now' || text === 'send invitation';
+            });
 
             if (sendBtn) {
-                (sendBtn as HTMLElement).click();
-                await sleep(1500);
-                console.log('[Wassel] ✅ Invite sent');
+                sendBtn.click();
+                await sleep(2000);
+                console.log('[Wassel] ✅ Invite SENT successfully');
                 return { ok: true };
             }
 
-            return { ok: false, error: 'Send button not found' };
+            // Fallback: click any primary button in modal
+            const primaryBtn = document.querySelector(
+                '.artdeco-modal button.artdeco-button--primary'
+            );
+            if (primaryBtn) {
+                primaryBtn.click();
+                await sleep(1500);
+                console.log('[Wassel] ✅ Invite sent via primary button');
+                return { ok: true };
+            }
+
+            return { ok: false, error: 'send_button_not_found' };
         } catch (err) {
             console.error('[Wassel] Invite error:', err);
-            return { ok: false, error: (err as Error).message };
+            return { ok: false, error: err.message };
         }
     }
 
@@ -262,104 +266,84 @@
         }
     }
 
-    // ── LinkedIn: fill post composer and notify user to click Post ──
-    async function doLinkedInPost(content, postId?) {
+    // ── LinkedIn 2026: fill post composer and AUTO-SUBMIT ──
+    async function doLinkedInPost(content, postId) {
         try {
-            await sleep(2000); // Wait for feed to load
+            await sleep(2500); // Wait for feed to load
 
-            // Click "Start a post" — try multiple selectors
-            let opened = false;
-
-            // Try the share-box button directly
-            const shareTrigger =
-                document.querySelector('button.share-box-feed-entry__trigger') ||
-                document.querySelector('[data-control-name="share.sharebox_text"]') ||
-                document.querySelector('.share-box-feed-entry__top-bar') ||
-                document.querySelector('[class*="share-box-feed-entry__top"]');
-
-            if (shareTrigger) {
-                (shareTrigger as HTMLElement).click();
-                opened = true;
+            // STEP 1: Click "Start a post"
+            const startBtn = Array.from(document.querySelectorAll('button, div[role="button"]')).find(el => {
+                const text = (el.textContent || '').toLowerCase();
+                const label = (el.getAttribute('aria-label') || '').toLowerCase();
+                return text.includes('start a post') || label.includes('start a post') ||
+                       text.includes('ابدأ منشور') ||
+                       el.classList.contains('share-box-feed-entry__trigger');
+            });
+            if (startBtn) {
+                startBtn.click();
+                await sleep(3000);
+            } else {
+                const shareBox = document.querySelector('.share-box-feed-entry__top-bar, .share-creation-state');
+                if (shareBox) { shareBox.click(); await sleep(3000); }
             }
 
-            if (!opened) {
-                // Fallback: look for any button with "start a post" text
-                const btn = Array.from(document.querySelectorAll('button, [role="button"]')).find(b =>
-                    (b.textContent || '').toLowerCase().includes('start a post') ||
-                    (b.getAttribute('aria-label') || '').toLowerCase().includes('start a post') ||
-                    (b.getAttribute('placeholder') || '').toLowerCase().includes('start a post')
-                );
-                if (btn) {
-                    (btn as HTMLElement).click();
-                    opened = true;
-                }
-            }
-
-            await sleep(3000);
-
-            // Find the editor — LinkedIn uses contenteditable div
-            const editor =
-                document.querySelector('.ql-editor[contenteditable="true"]') ||
-                document.querySelector('[data-placeholder][contenteditable="true"]') ||
-                document.querySelector('[role="textbox"][contenteditable="true"]') ||
-                document.querySelector('.editor-content [contenteditable="true"]') ||
-                document.querySelector('[contenteditable="true"].share-creation-state__text-editor');
+            // STEP 2: Find editor and fill content
+            await sleep(1000);
+            const editor = document.querySelector(
+                '.ql-editor[contenteditable="true"], ' +
+                '[role="textbox"][contenteditable="true"], ' +
+                '.editor-content [contenteditable="true"], ' +
+                '.share-creation-state__text-editor [contenteditable], ' +
+                '[data-placeholder][contenteditable="true"]'
+            );
 
             if (!editor) {
-                console.error('[Wassel] LinkedIn post editor not found');
-                showNotification('❌ لم يتم العثور على محرر LinkedIn — افتح linkedin.com/feed أولاً', 'error');
+                console.error('[Wassel] Editor not found');
+                showNotification('❌ لم يتم العثور على محرر LinkedIn', 'error');
                 return { ok: false, error: 'Editor not found' };
             }
 
-            (editor as HTMLElement).focus();
-            await sleep(300);
-
-            // Method 1: Clipboard paste (most reliable for LinkedIn)
-            try {
-                const dt = new DataTransfer();
-                dt.setData('text/plain', content);
-                const pasteEvent = new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true });
-                editor.dispatchEvent(pasteEvent);
-                await sleep(300);
-            } catch (_) {}
-
-            // Method 2: execCommand
-            if (!(editor as HTMLElement).innerText?.trim()) {
-                (editor as HTMLElement).focus();
-                document.execCommand('selectAll', false, undefined);
-                document.execCommand('insertText', false, content);
-                await sleep(300);
-            }
-
-            // Method 3: innerHTML fallback
-            if (!(editor as HTMLElement).innerText?.trim()) {
-                editor.innerHTML = content.split('\n').map(line =>
-                    `<p>${line || '<br>'}</p>`
-                ).join('');
-                editor.dispatchEvent(new InputEvent('input', { bubbles: true }));
-            }
-
+            editor.focus();
             await sleep(500);
+            editor.innerHTML = '';
 
-            // Highlight Post button
-            const postBtn = Array.from(document.querySelectorAll('button')).find(b => {
-                const text = (b.textContent || '').trim();
-                const label = b.getAttribute('aria-label') || '';
-                return text === 'Post' || label === 'Post' || text === 'نشر';
+            // Insert text line by line using execCommand
+            const lines = content.split('\n');
+            for (let i = 0; i < lines.length; i++) {
+                document.execCommand('insertText', false, lines[i]);
+                if (i < lines.length - 1) {
+                    document.execCommand('insertLineBreak');
+                }
+            }
+            editor.dispatchEvent(new Event('input', { bubbles: true }));
+            await sleep(2000);
+
+            // STEP 3: AUTO-CLICK the Post button
+            const postBtn = Array.from(document.querySelectorAll('button')).find(btn => {
+                const label = (btn.getAttribute('aria-label') || '').toLowerCase();
+                const text = (btn.textContent || '').trim().toLowerCase();
+                const cls = btn.className || '';
+                return (label.includes('post') && !label.includes('repost')) ||
+                       (text === 'post') || (text === 'نشر') ||
+                       cls.includes('share-actions__primary-action');
             });
-            if (postBtn) {
-                postBtn.style.boxShadow = '0 0 0 3px #7c3aed, 0 0 24px rgba(124,58,237,0.6)';
-                postBtn.style.transform = 'scale(1.05)';
-                postBtn.style.transition = 'all 0.2s ease';
+
+            if (postBtn && !postBtn.disabled) {
+                console.log('[Wassel] Auto-clicking Post button...');
+                postBtn.click();
+                await sleep(3000);
+                console.log('[Wassel] ✅ Post published automatically!');
+                showNotification('✅ تم نشر المنشور على LinkedIn', 'success');
+                return { ok: true };
             }
 
-            showNotification('✨ وصل — المحتوى جاهز! اضغط Post للنشر', 'success');
-            console.log('[Wassel] ✅ Post content filled');
-            return { ok: true };
+            console.log('[Wassel] Post button not found or disabled');
+            showNotification('⚠️ المحتوى جاهز — قد تحتاج الضغط على Post يدوياً', 'error');
+            return { ok: false, error: 'post_button_not_found' };
         } catch (err) {
-            console.error('[Wassel] Post helper error:', err);
+            console.error('[Wassel] Post error:', err);
             showNotification('❌ فشل تعبئة المنشور', 'error');
-            return { ok: false, error: (err as Error).message };
+            return { ok: false, error: err.message };
         }
     }
 
@@ -415,7 +399,7 @@
     }
 
     // ── Notification banner ──
-    function showNotification(message, type: 'success' | 'error' = 'success') {
+    function showNotification(message, type = 'success') {
         const existing = document.getElementById('wassel-notify');
         if (existing) existing.remove();
 
@@ -424,16 +408,16 @@
         div.style.cssText = `
             position:fixed; bottom:24px; right:24px; z-index:999999;
             padding:16px 24px; border-radius:16px; font-size:14px;
-            font-family:'Cairo',sans-serif; color:white; cursor:pointer;
+            font-family:Cairo,sans-serif; color:white; cursor:pointer;
             box-shadow:0 8px 32px rgba(0,0,0,0.3);
             ${type === 'success'
-                ? 'background:linear-gradient(135deg,#6366f1,#8b5cf6);'
-                : 'background:linear-gradient(135deg,#ef4444,#f97316);'}
+                ? 'background:linear-gradient(135deg,#22c55e,#16a34a);'
+                : 'background:linear-gradient(135deg,#f59e0b,#d97706);'}
         `;
         div.textContent = message;
         div.onclick = () => div.remove();
         document.body.appendChild(div);
-        setTimeout(() => { if (div.parentNode) div.remove(); }, 15000);
+        setTimeout(() => { if (div.parentNode) div.remove(); }, 10000);
     }
 
     function sleep(ms) {

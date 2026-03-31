@@ -6,7 +6,8 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import {
   Sparkles, Save, Trash2, Edit3, Copy, Search,
-  MessageSquare, Loader2, Plus, X, Send,
+  MessageSquare, Loader2, Plus, X, Send, Clock,
+  User,
 } from 'lucide-react';
 
 type MessageType = 'connection_note' | 'follow_up' | 'inmail';
@@ -52,10 +53,13 @@ export default function Messages() {
   const [search, setSearch] = useState('');
 
   // Quick Send state
-  const [quickUrl, setQuickUrl] = useState('');
+  const [prospects, setProspects] = useState<any[]>([]);
+  const [prospectSearch, setProspectSearch] = useState('');
+  const [selectedProspect, setSelectedProspect] = useState<any>(null);
   const [quickTemplateId, setQuickTemplateId] = useState('');
   const [quickCustomMsg, setQuickCustomMsg] = useState('');
   const [quickSending, setQuickSending] = useState(false);
+  const [messageHistory, setMessageHistory] = useState<any[]>([]);
 
   // Form state
   const [editId, setEditId] = useState<string | null>(null);
@@ -84,6 +88,24 @@ export default function Messages() {
   };
 
   useEffect(() => { fetchTemplates(); }, [filterType]);
+
+  // Fetch prospects + load message history
+  useEffect(() => {
+    async function loadProspects() {
+      try {
+        const res = await fetch('/api/ext/prospects', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setProspects(data.prospects || data || []);
+        }
+      } catch {}
+    }
+    if (token) loadProspects();
+    const saved = localStorage.getItem('wassel-message-history');
+    if (saved) try { setMessageHistory(JSON.parse(saved)); } catch {}
+  }, []);
 
   const resetForm = () => {
     setEditId(null);
@@ -200,16 +222,43 @@ export default function Messages() {
     inmail: { bg: 'rgba(34,197,94,0.12)', color: '#86efac' },
   };
 
+  const filteredProspects = prospects.filter(p => {
+    if (!prospectSearch) return false; // only show when searching
+    const q = prospectSearch.toLowerCase();
+    return (p.name || '').toLowerCase().includes(q) ||
+           (p.title || '').toLowerCase().includes(q) ||
+           (p.company || '').toLowerCase().includes(q);
+  });
+
   const handleQuickSend = () => {
-    if (!quickUrl.trim()) { toast.error('أدخل رابط الملف الشخصي على LinkedIn'); return; }
+    if (!selectedProspect?.linkedin_url) { toast.error('اختر عميلاً أولاً'); return; }
     const tpl = templates.find(t => t.id === quickTemplateId);
     const msgText = tpl ? tpl.content : quickCustomMsg;
     if (!msgText.trim()) { toast.error('اختر قالبًا أو اكتب رسالة'); return; }
     setQuickSending(true);
-    window.postMessage({ type: 'WASSEL_SEND_MESSAGE', source: 'wassel-web', profileUrl: quickUrl.trim(), message: msgText }, '*');
-    toast.success('✅ تم إرسال طلب الرسالة — سيفتح LinkedIn تلقائيًا');
+    window.postMessage({
+      type: 'WASSEL_SEND_MESSAGE', source: 'wassel-web',
+      profileUrl: selectedProspect.linkedin_url, message: msgText,
+    }, '*');
+
+    // Save to history
+    const entry = {
+      id: Date.now(), prospect: selectedProspect,
+      message: msgText, sentAt: new Date().toISOString(),
+    };
+    const updated = [entry, ...messageHistory].slice(0, 100);
+    setMessageHistory(updated);
+    localStorage.setItem('wassel-message-history', JSON.stringify(updated));
+
+    toast.success('✅ تم إرسال طلب الرسالة');
+    setSelectedProspect(null);
+    setQuickCustomMsg('');
+    setQuickTemplateId('');
     setTimeout(() => setQuickSending(false), 2000);
   };
+
+  const getInitials = (name: string) =>
+    (name || '?').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
 
   const card: React.CSSProperties = {
     background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)',
@@ -233,84 +282,203 @@ export default function Messages() {
             {t('messages.subtitle') || 'إنشاء وإدارة قوالب الرسائل لحملات LinkedIn'}
           </p>
 
-          {/* ── Quick Send ── */}
+          {/* ── Quick Send with Prospect Search ── */}
           <div style={{ ...card, marginBottom: 24, background: 'linear-gradient(135deg,rgba(124,58,237,0.08),rgba(59,130,246,0.06))', border: '1px solid rgba(124,58,237,0.2)' }}>
             <h2 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
               <Send size={15} style={{ color: '#c4b5fd' }} />
               إرسال رسالة سريعة
             </h2>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 10, alignItems: 'end' }}>
-              {/* LinkedIn URL */}
-              <div>
-                <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>رابط الملف الشخصي</label>
-                <input
-                  value={quickUrl}
-                  onChange={e => setQuickUrl(e.target.value)}
-                  placeholder="https://linkedin.com/in/..."
-                  dir="ltr"
-                  style={{
-                    width: '100%', padding: '9px 12px', borderRadius: 8,
-                    border: '1px solid var(--border-subtle)', background: 'rgba(255,255,255,0.05)',
-                    color: 'var(--text-primary)', fontSize: 13, outline: 'none',
-                  }}
-                />
+
+            {/* Prospect search */}
+            {!selectedProspect && (
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
+                  ابحث عن عميل
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <Search size={14} style={{ position: 'absolute', top: 10, insetInlineStart: 12, color: 'var(--text-muted)' }} />
+                  <input
+                    value={prospectSearch}
+                    onChange={e => setProspectSearch(e.target.value)}
+                    placeholder="ابحث بالاسم أو الشركة أو المسمى..."
+                    style={{
+                      width: '100%', padding: '9px 12px 9px 34px', borderRadius: 8,
+                      border: '1px solid var(--border-subtle)', background: 'rgba(255,255,255,0.05)',
+                      color: 'var(--text-primary)', fontSize: 13, outline: 'none',
+                    }}
+                  />
+                </div>
+                {/* Prospect dropdown */}
+                {prospectSearch && filteredProspects.length > 0 && (
+                  <div style={{ maxHeight: 200, overflowY: 'auto', border: '1px solid var(--border-subtle)', borderRadius: 8, marginTop: 4 }}>
+                    {filteredProspects.slice(0, 10).map((p: any, idx: number) => (
+                      <button
+                        key={idx}
+                        onClick={() => { setSelectedProspect(p); setProspectSearch(''); }}
+                        style={{
+                          width: '100%', display: 'flex', alignItems: 'center', gap: 10,
+                          padding: '10px 12px', background: 'none', border: 'none', borderBottom: '1px solid var(--border-subtle)',
+                          color: 'var(--text-primary)', cursor: 'pointer', textAlign: 'start',
+                        }}
+                        onMouseOver={e => (e.currentTarget.style.background = 'rgba(124,58,237,0.08)')}
+                        onMouseOut={e => (e.currentTarget.style.background = 'none')}
+                      >
+                        <div style={{
+                          width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+                          background: 'linear-gradient(135deg,#6366f1,#8b5cf6)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          color: '#fff', fontSize: 11, fontWeight: 700,
+                        }}>
+                          {getInitials(p.name)}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</div>
+                          <div style={{ fontSize: 11, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {[p.title, p.company].filter(Boolean).join(' • ')}
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {prospectSearch && filteredProspects.length === 0 && (
+                  <div style={{ padding: 10, fontSize: 12, color: 'var(--text-muted)', textAlign: 'center' }}>
+                    لا توجد نتائج
+                  </div>
+                )}
               </div>
-              {/* Template or custom */}
-              <div>
-                <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>القالب (أو اكتب رسالة أدناه)</label>
-                <select
-                  value={quickTemplateId}
-                  onChange={e => setQuickTemplateId(e.target.value)}
+            )}
+
+            {/* Selected prospect card */}
+            {selectedProspect && (
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14,
+                padding: '10px 14px', borderRadius: 10,
+                background: 'rgba(124,58,237,0.1)', border: '1px solid rgba(124,58,237,0.2)',
+              }}>
+                <div style={{
+                  width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
+                  background: 'linear-gradient(135deg,#6366f1,#8b5cf6)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: '#fff', fontSize: 12, fontWeight: 700,
+                }}>
+                  {getInitials(selectedProspect.name)}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>{selectedProspect.name}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                    {[selectedProspect.title, selectedProspect.company].filter(Boolean).join(' • ')}
+                  </div>
+                </div>
+                <button onClick={() => setSelectedProspect(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 16 }}>
+                  <X size={14} />
+                </button>
+              </div>
+            )}
+
+            {/* Message composition (shown when prospect selected) */}
+            {selectedProspect && (
+              <>
+                {/* Template selector */}
+                <div style={{ marginBottom: 10 }}>
+                  <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>القالب (أو اكتب رسالة أدناه)</label>
+                  <select
+                    value={quickTemplateId}
+                    onChange={e => setQuickTemplateId(e.target.value)}
+                    style={{
+                      width: '100%', padding: '9px 12px', borderRadius: 8,
+                      border: '1px solid var(--border-subtle)', background: 'rgba(255,255,255,0.05)',
+                      color: 'var(--text-primary)', fontSize: 13, outline: 'none',
+                    }}
+                  >
+                    <option value="">— رسالة مخصصة —</option>
+                    {templates.map(tmpl => <option key={tmpl.id} value={tmpl.id}>{tmpl.name}</option>)}
+                  </select>
+                </div>
+
+                {/* Custom message or template preview */}
+                {!quickTemplateId ? (
+                  <textarea
+                    value={quickCustomMsg}
+                    onChange={e => setQuickCustomMsg(e.target.value.slice(0, 500))}
+                    placeholder="اكتب رسالتك المخصصة هنا..."
+                    rows={4}
+                    style={{
+                      width: '100%', padding: '10px 12px', borderRadius: 8, marginBottom: 10,
+                      border: '1px solid var(--border-subtle)', background: 'rgba(255,255,255,0.04)',
+                      color: 'var(--text-primary)', fontSize: 13, resize: 'vertical',
+                      fontFamily: 'inherit', outline: 'none',
+                    }}
+                  />
+                ) : templates.find(tmpl => tmpl.id === quickTemplateId) ? (
+                  <div style={{ marginBottom: 10, padding: 10, borderRadius: 8, background: 'rgba(255,255,255,0.02)', border: '1px dashed var(--border-subtle)' }}>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>معاينة</div>
+                    <p style={{ fontSize: 12, color: 'var(--text-primary)', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+                      {previewContent(templates.find(tmpl => tmpl.id === quickTemplateId)!.content)}
+                    </p>
+                  </div>
+                ) : null}
+
+                {/* Send button */}
+                <button
+                  onClick={handleQuickSend}
+                  disabled={quickSending}
                   style={{
-                    width: '100%', padding: '9px 12px', borderRadius: 8,
-                    border: '1px solid var(--border-subtle)', background: 'rgba(255,255,255,0.05)',
-                    color: 'var(--text-primary)', fontSize: 13, outline: 'none',
+                    width: '100%', padding: '11px 20px', borderRadius: 8, fontSize: 13, fontWeight: 700,
+                    background: 'var(--gradient-primary)', border: 'none', color: '#fff',
+                    cursor: quickSending ? 'not-allowed' : 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                    opacity: quickSending ? 0.7 : 1,
                   }}
                 >
-                  <option value="">— رسالة مخصصة —</option>
-                  {templates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                </select>
-              </div>
-              {/* Send button */}
-              <button
-                onClick={handleQuickSend}
-                disabled={quickSending}
-                style={{
-                  padding: '9px 20px', borderRadius: 8, fontSize: 13, fontWeight: 700,
-                  background: 'var(--gradient-primary)', border: 'none', color: '#fff',
-                  cursor: quickSending ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 6,
-                  opacity: quickSending ? 0.7 : 1,
-                }}
-              >
-                {quickSending ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
-                إرسال
-              </button>
-            </div>
-            {/* Custom message (shown when no template selected) */}
-            {!quickTemplateId && (
-              <textarea
-                value={quickCustomMsg}
-                onChange={e => setQuickCustomMsg(e.target.value.slice(0, 500))}
-                placeholder="اكتب رسالتك المخصصة هنا..."
-                rows={3}
-                style={{
-                  width: '100%', padding: '10px 12px', borderRadius: 8, marginTop: 10,
-                  border: '1px solid var(--border-subtle)', background: 'rgba(255,255,255,0.04)',
-                  color: 'var(--text-primary)', fontSize: 13, resize: 'vertical',
-                  fontFamily: 'inherit', outline: 'none',
-                }}
-              />
-            )}
-            {/* Preview selected template */}
-            {quickTemplateId && templates.find(t => t.id === quickTemplateId) && (
-              <div style={{ marginTop: 10, padding: 10, borderRadius: 8, background: 'rgba(255,255,255,0.02)', border: '1px dashed var(--border-subtle)' }}>
-                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>معاينة</div>
-                <p style={{ fontSize: 12, color: 'var(--text-primary)', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
-                  {previewContent(templates.find(t => t.id === quickTemplateId)!.content)}
-                </p>
-              </div>
+                  {quickSending ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+                  إرسال الرسالة
+                </button>
+              </>
             )}
           </div>
+
+          {/* ── Message History ── */}
+          {messageHistory.length > 0 && (
+            <div style={{ ...card, marginBottom: 24 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+                <h2 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Clock size={15} />
+                  سجل الرسائل ({messageHistory.length})
+                </h2>
+                <button
+                  onClick={() => { setMessageHistory([]); localStorage.removeItem('wassel-message-history'); }}
+                  style={{ background: 'none', border: 'none', color: '#fca5a5', cursor: 'pointer', fontSize: 11 }}
+                >
+                  مسح الكل
+                </button>
+              </div>
+              <div style={{ maxHeight: 300, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {messageHistory.map((entry: any, idx: number) => (
+                  <div key={entry.id || idx} style={{
+                    padding: 12, borderRadius: 10,
+                    border: '1px solid var(--border-subtle)', background: 'rgba(255,255,255,0.02)',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                      <User size={12} style={{ color: 'var(--text-muted)' }} />
+                      <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
+                        {entry.prospect?.name || 'Unknown'}
+                      </span>
+                      <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                        {entry.prospect?.company || ''}
+                      </span>
+                      <span style={{ fontSize: 10, color: 'var(--text-muted)', marginInlineStart: 'auto' }}>
+                        {new Date(entry.sentAt).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : 'en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                    <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5, maxHeight: 40, overflow: 'hidden' }}>
+                      {entry.message?.substring(0, 120)}{(entry.message?.length || 0) > 120 ? '...' : ''}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div style={{ display: 'grid', gridTemplateColumns: '55% 1fr', gap: 20, alignItems: 'start' }}>
             {/* LEFT — Create/Edit Template */}
