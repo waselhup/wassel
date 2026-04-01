@@ -300,7 +300,8 @@ async function doInvite(url, note, stepId, name) {
     await ensureContentScript(tabId);
 
     // Delegate to content.js which has robust multi-method Connect detection
-    const result = await chrome.tabs.sendMessage(tabId, { type: 'SEND_INVITE', note: note || '' });
+    // Pass targetUrl so content.js can VERIFY it's on the correct profile
+    const result = await chrome.tabs.sendMessage(tabId, { type: 'SEND_INVITE', targetUrl: url, note: note || '' });
     console.log('[Wassel] SEND_INVITE result:', JSON.stringify(result));
 
     if (result?.ok) {
@@ -987,7 +988,7 @@ chrome.runtime.onStartup.addListener(async () => {
 // ─── PUBLISH_POST: Forward from web app to content.js on LinkedIn tab ───
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'PUBLISH_POST' && message.content) {
-    console.log('[Wassel] 📝 PUBLISH_POST received in background, forwarding to LinkedIn tab');
+    console.log('[Wassel-BG] PUBLISH_POST received, content length:', message.content.length);
 
     (async () => {
       try {
@@ -996,28 +997,62 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         let targetTab = tabs.find(t => t.url && t.url.includes('/feed'));
         if (!targetTab && tabs.length > 0) targetTab = tabs[0];
 
+        let tabId;
+
         if (targetTab && targetTab.id) {
-          await ensureContentScript(targetTab.id);
-          // Use DO_LINKEDIN_POST to avoid triggering this same handler on the content side
-          const r = await safeSendMessage(targetTab.id, {
-            type: 'DO_LINKEDIN_POST',
-            content: message.content,
-            postId: message.postId,
-          });
-          sendResponse({ ok: true, tabId: targetTab.id, result: r });
+          tabId = targetTab.id;
+          console.log('[Wassel-BG] Using existing LinkedIn tab:', tabId);
+          // Navigate to feed if not already there
+          if (!targetTab.url.includes('/feed')) {
+            await chrome.tabs.update(tabId, { url: 'https://www.linkedin.com/feed/' });
+            await new Promise(resolve => {
+              const listener = (id, changeInfo) => {
+                if (id === tabId && changeInfo.status === 'complete') {
+                  chrome.tabs.onUpdated.removeListener(listener);
+                  resolve();
+                }
+              };
+              chrome.tabs.onUpdated.addListener(listener);
+              setTimeout(() => { chrome.tabs.onUpdated.removeListener(listener); resolve(); }, 15000);
+            });
+          }
         } else {
-          // No LinkedIn tab open — create one (safeSendMessage waits for load)
-          const newTab = await chrome.tabs.create({ url: 'https://www.linkedin.com/feed/' });
-          await ensureContentScript(newTab.id);
-          const r = await safeSendMessage(newTab.id, {
-            type: 'DO_LINKEDIN_POST',
-            content: message.content,
-            postId: message.postId,
+          // No LinkedIn tab open — create one
+          console.log('[Wassel-BG] No LinkedIn tab found, creating new one');
+          const newTab = await chrome.tabs.create({ url: 'https://www.linkedin.com/feed/', active: true });
+          tabId = newTab.id;
+
+          // Wait for page to fully load
+          await new Promise(resolve => {
+            const listener = (id, changeInfo) => {
+              if (id === tabId && changeInfo.status === 'complete') {
+                chrome.tabs.onUpdated.removeListener(listener);
+                resolve();
+              }
+            };
+            chrome.tabs.onUpdated.addListener(listener);
+            setTimeout(() => { chrome.tabs.onUpdated.removeListener(listener); resolve(); }, 15000);
           });
-          sendResponse({ ok: true, tabId: newTab.id, result: r });
         }
+
+        // Extra wait for LinkedIn JS to initialize
+        console.log('[Wassel-BG] Tab loaded, waiting for LinkedIn JS...');
+        await sleep(4000);
+
+        // Ensure content script is injected
+        await ensureContentScript(tabId);
+        await sleep(1000);
+
+        console.log('[Wassel-BG] Sending DO_LINKEDIN_POST to tab:', tabId);
+        const r = await chrome.tabs.sendMessage(tabId, {
+          type: 'DO_LINKEDIN_POST',
+          content: message.content,
+          postId: message.postId,
+        });
+        console.log('[Wassel-BG] Post result:', JSON.stringify(r));
+        sendResponse({ ok: true, tabId: tabId, result: r });
       } catch (err) {
-        console.error('[Wassel] PUBLISH_POST forward error:', err);
+        console.error('[Wassel-BG] PUBLISH_POST error:', err);
         sendResponse({ ok: false, error: err.message });
       }
     })();

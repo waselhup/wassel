@@ -130,20 +130,14 @@ export default function Posts() {
       // 2. Call publish endpoint which returns extension action
       await apiFetch(`/api/posts/${postId}/publish`, token, { method: 'POST' });
 
-      // 3. Send message to extension to open LinkedIn and fill the post
-      const w = window as any;
-      if (typeof w.chrome !== 'undefined' && w.chrome?.runtime?.sendMessage) {
-        try {
-          w.chrome.runtime.sendMessage(
-            { type: 'PUBLISH_POST', postId, content: content.trim() },
-            (response: any) => {
-              console.log('[Posts] Extension response:', response);
-            }
-          );
-        } catch (extErr) {
-          console.warn('[Posts] Could not reach extension:', extErr);
-        }
-      }
+      // 3. Send message to extension via postMessage bridge (web page → content.js → background.js)
+      console.log('[Wassel-Posts] Sending publish request to extension via postMessage');
+      window.postMessage({
+        type: 'WASSEL_PUBLISH_POST',
+        source: 'wassel-web',
+        content: content.trim(),
+        postId,
+      }, '*');
 
       // Background.js opens the LinkedIn tab automatically — no need to open here
       setContent('');

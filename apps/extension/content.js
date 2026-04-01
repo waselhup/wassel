@@ -33,6 +33,7 @@
 
         // Publish post: web app asks extension to open LinkedIn and fill post
         if (event.data?.type === 'WASSEL_PUBLISH_POST' && event.data?.content) {
+            console.log('[Wassel-Content] Received WASSEL_PUBLISH_POST from web app, forwarding to background');
             chrome.runtime.sendMessage({
                 type: 'PUBLISH_POST',
                 content: event.data.content,
@@ -68,8 +69,8 @@
 
         // Campaign: send a connection invite
         if (message.type === 'SEND_INVITE') {
-            console.log('[Wassel] Send invite requested');
-            doSendInvite(message.note).then(result => sendResponse(result));
+            console.log('[Wassel] Send invite requested, targetUrl:', message.targetUrl);
+            doSendInvite(message.targetUrl || '', message.note || '').then(result => sendResponse(result));
             return true; // async
         }
 
@@ -103,37 +104,64 @@
     });
 
     // ── LinkedIn 2026: click "Connect" button on a profile page ──
-    async function doSendInvite(note) {
+    async function doSendInvite(targetUrl, note) {
         try {
             await sleep(3000); // Wait for profile to fully load
 
-            // STEP 1: Find Connect button
-            let connectBtn = null;
-            const allButtons = Array.from(document.querySelectorAll('button'));
+            // SAFETY CHECK: Verify we're on the correct profile page
+            if (targetUrl && targetUrl.includes('/in/')) {
+                const currentUrl = window.location.href.toLowerCase();
+                const targetSlug = targetUrl.split('/in/')[1]?.split(/[?/#]/)[0]?.toLowerCase();
 
-            // Pattern A: scan all buttons for Connect text/aria-label
-            for (const btn of allButtons) {
-                const label = (btn.getAttribute('aria-label') || '').toLowerCase();
-                const text = (btn.textContent || '').trim().toLowerCase();
-                if ((label.includes('connect') && !label.includes('disconnect')) ||
-                    text === 'connect' || text === 'اتصال') {
-                    connectBtn = btn;
-                    break;
+                if (targetSlug && !currentUrl.includes('/in/' + targetSlug)) {
+                    console.log('[Wassel] Wrong page! Expected:', targetSlug, 'Got:', currentUrl);
+                    window.location.href = targetUrl;
+                    await sleep(5000);
+
+                    const newUrl = window.location.href.toLowerCase();
+                    if (!newUrl.includes('/in/' + targetSlug)) {
+                        console.error('[Wassel] Navigation failed, still on wrong page');
+                        return { ok: false, error: 'navigation_failed' };
+                    }
+                    // Wait for page to load after navigation
+                    await sleep(3000);
                 }
+                console.log('[Wassel] Confirmed on correct profile:', targetSlug);
             }
+
+            // Log the profile name for verification
+            const profileName = (document.querySelector(
+                'h1.text-heading-xlarge, h1.inline, .pv-top-card h1, h1'
+            ) || {}).textContent;
+            console.log('[Wassel] Profile name on page:', (profileName || '').trim());
+
+            // Helper: find element by text content
+            function findByText(texts) {
+                const all = document.querySelectorAll('button, [role="button"]');
+                for (const el of all) {
+                    const t = (el.textContent || '').trim().toLowerCase();
+                    const label = (el.getAttribute('aria-label') || '').toLowerCase();
+                    for (const text of texts) {
+                        if (t === text || (label.includes(text) && !label.includes('disconnect'))) {
+                            return el;
+                        }
+                    }
+                }
+                return null;
+            }
+
+            // STEP 1: Find Connect button
+            let connectBtn = findByText(['connect', 'اتصال']);
 
             // Pattern B: "More" dropdown → Connect
             if (!connectBtn) {
-                const moreBtn = allButtons.find(btn => {
-                    const label = (btn.getAttribute('aria-label') || '').toLowerCase();
-                    return label.includes('more action') || label.includes('المزيد');
-                }) || allButtons.find(btn => (btn.textContent || '').trim() === 'More');
-
+                const moreBtn = findByText(['more', 'more actions', 'المزيد']);
                 if (moreBtn) {
                     moreBtn.click();
                     await sleep(1500);
-                    const dropdownItems = Array.from(
-                        document.querySelectorAll('[role="menuitem"], .artdeco-dropdown__item, .artdeco-dropdown__content-inner li')
+                    // Search dropdown items
+                    const dropdownItems = document.querySelectorAll(
+                        '[role="menuitem"], .artdeco-dropdown__item, .artdeco-dropdown__content-inner li'
                     );
                     for (const item of dropdownItems) {
                         const text = (item.textContent || '').toLowerCase();
@@ -146,36 +174,41 @@
             }
 
             if (!connectBtn) {
-                console.log('[Wassel] No Connect button — possibly already connected');
+                // Check if already connected (Message button present)
+                const msgBtn = findByText(['message', 'رسالة']);
+                if (msgBtn) {
+                    console.log('[Wassel] Already connected (Message button found)');
+                    return { ok: true, note: 'already_connected' };
+                }
+                console.log('[Wassel] No Connect button found');
                 return { ok: false, error: 'no_connect_button' };
+            }
+
+            // Check if button says Pending or Connected
+            const btnText = (connectBtn.textContent || '').trim().toLowerCase();
+            if (btnText.includes('pending') || btnText.includes('connected')) {
+                console.log('[Wassel] Already pending or connected');
+                return { ok: true, note: 'already_pending_or_connected' };
             }
 
             console.log('[Wassel] Found Connect button, clicking...');
             connectBtn.click();
-            await sleep(2500);
+            await sleep(3000);
 
             // STEP 2: Handle the modal — "Add a note" or direct send
             if (note && note.trim()) {
-                const addNoteBtn = Array.from(document.querySelectorAll('button')).find(btn => {
-                    const label = (btn.getAttribute('aria-label') || '').toLowerCase();
-                    const text = (btn.textContent || '').trim().toLowerCase();
-                    return label.includes('add a note') || text.includes('add a note') ||
-                           text.includes('إضافة ملاحظة');
-                });
+                const addNoteBtn = findByText(['add a note', 'إضافة ملاحظة']);
                 if (addNoteBtn) {
                     addNoteBtn.click();
                     await sleep(1500);
-                    const textarea = document.querySelector(
-                        'textarea[name="message"], textarea#custom-message, ' +
-                        'textarea.connect-button-send-invite__custom-message, ' +
-                        '.artdeco-modal textarea'
-                    );
+                    const textarea = document.querySelector('textarea');
                     if (textarea) {
                         textarea.focus();
-                        textarea.value = '';
-                        textarea.value = note;
+                        var setter = Object.getOwnPropertyDescriptor(
+                            HTMLTextAreaElement.prototype, 'value'
+                        ).set;
+                        setter.call(textarea, note);
                         textarea.dispatchEvent(new Event('input', { bubbles: true }));
-                        textarea.dispatchEvent(new Event('change', { bubbles: true }));
                         await sleep(500);
                     }
                 }
@@ -183,29 +216,26 @@
 
             // STEP 3: Click Send
             await sleep(1000);
-            const sendBtn = Array.from(document.querySelectorAll('button')).find(btn => {
-                const label = (btn.getAttribute('aria-label') || '').toLowerCase();
-                const text = (btn.textContent || '').trim().toLowerCase();
-                return label.includes('send') || text === 'send' ||
-                       text === 'send without a note' || text === 'إرسال' ||
-                       text === 'send now' || text === 'send invitation';
-            });
+            let sendBtn = findByText(['send', 'send now', 'send without a note', 'send invitation', 'إرسال']);
+
+            if (!sendBtn) {
+                // Find primary button in modal
+                var modal = document.querySelector('[role="dialog"], .artdeco-modal');
+                if (modal) {
+                    var btns = modal.querySelectorAll('button');
+                    for (var b of btns) {
+                        if (b.className.includes('primary') || b.className.includes('ml-auto')) {
+                            sendBtn = b;
+                            break;
+                        }
+                    }
+                }
+            }
 
             if (sendBtn) {
                 sendBtn.click();
                 await sleep(2000);
-                console.log('[Wassel] ✅ Invite SENT successfully');
-                return { ok: true };
-            }
-
-            // Fallback: click any primary button in modal
-            const primaryBtn = document.querySelector(
-                '.artdeco-modal button.artdeco-button--primary'
-            );
-            if (primaryBtn) {
-                primaryBtn.click();
-                await sleep(1500);
-                console.log('[Wassel] ✅ Invite sent via primary button');
+                console.log('[Wassel] Invite SENT successfully');
                 return { ok: true };
             }
 
@@ -269,76 +299,128 @@
     // ── LinkedIn 2026: fill post composer and AUTO-SUBMIT ──
     async function doLinkedInPost(content, postId) {
         try {
-            await sleep(2500); // Wait for feed to load
+            console.log('[Wassel] doLinkedInPost starting, content length:', content.length);
+            await sleep(2000);
 
             // STEP 1: Click "Start a post"
-            const startBtn = Array.from(document.querySelectorAll('button, div[role="button"]')).find(el => {
-                const text = (el.textContent || '').toLowerCase();
-                const label = (el.getAttribute('aria-label') || '').toLowerCase();
-                return text.includes('start a post') || label.includes('start a post') ||
-                       text.includes('ابدأ منشور') ||
-                       el.classList.contains('share-box-feed-entry__trigger');
-            });
-            if (startBtn) {
-                startBtn.click();
-                await sleep(3000);
-            } else {
-                const shareBox = document.querySelector('.share-box-feed-entry__top-bar, .share-creation-state');
-                if (shareBox) { shareBox.click(); await sleep(3000); }
+            console.log('[Wassel] Step 1: Looking for Start Post button...');
+            var allClickable = document.querySelectorAll('button, div[role="button"], span[role="textbox"]');
+            var startBtn = null;
+
+            for (var el of allClickable) {
+                var text = (el.textContent || '').toLowerCase();
+                var label = (el.getAttribute('aria-label') || '').toLowerCase();
+                var placeholder = (el.getAttribute('placeholder') || '').toLowerCase();
+                if (text.includes('start a post') || label.includes('start a post') ||
+                    text.includes('ابدأ منشور') || placeholder.includes('start') ||
+                    el.classList.contains('share-box-feed-entry__trigger') ||
+                    el.classList.contains('share-box-feed-entry__top-bar')) {
+                    startBtn = el;
+                    break;
+                }
             }
 
-            // STEP 2: Find editor and fill content
-            await sleep(1000);
-            const editor = document.querySelector(
-                '.ql-editor[contenteditable="true"], ' +
-                '[role="textbox"][contenteditable="true"], ' +
-                '.editor-content [contenteditable="true"], ' +
-                '.share-creation-state__text-editor [contenteditable], ' +
-                '[data-placeholder][contenteditable="true"]'
-            );
+            if (!startBtn) {
+                startBtn = document.querySelector(
+                    '.share-box-feed-entry__trigger, ' +
+                    '.share-box-feed-entry__top-bar, ' +
+                    '.share-creation-state, ' +
+                    '[data-control-name="share.sharebox_text"]'
+                );
+            }
+
+            if (startBtn) {
+                console.log('[Wassel] Found Start Post, clicking...');
+                startBtn.click();
+                await sleep(3500);
+            } else {
+                console.error('[Wassel] Start Post button NOT found');
+                showNotification('❌ لم يتم العثور على زر المنشور', 'error');
+                return { ok: false, error: 'start_post_not_found' };
+            }
+
+            // STEP 2: Find editor
+            console.log('[Wassel] Step 2: Looking for editor...');
+            await sleep(1500);
+
+            var editor = document.querySelector('.ql-editor[contenteditable="true"]') ||
+                document.querySelector('[role="textbox"][contenteditable="true"]') ||
+                document.querySelector('.share-creation-state__text-editor [contenteditable="true"]') ||
+                document.querySelector('[data-placeholder][contenteditable="true"]');
+
+            // Broader search: find any large contenteditable
+            if (!editor) {
+                var allEditable = document.querySelectorAll('[contenteditable="true"]');
+                for (var ed of allEditable) {
+                    if (ed.offsetHeight > 50 && ed.offsetWidth > 200) {
+                        editor = ed;
+                        break;
+                    }
+                }
+            }
 
             if (!editor) {
-                console.error('[Wassel] Editor not found');
-                showNotification('❌ لم يتم العثور على محرر LinkedIn', 'error');
-                return { ok: false, error: 'Editor not found' };
+                console.error('[Wassel] Editor NOT found');
+                showNotification('❌ لم يتم العثور على محرر النص', 'error');
+                return { ok: false, error: 'editor_not_found' };
             }
 
+            console.log('[Wassel] Step 3: Found editor, filling content...');
             editor.focus();
-            await sleep(500);
+            await sleep(300);
             editor.innerHTML = '';
 
             // Insert text line by line using execCommand
-            const lines = content.split('\n');
-            for (let i = 0; i < lines.length; i++) {
+            var lines = content.split('\n');
+            for (var i = 0; i < lines.length; i++) {
                 document.execCommand('insertText', false, lines[i]);
                 if (i < lines.length - 1) {
                     document.execCommand('insertLineBreak');
                 }
             }
             editor.dispatchEvent(new Event('input', { bubbles: true }));
+            await sleep(500);
+
+            // Verify content was inserted
+            if (!(editor.textContent || '').trim()) {
+                console.log('[Wassel] execCommand failed, trying innerHTML...');
+                editor.innerHTML = lines.map(function(l) { return '<p>' + (l || '<br>') + '</p>'; }).join('');
+                editor.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+
+            console.log('[Wassel] Content filled:', (editor.textContent || '').slice(0, 50));
             await sleep(2000);
 
-            // STEP 3: AUTO-CLICK the Post button
-            const postBtn = Array.from(document.querySelectorAll('button')).find(btn => {
-                const label = (btn.getAttribute('aria-label') || '').toLowerCase();
-                const text = (btn.textContent || '').trim().toLowerCase();
-                const cls = btn.className || '';
-                return (label.includes('post') && !label.includes('repost')) ||
-                       (text === 'post') || (text === 'نشر') ||
-                       cls.includes('share-actions__primary-action');
-            });
+            // STEP 4: Click Post button
+            console.log('[Wassel] Step 4: Looking for Post button...');
+            var allBtns = document.querySelectorAll('button');
+            var postBtn = null;
 
-            if (postBtn && !postBtn.disabled) {
-                console.log('[Wassel] Auto-clicking Post button...');
+            for (var btn of allBtns) {
+                var btnText = (btn.textContent || '').trim().toLowerCase();
+                var btnLabel = (btn.getAttribute('aria-label') || '').toLowerCase();
+                if ((btnText === 'post' || btnText === 'نشر' || btnLabel.includes('post')) &&
+                    !btnText.includes('repost') && !btnLabel.includes('repost') && !btn.disabled) {
+                    postBtn = btn;
+                    break;
+                }
+            }
+
+            if (!postBtn) {
+                postBtn = document.querySelector('button.share-actions__primary-action:not([disabled])');
+            }
+
+            if (postBtn) {
+                console.log('[Wassel] Found Post button, clicking...');
                 postBtn.click();
                 await sleep(3000);
-                console.log('[Wassel] ✅ Post published automatically!');
-                showNotification('✅ تم نشر المنشور على LinkedIn', 'success');
+                console.log('[Wassel] Post published!');
+                showNotification('✅ تم نشر المنشور بنجاح!', 'success');
                 return { ok: true };
             }
 
             console.log('[Wassel] Post button not found or disabled');
-            showNotification('⚠️ المحتوى جاهز — قد تحتاج الضغط على Post يدوياً', 'error');
+            showNotification('⚠️ المحتوى جاهز — اضغط Post يدوياً', 'error');
             return { ok: false, error: 'post_button_not_found' };
         } catch (err) {
             console.error('[Wassel] Post error:', err);
