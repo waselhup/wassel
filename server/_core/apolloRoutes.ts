@@ -134,6 +134,8 @@ router.post('/import', async (req: Request, res: Response) => {
       status: 'imported',
     }));
 
+    console.log('[Import] Importing', records.length, 'prospects for team', member.team_id);
+
     const BATCH = 50;
     let imported = 0;
     for (let i = 0; i < records.length; i += BATCH) {
@@ -142,9 +144,14 @@ router.post('/import', async (req: Request, res: Response) => {
         .from('prospects')
         .upsert(batch, { onConflict: 'linkedin_url,team_id', ignoreDuplicates: true })
         .select('id');
-      if (!error) imported += inserted?.length || batch.length;
+      if (error) {
+        console.error('[Import] Batch error:', error.message, error.code, error.details);
+      } else {
+        imported += inserted?.length || batch.length;
+      }
     }
 
+    console.log('[Import] Done. Imported:', imported);
     res.json({ success: true, imported });
   } catch (err: any) {
     console.error('[Import] Error:', err.message);
