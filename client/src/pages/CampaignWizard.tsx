@@ -3,6 +3,7 @@ import { useLocation } from 'wouter';
 import ClientNav from '@/components/ClientNav';
 import { useAuth } from '@/contexts/AuthContext';
 import Avatar from '@/components/Avatar';
+import ProspectCard from '@/components/ProspectCard';
 import { ChevronRight, ChevronLeft, Rocket, Search, Users, Loader2, Lock, Sparkles, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
@@ -676,32 +677,26 @@ export default function CampaignWizard() {
                   <button style={btnPrimary} onClick={() => navigate('/app/extension')}>{t('wizard.goImport')}</button>
                 </div>
               ) : (
-                <div style={{ maxHeight: 340, overflowY: 'auto', borderRadius: 8, border: '1px solid rgba(255,255,255,0.06)' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                    <thead>
-                      <tr style={{ background: 'rgba(255,255,255,0.03)' }}>
-                        <th style={{ padding: '8px 12px', textAlign: 'left', color: '#64748b', fontWeight: 500, width: 36 }}>☑</th>
-                        <th style={{ padding: '8px 12px', textAlign: 'left', color: '#64748b', fontWeight: 500 }}>{t('leads.name')}</th>
-                        <th style={{ padding: '8px 12px', textAlign: 'left', color: '#64748b', fontWeight: 500 }}>{t('leads.titleCol')}</th>
-                        <th style={{ padding: '8px 12px', textAlign: 'left', color: '#64748b', fontWeight: 500 }}>{t('leads.company')}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredProspects.map(p => (
-                        <tr key={p.id} onClick={() => toggleSelect(p.id)} style={{ cursor: 'pointer', borderTop: '1px solid rgba(255,255,255,0.04)', background: selected.has(p.id) ? 'rgba(124,58,237,0.06)' : 'transparent' }}>
-                          <td style={{ padding: '8px 12px' }}><input type="checkbox" checked={selected.has(p.id)} readOnly style={{ accentColor: '#7c3aed' }} /></td>
-                          <td style={{ padding: '8px 12px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                              <Avatar name={p.name || '?'} size="sm" />
-                              <span style={{ color: '#f1f5f9', fontWeight: 500 }}>{p.name || '—'}</span>
-                            </div>
-                          </td>
-                          <td style={{ padding: '8px 12px', color: '#94a3b8' }}>{p.title || '—'}</td>
-                          <td style={{ padding: '8px 12px', color: '#94a3b8' }}>{p.company || '—'}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <div style={{ maxHeight: 440, overflowY: 'auto', borderRadius: 12, paddingRight: 4 }}>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {filteredProspects.map(p => (
+                      <ProspectCard
+                        key={p.id}
+                        prospect={{
+                          name: p.name || p.full_name || 'Unknown',
+                          title: p.title || p.job_title || undefined,
+                          company: p.company || undefined,
+                          location: p.location || undefined,
+                          linkedin_url: p.linkedin_url || undefined,
+                          profile_picture_url: p.photo_url || p.profile_picture_url || p.avatar_url || undefined,
+                        }}
+                        isSelected={selected.has(p.id)}
+                        onToggleSelect={() => toggleSelect(p.id)}
+                        showCheckbox={true}
+                        showLinkedIn={true}
+                      />
+                    ))}
+                  </div>
                 </div>
               )}
             </div>

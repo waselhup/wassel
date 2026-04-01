@@ -206,11 +206,27 @@ export default function ProspectDiscovery() {
       return false;
     }
 
+    // SAFETY: Filter out 1st-degree connections (already connected on LinkedIn)
+    const safeProspects = toImport.filter(p => {
+      const deg = String(p.connection_degree || '').replace(/[^0-9]/g, '');
+      return deg !== '1'; // Block 1st-degree connections
+    });
+
+    if (safeProspects.length === 0) {
+      setError(isAr ? 'جميع العملاء المحتملين هم بالفعل في شبكتك (درجة أولى)' : 'All selected prospects are already your connections (1st degree)');
+      return false;
+    }
+
+    if (safeProspects.length < toImport.length) {
+      const skipped = toImport.length - safeProspects.length;
+      console.log(`[Import] Skipped ${skipped} 1st-degree connections`);
+    }
+
     const res = await fetch('/api/prospects/import', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({
-        prospects: toImport.map(p => ({
+        prospects: safeProspects.map(p => ({
           name: p.name || '',
           title: p.title || '',
           company: p.company || '',

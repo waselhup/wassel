@@ -1,5 +1,5 @@
 // ============================================================
-// WASSEL EXTENSION v2.0.1 — Content Script
+// WASSEL EXTENSION v2.0.2 — Content Script
 // Handles: campaign execution, post publishing, auth bridge, detection
 // Does NOT: scan/scrape prospects (Apify handles discovery now)
 // ============================================================
@@ -13,7 +13,7 @@
 
     // ── Detection: mark the page so the web app knows extension is installed ──
     document.documentElement.setAttribute('data-wassel-extension', 'true');
-    window.postMessage({ type: 'WASSEL_EXTENSION_INSTALLED', version: '2.0.1' }, '*');
+    window.postMessage({ type: 'WASSEL_EXTENSION_INSTALLED', version: '2.0.2' }, '*');
 
     // Hidden marker element for legacy detection
     const marker = document.createElement('div');
@@ -135,10 +135,45 @@
             ) || {}).textContent;
             console.log('[Wassel] Profile name on page:', (profileName || '').trim());
 
-            // Helper: find element by text content
-            function findByText(texts) {
-                const all = document.querySelectorAll('button, [role="button"]');
+            // ── PROFILE ACTION BAR — the main buttons section at the top of the profile ──
+            // LinkedIn wraps the profile owner's action buttons in a specific container.
+            // We MUST only search inside this container to avoid clicking sidebar "Connect" buttons
+            // belonging to "People also viewed" / "People you may know" suggestions.
+            const profileActionContainers = [
+                '.pv-top-card-v2-ctas',                          // 2026 layout
+                '.pvs-profile-actions',                          // alternate 2026 layout
+                '.pv-top-card__action-buttons',                  // classic layout
+                '.pv-top-card-v3__action-buttons',               // v3 layout
+                'section.pv-top-card .ph5',                      // section-based layout
+                '.scaffold-layout__main',                        // broad main content area
+            ];
+
+            let actionBar = null;
+            for (const sel of profileActionContainers) {
+                actionBar = document.querySelector(sel);
+                if (actionBar) {
+                    console.log('[Wassel] Found action bar via:', sel);
+                    break;
+                }
+            }
+
+            // Helper: find button by text ONLY within a container (or page-wide as last resort)
+            function findByText(texts, container) {
+                const scope = container || document;
+                const all = scope.querySelectorAll('button, [role="button"]');
                 for (const el of all) {
+                    // SKIP buttons inside sidebar recommendation sections
+                    if (!container && el.closest(
+                        '.pv-browsemap-section, ' +
+                        '.pv-right-rail, ' +
+                        '[data-view-name="profile-browsemap"], ' +
+                        '.aside-container, ' +
+                        '.scaffold-layout__aside, ' +
+                        '.artdeco-card--full-width, ' +
+                        '[data-view-name="profile-card"]'
+                    )) {
+                        continue;
+                    }
                     const t = (el.textContent || '').trim().toLowerCase();
                     const label = (el.getAttribute('aria-label') || '').toLowerCase();
                     for (const text of texts) {
@@ -150,16 +185,25 @@
                 return null;
             }
 
-            // STEP 1: Find Connect button
-            let connectBtn = findByText(['connect', 'اتصال']);
-
-            // Pattern B: "More" dropdown → Connect
+            // STEP 1: Find Connect button — FIRST inside the profile action bar, THEN page-wide with sidebar exclusion
+            let connectBtn = null;
+            if (actionBar) {
+                connectBtn = findByText(['connect', 'اتصال'], actionBar);
+                if (connectBtn) console.log('[Wassel] Found Connect in action bar ✓');
+            }
             if (!connectBtn) {
-                const moreBtn = findByText(['more', 'more actions', 'المزيد']);
+                connectBtn = findByText(['connect', 'اتصال'], null);
+                if (connectBtn) console.log('[Wassel] Found Connect via page-wide search (sidebar excluded) ✓');
+            }
+
+            // Pattern B: "More" dropdown → Connect (also scoped to action bar first)
+            if (!connectBtn) {
+                const moreBtn = findByText(['more', 'more actions', 'المزيد'], actionBar) ||
+                                findByText(['more', 'more actions', 'المزيد'], null);
                 if (moreBtn) {
                     moreBtn.click();
                     await sleep(1500);
-                    // Search dropdown items
+                    // Search dropdown items (dropdowns render at document level, so search globally)
                     const dropdownItems = document.querySelectorAll(
                         '[role="menuitem"], .artdeco-dropdown__item, .artdeco-dropdown__content-inner li'
                     );
@@ -175,13 +219,24 @@
 
             if (!connectBtn) {
                 // Check if already connected (Message button present)
-                const msgBtn = findByText(['message', 'رسالة']);
+                const msgBtn = findByText(['message', 'رسالة'], actionBar) ||
+                               findByText(['message', 'رسالة'], null);
                 if (msgBtn) {
                     console.log('[Wassel] Already connected (Message button found)');
                     return { ok: true, note: 'already_connected' };
                 }
                 console.log('[Wassel] No Connect button found');
                 return { ok: false, error: 'no_connect_button' };
+            }
+
+            // SAFETY: Verify the Connect button is NOT inside a sidebar/recommendation card
+            const dangerousParent = connectBtn.closest(
+                '.pv-browsemap-section, .pv-right-rail, [data-view-name="profile-browsemap"], ' +
+                '.aside-container, .scaffold-layout__aside, [data-view-name="profile-card"]'
+            );
+            if (dangerousParent) {
+                console.error('[Wassel] ⚠️ BLOCKED: Connect button belongs to sidebar suggestion, NOT the profile owner!');
+                return { ok: false, error: 'connect_button_in_sidebar' };
             }
 
             // Check if button says Pending or Connected
@@ -506,5 +561,5 @@
         return new Promise(r => setTimeout(r, ms));
     }
 
-    console.log('[Wassel] Content script v2.0.1 loaded');
+    console.log('[Wassel] Content script v2.0.2 loaded');
 })();

@@ -9,27 +9,35 @@ function getUserId(req: Request): string | null {
 
 function normalizeProspects(items: any[]): any[] {
   return items
-    .map((p: any) => ({
-      name: [
-        p.firstName || p.first_name,
-        p.lastName || p.last_name,
-      ].filter(Boolean).join(' ') ||
-        p.fullName || p.name || '',
-      first_name: p.firstName || p.first_name || '',
-      last_name: p.lastName || p.last_name || '',
-      title: p.headline || p.title ||
-             p.currentPosition?.[0]?.position || '',
-      company: p.currentPosition?.[0]?.companyName ||
-               p.company || '',
-      location: p.location?.linkedinText || p.location?.parsed?.text || p.location || p.city || '',
-      linkedin_url: p.linkedinUrl || p.profileUrl || p.url || null,
-      avatar_url: p.photo || p.profilePicture?.url || p.imageUrl || null,
-      avatar_initials: (
-        (p.firstName?.[0] || p.first_name?.[0] || '') +
-        (p.lastName?.[0] || p.last_name?.[0] || '')
-      ).toUpperCase() || '?',
-    }))
-    .filter(p => p.name || p.linkedin_url);
+    .map((p: any) => {
+      // Extract connection degree from Apify/harvestapi response
+      const rawDegree = p.connectionDegree || p.connection_degree || p.degree || p.connectionType || '';
+      const degree = String(rawDegree).replace(/[^0-9]/g, ''); // "1st" → "1", "2nd" → "2"
+
+      return {
+        name: [
+          p.firstName || p.first_name,
+          p.lastName || p.last_name,
+        ].filter(Boolean).join(' ') ||
+          p.fullName || p.name || '',
+        first_name: p.firstName || p.first_name || '',
+        last_name: p.lastName || p.last_name || '',
+        title: p.headline || p.title ||
+               p.currentPosition?.[0]?.position || '',
+        company: p.currentPosition?.[0]?.companyName ||
+                 p.company || '',
+        location: p.location?.linkedinText || p.location?.parsed?.text || p.location || p.city || '',
+        linkedin_url: p.linkedinUrl || p.profileUrl || p.url || null,
+        avatar_url: p.photo || p.profilePicture?.url || p.imageUrl || null,
+        avatar_initials: (
+          (p.firstName?.[0] || p.first_name?.[0] || '') +
+          (p.lastName?.[0] || p.last_name?.[0] || '')
+        ).toUpperCase() || '?',
+        connection_degree: degree || null, // "1", "2", "3", or null
+      };
+    })
+    // SAFETY: Filter out 1st-degree connections — these are already your connections!
+    .filter(p => (p.name || p.linkedin_url) && p.connection_degree !== '1');
 }
 
 // POST /api/prospects/search

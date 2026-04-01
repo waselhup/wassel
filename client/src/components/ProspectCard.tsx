@@ -11,8 +11,9 @@ export interface ProspectCardProps {
     linkedin_url?: string;
     avatar_url?: string;
     profile_picture_url?: string;
-    photo_url?: string; // Sometimes APIs use photo_url
+    photo_url?: string;
     avatar_initials?: string;
+    connection_degree?: string | null; // "2", "3", etc.
   };
   isSelected?: boolean;
   onToggleSelect?: () => void;
@@ -41,14 +42,21 @@ export default function ProspectCard({
   const isAr = i18n.language === 'ar';
 
   const photo = prospect.profile_picture_url || prospect.avatar_url || prospect.photo_url;
-  const initials =
-    prospect.avatar_initials ||
-    (prospect.name ? prospect.name.charAt(0).toUpperCase() : '?');
 
-  // Simple string hash for consistent colors
-  const colorIndex = prospect.name
-    ? prospect.name.charCodeAt(0) % AVATAR_COLORS.length
-    : 0;
+  // 2-char initials like Avatar component (e.g. "Mohammed Ali" → "MA")
+  const getInitials = (name: string) => {
+    const parts = name.trim().split(/\s+/).filter(p => p.length > 0);
+    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+    return name.substring(0, 2).toUpperCase();
+  };
+  const initials = prospect.avatar_initials || (prospect.name ? getInitials(prospect.name) : '?');
+
+  // Deterministic color hash (same name → same color)
+  let hash = 0;
+  for (let i = 0; i < (prospect.name || '').length; i++) {
+    hash = (prospect.name || '').charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const colorIndex = Math.abs(hash) % AVATAR_COLORS.length;
 
   return (
     <div
@@ -134,7 +142,14 @@ export default function ProspectCard({
         </p>
 
         <div className="flex items-center gap-3">
-          {/* Location limit visually appealing icon */}
+          {/* Connection degree badge */}
+          {prospect.connection_degree && (
+            <span className="inline-flex items-center text-xs font-semibold px-1.5 py-0.5 rounded bg-purple-50 text-purple-600 border border-purple-100/50">
+              {prospect.connection_degree === '2' ? '2nd' : prospect.connection_degree === '3' ? '3rd' : `${prospect.connection_degree}th`}
+            </span>
+          )}
+
+          {/* Location */}
           {prospect.location && (
             <div className="flex items-center gap-1 min-w-0">
               <MapPin className="w-3 h-3 text-gray-400 flex-shrink-0" />
