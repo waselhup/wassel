@@ -104,113 +104,63 @@
     });
 
     // ── LinkedIn 2026: click "Connect" button on a profile page ──
+    // CRITICAL: Only searches MAIN profile section to avoid clicking on suggested people
     async function doSendInvite(targetUrl, note) {
         try {
-            await sleep(3000); // Wait for profile to fully load
+            var targetSlug = (targetUrl || '').split('/in/')[1]?.split(/[?/]/)[0]?.toLowerCase();
+            var currentSlug = window.location.href.split('/in/')[1]?.split(/[?/]/)[0]?.toLowerCase();
 
-            // SAFETY CHECK: Verify we're on the correct profile page
-            if (targetUrl && targetUrl.includes('/in/')) {
-                const currentUrl = window.location.href.toLowerCase();
-                const targetSlug = targetUrl.split('/in/')[1]?.split(/[?/#]/)[0]?.toLowerCase();
-
-                if (targetSlug && !currentUrl.includes('/in/' + targetSlug)) {
-                    console.log('[Wassel] Wrong page! Expected:', targetSlug, 'Got:', currentUrl);
-                    window.location.href = targetUrl;
-                    await sleep(5000);
-
-                    const newUrl = window.location.href.toLowerCase();
-                    if (!newUrl.includes('/in/' + targetSlug)) {
-                        console.error('[Wassel] Navigation failed, still on wrong page');
-                        return { ok: false, error: 'navigation_failed' };
-                    }
-                    // Wait for page to load after navigation
-                    await sleep(3000);
-                }
-                console.log('[Wassel] Confirmed on correct profile:', targetSlug);
+            if (targetSlug && currentSlug !== targetSlug) {
+                console.log('[Wassel] Wrong page! Expected:', targetSlug, 'Got:', currentSlug);
+                window.location.href = targetUrl;
+                await sleep(5000);
             }
 
-            // Log the profile name for verification
-            const profileName = (document.querySelector(
-                'h1.text-heading-xlarge, h1.inline, .pv-top-card h1, h1'
-            ) || {}).textContent;
-            console.log('[Wassel] Profile name on page:', (profileName || '').trim());
+            await sleep(3000);
 
-            // ── PROFILE ACTION BAR — the main buttons section at the top of the profile ──
-            // LinkedIn wraps the profile owner's action buttons in a specific container.
-            // We MUST only search inside this container to avoid clicking sidebar "Connect" buttons
-            // belonging to "People also viewed" / "People you may know" suggestions.
-            const profileActionContainers = [
-                '.pv-top-card-v2-ctas',                          // 2026 layout
-                '.pvs-profile-actions',                          // alternate 2026 layout
-                '.pv-top-card__action-buttons',                  // classic layout
-                '.pv-top-card-v3__action-buttons',               // v3 layout
-                'section.pv-top-card .ph5',                      // section-based layout
-                '.scaffold-layout__main',                        // broad main content area
-            ];
+            // CRITICAL: Only search in MAIN profile section, not sidebar/suggestions
+            var mainSection =
+                document.querySelector('.pv-top-card') ||
+                document.querySelector('.scaffold-layout__main') ||
+                document.querySelector('main') ||
+                document.querySelector('[data-view-name="profile-card"]');
 
-            let actionBar = null;
-            for (const sel of profileActionContainers) {
-                actionBar = document.querySelector(sel);
-                if (actionBar) {
-                    console.log('[Wassel] Found action bar via:', sel);
+            if (!mainSection) {
+                console.error('[Wassel] Main profile section not found');
+                return { ok: false, error: 'profile_section_not_found' };
+            }
+
+            var buttons = mainSection.querySelectorAll('button');
+            var connectBtn = null;
+
+            for (var btn of buttons) {
+                var text = (btn.textContent || '').trim().toLowerCase();
+                var label = (btn.getAttribute('aria-label') || '').toLowerCase();
+
+                if ((text === 'connect' || label.includes('connect')) &&
+                    !text.includes('disconnect') && !text.includes('connected') &&
+                    !text.includes('pending')) {
+                    connectBtn = btn;
                     break;
                 }
             }
 
-            // Helper: find button by text ONLY within a container (or page-wide as last resort)
-            function findByText(texts, container) {
-                const scope = container || document;
-                const all = scope.querySelectorAll('button, [role="button"]');
-                for (const el of all) {
-                    // SKIP buttons inside sidebar recommendation sections
-                    if (!container && el.closest(
-                        '.pv-browsemap-section, ' +
-                        '.pv-right-rail, ' +
-                        '[data-view-name="profile-browsemap"], ' +
-                        '.aside-container, ' +
-                        '.scaffold-layout__aside, ' +
-                        '.artdeco-card--full-width, ' +
-                        '[data-view-name="profile-card"]'
-                    )) {
-                        continue;
-                    }
-                    const t = (el.textContent || '').trim().toLowerCase();
-                    const label = (el.getAttribute('aria-label') || '').toLowerCase();
-                    for (const text of texts) {
-                        if (t === text || (label.includes(text) && !label.includes('disconnect'))) {
-                            return el;
-                        }
-                    }
-                }
-                return null;
-            }
-
-            // STEP 1: Find Connect button — FIRST inside the profile action bar, THEN page-wide with sidebar exclusion
-            let connectBtn = null;
-            if (actionBar) {
-                connectBtn = findByText(['connect', 'اتصال'], actionBar);
-                if (connectBtn) console.log('[Wassel] Found Connect in action bar ✓');
-            }
+            // Try More dropdown in main section only
             if (!connectBtn) {
-                connectBtn = findByText(['connect', 'اتصال'], null);
-                if (connectBtn) console.log('[Wassel] Found Connect via page-wide search (sidebar excluded) ✓');
-            }
+                var moreBtn = Array.from(mainSection.querySelectorAll('button')).find(function(b) {
+                    var l = (b.getAttribute('aria-label') || '').toLowerCase();
+                    return l.includes('more action');
+                });
 
-            // Pattern B: "More" dropdown → Connect (also scoped to action bar first)
-            if (!connectBtn) {
-                const moreBtn = findByText(['more', 'more actions', 'المزيد'], actionBar) ||
-                                findByText(['more', 'more actions', 'المزيد'], null);
                 if (moreBtn) {
                     moreBtn.click();
                     await sleep(1500);
-                    // Search dropdown items (dropdowns render at document level, so search globally)
-                    const dropdownItems = document.querySelectorAll(
-                        '[role="menuitem"], .artdeco-dropdown__item, .artdeco-dropdown__content-inner li'
-                    );
-                    for (const item of dropdownItems) {
-                        const text = (item.textContent || '').toLowerCase();
-                        if (text.includes('connect') || text.includes('اتصال')) {
-                            connectBtn = item;
+
+                    var items = document.querySelectorAll('[role="menuitem"]');
+                    for (var i = 0; i < items.length; i++) {
+                        var t = (items[i].textContent || '').toLowerCase();
+                        if (t.includes('connect') && !t.includes('disconnect')) {
+                            connectBtn = items[i];
                             break;
                         }
                     }
@@ -218,83 +168,66 @@
             }
 
             if (!connectBtn) {
-                // Check if already connected (Message button present)
-                const msgBtn = findByText(['message', 'رسالة'], actionBar) ||
-                               findByText(['message', 'رسالة'], null);
-                if (msgBtn) {
-                    console.log('[Wassel] Already connected (Message button found)');
-                    return { ok: true, note: 'already_connected' };
-                }
-                console.log('[Wassel] No Connect button found');
-                return { ok: false, error: 'no_connect_button' };
+                var msgBtn = Array.from(mainSection.querySelectorAll('button')).find(function(b) {
+                    return (b.textContent || '').trim().toLowerCase() === 'message';
+                });
+                if (msgBtn) return { ok: true, note: 'already_connected' };
+                return { ok: false, error: 'connect_not_found' };
             }
 
-            // SAFETY: Verify the Connect button is NOT inside a sidebar/recommendation card
-            const dangerousParent = connectBtn.closest(
-                '.pv-browsemap-section, .pv-right-rail, [data-view-name="profile-browsemap"], ' +
-                '.aside-container, .scaffold-layout__aside, [data-view-name="profile-card"]'
-            );
-            if (dangerousParent) {
-                console.error('[Wassel] ⚠️ BLOCKED: Connect button belongs to sidebar suggestion, NOT the profile owner!');
-                return { ok: false, error: 'connect_button_in_sidebar' };
+            // Safety: reject if button is too far down the page (in suggestions area)
+            var rect = connectBtn.getBoundingClientRect();
+            if (rect.top > 800) {
+                console.error('[Wassel] Button too far down (y=' + rect.top + '), likely suggestion');
+                return { ok: false, error: 'button_in_suggestions' };
             }
 
-            // Check if button says Pending or Connected
-            const btnText = (connectBtn.textContent || '').trim().toLowerCase();
-            if (btnText.includes('pending') || btnText.includes('connected')) {
-                console.log('[Wassel] Already pending or connected');
-                return { ok: true, note: 'already_pending_or_connected' };
-            }
-
-            console.log('[Wassel] Found Connect button, clicking...');
+            console.log('[Wassel] Clicking Connect at y=' + rect.top);
             connectBtn.click();
             await sleep(3000);
 
-            // STEP 2: Handle the modal — "Add a note" or direct send
+            // Add note if provided
             if (note && note.trim()) {
-                const addNoteBtn = findByText(['add a note', 'إضافة ملاحظة']);
-                if (addNoteBtn) {
-                    addNoteBtn.click();
+                var noteBtn = Array.from(document.querySelectorAll('button')).find(function(b) {
+                    return (b.textContent || '').toLowerCase().includes('add a note');
+                });
+                if (noteBtn) {
+                    noteBtn.click();
                     await sleep(1500);
-                    const textarea = document.querySelector('textarea');
-                    if (textarea) {
-                        textarea.focus();
+                    var ta = document.querySelector('textarea');
+                    if (ta) {
+                        ta.focus();
                         var setter = Object.getOwnPropertyDescriptor(
                             HTMLTextAreaElement.prototype, 'value'
                         ).set;
-                        setter.call(textarea, note);
-                        textarea.dispatchEvent(new Event('input', { bubbles: true }));
-                        await sleep(500);
+                        setter.call(ta, note);
+                        ta.dispatchEvent(new Event('input', { bubbles: true }));
                     }
                 }
             }
 
-            // STEP 3: Click Send
+            // Click Send
             await sleep(1000);
-            let sendBtn = findByText(['send', 'send now', 'send without a note', 'send invitation', 'إرسال']);
-
-            if (!sendBtn) {
-                // Find primary button in modal
-                var modal = document.querySelector('[role="dialog"], .artdeco-modal');
-                if (modal) {
-                    var btns = modal.querySelectorAll('button');
-                    for (var b of btns) {
-                        if (b.className.includes('primary') || b.className.includes('ml-auto')) {
-                            sendBtn = b;
-                            break;
-                        }
-                    }
-                }
-            }
+            var sendBtn = Array.from(document.querySelectorAll('button')).find(function(b) {
+                var t = (b.textContent || '').trim().toLowerCase();
+                return t === 'send' || t === 'send now' || t === 'send without a note';
+            });
 
             if (sendBtn) {
                 sendBtn.click();
                 await sleep(2000);
-                console.log('[Wassel] Invite SENT successfully');
+                console.log('[Wassel] Invite sent!');
                 return { ok: true };
             }
 
-            return { ok: false, error: 'send_button_not_found' };
+            // Try primary button in modal
+            var modal = document.querySelector('[role="dialog"]');
+            if (modal) {
+                var primary = modal.querySelector('button.artdeco-button--primary');
+                if (primary) { primary.click(); await sleep(2000); return { ok: true }; }
+            }
+
+            return { ok: false, error: 'send_not_found' };
         } catch (err) {
             console.error('[Wassel] Invite error:', err);
             return { ok: false, error: err.message };
