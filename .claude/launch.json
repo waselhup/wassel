@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Wassel Full-Stack Dev",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["tsx", "watch", "server/_core/index.ts"],
+      "port": 3000
+    },
+    {
+      "name": "Vite Client Only",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["vite", "--host"],
+      "port": 5173
+    }
+  ]
+}
