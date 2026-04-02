@@ -187,16 +187,22 @@ export default function CampaignDetail() {
     return () => clearInterval(interval);
   }, [loadActivity]);
 
-  // Test automation handler
+  // Test automation handler — checks cloud session + queue
   const testAutomation = async () => {
     setTestLoading(true);
     try {
       const token = localStorage.getItem('supabase_token') || localStorage.getItem('supabase_access_token') || '';
-      const res = await fetch(`${API_BASE}/sequence/queue/active`, {
-        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-      });
-      const data = await res.json();
-      setTestResult(data);
+      const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
+
+      // Check cloud session
+      const sessionRes = await fetch('/api/cloud/session-check', { headers });
+      const { hasSession } = await sessionRes.json();
+
+      // Also check old queue for backward compatibility
+      const queueRes = await fetch(`${API_BASE}/sequence/queue/active`, { headers });
+      const queueData = await queueRes.json();
+
+      setTestResult({ ...queueData, hasSession, mode: 'cloud' });
     } catch (e: any) {
       setTestResult({ error: e.message });
     }
@@ -570,17 +576,19 @@ export default function CampaignDetail() {
                 </Button>
                 {testResult && (
                   <div className={`text-xs rounded-lg p-3 ${
-                    testResult.queue?.length > 0
+                    testResult.hasSession
                       ? 'bg-green-50 text-green-800 border border-green-200'
                       : 'bg-amber-50 text-amber-800 border border-amber-200'
                   }`}>
                     {testResult.error ? (
                       <p>❌ Error: {testResult.error}</p>
-                    ) : testResult.queue?.length > 0 ? (
+                    ) : testResult.hasSession ? (
                       <>
                         <p className="font-semibold">{t('campaign.working')}</p>
-                        <p className="mt-1">Next: {testResult.queue[0]?.step_type} for {testResult.queue[0]?.name}</p>
-                        <p>{t('campaign.queue')} {testResult.queue.length} {t('campaign.actionPending')}</p>
+                        <p className="mt-1">☁️ LinkedIn session active — cloud execution ready</p>
+                        {testResult.queue?.length > 0 && (
+                          <p>{t('campaign.queue')} {testResult.queue.length} {t('campaign.actionPending')}</p>
+                        )}
                         <p className="mt-1 text-green-600">{t('campaign.executeSoon')}</p>
                       </>
                     ) : (
