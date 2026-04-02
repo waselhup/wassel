@@ -12,6 +12,12 @@
       "runtimeExecutable": "npx",
       "runtimeArgs": ["vite", "--host"],
       "port": 5173
+    },
+    {
+      "name": "Automation Server",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["--watch", "--env-file=.env", "index.js"],
+      "port": 4000
     }
   ]
 }

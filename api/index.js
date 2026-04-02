@@ -18834,17 +18834,17 @@ var require_router = __commonJS({
     var toString3 = Object.prototype.toString;
     var proto = module2.exports = function(options) {
       var opts = options || {};
-      function router17(req, res, next) {
-        router17.handle(req, res, next);
+      function router20(req, res, next) {
+        router20.handle(req, res, next);
       }
-      setPrototypeOf(router17, proto);
-      router17.params = {};
-      router17._params = [];
-      router17.caseSensitive = opts.caseSensitive;
-      router17.mergeParams = opts.mergeParams;
-      router17.strict = opts.strict;
-      router17.stack = [];
-      return router17;
+      setPrototypeOf(router20, proto);
+      router20.params = {};
+      router20._params = [];
+      router20.caseSensitive = opts.caseSensitive;
+      router20.mergeParams = opts.mergeParams;
+      router20.strict = opts.strict;
+      router20.stack = [];
+      return router20;
     };
     proto.param = function param(name, fn) {
       if (typeof name === "function") {
@@ -21860,7 +21860,7 @@ var require_application = __commonJS({
   "node_modules/express/lib/application.js"(exports2, module2) {
     "use strict";
     var finalhandler = require_finalhandler();
-    var Router16 = require_router();
+    var Router19 = require_router();
     var methods = require_methods();
     var middleware = require_init();
     var query = require_query();
@@ -21925,7 +21925,7 @@ var require_application = __commonJS({
     };
     app2.lazyrouter = function lazyrouter() {
       if (!this._router) {
-        this._router = new Router16({
+        this._router = new Router19({
           caseSensitive: this.enabled("case sensitive routing"),
           strict: this.enabled("strict routing")
         });
@@ -21934,17 +21934,17 @@ var require_application = __commonJS({
       }
     };
     app2.handle = function handle(req, res, callback) {
-      var router17 = this._router;
+      var router20 = this._router;
       var done = callback || finalhandler(req, res, {
         env: this.get("env"),
         onerror: logerror.bind(this)
       });
-      if (!router17) {
+      if (!router20) {
         debug("no routes defined on app");
         done();
         return;
       }
-      router17.handle(req, res, done);
+      router20.handle(req, res, done);
     };
     app2.use = function use(fn) {
       var offset = 0;
@@ -21964,15 +21964,15 @@ var require_application = __commonJS({
         throw new TypeError("app.use() requires a middleware function");
       }
       this.lazyrouter();
-      var router17 = this._router;
+      var router20 = this._router;
       fns.forEach(function(fn2) {
         if (!fn2 || !fn2.handle || !fn2.set) {
-          return router17.use(path, fn2);
+          return router20.use(path, fn2);
         }
         debug(".use app under %s", path);
         fn2.mountpath = path;
         fn2.parent = this;
-        router17.use(path, function mounted_app(req, res, next) {
+        router20.use(path, function mounted_app(req, res, next) {
           var orig = req.app;
           fn2.handle(req, res, function(err) {
             setPrototypeOf(req, orig.request);
@@ -23789,7 +23789,7 @@ var require_express = __commonJS({
     var mixin = require_merge_descriptors();
     var proto = require_application();
     var Route = require_route();
-    var Router16 = require_router();
+    var Router19 = require_router();
     var req = require_request();
     var res = require_response();
     exports2 = module2.exports = createApplication;
@@ -23812,7 +23812,7 @@ var require_express = __commonJS({
     exports2.request = req;
     exports2.response = res;
     exports2.Route = Route;
-    exports2.Router = Router16;
+    exports2.Router = Router19;
     exports2.json = bodyParser.json;
     exports2.query = require_query();
     exports2.raw = bodyParser.raw;
@@ -43745,7 +43745,7 @@ __export(vercel_exports, {
   default: () => vercel_default
 });
 module.exports = __toCommonJS(vercel_exports);
-var import_express16 = __toESM(require_express2(), 1);
+var import_express19 = __toESM(require_express2(), 1);
 
 // node_modules/@trpc/server/dist/codes-DagpWZLc.mjs
 function mergeWithoutOverrides(obj1, ...objs) {
@@ -44186,19 +44186,19 @@ function createRouterFactory(config2) {
       procedures,
       lazy: lazy$1
     }, emptyRouter), {}, { record: record2 });
-    const router17 = (0, import_objectSpread22.default)((0, import_objectSpread22.default)({}, record2), {}, {
+    const router20 = (0, import_objectSpread22.default)((0, import_objectSpread22.default)({}, record2), {}, {
       _def,
       createCaller: createCallerFactory()({ _def })
     });
-    return router17;
+    return router20;
   }
   return createRouterInner;
 }
 function isProcedure(procedureOrRouter) {
   return typeof procedureOrRouter === "function";
 }
-async function getProcedureAtPath(router17, path) {
-  const { _def } = router17;
+async function getProcedureAtPath(router20, path) {
+  const { _def } = router20;
   let procedure = _def.procedures[path];
   while (!procedure) {
     const key = Object.keys(_def.lazy).find((key$1) => path.startsWith(key$1));
@@ -44210,14 +44210,14 @@ async function getProcedureAtPath(router17, path) {
   return procedure;
 }
 function createCallerFactory() {
-  return function createCallerInner(router17) {
-    const { _def } = router17;
+  return function createCallerInner(router20) {
+    const { _def } = router20;
     return function createCaller(ctxOrCallback, opts) {
       return createRecursiveProxy(async (innerOpts) => {
         const { path, args } = innerOpts;
         const fullPath = path.join(".");
         if (path.length === 1 && path[0] === "_def") return _def;
-        const procedure = await getProcedureAtPath(router17, fullPath);
+        const procedure = await getProcedureAtPath(router20, fullPath);
         let ctx = void 0;
         try {
           if (!procedure) throw new TRPCError({
@@ -44265,7 +44265,7 @@ function mergeRouters(...routerList) {
     }
     return prev;
   }, defaultTransformer);
-  const router17 = createRouterFactory({
+  const router20 = createRouterFactory({
     errorFormatter,
     transformer,
     isDev: routerList.every((r) => r._def._config.isDev),
@@ -44274,7 +44274,7 @@ function mergeRouters(...routerList) {
     $types: (_routerList$ = routerList[0]) === null || _routerList$ === void 0 ? void 0 : _routerList$._def._config.$types,
     sse: (_routerList$2 = routerList[0]) === null || _routerList$2 === void 0 ? void 0 : _routerList$2._def._config.sse
   })(record2);
-  return router17;
+  return router20;
 }
 var trackedSymbol = Symbol();
 function isTrackedEnvelope(value) {
@@ -45624,7 +45624,7 @@ function initResponse(initOpts) {
   return { status };
 }
 function caughtErrorToData(cause, errorOpts) {
-  const { router: router17, req, onError } = errorOpts.opts;
+  const { router: router20, req, onError } = errorOpts.opts;
   const error48 = getTRPCErrorFromUnknown(cause);
   onError === null || onError === void 0 || onError({
     error: error48,
@@ -45635,14 +45635,14 @@ function caughtErrorToData(cause, errorOpts) {
     req
   });
   const untransformedJSON = { error: getErrorShape({
-    config: router17._def._config,
+    config: router20._def._config,
     error: error48,
     type: errorOpts.type,
     path: errorOpts.path,
     input: errorOpts.input,
     ctx: errorOpts.ctx
   }) };
-  const transformedJSON = transformTRPCResponse(router17._def._config, untransformedJSON);
+  const transformedJSON = transformTRPCResponse(router20._def._config, untransformedJSON);
   const body = JSON.stringify(transformedJSON);
   return {
     error: error48,
@@ -45657,9 +45657,9 @@ function isDataStream(v) {
 }
 async function resolveResponse(opts) {
   var _ref, _opts$allowBatching, _opts$batching, _opts$allowMethodOver, _config$sse$enabled, _config$sse;
-  const { router: router17, req } = opts;
+  const { router: router20, req } = opts;
   const headers = new Headers([["vary", "trpc-accept"]]);
-  const config2 = router17._def._config;
+  const config2 = router20._def._config;
   const url3 = new URL(req.url);
   if (req.method === "HEAD") return new Response(null, { status: 204 });
   const allowBatching = (_ref = (_opts$allowBatching = opts.allowBatching) !== null && _opts$allowBatching !== void 0 ? _opts$allowBatching : (_opts$batching = opts.batching) === null || _opts$batching === void 0 ? void 0 : _opts$batching.enabled) !== null && _ref !== void 0 ? _ref : true;
@@ -45669,7 +45669,7 @@ async function resolveResponse(opts) {
       return [void 0, await getRequestInfo({
         req,
         path: decodeURIComponent(opts.path),
-        router: router17,
+        router: router20,
         searchParams: url3.searchParams,
         headers: opts.req.headers,
         url: url3
@@ -49499,9 +49499,9 @@ var trackStream = (stream4, chunkSize, onProgress, onFinish) => {
 // node_modules/axios/lib/adapters/fetch.js
 var DEFAULT_CHUNK_SIZE = 64 * 1024;
 var { isFunction: isFunction3 } = utils_default;
-var globalFetchAPI = (({ Request: Request16, Response: Response16 }) => ({
-  Request: Request16,
-  Response: Response16
+var globalFetchAPI = (({ Request: Request19, Response: Response19 }) => ({
+  Request: Request19,
+  Response: Response19
 }))(utils_default.global);
 var { ReadableStream: ReadableStream2, TextEncoder: TextEncoder2 } = utils_default.global;
 var test = (fn, ...args) => {
@@ -49519,18 +49519,18 @@ var factory = (env) => {
     globalFetchAPI,
     env
   );
-  const { fetch: envFetch, Request: Request16, Response: Response16 } = env;
+  const { fetch: envFetch, Request: Request19, Response: Response19 } = env;
   const isFetchSupported = envFetch ? isFunction3(envFetch) : typeof fetch === "function";
-  const isRequestSupported = isFunction3(Request16);
-  const isResponseSupported = isFunction3(Response16);
+  const isRequestSupported = isFunction3(Request19);
+  const isResponseSupported = isFunction3(Response19);
   if (!isFetchSupported) {
     return false;
   }
   const isReadableStreamSupported = isFetchSupported && isFunction3(ReadableStream2);
-  const encodeText = isFetchSupported && (typeof TextEncoder2 === "function" ? /* @__PURE__ */ ((encoder2) => (str) => encoder2.encode(str))(new TextEncoder2()) : async (str) => new Uint8Array(await new Request16(str).arrayBuffer()));
+  const encodeText = isFetchSupported && (typeof TextEncoder2 === "function" ? /* @__PURE__ */ ((encoder2) => (str) => encoder2.encode(str))(new TextEncoder2()) : async (str) => new Uint8Array(await new Request19(str).arrayBuffer()));
   const supportsRequestStream = isRequestSupported && isReadableStreamSupported && test(() => {
     let duplexAccessed = false;
-    const hasContentType = new Request16(platform_default.origin, {
+    const hasContentType = new Request19(platform_default.origin, {
       body: new ReadableStream2(),
       method: "POST",
       get duplex() {
@@ -49540,7 +49540,7 @@ var factory = (env) => {
     }).headers.has("Content-Type");
     return duplexAccessed && !hasContentType;
   });
-  const supportsResponseStream = isResponseSupported && isReadableStreamSupported && test(() => utils_default.isReadableStream(new Response16("").body));
+  const supportsResponseStream = isResponseSupported && isReadableStreamSupported && test(() => utils_default.isReadableStream(new Response19("").body));
   const resolvers = {
     stream: supportsResponseStream && ((res) => res.body)
   };
@@ -49567,7 +49567,7 @@ var factory = (env) => {
       return body.size;
     }
     if (utils_default.isSpecCompliantForm(body)) {
-      const _request = new Request16(platform_default.origin, {
+      const _request = new Request19(platform_default.origin, {
         method: "POST",
         body
       });
@@ -49615,7 +49615,7 @@ var factory = (env) => {
     let requestContentLength;
     try {
       if (onUploadProgress && supportsRequestStream && method !== "get" && method !== "head" && (requestContentLength = await resolveBodyLength(headers, data)) !== 0) {
-        let _request = new Request16(url3, {
+        let _request = new Request19(url3, {
           method: "POST",
           body: data,
           duplex: "half"
@@ -49635,7 +49635,7 @@ var factory = (env) => {
       if (!utils_default.isString(withCredentials)) {
         withCredentials = withCredentials ? "include" : "omit";
       }
-      const isCredentialsSupported = isRequestSupported && "credentials" in Request16.prototype;
+      const isCredentialsSupported = isRequestSupported && "credentials" in Request19.prototype;
       const resolvedOptions = {
         ...fetchOptions,
         signal: composedSignal,
@@ -49645,7 +49645,7 @@ var factory = (env) => {
         duplex: "half",
         credentials: isCredentialsSupported ? withCredentials : void 0
       };
-      request = isRequestSupported && new Request16(url3, resolvedOptions);
+      request = isRequestSupported && new Request19(url3, resolvedOptions);
       let response = await (isRequestSupported ? _fetch(request, fetchOptions) : _fetch(url3, resolvedOptions));
       const isStreamResponse = supportsResponseStream && (responseType === "stream" || responseType === "response");
       if (supportsResponseStream && (onDownloadProgress || isStreamResponse && unsubscribe)) {
@@ -49658,7 +49658,7 @@ var factory = (env) => {
           responseContentLength,
           progressEventReducer(asyncDecorator(onDownloadProgress), true)
         ) || [];
-        response = new Response16(
+        response = new Response19(
           trackStream(response.body, DEFAULT_CHUNK_SIZE, onProgress, () => {
             flush && flush();
             unsubscribe && unsubscribe();
@@ -49705,8 +49705,8 @@ var factory = (env) => {
 var seedCache = /* @__PURE__ */ new Map();
 var getFetch = (config2) => {
   let env = config2 && config2.env || {};
-  const { fetch: fetch2, Request: Request16, Response: Response16 } = env;
-  const seeds = [Request16, Response16, fetch2];
+  const { fetch: fetch2, Request: Request19, Response: Response19 } = env;
+  const seeds = [Request19, Response19, fetch2];
   let len = seeds.length, i = len, seed, target, map2 = seedCache;
   while (i--) {
     seed = seeds[i];
@@ -52058,6 +52058,7 @@ var supabase = createClient(supabaseUrl, supabaseServiceKey, {
 var import_crypto2 = require("crypto");
 var ALGORITHM = "aes-256-gcm";
 var IV_LENGTH = 16;
+var TAG_LENGTH = 16;
 function getKey() {
   let key = process.env.ENCRYPTION_KEY || "";
   key = key.trim();
@@ -52075,6 +52076,18 @@ function encrypt(plaintext) {
   const tag2 = cipher.getAuthTag();
   const result = Buffer.concat([iv, encrypted, tag2]);
   return result.toString("base64");
+}
+function decrypt(encoded) {
+  const key = getKey();
+  const buffer = Buffer.from(encoded, "base64");
+  const iv = buffer.subarray(0, IV_LENGTH);
+  const tag2 = buffer.subarray(buffer.length - TAG_LENGTH);
+  const ciphertext = buffer.subarray(IV_LENGTH, buffer.length - TAG_LENGTH);
+  const decipher = (0, import_crypto2.createDecipheriv)(ALGORITHM, key, iv);
+  decipher.setAuthTag(tag2);
+  let decrypted = decipher.update(ciphertext);
+  decrypted = Buffer.concat([decrypted, decipher.final()]);
+  return decrypted.toString("utf8");
 }
 
 // server/_core/linkedinAuth.ts
@@ -53059,7 +53072,7 @@ router5.get("/prospects", async (req, res) => {
       return res.status(401).json({ error: "No team associated with user" });
     }
     const clientId = req.query.client_id;
-    let query = supabase.from("prospects").select("id, linkedin_url, name, title, company, location, source_url, status, created_at").eq("team_id", teamId).order("created_at", { ascending: false }).limit(1e3);
+    let query = supabase.from("prospects").select("id, linkedin_url, name, title, company, location, photo_url, source_url, status, created_at").eq("team_id", teamId).order("created_at", { ascending: false }).limit(1e3);
     if (clientId) {
       query = query.eq("client_id", clientId);
     }
@@ -54322,15 +54335,13 @@ router9.post("/", async (req, res) => {
       const { data: membership } = await supabase.from("team_members").select("team_id").eq("user_id", userId).single();
       teamId = membership?.team_id || null;
     }
-    if (!teamId) {
-      teamId = userId;
-    }
     const { action_type, status, prospect_name, linkedin_url, campaign_id, error_message } = req.body;
     if (!action_type || !status) {
       return res.status(400).json({ error: "action_type and status are required" });
     }
     const { error: error48 } = await supabase.from("activity_logs").insert({
-      team_id: teamId,
+      user_id: userId,
+      team_id: teamId || null,
       campaign_id: campaign_id || null,
       action_type,
       status,
@@ -54361,12 +54372,14 @@ router9.get("/", async (req, res) => {
       const { data: membership } = await supabase.from("team_members").select("team_id").eq("user_id", userId).single();
       teamId = membership?.team_id || null;
     }
-    if (!teamId) {
-      teamId = userId;
-    }
     const limit = parseInt(req.query.limit) || 50;
     const campaignId = req.query.campaign_id;
-    let query = supabase.from("activity_logs").select("id, action_type, status, prospect_name, linkedin_url, error_message, executed_at, created_at").eq("team_id", teamId).order("created_at", { ascending: false }).limit(limit);
+    let query = supabase.from("activity_logs").select("id, action_type, status, prospect_name, linkedin_url, error_message, executed_at, created_at").order("created_at", { ascending: false }).limit(limit);
+    if (teamId) {
+      query = query.eq("team_id", teamId);
+    } else {
+      query = query.eq("user_id", userId);
+    }
     if (campaignId) {
       query = query.eq("campaign_id", campaignId);
     }
@@ -54389,7 +54402,13 @@ router9.get("/debug", async (req, res) => {
       const { data: membership } = await supabase.from("team_members").select("team_id").eq("user_id", userId).single();
       teamId = membership?.team_id || null;
     }
-    const { data, error: error48, count } = await supabase.from("activity_logs").select("*", { count: "exact" }).eq("team_id", teamId || "").order("created_at", { ascending: false }).limit(1);
+    let debugQuery = supabase.from("activity_logs").select("*", { count: "exact" }).order("created_at", { ascending: false }).limit(1);
+    if (teamId) {
+      debugQuery = debugQuery.eq("team_id", teamId);
+    } else if (userId) {
+      debugQuery = debugQuery.eq("user_id", userId);
+    }
+    const { data, error: error48, count } = await debugQuery;
     const tableExists = !error48 || error48.code !== "42P01";
     res.json({
       tableExists,
@@ -54968,20 +54987,26 @@ function getUserId3(req) {
   return req.userId || req.user?.id || null;
 }
 function normalizeProspects(items) {
-  return items.map((p) => ({
-    name: [
-      p.firstName || p.first_name,
-      p.lastName || p.last_name
-    ].filter(Boolean).join(" ") || p.fullName || p.name || "",
-    first_name: p.firstName || p.first_name || "",
-    last_name: p.lastName || p.last_name || "",
-    title: p.headline || p.title || p.currentPosition?.[0]?.position || "",
-    company: p.currentPosition?.[0]?.companyName || p.company || "",
-    location: p.location?.linkedinText || p.location?.parsed?.text || p.location || p.city || "",
-    linkedin_url: p.linkedinUrl || p.profileUrl || p.url || null,
-    avatar_url: p.photo || p.profilePicture?.url || p.imageUrl || null,
-    avatar_initials: ((p.firstName?.[0] || p.first_name?.[0] || "") + (p.lastName?.[0] || p.last_name?.[0] || "")).toUpperCase() || "?"
-  })).filter((p) => p.name || p.linkedin_url);
+  return items.map((p) => {
+    const rawDegree = p.connectionDegree || p.connection_degree || p.degree || p.connectionType || "";
+    const degree = String(rawDegree).replace(/[^0-9]/g, "");
+    return {
+      name: [
+        p.firstName || p.first_name,
+        p.lastName || p.last_name
+      ].filter(Boolean).join(" ") || p.fullName || p.name || "",
+      first_name: p.firstName || p.first_name || "",
+      last_name: p.lastName || p.last_name || "",
+      title: p.headline || p.title || p.currentPosition?.[0]?.position || "",
+      company: p.currentPosition?.[0]?.companyName || p.company || "",
+      location: p.location?.linkedinText || p.location?.parsed?.text || p.location || p.city || "",
+      linkedin_url: p.linkedinUrl || p.profileUrl || p.url || null,
+      avatar_url: p.photo || p.profilePicture?.url || p.imageUrl || null,
+      avatar_initials: ((p.firstName?.[0] || p.first_name?.[0] || "") + (p.lastName?.[0] || p.last_name?.[0] || "")).toUpperCase() || "?",
+      connection_degree: degree || null
+      // "1", "2", "3", or null
+    };
+  }).filter((p) => (p.name || p.linkedin_url) && p.connection_degree !== "1");
 }
 router11.post("/search", async (req, res) => {
   try {
@@ -55036,24 +55061,31 @@ router11.post("/import", async (req, res) => {
     if (!prospects?.length) return res.status(400).json({ error: "No prospects provided" });
     const { data: member } = await supabase.from("team_members").select("team_id").eq("user_id", userId).limit(1).single();
     if (!member?.team_id) return res.status(400).json({ error: "No team found" });
-    const leads = prospects.map((p) => ({
+    const records = prospects.map((p) => ({
       team_id: member.team_id,
+      client_id: member.team_id,
       name: p.name || "Unknown",
       title: p.title || null,
       company: p.company || null,
       location: p.location || null,
       linkedin_url: p.linkedin_url || null,
-      profile_picture_url: p.avatar_url || p.photo || null,
-      source: "discovery",
-      status: "new"
+      photo_url: p.avatar_url || p.photo || null,
+      source_url: null,
+      status: "imported"
     }));
+    console.log("[Import] Importing", records.length, "prospects for team", member.team_id);
     const BATCH = 50;
     let imported = 0;
-    for (let i = 0; i < leads.length; i += BATCH) {
-      const batch = leads.slice(i, i + BATCH);
-      const { error: error48 } = await supabase.from("leads").upsert(batch, { onConflict: "team_id,linkedin_url", ignoreDuplicates: true });
-      if (!error48) imported += batch.length;
+    for (let i = 0; i < records.length; i += BATCH) {
+      const batch = records.slice(i, i + BATCH);
+      const { data: inserted, error: error48 } = await supabase.from("prospects").upsert(batch, { onConflict: "linkedin_url,team_id", ignoreDuplicates: true }).select("id");
+      if (error48) {
+        console.error("[Import] Batch error:", error48.message, error48.code, error48.details);
+      } else {
+        imported += inserted?.length || batch.length;
+      }
     }
+    console.log("[Import] Done. Imported:", imported);
     res.json({ success: true, imported });
   } catch (err) {
     console.error("[Import] Error:", err.message);
@@ -60819,6 +60851,583 @@ router14.get("/portal", async (req, res) => {
   }
 });
 var stripeRoutes_default = router14;
+
+// server/_core/sessionRoutes.ts
+var import_express15 = __toESM(require_express2(), 1);
+var router15 = (0, import_express15.Router)();
+function getTeamId6(req) {
+  const user = req.user;
+  if (!user) return null;
+  if (user.role === "super_admin" && req.query.target_team_id) {
+    return req.query.target_team_id;
+  }
+  return user.teamId || null;
+}
+router15.post("/store", async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+    const { li_at, jsessionid } = req.body;
+    if (!li_at || typeof li_at !== "string") {
+      return res.status(400).json({ error: "li_at cookie is required" });
+    }
+    const teamId = getTeamId6(req);
+    const encryptedLiAt = encrypt(li_at);
+    const encryptedJsession = jsessionid ? encrypt(jsessionid) : null;
+    const { data, error: error48 } = await supabase.from("linkedin_sessions").upsert({
+      user_id: userId,
+      team_id: teamId,
+      li_at: encryptedLiAt,
+      jsessionid: encryptedJsession,
+      status: "active",
+      last_verified_at: (/* @__PURE__ */ new Date()).toISOString(),
+      expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1e3).toISOString(),
+      updated_at: (/* @__PURE__ */ new Date()).toISOString()
+    }, { onConflict: "user_id" }).select("id").single();
+    if (error48) {
+      console.error("[Session] Store error:", error48.message);
+      return res.status(500).json({ error: error48.message });
+    }
+    console.log(`[Session] Stored for user=${userId.slice(0, 8)}\u2026`);
+    res.json({ success: true, id: data?.id, status: "active" });
+  } catch (err) {
+    console.error("[Session] Store exception:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+router15.get("/status", async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.json({ hasSession: false, reason: "not_authenticated" });
+    }
+    const { data } = await supabase.from("linkedin_sessions").select("id, status, last_verified_at, expires_at, created_at, updated_at").eq("user_id", userId).eq("status", "active").single();
+    if (!data) {
+      return res.json({ hasSession: false });
+    }
+    if (data.expires_at && new Date(data.expires_at) < /* @__PURE__ */ new Date()) {
+      await supabase.from("linkedin_sessions").update({ status: "expired" }).eq("id", data.id);
+      return res.json({ hasSession: false, reason: "expired" });
+    }
+    res.json({
+      hasSession: true,
+      status: data.status,
+      lastVerified: data.last_verified_at,
+      expiresAt: data.expires_at,
+      updatedAt: data.updated_at
+    });
+  } catch (err) {
+    res.json({ hasSession: false, error: err.message });
+  }
+});
+router15.delete("/revoke", async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+    const { error: error48 } = await supabase.from("linkedin_sessions").update({ status: "revoked", li_at: "", jsessionid: "", updated_at: (/* @__PURE__ */ new Date()).toISOString() }).eq("user_id", userId);
+    if (error48) {
+      return res.status(500).json({ error: error48.message });
+    }
+    console.log(`[Session] Revoked for user=${userId.slice(0, 8)}\u2026`);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+var sessionRoutes_default = router15;
+
+// server/_core/automationRoutes.ts
+var import_express16 = __toESM(require_express2(), 1);
+var router16 = (0, import_express16.Router)();
+var AUTOMATION_URL = process.env.AUTOMATION_SERVER_URL || "";
+var AUTOMATION_KEY = process.env.AUTOMATION_API_KEY || "";
+function getTeamId7(req) {
+  const user = req.user;
+  if (!user) return null;
+  if (user.role === "super_admin" && req.query.target_team_id) {
+    return req.query.target_team_id;
+  }
+  return user.teamId || null;
+}
+function replaceVariables2(template, prospect) {
+  if (!template) return "";
+  return template.replace(/\{\{firstName\}\}/g, prospect?.name?.split(" ")[0] || prospect?.first_name || "").replace(/\{\{lastName\}\}/g, prospect?.name?.split(" ").slice(1).join(" ") || prospect?.last_name || "").replace(/\{\{company\}\}/g, prospect?.company || "").replace(/\{\{jobTitle\}\}/g, prospect?.title || prospect?.headline || "");
+}
+router16.post("/campaigns/:id/launch", async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const teamId = getTeamId7(req);
+    if (!userId || !teamId) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+    if (!AUTOMATION_URL) {
+      return res.status(503).json({ error: "Automation server not configured" });
+    }
+    const campaignId = req.params.id;
+    const { data: campaign } = await supabase.from("campaigns").select("id, name, status").eq("id", campaignId).eq("team_id", teamId).single();
+    if (!campaign) {
+      return res.status(404).json({ error: "Campaign not found" });
+    }
+    const { data: session } = await supabase.from("linkedin_sessions").select("id, status").eq("user_id", userId).eq("status", "active").single();
+    if (!session) {
+      return res.status(400).json({
+        error: "No active LinkedIn session. Open LinkedIn in your browser and reload the Wassel extension."
+      });
+    }
+    const now = (/* @__PURE__ */ new Date()).toISOString();
+    const { data: pendingSteps, error: qError } = await supabase.from("prospect_step_status").select(`
+        id,
+        prospect_id,
+        step_id,
+        campaign_steps (
+          step_type,
+          step_number,
+          message_template
+        ),
+        prospects (
+          id,
+          name,
+          linkedin_url,
+          title,
+          company
+        )
+      `).eq("campaign_id", campaignId).eq("status", "pending").lte("scheduled_at", now).order("scheduled_at", { ascending: true }).limit(100);
+    if (qError) {
+      return res.status(500).json({ error: qError.message });
+    }
+    if (!pendingSteps || pendingSteps.length === 0) {
+      return res.json({ success: true, queued: 0, message: "No pending actions" });
+    }
+    let queued = 0;
+    let failed = 0;
+    for (const step of pendingSteps) {
+      const stepData = step.campaign_steps;
+      const prospect = step.prospects;
+      if (!prospect?.linkedin_url) continue;
+      const actionType = stepData?.step_type === "invitation" || stepData?.step_type === "invite" || stepData?.step_type === "connection_request" ? "connect" : stepData?.step_type === "visit" ? "visit" : stepData?.step_type === "message" || stepData?.step_type === "follow_up" ? "message" : null;
+      if (!actionType) continue;
+      try {
+        const resp = await fetch(`${AUTOMATION_URL}/jobs/enqueue`, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${AUTOMATION_KEY}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            type: actionType,
+            userId,
+            teamId,
+            prospectStepId: step.id,
+            linkedinUrl: prospect.linkedin_url,
+            name: prospect.name || "",
+            message: replaceVariables2(stepData?.message_template, prospect),
+            campaignId
+          })
+        });
+        if (resp.ok) {
+          queued++;
+          await supabase.from("prospect_step_status").update({ status: "in_progress" }).eq("id", step.id);
+        } else {
+          failed++;
+        }
+      } catch (err) {
+        console.error("[Automation] Queue error:", err.message);
+        failed++;
+      }
+    }
+    if (queued > 0) {
+      await supabase.from("campaigns").update({ status: "active" }).eq("id", campaignId);
+    }
+    console.log(`[Automation] Campaign ${campaignId.slice(0, 8)}\u2026 launched: ${queued} queued, ${failed} failed`);
+    res.json({ success: true, queued, failed });
+  } catch (err) {
+    console.error("[Automation] Launch error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+router16.get("/campaigns/:id/progress", async (req, res) => {
+  try {
+    const teamId = getTeamId7(req);
+    if (!teamId) return res.status(401).json({ error: "Authentication required" });
+    const campaignId = req.params.id;
+    const { data: campaign } = await supabase.from("campaigns").select("id").eq("id", campaignId).eq("team_id", teamId).single();
+    if (!campaign) return res.status(404).json({ error: "Campaign not found" });
+    const { data: statuses } = await supabase.from("prospect_step_status").select("status").eq("campaign_id", campaignId);
+    const counts = { total: 0, pending: 0, in_progress: 0, completed: 0, failed: 0, waiting: 0, skipped: 0 };
+    for (const s of statuses || []) {
+      counts.total++;
+      const st = s.status;
+      if (st in counts) counts[st]++;
+    }
+    res.json({ success: true, progress: counts });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+router16.post("/campaigns/:id/pause", async (req, res) => {
+  try {
+    const teamId = getTeamId7(req);
+    if (!teamId) return res.status(401).json({ error: "Authentication required" });
+    const campaignId = req.params.id;
+    const { data: campaign } = await supabase.from("campaigns").select("id").eq("id", campaignId).eq("team_id", teamId).single();
+    if (!campaign) return res.status(404).json({ error: "Campaign not found" });
+    await supabase.from("prospect_step_status").update({ status: "pending" }).eq("campaign_id", campaignId).eq("status", "in_progress");
+    await supabase.from("campaigns").update({ status: "paused" }).eq("id", campaignId);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+var automationRoutes_default = router16;
+
+// server/_core/cloudCampaignRoutes.ts
+var import_express17 = __toESM(require_express2(), 1);
+
+// server/_core/linkedinApi.ts
+function makeHeaders(session) {
+  return {
+    "cookie": `li_at=${session.liAt}; JSESSIONID="${session.jsessionId}"`,
+    "csrf-token": session.jsessionId.replace(/"/g, ""),
+    "user-agent": session.userAgent || "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+    "x-li-lang": "en_US",
+    "x-restli-protocol-version": "2.0.0",
+    "x-li-track": '{"clientVersion":"1.13.8860","mpVersion":"1.13.8860","osName":"web","timezoneOffset":3,"timezone":"Asia/Riyadh","deviceFormFactor":"DESKTOP","mpName":"voyager-web"}'
+  };
+}
+async function visitProfile(session, profileSlug) {
+  try {
+    const res = await fetch(
+      `https://www.linkedin.com/voyager/api/identity/profiles/${encodeURIComponent(profileSlug)}`,
+      { headers: makeHeaders(session) }
+    );
+    if (res.ok) {
+      const data = await res.json();
+      const firstName = data?.firstName || data?.miniProfile?.firstName || "";
+      const lastName = data?.lastName || data?.miniProfile?.lastName || "";
+      const entityUrn = data?.entityUrn || data?.miniProfile?.entityUrn || "";
+      const profileId = entityUrn.split(":").pop() || "";
+      return {
+        success: true,
+        name: `${firstName} ${lastName}`.trim(),
+        profileId
+      };
+    }
+    return { success: false, error: `HTTP ${res.status}` };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+async function sendInvite(session, profileId, note) {
+  try {
+    const body = {
+      invitee: {
+        "com.linkedin.voyager.growth.invitation.InviteeProfile": {
+          profileId
+        }
+      }
+    };
+    if (note && note.trim()) {
+      body.message = note.trim();
+    }
+    const res = await fetch(
+      "https://www.linkedin.com/voyager/api/growth/normInvitations",
+      {
+        method: "POST",
+        headers: {
+          ...makeHeaders(session),
+          "content-type": "application/json"
+        },
+        body: JSON.stringify(body)
+      }
+    );
+    if (res.ok || res.status === 201) {
+      return { success: true };
+    }
+    const errText = await res.text();
+    return { success: false, error: `HTTP ${res.status}: ${errText.slice(0, 200)}` };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+async function sendMessage(session, profileUrn, message2) {
+  try {
+    const body = {
+      keyVersion: "LEGACY_INBOX",
+      conversationCreate: {
+        eventCreate: {
+          value: {
+            "com.linkedin.voyager.messaging.create.MessageCreate": {
+              attributedBody: { text: message2, attributes: [] },
+              attachments: []
+            }
+          }
+        },
+        recipients: [profileUrn],
+        subtype: "MEMBER_TO_MEMBER"
+      }
+    };
+    const res = await fetch(
+      "https://www.linkedin.com/voyager/api/messaging/conversations",
+      {
+        method: "POST",
+        headers: {
+          ...makeHeaders(session),
+          "content-type": "application/json"
+        },
+        body: JSON.stringify(body)
+      }
+    );
+    if (res.ok || res.status === 201) {
+      return { success: true };
+    }
+    return { success: false, error: `HTTP ${res.status}` };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+async function publishPost(session, content, authorUrn) {
+  try {
+    const body = {
+      author: authorUrn,
+      lifecycleState: "PUBLISHED",
+      specificContent: {
+        "com.linkedin.ugc.ShareContent": {
+          shareCommentary: { text: content },
+          shareMediaCategory: "NONE"
+        }
+      },
+      visibility: {
+        "com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC"
+      }
+    };
+    const res = await fetch(
+      "https://www.linkedin.com/voyager/api/contentcreation/normShares",
+      {
+        method: "POST",
+        headers: {
+          ...makeHeaders(session),
+          "content-type": "application/json"
+        },
+        body: JSON.stringify(body)
+      }
+    );
+    if (res.ok || res.status === 201) {
+      return { success: true };
+    }
+    return { success: false, error: `HTTP ${res.status}` };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
+// server/_core/cloudCampaignRoutes.ts
+var router17 = (0, import_express17.Router)();
+async function getUserSession(userId) {
+  const { data } = await supabase.from("linkedin_sessions").select("li_at, jsessionid, status, expires_at").eq("user_id", userId).eq("status", "active").single();
+  if (!data || !data.li_at) return null;
+  if (data.expires_at && new Date(data.expires_at) < /* @__PURE__ */ new Date()) {
+    await supabase.from("linkedin_sessions").update({ status: "expired" }).eq("user_id", userId);
+    return null;
+  }
+  try {
+    return {
+      liAt: decrypt(data.li_at),
+      jsessionId: data.jsessionid ? decrypt(data.jsessionid) : ""
+    };
+  } catch (err) {
+    console.error("[Cloud] Decrypt failed:", err.message);
+    return null;
+  }
+}
+function getUserId5(req) {
+  return req.user?.id || null;
+}
+function getTeamId8(req) {
+  return req.user?.teamId || null;
+}
+router17.get("/session-check", async (req, res) => {
+  const userId = getUserId5(req);
+  if (!userId) return res.json({ hasSession: false });
+  const session = await getUserSession(userId);
+  res.json({ hasSession: !!session });
+});
+router17.post("/execute", async (req, res) => {
+  try {
+    const userId = getUserId5(req);
+    if (!userId) return res.status(401).json({ error: "Auth required" });
+    const { actionType, targetUrl, message: message2, campaignId, prospectName } = req.body;
+    const session = await getUserSession(userId);
+    if (!session) {
+      return res.status(400).json({
+        error: "No LinkedIn session. Open LinkedIn and reload the extension to sync cookies."
+      });
+    }
+    const slugMatch = (targetUrl || "").match(/\/in\/([^/?#]+)/);
+    const slug = slugMatch ? slugMatch[1] : "";
+    let result = {
+      success: false,
+      error: "unknown_action"
+    };
+    await new Promise((r) => setTimeout(r, 2e3 + Math.random() * 3e3));
+    switch (actionType) {
+      case "visit": {
+        result = await visitProfile(session, slug);
+        break;
+      }
+      case "connect": {
+        const profile = await visitProfile(session, slug);
+        if (profile.success && profile.profileId) {
+          await new Promise((r) => setTimeout(r, 1e3 + Math.random() * 2e3));
+          const inviteResult = await sendInvite(session, profile.profileId, message2 || void 0);
+          result = { ...inviteResult, profileName: profile.name };
+        } else {
+          result = { success: false, error: `Profile not found: ${slug}` };
+        }
+        break;
+      }
+      case "message": {
+        const profile = await visitProfile(session, slug);
+        if (profile.success && profile.profileId) {
+          const profileUrn = `urn:li:fsd_profile:${profile.profileId}`;
+          await new Promise((r) => setTimeout(r, 1e3 + Math.random() * 2e3));
+          result = await sendMessage(session, profileUrn, message2 || "");
+        } else {
+          result = { success: false, error: `Profile not found: ${slug}` };
+        }
+        break;
+      }
+      case "post": {
+        const postResult = await publishPost(session, message2 || "", "");
+        result = postResult;
+        break;
+      }
+    }
+    try {
+      await supabase.from("activity_logs").insert({
+        user_id: userId,
+        team_id: getTeamId8(req),
+        campaign_id: campaignId || null,
+        action_type: actionType,
+        status: result.success ? "success" : "failed",
+        prospect_name: prospectName || result.profileName || slug,
+        linkedin_url: targetUrl || null,
+        error_message: result.error || null,
+        executed_at: (/* @__PURE__ */ new Date()).toISOString()
+      });
+    } catch (logErr) {
+      console.error("[Cloud] Activity log failed:", logErr.message);
+    }
+    res.json(result);
+  } catch (err) {
+    console.error("[Cloud] Execute error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+router17.post("/campaign/:id/launch", async (req, res) => {
+  try {
+    const userId = getUserId5(req);
+    if (!userId) return res.status(401).json({ error: "Auth required" });
+    const campaignId = req.params.id;
+    const session = await getUserSession(userId);
+    if (!session) {
+      return res.status(400).json({ error: "No LinkedIn session. Open LinkedIn and reload the extension." });
+    }
+    const { data: campaign } = await supabase.from("campaigns").select("*").eq("id", campaignId).single();
+    if (!campaign) return res.status(404).json({ error: "Campaign not found" });
+    const { data: steps } = await supabase.from("campaign_steps").select("*").eq("campaign_id", campaignId).order("step_order", { ascending: true });
+    const { data: campaignProspects } = await supabase.from("campaign_prospects").select("*, prospect:prospects(*)").eq("campaign_id", campaignId).in("status", ["pending", "in_progress"]);
+    if (!campaignProspects?.length) {
+      return res.status(400).json({ error: "No pending prospects in this campaign" });
+    }
+    await supabase.from("campaigns").update({ status: "active" }).eq("id", campaignId);
+    executeCampaignInBackground(userId, getTeamId8(req), campaignId, steps || [], campaignProspects, session);
+    res.json({
+      success: true,
+      message: "Campaign launched in cloud",
+      prospects: campaignProspects.length,
+      steps: steps?.length || 0
+    });
+  } catch (err) {
+    console.error("[Cloud] Campaign launch error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+async function executeCampaignInBackground(userId, teamId, campaignId, steps, prospects, session) {
+  const DAILY_LIMITS = { visit: 80, connect: 20, message: 30 };
+  const counters = { visit: 0, connect: 0, message: 0 };
+  console.log(`[Cloud] Campaign ${campaignId}: processing ${prospects.length} prospects, ${steps.length} steps`);
+  for (const cp of prospects) {
+    const prospect = cp.prospect;
+    if (!prospect?.linkedin_url) continue;
+    const slug = prospect.linkedin_url.match(/\/in\/([^/?#]+)/)?.[1];
+    if (!slug) continue;
+    for (const step of steps) {
+      const actionType = step.step_type === "visit" ? "visit" : step.step_type === "invite" ? "connect" : step.step_type === "connect" ? "connect" : step.step_type === "message" ? "message" : null;
+      if (!actionType) continue;
+      if (counters[actionType] >= DAILY_LIMITS[actionType]) {
+        console.log(`[Cloud] Daily limit reached for ${actionType}, skipping`);
+        continue;
+      }
+      const delay = 3e4 + Math.random() * 6e4;
+      await new Promise((r) => setTimeout(r, delay));
+      try {
+        let result;
+        switch (actionType) {
+          case "visit":
+            result = await visitProfile(session, slug);
+            break;
+          case "connect": {
+            const profile = await visitProfile(session, slug);
+            if (profile.success && profile.profileId) {
+              await new Promise((r) => setTimeout(r, 2e3 + Math.random() * 3e3));
+              result = await sendInvite(session, profile.profileId, step.message_template || void 0);
+            } else {
+              result = { success: false, error: "profile_not_found" };
+            }
+            break;
+          }
+          case "message": {
+            const profile = await visitProfile(session, slug);
+            if (profile.success && profile.profileId) {
+              const urn = `urn:li:fsd_profile:${profile.profileId}`;
+              await new Promise((r) => setTimeout(r, 2e3 + Math.random() * 3e3));
+              result = await sendMessage(session, urn, step.message_template || "");
+            } else {
+              result = { success: false, error: "profile_not_found" };
+            }
+            break;
+          }
+        }
+        counters[actionType]++;
+        await supabase.from("activity_logs").insert({
+          user_id: userId,
+          team_id: teamId,
+          campaign_id: campaignId,
+          action_type: actionType,
+          status: result?.success ? "success" : "failed",
+          prospect_name: prospect.name || slug,
+          linkedin_url: prospect.linkedin_url,
+          error_message: result?.error || null,
+          executed_at: (/* @__PURE__ */ new Date()).toISOString()
+        });
+        await supabase.from("campaign_prospects").update({
+          status: result?.success ? "completed" : "failed",
+          updated_at: (/* @__PURE__ */ new Date()).toISOString()
+        }).eq("id", cp.id);
+        console.log(`[Cloud] ${actionType} ${slug}: ${result?.success ? "OK" : result?.error}`);
+      } catch (err) {
+        console.error(`[Cloud] Action failed for ${slug}:`, err.message);
+      }
+    }
+  }
+  await supabase.from("campaigns").update({ status: "completed", completed_at: (/* @__PURE__ */ new Date()).toISOString() }).eq("id", campaignId);
+  console.log(`[Cloud] Campaign ${campaignId} completed`);
+}
+var cloudCampaignRoutes_default = router17;
 
 // node_modules/zod/v4/classic/external.js
 var external_exports = {};
@@ -74674,7 +75283,7 @@ var import_superjson = __toESM(require_dist2(), 1);
 var t = initTRPC.context().create({
   transformer: import_superjson.default
 });
-var router15 = t.router;
+var router18 = t.router;
 var publicProcedure = t.procedure;
 var requireUser = t.middleware(async (opts) => {
   const { ctx, next } = opts;
@@ -74705,7 +75314,7 @@ var adminProcedure = t.procedure.use(
 );
 
 // server/_core/systemRouter.ts
-var systemRouter = router15({
+var systemRouter = router18({
   health: publicProcedure.input(
     external_exports.object({
       timestamp: external_exports.number().min(0, "timestamp cannot be negative")
@@ -74743,7 +75352,7 @@ async function getUserTeamId(userId) {
 
 // server/routers/auth.ts
 var import_crypto6 = require("crypto");
-var authRouter = router15({
+var authRouter = router18({
   /**
    * Get current user from Supabase Auth
    * Returns null if not authenticated
@@ -74853,7 +75462,7 @@ var authRouter = router15({
 
 // server/routers/demo.ts
 var import_crypto7 = require("crypto");
-var demoRouter = router15({
+var demoRouter = router18({
   /**
    * Create demo campaign for the user's team
    */
@@ -75056,7 +75665,7 @@ var demoRouter = router15({
 
 // server/routers/campaigns.ts
 var import_crypto8 = require("crypto");
-var campaignsRouter = router15({
+var campaignsRouter = router18({
   /**
    * Get all unique clients for the user's team
    */
@@ -75213,7 +75822,7 @@ var campaignsRouter = router15({
 });
 
 // server/routers/leads.ts
-var leadsRouter = router15({
+var leadsRouter = router18({
   list: protectedProcedure.input(external_exports.object({ campaignId: external_exports.string().optional() }).optional()).query(async ({ ctx, input }) => {
     if (!ctx.user?.id) return [];
     const teamId = await getUserTeamId(ctx.user.id);
@@ -75324,7 +75933,7 @@ var leadsRouter = router15({
 });
 
 // server/routers/templates.ts
-var templatesRouter = router15({
+var templatesRouter = router18({
   list: protectedProcedure.query(async ({ ctx }) => {
     if (!ctx.user?.id) return [];
     const teamId = await getUserTeamId(ctx.user.id);
@@ -75477,7 +76086,7 @@ var templatesRouter = router15({
 });
 
 // server/routers/extension.ts
-var extensionRouter = router15({
+var extensionRouter = router18({
   // Campaign: list all campaigns for team
   campaignsList: protectedProcedure.query(async ({ ctx }) => {
     if (!ctx.user?.id) {
@@ -75826,7 +76435,7 @@ function getUsagePercentage(usedLeads, plan) {
 }
 
 // server/routers/billing.ts
-var billingRouter = router15({
+var billingRouter = router18({
   /**
    * Get current plan and usage for user's team
    */
@@ -75958,7 +76567,7 @@ var billingRouter = router15({
 });
 
 // server/routers.ts
-var appRouter = router15({
+var appRouter = router18({
   system: systemRouter,
   auth: authRouter,
   demo: demoRouter,
@@ -75967,7 +76576,7 @@ var appRouter = router15({
   templates: templatesRouter,
   extension: extensionRouter,
   billing: billingRouter,
-  queue: router15({
+  queue: router18({
     list: protectedProcedure.input(external_exports.object({ status: external_exports.enum(["all", "new", "approved"]).optional() }).optional()).query(async ({ ctx, input }) => {
       if (!ctx.user?.id) return [];
       const teamId = await getUserTeamId(ctx.user.id);
@@ -76141,16 +76750,16 @@ function requireRole(role) {
 }
 
 // server/_core/userRoutes.ts
-var import_express15 = __toESM(require_express2(), 1);
+var import_express18 = __toESM(require_express2(), 1);
 init_dist4();
-var router16 = (0, import_express15.Router)();
+var router19 = (0, import_express18.Router)();
 function getSupabase3() {
   return createClient(
     process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "",
     process.env.SUPABASE_SERVICE_ROLE_KEY || ""
   );
 }
-router16.patch("/profile", async (req, res) => {
+router19.patch("/profile", async (req, res) => {
   const supabase3 = getSupabase3();
   try {
     const authHeader = req.headers.authorization;
@@ -76189,7 +76798,7 @@ router16.patch("/profile", async (req, res) => {
     return res.status(500).json({ error: "Server error: " + err.message });
   }
 });
-router16.get("/profile", async (req, res) => {
+router19.get("/profile", async (req, res) => {
   const supabase3 = getSupabase3();
   try {
     const authHeader = req.headers.authorization;
@@ -76207,12 +76816,12 @@ router16.get("/profile", async (req, res) => {
     return res.status(500).json({ error: err.message });
   }
 });
-var userRoutes_default = router16;
+var userRoutes_default = router19;
 
 // server/_core/vercel.ts
-var app = (0, import_express16.default)();
-app.use(import_express16.default.json({ limit: "50mb" }));
-app.use(import_express16.default.urlencoded({ limit: "50mb", extended: true }));
+var app = (0, import_express19.default)();
+app.use(import_express19.default.json({ limit: "50mb" }));
+app.use(import_express19.default.urlencoded({ limit: "50mb", extended: true }));
 app.get("/api/debug-env", (_req, res) => {
   res.json({
     hasApify: !!process.env.APIFY_API_TOKEN,
@@ -76246,6 +76855,9 @@ app.use("/api/ai", expressAuthMiddleware, aiRoutes_default);
 app.use("/api/prospects", expressAuthMiddleware, apolloRoutes_default);
 app.use("/api/posts", expressAuthMiddleware, postRoutes_default);
 app.use("/api/messages", expressAuthMiddleware, messageRoutes_default);
+app.use("/api/session", expressAuthMiddleware, sessionRoutes_default);
+app.use("/api/automation", expressAuthMiddleware, automationRoutes_default);
+app.use("/api/cloud", expressAuthMiddleware, cloudCampaignRoutes_default);
 app.use("/api/stripe", stripeRoutes_default);
 app.use("/api/user", userRoutes_default);
 app.get("/api/health", (_req, res) => {
