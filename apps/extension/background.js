@@ -282,6 +282,15 @@ async function doInvite(url, note, stepId, name) {
   console.log(`[Wassel] 🤝 Inviting: ${name} — ${url}`);
   let tabId = null;
   try {
+    // Extract expected slug for verification
+    const slugMatch = url.match(/\/in\/([^/?]+)/);
+    const expectedSlug = slugMatch ? slugMatch[1].toLowerCase() : '';
+    if (!expectedSlug) {
+      console.error(`[Wassel] ❌ No slug in URL: ${url}`);
+      await updateStepStatus(stepId, 'failed', 'No slug in URL');
+      return { ok: false, error: 'no_slug_in_url' };
+    }
+
     const tab = await chrome.tabs.create({ url, active: true });
     tabId = tab.id;
 
@@ -297,17 +306,38 @@ async function doInvite(url, note, stepId, name) {
       setTimeout(() => { chrome.tabs.onUpdated.removeListener(listener); resolve(); }, 15000);
     });
 
-    await ensureContentScript(tabId);
+    // CRITICAL: Extra wait for LinkedIn SPA to render the profile card
+    // status=complete fires when HTML loads, but React/SPA needs more time
+    await sleep(3000);
 
-    // Delegate to content.js which has robust multi-method Connect detection
-    // Pass targetUrl so content.js can VERIFY it's on the correct profile
+    // VERIFY: Check that the tab URL still matches the expected profile
+    const tabInfo = await chrome.tabs.get(tabId);
+    const tabUrl = (tabInfo.url || '').toLowerCase();
+    if (!tabUrl.includes('/in/' + expectedSlug)) {
+      console.error(`[Wassel] ❌ Tab URL mismatch! Expected slug: ${expectedSlug} | Tab URL: ${tabInfo.url}`);
+      // Wait and retry once — LinkedIn might still be redirecting
+      await sleep(3000);
+      const tabInfo2 = await chrome.tabs.get(tabId);
+      const tabUrl2 = (tabInfo2.url || '').toLowerCase();
+      if (!tabUrl2.includes('/in/' + expectedSlug)) {
+        console.error(`[Wassel] ❌ Tab URL still wrong after retry: ${tabInfo2.url}`);
+        await updateStepStatus(stepId, 'failed', 'Tab URL mismatch: ' + tabInfo2.url);
+        return { ok: false, error: 'tab_url_mismatch' };
+      }
+    }
+
+    await ensureContentScript(tabId);
+    // Extra wait after content script injection for it to initialize
+    await sleep(1000);
+
+    console.log(`[Wassel] 📤 Sending SEND_INVITE to tab ${tabId} for ${name} (slug: ${expectedSlug})`);
     const result = await chrome.tabs.sendMessage(tabId, { type: 'SEND_INVITE', targetUrl: url, note: note || '' });
     console.log('[Wassel] SEND_INVITE result:', JSON.stringify(result));
 
     if (result?.ok) {
       await incrementLimit('invites');
       await updateStepStatus(stepId, 'completed');
-      console.log(`[Wassel] ✅ Invite sent to: ${name}`);
+      console.log(`[Wassel] ✅ Invite sent to: ${name} (confirmed: ${result.sentTo || 'unknown'})`);
       return { ok: true };
     } else {
       const errMsg = result?.error || 'Connect button not found';

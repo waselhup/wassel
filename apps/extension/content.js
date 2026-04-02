@@ -1,5 +1,5 @@
 // ============================================================
-// WASSEL EXTENSION v2.1.0 — Content Script
+// WASSEL EXTENSION v3.0.0 — Content Script
 // Handles: campaign execution, post publishing, auth bridge, detection
 // Does NOT: scan/scrape prospects (Apify handles discovery now)
 // ============================================================
@@ -104,108 +104,141 @@
     });
 
     // ── LinkedIn: SEND INVITE ──
+    // v3.0 — bulletproof: h1-proximity button finding, NO page navigation,
+    // strict li/aside exclusion, URL verification
     async function doSendInvite(targetUrl, note) {
         try {
             var match = (targetUrl || '').match(/\/in\/([^/?]+)/);
             if (!match) return { ok: false, error: 'invalid_url' };
-            var slug = match[1];
+            var slug = match[1].toLowerCase();
 
-            console.log('[Wassel] INVITE: target slug =', slug);
-            var cleanUrl = 'https://www.linkedin.com/in/' + slug + '/';
+            console.log('[Wassel] INVITE v3: target slug =', slug, '| current URL =', window.location.href);
 
-            // Navigate if not on the correct absolute page
-            if (!window.location.href.includes('/in/' + slug)) {
-                window.location.href = cleanUrl;
-                await sleep(6000);
-            }
-            if (!window.location.href.includes('/in/' + slug)) {
-                return { ok: false, error: 'wrong_page' };
+            // STEP 1: URL VERIFICATION — do NOT navigate (background.js already opened correct URL)
+            // If URL doesn't match, FAIL immediately — let background.js handle retries
+            var currentPath = window.location.pathname.toLowerCase();
+            if (!currentPath.includes('/in/' + slug)) {
+                console.error('[Wassel] WRONG PAGE! Expected slug:', slug, '| Got path:', currentPath);
+                return { ok: false, error: 'wrong_page:' + currentPath };
             }
 
-            await sleep(2000);
+            // STEP 2: Wait for LinkedIn SPA to render the profile card
+            await sleep(3000);
+
+            // STEP 3: Find h1 (profile name) — this is the anchor point
             var h1 = document.querySelector('h1');
-            var profileName = h1 ? h1.textContent.trim() : '';
-            console.log('[Wassel] Profile name:', profileName);
+            if (!h1) {
+                console.error('[Wassel] No h1 found on page');
+                return { ok: false, error: 'no_h1_on_page' };
+            }
 
-            // The absolute STRUCTURAL DIFFERENCE for the main Connect button is that it is
-            // located within the top profile card (.ph5, .pv-top-card-v2-ctas, .pvs-profile-actions).
-            // It is NEVER nested inside a list item `<li>` or an sidebar `<aside>`.
-            
+            var profileName = h1.textContent.trim();
+            console.log('[Wassel] INVITE v3: Profile name from h1:', profileName);
+
+            // STEP 4: Find Connect button using H1-PROXIMITY strategy
+            // Walk UP from h1 to find the nearest ancestor that contains a Connect button.
+            // This guarantees we find the button in the SAME card as the profile name,
+            // never in "People also viewed" or "People you may know" sections.
             var targetBtn = null;
-            var topCard = document.querySelector('main .ph5') || document.querySelector('main .pv-top-card');
+            var searchContainer = h1;
 
-            // 1. Direct fetch inside the main top card container
-            if (topCard) {
-                var buttons = topCard.querySelectorAll('button');
-                for (var i = 0; i < buttons.length; i++) {
-                    var btn = buttons[i];
+            for (var level = 0; level < 8 && searchContainer; level++) {
+                searchContainer = searchContainer.parentElement;
+                if (!searchContainer || searchContainer === document.body || searchContainer.tagName === 'MAIN') break;
+
+                var btns = searchContainer.querySelectorAll('button');
+                for (var i = 0; i < btns.length; i++) {
+                    var btn = btns[i];
                     var text = (btn.textContent || '').trim().toLowerCase();
                     var aria = (btn.getAttribute('aria-label') || '').toLowerCase();
 
-                    if ((text === 'connect' || aria.includes('connect') || aria.includes('invite')) &&
-                        !text.includes('disconnect') && !text.includes('pending') && !text.includes('connected')) {
-                        targetBtn = btn;
-                        break;
+                    // Match Connect button
+                    if (!(text === 'connect' || text === 'اتصال' ||
+                          aria.includes('invite') || aria.includes('connect'))) continue;
+
+                    // Reject non-connect buttons
+                    if (text.includes('disconnect') || text.includes('pending') ||
+                        text.includes('connected') || aria.includes('disconnect')) continue;
+
+                    // CRITICAL: Reject if button is inside a <li> (suggestion card),
+                    // <aside> (sidebar), or a data-view-name card (search result)
+                    if (btn.closest('li') || btn.closest('aside') || btn.closest('[data-view-name]')) {
+                        console.log('[Wassel] REJECTED button inside li/aside/card at level', level);
+                        continue;
                     }
+
+                    // Position check: profile Connect button is always near top of page
+                    var rect = btn.getBoundingClientRect();
+                    if (rect.top > 500) {
+                        console.log('[Wassel] REJECTED button at y=' + rect.top + ' (too low)');
+                        continue;
+                    }
+
+                    targetBtn = btn;
+                    console.log('[Wassel] FOUND Connect button at level', level, 'y=' + rect.top);
+                    break;
                 }
+                if (targetBtn) break;
             }
 
-            // Position check: reject if button is too far down the page
-            if (targetBtn) {
-                var rect1 = targetBtn.getBoundingClientRect();
-                if (rect1.top > 500) {
-                    console.log('[Wassel] Button at y=' + rect1.top + ' too low, rejecting');
-                    targetBtn = null;
-                }
-            }
+            // STEP 5: Fallback — More dropdown menu (scoped to h1's container)
+            if (!targetBtn) {
+                // Re-walk from h1 to find More button in the profile card
+                var moreContainer = h1;
+                for (var ml = 0; ml < 8 && moreContainer; ml++) {
+                    moreContainer = moreContainer.parentElement;
+                    if (!moreContainer || moreContainer === document.body || moreContainer.tagName === 'MAIN') break;
 
-            // 2. Fallback to More Menu if not immediately visible (NO page-wide search)
-            if (!targetBtn && topCard) {
-                var moreBtn = null;
-                var mBtns = topCard.querySelectorAll('button');
-                for (var m = 0; m < mBtns.length; m++) {
-                    var mAria = (mBtns[m].getAttribute('aria-label') || '').toLowerCase();
-                    if (mAria.includes('more action') || mAria === 'more' || mAria.includes('更多')) {
-                        moreBtn = mBtns[m];
-                        break;
-                    }
-                }
-                
-                if (moreBtn) {
-                    moreBtn.click();
-                    await sleep(1500);
-                    var menuItems = document.querySelectorAll('[role="menuitem"], .artdeco-dropdown__item');
-                    for (var j = 0; j < menuItems.length; j++) {
-                        var mText = (menuItems[j].textContent || '').toLowerCase();
-                        if (mText.includes('connect') && !mText.includes('disconnect')) {
-                            targetBtn = menuItems[j];
+                    var moreBtns = moreContainer.querySelectorAll('button');
+                    for (var m = 0; m < moreBtns.length; m++) {
+                        var mAria = (moreBtns[m].getAttribute('aria-label') || '').toLowerCase();
+                        if (mAria.includes('more action') || mAria === 'more' || mAria.includes('更多')) {
+                            // Check it's not inside li/aside
+                            if (moreBtns[m].closest('li') || moreBtns[m].closest('aside')) continue;
+                            moreBtns[m].click();
+                            await sleep(1500);
+
+                            var menuItems = document.querySelectorAll('[role="menuitem"], .artdeco-dropdown__item');
+                            for (var j = 0; j < menuItems.length; j++) {
+                                var mText = (menuItems[j].textContent || '').toLowerCase();
+                                if (mText.includes('connect') && !mText.includes('disconnect')) {
+                                    targetBtn = menuItems[j];
+                                    console.log('[Wassel] FOUND Connect in More dropdown');
+                                    break;
+                                }
+                            }
                             break;
                         }
                     }
-                }
-            }
-
-            // Position check after More dropdown
-            if (targetBtn && targetBtn.getBoundingClientRect) {
-                var rect2 = targetBtn.getBoundingClientRect();
-                if (rect2.top > 500) {
-                    console.log('[Wassel] More menu button at y=' + rect2.top + ' too low, rejecting');
-                    targetBtn = null;
+                    if (targetBtn) break;
                 }
             }
 
             if (!targetBtn) {
-                // Determine if already connected or pending
-                if (topCard && (topCard.innerText.toLowerCase().includes('message') || topCard.innerText.toLowerCase().includes('pending'))) {
+                // Check if already connected or invite pending
+                var pageText = (document.querySelector('main') || document.body).innerText.toLowerCase();
+                var topArea = '';
+                var h1Parent = h1.parentElement;
+                for (var up = 0; up < 5 && h1Parent; up++) {
+                    topArea = (h1Parent.innerText || '').toLowerCase();
+                    h1Parent = h1Parent.parentElement;
+                    if (topArea.includes('message') || topArea.includes('pending')) break;
+                }
+                if (topArea.includes('pending') || topArea.includes('message')) {
+                    console.log('[Wassel] Already connected or pending for:', profileName);
                     return { ok: true, note: 'already_connected_or_pending' };
                 }
-                return { ok: false, error: 'no_main_connect_button_found' };
+                return { ok: false, error: 'no_connect_button_found' };
             }
 
-            // Verification logging before clicking
-            console.log('[Wassel] VERIFY: Page h1 says:', document.querySelector('h1') ? document.querySelector('h1').textContent.trim() : 'none');
-            console.log('[Wassel] VERIFY: Target slug:', slug);
-            console.log('[Wassel] VERIFY: Connect button y-position:', targetBtn.getBoundingClientRect ? targetBtn.getBoundingClientRect().top : 'n/a');
+            // STEP 6: FINAL VERIFICATION before clicking
+            console.log('[Wassel] ══════════════════════════════════');
+            console.log('[Wassel] CLICKING Connect for:', profileName);
+            console.log('[Wassel] Target slug:', slug);
+            console.log('[Wassel] Current URL:', window.location.href);
+            console.log('[Wassel] Button y-pos:', targetBtn.getBoundingClientRect ? targetBtn.getBoundingClientRect().top : 'n/a');
+            console.log('[Wassel] Button text:', (targetBtn.textContent || '').trim());
+            console.log('[Wassel] ══════════════════════════════════');
 
             targetBtn.click();
             await sleep(3000);
@@ -232,7 +265,7 @@
             }
 
             await sleep(1500);
-            
+
             // Click Send
             var sendBtns = document.querySelectorAll('button');
             for (var s = 0; s < sendBtns.length; s++) {
@@ -241,8 +274,8 @@
                 if (st === 'send' || st === 'send now' || st === 'send without a note' || st === 'send invitation' || sAria.includes('send invitation')) {
                     sendBtns[s].click();
                     await sleep(2000);
-                    console.log('[Wassel] RESULT: Invite sent to person on page:', document.querySelector('h1') ? document.querySelector('h1').textContent.trim() : 'unknown');
-                    return { ok: true };
+                    console.log('[Wassel] RESULT: Invite SENT to:', profileName, '| slug:', slug);
+                    return { ok: true, sentTo: profileName };
                 }
             }
 
@@ -252,8 +285,8 @@
                 if (pBtns.length > 0) {
                     pBtns[0].click();
                     await sleep(2000);
-                    console.log('[Wassel] RESULT: Invite sent to person on page:', document.querySelector('h1') ? document.querySelector('h1').textContent.trim() : 'unknown');
-                    return { ok: true };
+                    console.log('[Wassel] RESULT: Invite SENT (modal) to:', profileName, '| slug:', slug);
+                    return { ok: true, sentTo: profileName };
                 }
             }
 
@@ -458,5 +491,5 @@
         return new Promise(r => setTimeout(r, ms));
     }
 
-    console.log('[Wassel] Content script v2.1.0 loaded');
+    console.log('[Wassel] Content script v3.0.0 loaded');
 })();
