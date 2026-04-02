@@ -15,6 +15,8 @@ import prospectRoutes from "./apolloRoutes";
 import postRoutes from "./postRoutes";
 import messageRoutes from "./messageRoutes";
 import stripeRoutes from "./stripeRoutes";
+import sessionRoutes from "./sessionRoutes";
+import automationRoutes from "./automationRoutes";
 import { appRouter } from "../routers";
 import { createContext, expressAuthMiddleware, requireRole } from "./context";
 
@@ -79,6 +81,12 @@ app.use("/api/posts", expressAuthMiddleware, postRoutes);
 
 // Messages routes: JWT required
 app.use("/api/messages", expressAuthMiddleware, messageRoutes);
+
+// LinkedIn session (cookie) management: JWT required
+app.use("/api/session", expressAuthMiddleware, sessionRoutes);
+
+// Cloud automation orchestrator: JWT required
+app.use("/api/automation", expressAuthMiddleware, automationRoutes);
 
 // Stripe: webhook has NO auth (raw body needed), other routes need auth
 app.use("/api/stripe", stripeRoutes);

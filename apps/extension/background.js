@@ -77,6 +77,47 @@ async function ensureContentScript(tabId) {
 }
 
 // ============================================================================
+// LINKEDIN COOKIE EXTRACTION — sends li_at + JSESSIONID to server
+// ============================================================================
+async function extractAndStoreCookies() {
+  try {
+    const token = await getToken();
+    if (!token) {
+      console.log('[Wassel] No token — skipping cookie extraction');
+      return { success: false, reason: 'no_token' };
+    }
+
+    const cookies = await chrome.cookies.getAll({ domain: '.linkedin.com' });
+    const liAt = cookies.find(c => c.name === 'li_at');
+    const jsessionId = cookies.find(c => c.name === 'JSESSIONID');
+
+    if (!liAt?.value) {
+      console.log('[Wassel] No li_at cookie — user may not be logged into LinkedIn');
+      return { success: false, reason: 'no_li_at' };
+    }
+
+    const res = await fetch(`${API_BASE}/session/store`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        li_at: liAt.value,
+        jsessionid: jsessionId?.value ? jsessionId.value.replace(/"/g, '') : '',
+      }),
+    });
+
+    const data = await res.json();
+    console.log('[Wassel] 🍪 Cookie store:', data.success ? 'OK' : (data.error || 'failed'));
+    return data;
+  } catch (e) {
+    console.warn('[Wassel] Cookie extraction error:', e.message);
+    return { success: false, reason: e.message };
+  }
+}
+
+// ============================================================================
 // TOKEN MANAGEMENT
 // ============================================================================
 async function getToken() {
@@ -128,6 +169,8 @@ async function syncTokenFromDashboard() {
       const { token, source } = results[0].result;
       await chrome.storage.local.set({ wasselToken: token });
       console.log(`[Wassel] ✅ Token synced (${source})`);
+      // After token sync, also extract LinkedIn cookies for cloud automation
+      extractAndStoreCookies();
       return { synced: true, source };
     }
 
@@ -958,6 +1001,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     });
     return true;
   }
+
+  if (message.type === 'EXTRACT_COOKIES') {
+    extractAndStoreCookies().then(result => sendResponse(result));
+    return true;
+  }
 });
 
 // ============================================================================
@@ -969,6 +1017,9 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
   }
   if (alarm.name === 'tokenSync') {
     await syncTokenFromDashboard();
+  }
+  if (alarm.name === 'cookieRefresh') {
+    await extractAndStoreCookies();
   }
 });
 
@@ -982,15 +1033,18 @@ chrome.runtime.onInstalled.addListener(async () => {
   // Set up alarms
   chrome.alarms.create('poll', { periodInMinutes: 1 });
   chrome.alarms.create('tokenSync', { periodInMinutes: 30 });
+  chrome.alarms.create('cookieRefresh', { periodInMinutes: 720 }); // every 12 hours
 
   await syncTokenFromDashboard();
   setTimeout(processQueue, 3000);
+  setTimeout(extractAndStoreCookies, 5000); // extract cookies 5s after install
 });
 
 chrome.runtime.onStartup.addListener(async () => {
   console.log('[Wassel] Chrome started');
   chrome.alarms.create('poll', { periodInMinutes: 1 });
   chrome.alarms.create('tokenSync', { periodInMinutes: 30 });
+  chrome.alarms.create('cookieRefresh', { periodInMinutes: 720 });
 
   await syncTokenFromDashboard();
   setTimeout(processQueue, 3000);
