@@ -141,8 +141,8 @@
                     var btn = buttons[i];
                     var text = (btn.textContent || '').trim().toLowerCase();
                     var aria = (btn.getAttribute('aria-label') || '').toLowerCase();
-                    
-                    if ((text === 'connect' || aria.includes('connect') || aria.includes('invite')) && 
+
+                    if ((text === 'connect' || aria.includes('connect') || aria.includes('invite')) &&
                         !text.includes('disconnect') && !text.includes('pending') && !text.includes('connected')) {
                         targetBtn = btn;
                         break;
@@ -150,29 +150,16 @@
                 }
             }
 
-            // 2. Strict Fallback ensuring we exclude suggestion buttons
-            if (!targetBtn) {
-                var allButtons = document.querySelectorAll('button');
-                for (var i = 0; i < allButtons.length; i++) {
-                    var btn = allButtons[i];
-                    
-                    // STRUCTURAL DIFFERENCE REJECTION
-                    if (btn.closest('li') || btn.closest('aside') || btn.closest('section.pv-profile-section') || btn.closest('.discover-entity-type-card') || btn.closest('.pv-browsemap-section')) {
-                        continue;
-                    }
-
-                    var text = (btn.textContent || '').trim().toLowerCase();
-                    var aria = (btn.getAttribute('aria-label') || '').toLowerCase();
-
-                    if ((text === 'connect' || aria.includes('connect') || aria.includes('invite')) &&
-                        !text.includes('disconnect') && !text.includes('pending')) {
-                        targetBtn = btn;
-                        break;
-                    }
+            // Position check: reject if button is too far down the page
+            if (targetBtn) {
+                var rect1 = targetBtn.getBoundingClientRect();
+                if (rect1.top > 500) {
+                    console.log('[Wassel] Button at y=' + rect1.top + ' too low, rejecting');
+                    targetBtn = null;
                 }
             }
 
-            // 3. Fallback to More Menu if not immediately visible
+            // 2. Fallback to More Menu if not immediately visible (NO page-wide search)
             if (!targetBtn && topCard) {
                 var moreBtn = null;
                 var mBtns = topCard.querySelectorAll('button');
@@ -198,6 +185,15 @@
                 }
             }
 
+            // Position check after More dropdown
+            if (targetBtn && targetBtn.getBoundingClientRect) {
+                var rect2 = targetBtn.getBoundingClientRect();
+                if (rect2.top > 500) {
+                    console.log('[Wassel] More menu button at y=' + rect2.top + ' too low, rejecting');
+                    targetBtn = null;
+                }
+            }
+
             if (!targetBtn) {
                 // Determine if already connected or pending
                 if (topCard && (topCard.innerText.toLowerCase().includes('message') || topCard.innerText.toLowerCase().includes('pending'))) {
@@ -205,6 +201,11 @@
                 }
                 return { ok: false, error: 'no_main_connect_button_found' };
             }
+
+            // Verification logging before clicking
+            console.log('[Wassel] VERIFY: Page h1 says:', document.querySelector('h1') ? document.querySelector('h1').textContent.trim() : 'none');
+            console.log('[Wassel] VERIFY: Target slug:', slug);
+            console.log('[Wassel] VERIFY: Connect button y-position:', targetBtn.getBoundingClientRect ? targetBtn.getBoundingClientRect().top : 'n/a');
 
             targetBtn.click();
             await sleep(3000);
@@ -240,7 +241,7 @@
                 if (st === 'send' || st === 'send now' || st === 'send without a note' || st === 'send invitation' || sAria.includes('send invitation')) {
                     sendBtns[s].click();
                     await sleep(2000);
-                    console.log('[Wassel] ✅ SENT invite to:', profileName);
+                    console.log('[Wassel] RESULT: Invite sent to person on page:', document.querySelector('h1') ? document.querySelector('h1').textContent.trim() : 'unknown');
                     return { ok: true };
                 }
             }
@@ -251,6 +252,7 @@
                 if (pBtns.length > 0) {
                     pBtns[0].click();
                     await sleep(2000);
+                    console.log('[Wassel] RESULT: Invite sent to person on page:', document.querySelector('h1') ? document.querySelector('h1').textContent.trim() : 'unknown');
                     return { ok: true };
                 }
             }
