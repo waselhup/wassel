@@ -103,153 +103,125 @@
         }
     });
 
-    // ── LinkedIn 2026: SEND INVITE v3 — section-h2 exclusion + Y-sort approach ──
-    // 1. Skips buttons inside sections with h2 containing "similar"/"also viewed"/"people you may know"/"mutual"
-    // 2. Collects ALL Connect candidates then sorts by Y position
-    // 3. Picks the HIGHEST button (smallest top value = main profile)
-    // 4. Rejects anything below 500px (likely a suggestion card)
-    // 5. No arrow functions (plain JS for max compat)
+    // ── LinkedIn: SEND INVITE ──
     async function doSendInvite(targetUrl, note) {
         try {
             var match = (targetUrl || '').match(/\/in\/([^/?]+)/);
             if (!match) return { ok: false, error: 'invalid_url' };
             var slug = match[1];
 
-            console.log('[Wassel] INVITE v3: target slug =', slug);
-
-            // STEP 1: Navigate to the EXACT profile URL
+            console.log('[Wassel] INVITE: target slug =', slug);
             var cleanUrl = 'https://www.linkedin.com/in/' + slug + '/';
 
+            // Navigate if not on the correct absolute page
             if (!window.location.href.includes('/in/' + slug)) {
                 window.location.href = cleanUrl;
                 await sleep(6000);
             }
-
-            // STEP 2: Verify we are on the right profile
             if (!window.location.href.includes('/in/' + slug)) {
                 return { ok: false, error: 'wrong_page' };
             }
 
             await sleep(2000);
-
-            // STEP 3: Get the name from h1
             var h1 = document.querySelector('h1');
             var profileName = h1 ? h1.textContent.trim() : '';
             console.log('[Wassel] Profile name:', profileName);
 
-            // STEP 4: Find Connect candidates — skip suggestion sections
-            var allButtons = document.querySelectorAll('button');
-            var candidates = [];
+            // The absolute STRUCTURAL DIFFERENCE for the main Connect button is that it is
+            // located within the top profile card (.ph5, .pv-top-card-v2-ctas, .pvs-profile-actions).
+            // It is NEVER nested inside a list item `<li>` or an sidebar `<aside>`.
+            
+            var targetBtn = null;
+            var topCard = document.querySelector('main .ph5') || document.querySelector('main .pv-top-card');
 
-            for (var i = 0; i < allButtons.length; i++) {
-                var btn = allButtons[i];
-                var text = (btn.textContent || '').trim();
-                var label = btn.getAttribute('aria-label') || '';
-                var textLow = text.toLowerCase();
-                var labelLow = label.toLowerCase();
-
-                // Skip if inside a list item (suggestion cards have <li>)
-                if (btn.closest('li')) continue;
-                // Skip if inside aside
-                if (btn.closest('aside')) continue;
-                // Skip if inside footer
-                if (btn.closest('footer')) continue;
-                // Skip if inside a section with "similar" or "also viewed"
-                var parentSection = btn.closest('section');
-                if (parentSection) {
-                    var sectionH2 = parentSection.querySelector('h2');
-                    var sectionText = sectionH2 ? (sectionH2.textContent || '') : '';
-                    var sectionLow = sectionText.toLowerCase();
-                    if (sectionLow.includes('similar') ||
-                        sectionLow.includes('also viewed') ||
-                        sectionLow.includes('people you may know') ||
-                        sectionLow.includes('people also viewed') ||
-                        sectionLow.includes('mutual')) continue;
-                }
-
-                if ((textLow === 'connect' ||
-                     (labelLow.includes('invite') && labelLow.includes('connect'))) &&
-                    !textLow.includes('disconnect') &&
-                    !textLow.includes('connected') &&
-                    !textLow.includes('pending')) {
-
-                    var rect = btn.getBoundingClientRect();
-                    if (rect.width > 0) {
-                        candidates.push({ btn: btn, top: rect.top, text: text, label: label });
-                    }
-                }
-            }
-
-            console.log('[Wassel] Found', candidates.length, 'Connect candidates');
-
-            // STEP 5: If no direct Connect, check already connected or try More dropdown
-            if (candidates.length === 0) {
-                // Check if already connected (Message or Pending button near top)
-                for (var j = 0; j < allButtons.length; j++) {
-                    var b = allButtons[j];
-                    var t = (b.textContent || '').trim().toLowerCase();
-                    var r = b.getBoundingClientRect();
-                    if ((t === 'message' || t === 'pending') && r.top < 500) {
-                        console.log('[Wassel] Already connected or pending');
-                        return { ok: true, note: 'already_connected_or_pending' };
-                    }
-                }
-
-                // Try More dropdown
-                for (var k = 0; k < allButtons.length; k++) {
-                    var mb = allButtons[k];
-                    var ml = (mb.getAttribute('aria-label') || '').toLowerCase();
-                    var mr = mb.getBoundingClientRect();
-                    if (ml.includes('more action') && mr.top < 500 && !mb.closest('li') && !mb.closest('aside')) {
-                        console.log('[Wassel] Trying More dropdown...');
-                        mb.click();
-                        await sleep(2000);
-                        var menuItems = document.querySelectorAll('[role="menuitem"], .artdeco-dropdown__item');
-                        for (var m = 0; m < menuItems.length; m++) {
-                            var mt = (menuItems[m].textContent || '').toLowerCase();
-                            if (mt.includes('connect') && !mt.includes('disconnect')) {
-                                candidates.push({ btn: menuItems[m], top: 0, text: menuItems[m].textContent });
-                                break;
-                            }
-                        }
+            // 1. Direct fetch inside the main top card container
+            if (topCard) {
+                var buttons = topCard.querySelectorAll('button');
+                for (var i = 0; i < buttons.length; i++) {
+                    var btn = buttons[i];
+                    var text = (btn.textContent || '').trim().toLowerCase();
+                    var aria = (btn.getAttribute('aria-label') || '').toLowerCase();
+                    
+                    if ((text === 'connect' || aria.includes('connect') || aria.includes('invite')) && 
+                        !text.includes('disconnect') && !text.includes('pending') && !text.includes('connected')) {
+                        targetBtn = btn;
                         break;
                     }
                 }
             }
 
-            if (candidates.length === 0) {
-                console.error('[Wassel] No Connect button found');
-                return { ok: false, error: 'no_connect_button' };
+            // 2. Strict Fallback ensuring we exclude suggestion buttons
+            if (!targetBtn) {
+                var allButtons = document.querySelectorAll('button');
+                for (var i = 0; i < allButtons.length; i++) {
+                    var btn = allButtons[i];
+                    
+                    // STRUCTURAL DIFFERENCE REJECTION
+                    if (btn.closest('li') || btn.closest('aside') || btn.closest('section.pv-profile-section') || btn.closest('.discover-entity-type-card') || btn.closest('.pv-browsemap-section')) {
+                        continue;
+                    }
+
+                    var text = (btn.textContent || '').trim().toLowerCase();
+                    var aria = (btn.getAttribute('aria-label') || '').toLowerCase();
+
+                    if ((text === 'connect' || aria.includes('connect') || aria.includes('invite')) &&
+                        !text.includes('disconnect') && !text.includes('pending')) {
+                        targetBtn = btn;
+                        break;
+                    }
+                }
             }
 
-            // STEP 6: Sort by Y position — pick the HIGHEST (smallest top value)
-            candidates.sort(function(a, b) { return a.top - b.top; });
-            var chosen = candidates[0];
-
-            console.log('[Wassel] Clicking Connect at y=' + chosen.top + ' text="' + chosen.text + '"');
-
-            // SAFETY: If button is below 500px, likely a suggestion card
-            if (chosen.top > 500) {
-                console.error('[Wassel] Button too far down (' + chosen.top + 'px), likely suggestion');
-                return { ok: false, error: 'button_too_low_likely_suggestion' };
+            // 3. Fallback to More Menu if not immediately visible
+            if (!targetBtn && topCard) {
+                var moreBtn = null;
+                var mBtns = topCard.querySelectorAll('button');
+                for (var m = 0; m < mBtns.length; m++) {
+                    var mAria = (mBtns[m].getAttribute('aria-label') || '').toLowerCase();
+                    if (mAria.includes('more action') || mAria === 'more' || mAria.includes('更多')) {
+                        moreBtn = mBtns[m];
+                        break;
+                    }
+                }
+                
+                if (moreBtn) {
+                    moreBtn.click();
+                    await sleep(1500);
+                    var menuItems = document.querySelectorAll('[role="menuitem"], .artdeco-dropdown__item');
+                    for (var j = 0; j < menuItems.length; j++) {
+                        var mText = (menuItems[j].textContent || '').toLowerCase();
+                        if (mText.includes('connect') && !mText.includes('disconnect')) {
+                            targetBtn = menuItems[j];
+                            break;
+                        }
+                    }
+                }
             }
 
-            chosen.btn.click();
+            if (!targetBtn) {
+                // Determine if already connected or pending
+                if (topCard && (topCard.innerText.toLowerCase().includes('message') || topCard.innerText.toLowerCase().includes('pending'))) {
+                    return { ok: true, note: 'already_connected_or_pending' };
+                }
+                return { ok: false, error: 'no_main_connect_button_found' };
+            }
+
+            targetBtn.click();
             await sleep(3000);
 
-            // STEP 7: Handle note
+            // Handle Note
             if (note && note.trim()) {
                 var noteBtns = document.querySelectorAll('button');
                 for (var n = 0; n < noteBtns.length; n++) {
-                    if ((noteBtns[n].textContent || '').toLowerCase().includes('add a note')) {
+                    var nAria = (noteBtns[n].getAttribute('aria-label') || '').toLowerCase();
+                    var nText = (noteBtns[n].textContent || '').toLowerCase();
+                    if (nText.includes('add a note') || nAria.includes('add a note')) {
                         noteBtns[n].click();
                         await sleep(1500);
                         var ta = document.querySelector('textarea');
                         if (ta) {
                             ta.focus();
-                            var setter = Object.getOwnPropertyDescriptor(
-                                HTMLTextAreaElement.prototype, 'value'
-                            ).set;
+                            var setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set;
                             setter.call(ta, note);
                             ta.dispatchEvent(new Event('input', { bubbles: true }));
                         }
@@ -258,13 +230,14 @@
                 }
             }
 
-            // STEP 8: Click Send
             await sleep(1500);
+            
+            // Click Send
             var sendBtns = document.querySelectorAll('button');
             for (var s = 0; s < sendBtns.length; s++) {
                 var st = (sendBtns[s].textContent || '').trim().toLowerCase();
-                if (st === 'send' || st === 'send now' ||
-                    st === 'send without a note' || st === 'send invitation') {
+                var sAria = (sendBtns[s].getAttribute('aria-label') || '').trim().toLowerCase();
+                if (st === 'send' || st === 'send now' || st === 'send without a note' || st === 'send invitation' || sAria.includes('send invitation')) {
                     sendBtns[s].click();
                     await sleep(2000);
                     console.log('[Wassel] ✅ SENT invite to:', profileName);
@@ -272,21 +245,17 @@
                 }
             }
 
-            // Last resort: primary button in dialog modal
             var modal = document.querySelector('[role="dialog"]');
             if (modal) {
-                var pBtns = modal.querySelectorAll('button');
-                for (var p = 0; p < pBtns.length; p++) {
-                    if (pBtns[p].className.includes('primary')) {
-                        pBtns[p].click();
-                        await sleep(2000);
-                        console.log('[Wassel] ✅ Sent via modal primary to:', profileName);
-                        return { ok: true };
-                    }
+                var pBtns = modal.querySelectorAll('button.artdeco-button--primary');
+                if (pBtns.length > 0) {
+                    pBtns[0].click();
+                    await sleep(2000);
+                    return { ok: true };
                 }
             }
 
-            return { ok: false, error: 'send_not_found' };
+            return { ok: false, error: 'send_button_not_found' };
         } catch (err) {
             console.error('[Wassel] Invite error:', err);
             return { ok: false, error: err.message };
@@ -349,75 +318,32 @@
             console.log('[Wassel] doLinkedInPost starting, content length:', content.length);
             await sleep(2000);
 
-            // STEP 1: Click "Start a post"
-            console.log('[Wassel] Step 1: Looking for Start Post button...');
-            var allClickable = document.querySelectorAll('button, div[role="button"], span[role="textbox"]');
-            var startBtn = null;
-
-            for (var el of allClickable) {
-                var text = (el.textContent || '').toLowerCase();
-                var label = (el.getAttribute('aria-label') || '').toLowerCase();
-                var placeholder = (el.getAttribute('placeholder') || '').toLowerCase();
-                if (text.includes('start a post') || label.includes('start a post') ||
-                    text.includes('ابدأ منشور') || placeholder.includes('start') ||
-                    el.classList.contains('share-box-feed-entry__trigger') ||
-                    el.classList.contains('share-box-feed-entry__top-bar')) {
-                    startBtn = el;
-                    break;
-                }
-            }
+            // Step 1: Click "Start a post"
+            var startBtn = document.querySelector('button.share-box-feed-entry__trigger') || 
+                           document.querySelector('#share-to-linkedin-modal-trigger') || 
+                           document.querySelector('button[aria-label*="Start a post" i]');
 
             if (!startBtn) {
-                startBtn = document.querySelector(
-                    '.share-box-feed-entry__trigger, ' +
-                    '.share-box-feed-entry__top-bar, ' +
-                    '.share-creation-state, ' +
-                    '[data-control-name="share.sharebox_text"]'
-                );
-            }
-
-            if (startBtn) {
-                console.log('[Wassel] Found Start Post, clicking...');
-                startBtn.click();
-                await sleep(3500);
-            } else {
-                console.error('[Wassel] Start Post button NOT found');
                 showNotification('❌ لم يتم العثور على زر المنشور', 'error');
                 return { ok: false, error: 'start_post_not_found' };
             }
 
-            // STEP 2: Find editor
-            console.log('[Wassel] Step 2: Looking for editor...');
-            await sleep(1500);
+            startBtn.click();
+            await sleep(3500);
 
+            // Step 2: Find Editor
             var editor = document.querySelector('.ql-editor[contenteditable="true"]') ||
-                document.querySelector('[role="textbox"][contenteditable="true"]') ||
-                document.querySelector('.share-creation-state__text-editor [contenteditable="true"]') ||
-                document.querySelector('[data-placeholder][contenteditable="true"]');
-
-            // Broader search: find any large contenteditable
-            if (!editor) {
-                var allEditable = document.querySelectorAll('[contenteditable="true"]');
-                for (var ed of allEditable) {
-                    if (ed.offsetHeight > 50 && ed.offsetWidth > 200) {
-                        editor = ed;
-                        break;
-                    }
-                }
-            }
+                         document.querySelector('[role="textbox"][contenteditable="true"]');
 
             if (!editor) {
-                console.error('[Wassel] Editor NOT found');
                 showNotification('❌ لم يتم العثور على محرر النص', 'error');
                 return { ok: false, error: 'editor_not_found' };
             }
 
-            console.log('[Wassel] Step 3: Found editor, filling content...');
             editor.focus();
             await sleep(300);
             editor.innerHTML = '';
-
-            // Insert text line by line using execCommand
+            
             var lines = content.split('\n');
             for (var i = 0; i < lines.length; i++) {
                 document.execCommand('insertText', false, lines[i]);
@@ -426,52 +352,29 @@
                 }
             }
             editor.dispatchEvent(new Event('input', { bubbles: true }));
-            await sleep(500);
-
-            // Verify content was inserted
-            if (!(editor.textContent || '').trim()) {
-                console.log('[Wassel] execCommand failed, trying innerHTML...');
-                editor.innerHTML = lines.map(function(l) { return '<p>' + (l || '<br>') + '</p>'; }).join('');
-                editor.dispatchEvent(new Event('input', { bubbles: true }));
-            }
-
-            console.log('[Wassel] Content filled:', (editor.textContent || '').slice(0, 50));
             await sleep(2000);
 
-            // STEP 4: Click Post button
-            console.log('[Wassel] Step 4: Looking for Post button...');
-            var allBtns = document.querySelectorAll('button');
-            var postBtn = null;
+            // Step 3: Verify and Click Post submit
+            var postBtn = document.querySelector('button.share-actions__primary-action') ||
+                          document.querySelector('div.share-box_actions button.artdeco-button--primary');
 
-            for (var btn of allBtns) {
-                var btnText = (btn.textContent || '').trim().toLowerCase();
-                var btnLabel = (btn.getAttribute('aria-label') || '').toLowerCase();
-                if ((btnText === 'post' || btnText === 'نشر' || btnLabel.includes('post')) &&
-                    !btnText.includes('repost') && !btnLabel.includes('repost') && !btn.disabled) {
-                    postBtn = btn;
-                    break;
-                }
-            }
-
-            if (!postBtn) {
-                postBtn = document.querySelector('button.share-actions__primary-action:not([disabled])');
-            }
-
-            if (postBtn) {
-                console.log('[Wassel] Found Post button, clicking...');
+            if (postBtn && !postBtn.disabled) {
                 postBtn.click();
                 await sleep(3000);
-                console.log('[Wassel] Post published!');
+                
+                var stillOpen = document.querySelector('.ql-editor[contenteditable="true"]');
+                if (stillOpen) {
+                    return { ok: false, error: 'post_failed_to_submit' };
+                }
+
                 showNotification('✅ تم نشر المنشور بنجاح!', 'success');
                 return { ok: true };
             }
 
-            console.log('[Wassel] Post button not found or disabled');
             showNotification('⚠️ المحتوى جاهز — اضغط Post يدوياً', 'error');
             return { ok: false, error: 'post_button_not_found' };
         } catch (err) {
             console.error('[Wassel] Post error:', err);
-            showNotification('❌ فشل تعبئة المنشور', 'error');
             return { ok: false, error: err.message };
         }
     }
