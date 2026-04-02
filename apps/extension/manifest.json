@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Wassel Assistant",
-  "version": "4.1.0",
-  "description": "Automate LinkedIn campaigns — visits, invites, and messages with Wassel",
+  "version": "5.0.0",
+  "description": "Wassel — Cloud LinkedIn automation. Extension syncs cookies for cloud execution.",
   "permissions": [
     "storage",
     "tabs",
