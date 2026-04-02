@@ -158,18 +158,27 @@ export default function ProspectDiscovery() {
     setImportedProspects(new Set());
     try {
       const token = await getFreshToken(accessToken);
+      if (!token) {
+        setError(isAr ? 'انتهت الجلسة. سجّل الدخول مرة أخرى' : 'Session expired. Please log in again.');
+        setLoading(false);
+        return;
+      }
+      console.log('[Search] Token OK, length:', token.length, 'Sending search request...');
       const res = await fetch('/api/prospects/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ jobTitles, locations, industries, companySizes, keywords, limit }),
+        signal: AbortSignal.timeout(55000),
       });
       if (!res.ok) {
         const text = await res.text();
+        console.error('[Search] Server error:', res.status, text);
         let msg = isAr ? 'فشل البحث' : 'Search failed';
         try { msg = JSON.parse(text).error || msg; } catch { msg = `Server error (${res.status})`; }
         throw new Error(msg);
       }
       const data = await res.json();
+      console.log('[Search] Got', data.prospects?.length || 0, 'results');
       const found: any[] = data.prospects || [];
       setProspects(found);
       setTotal(data.total || 0);
@@ -192,7 +201,12 @@ export default function ProspectDiscovery() {
         saveHistory([...newEntries, ...prospectHistory].slice(0, 1000));
       }
     } catch (err: any) {
-      setError(err.message);
+      console.error('[Search] Error:', err.name, err.message);
+      if (err.name === 'TimeoutError') {
+        setError(isAr ? 'انتهت مهلة البحث. حاول مرة أخرى' : 'Search timed out. Please try again.');
+      } else {
+        setError(err.message);
+      }
       setProspects([]);
     } finally {
       setLoading(false);
@@ -235,6 +249,7 @@ export default function ProspectDiscovery() {
           avatar_url: p.avatar_url || '',
         })),
       }),
+      signal: AbortSignal.timeout(30000),
     });
 
     const responseText = await res.text();
