@@ -103,128 +103,197 @@
         }
     });
 
-    // ── LinkedIn 2026: click "Connect" button on a profile page ──
-    // CRITICAL: Only searches MAIN profile section to avoid clicking on suggested people
+    // ── LinkedIn 2026: click "Connect" — walk-up-from-h1 approach ──
+    // Finds the h1 (profile name), walks UP to the card/section container,
+    // then searches ONLY that container for Connect. Skips li/aside/footer.
     async function doSendInvite(targetUrl, note) {
         try {
-            var targetSlug = (targetUrl || '').split('/in/')[1]?.split(/[?/]/)[0]?.toLowerCase();
-            var currentSlug = window.location.href.split('/in/')[1]?.split(/[?/]/)[0]?.toLowerCase();
+            console.log('[Wassel] doSendInvite called for:', targetUrl);
 
-            if (targetSlug && currentSlug !== targetSlug) {
-                console.log('[Wassel] Wrong page! Expected:', targetSlug, 'Got:', currentSlug);
-                window.location.href = targetUrl;
-                await sleep(5000);
+            // Extract profile slug
+            var slugMatch = (targetUrl || '').match(/\/in\/([^/?]+)/);
+            if (!slugMatch) {
+                console.error('[Wassel] Invalid LinkedIn URL:', targetUrl);
+                return { ok: false, error: 'invalid_url' };
+            }
+            var slug = slugMatch[1];
+
+            // Step 1: Make sure we are on the correct profile
+            if (!window.location.href.includes('/in/' + slug)) {
+                console.log('[Wassel] Navigating to profile:', slug);
+                window.location.href = 'https://www.linkedin.com/in/' + slug + '/';
+                await sleep(6000);
             }
 
-            await sleep(3000);
-
-            // CRITICAL: Only search in MAIN profile section, not sidebar/suggestions
-            var mainSection =
-                document.querySelector('.pv-top-card') ||
-                document.querySelector('.scaffold-layout__main') ||
-                document.querySelector('main') ||
-                document.querySelector('[data-view-name="profile-card"]');
-
-            if (!mainSection) {
-                console.error('[Wassel] Main profile section not found');
-                return { ok: false, error: 'profile_section_not_found' };
+            // Step 2: Double-check URL
+            if (!window.location.href.includes('/in/' + slug)) {
+                console.error('[Wassel] Failed to navigate to:', slug);
+                return { ok: false, error: 'navigation_failed' };
             }
 
-            var buttons = mainSection.querySelectorAll('button');
-            var connectBtn = null;
+            // Step 3: Get the person's name from the page header
+            await sleep(2000);
+            var h1 = document.querySelector('h1');
+            var pageName = h1 ? h1.textContent.trim() : 'unknown';
+            console.log('[Wassel] On profile of:', pageName);
 
-            for (var btn of buttons) {
-                var text = (btn.textContent || '').trim().toLowerCase();
-                var label = (btn.getAttribute('aria-label') || '').toLowerCase();
+            // Step 4: Walk UP from h1 to find the card container
+            var h1Element = document.querySelector('h1');
+            if (!h1Element) {
+                return { ok: false, error: 'no_h1_found' };
+            }
 
-                if ((text === 'connect' || label.includes('connect')) &&
-                    !text.includes('disconnect') && !text.includes('connected') &&
-                    !text.includes('pending')) {
-                    connectBtn = btn;
+            var container = h1Element;
+            for (var ci = 0; ci < 10; ci++) {
+                container = container.parentElement;
+                if (!container) break;
+                if (container.tagName === 'SECTION' ||
+                    container.tagName === 'MAIN' ||
+                    (container.className && container.className.includes('artdeco-card'))) {
                     break;
                 }
             }
 
-            // Try More dropdown in main section only
+            if (!container) {
+                container = document.querySelector('main') || document.body;
+            }
+
+            console.log('[Wassel] Searching in container:', container.tagName, (container.className || '').slice(0, 50));
+
+            // Step 5: Find buttons ONLY in this container
+            var connectBtn = null;
+            var btns = container.querySelectorAll('button');
+
+            for (var btn of btns) {
+                var text = (btn.textContent || '').trim();
+                var label = (btn.getAttribute('aria-label') || '');
+                var textLower = text.toLowerCase();
+                var labelLower = label.toLowerCase();
+
+                // Must NOT be in a list item (those are suggestions)
+                if (btn.closest('li')) continue;
+                // Must NOT be inside an aside element
+                if (btn.closest('aside')) continue;
+                // Must NOT be inside a footer
+                if (btn.closest('footer')) continue;
+
+                if ((textLower === 'connect' ||
+                     (labelLower.includes('connect') && !labelLower.includes('disconnect'))) &&
+                    !textLower.includes('disconnect') &&
+                    !textLower.includes('connected') &&
+                    !textLower.includes('pending')) {
+
+                    // Final check: must be visible and near top of page
+                    var rect = btn.getBoundingClientRect();
+                    if (rect.top < 600 && rect.width > 0) {
+                        connectBtn = btn;
+                        console.log('[Wassel] Found Connect button at y=' + rect.top + ' text=' + text);
+                        break;
+                    }
+                }
+            }
+
+            // Step 6: If no Connect, try "More" dropdown
             if (!connectBtn) {
-                var moreBtn = Array.from(mainSection.querySelectorAll('button')).find(function(b) {
-                    var l = (b.getAttribute('aria-label') || '').toLowerCase();
-                    return l.includes('more action');
-                });
+                console.log('[Wassel] No direct Connect, trying More...');
+                var moreBtns = container.querySelectorAll('button');
+                for (var mb of moreBtns) {
+                    var mLabel = (mb.getAttribute('aria-label') || '').toLowerCase();
+                    if (mLabel.includes('more action')) {
+                        var mRect = mb.getBoundingClientRect();
+                        if (mRect.top < 600) {
+                            mb.click();
+                            await sleep(2000);
 
-                if (moreBtn) {
-                    moreBtn.click();
-                    await sleep(1500);
-
-                    var items = document.querySelectorAll('[role="menuitem"]');
-                    for (var i = 0; i < items.length; i++) {
-                        var t = (items[i].textContent || '').toLowerCase();
-                        if (t.includes('connect') && !t.includes('disconnect')) {
-                            connectBtn = items[i];
+                            var menuItems = document.querySelectorAll(
+                                '.artdeco-dropdown__content-inner li, [role="menuitem"]'
+                            );
+                            for (var mi = 0; mi < menuItems.length; mi++) {
+                                var mt = (menuItems[mi].textContent || '').toLowerCase();
+                                if (mt.includes('connect') && !mt.includes('disconnect')) {
+                                    connectBtn = menuItems[mi];
+                                    console.log('[Wassel] Found Connect in More menu');
+                                    break;
+                                }
+                            }
                             break;
                         }
                     }
                 }
             }
 
+            // Step 7: Check if already connected
             if (!connectBtn) {
-                var msgBtn = Array.from(mainSection.querySelectorAll('button')).find(function(b) {
-                    return (b.textContent || '').trim().toLowerCase() === 'message';
-                });
-                if (msgBtn) return { ok: true, note: 'already_connected' };
+                var allBtns = container.querySelectorAll('button');
+                for (var ab of allBtns) {
+                    var at = (ab.textContent || '').trim().toLowerCase();
+                    if (at === 'message' && ab.getBoundingClientRect().top < 600) {
+                        console.log('[Wassel] Already connected (Message button found)');
+                        return { ok: true, note: 'already_connected' };
+                    }
+                    if (at === 'pending' || at.includes('pending')) {
+                        console.log('[Wassel] Already pending');
+                        return { ok: true, note: 'already_pending' };
+                    }
+                }
+                console.error('[Wassel] No Connect button found anywhere');
                 return { ok: false, error: 'connect_not_found' };
             }
 
-            // Safety: reject if button is too far down the page (in suggestions area)
-            var rect = connectBtn.getBoundingClientRect();
-            if (rect.top > 800) {
-                console.error('[Wassel] Button too far down (y=' + rect.top + '), likely suggestion');
-                return { ok: false, error: 'button_in_suggestions' };
-            }
-
-            console.log('[Wassel] Clicking Connect at y=' + rect.top);
+            // Step 8: Click Connect
+            console.log('[Wassel] Clicking Connect for:', pageName);
             connectBtn.click();
             await sleep(3000);
 
-            // Add note if provided
+            // Step 9: Handle note
             if (note && note.trim()) {
-                var noteBtn = Array.from(document.querySelectorAll('button')).find(function(b) {
-                    return (b.textContent || '').toLowerCase().includes('add a note');
-                });
-                if (noteBtn) {
-                    noteBtn.click();
-                    await sleep(1500);
-                    var ta = document.querySelector('textarea');
-                    if (ta) {
-                        ta.focus();
-                        var setter = Object.getOwnPropertyDescriptor(
-                            HTMLTextAreaElement.prototype, 'value'
-                        ).set;
-                        setter.call(ta, note);
-                        ta.dispatchEvent(new Event('input', { bubbles: true }));
+                var allBtns2 = document.querySelectorAll('button');
+                for (var nb of allBtns2) {
+                    if ((nb.textContent || '').toLowerCase().includes('add a note')) {
+                        nb.click();
+                        await sleep(1500);
+                        var ta = document.querySelector('textarea');
+                        if (ta) {
+                            ta.focus();
+                            var setter = Object.getOwnPropertyDescriptor(
+                                HTMLTextAreaElement.prototype, 'value'
+                            ).set;
+                            setter.call(ta, note);
+                            ta.dispatchEvent(new Event('input', { bubbles: true }));
+                            await sleep(500);
+                        }
+                        break;
                     }
                 }
             }
 
-            // Click Send
-            await sleep(1000);
-            var sendBtn = Array.from(document.querySelectorAll('button')).find(function(b) {
-                var t = (b.textContent || '').trim().toLowerCase();
-                return t === 'send' || t === 'send now' || t === 'send without a note';
-            });
-
-            if (sendBtn) {
-                sendBtn.click();
-                await sleep(2000);
-                console.log('[Wassel] Invite sent!');
-                return { ok: true };
+            // Step 10: Click Send
+            await sleep(1500);
+            var allBtns3 = document.querySelectorAll('button');
+            for (var sb of allBtns3) {
+                var st = (sb.textContent || '').trim().toLowerCase();
+                if (st === 'send' || st === 'send now' ||
+                    st === 'send without a note' || st === 'send invitation') {
+                    console.log('[Wassel] Clicking Send');
+                    sb.click();
+                    await sleep(2000);
+                    console.log('[Wassel] Invite SENT to:', pageName);
+                    return { ok: true };
+                }
             }
 
-            // Try primary button in modal
+            // Last resort: primary button in modal
             var modal = document.querySelector('[role="dialog"]');
             if (modal) {
-                var primary = modal.querySelector('button.artdeco-button--primary');
-                if (primary) { primary.click(); await sleep(2000); return { ok: true }; }
+                var primary = Array.from(modal.querySelectorAll('button')).find(function(b) {
+                    return b.className.includes('primary');
+                });
+                if (primary) {
+                    primary.click();
+                    await sleep(2000);
+                    console.log('[Wassel] Sent via modal primary');
+                    return { ok: true };
+                }
             }
 
             return { ok: false, error: 'send_not_found' };
