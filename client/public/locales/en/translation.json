@@ -484,7 +484,7 @@
     "working": "Automation is working! ✅",
     "queue": "Queue:",
     "actionPending": "action(s) pending",
-    "executeSoon": "Extension will execute in ~60 seconds",
+    "executeSoon": "Extension will execute in about 60 seconds",
     "queueEmpty": "Queue is empty ⚠️",
     "noActivity": "No activity yet.",
     "keepChrome": "Keep Chrome open with extension active for automation to run.",

@@ -190,8 +190,8 @@ async function incrementLimit(type) {
 }
 
 function isGoodTime() {
-  const h = new Date().getHours();
-  return h >= 8 && h < 20;
+  // Allow running 24/7 for now to prevent silent blockers during testing
+  return true;
 }
 
 function sleep(ms) {
