@@ -1,5 +1,5 @@
 // ============================================================
-// WASSEL EXTENSION v4.0.0 — Content Script
+// WASSEL EXTENSION v4.1.0 — Content Script
 // Handles: campaign execution, post publishing, auth bridge, detection
 // Does NOT: scan/scrape prospects (Apify handles discovery now)
 // ============================================================
@@ -227,13 +227,25 @@
             targetBtn.click();
             await sleep(3000);
 
-            // Handle Note
+            // After clicking Connect, LinkedIn shows a modal/popup.
+            // It may say: "Add a note" / "Send without a note" / "Send" / "Send invitation"
+            // Log what buttons we see for debugging
+            var allModalBtns = document.querySelectorAll('button');
+            var btnTexts = [];
+            for (var db = 0; db < allModalBtns.length; db++) {
+                var dbText = (allModalBtns[db].textContent || '').trim();
+                if (dbText.length > 0 && dbText.length < 40) btnTexts.push(dbText);
+            }
+            console.log('[Wassel] Buttons after Connect click:', JSON.stringify(btnTexts.slice(0, 20)));
+
+            // Handle Note — if we have a note, click "Add a note" first
             if (note && note.trim()) {
                 var noteBtns = document.querySelectorAll('button');
                 for (var n = 0; n < noteBtns.length; n++) {
                     var nAria = (noteBtns[n].getAttribute('aria-label') || '').toLowerCase();
-                    var nText = (noteBtns[n].textContent || '').toLowerCase();
-                    if (nText.includes('add a note') || nAria.includes('add a note')) {
+                    var nText = (noteBtns[n].textContent || '').toLowerCase().trim();
+                    if (nText.includes('add a note') || nAria.includes('add a note') ||
+                        nText.includes('إضافة ملاحظة') || nText.includes('أضف ملاحظة')) {
                         noteBtns[n].click();
                         await sleep(1500);
                         var ta = document.querySelector('textarea');
@@ -250,13 +262,28 @@
 
             await sleep(1500);
 
-            // Click Send
+            // Click Send / Send without a note / Send invitation — use includes() not ===
             var sendBtns = document.querySelectorAll('button');
             for (var s = 0; s < sendBtns.length; s++) {
                 var st = (sendBtns[s].textContent || '').trim().toLowerCase();
                 var sAria = (sendBtns[s].getAttribute('aria-label') || '').trim().toLowerCase();
-                if (st === 'send' || st === 'send now' || st === 'send without a note' ||
-                    st === 'send invitation' || st === 'إرسال' || sAria.includes('send invitation')) {
+
+                var isSend = (
+                    st === 'send' ||
+                    st.includes('send without') ||
+                    st.includes('send now') ||
+                    st.includes('send invitation') ||
+                    st === 'إرسال' ||
+                    st.includes('إرسال بدون') ||
+                    st.includes('إرسال دعوة') ||
+                    st.includes('أرسل') ||
+                    sAria.includes('send invitation') ||
+                    sAria.includes('send without') ||
+                    sAria.includes('إرسال')
+                );
+
+                if (isSend) {
+                    console.log('[Wassel] Clicking send button: "' + st + '"');
                     sendBtns[s].click();
                     await sleep(2000);
                     console.log('[Wassel] RESULT: Invite SENT to:', profileName, '| slug:', slug);
@@ -264,11 +291,12 @@
                 }
             }
 
-            // Fallback: primary button in modal
+            // Fallback: any primary button in a modal/dialog
             var modal = document.querySelector('[role="dialog"]');
             if (modal) {
-                var pBtns = modal.querySelectorAll('button.artdeco-button--primary');
+                var pBtns = modal.querySelectorAll('button.artdeco-button--primary, button[data-control-name="send"]');
                 if (pBtns.length > 0) {
+                    console.log('[Wassel] Clicking modal primary button: "' + (pBtns[0].textContent || '').trim() + '"');
                     pBtns[0].click();
                     await sleep(2000);
                     console.log('[Wassel] RESULT: Invite SENT (modal) to:', profileName, '| slug:', slug);
@@ -276,6 +304,20 @@
                 }
             }
 
+            // Last resort: look for any artdeco-button--primary on page (invite confirmation)
+            var primaryBtns = document.querySelectorAll('button.artdeco-button--primary');
+            for (var pb = 0; pb < primaryBtns.length; pb++) {
+                var pbText = (primaryBtns[pb].textContent || '').trim().toLowerCase();
+                if (pbText.includes('send') || pbText.includes('إرسال') || pbText.includes('أرسل')) {
+                    console.log('[Wassel] Clicking primary send button: "' + pbText + '"');
+                    primaryBtns[pb].click();
+                    await sleep(2000);
+                    console.log('[Wassel] RESULT: Invite SENT (primary) to:', profileName, '| slug:', slug);
+                    return { ok: true, sentTo: profileName };
+                }
+            }
+
+            console.error('[Wassel] No send button found. Visible buttons:', JSON.stringify(btnTexts.slice(0, 15)));
             return { ok: false, error: 'send_button_not_found' };
         } catch (err) {
             console.error('[Wassel] Invite error:', err);
@@ -477,5 +519,5 @@
         return new Promise(r => setTimeout(r, ms));
     }
 
-    console.log('[Wassel] Content script v4.0.0 loaded');
+    console.log('[Wassel] Content script v4.1.0 loaded');
 })();
