@@ -1,5 +1,5 @@
 // ============================================================
-// WASSEL EXTENSION v3.0.0 — Content Script
+// WASSEL EXTENSION v3.0.1 — Content Script
 // Handles: campaign execution, post publishing, auth bridge, detection
 // Does NOT: scan/scrape prospects (Apify handles discovery now)
 // ============================================================
@@ -123,13 +123,20 @@
             }
 
             // STEP 2: Wait for LinkedIn SPA to render the profile card
-            await sleep(3000);
+            // LinkedIn loads progressively — h1 may not exist yet even though page is "complete"
+            // Poll for up to 15 seconds waiting for the h1 to appear
+            var h1 = null;
+            for (var wait = 0; wait < 15; wait++) {
+                h1 = document.querySelector('h1');
+                if (h1 && h1.textContent.trim().length > 0) break;
+                h1 = null;
+                console.log('[Wassel] Waiting for h1 to render... attempt', wait + 1);
+                await sleep(1000);
+            }
 
-            // STEP 3: Find h1 (profile name) — this is the anchor point
-            var h1 = document.querySelector('h1');
             if (!h1) {
-                console.error('[Wassel] No h1 found on page');
-                return { ok: false, error: 'no_h1_on_page' };
+                console.error('[Wassel] No h1 found after 15s on page:', window.location.href);
+                return { ok: false, error: 'no_h1_after_wait' };
             }
 
             var profileName = h1.textContent.trim();
@@ -491,5 +498,5 @@
         return new Promise(r => setTimeout(r, ms));
     }
 
-    console.log('[Wassel] Content script v3.0.0 loaded');
+    console.log('[Wassel] Content script v3.0.1 loaded');
 })();
