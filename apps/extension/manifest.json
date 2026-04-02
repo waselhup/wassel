@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Wassel Assistant",
-  "version": "3.0.1",
+  "version": "4.0.0",
   "description": "Automate LinkedIn campaigns — visits, invites, and messages with Wassel",
   "permissions": [
     "storage",
