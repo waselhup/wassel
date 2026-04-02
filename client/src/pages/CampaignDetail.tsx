@@ -84,12 +84,48 @@ export default function CampaignDetail() {
   });
 
   const [statusUpdating, setStatusUpdating] = useState(false);
+  const [cloudError, setCloudError] = useState('');
   const changeCampaignStatus = async (newStatus: string) => {
     setStatusUpdating(true);
+    setCloudError('');
     try {
+      // If launching or resuming → use cloud execution
+      if (newStatus === 'active') {
+        const token = localStorage.getItem('supabase_token') || '';
+
+        // Check if user has a LinkedIn session (cookies stored)
+        const checkRes = await fetch('/api/cloud/session-check', {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+        const { hasSession } = await checkRes.json();
+
+        if (!hasSession) {
+          setCloudError('يرجى فتح LinkedIn وإعادة تحميل الإضافة لمزامنة الجلسة\nPlease open LinkedIn and reload the extension to sync your session.');
+          setStatusUpdating(false);
+          return;
+        }
+
+        // Launch campaign in cloud
+        const launchRes = await fetch(`/api/cloud/campaign/${campaignId}/launch`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        });
+        const launchData = await launchRes.json();
+
+        if (!launchData.success) {
+          setCloudError(launchData.error || 'Cloud launch failed');
+          setStatusUpdating(false);
+          return;
+        }
+
+        console.log(`[Campaign] Cloud launch: ${launchData.prospects} prospects, ${launchData.steps} steps`);
+      }
+
+      // Update UI status via TRPC
       await updateStatusMutation.mutateAsync({ id: campaignId, status: newStatus as any });
-    } catch (e) {
+    } catch (e: any) {
       console.error('Status update failed:', e);
+      setCloudError(e.message || 'Launch failed');
     }
     setStatusUpdating(false);
   };
@@ -458,6 +494,15 @@ export default function CampaignDetail() {
           );
         })()}
       </div>
+
+      {/* Cloud error banner */}
+      {cloudError && (
+        <div className="max-w-6xl mx-auto px-6 pt-2">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700 whitespace-pre-line">
+            ⚠️ {cloudError}
+          </div>
+        </div>
+      )}
 
       {/* Activity Feed + Test Automation */}
       <div className="max-w-6xl mx-auto px-6 pt-4">

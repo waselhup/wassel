@@ -109,17 +109,12 @@ export default function Posts() {
     }
   };
 
-  // Publish now (user-assisted via extension)
+  // Publish now (cloud — via LinkedIn Voyager API, no extension needed)
   const publishNow = async () => {
     if (!content.trim()) return;
-    // Check extension is installed
-    if (document.documentElement.getAttribute('data-wassel-extension') !== 'true') {
-      setShowExtModal(true);
-      return;
-    }
     setPublishing(true);
     try {
-      // 1. Create the post
+      // 1. Create the post in database
       const createRes = await apiFetch('/api/posts', token, {
         method: 'POST',
         body: JSON.stringify({ content: content.trim() }),
@@ -127,21 +122,26 @@ export default function Posts() {
       const postId = createRes.post?.id;
       if (!postId) throw new Error('Failed to create post');
 
-      // 2. Call publish endpoint which returns extension action
+      // 2. Mark as published in database
       await apiFetch(`/api/posts/${postId}/publish`, token, { method: 'POST' });
 
-      // 3. Send message to extension via postMessage bridge (web page → content.js → background.js)
-      console.log('[Wassel-Posts] Sending publish request to extension via postMessage');
-      window.postMessage({
-        type: 'WASSEL_PUBLISH_POST',
-        source: 'wassel-web',
-        content: content.trim(),
-        postId,
-      }, '*');
+      // 3. Execute via cloud API (LinkedIn Voyager API — no extension needed)
+      console.log('[Wassel-Posts] Publishing via cloud API');
+      const cloudRes = await apiFetch('/api/cloud/execute', token, {
+        method: 'POST',
+        body: JSON.stringify({
+          actionType: 'post',
+          message: content.trim(),
+        }),
+      });
 
-      // Background.js opens the LinkedIn tab automatically — no need to open here
-      setContent('');
-      toast.success(t('posts.openLinkedIn'));
+      if (cloudRes.success) {
+        setContent('');
+        toast.success(t('posts.published') || 'Post published successfully!');
+      } else {
+        toast.error(cloudRes.error || 'Cloud publish failed');
+      }
+
       fetchPosts();
     } catch (e: any) {
       console.error('[Posts] publish error:', e);

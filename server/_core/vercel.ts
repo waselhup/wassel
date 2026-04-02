@@ -17,6 +17,7 @@ import messageRoutes from "./messageRoutes";
 import stripeRoutes from "./stripeRoutes";
 import sessionRoutes from "./sessionRoutes";
 import automationRoutes from "./automationRoutes";
+import cloudCampaignRoutes from "./cloudCampaignRoutes";
 import { appRouter } from "../routers";
 import { createContext, expressAuthMiddleware, requireRole } from "./context";
 
@@ -87,6 +88,9 @@ app.use("/api/session", expressAuthMiddleware, sessionRoutes);
 
 // Cloud automation orchestrator: JWT required
 app.use("/api/automation", expressAuthMiddleware, automationRoutes);
+
+// Cloud campaign execution via LinkedIn Voyager API
+app.use("/api/cloud", expressAuthMiddleware, cloudCampaignRoutes);
 
 // Stripe: webhook has NO auth (raw body needed), other routes need auth
 app.use("/api/stripe", stripeRoutes);
