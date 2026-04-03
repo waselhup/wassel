@@ -18834,17 +18834,17 @@ var require_router = __commonJS({
     var toString3 = Object.prototype.toString;
     var proto = module2.exports = function(options) {
       var opts = options || {};
-      function router20(req, res, next) {
-        router20.handle(req, res, next);
+      function router21(req, res, next) {
+        router21.handle(req, res, next);
       }
-      setPrototypeOf(router20, proto);
-      router20.params = {};
-      router20._params = [];
-      router20.caseSensitive = opts.caseSensitive;
-      router20.mergeParams = opts.mergeParams;
-      router20.strict = opts.strict;
-      router20.stack = [];
-      return router20;
+      setPrototypeOf(router21, proto);
+      router21.params = {};
+      router21._params = [];
+      router21.caseSensitive = opts.caseSensitive;
+      router21.mergeParams = opts.mergeParams;
+      router21.strict = opts.strict;
+      router21.stack = [];
+      return router21;
     };
     proto.param = function param(name, fn) {
       if (typeof name === "function") {
@@ -19977,14 +19977,14 @@ var require_etag = __commonJS({
   "node_modules/etag/index.js"(exports2, module2) {
     "use strict";
     module2.exports = etag;
-    var crypto6 = require("crypto");
+    var crypto8 = require("crypto");
     var Stats = require("fs").Stats;
     var toString3 = Object.prototype.toString;
     function entitytag(entity) {
       if (entity.length === 0) {
         return '"0-2jmj7l5rSw0yVb/vlWAYkK/YBwk"';
       }
-      var hash2 = crypto6.createHash("sha1").update(entity, "utf8").digest("base64").substring(0, 27);
+      var hash2 = crypto8.createHash("sha1").update(entity, "utf8").digest("base64").substring(0, 27);
       var len = typeof entity === "string" ? Buffer.byteLength(entity, "utf8") : entity.length;
       return '"' + len.toString(16) + "-" + hash2 + '"';
     }
@@ -21860,7 +21860,7 @@ var require_application = __commonJS({
   "node_modules/express/lib/application.js"(exports2, module2) {
     "use strict";
     var finalhandler = require_finalhandler();
-    var Router19 = require_router();
+    var Router20 = require_router();
     var methods = require_methods();
     var middleware = require_init();
     var query = require_query();
@@ -21925,7 +21925,7 @@ var require_application = __commonJS({
     };
     app2.lazyrouter = function lazyrouter() {
       if (!this._router) {
-        this._router = new Router19({
+        this._router = new Router20({
           caseSensitive: this.enabled("case sensitive routing"),
           strict: this.enabled("strict routing")
         });
@@ -21934,17 +21934,17 @@ var require_application = __commonJS({
       }
     };
     app2.handle = function handle(req, res, callback) {
-      var router20 = this._router;
+      var router21 = this._router;
       var done = callback || finalhandler(req, res, {
         env: this.get("env"),
         onerror: logerror.bind(this)
       });
-      if (!router20) {
+      if (!router21) {
         debug("no routes defined on app");
         done();
         return;
       }
-      router20.handle(req, res, done);
+      router21.handle(req, res, done);
     };
     app2.use = function use(fn) {
       var offset = 0;
@@ -21964,15 +21964,15 @@ var require_application = __commonJS({
         throw new TypeError("app.use() requires a middleware function");
       }
       this.lazyrouter();
-      var router20 = this._router;
+      var router21 = this._router;
       fns.forEach(function(fn2) {
         if (!fn2 || !fn2.handle || !fn2.set) {
-          return router20.use(path, fn2);
+          return router21.use(path, fn2);
         }
         debug(".use app under %s", path);
         fn2.mountpath = path;
         fn2.parent = this;
-        router20.use(path, function mounted_app(req, res, next) {
+        router21.use(path, function mounted_app(req, res, next) {
           var orig = req.app;
           fn2.handle(req, res, function(err) {
             setPrototypeOf(req, orig.request);
@@ -22876,11 +22876,11 @@ var require_request = __commonJS({
 // node_modules/cookie-signature/index.js
 var require_cookie_signature = __commonJS({
   "node_modules/cookie-signature/index.js"(exports2) {
-    var crypto6 = require("crypto");
+    var crypto8 = require("crypto");
     exports2.sign = function(val, secret) {
       if ("string" !== typeof val) throw new TypeError("Cookie value must be provided as a string.");
       if (null == secret) throw new TypeError("Secret key must be provided.");
-      return val + "." + crypto6.createHmac("sha256", secret).update(val).digest("base64").replace(/\=+$/, "");
+      return val + "." + crypto8.createHmac("sha256", secret).update(val).digest("base64").replace(/\=+$/, "");
     };
     exports2.unsign = function(val, secret) {
       if ("string" !== typeof val) throw new TypeError("Signed cookie string must be provided.");
@@ -22889,7 +22889,7 @@ var require_cookie_signature = __commonJS({
       return sha1(mac3) == sha1(val) ? str : false;
     };
     function sha1(str) {
-      return crypto6.createHash("sha1").update(str).digest("hex");
+      return crypto8.createHash("sha1").update(str).digest("hex");
     }
   }
 });
@@ -23789,7 +23789,7 @@ var require_express = __commonJS({
     var mixin = require_merge_descriptors();
     var proto = require_application();
     var Route = require_route();
-    var Router19 = require_router();
+    var Router20 = require_router();
     var req = require_request();
     var res = require_response();
     exports2 = module2.exports = createApplication;
@@ -23812,7 +23812,7 @@ var require_express = __commonJS({
     exports2.request = req;
     exports2.response = res;
     exports2.Route = Route;
-    exports2.Router = Router19;
+    exports2.Router = Router20;
     exports2.json = bodyParser.json;
     exports2.query = require_query();
     exports2.raw = bodyParser.raw;
@@ -24394,7 +24394,7 @@ var require_form_data = __commonJS({
     var parseUrl = require("url").parse;
     var fs = require("fs");
     var Stream = require("stream").Stream;
-    var crypto6 = require("crypto");
+    var crypto8 = require("crypto");
     var mime = require_mime_types();
     var asynckit = require_asynckit();
     var setToStringTag = require_es_set_tostringtag();
@@ -24600,7 +24600,7 @@ var require_form_data = __commonJS({
       return Buffer.concat([dataBuffer, Buffer.from(this._lastBoundary())]);
     };
     FormData3.prototype._generateBoundary = function() {
-      this._boundary = "--------------------------" + crypto6.randomBytes(12).toString("hex");
+      this._boundary = "--------------------------" + crypto8.randomBytes(12).toString("hex");
     };
     FormData3.prototype.getLengthSync = function() {
       var knownLength = this._overheadLength + this._valueLength;
@@ -34259,10 +34259,10 @@ var require_GoTrueAdminApi = __commonJS({
        * })
        * ```
        */
-      constructor({ url: url3 = "", headers = {}, fetch: fetch2 }) {
+      constructor({ url: url3 = "", headers = {}, fetch: fetch3 }) {
         this.url = url3;
         this.headers = headers;
-        this.fetch = (0, helpers_1.resolveFetch)(fetch2);
+        this.fetch = (0, helpers_1.resolveFetch)(fetch3);
         this.mfa = {
           listFactors: this._listFactors.bind(this),
           deleteFactor: this._deleteFactor.bind(this)
@@ -38966,14 +38966,14 @@ var require_buffer_equal_constant_time = __commonJS({
 var require_jwa = __commonJS({
   "node_modules/jwa/index.js"(exports2, module2) {
     var Buffer2 = require_safe_buffer().Buffer;
-    var crypto6 = require("crypto");
+    var crypto8 = require("crypto");
     var formatEcdsa = require_ecdsa_sig_formatter();
     var util3 = require("util");
     var MSG_INVALID_ALGORITHM = '"%s" is not a valid algorithm.\n  Supported algorithms are:\n  "HS256", "HS384", "HS512", "RS256", "RS384", "RS512", "PS256", "PS384", "PS512", "ES256", "ES384", "ES512" and "none".';
     var MSG_INVALID_SECRET = "secret must be a string or buffer";
     var MSG_INVALID_VERIFIER_KEY = "key must be a string or a buffer";
     var MSG_INVALID_SIGNER_KEY = "key must be a string, a buffer or an object";
-    var supportsKeyObjects = typeof crypto6.createPublicKey === "function";
+    var supportsKeyObjects = typeof crypto8.createPublicKey === "function";
     if (supportsKeyObjects) {
       MSG_INVALID_VERIFIER_KEY += " or a KeyObject";
       MSG_INVALID_SECRET += "or a KeyObject";
@@ -39063,17 +39063,17 @@ var require_jwa = __commonJS({
       return function sign(thing, secret) {
         checkIsSecretKey(secret);
         thing = normalizeInput(thing);
-        var hmac = crypto6.createHmac("sha" + bits, secret);
+        var hmac = crypto8.createHmac("sha" + bits, secret);
         var sig = (hmac.update(thing), hmac.digest("base64"));
         return fromBase64(sig);
       };
     }
     var bufferEqual;
-    var timingSafeEqual2 = "timingSafeEqual" in crypto6 ? function timingSafeEqual3(a, b) {
+    var timingSafeEqual2 = "timingSafeEqual" in crypto8 ? function timingSafeEqual3(a, b) {
       if (a.byteLength !== b.byteLength) {
         return false;
       }
-      return crypto6.timingSafeEqual(a, b);
+      return crypto8.timingSafeEqual(a, b);
     } : function timingSafeEqual3(a, b) {
       if (!bufferEqual) {
         bufferEqual = require_buffer_equal_constant_time();
@@ -39090,7 +39090,7 @@ var require_jwa = __commonJS({
       return function sign(thing, privateKey) {
         checkIsPrivateKey(privateKey);
         thing = normalizeInput(thing);
-        var signer = crypto6.createSign("RSA-SHA" + bits);
+        var signer = crypto8.createSign("RSA-SHA" + bits);
         var sig = (signer.update(thing), signer.sign(privateKey, "base64"));
         return fromBase64(sig);
       };
@@ -39100,7 +39100,7 @@ var require_jwa = __commonJS({
         checkIsPublicKey(publicKey);
         thing = normalizeInput(thing);
         signature = toBase64(signature);
-        var verifier = crypto6.createVerify("RSA-SHA" + bits);
+        var verifier = crypto8.createVerify("RSA-SHA" + bits);
         verifier.update(thing);
         return verifier.verify(publicKey, signature, "base64");
       };
@@ -39109,11 +39109,11 @@ var require_jwa = __commonJS({
       return function sign(thing, privateKey) {
         checkIsPrivateKey(privateKey);
         thing = normalizeInput(thing);
-        var signer = crypto6.createSign("RSA-SHA" + bits);
+        var signer = crypto8.createSign("RSA-SHA" + bits);
         var sig = (signer.update(thing), signer.sign({
           key: privateKey,
-          padding: crypto6.constants.RSA_PKCS1_PSS_PADDING,
-          saltLength: crypto6.constants.RSA_PSS_SALTLEN_DIGEST
+          padding: crypto8.constants.RSA_PKCS1_PSS_PADDING,
+          saltLength: crypto8.constants.RSA_PSS_SALTLEN_DIGEST
         }, "base64"));
         return fromBase64(sig);
       };
@@ -39123,12 +39123,12 @@ var require_jwa = __commonJS({
         checkIsPublicKey(publicKey);
         thing = normalizeInput(thing);
         signature = toBase64(signature);
-        var verifier = crypto6.createVerify("RSA-SHA" + bits);
+        var verifier = crypto8.createVerify("RSA-SHA" + bits);
         verifier.update(thing);
         return verifier.verify({
           key: publicKey,
-          padding: crypto6.constants.RSA_PKCS1_PSS_PADDING,
-          saltLength: crypto6.constants.RSA_PSS_SALTLEN_DIGEST
+          padding: crypto8.constants.RSA_PKCS1_PSS_PADDING,
+          saltLength: crypto8.constants.RSA_PSS_SALTLEN_DIGEST
         }, signature, "base64");
       };
     }
@@ -43745,7 +43745,7 @@ __export(vercel_exports, {
   default: () => vercel_default
 });
 module.exports = __toCommonJS(vercel_exports);
-var import_express19 = __toESM(require_express2(), 1);
+var import_express20 = __toESM(require_express2(), 1);
 
 // node_modules/@trpc/server/dist/codes-DagpWZLc.mjs
 function mergeWithoutOverrides(obj1, ...objs) {
@@ -44186,19 +44186,19 @@ function createRouterFactory(config2) {
       procedures,
       lazy: lazy$1
     }, emptyRouter), {}, { record: record2 });
-    const router20 = (0, import_objectSpread22.default)((0, import_objectSpread22.default)({}, record2), {}, {
+    const router21 = (0, import_objectSpread22.default)((0, import_objectSpread22.default)({}, record2), {}, {
       _def,
       createCaller: createCallerFactory()({ _def })
     });
-    return router20;
+    return router21;
   }
   return createRouterInner;
 }
 function isProcedure(procedureOrRouter) {
   return typeof procedureOrRouter === "function";
 }
-async function getProcedureAtPath(router20, path) {
-  const { _def } = router20;
+async function getProcedureAtPath(router21, path) {
+  const { _def } = router21;
   let procedure = _def.procedures[path];
   while (!procedure) {
     const key = Object.keys(_def.lazy).find((key$1) => path.startsWith(key$1));
@@ -44210,14 +44210,14 @@ async function getProcedureAtPath(router20, path) {
   return procedure;
 }
 function createCallerFactory() {
-  return function createCallerInner(router20) {
-    const { _def } = router20;
+  return function createCallerInner(router21) {
+    const { _def } = router21;
     return function createCaller(ctxOrCallback, opts) {
       return createRecursiveProxy(async (innerOpts) => {
         const { path, args } = innerOpts;
         const fullPath = path.join(".");
         if (path.length === 1 && path[0] === "_def") return _def;
-        const procedure = await getProcedureAtPath(router20, fullPath);
+        const procedure = await getProcedureAtPath(router21, fullPath);
         let ctx = void 0;
         try {
           if (!procedure) throw new TRPCError({
@@ -44265,7 +44265,7 @@ function mergeRouters(...routerList) {
     }
     return prev;
   }, defaultTransformer);
-  const router20 = createRouterFactory({
+  const router21 = createRouterFactory({
     errorFormatter,
     transformer,
     isDev: routerList.every((r) => r._def._config.isDev),
@@ -44274,7 +44274,7 @@ function mergeRouters(...routerList) {
     $types: (_routerList$ = routerList[0]) === null || _routerList$ === void 0 ? void 0 : _routerList$._def._config.$types,
     sse: (_routerList$2 = routerList[0]) === null || _routerList$2 === void 0 ? void 0 : _routerList$2._def._config.sse
   })(record2);
-  return router20;
+  return router21;
 }
 var trackedSymbol = Symbol();
 function isTrackedEnvelope(value) {
@@ -45624,7 +45624,7 @@ function initResponse(initOpts) {
   return { status };
 }
 function caughtErrorToData(cause, errorOpts) {
-  const { router: router20, req, onError } = errorOpts.opts;
+  const { router: router21, req, onError } = errorOpts.opts;
   const error48 = getTRPCErrorFromUnknown(cause);
   onError === null || onError === void 0 || onError({
     error: error48,
@@ -45635,14 +45635,14 @@ function caughtErrorToData(cause, errorOpts) {
     req
   });
   const untransformedJSON = { error: getErrorShape({
-    config: router20._def._config,
+    config: router21._def._config,
     error: error48,
     type: errorOpts.type,
     path: errorOpts.path,
     input: errorOpts.input,
     ctx: errorOpts.ctx
   }) };
-  const transformedJSON = transformTRPCResponse(router20._def._config, untransformedJSON);
+  const transformedJSON = transformTRPCResponse(router21._def._config, untransformedJSON);
   const body = JSON.stringify(transformedJSON);
   return {
     error: error48,
@@ -45657,9 +45657,9 @@ function isDataStream(v) {
 }
 async function resolveResponse(opts) {
   var _ref, _opts$allowBatching, _opts$batching, _opts$allowMethodOver, _config$sse$enabled, _config$sse;
-  const { router: router20, req } = opts;
+  const { router: router21, req } = opts;
   const headers = new Headers([["vary", "trpc-accept"]]);
-  const config2 = router20._def._config;
+  const config2 = router21._def._config;
   const url3 = new URL(req.url);
   if (req.method === "HEAD") return new Response(null, { status: 204 });
   const allowBatching = (_ref = (_opts$allowBatching = opts.allowBatching) !== null && _opts$allowBatching !== void 0 ? _opts$allowBatching : (_opts$batching = opts.batching) === null || _opts$batching === void 0 ? void 0 : _opts$batching.enabled) !== null && _ref !== void 0 ? _ref : true;
@@ -45669,7 +45669,7 @@ async function resolveResponse(opts) {
       return [void 0, await getRequestInfo({
         req,
         path: decodeURIComponent(opts.path),
-        router: router20,
+        router: router21,
         searchParams: url3.searchParams,
         headers: opts.req.headers,
         url: url3
@@ -49499,9 +49499,9 @@ var trackStream = (stream4, chunkSize, onProgress, onFinish) => {
 // node_modules/axios/lib/adapters/fetch.js
 var DEFAULT_CHUNK_SIZE = 64 * 1024;
 var { isFunction: isFunction3 } = utils_default;
-var globalFetchAPI = (({ Request: Request19, Response: Response19 }) => ({
-  Request: Request19,
-  Response: Response19
+var globalFetchAPI = (({ Request: Request18, Response: Response18 }) => ({
+  Request: Request18,
+  Response: Response18
 }))(utils_default.global);
 var { ReadableStream: ReadableStream2, TextEncoder: TextEncoder2 } = utils_default.global;
 var test = (fn, ...args) => {
@@ -49519,18 +49519,18 @@ var factory = (env) => {
     globalFetchAPI,
     env
   );
-  const { fetch: envFetch, Request: Request19, Response: Response19 } = env;
+  const { fetch: envFetch, Request: Request18, Response: Response18 } = env;
   const isFetchSupported = envFetch ? isFunction3(envFetch) : typeof fetch === "function";
-  const isRequestSupported = isFunction3(Request19);
-  const isResponseSupported = isFunction3(Response19);
+  const isRequestSupported = isFunction3(Request18);
+  const isResponseSupported = isFunction3(Response18);
   if (!isFetchSupported) {
     return false;
   }
   const isReadableStreamSupported = isFetchSupported && isFunction3(ReadableStream2);
-  const encodeText = isFetchSupported && (typeof TextEncoder2 === "function" ? /* @__PURE__ */ ((encoder2) => (str) => encoder2.encode(str))(new TextEncoder2()) : async (str) => new Uint8Array(await new Request19(str).arrayBuffer()));
+  const encodeText = isFetchSupported && (typeof TextEncoder2 === "function" ? /* @__PURE__ */ ((encoder2) => (str) => encoder2.encode(str))(new TextEncoder2()) : async (str) => new Uint8Array(await new Request18(str).arrayBuffer()));
   const supportsRequestStream = isRequestSupported && isReadableStreamSupported && test(() => {
     let duplexAccessed = false;
-    const hasContentType = new Request19(platform_default.origin, {
+    const hasContentType = new Request18(platform_default.origin, {
       body: new ReadableStream2(),
       method: "POST",
       get duplex() {
@@ -49540,7 +49540,7 @@ var factory = (env) => {
     }).headers.has("Content-Type");
     return duplexAccessed && !hasContentType;
   });
-  const supportsResponseStream = isResponseSupported && isReadableStreamSupported && test(() => utils_default.isReadableStream(new Response19("").body));
+  const supportsResponseStream = isResponseSupported && isReadableStreamSupported && test(() => utils_default.isReadableStream(new Response18("").body));
   const resolvers = {
     stream: supportsResponseStream && ((res) => res.body)
   };
@@ -49567,7 +49567,7 @@ var factory = (env) => {
       return body.size;
     }
     if (utils_default.isSpecCompliantForm(body)) {
-      const _request = new Request19(platform_default.origin, {
+      const _request = new Request18(platform_default.origin, {
         method: "POST",
         body
       });
@@ -49615,7 +49615,7 @@ var factory = (env) => {
     let requestContentLength;
     try {
       if (onUploadProgress && supportsRequestStream && method !== "get" && method !== "head" && (requestContentLength = await resolveBodyLength(headers, data)) !== 0) {
-        let _request = new Request19(url3, {
+        let _request = new Request18(url3, {
           method: "POST",
           body: data,
           duplex: "half"
@@ -49635,7 +49635,7 @@ var factory = (env) => {
       if (!utils_default.isString(withCredentials)) {
         withCredentials = withCredentials ? "include" : "omit";
       }
-      const isCredentialsSupported = isRequestSupported && "credentials" in Request19.prototype;
+      const isCredentialsSupported = isRequestSupported && "credentials" in Request18.prototype;
       const resolvedOptions = {
         ...fetchOptions,
         signal: composedSignal,
@@ -49645,7 +49645,7 @@ var factory = (env) => {
         duplex: "half",
         credentials: isCredentialsSupported ? withCredentials : void 0
       };
-      request = isRequestSupported && new Request19(url3, resolvedOptions);
+      request = isRequestSupported && new Request18(url3, resolvedOptions);
       let response = await (isRequestSupported ? _fetch(request, fetchOptions) : _fetch(url3, resolvedOptions));
       const isStreamResponse = supportsResponseStream && (responseType === "stream" || responseType === "response");
       if (supportsResponseStream && (onDownloadProgress || isStreamResponse && unsubscribe)) {
@@ -49658,7 +49658,7 @@ var factory = (env) => {
           responseContentLength,
           progressEventReducer(asyncDecorator(onDownloadProgress), true)
         ) || [];
-        response = new Response19(
+        response = new Response18(
           trackStream(response.body, DEFAULT_CHUNK_SIZE, onProgress, () => {
             flush && flush();
             unsubscribe && unsubscribe();
@@ -49705,8 +49705,8 @@ var factory = (env) => {
 var seedCache = /* @__PURE__ */ new Map();
 var getFetch = (config2) => {
   let env = config2 && config2.env || {};
-  const { fetch: fetch2, Request: Request19, Response: Response19 } = env;
-  const seeds = [Request19, Response19, fetch2];
+  const { fetch: fetch3, Request: Request18, Response: Response18 } = env;
+  const seeds = [Request18, Response18, fetch3];
   let len = seeds.length, i = len, seed, target, map2 = seedCache;
   while (i--) {
     seed = seeds[i];
@@ -52004,7 +52004,7 @@ router.post("/extension-token", async (req, res) => {
     if (target_client_id && role !== "super_admin") {
       return res.status(403).json({ error: "Only admins can use operate-as-client mode" });
     }
-    const crypto6 = require("crypto");
+    const crypto8 = require("crypto");
     const expiresAt = Math.floor(Date.now() / 1e3) + 3600;
     const payload = {
       userId: authUser.id,
@@ -52017,7 +52017,7 @@ router.post("/extension-token", async (req, res) => {
     };
     const payloadBase64 = Buffer.from(JSON.stringify(payload)).toString("base64url");
     const secret = process.env.SUPABASE_SERVICE_ROLE_KEY || "wassel-ext-secret";
-    const signature = crypto6.createHmac("sha256", secret).update(payloadBase64).digest("base64url");
+    const signature = crypto8.createHmac("sha256", secret).update(payloadBase64).digest("base64url");
     const extensionToken = `${payloadBase64}.${signature}`;
     console.log(`[Auth] EXTENSION_TOKEN_OK user=${authUser.id.substring(0, 8)}... role=${role} target_client=${target_client_id || "none"}`);
     res.json({
@@ -52058,7 +52058,6 @@ var supabase = createClient(supabaseUrl, supabaseServiceKey, {
 var import_crypto2 = require("crypto");
 var ALGORITHM = "aes-256-gcm";
 var IV_LENGTH = 16;
-var TAG_LENGTH = 16;
 function getKey() {
   let key = process.env.ENCRYPTION_KEY || "";
   key = key.trim();
@@ -52076,18 +52075,6 @@ function encrypt(plaintext) {
   const tag2 = cipher.getAuthTag();
   const result = Buffer.concat([iv, encrypted, tag2]);
   return result.toString("base64");
-}
-function decrypt(encoded) {
-  const key = getKey();
-  const buffer = Buffer.from(encoded, "base64");
-  const iv = buffer.subarray(0, IV_LENGTH);
-  const tag2 = buffer.subarray(buffer.length - TAG_LENGTH);
-  const ciphertext = buffer.subarray(IV_LENGTH, buffer.length - TAG_LENGTH);
-  const decipher = (0, import_crypto2.createDecipheriv)(ALGORITHM, key, iv);
-  decipher.setAuthTag(tag2);
-  let decrypted = decipher.update(ciphertext);
-  decrypted = Buffer.concat([decrypted, decipher.final()]);
-  return decrypted.toString("utf8");
 }
 
 // server/_core/linkedinAuth.ts
@@ -54376,7 +54363,7 @@ router9.get("/", async (req, res) => {
     const campaignId = req.query.campaign_id;
     let query = supabase.from("activity_logs").select("id, action_type, status, prospect_name, linkedin_url, error_message, executed_at, created_at").order("created_at", { ascending: false }).limit(limit);
     if (teamId) {
-      query = query.eq("team_id", teamId);
+      query = query.or(`team_id.eq.${teamId},user_id.eq.${userId}`);
     } else {
       query = query.eq("user_id", userId);
     }
@@ -61088,32 +61075,27 @@ var automationRoutes_default = router16;
 var import_express17 = __toESM(require_express2(), 1);
 
 // server/_core/linkedinApi.ts
-function makeHeaders(session) {
-  return {
-    "cookie": `li_at=${session.liAt}; JSESSIONID="${session.jsessionId}"`,
-    "csrf-token": session.jsessionId.replace(/"/g, ""),
-    "user-agent": session.userAgent || "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-    "x-li-lang": "en_US",
-    "x-restli-protocol-version": "2.0.0",
-    "x-li-track": '{"clientVersion":"1.13.8860","mpVersion":"1.13.8860","osName":"web","timezoneOffset":3,"timezone":"Asia/Riyadh","deviceFormFactor":"DESKTOP","mpName":"voyager-web"}'
-  };
-}
+var import_node_fetch = __toESM(require("node-fetch"), 1);
 async function visitProfile(session, profileSlug) {
   try {
-    const res = await fetch(
-      `https://www.linkedin.com/voyager/api/identity/profiles/${encodeURIComponent(profileSlug)}`,
-      { headers: makeHeaders(session) }
+    const res = await (0, import_node_fetch.default)(
+      `https://www.linkedin.com/voyager/api/identity/profiles/${profileSlug}`,
+      {
+        headers: {
+          "cookie": `li_at=${session.liAt}; JSESSIONID="${session.jsessionId}"`,
+          "csrf-token": session.jsessionId.replace(/"/g, ""),
+          "user-agent": session.userAgent || "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+          "x-li-lang": "en_US",
+          "x-restli-protocol-version": "2.0.0"
+        }
+      }
     );
     if (res.ok) {
       const data = await res.json();
-      const firstName = data?.firstName || data?.miniProfile?.firstName || "";
-      const lastName = data?.lastName || data?.miniProfile?.lastName || "";
-      const entityUrn = data?.entityUrn || data?.miniProfile?.entityUrn || "";
-      const profileId = entityUrn.split(":").pop() || "";
       return {
         success: true,
-        name: `${firstName} ${lastName}`.trim(),
-        profileId
+        name: data?.firstName + " " + data?.lastName,
+        profileId: data?.entityUrn?.split(":").pop()
       };
     }
     return { success: false, error: `HTTP ${res.status}` };
@@ -61130,16 +61112,20 @@ async function sendInvite(session, profileId, note) {
         }
       }
     };
-    if (note && note.trim()) {
-      body.message = note.trim();
+    if (note) {
+      body.message = note;
     }
-    const res = await fetch(
+    const res = await (0, import_node_fetch.default)(
       "https://www.linkedin.com/voyager/api/growth/normInvitations",
       {
         method: "POST",
         headers: {
-          ...makeHeaders(session),
-          "content-type": "application/json"
+          "cookie": `li_at=${session.liAt}; JSESSIONID="${session.jsessionId}"`,
+          "csrf-token": session.jsessionId.replace(/"/g, ""),
+          "user-agent": session.userAgent || "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+          "content-type": "application/json",
+          "x-li-lang": "en_US",
+          "x-restli-protocol-version": "2.0.0"
         },
         body: JSON.stringify(body)
       }
@@ -61170,47 +61156,17 @@ async function sendMessage(session, profileUrn, message2) {
         subtype: "MEMBER_TO_MEMBER"
       }
     };
-    const res = await fetch(
+    const res = await (0, import_node_fetch.default)(
       "https://www.linkedin.com/voyager/api/messaging/conversations",
       {
         method: "POST",
         headers: {
-          ...makeHeaders(session),
-          "content-type": "application/json"
-        },
-        body: JSON.stringify(body)
-      }
-    );
-    if (res.ok || res.status === 201) {
-      return { success: true };
-    }
-    return { success: false, error: `HTTP ${res.status}` };
-  } catch (err) {
-    return { success: false, error: err.message };
-  }
-}
-async function publishPost(session, content, authorUrn) {
-  try {
-    const body = {
-      author: authorUrn,
-      lifecycleState: "PUBLISHED",
-      specificContent: {
-        "com.linkedin.ugc.ShareContent": {
-          shareCommentary: { text: content },
-          shareMediaCategory: "NONE"
-        }
-      },
-      visibility: {
-        "com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC"
-      }
-    };
-    const res = await fetch(
-      "https://www.linkedin.com/voyager/api/contentcreation/normShares",
-      {
-        method: "POST",
-        headers: {
-          ...makeHeaders(session),
-          "content-type": "application/json"
+          "cookie": `li_at=${session.liAt}; JSESSIONID="${session.jsessionId}"`,
+          "csrf-token": session.jsessionId.replace(/"/g, ""),
+          "user-agent": session.userAgent || "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+          "content-type": "application/json",
+          "x-li-lang": "en_US",
+          "x-restli-protocol-version": "2.0.0"
         },
         body: JSON.stringify(body)
       }
@@ -61225,53 +61181,62 @@ async function publishPost(session, content, authorUrn) {
 }
 
 // server/_core/cloudCampaignRoutes.ts
+var import_crypto6 = __toESM(require("crypto"), 1);
 var router17 = (0, import_express17.Router)();
+var ENCRYPTION_KEY = process.env.SESSION_ENCRYPTION_KEY || "wassel-session-key-2026-secure!!";
+function decrypt2(text) {
+  const [ivHex, encrypted] = text.split(":");
+  const iv = Buffer.from(ivHex, "hex");
+  const decipher = import_crypto6.default.createDecipheriv(
+    "aes-256-cbc",
+    import_crypto6.default.scryptSync(ENCRYPTION_KEY, "salt", 32),
+    iv
+  );
+  let decrypted = decipher.update(encrypted, "hex", "utf8");
+  decrypted += decipher.final("utf8");
+  return decrypted;
+}
+function renderTemplate(template, prospect) {
+  if (!template) return "";
+  const firstName = (prospect?.name || "").split(" ")[0] || "";
+  const fullName = prospect?.name || "";
+  const company = prospect?.company || "";
+  return template.replace(/\{\{firstName\}\}/gi, firstName).replace(/\{\{name\}\}/gi, fullName).replace(/\{\{fullName\}\}/gi, fullName).replace(/\{\{company\}\}/gi, company);
+}
+function profileMatchesProspect(profileName, prospectName) {
+  if (!profileName || !prospectName) return true;
+  const normalize = (s) => s.toLowerCase().replace(/[^a-z\u0600-\u06ff0-9]/g, "");
+  const pn = normalize(profileName);
+  const sn = normalize(prospectName);
+  return pn.includes(sn) || sn.includes(pn) || pn === sn;
+}
 async function getUserSession(userId) {
-  const { data } = await supabase.from("linkedin_sessions").select("li_at, jsessionid, status, expires_at").eq("user_id", userId).eq("status", "active").single();
-  if (!data || !data.li_at) return null;
-  if (data.expires_at && new Date(data.expires_at) < /* @__PURE__ */ new Date()) {
-    await supabase.from("linkedin_sessions").update({ status: "expired" }).eq("user_id", userId);
-    return null;
-  }
-  try {
-    return {
-      liAt: decrypt(data.li_at),
-      jsessionId: data.jsessionid ? decrypt(data.jsessionid) : ""
-    };
-  } catch (err) {
-    console.error("[Cloud] Decrypt failed:", err.message);
-    return null;
-  }
+  const { data } = await supabase.from("linkedin_sessions").select("*").eq("user_id", userId).eq("status", "active").single();
+  if (!data) return null;
+  return {
+    liAt: decrypt2(data.li_at),
+    jsessionId: data.jsessionid ? decrypt2(data.jsessionid) : "",
+    userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+  };
 }
-function getUserId5(req) {
-  return req.user?.id || null;
+async function getUserTeamId(userId) {
+  const { data } = await supabase.from("team_members").select("team_id").eq("user_id", userId).single();
+  return data?.team_id || null;
 }
-function getTeamId8(req) {
-  return req.user?.teamId || null;
-}
-router17.get("/session-check", async (req, res) => {
-  const userId = getUserId5(req);
-  if (!userId) return res.json({ hasSession: false });
-  const session = await getUserSession(userId);
-  res.json({ hasSession: !!session });
-});
 router17.post("/execute", async (req, res) => {
   try {
-    const userId = getUserId5(req);
+    const userId = req.user?.id;
     if (!userId) return res.status(401).json({ error: "Auth required" });
     const { actionType, targetUrl, message: message2, campaignId, prospectName } = req.body;
     const session = await getUserSession(userId);
     if (!session) {
       return res.status(400).json({
-        error: "No LinkedIn session. Open LinkedIn and reload the extension to sync cookies."
+        error: "No LinkedIn session. Please open LinkedIn and reload the extension."
       });
     }
-    const slugMatch = (targetUrl || "").match(/\/in\/([^/?#]+)/);
+    const slugMatch = (targetUrl || "").match(/\/in\/([^/?]+)/);
     const slug = slugMatch ? slugMatch[1] : "";
-    let result = {
-      success: false,
-      error: "unknown_action"
-    };
+    let result = { success: false, error: "unknown_action" };
     await new Promise((r) => setTimeout(r, 2e3 + Math.random() * 3e3));
     switch (actionType) {
       case "visit": {
@@ -61281,153 +61246,346 @@ router17.post("/execute", async (req, res) => {
       case "connect": {
         const profile = await visitProfile(session, slug);
         if (profile.success && profile.profileId) {
+          if (prospectName && profile.name && !profileMatchesProspect(profile.name, prospectName)) {
+            result = { success: false, error: `identity_mismatch: expected "${prospectName}" but got "${profile.name}"` };
+            break;
+          }
           await new Promise((r) => setTimeout(r, 1e3 + Math.random() * 2e3));
-          const inviteResult = await sendInvite(session, profile.profileId, message2 || void 0);
-          result = { ...inviteResult, profileName: profile.name };
+          const renderedMessage = renderTemplate(message2 || "", { name: prospectName });
+          result = await sendInvite(session, profile.profileId, renderedMessage);
+          result.profileName = profile.name;
         } else {
-          result = { success: false, error: `Profile not found: ${slug}` };
+          result = { success: false, error: "Profile not found: " + slug };
         }
         break;
       }
       case "message": {
         const profile = await visitProfile(session, slug);
         if (profile.success && profile.profileId) {
+          if (prospectName && profile.name && !profileMatchesProspect(profile.name, prospectName)) {
+            result = { success: false, error: `identity_mismatch: expected "${prospectName}" but got "${profile.name}"` };
+            break;
+          }
           const profileUrn = `urn:li:fsd_profile:${profile.profileId}`;
           await new Promise((r) => setTimeout(r, 1e3 + Math.random() * 2e3));
-          result = await sendMessage(session, profileUrn, message2 || "");
+          const renderedMessage = renderTemplate(message2 || "", { name: prospectName });
+          result = await sendMessage(session, profileUrn, renderedMessage);
         } else {
-          result = { success: false, error: `Profile not found: ${slug}` };
+          result = { success: false, error: "Profile not found: " + slug };
         }
         break;
       }
-      case "post": {
-        const postResult = await publishPost(session, message2 || "", "");
-        result = postResult;
-        break;
-      }
     }
-    try {
-      await supabase.from("activity_logs").insert({
-        user_id: userId,
-        team_id: getTeamId8(req),
-        campaign_id: campaignId || null,
-        action_type: actionType,
-        status: result.success ? "success" : "failed",
-        prospect_name: prospectName || result.profileName || slug,
-        linkedin_url: targetUrl || null,
-        error_message: result.error || null,
-        executed_at: (/* @__PURE__ */ new Date()).toISOString()
-      });
-    } catch (logErr) {
-      console.error("[Cloud] Activity log failed:", logErr.message);
-    }
+    const teamId = await getUserTeamId(userId);
+    await supabase.from("activity_logs").insert({
+      user_id: userId,
+      team_id: teamId,
+      campaign_id: campaignId || null,
+      action_type: actionType,
+      status: result.success ? "success" : "failed",
+      prospect_name: prospectName || result.profileName || slug,
+      linkedin_url: targetUrl,
+      error_message: result.error || null,
+      executed_at: (/* @__PURE__ */ new Date()).toISOString()
+    });
     res.json(result);
   } catch (err) {
-    console.error("[Cloud] Execute error:", err.message);
     res.status(500).json({ error: err.message });
   }
 });
 router17.post("/campaign/:id/launch", async (req, res) => {
   try {
-    const userId = getUserId5(req);
+    const userId = req.user?.id;
     if (!userId) return res.status(401).json({ error: "Auth required" });
     const campaignId = req.params.id;
     const session = await getUserSession(userId);
     if (!session) {
-      return res.status(400).json({ error: "No LinkedIn session. Open LinkedIn and reload the extension." });
+      return res.status(400).json({ error: "No LinkedIn session" });
     }
     const { data: campaign } = await supabase.from("campaigns").select("*").eq("id", campaignId).single();
     if (!campaign) return res.status(404).json({ error: "Campaign not found" });
-    const { data: steps } = await supabase.from("campaign_steps").select("*").eq("campaign_id", campaignId).order("step_order", { ascending: true });
-    const { data: campaignProspects } = await supabase.from("campaign_prospects").select("*, prospect:prospects(*)").eq("campaign_id", campaignId).in("status", ["pending", "in_progress"]);
-    if (!campaignProspects?.length) {
-      return res.status(400).json({ error: "No pending prospects in this campaign" });
+    const { data: steps } = await supabase.from("campaign_steps").select("id, step_number, step_type, delay_days").eq("campaign_id", campaignId).order("step_number", { ascending: true });
+    if (!steps || steps.length === 0) {
+      return res.status(400).json({ error: "Campaign has no steps configured" });
     }
-    await supabase.from("campaigns").update({ status: "active" }).eq("id", campaignId);
-    executeCampaignInBackground(userId, getTeamId8(req), campaignId, steps || [], campaignProspects, session);
+    const { count: existingCount } = await supabase.from("prospect_step_status").select("*", { count: "exact", head: true }).eq("campaign_id", campaignId).in("status", ["pending", "waiting", "in_progress"]);
+    let pendingCount = existingCount || 0;
+    if (!pendingCount) {
+      const { data: prospects } = await supabase.from("prospects").select("id").eq("campaign_id", campaignId);
+      if (!prospects || prospects.length === 0) {
+        return res.status(400).json({ error: "No prospects in this campaign" });
+      }
+      const now = (/* @__PURE__ */ new Date()).toISOString();
+      const statusRows = [];
+      for (const prospect of prospects) {
+        for (const step of steps) {
+          statusRows.push({
+            prospect_id: prospect.id,
+            campaign_id: campaignId,
+            step_id: step.id,
+            status: step.step_number === 1 ? "pending" : "waiting",
+            scheduled_at: step.step_number === 1 ? now : null
+          });
+        }
+      }
+      for (let i = 0; i < statusRows.length; i += 50) {
+        const chunk = statusRows.slice(i, i + 50);
+        await supabase.from("prospect_step_status").insert(chunk);
+      }
+      pendingCount = statusRows.length;
+      console.log(`[CloudLaunch] Auto-enrolled ${prospects.length} prospects \xD7 ${steps.length} steps = ${statusRows.length} rows`);
+    }
+    await supabase.from("prospect_step_status").update({ status: "pending" }).eq("campaign_id", campaignId).eq("status", "in_progress");
+    await supabase.from("campaigns").update({ status: "active", started_at: (/* @__PURE__ */ new Date()).toISOString() }).eq("id", campaignId);
+    const teamId = campaign.team_id || await getUserTeamId(userId);
+    await supabase.from("activity_logs").insert({
+      user_id: userId,
+      team_id: teamId,
+      campaign_id: campaignId,
+      action_type: "visit",
+      status: "success",
+      prospect_name: `Campaign "${campaign.name}" launched`,
+      executed_at: (/* @__PURE__ */ new Date()).toISOString()
+    });
     res.json({
       success: true,
-      message: "Campaign launched in cloud",
-      prospects: campaignProspects.length,
+      message: "Campaign launched \u2014 cloud cron will process actions every minute",
+      prospects: pendingCount,
       steps: steps?.length || 0
     });
   } catch (err) {
-    console.error("[Cloud] Campaign launch error:", err.message);
     res.status(500).json({ error: err.message });
   }
 });
-async function executeCampaignInBackground(userId, teamId, campaignId, steps, prospects, session) {
-  const DAILY_LIMITS = { visit: 80, connect: 20, message: 30 };
-  const counters = { visit: 0, connect: 0, message: 0 };
-  console.log(`[Cloud] Campaign ${campaignId}: processing ${prospects.length} prospects, ${steps.length} steps`);
-  for (const cp of prospects) {
-    const prospect = cp.prospect;
-    if (!prospect?.linkedin_url) continue;
-    const slug = prospect.linkedin_url.match(/\/in\/([^/?#]+)/)?.[1];
-    if (!slug) continue;
-    for (const step of steps) {
-      const actionType = step.step_type === "visit" ? "visit" : step.step_type === "invite" ? "connect" : step.step_type === "connect" ? "connect" : step.step_type === "message" ? "message" : null;
-      if (!actionType) continue;
-      if (counters[actionType] >= DAILY_LIMITS[actionType]) {
-        console.log(`[Cloud] Daily limit reached for ${actionType}, skipping`);
+router17.get("/session-check", async (req, res) => {
+  const userId = req.user?.id;
+  if (!userId) return res.json({ hasSession: false });
+  const session = await getUserSession(userId);
+  res.json({ hasSession: !!session });
+});
+var cloudCampaignRoutes_default = router17;
+
+// server/_core/campaignCron.ts
+var import_express18 = __toESM(require_express2(), 1);
+var import_crypto7 = __toESM(require("crypto"), 1);
+var router18 = (0, import_express18.Router)();
+var ENCRYPTION_KEY2 = process.env.SESSION_ENCRYPTION_KEY || "wassel-session-key-2026-secure!!";
+var CRON_SECRET = process.env.CRON_SECRET || "";
+var DAILY_LIMITS = { visit: 80, connect: 20, message: 30 };
+function decrypt3(text) {
+  const [ivHex, encrypted] = text.split(":");
+  const iv = Buffer.from(ivHex, "hex");
+  const decipher = import_crypto7.default.createDecipheriv(
+    "aes-256-cbc",
+    import_crypto7.default.scryptSync(ENCRYPTION_KEY2, "salt", 32),
+    iv
+  );
+  let decrypted = decipher.update(encrypted, "hex", "utf8");
+  decrypted += decipher.final("utf8");
+  return decrypted;
+}
+function renderTemplate2(template, prospect) {
+  if (!template) return "";
+  const firstName = (prospect?.name || "").split(" ")[0] || "";
+  const fullName = prospect?.name || "";
+  const company = prospect?.company || "";
+  return template.replace(/\{\{firstName\}\}/gi, firstName).replace(/\{\{name\}\}/gi, fullName).replace(/\{\{fullName\}\}/gi, fullName).replace(/\{\{company\}\}/gi, company);
+}
+function profileMatchesProspect2(profileName, prospectName) {
+  if (!profileName || !prospectName) return true;
+  const normalize = (s) => s.toLowerCase().replace(/[^a-z\u0600-\u06ff0-9]/g, "");
+  const pn = normalize(profileName);
+  const sn = normalize(prospectName);
+  return pn.includes(sn) || sn.includes(pn) || pn === sn;
+}
+async function getUserSession2(userId) {
+  const { data } = await supabase.from("linkedin_sessions").select("*").eq("user_id", userId).eq("status", "active").single();
+  if (!data) return null;
+  return {
+    liAt: decrypt3(data.li_at),
+    jsessionId: data.jsessionid ? decrypt3(data.jsessionid) : "",
+    userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+  };
+}
+async function getDailyCount(userId, actionType) {
+  const today = /* @__PURE__ */ new Date();
+  today.setHours(0, 0, 0, 0);
+  const { count } = await supabase.from("activity_logs").select("*", { count: "exact", head: true }).eq("user_id", userId).eq("action_type", actionType).eq("status", "success").gte("executed_at", today.toISOString());
+  return count || 0;
+}
+function stepTypeToActionType(stepType) {
+  if (stepType === "visit") return "visit";
+  if (stepType === "invitation") return "connect";
+  if (stepType === "message") return "message";
+  return null;
+}
+router18.get("/campaign-runner", async (req, res) => {
+  const authHeader = req.headers["authorization"] || "";
+  if (CRON_SECRET && authHeader !== `Bearer ${CRON_SECRET}`) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  const results = [];
+  const startTime = Date.now();
+  try {
+    const tenMinAgo = new Date(Date.now() - 10 * 60 * 1e3).toISOString();
+    await supabase.from("prospect_step_status").update({ status: "pending" }).eq("status", "in_progress").lt("created_at", tenMinAgo);
+    const { data: activeCampaigns } = await supabase.from("campaigns").select("id, team_id, created_by, name").eq("status", "active");
+    if (!activeCampaigns?.length) {
+      return res.json({ ok: true, message: "No active campaigns", processed: 0 });
+    }
+    const userCampaigns = {};
+    for (const campaign of activeCampaigns) {
+      const userId = campaign.created_by;
+      if (!userId) continue;
+      if (!userCampaigns[userId]) userCampaigns[userId] = [];
+      userCampaigns[userId].push(campaign);
+    }
+    for (const [userId, campaigns] of Object.entries(userCampaigns)) {
+      const session = await getUserSession2(userId);
+      if (!session) {
+        results.push({ userId, error: "no_session" });
         continue;
       }
-      const delay = 3e4 + Math.random() * 6e4;
-      await new Promise((r) => setTimeout(r, delay));
-      try {
-        let result;
-        switch (actionType) {
-          case "visit":
-            result = await visitProfile(session, slug);
-            break;
-          case "connect": {
-            const profile = await visitProfile(session, slug);
-            if (profile.success && profile.profileId) {
-              await new Promise((r) => setTimeout(r, 2e3 + Math.random() * 3e3));
-              result = await sendInvite(session, profile.profileId, step.message_template || void 0);
-            } else {
-              result = { success: false, error: "profile_not_found" };
-            }
-            break;
+      for (const campaign of campaigns) {
+        const now = (/* @__PURE__ */ new Date()).toISOString();
+        const { data: pendingSteps } = await supabase.from("prospect_step_status").select(`
+            id,
+            prospect_id,
+            step_id,
+            status,
+            campaign_steps!inner (
+              step_number,
+              step_type,
+              name,
+              message_template
+            ),
+            prospects!inner (
+              linkedin_url,
+              name,
+              company
+            )
+          `).eq("campaign_id", campaign.id).eq("status", "pending").or(`scheduled_at.is.null,scheduled_at.lte.${now}`).order("created_at", { ascending: true }).limit(1);
+        if (!pendingSteps?.length) {
+          const { count: remainingCount } = await supabase.from("prospect_step_status").select("*", { count: "exact", head: true }).eq("campaign_id", campaign.id).in("status", ["pending", "in_progress", "waiting"]);
+          if (!remainingCount) {
+            await supabase.from("campaigns").update({ status: "completed", completed_at: (/* @__PURE__ */ new Date()).toISOString() }).eq("id", campaign.id);
+            results.push({ campaign: campaign.name, status: "completed" });
           }
-          case "message": {
-            const profile = await visitProfile(session, slug);
-            if (profile.success && profile.profileId) {
-              const urn = `urn:li:fsd_profile:${profile.profileId}`;
-              await new Promise((r) => setTimeout(r, 2e3 + Math.random() * 3e3));
-              result = await sendMessage(session, urn, step.message_template || "");
-            } else {
-              result = { success: false, error: "profile_not_found" };
-            }
-            break;
-          }
+          continue;
         }
-        counters[actionType]++;
+        const pss = pendingSteps[0];
+        const stepDef = pss.campaign_steps;
+        const prospect = pss.prospects;
+        if (!prospect?.linkedin_url) continue;
+        const slug = prospect.linkedin_url.match(/\/in\/([^/?]+)/)?.[1];
+        if (!slug) continue;
+        const actionType = stepTypeToActionType(stepDef.step_type);
+        if (!actionType) continue;
+        const dailyCount = await getDailyCount(userId, actionType);
+        if (dailyCount >= DAILY_LIMITS[actionType]) {
+          results.push({ campaign: campaign.name, prospect: prospect.name, skipped: `daily_limit_${actionType}` });
+          continue;
+        }
+        await supabase.from("prospect_step_status").update({ status: "in_progress" }).eq("id", pss.id);
         await supabase.from("activity_logs").insert({
           user_id: userId,
-          team_id: teamId,
-          campaign_id: campaignId,
+          team_id: campaign.team_id,
+          campaign_id: campaign.id,
           action_type: actionType,
-          status: result?.success ? "success" : "failed",
+          status: "in_progress",
           prospect_name: prospect.name || slug,
           linkedin_url: prospect.linkedin_url,
-          error_message: result?.error || null,
           executed_at: (/* @__PURE__ */ new Date()).toISOString()
         });
-        await supabase.from("campaign_prospects").update({
-          status: result?.success ? "completed" : "failed",
-          updated_at: (/* @__PURE__ */ new Date()).toISOString()
-        }).eq("id", cp.id);
-        console.log(`[Cloud] ${actionType} ${slug}: ${result?.success ? "OK" : result?.error}`);
-      } catch (err) {
-        console.error(`[Cloud] Action failed for ${slug}:`, err.message);
+        let result = { success: false, error: "unknown" };
+        try {
+          switch (actionType) {
+            case "visit":
+              result = await visitProfile(session, slug);
+              break;
+            case "connect": {
+              const profile = await visitProfile(session, slug);
+              if (profile.success && profile.profileId) {
+                if (prospect.name && profile.name && !profileMatchesProspect2(profile.name, prospect.name)) {
+                  result = { success: false, error: `identity_mismatch: expected "${prospect.name}" got "${profile.name}"` };
+                  break;
+                }
+                await new Promise((r) => setTimeout(r, 2e3 + Math.random() * 2e3));
+                const note = renderTemplate2(stepDef.message_template || "", prospect);
+                result = await sendInvite(session, profile.profileId, note);
+              } else {
+                result = { success: false, error: "profile_not_found" };
+              }
+              break;
+            }
+            case "message": {
+              const profile = await visitProfile(session, slug);
+              if (profile.success && profile.profileId) {
+                if (prospect.name && profile.name && !profileMatchesProspect2(profile.name, prospect.name)) {
+                  result = { success: false, error: `identity_mismatch: expected "${prospect.name}" got "${profile.name}"` };
+                  break;
+                }
+                const urn = `urn:li:fsd_profile:${profile.profileId}`;
+                await new Promise((r) => setTimeout(r, 2e3 + Math.random() * 2e3));
+                const msg = renderTemplate2(stepDef.message_template || "", prospect);
+                result = await sendMessage(session, urn, msg);
+              } else {
+                result = { success: false, error: "profile_not_found" };
+              }
+              break;
+            }
+          }
+        } catch (e) {
+          result = { success: false, error: e.message };
+        }
+        const finalStatus = result.success ? "completed" : "failed";
+        await supabase.from("prospect_step_status").update({
+          status: finalStatus,
+          executed_at: (/* @__PURE__ */ new Date()).toISOString(),
+          error_message: result.error || null
+        }).eq("id", pss.id);
+        await supabase.from("activity_logs").insert({
+          user_id: userId,
+          team_id: campaign.team_id,
+          campaign_id: campaign.id,
+          action_type: actionType,
+          status: finalStatus,
+          prospect_name: prospect.name || slug,
+          linkedin_url: prospect.linkedin_url,
+          error_message: result.error || null,
+          executed_at: (/* @__PURE__ */ new Date()).toISOString()
+        });
+        if (result.success) {
+          const currentStepNumber = stepDef.step_number;
+          const { data: nextStepDef } = await supabase.from("campaign_steps").select("id, step_number, step_type, delay_days").eq("campaign_id", campaign.id).eq("step_number", currentStepNumber + 1).single();
+          if (nextStepDef) {
+            const delayDays = nextStepDef.delay_days || 0;
+            const scheduledAt = delayDays > 0 ? new Date(Date.now() + delayDays * 864e5).toISOString() : (/* @__PURE__ */ new Date()).toISOString();
+            await supabase.from("prospect_step_status").update({ status: "pending", scheduled_at: scheduledAt }).eq("prospect_id", pss.prospect_id).eq("campaign_id", campaign.id).eq("step_id", nextStepDef.id).eq("status", "waiting");
+          }
+          if (actionType === "connect") {
+            await supabase.from("prospects").update({ connection_status: "pending" }).eq("id", pss.prospect_id);
+          }
+        }
+        results.push({
+          campaign: campaign.name,
+          prospect: prospect.name || slug,
+          action: actionType,
+          stepNumber: stepDef.step_number,
+          success: result.success,
+          error: result.error || null
+        });
+        if (Date.now() - startTime > 8e3) break;
       }
+      if (Date.now() - startTime > 8e3) break;
     }
+    return res.json({ ok: true, processed: results.length, results });
+  } catch (err) {
+    console.error("[CampaignCron] Error:", err.message);
+    return res.status(500).json({ error: err.message });
   }
-  await supabase.from("campaigns").update({ status: "completed", completed_at: (/* @__PURE__ */ new Date()).toISOString() }).eq("id", campaignId);
-  console.log(`[Cloud] Campaign ${campaignId} completed`);
-}
-var cloudCampaignRoutes_default = router17;
+});
+var campaignCron_default = router18;
 
 // node_modules/zod/v4/classic/external.js
 var external_exports = {};
@@ -75283,7 +75441,7 @@ var import_superjson = __toESM(require_dist2(), 1);
 var t = initTRPC.context().create({
   transformer: import_superjson.default
 });
-var router18 = t.router;
+var router19 = t.router;
 var publicProcedure = t.procedure;
 var requireUser = t.middleware(async (opts) => {
   const { ctx, next } = opts;
@@ -75314,7 +75472,7 @@ var adminProcedure = t.procedure.use(
 );
 
 // server/_core/systemRouter.ts
-var systemRouter = router18({
+var systemRouter = router19({
   health: publicProcedure.input(
     external_exports.object({
       timestamp: external_exports.number().min(0, "timestamp cannot be negative")
@@ -75336,7 +75494,7 @@ var systemRouter = router18({
 });
 
 // server/db.ts
-async function getUserTeamId(userId) {
+async function getUserTeamId2(userId) {
   try {
     const { data, error: error48 } = await supabase.from("team_members").select("team_id").eq("user_id", userId).limit(1).single();
     if (error48) {
@@ -75351,8 +75509,8 @@ async function getUserTeamId(userId) {
 }
 
 // server/routers/auth.ts
-var import_crypto6 = require("crypto");
-var authRouter = router18({
+var import_crypto8 = require("crypto");
+var authRouter = router19({
   /**
    * Get current user from Supabase Auth
    * Returns null if not authenticated
@@ -75399,7 +75557,7 @@ var authRouter = router18({
       if (profileError) {
         throw new Error(`Failed to create profile: ${profileError.message}`);
       }
-      const teamId = (0, import_crypto6.randomUUID)();
+      const teamId = (0, import_crypto8.randomUUID)();
       const { error: teamError } = await supabase.from("teams").insert({
         id: teamId,
         name: "\u0641\u0631\u064A\u0642\u064A \u0627\u0644\u0627\u0641\u062A\u0631\u0627\u0636\u064A",
@@ -75412,7 +75570,7 @@ var authRouter = router18({
         throw new Error(`Failed to create team: ${teamError.message}`);
       }
       const { error: memberError } = await supabase.from("team_members").insert({
-        id: (0, import_crypto6.randomUUID)(),
+        id: (0, import_crypto8.randomUUID)(),
         team_id: teamId,
         user_id: userId,
         role: "owner"
@@ -75461,8 +75619,8 @@ var authRouter = router18({
 });
 
 // server/routers/demo.ts
-var import_crypto7 = require("crypto");
-var demoRouter = router18({
+var import_crypto9 = require("crypto");
+var demoRouter = router19({
   /**
    * Create demo campaign for the user's team
    */
@@ -75471,11 +75629,11 @@ var demoRouter = router18({
       throw new Error("User not authenticated");
     }
     try {
-      const teamId = await getUserTeamId(ctx.user.id);
+      const teamId = await getUserTeamId2(ctx.user.id);
       if (!teamId) {
         throw new Error("User has no team");
       }
-      const campaignId = (0, import_crypto7.randomUUID)();
+      const campaignId = (0, import_crypto9.randomUUID)();
       const { data: campaign, error: error48 } = await supabase.from("campaigns").insert({
         id: campaignId,
         team_id: teamId,
@@ -75513,15 +75671,15 @@ var demoRouter = router18({
       throw new Error("User not authenticated");
     }
     try {
-      const teamId = await getUserTeamId(ctx.user.id);
+      const teamId = await getUserTeamId2(ctx.user.id);
       if (!teamId) {
         throw new Error("User has no team");
       }
       const { data: campaigns } = await supabase.from("campaigns").select("id").eq("team_id", teamId).limit(1);
-      const campaignId = campaigns?.[0]?.id || (0, import_crypto7.randomUUID)();
+      const campaignId = campaigns?.[0]?.id || (0, import_crypto9.randomUUID)();
       const demoLeads = [
         {
-          id: (0, import_crypto7.randomUUID)(),
+          id: (0, import_crypto9.randomUUID)(),
           team_id: teamId,
           campaign_id: campaignId,
           linkedin_id: `lead-001-${Date.now()}`,
@@ -75542,7 +75700,7 @@ var demoRouter = router18({
           }
         },
         {
-          id: (0, import_crypto7.randomUUID)(),
+          id: (0, import_crypto9.randomUUID)(),
           team_id: teamId,
           campaign_id: campaignId,
           linkedin_id: `lead-002-${Date.now()}`,
@@ -75563,7 +75721,7 @@ var demoRouter = router18({
           }
         },
         {
-          id: (0, import_crypto7.randomUUID)(),
+          id: (0, import_crypto9.randomUUID)(),
           team_id: teamId,
           campaign_id: campaignId,
           linkedin_id: `lead-003-${Date.now()}`,
@@ -75602,7 +75760,7 @@ var demoRouter = router18({
       throw new Error("User not authenticated");
     }
     try {
-      const teamId = await getUserTeamId(ctx.user.id);
+      const teamId = await getUserTeamId2(ctx.user.id);
       if (!teamId) {
         throw new Error("User has no team");
       }
@@ -75615,7 +75773,7 @@ var demoRouter = router18({
       const leadIds = leads.map((l) => l.id);
       const queueItems = [
         {
-          id: (0, import_crypto7.randomUUID)(),
+          id: (0, import_crypto9.randomUUID)(),
           team_id: teamId,
           campaign_id: campaignId,
           lead_id: leadIds[0],
@@ -75627,7 +75785,7 @@ var demoRouter = router18({
           status: "pending"
         },
         {
-          id: (0, import_crypto7.randomUUID)(),
+          id: (0, import_crypto9.randomUUID)(),
           team_id: teamId,
           campaign_id: campaignId,
           lead_id: leadIds[1],
@@ -75639,7 +75797,7 @@ var demoRouter = router18({
           status: "pending"
         },
         {
-          id: (0, import_crypto7.randomUUID)(),
+          id: (0, import_crypto9.randomUUID)(),
           team_id: teamId,
           campaign_id: campaignId,
           lead_id: leadIds[2],
@@ -75664,14 +75822,14 @@ var demoRouter = router18({
 });
 
 // server/routers/campaigns.ts
-var import_crypto8 = require("crypto");
-var campaignsRouter = router18({
+var import_crypto10 = require("crypto");
+var campaignsRouter = router19({
   /**
    * Get all unique clients for the user's team
    */
   getClients: protectedProcedure.query(async ({ ctx }) => {
     if (!ctx.user?.id) return [];
-    const teamId = await getUserTeamId(ctx.user.id);
+    const teamId = await getUserTeamId2(ctx.user.id);
     if (!teamId) return [];
     const { data } = await supabase.from("campaigns").select("client_id, client_name").eq("team_id", teamId).not("client_id", "is", null).order("client_name", { ascending: true });
     const clientMap = /* @__PURE__ */ new Map();
@@ -75693,7 +75851,7 @@ var campaignsRouter = router18({
       return [];
     }
     try {
-      const teamId = await getUserTeamId(ctx.user.id);
+      const teamId = await getUserTeamId2(ctx.user.id);
       if (!teamId) {
         return [];
       }
@@ -75726,11 +75884,11 @@ var campaignsRouter = router18({
       throw new Error("\u0627\u0644\u0645\u0633\u062A\u062E\u062F\u0645 \u063A\u064A\u0631 \u0645\u0635\u0631\u062D");
     }
     try {
-      const teamId = await getUserTeamId(ctx.user.id);
+      const teamId = await getUserTeamId2(ctx.user.id);
       if (!teamId) {
         throw new Error("\u0644\u0645 \u064A\u062A\u0645 \u0627\u0644\u0639\u062B\u0648\u0631 \u0639\u0644\u0649 \u0641\u0631\u064A\u0642");
       }
-      const campaignId = (0, import_crypto8.randomUUID)();
+      const campaignId = (0, import_crypto10.randomUUID)();
       const { data, error: error48 } = await supabase.from("campaigns").insert({
         id: campaignId,
         team_id: teamId,
@@ -75756,7 +75914,7 @@ var campaignsRouter = router18({
       return null;
     }
     try {
-      const teamId = await getUserTeamId(ctx.user.id);
+      const teamId = await getUserTeamId2(ctx.user.id);
       if (!teamId) {
         return null;
       }
@@ -75783,7 +75941,7 @@ var campaignsRouter = router18({
       throw new Error("\u0627\u0644\u0645\u0633\u062A\u062E\u062F\u0645 \u063A\u064A\u0631 \u0645\u0635\u0631\u062D");
     }
     try {
-      const teamId = await getUserTeamId(ctx.user.id);
+      const teamId = await getUserTeamId2(ctx.user.id);
       if (!teamId) {
         throw new Error("\u0644\u0645 \u064A\u062A\u0645 \u0627\u0644\u0639\u062B\u0648\u0631 \u0639\u0644\u0649 \u0641\u0631\u064A\u0642");
       }
@@ -75805,7 +75963,7 @@ var campaignsRouter = router18({
       throw new Error("\u0627\u0644\u0645\u0633\u062A\u062E\u062F\u0645 \u063A\u064A\u0631 \u0645\u0635\u0631\u062D");
     }
     try {
-      const teamId = await getUserTeamId(ctx.user.id);
+      const teamId = await getUserTeamId2(ctx.user.id);
       if (!teamId) {
         throw new Error("\u0644\u0645 \u064A\u062A\u0645 \u0627\u0644\u0639\u062B\u0648\u0631 \u0639\u0644\u0649 \u0641\u0631\u064A\u0642");
       }
@@ -75822,10 +75980,10 @@ var campaignsRouter = router18({
 });
 
 // server/routers/leads.ts
-var leadsRouter = router18({
+var leadsRouter = router19({
   list: protectedProcedure.input(external_exports.object({ campaignId: external_exports.string().optional() }).optional()).query(async ({ ctx, input }) => {
     if (!ctx.user?.id) return [];
-    const teamId = await getUserTeamId(ctx.user.id);
+    const teamId = await getUserTeamId2(ctx.user.id);
     if (!teamId) return [];
     let query = supabase.from("leads").select("*").eq("team_id", teamId);
     if (input?.campaignId) {
@@ -75852,7 +76010,7 @@ var leadsRouter = router18({
     if (!ctx.user?.id) {
       throw new Error("\u063A\u064A\u0631 \u0645\u0635\u0631\u062D");
     }
-    const teamId = await getUserTeamId(ctx.user.id);
+    const teamId = await getUserTeamId2(ctx.user.id);
     if (!teamId) {
       throw new Error("\u0641\u0631\u064A\u0642 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F");
     }
@@ -75918,14 +76076,14 @@ var leadsRouter = router18({
   }),
   updateStatus: protectedProcedure.input(external_exports.object({ leadId: external_exports.string(), status: external_exports.string() })).mutation(async ({ ctx, input }) => {
     if (!ctx.user?.id) return null;
-    const teamId = await getUserTeamId(ctx.user.id);
+    const teamId = await getUserTeamId2(ctx.user.id);
     if (!teamId) return null;
     const { data } = await supabase.from("leads").update({ status: input.status, updated_at: (/* @__PURE__ */ new Date()).toISOString() }).eq("id", input.leadId).eq("team_id", teamId).select().single();
     return data || null;
   }),
   delete: protectedProcedure.input(external_exports.object({ leadId: external_exports.string() })).mutation(async ({ ctx, input }) => {
     if (!ctx.user?.id) return null;
-    const teamId = await getUserTeamId(ctx.user.id);
+    const teamId = await getUserTeamId2(ctx.user.id);
     if (!teamId) return null;
     const { data } = await supabase.from("leads").delete().eq("id", input.leadId).eq("team_id", teamId).select().single();
     return data || null;
@@ -75933,10 +76091,10 @@ var leadsRouter = router18({
 });
 
 // server/routers/templates.ts
-var templatesRouter = router18({
+var templatesRouter = router19({
   list: protectedProcedure.query(async ({ ctx }) => {
     if (!ctx.user?.id) return [];
-    const teamId = await getUserTeamId(ctx.user.id);
+    const teamId = await getUserTeamId2(ctx.user.id);
     if (!teamId) return [];
     const { data } = await supabase.from("message_templates").select("*").eq("team_id", teamId).order("created_at", { ascending: false });
     return data || [];
@@ -75953,7 +76111,7 @@ var templatesRouter = router18({
     if (!ctx.user?.id) {
       throw new Error("\u063A\u064A\u0631 \u0645\u0635\u0631\u062D");
     }
-    const teamId = await getUserTeamId(ctx.user.id);
+    const teamId = await getUserTeamId2(ctx.user.id);
     if (!teamId) {
       throw new Error("\u0641\u0631\u064A\u0642 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F");
     }
@@ -75992,7 +76150,7 @@ var templatesRouter = router18({
     if (!ctx.user?.id) {
       throw new Error("\u063A\u064A\u0631 \u0645\u0635\u0631\u062D");
     }
-    const teamId = await getUserTeamId(ctx.user.id);
+    const teamId = await getUserTeamId2(ctx.user.id);
     if (!teamId) {
       throw new Error("\u0641\u0631\u064A\u0642 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F");
     }
@@ -76026,7 +76184,7 @@ var templatesRouter = router18({
     if (!ctx.user?.id) {
       throw new Error("\u063A\u064A\u0631 \u0645\u0635\u0631\u062D");
     }
-    const teamId = await getUserTeamId(ctx.user.id);
+    const teamId = await getUserTeamId2(ctx.user.id);
     if (!teamId) {
       throw new Error("\u0641\u0631\u064A\u0642 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F");
     }
@@ -76060,7 +76218,7 @@ var templatesRouter = router18({
     if (!ctx.user?.id) {
       throw new Error("\u063A\u064A\u0631 \u0645\u0635\u0631\u062D");
     }
-    const teamId = await getUserTeamId(ctx.user.id);
+    const teamId = await getUserTeamId2(ctx.user.id);
     if (!teamId) {
       throw new Error("\u0641\u0631\u064A\u0642 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F");
     }
@@ -76086,13 +76244,13 @@ var templatesRouter = router18({
 });
 
 // server/routers/extension.ts
-var extensionRouter = router18({
+var extensionRouter = router19({
   // Campaign: list all campaigns for team
   campaignsList: protectedProcedure.query(async ({ ctx }) => {
     if (!ctx.user?.id) {
       throw new Error("\u063A\u064A\u0631 \u0645\u0635\u0631\u062D");
     }
-    const teamId = await getUserTeamId(ctx.user.id);
+    const teamId = await getUserTeamId2(ctx.user.id);
     if (!teamId) {
       throw new Error("\u0641\u0631\u064A\u0642 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F");
     }
@@ -76113,7 +76271,7 @@ var extensionRouter = router18({
     if (!ctx.user?.id) {
       throw new Error("\u063A\u064A\u0631 \u0645\u0635\u0631\u062D");
     }
-    const teamId = await getUserTeamId(ctx.user.id);
+    const teamId = await getUserTeamId2(ctx.user.id);
     if (!teamId) {
       throw new Error("\u0641\u0631\u064A\u0642 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F");
     }
@@ -76137,7 +76295,7 @@ var extensionRouter = router18({
     if (!ctx.user?.id) {
       throw new Error("\u063A\u064A\u0631 \u0645\u0635\u0631\u062D");
     }
-    const teamId = await getUserTeamId(ctx.user.id);
+    const teamId = await getUserTeamId2(ctx.user.id);
     if (!teamId) {
       throw new Error("\u0641\u0631\u064A\u0642 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F");
     }
@@ -76155,7 +76313,7 @@ var extensionRouter = router18({
     if (!ctx.user?.id) {
       throw new Error("\u063A\u064A\u0631 \u0645\u0635\u0631\u062D");
     }
-    const teamId = await getUserTeamId(ctx.user.id);
+    const teamId = await getUserTeamId2(ctx.user.id);
     if (!teamId) {
       throw new Error("\u0641\u0631\u064A\u0642 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F");
     }
@@ -76179,7 +76337,7 @@ var extensionRouter = router18({
     if (!ctx.user?.id) {
       throw new Error("\u063A\u064A\u0631 \u0645\u0635\u0631\u062D");
     }
-    const teamId = await getUserTeamId(ctx.user.id);
+    const teamId = await getUserTeamId2(ctx.user.id);
     if (!teamId) {
       throw new Error("\u0641\u0631\u064A\u0642 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F");
     }
@@ -76230,7 +76388,7 @@ var extensionRouter = router18({
     if (!ctx.user?.id) {
       throw new Error("\u063A\u064A\u0631 \u0645\u0635\u0631\u062D");
     }
-    const teamId = await getUserTeamId(ctx.user.id);
+    const teamId = await getUserTeamId2(ctx.user.id);
     if (!teamId) {
       throw new Error("\u0641\u0631\u064A\u0642 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F");
     }
@@ -76249,7 +76407,7 @@ var extensionRouter = router18({
     if (!ctx.user?.id) {
       throw new Error("\u063A\u064A\u0631 \u0645\u0635\u0631\u062D");
     }
-    const teamId = await getUserTeamId(ctx.user.id);
+    const teamId = await getUserTeamId2(ctx.user.id);
     if (!teamId) {
       throw new Error("\u0641\u0631\u064A\u0642 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F");
     }
@@ -76272,7 +76430,7 @@ var extensionRouter = router18({
     if (!ctx.user?.id) {
       throw new Error("\u063A\u064A\u0631 \u0645\u0635\u0631\u062D");
     }
-    const teamId = await getUserTeamId(ctx.user.id);
+    const teamId = await getUserTeamId2(ctx.user.id);
     if (!teamId) {
       throw new Error("\u0641\u0631\u064A\u0642 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F");
     }
@@ -76293,7 +76451,7 @@ var extensionRouter = router18({
     if (!ctx.user?.id) {
       throw new Error("\u063A\u064A\u0631 \u0645\u0635\u0631\u062D");
     }
-    const teamId = await getUserTeamId(ctx.user.id);
+    const teamId = await getUserTeamId2(ctx.user.id);
     if (!teamId) {
       throw new Error("\u0641\u0631\u064A\u0642 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F");
     }
@@ -76308,7 +76466,7 @@ var extensionRouter = router18({
     if (!ctx.user?.id) {
       throw new Error("\u063A\u064A\u0631 \u0645\u0635\u0631\u062D");
     }
-    const teamId = await getUserTeamId(ctx.user.id);
+    const teamId = await getUserTeamId2(ctx.user.id);
     if (!teamId) {
       throw new Error("\u0641\u0631\u064A\u0642 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F");
     }
@@ -76435,7 +76593,7 @@ function getUsagePercentage(usedLeads, plan) {
 }
 
 // server/routers/billing.ts
-var billingRouter = router18({
+var billingRouter = router19({
   /**
    * Get current plan and usage for user's team
    */
@@ -76450,7 +76608,7 @@ var billingRouter = router18({
       };
     }
     try {
-      const teamId = await getUserTeamId(ctx.user.id);
+      const teamId = await getUserTeamId2(ctx.user.id);
       if (!teamId) {
         return {
           plan: "starter",
@@ -76493,7 +76651,7 @@ var billingRouter = router18({
   canAddLead: protectedProcedure.query(async ({ ctx }) => {
     if (!ctx.user?.id) return false;
     try {
-      const teamId = await getUserTeamId(ctx.user.id);
+      const teamId = await getUserTeamId2(ctx.user.id);
       if (!teamId) return false;
       const { data: team } = await supabase.from("teams").select("plan").eq("id", teamId).single();
       const planId = team?.plan || "starter";
@@ -76547,7 +76705,7 @@ var billingRouter = router18({
       throw new Error("\u0627\u0644\u0645\u0633\u062A\u062E\u062F\u0645 \u063A\u064A\u0631 \u0645\u0635\u0631\u062D");
     }
     try {
-      const teamId = await getUserTeamId(ctx.user.id);
+      const teamId = await getUserTeamId2(ctx.user.id);
       if (!teamId) {
         throw new Error("\u0644\u0645 \u064A\u062A\u0645 \u0627\u0644\u0639\u062B\u0648\u0631 \u0639\u0644\u0649 \u0641\u0631\u064A\u0642");
       }
@@ -76567,7 +76725,7 @@ var billingRouter = router18({
 });
 
 // server/routers.ts
-var appRouter = router18({
+var appRouter = router19({
   system: systemRouter,
   auth: authRouter,
   demo: demoRouter,
@@ -76576,10 +76734,10 @@ var appRouter = router18({
   templates: templatesRouter,
   extension: extensionRouter,
   billing: billingRouter,
-  queue: router18({
+  queue: router19({
     list: protectedProcedure.input(external_exports.object({ status: external_exports.enum(["all", "new", "approved"]).optional() }).optional()).query(async ({ ctx, input }) => {
       if (!ctx.user?.id) return [];
-      const teamId = await getUserTeamId(ctx.user.id);
+      const teamId = await getUserTeamId2(ctx.user.id);
       if (!teamId) return [];
       let query = supabase.from("action_queue").select(`
             id,
@@ -76602,7 +76760,7 @@ var appRouter = router18({
     }),
     approve: protectedProcedure.input(external_exports.object({ itemId: external_exports.string() })).mutation(async ({ ctx, input }) => {
       if (!ctx.user?.id) return null;
-      const teamId = await getUserTeamId(ctx.user.id);
+      const teamId = await getUserTeamId2(ctx.user.id);
       if (!teamId) return null;
       const { data } = await supabase.from("action_queue").update({
         status: "ready",
@@ -76614,7 +76772,7 @@ var appRouter = router18({
     }),
     reject: protectedProcedure.input(external_exports.object({ itemId: external_exports.string() })).mutation(async ({ ctx, input }) => {
       if (!ctx.user?.id) return null;
-      const teamId = await getUserTeamId(ctx.user.id);
+      const teamId = await getUserTeamId2(ctx.user.id);
       if (!teamId) return null;
       const { data } = await supabase.from("action_queue").update({
         status: "skipped",
@@ -76625,7 +76783,7 @@ var appRouter = router18({
     // Bulk operations
     bulkApprove: protectedProcedure.input(external_exports.object({ itemIds: external_exports.array(external_exports.string()) })).mutation(async ({ ctx, input }) => {
       if (!ctx.user?.id || input.itemIds.length === 0) return null;
-      const teamId = await getUserTeamId(ctx.user.id);
+      const teamId = await getUserTeamId2(ctx.user.id);
       if (!teamId) return null;
       const { data } = await supabase.from("action_queue").update({
         status: "ready",
@@ -76637,7 +76795,7 @@ var appRouter = router18({
     }),
     bulkReject: protectedProcedure.input(external_exports.object({ itemIds: external_exports.array(external_exports.string()) })).mutation(async ({ ctx, input }) => {
       if (!ctx.user?.id || input.itemIds.length === 0) return null;
-      const teamId = await getUserTeamId(ctx.user.id);
+      const teamId = await getUserTeamId2(ctx.user.id);
       if (!teamId) return null;
       const { data } = await supabase.from("action_queue").update({
         status: "skipped",
@@ -76706,12 +76864,12 @@ async function createContext(opts) {
 }
 function verifyExtensionToken(token) {
   try {
-    const crypto6 = require("crypto");
+    const crypto8 = require("crypto");
     const parts = token.split(".");
     if (parts.length !== 2) return null;
     const [payloadBase64, signature] = parts;
     const secret = process.env.SUPABASE_SERVICE_ROLE_KEY || "wassel-ext-secret";
-    const expectedSig = crypto6.createHmac("sha256", secret).update(payloadBase64).digest("base64url");
+    const expectedSig = crypto8.createHmac("sha256", secret).update(payloadBase64).digest("base64url");
     if (signature !== expectedSig) return null;
     const payload = JSON.parse(Buffer.from(payloadBase64, "base64url").toString());
     if (payload.exp && payload.exp < Math.floor(Date.now() / 1e3)) return null;
@@ -76750,16 +76908,16 @@ function requireRole(role) {
 }
 
 // server/_core/userRoutes.ts
-var import_express18 = __toESM(require_express2(), 1);
+var import_express19 = __toESM(require_express2(), 1);
 init_dist4();
-var router19 = (0, import_express18.Router)();
+var router20 = (0, import_express19.Router)();
 function getSupabase3() {
   return createClient(
     process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "",
     process.env.SUPABASE_SERVICE_ROLE_KEY || ""
   );
 }
-router19.patch("/profile", async (req, res) => {
+router20.patch("/profile", async (req, res) => {
   const supabase3 = getSupabase3();
   try {
     const authHeader = req.headers.authorization;
@@ -76798,7 +76956,7 @@ router19.patch("/profile", async (req, res) => {
     return res.status(500).json({ error: "Server error: " + err.message });
   }
 });
-router19.get("/profile", async (req, res) => {
+router20.get("/profile", async (req, res) => {
   const supabase3 = getSupabase3();
   try {
     const authHeader = req.headers.authorization;
@@ -76816,12 +76974,12 @@ router19.get("/profile", async (req, res) => {
     return res.status(500).json({ error: err.message });
   }
 });
-var userRoutes_default = router19;
+var userRoutes_default = router20;
 
 // server/_core/vercel.ts
-var app = (0, import_express19.default)();
-app.use(import_express19.default.json({ limit: "50mb" }));
-app.use(import_express19.default.urlencoded({ limit: "50mb", extended: true }));
+var app = (0, import_express20.default)();
+app.use(import_express20.default.json({ limit: "50mb" }));
+app.use(import_express20.default.urlencoded({ limit: "50mb", extended: true }));
 app.get("/api/debug-env", (_req, res) => {
   res.json({
     hasApify: !!process.env.APIFY_API_TOKEN,
@@ -76858,6 +77016,7 @@ app.use("/api/messages", expressAuthMiddleware, messageRoutes_default);
 app.use("/api/session", expressAuthMiddleware, sessionRoutes_default);
 app.use("/api/automation", expressAuthMiddleware, automationRoutes_default);
 app.use("/api/cloud", expressAuthMiddleware, cloudCampaignRoutes_default);
+app.use("/api/cron", campaignCron_default);
 app.use("/api/stripe", stripeRoutes_default);
 app.use("/api/user", userRoutes_default);
 app.get("/api/health", (_req, res) => {
