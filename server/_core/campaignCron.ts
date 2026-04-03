@@ -277,14 +277,21 @@ router.get('/campaign-runner', async (req: any, res: any) => {
         const dailyCount = await getDailyCount(userId, actionType);
         if (dailyCount >= DAILY_LIMITS[actionType]) {
           results.push({ campaign: campaign.name, prospect: prospect.name, skipped: `daily_limit_${actionType}` });
-          continue; // skip this step, try next campaign
+          continue;
         }
 
-        // Mark as in_progress
-        await supabase
+        // Atomic claim: only update if still 'pending' (prevents duplicate processing)
+        const { data: claimed } = await supabase
           .from('prospect_step_status')
           .update({ status: 'in_progress' })
-          .eq('id', pss.id);
+          .eq('id', pss.id)
+          .eq('status', 'pending')
+          .select('id');
+
+        if (!claimed?.length) {
+          // Another process already claimed this row — skip
+          continue;
+        }
 
         // Log "in_progress" activity for live visibility
         await supabase.from('activity_logs').insert({

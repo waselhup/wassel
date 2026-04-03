@@ -61087,9 +61087,13 @@ async function visitProfile(session, profileSlug) {
           "user-agent": session.userAgent || "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
           "x-li-lang": "en_US",
           "x-restli-protocol-version": "2.0.0"
-        }
+        },
+        redirect: "manual"
       }
     );
+    if (res.status >= 300 && res.status < 400) {
+      return { success: false, error: "session_expired: LinkedIn redirected (li_at cookie invalid)" };
+    }
     if (res.ok) {
       const data = await res.json();
       return {
@@ -61395,7 +61399,10 @@ router17.post("/campaign/:id/tick", async (req, res) => {
     const slug = prospect.linkedin_url.match(/\/in\/([^/?]+)/)?.[1];
     if (!slug) return res.json({ processed: false, reason: "bad_url" });
     const actionType = stepDef.step_type === "invitation" ? "connect" : stepDef.step_type === "message" ? "message" : "visit";
-    await supabase.from("prospect_step_status").update({ status: "in_progress" }).eq("id", pss.id);
+    const { data: claimed } = await supabase.from("prospect_step_status").update({ status: "in_progress" }).eq("id", pss.id).eq("status", "pending").select("id");
+    if (!claimed?.length) {
+      return res.json({ processed: false, reason: "already_claimed" });
+    }
     await supabase.from("activity_logs").insert({
       user_id: userId,
       team_id: campaign.team_id,
@@ -61660,7 +61667,10 @@ router18.get("/campaign-runner", async (req, res) => {
           results.push({ campaign: campaign.name, prospect: prospect.name, skipped: `daily_limit_${actionType}` });
           continue;
         }
-        await supabase.from("prospect_step_status").update({ status: "in_progress" }).eq("id", pss.id);
+        const { data: claimed } = await supabase.from("prospect_step_status").update({ status: "in_progress" }).eq("id", pss.id).eq("status", "pending").select("id");
+        if (!claimed?.length) {
+          continue;
+        }
         await supabase.from("activity_logs").insert({
           user_id: userId,
           team_id: campaign.team_id,

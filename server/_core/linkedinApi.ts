@@ -19,13 +19,19 @@ export async function visitProfile(session: LinkedInSession, profileSlug: string
           'x-li-lang': 'en_US',
           'x-restli-protocol-version': '2.0.0',
         },
+        redirect: 'manual',
       }
     );
-    
+
+    // Redirect means session expired
+    if (res.status >= 300 && res.status < 400) {
+      return { success: false, error: 'session_expired: LinkedIn redirected (li_at cookie invalid)' };
+    }
+
     if (res.ok) {
       const data = await res.json();
-      return { 
-        success: true, 
+      return {
+        success: true,
         name: data?.firstName + ' ' + data?.lastName,
         profileId: data?.entityUrn?.split(':').pop(),
       };

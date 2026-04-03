@@ -340,11 +340,17 @@ router.post('/campaign/:id/tick', async (req, res) => {
     const actionType = stepDef.step_type === 'invitation' ? 'connect'
       : stepDef.step_type === 'message' ? 'message' : 'visit';
 
-    // Mark as in_progress
-    await supabase
+    // Atomic claim: only update if still 'pending' (prevents duplicate processing)
+    const { data: claimed } = await supabase
       .from('prospect_step_status')
       .update({ status: 'in_progress' })
-      .eq('id', pss.id);
+      .eq('id', pss.id)
+      .eq('status', 'pending')
+      .select('id');
+
+    if (!claimed?.length) {
+      return res.json({ processed: false, reason: 'already_claimed' });
+    }
 
     // Log in_progress for live UI
     await supabase.from('activity_logs').insert({
