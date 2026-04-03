@@ -9,6 +9,14 @@
             "schedule": "* * * * *"
         }
     ],
+    "headers": [
+        {
+            "source": "/api/cron/(.*)",
+            "headers": [
+                { "key": "authorization", "value": "Bearer ozail-cron-2026-wassel" }
+            ]
+        }
+    ],
     "rewrites": [
         {
             "source": "/api/(.*)",
