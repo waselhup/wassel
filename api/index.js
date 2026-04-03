@@ -61568,6 +61568,30 @@ router18.get("/campaign-runner", async (req, res) => {
         continue;
       }
       for (const campaign of campaigns) {
+        const { count: totalRows } = await supabase.from("prospect_step_status").select("*", { count: "exact", head: true }).eq("campaign_id", campaign.id);
+        if (!totalRows) {
+          const { data: prospects } = await supabase.from("prospects").select("id").eq("campaign_id", campaign.id);
+          const { data: campaignSteps } = await supabase.from("campaign_steps").select("id, step_number").eq("campaign_id", campaign.id).order("step_number", { ascending: true });
+          if (prospects?.length && campaignSteps?.length) {
+            const now2 = (/* @__PURE__ */ new Date()).toISOString();
+            const rows = [];
+            for (const p of prospects) {
+              for (const s of campaignSteps) {
+                rows.push({
+                  prospect_id: p.id,
+                  campaign_id: campaign.id,
+                  step_id: s.id,
+                  status: s.step_number === 1 ? "pending" : "waiting",
+                  scheduled_at: s.step_number === 1 ? now2 : null
+                });
+              }
+            }
+            for (let i = 0; i < rows.length; i += 50) {
+              await supabase.from("prospect_step_status").insert(rows.slice(i, i + 50));
+            }
+            console.log(`[Cron] Auto-enrolled ${prospects.length} prospects \xD7 ${campaignSteps.length} steps for "${campaign.name}"`);
+          }
+        }
         const now = (/* @__PURE__ */ new Date()).toISOString();
         const { data: pendingSteps } = await supabase.from("prospect_step_status").select(`
             id,
