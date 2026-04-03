@@ -457,16 +457,38 @@ async function processCampaignAction(
     await unlockNextStep(pss, stepDef, campaign, prospect, actionType, userId, teamId);
   }
 
-  // ── On session_expired: revert to pending for retry ──
-  // Do NOT mark the session as expired — it could be a transient LinkedIn issue.
-  // Only the extension (on next cookie refresh) or manual revoke should change session status.
+  // ── On session_expired: revert to pending + track consecutive failures ──
+  // Do NOT mark the session as expired — only extension/manual can do that.
+  // But DO auto-pause campaigns after 5 consecutive session failures to avoid hammering LinkedIn.
   if (!result.success && result.error?.includes('session_expired')) {
     await supabase
       .from('prospect_step_status')
       .update({ status: 'pending', error_message: 'session_expired - will retry' })
       .eq('id', pss.id);
 
-    console.log(`[Cron] Session may be expired for user ${userId.slice(0, 8)}… — will retry on next run`);
+    // Count recent consecutive session_expired failures for this campaign
+    const { data: recentLogs } = await supabase
+      .from('activity_logs')
+      .select('status, error_message')
+      .eq('campaign_id', campaign.id)
+      .order('executed_at', { ascending: false })
+      .limit(5);
+
+    const allSessionExpired = recentLogs?.every(
+      (l: any) => l.status === 'failed' && l.error_message?.includes('session_expired')
+    );
+
+    if (recentLogs?.length === 5 && allSessionExpired) {
+      // Auto-pause the campaign — LinkedIn cookie is dead
+      await supabase
+        .from('campaigns')
+        .update({ status: 'paused' })
+        .eq('id', campaign.id);
+
+      console.log(`[Cron] ⚠️ Auto-paused campaign "${campaign.name}" after 5 consecutive session_expired errors. User needs to refresh LinkedIn cookies.`);
+    } else {
+      console.log(`[Cron] Session may be expired for user ${userId.slice(0, 8)}… — will retry on next run`);
+    }
   }
 
   return {

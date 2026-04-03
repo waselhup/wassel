@@ -149,13 +149,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('btn-resync').addEventListener('click', async () => {
     const btn = document.getElementById('btn-resync');
-    setStatus('info', '🔄 Refreshing...');
+    setStatus('info', '🔄 Syncing token...');
     btn.disabled = true;
     btn.textContent = '⏳ Syncing...';
 
     const result = await syncToken();
     if (result?.synced) {
-      btn.textContent = '✅ Connected!';
+      btn.textContent = '✅ Token synced!';
       await init();
     } else {
       btn.textContent = '❌ Open Dashboard First';
@@ -163,9 +163,58 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     setTimeout(() => {
-      btn.textContent = '🔄 Refresh Session';
+      btn.textContent = '🔄 Sync Wassel Token';
       btn.disabled = false;
     }, 3000);
+  });
+
+  // ── Refresh LinkedIn Cookie ──
+  document.getElementById('btn-refresh-cookie').addEventListener('click', async () => {
+    const btn = document.getElementById('btn-refresh-cookie');
+    const cookieBox = document.getElementById('cookie-status');
+    const cookieText = document.getElementById('cookie-status-text');
+
+    btn.disabled = true;
+    btn.textContent = '⏳ Extracting cookies...';
+    cookieBox.className = 'cookie-status-box';
+    cookieText.textContent = 'Extracting LinkedIn cookies from Chrome...';
+
+    const result = await new Promise(resolve => {
+      chrome.runtime.sendMessage({ type: 'EXTRACT_COOKIES' }, resolve);
+    });
+
+    if (result?.success) {
+      if (result.verified) {
+        cookieBox.className = 'cookie-status-box valid';
+        cookieText.textContent = `✅ Valid! Connected as ${result.linkedinName || 'Unknown'}`;
+        btn.textContent = '✅ Cookie saved!';
+      } else {
+        cookieBox.className = 'cookie-status-box invalid';
+        cookieText.textContent = `⚠️ Cookie stored but EXPIRED: ${result.verifyError || 'LinkedIn rejected it'}`;
+        btn.textContent = '⚠️ Cookie expired!';
+      }
+    } else {
+      cookieBox.className = 'cookie-status-box invalid';
+      const reason = result?.reason || 'unknown error';
+      if (reason === 'no_token') {
+        cookieText.textContent = '❌ No Wassel token — sync first';
+      } else if (reason === 'no_li_at') {
+        cookieText.textContent = '❌ Not logged into LinkedIn — open linkedin.com and log in';
+      } else {
+        cookieText.textContent = `❌ ${reason}`;
+      }
+      btn.textContent = '❌ Failed';
+    }
+
+    setTimeout(() => {
+      btn.textContent = '🍪 Refresh LinkedIn Cookie';
+      btn.disabled = false;
+    }, 5000);
+  });
+
+  // ── Manual Cookie Input — opens dashboard page ──
+  document.getElementById('btn-manual-cookie').addEventListener('click', () => {
+    chrome.tabs.create({ url: 'https://wassel-alpha.vercel.app/app/linkedin-session' });
   });
 
   // ══════════════════════════════════════════

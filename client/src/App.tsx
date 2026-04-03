@@ -44,6 +44,7 @@ import OnboardingExtension from "./pages/OnboardingExtension";
 import OnboardingLinkedIn from "./pages/OnboardingLinkedIn";
 import CampaignTemplates from "./pages/CampaignTemplates";
 import ProspectDiscovery from "./pages/ProspectDiscovery";
+import LinkedInSession from "./pages/LinkedInSession";
 import StagingBanner from "./components/StagingBanner";
 
 function WasselLoader() {
@@ -210,6 +211,7 @@ function Router() {
       <Route path={/^\/app\/leads/} component={() => <ClientRoute component={Leads} />} />
       <Route path={/^\/app\/queue/} component={() => <ClientRoute component={Queue} />} />
       <Route path="/app/discover" component={() => <ClientRoute component={ProspectDiscovery} />} />
+      <Route path="/app/linkedin-session" component={() => <ClientRoute component={LinkedInSession} />} />
       <Route path="/app/campaigns/templates" component={() => <ClientRoute component={CampaignTemplates} />} />
       <Route path="/app/campaigns/new" component={() => <ClientRoute component={CampaignWizard} />} />
       <Route path="/app/campaigns/:id" component={() => <ClientRoute component={CampaignDetail} />} />
