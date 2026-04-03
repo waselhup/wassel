@@ -19,16 +19,24 @@ const CRON_SECRET = process.env.CRON_SECRET || '';
 const DAILY_LIMITS: Record<string, number> = { visit: 80, connect: 20, message: 30 };
 
 function decrypt(text: string): string {
-  const [ivHex, encrypted] = text.split(':');
-  const iv = Buffer.from(ivHex, 'hex');
-  const decipher = crypto.createDecipheriv(
-    'aes-256-cbc',
-    crypto.scryptSync(ENCRYPTION_KEY, 'salt', 32),
-    iv
-  );
-  let decrypted = decipher.update(encrypted, 'hex', 'utf8');
-  decrypted += decipher.final('utf8');
-  return decrypted;
+  if (!text) return '';
+  // If it doesn't look encrypted (no colon separator), return as-is
+  if (!text.includes(':')) return text;
+  try {
+    const [ivHex, encrypted] = text.split(':');
+    const iv = Buffer.from(ivHex, 'hex');
+    const decipher = crypto.createDecipheriv(
+      'aes-256-cbc',
+      crypto.scryptSync(ENCRYPTION_KEY, 'salt', 32),
+      iv
+    );
+    let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+    return decrypted;
+  } catch {
+    // If decryption fails, return raw value (might be stored unencrypted)
+    return text;
+  }
 }
 
 function renderTemplate(template: string, prospect: any): string {

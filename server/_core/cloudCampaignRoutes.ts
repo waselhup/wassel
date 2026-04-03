@@ -8,13 +8,19 @@ const router = Router();
 const ENCRYPTION_KEY = process.env.SESSION_ENCRYPTION_KEY || 'wassel-session-key-2026-secure!!';
 
 function decrypt(text: string): string {
-  const [ivHex, encrypted] = text.split(':');
-  const iv = Buffer.from(ivHex, 'hex');
-  const decipher = crypto.createDecipheriv('aes-256-cbc',
-    crypto.scryptSync(ENCRYPTION_KEY, 'salt', 32), iv);
-  let decrypted = decipher.update(encrypted, 'hex', 'utf8');
-  decrypted += decipher.final('utf8');
-  return decrypted;
+  if (!text) return '';
+  if (!text.includes(':')) return text;
+  try {
+    const [ivHex, encrypted] = text.split(':');
+    const iv = Buffer.from(ivHex, 'hex');
+    const decipher = crypto.createDecipheriv('aes-256-cbc',
+      crypto.scryptSync(ENCRYPTION_KEY, 'salt', 32), iv);
+    let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+    return decrypted;
+  } catch {
+    return text;
+  }
 }
 
 // Helper: render template variables from prospect data

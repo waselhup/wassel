@@ -61185,16 +61185,22 @@ var import_crypto6 = __toESM(require("crypto"), 1);
 var router17 = (0, import_express17.Router)();
 var ENCRYPTION_KEY = process.env.SESSION_ENCRYPTION_KEY || "wassel-session-key-2026-secure!!";
 function decrypt2(text) {
-  const [ivHex, encrypted] = text.split(":");
-  const iv = Buffer.from(ivHex, "hex");
-  const decipher = import_crypto6.default.createDecipheriv(
-    "aes-256-cbc",
-    import_crypto6.default.scryptSync(ENCRYPTION_KEY, "salt", 32),
-    iv
-  );
-  let decrypted = decipher.update(encrypted, "hex", "utf8");
-  decrypted += decipher.final("utf8");
-  return decrypted;
+  if (!text) return "";
+  if (!text.includes(":")) return text;
+  try {
+    const [ivHex, encrypted] = text.split(":");
+    const iv = Buffer.from(ivHex, "hex");
+    const decipher = import_crypto6.default.createDecipheriv(
+      "aes-256-cbc",
+      import_crypto6.default.scryptSync(ENCRYPTION_KEY, "salt", 32),
+      iv
+    );
+    let decrypted = decipher.update(encrypted, "hex", "utf8");
+    decrypted += decipher.final("utf8");
+    return decrypted;
+  } catch {
+    return text;
+  }
 }
 function renderTemplate(template, prospect) {
   if (!template) return "";
@@ -61494,16 +61500,22 @@ var ENCRYPTION_KEY2 = process.env.SESSION_ENCRYPTION_KEY || "wassel-session-key-
 var CRON_SECRET = process.env.CRON_SECRET || "";
 var DAILY_LIMITS = { visit: 80, connect: 20, message: 30 };
 function decrypt3(text) {
-  const [ivHex, encrypted] = text.split(":");
-  const iv = Buffer.from(ivHex, "hex");
-  const decipher = import_crypto7.default.createDecipheriv(
-    "aes-256-cbc",
-    import_crypto7.default.scryptSync(ENCRYPTION_KEY2, "salt", 32),
-    iv
-  );
-  let decrypted = decipher.update(encrypted, "hex", "utf8");
-  decrypted += decipher.final("utf8");
-  return decrypted;
+  if (!text) return "";
+  if (!text.includes(":")) return text;
+  try {
+    const [ivHex, encrypted] = text.split(":");
+    const iv = Buffer.from(ivHex, "hex");
+    const decipher = import_crypto7.default.createDecipheriv(
+      "aes-256-cbc",
+      import_crypto7.default.scryptSync(ENCRYPTION_KEY2, "salt", 32),
+      iv
+    );
+    let decrypted = decipher.update(encrypted, "hex", "utf8");
+    decrypted += decipher.final("utf8");
+    return decrypted;
+  } catch {
+    return text;
+  }
 }
 function renderTemplate2(template, prospect) {
   if (!template) return "";
