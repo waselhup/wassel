@@ -32,11 +32,10 @@ function renderTemplate(template: string, prospect: any): string {
 
 // Helper: validate LinkedIn profile matches stored prospect
 function profileMatchesProspect(profileName: string, prospectName: string): boolean {
-  if (!profileName || !prospectName) return true; // can't validate, allow
+  if (!profileName || !prospectName) return true;
   const normalize = (s: string) => s.toLowerCase().replace(/[^a-z\u0600-\u06ff0-9]/g, '');
   const pn = normalize(profileName);
   const sn = normalize(prospectName);
-  // Accept if either name contains the other (handles partial names)
   return pn.includes(sn) || sn.includes(pn) || pn === sn;
 }
 
@@ -46,16 +45,26 @@ async function getUserSession(userId: string) {
     .from('linkedin_sessions')
     .select('*')
     .eq('user_id', userId)
-    .eq('is_valid', true)
+    .eq('status', 'active')
     .single();
 
   if (!data) return null;
 
   return {
     liAt: decrypt(data.li_at),
-    jsessionId: data.jsession_id ? decrypt(data.jsession_id) : '',
-    userAgent: data.user_agent || '',
+    jsessionId: data.jsessionid ? decrypt(data.jsessionid) : '',
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
   };
+}
+
+// Helper: get user's team_id
+async function getUserTeamId(userId: string): Promise<string | null> {
+  const { data } = await supabase
+    .from('team_members')
+    .select('team_id')
+    .eq('user_id', userId)
+    .single();
+  return data?.team_id || null;
 }
 
 // POST /api/cloud/execute — Execute a single LinkedIn action
@@ -68,8 +77,8 @@ router.post('/execute', async (req, res) => {
 
     const session = await getUserSession(userId);
     if (!session) {
-      return res.status(400).json({ 
-        error: 'No LinkedIn session. Please open LinkedIn and reload the extension.' 
+      return res.status(400).json({
+        error: 'No LinkedIn session. Please open LinkedIn and reload the extension.'
       });
     }
 
@@ -88,10 +97,8 @@ router.post('/execute', async (req, res) => {
         break;
       }
       case 'connect': {
-        // First visit to get profileId
         const profile = await visitProfile(session, slug);
         if (profile.success && profile.profileId) {
-          // Identity validation
           if (prospectName && profile.name && !profileMatchesProspect(profile.name, prospectName)) {
             result = { success: false, error: `identity_mismatch: expected "${prospectName}" but got "${profile.name}"` };
             break;
@@ -108,7 +115,6 @@ router.post('/execute', async (req, res) => {
       case 'message': {
         const profile = await visitProfile(session, slug);
         if (profile.success && profile.profileId) {
-          // Identity validation
           if (prospectName && profile.name && !profileMatchesProspect(profile.name, prospectName)) {
             result = { success: false, error: `identity_mismatch: expected "${prospectName}" but got "${profile.name}"` };
             break;
@@ -124,9 +130,11 @@ router.post('/execute', async (req, res) => {
       }
     }
 
-    // Log activity
+    // Log activity with team_id
+    const teamId = await getUserTeamId(userId);
     await supabase.from('activity_logs').insert({
       user_id: userId,
+      team_id: teamId,
       campaign_id: campaignId || null,
       action_type: actionType,
       status: result.success ? 'success' : 'failed',
@@ -142,7 +150,7 @@ router.post('/execute', async (req, res) => {
   }
 });
 
-// POST /api/cloud/campaign/:id/launch — Launch entire campaign
+// POST /api/cloud/campaign/:id/launch — Launch campaign (cron handles execution)
 router.post('/campaign/:id/launch', async (req, res) => {
   try {
     const userId = (req as any).user?.id;
@@ -156,7 +164,7 @@ router.post('/campaign/:id/launch', async (req, res) => {
       return res.status(400).json({ error: 'No LinkedIn session' });
     }
 
-    // Get campaign with steps and prospects
+    // Get campaign
     const { data: campaign } = await supabase
       .from('campaigns')
       .select('*')
@@ -165,152 +173,59 @@ router.post('/campaign/:id/launch', async (req, res) => {
 
     if (!campaign) return res.status(404).json({ error: 'Campaign not found' });
 
+    // Get steps count
     const { data: steps } = await supabase
       .from('campaign_steps')
-      .select('*')
-      .eq('campaign_id', campaignId)
-      .order('step_order', { ascending: true });
+      .select('id')
+      .eq('campaign_id', campaignId);
 
-    const { data: campaignProspects } = await supabase
-      .from('campaign_prospects')
-      .select('*, prospect:prospects(*)')
+    // Count pending prospect steps
+    const { count: pendingCount } = await supabase
+      .from('prospect_step_status')
+      .select('*', { count: 'exact', head: true })
       .eq('campaign_id', campaignId)
-      .in('status', ['pending', 'in_progress']);
+      .in('status', ['pending', 'waiting']);
 
-    if (!campaignProspects?.length) {
-      return res.status(400).json({ error: 'No pending prospects' });
+    if (!pendingCount) {
+      return res.status(400).json({ error: 'No pending prospects — enroll prospects first' });
     }
 
-    // Update campaign status
+    // Reset any stuck in_progress back to pending
+    await supabase
+      .from('prospect_step_status')
+      .update({ status: 'pending' })
+      .eq('campaign_id', campaignId)
+      .eq('status', 'in_progress');
+
+    // Update campaign status to active
     await supabase
       .from('campaigns')
-      .update({ status: 'active' })
+      .update({ status: 'active', started_at: new Date().toISOString() })
       .eq('id', campaignId);
 
-    // Execute in background (non-blocking)
-    executeCampaignInBackground(userId, campaignId, steps || [], campaignProspects, session);
+    // Log campaign launch activity
+    const teamId = campaign.team_id || await getUserTeamId(userId);
+    await supabase.from('activity_logs').insert({
+      user_id: userId,
+      team_id: teamId,
+      campaign_id: campaignId,
+      action_type: 'visit',
+      status: 'success',
+      prospect_name: `Campaign "${campaign.name}" launched`,
+      executed_at: new Date().toISOString(),
+    });
 
-    res.json({ 
-      success: true, 
-      message: 'Campaign launched in cloud',
-      prospects: campaignProspects.length,
+    // Return immediately — cron will handle execution every minute
+    res.json({
+      success: true,
+      message: 'Campaign launched — cloud cron will process actions every minute',
+      prospects: pendingCount,
       steps: steps?.length || 0,
     });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
 });
-
-// Background execution function
-async function executeCampaignInBackground(
-  userId: string, 
-  campaignId: string,
-  steps: any[], 
-  prospects: any[],
-  session: any
-) {
-  const DAILY_LIMITS = { visit: 80, connect: 20, message: 30 };
-  const counters = { visit: 0, connect: 0, message: 0 };
-
-  for (const cp of prospects) {
-    const prospect = cp.prospect;
-    if (!prospect?.linkedin_url) continue;
-
-    const slug = prospect.linkedin_url.match(/\/in\/([^/?]+)/)?.[1];
-    if (!slug) continue;
-
-    for (const step of steps) {
-      const actionType = step.step_type === 'visit' ? 'visit' :
-                        step.step_type === 'invite' ? 'connect' :
-                        step.step_type === 'message' ? 'message' : null;
-      if (!actionType) continue;
-
-      // Check daily limits
-      if (counters[actionType] >= DAILY_LIMITS[actionType]) {
-        console.log(`[Cloud] Daily limit reached for ${actionType}`);
-        continue;
-      }
-
-      // Random delay between actions (30-90 seconds)
-      const delay = 30000 + Math.random() * 60000;
-      await new Promise(r => setTimeout(r, delay));
-
-      try {
-        let result: any;
-
-        switch (actionType) {
-          case 'visit':
-            result = await visitProfile(session, slug);
-            break;
-          case 'connect': {
-            const profile = await visitProfile(session, slug);
-            if (profile.success && profile.profileId) {
-              // Identity validation
-              if (prospect.name && profile.name && !profileMatchesProspect(profile.name, prospect.name)) {
-                result = { success: false, error: `identity_mismatch: expected "${prospect.name}" but got "${profile.name}"` };
-                break;
-              }
-              await new Promise(r => setTimeout(r, 2000 + Math.random() * 3000));
-              const renderedNote = renderTemplate(step.message_template || '', prospect);
-              result = await sendInvite(session, profile.profileId, renderedNote);
-            } else {
-              result = { success: false, error: 'profile_not_found' };
-            }
-            break;
-          }
-          case 'message': {
-            const profile = await visitProfile(session, slug);
-            if (profile.success && profile.profileId) {
-              // Identity validation
-              if (prospect.name && profile.name && !profileMatchesProspect(profile.name, prospect.name)) {
-                result = { success: false, error: `identity_mismatch: expected "${prospect.name}" but got "${profile.name}"` };
-                break;
-              }
-              const urn = `urn:li:fsd_profile:${profile.profileId}`;
-              await new Promise(r => setTimeout(r, 2000 + Math.random() * 3000));
-              const renderedMsg = renderTemplate(step.message_template || '', prospect);
-              result = await sendMessage(session, urn, renderedMsg);
-            } else {
-              result = { success: false, error: 'profile_not_found' };
-            }
-            break;
-          }
-        }
-
-        counters[actionType]++;
-
-        // Log activity
-        await supabase.from('activity_logs').insert({
-          user_id: userId,
-          campaign_id: campaignId,
-          action_type: actionType,
-          status: result?.success ? 'success' : 'failed',
-          prospect_name: prospect.name || slug,
-          linkedin_url: prospect.linkedin_url,
-          error_message: result?.error || null,
-        });
-
-        // Update prospect status
-        await supabase
-          .from('campaign_prospects')
-          .update({ 
-            status: result?.success ? 'completed' : 'failed',
-            [`${step.step_type}_completed_at`]: new Date().toISOString(),
-          })
-          .eq('id', cp.id);
-
-      } catch (err: any) {
-        console.error(`[Cloud] Action failed:`, err.message);
-      }
-    }
-  }
-
-  // Campaign complete
-  await supabase
-    .from('campaigns')
-    .update({ status: 'completed', completed_at: new Date().toISOString() })
-    .eq('id', campaignId);
-}
 
 // GET /api/cloud/session-check
 router.get('/session-check', async (req, res) => {

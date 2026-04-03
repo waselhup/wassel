@@ -119,9 +119,14 @@ export default function CampaignDetail() {
         }
 
         console.log(`[Campaign] Cloud launch: ${launchData.prospects} prospects, ${launchData.steps} steps`);
+        // Launch endpoint already set status to 'active' — just refresh UI cache
+        utils.campaigns.get.invalidate({ id: campaignId });
+        setStatusUpdating(false);
+        loadActivity();
+        return;
       }
 
-      // Update UI status via TRPC
+      // For non-active statuses (pause etc), update via TRPC
       await updateStatusMutation.mutateAsync({ id: campaignId, status: newStatus as any });
     } catch (e: any) {
       console.error('Status update failed:', e);
@@ -183,7 +188,7 @@ export default function CampaignDetail() {
   // Auto-refresh activity every 8s
   useEffect(() => {
     loadActivity();
-    const interval = setInterval(loadActivity, 8000);
+    const interval = setInterval(loadActivity, 4000);
     return () => clearInterval(interval);
   }, [loadActivity]);
 
@@ -459,7 +464,7 @@ export default function CampaignDetail() {
         {(() => {
           const s = campaign.status;
           const banners: Record<string, { bg: string; border: string; icon: string; color: string; title: string; desc: string }> = {
-            active: { bg: 'bg-green-50', border: 'border-green-200', icon: '🟢', color: 'text-green-800', title: t('campaign.running'), desc: `${t('campaign.extensionExecuting')}. ${t('campaign.keepLinkedIn')}.` },
+            active: { bg: 'bg-green-50', border: 'border-green-200', icon: '🟢', color: 'text-green-800', title: t('campaign.running'), desc: 'وصل ينفذ الإجراءات في السحابة. لا حاجة لإبقاء LinkedIn مفتوحاً.' },
             paused: { bg: 'bg-amber-50', border: 'border-amber-200', icon: '⏸', color: 'text-amber-800', title: t('campaign.paused'), desc: t('campaigns.pausedDesc') },
             draft: { bg: 'bg-gray-50', border: 'border-gray-200', icon: '📝', color: 'text-gray-700', title: t('campaign.draft'), desc: t('campaigns.draftDesc') },
             completed: { bg: 'bg-blue-50', border: 'border-blue-200', icon: '✅', color: 'text-blue-800', title: t('campaign.completed'), desc: t('campaigns.completedDesc') },
@@ -531,7 +536,7 @@ export default function CampaignDetail() {
               {activity.length === 0 ? (
                 <div className="text-center py-8">
                   <p className="text-gray-400 text-sm">{t('campaign.noActivity')}</p>
-                  <p className="text-gray-400 text-xs mt-1">{t('campaign.keepChrome')}</p>
+                  <p className="text-gray-400 text-xs mt-1">الأتمتة السحابية تعمل — لا حاجة لإبقاء المتصفح مفتوحاً</p>
                 </div>
               ) : (
                 <div className="space-y-2">

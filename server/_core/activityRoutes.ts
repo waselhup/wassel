@@ -94,7 +94,7 @@ router.get('/', async (req: Request, res: Response) => {
         const limit = parseInt(req.query.limit as string) || 50;
         const campaignId = req.query.campaign_id as string;
 
-        // Filter by team_id if available, else by user_id (solo users)
+        // Filter by team_id OR user_id (covers logs written with either)
         let query = supabase
             .from('activity_logs')
             .select('id, action_type, status, prospect_name, linkedin_url, error_message, executed_at, created_at')
@@ -102,7 +102,8 @@ router.get('/', async (req: Request, res: Response) => {
             .limit(limit);
 
         if (teamId) {
-            query = query.eq('team_id', teamId);
+            // Match either team_id or user_id — cron writes team_id, some old logs may only have user_id
+            query = query.or(`team_id.eq.${teamId},user_id.eq.${userId}`);
         } else {
             query = query.eq('user_id', userId);
         }

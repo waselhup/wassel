@@ -2,7 +2,7 @@
  * Campaign Cron Runner
  * Vercel Cron: runs every minute via GET /api/cron/campaign-runner
  * Processes one pending action per active campaign per user.
- * Replaces background execution that gets killed on Vercel Serverless.
+ * Uses prospect_step_status + prospects tables for tracking.
  */
 
 import { Router } from 'express';
@@ -56,14 +56,14 @@ async function getUserSession(userId: string) {
     .from('linkedin_sessions')
     .select('*')
     .eq('user_id', userId)
-    .eq('is_valid', true)
+    .eq('status', 'active')
     .single();
 
   if (!data) return null;
   return {
     liAt: decrypt(data.li_at),
-    jsessionId: data.jsession_id ? decrypt(data.jsession_id) : '',
-    userAgent: data.user_agent || '',
+    jsessionId: data.jsessionid ? decrypt(data.jsessionid) : '',
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
   };
 }
 
@@ -80,8 +80,15 @@ async function getDailyCount(userId: string, actionType: string): Promise<number
   return count || 0;
 }
 
+// Map step_type to action_type for logging
+function stepTypeToActionType(stepType: string): string | null {
+  if (stepType === 'visit') return 'visit';
+  if (stepType === 'invitation') return 'connect';
+  if (stepType === 'message') return 'message';
+  return null;
+}
+
 // GET /api/cron/campaign-runner
-// Called by Vercel Cron every minute
 router.get('/campaign-runner', async (req: any, res: any) => {
   // Verify cron secret if set
   const authHeader = req.headers['authorization'] || '';
@@ -93,21 +100,31 @@ router.get('/campaign-runner', async (req: any, res: any) => {
   const startTime = Date.now();
 
   try {
+    // Recovery: reset stuck in_progress items older than 10 minutes
+    const tenMinAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+    await supabase
+      .from('prospect_step_status')
+      .update({ status: 'pending' })
+      .eq('status', 'in_progress')
+      .lt('created_at', tenMinAgo);
+
     // Get all active campaigns
     const { data: activeCampaigns } = await supabase
       .from('campaigns')
-      .select('id, user_id, name')
+      .select('id, team_id, created_by, name')
       .eq('status', 'active');
 
     if (!activeCampaigns?.length) {
       return res.json({ ok: true, message: 'No active campaigns', processed: 0 });
     }
 
-    // Group by user to manage sessions efficiently
+    // Group by created_by (user) to manage sessions efficiently
     const userCampaigns: Record<string, any[]> = {};
     for (const campaign of activeCampaigns) {
-      if (!userCampaigns[campaign.user_id]) userCampaigns[campaign.user_id] = [];
-      userCampaigns[campaign.user_id].push(campaign);
+      const userId = campaign.created_by;
+      if (!userId) continue;
+      if (!userCampaigns[userId]) userCampaigns[userId] = [];
+      userCampaigns[userId].push(campaign);
     }
 
     for (const [userId, campaigns] of Object.entries(userCampaigns)) {
@@ -119,30 +136,41 @@ router.get('/campaign-runner', async (req: any, res: any) => {
       }
 
       for (const campaign of campaigns) {
-        // Get campaign steps
-        const { data: steps } = await supabase
-          .from('campaign_steps')
-          .select('*')
-          .eq('campaign_id', campaign.id)
-          .order('step_order', { ascending: true });
-
-        if (!steps?.length) continue;
-
-        // Get ONE pending prospect for this campaign
-        const { data: pendingProspects } = await supabase
-          .from('campaign_prospects')
-          .select('*, prospect:prospects(*)')
+        // Get ONE pending prospect_step_status for this campaign
+        // Only get steps where scheduled_at <= now (respects delays)
+        const now = new Date().toISOString();
+        const { data: pendingSteps } = await supabase
+          .from('prospect_step_status')
+          .select(`
+            id,
+            prospect_id,
+            step_id,
+            status,
+            campaign_steps!inner (
+              step_number,
+              step_type,
+              name,
+              message_template
+            ),
+            prospects!inner (
+              linkedin_url,
+              name,
+              company
+            )
+          `)
           .eq('campaign_id', campaign.id)
           .eq('status', 'pending')
+          .or(`scheduled_at.is.null,scheduled_at.lte.${now}`)
+          .order('created_at', { ascending: true })
           .limit(1);
 
-        if (!pendingProspects?.length) {
-          // No more pending — check if all done
+        if (!pendingSteps?.length) {
+          // Check if all steps are done for this campaign
           const { count: remainingCount } = await supabase
-            .from('campaign_prospects')
+            .from('prospect_step_status')
             .select('*', { count: 'exact', head: true })
             .eq('campaign_id', campaign.id)
-            .in('status', ['pending', 'in_progress']);
+            .in('status', ['pending', 'in_progress', 'waiting']);
 
           if (!remainingCount) {
             await supabase
@@ -154,122 +182,157 @@ router.get('/campaign-runner', async (req: any, res: any) => {
           continue;
         }
 
-        const cp = pendingProspects[0];
-        const prospect = cp.prospect;
+        const pss = pendingSteps[0];
+        const stepDef = (pss as any).campaign_steps;
+        const prospect = (pss as any).prospects;
+
         if (!prospect?.linkedin_url) continue;
 
         const slug = prospect.linkedin_url.match(/\/in\/([^/?]+)/)?.[1];
         if (!slug) continue;
 
-        // Mark as in_progress to avoid double-processing
-        await supabase
-          .from('campaign_prospects')
-          .update({ status: 'in_progress' })
-          .eq('id', cp.id);
+        const actionType = stepTypeToActionType(stepDef.step_type);
+        if (!actionType) continue;
 
-        // Process each step in order
-        let allStepsDone = true;
-        for (const step of steps) {
-          const actionType = step.step_type === 'visit' ? 'visit'
-            : step.step_type === 'invite' ? 'connect'
-              : step.step_type === 'message' ? 'message' : null;
-
-          if (!actionType) continue;
-
-          // Check daily limit
-          const dailyCount = await getDailyCount(userId, actionType);
-          if (dailyCount >= DAILY_LIMITS[actionType]) {
-            results.push({ campaign: campaign.name, prospect: prospect.name, skipped: `daily_limit_${actionType}` });
-            allStepsDone = false;
-            // Put back to pending so it's retried tomorrow
-            await supabase
-              .from('campaign_prospects')
-              .update({ status: 'pending' })
-              .eq('id', cp.id);
-            break;
-          }
-
-          let result: any = { success: false, error: 'unknown' };
-
-          try {
-            switch (actionType) {
-              case 'visit':
-                result = await visitProfile(session, slug);
-                break;
-              case 'connect': {
-                const profile = await visitProfile(session, slug);
-                if (profile.success && profile.profileId) {
-                  if (prospect.name && profile.name && !profileMatchesProspect(profile.name, prospect.name)) {
-                    result = { success: false, error: `identity_mismatch: expected "${prospect.name}" got "${profile.name}"` };
-                    break;
-                  }
-                  await new Promise(r => setTimeout(r, 2000 + Math.random() * 2000));
-                  const note = renderTemplate(step.message_template || '', prospect);
-                  result = await sendInvite(session, profile.profileId, note);
-                } else {
-                  result = { success: false, error: 'profile_not_found' };
-                }
-                break;
-              }
-              case 'message': {
-                const profile = await visitProfile(session, slug);
-                if (profile.success && profile.profileId) {
-                  if (prospect.name && profile.name && !profileMatchesProspect(profile.name, prospect.name)) {
-                    result = { success: false, error: `identity_mismatch: expected "${prospect.name}" got "${profile.name}"` };
-                    break;
-                  }
-                  const urn = `urn:li:fsd_profile:${profile.profileId}`;
-                  await new Promise(r => setTimeout(r, 2000 + Math.random() * 2000));
-                  const msg = renderTemplate(step.message_template || '', prospect);
-                  result = await sendMessage(session, urn, msg);
-                } else {
-                  result = { success: false, error: 'profile_not_found' };
-                }
-                break;
-              }
-            }
-          } catch (e: any) {
-            result = { success: false, error: e.message };
-          }
-
-          // Log activity
-          await supabase.from('activity_logs').insert({
-            user_id: userId,
-            campaign_id: campaign.id,
-            action_type: actionType,
-            status: result.success ? 'success' : 'failed',
-            prospect_name: prospect.name || slug,
-            linkedin_url: prospect.linkedin_url,
-            error_message: result.error || null,
-            executed_at: new Date().toISOString(),
-          });
-
-          results.push({
-            campaign: campaign.name,
-            prospect: prospect.name || slug,
-            action: actionType,
-            success: result.success,
-            error: result.error || null,
-          });
-
-          // Stop on failure to avoid wasting quota
-          if (!result.success) {
-            allStepsDone = false;
-            break;
-          }
-
-          // Small delay between steps
-          await new Promise(r => setTimeout(r, 1000));
+        // Check daily limit
+        const dailyCount = await getDailyCount(userId, actionType);
+        if (dailyCount >= DAILY_LIMITS[actionType]) {
+          results.push({ campaign: campaign.name, prospect: prospect.name, skipped: `daily_limit_${actionType}` });
+          continue; // skip this step, try next campaign
         }
 
-        // Update prospect status
+        // Mark as in_progress
         await supabase
-          .from('campaign_prospects')
+          .from('prospect_step_status')
+          .update({ status: 'in_progress' })
+          .eq('id', pss.id);
+
+        // Log "in_progress" activity for live visibility
+        await supabase.from('activity_logs').insert({
+          user_id: userId,
+          team_id: campaign.team_id,
+          campaign_id: campaign.id,
+          action_type: actionType,
+          status: 'in_progress',
+          prospect_name: prospect.name || slug,
+          linkedin_url: prospect.linkedin_url,
+          executed_at: new Date().toISOString(),
+        });
+
+        let result: any = { success: false, error: 'unknown' };
+
+        try {
+          switch (actionType) {
+            case 'visit':
+              result = await visitProfile(session, slug);
+              break;
+            case 'connect': {
+              const profile = await visitProfile(session, slug);
+              if (profile.success && profile.profileId) {
+                if (prospect.name && profile.name && !profileMatchesProspect(profile.name, prospect.name)) {
+                  result = { success: false, error: `identity_mismatch: expected "${prospect.name}" got "${profile.name}"` };
+                  break;
+                }
+                await new Promise(r => setTimeout(r, 2000 + Math.random() * 2000));
+                const note = renderTemplate(stepDef.message_template || '', prospect);
+                result = await sendInvite(session, profile.profileId, note);
+              } else {
+                result = { success: false, error: 'profile_not_found' };
+              }
+              break;
+            }
+            case 'message': {
+              const profile = await visitProfile(session, slug);
+              if (profile.success && profile.profileId) {
+                if (prospect.name && profile.name && !profileMatchesProspect(profile.name, prospect.name)) {
+                  result = { success: false, error: `identity_mismatch: expected "${prospect.name}" got "${profile.name}"` };
+                  break;
+                }
+                const urn = `urn:li:fsd_profile:${profile.profileId}`;
+                await new Promise(r => setTimeout(r, 2000 + Math.random() * 2000));
+                const msg = renderTemplate(stepDef.message_template || '', prospect);
+                result = await sendMessage(session, urn, msg);
+              } else {
+                result = { success: false, error: 'profile_not_found' };
+              }
+              break;
+            }
+          }
+        } catch (e: any) {
+          result = { success: false, error: e.message };
+        }
+
+        const finalStatus = result.success ? 'completed' : 'failed';
+
+        // Update prospect_step_status
+        await supabase
+          .from('prospect_step_status')
           .update({
-            status: allStepsDone ? 'completed' : 'failed',
-            updated_at: new Date().toISOString(),
+            status: finalStatus,
+            executed_at: new Date().toISOString(),
+            error_message: result.error || null,
           })
-          .eq('id', cp.id);
+          .eq('id', pss.id);
+
+        // Update the activity log — replace the in_progress entry with final status
+        await supabase.from('activity_logs').insert({
+          user_id: userId,
+          team_id: campaign.team_id,
+          campaign_id: campaign.id,
+          action_type: actionType,
+          status: finalStatus,
+          prospect_name: prospect.name || slug,
+          linkedin_url: prospect.linkedin_url,
+          error_message: result.error || null,
+          executed_at: new Date().toISOString(),
+        });
+
+        // If success, unlock next step for this prospect in this campaign
+        if (result.success) {
+          const currentStepNumber = stepDef.step_number;
+
+          // Get next step definition
+          const { data: nextStepDef } = await supabase
+            .from('campaign_steps')
+            .select('id, step_number, step_type, delay_days')
+            .eq('campaign_id', campaign.id)
+            .eq('step_number', currentStepNumber + 1)
+            .single();
+
+          if (nextStepDef) {
+            // Calculate scheduled_at based on delay_days
+            const delayDays = nextStepDef.delay_days || 0;
+            const scheduledAt = delayDays > 0
+              ? new Date(Date.now() + delayDays * 86400000).toISOString()
+              : new Date().toISOString();
+
+            // Unlock next step for this prospect
+            await supabase
+              .from('prospect_step_status')
+              .update({ status: 'pending', scheduled_at: scheduledAt })
+              .eq('prospect_id', pss.prospect_id)
+              .eq('campaign_id', campaign.id)
+              .eq('step_id', nextStepDef.id)
+              .eq('status', 'waiting');
+          }
+
+          // Update prospect connection_status if invite was sent
+          if (actionType === 'connect') {
+            await supabase
+              .from('prospects')
+              .update({ connection_status: 'pending' })
+              .eq('id', pss.prospect_id);
+          }
+        }
+
+        results.push({
+          campaign: campaign.name,
+          prospect: prospect.name || slug,
+          action: actionType,
+          stepNumber: stepDef.step_number,
+          success: result.success,
+          error: result.error || null,
+        });
 
         // Abort if we're close to Vercel's 10s limit
         if (Date.now() - startTime > 8000) break;
