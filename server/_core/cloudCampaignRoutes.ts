@@ -173,21 +173,59 @@ router.post('/campaign/:id/launch', async (req, res) => {
 
     if (!campaign) return res.status(404).json({ error: 'Campaign not found' });
 
-    // Get steps count
+    // Get campaign steps
     const { data: steps } = await supabase
       .from('campaign_steps')
-      .select('id')
-      .eq('campaign_id', campaignId);
+      .select('id, step_number, step_type, delay_days')
+      .eq('campaign_id', campaignId)
+      .order('step_number', { ascending: true });
 
-    // Count pending prospect steps
-    const { count: pendingCount } = await supabase
+    if (!steps || steps.length === 0) {
+      return res.status(400).json({ error: 'Campaign has no steps configured' });
+    }
+
+    // Count existing prospect_step_status rows
+    const { count: existingCount } = await supabase
       .from('prospect_step_status')
       .select('*', { count: 'exact', head: true })
       .eq('campaign_id', campaignId)
-      .in('status', ['pending', 'waiting']);
+      .in('status', ['pending', 'waiting', 'in_progress']);
 
+    // If no enrollment rows exist, auto-enroll all prospects in this campaign
+    let pendingCount = existingCount || 0;
     if (!pendingCount) {
-      return res.status(400).json({ error: 'No pending prospects — enroll prospects first' });
+      const { data: prospects } = await supabase
+        .from('prospects')
+        .select('id')
+        .eq('campaign_id', campaignId);
+
+      if (!prospects || prospects.length === 0) {
+        return res.status(400).json({ error: 'No prospects in this campaign' });
+      }
+
+      // Create prospect_step_status rows for each prospect × each step
+      const now = new Date().toISOString();
+      const statusRows: any[] = [];
+      for (const prospect of prospects) {
+        for (const step of steps) {
+          statusRows.push({
+            prospect_id: prospect.id,
+            campaign_id: campaignId,
+            step_id: step.id,
+            status: step.step_number === 1 ? 'pending' : 'waiting',
+            scheduled_at: step.step_number === 1 ? now : null,
+          });
+        }
+      }
+
+      // Insert in chunks of 50
+      for (let i = 0; i < statusRows.length; i += 50) {
+        const chunk = statusRows.slice(i, i + 50);
+        await supabase.from('prospect_step_status').insert(chunk);
+      }
+
+      pendingCount = statusRows.length;
+      console.log(`[CloudLaunch] Auto-enrolled ${prospects.length} prospects × ${steps.length} steps = ${statusRows.length} rows`);
     }
 
     // Reset any stuck in_progress back to pending
