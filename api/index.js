@@ -67692,6 +67692,127 @@ router17.post("/campaign/:id/launch", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+router17.post("/campaign/:id/tick", async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ error: "Auth required" });
+    const campaignId = req.params.id;
+    const session = await getUserSession(userId);
+    if (!session) return res.json({ processed: false, reason: "no_session" });
+    const { data: campaign } = await supabase.from("campaigns").select("id, team_id, name, status").eq("id", campaignId).single();
+    if (!campaign || campaign.status !== "active") {
+      return res.json({ processed: false, reason: "not_active" });
+    }
+    const now = (/* @__PURE__ */ new Date()).toISOString();
+    const { data: pendingSteps } = await supabase.from("prospect_step_status").select(`
+        id, prospect_id, step_id, status,
+        campaign_steps!inner ( step_number, step_type, name, message_template ),
+        prospects!inner ( linkedin_url, name, company )
+      `).eq("campaign_id", campaignId).eq("status", "pending").or(`scheduled_at.is.null,scheduled_at.lte.${now}`).order("created_at", { ascending: true }).limit(1);
+    if (!pendingSteps?.length) {
+      const { count } = await supabase.from("prospect_step_status").select("*", { count: "exact", head: true }).eq("campaign_id", campaignId).in("status", ["pending", "in_progress", "waiting"]);
+      if (!count) {
+        await supabase.from("campaigns").update({ status: "completed", completed_at: now }).eq("id", campaignId);
+        return res.json({ processed: false, reason: "campaign_completed" });
+      }
+      return res.json({ processed: false, reason: "no_pending_steps" });
+    }
+    const pss = pendingSteps[0];
+    const stepDef = pss.campaign_steps;
+    const prospect = pss.prospects;
+    if (!prospect?.linkedin_url) return res.json({ processed: false, reason: "no_url" });
+    const slug = prospect.linkedin_url.match(/\/in\/([^/?]+)/)?.[1];
+    if (!slug) return res.json({ processed: false, reason: "bad_url" });
+    const actionType = stepDef.step_type === "invitation" ? "connect" : stepDef.step_type === "message" ? "message" : "visit";
+    await supabase.from("prospect_step_status").update({ status: "in_progress" }).eq("id", pss.id);
+    await supabase.from("activity_logs").insert({
+      user_id: userId,
+      team_id: campaign.team_id,
+      campaign_id: campaignId,
+      action_type: actionType,
+      status: "in_progress",
+      prospect_name: prospect.name || slug,
+      linkedin_url: prospect.linkedin_url,
+      executed_at: (/* @__PURE__ */ new Date()).toISOString()
+    });
+    let result = { success: false, error: "unknown" };
+    try {
+      await new Promise((r2) => setTimeout(r2, 2e3 + Math.random() * 3e3));
+      switch (actionType) {
+        case "visit":
+          result = await visitProfile(session, slug);
+          break;
+        case "connect": {
+          const profile = await visitProfile(session, slug);
+          if (profile.success && profile.profileId) {
+            if (prospect.name && profile.name && !profileMatchesProspect(profile.name, prospect.name)) {
+              result = { success: false, error: `identity_mismatch` };
+              break;
+            }
+            await new Promise((r2) => setTimeout(r2, 2e3 + Math.random() * 2e3));
+            const note = renderTemplate(stepDef.message_template || "", prospect);
+            result = await sendInvite(session, profile.profileId, note);
+          } else {
+            result = { success: false, error: "profile_not_found" };
+          }
+          break;
+        }
+        case "message": {
+          const profile = await visitProfile(session, slug);
+          if (profile.success && profile.profileId) {
+            if (prospect.name && profile.name && !profileMatchesProspect(profile.name, prospect.name)) {
+              result = { success: false, error: `identity_mismatch` };
+              break;
+            }
+            const urn = `urn:li:fsd_profile:${profile.profileId}`;
+            await new Promise((r2) => setTimeout(r2, 2e3 + Math.random() * 2e3));
+            const msg = renderTemplate(stepDef.message_template || "", prospect);
+            result = await sendMessage(session, urn, msg);
+          } else {
+            result = { success: false, error: "profile_not_found" };
+          }
+          break;
+        }
+      }
+    } catch (e2) {
+      result = { success: false, error: e2.message };
+    }
+    const finalStatus = result.success ? "completed" : "failed";
+    await supabase.from("prospect_step_status").update({ status: finalStatus, executed_at: (/* @__PURE__ */ new Date()).toISOString(), error_message: result.error || null }).eq("id", pss.id);
+    await supabase.from("activity_logs").insert({
+      user_id: userId,
+      team_id: campaign.team_id,
+      campaign_id: campaignId,
+      action_type: actionType,
+      status: finalStatus,
+      prospect_name: prospect.name || slug,
+      linkedin_url: prospect.linkedin_url,
+      error_message: result.error || null,
+      executed_at: (/* @__PURE__ */ new Date()).toISOString()
+    });
+    if (result.success) {
+      const { data: nextStepDef } = await supabase.from("campaign_steps").select("id, delay_days").eq("campaign_id", campaignId).eq("step_number", stepDef.step_number + 1).single();
+      if (nextStepDef) {
+        const delayDays = nextStepDef.delay_days || 0;
+        const scheduledAt = delayDays > 0 ? new Date(Date.now() + delayDays * 864e5).toISOString() : (/* @__PURE__ */ new Date()).toISOString();
+        await supabase.from("prospect_step_status").update({ status: "pending", scheduled_at: scheduledAt }).eq("prospect_id", pss.prospect_id).eq("campaign_id", campaignId).eq("step_id", nextStepDef.id).eq("status", "waiting");
+      }
+      if (actionType === "connect") {
+        await supabase.from("prospects").update({ connection_status: "pending" }).eq("id", pss.prospect_id);
+      }
+    }
+    res.json({
+      processed: true,
+      prospect: prospect.name || slug,
+      action: actionType,
+      step: stepDef.step_number,
+      success: result.success,
+      error: result.error || null
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 router17.get("/session-check", async (req, res) => {
   const userId = req.user?.id;
   if (!userId) return res.json({ hasSession: false });

@@ -185,12 +185,44 @@ export default function CampaignDetail() {
     setLoadingActivity(false);
   }, [campaignId]);
 
-  // Auto-refresh activity every 8s
+  // Auto-refresh activity every 4s
   useEffect(() => {
     loadActivity();
     const interval = setInterval(loadActivity, 4000);
     return () => clearInterval(interval);
   }, [loadActivity]);
+
+  // Drive campaign processing via /tick while campaign is active
+  useEffect(() => {
+    if (campaign?.status !== 'active') return;
+    let stopped = false;
+    const token = localStorage.getItem('supabase_token') || localStorage.getItem('supabase_access_token') || '';
+    const runTick = async () => {
+      if (stopped) return;
+      try {
+        const res = await fetch(`/api/cloud/campaign/${campaignId}/tick`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        });
+        const data = await res.json();
+        if (data.processed) {
+          loadActivity();
+          // If something was processed, tick again after a short delay
+          if (!stopped) setTimeout(runTick, 8000);
+          return;
+        }
+        if (data.reason === 'campaign_completed') {
+          utils.campaigns.get.invalidate({ id: campaignId });
+          return;
+        }
+      } catch {}
+      // Nothing processed or error — wait longer before next tick
+      if (!stopped) setTimeout(runTick, 15000);
+    };
+    // Start first tick after 2s
+    const timer = setTimeout(runTick, 2000);
+    return () => { stopped = true; clearTimeout(timer); };
+  }, [campaign?.status, campaignId]);
 
   // Test automation handler — checks cloud session + queue
   const testAutomation = async () => {

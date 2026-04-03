@@ -6,7 +6,7 @@
     "crons": [
         {
             "path": "/api/cron/campaign-runner",
-            "schedule": "* * * * *"
+            "schedule": "0 8 * * *"
         }
     ],
     "headers": [
