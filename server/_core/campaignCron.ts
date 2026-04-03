@@ -118,6 +118,11 @@ router.get('/campaign-runner', async (req: any, res: any) => {
       return res.json({ ok: true, message: 'No active campaigns', processed: 0 });
     }
 
+    // Debug: log what we found
+    const debug: any = {
+      activeCampaigns: activeCampaigns.map(c => ({ id: c.id, name: c.name, created_by: c.created_by, team_id: c.team_id })),
+    };
+
     // Group by created_by (user) to manage sessions efficiently
     const userCampaigns: Record<string, any[]> = {};
     for (const campaign of activeCampaigns) {
@@ -126,6 +131,8 @@ router.get('/campaign-runner', async (req: any, res: any) => {
       if (!userCampaigns[userId]) userCampaigns[userId] = [];
       userCampaigns[userId].push(campaign);
     }
+
+    debug.userGroups = Object.keys(userCampaigns).length;
 
     for (const [userId, campaigns] of Object.entries(userCampaigns)) {
       // Get user's LinkedIn session
@@ -380,7 +387,7 @@ router.get('/campaign-runner', async (req: any, res: any) => {
       if (Date.now() - startTime > 8000) break;
     }
 
-    return res.json({ ok: true, processed: results.length, results });
+    return res.json({ ok: true, processed: results.length, results, debug });
   } catch (err: any) {
     console.error('[CampaignCron] Error:', err.message);
     return res.status(500).json({ error: err.message });

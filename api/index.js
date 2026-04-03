@@ -61554,6 +61554,9 @@ router18.get("/campaign-runner", async (req, res) => {
     if (!activeCampaigns?.length) {
       return res.json({ ok: true, message: "No active campaigns", processed: 0 });
     }
+    const debug = {
+      activeCampaigns: activeCampaigns.map((c) => ({ id: c.id, name: c.name, created_by: c.created_by, team_id: c.team_id }))
+    };
     const userCampaigns = {};
     for (const campaign of activeCampaigns) {
       const userId = campaign.created_by;
@@ -61561,6 +61564,7 @@ router18.get("/campaign-runner", async (req, res) => {
       if (!userCampaigns[userId]) userCampaigns[userId] = [];
       userCampaigns[userId].push(campaign);
     }
+    debug.userGroups = Object.keys(userCampaigns).length;
     for (const [userId, campaigns] of Object.entries(userCampaigns)) {
       const session = await getUserSession2(userId);
       if (!session) {
@@ -61724,7 +61728,7 @@ router18.get("/campaign-runner", async (req, res) => {
       }
       if (Date.now() - startTime > 8e3) break;
     }
-    return res.json({ ok: true, processed: results.length, results });
+    return res.json({ ok: true, processed: results.length, results, debug });
   } catch (err) {
     console.error("[CampaignCron] Error:", err.message);
     return res.status(500).json({ error: err.message });
