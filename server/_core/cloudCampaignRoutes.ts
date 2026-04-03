@@ -1,42 +1,31 @@
+/**
+ * Cloud Campaign Routes
+ * - /execute — Manual single action (for testing/ad-hoc)
+ * - /campaign/:id/launch — Launch campaign (cron handles execution)
+ * - /campaign/:id/tick — DISABLED (cron-only execution)
+ * - /session-check — Check if user has active LinkedIn session
+ */
+
 import { Router } from 'express';
 import { supabase } from '../supabase';
-import { visitProfile, sendInvite, sendMessage } from './linkedinApi';
-import crypto from 'crypto';
+import { visitProfile, sendInvite, sendMessage, followProfile, extractSlug } from './linkedinApi';
+import type { LinkedInSession } from './linkedinApi';
+import { decrypt } from './encryption';
 
 const router = Router();
 
-const ENCRYPTION_KEY = process.env.SESSION_ENCRYPTION_KEY || 'wassel-session-key-2026-secure!!';
-
-function decrypt(text: string): string {
-  if (!text) return '';
-  if (!text.includes(':')) return text;
-  try {
-    const [ivHex, encrypted] = text.split(':');
-    const iv = Buffer.from(ivHex, 'hex');
-    const decipher = crypto.createDecipheriv('aes-256-cbc',
-      crypto.scryptSync(ENCRYPTION_KEY, 'salt', 32), iv);
-    let decrypted = decipher.update(encrypted, 'hex', 'utf8');
-    decrypted += decipher.final('utf8');
-    return decrypted;
-  } catch {
-    return text;
-  }
-}
-
-// Helper: render template variables from prospect data
 function renderTemplate(template: string, prospect: any): string {
   if (!template) return '';
-  const firstName = (prospect?.name || '').split(' ')[0] || '';
-  const fullName = prospect?.name || '';
+  const name = prospect?.name || '';
+  const firstName = name.split(' ')[0] || '';
   const company = prospect?.company || '';
   return template
     .replace(/\{\{firstName\}\}/gi, firstName)
-    .replace(/\{\{name\}\}/gi, fullName)
-    .replace(/\{\{fullName\}\}/gi, fullName)
+    .replace(/\{\{name\}\}/gi, name)
+    .replace(/\{\{fullName\}\}/gi, name)
     .replace(/\{\{company\}\}/gi, company);
 }
 
-// Helper: validate LinkedIn profile matches stored prospect
 function profileMatchesProspect(profileName: string, prospectName: string): boolean {
   if (!profileName || !prospectName) return true;
   const normalize = (s: string) => s.toLowerCase().replace(/[^a-z\u0600-\u06ff0-9]/g, '');
@@ -45,8 +34,7 @@ function profileMatchesProspect(profileName: string, prospectName: string): bool
   return pn.includes(sn) || sn.includes(pn) || pn === sn;
 }
 
-// Helper: get user's LinkedIn session
-async function getUserSession(userId: string) {
+async function getUserSession(userId: string): Promise<LinkedInSession | null> {
   const { data } = await supabase
     .from('linkedin_sessions')
     .select('*')
@@ -56,14 +44,22 @@ async function getUserSession(userId: string) {
 
   if (!data) return null;
 
-  return {
-    liAt: decrypt(data.li_at),
-    jsessionId: data.jsessionid ? decrypt(data.jsessionid) : '',
-    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-  };
+  try {
+    const liAt = decrypt(data.li_at);
+    const jsessionId = data.jsessionid ? decrypt(data.jsessionid) : '';
+    if (!liAt) return null;
+
+    return {
+      liAt,
+      jsessionId,
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+    };
+  } catch (e: any) {
+    console.error('[Cloud] Failed to decrypt session:', e.message);
+    return null;
+  }
 }
 
-// Helper: get user's team_id
 async function getUserTeamId(userId: string): Promise<string | null> {
   const { data } = await supabase
     .from('team_members')
@@ -73,7 +69,8 @@ async function getUserTeamId(userId: string): Promise<string | null> {
   return data?.team_id || null;
 }
 
-// POST /api/cloud/execute — Execute a single LinkedIn action
+// ─── POST /api/cloud/execute — Manual single action ────────
+
 router.post('/execute', async (req, res) => {
   try {
     const userId = (req as any).user?.id;
@@ -88,13 +85,12 @@ router.post('/execute', async (req, res) => {
       });
     }
 
-    // Extract profile slug
-    const slugMatch = (targetUrl || '').match(/\/in\/([^/?]+)/);
-    const slug = slugMatch ? slugMatch[1] : '';
+    const slug = extractSlug(targetUrl || '');
+    if (!slug) return res.status(400).json({ error: 'Invalid LinkedIn URL' });
 
     let result: any = { success: false, error: 'unknown_action' };
 
-    // Random delay (2-5 seconds) to mimic human behavior
+    // Human-like delay (2-5 seconds)
     await new Promise(r => setTimeout(r, 2000 + Math.random() * 3000));
 
     switch (actionType) {
@@ -112,7 +108,6 @@ router.post('/execute', async (req, res) => {
           await new Promise(r => setTimeout(r, 1000 + Math.random() * 2000));
           const renderedMessage = renderTemplate(message || '', { name: prospectName });
           result = await sendInvite(session, profile.profileId, renderedMessage);
-          result.profileName = profile.name;
         } else {
           result = { success: false, error: 'Profile not found: ' + slug };
         }
@@ -134,9 +129,13 @@ router.post('/execute', async (req, res) => {
         }
         break;
       }
+      case 'follow': {
+        result = await followProfile(session, slug);
+        break;
+      }
     }
 
-    // Log activity with team_id
+    // Log activity
     const teamId = await getUserTeamId(userId);
     await supabase.from('activity_logs').insert({
       user_id: userId,
@@ -144,7 +143,7 @@ router.post('/execute', async (req, res) => {
       campaign_id: campaignId || null,
       action_type: actionType,
       status: result.success ? 'success' : 'failed',
-      prospect_name: prospectName || result.profileName || slug,
+      prospect_name: prospectName || result.name || slug,
       linkedin_url: targetUrl,
       error_message: result.error || null,
       executed_at: new Date().toISOString(),
@@ -156,7 +155,8 @@ router.post('/execute', async (req, res) => {
   }
 });
 
-// POST /api/cloud/campaign/:id/launch — Launch campaign (cron handles execution)
+// ─── POST /api/cloud/campaign/:id/launch ───────────────────
+
 router.post('/campaign/:id/launch', async (req, res) => {
   try {
     const userId = (req as any).user?.id;
@@ -197,8 +197,9 @@ router.post('/campaign/:id/launch', async (req, res) => {
       .eq('campaign_id', campaignId)
       .in('status', ['pending', 'waiting', 'in_progress']);
 
-    // If no enrollment rows exist, auto-enroll all prospects in this campaign
     let pendingCount = existingCount || 0;
+
+    // If no enrollment rows exist, auto-enroll all prospects
     if (!pendingCount) {
       const { data: prospects } = await supabase
         .from('prospects')
@@ -209,7 +210,6 @@ router.post('/campaign/:id/launch', async (req, res) => {
         return res.status(400).json({ error: 'No prospects in this campaign' });
       }
 
-      // Create prospect_step_status rows for each prospect × each step
       const now = new Date().toISOString();
       const statusRows: any[] = [];
       for (const prospect of prospects) {
@@ -224,14 +224,12 @@ router.post('/campaign/:id/launch', async (req, res) => {
         }
       }
 
-      // Insert in chunks of 50
       for (let i = 0; i < statusRows.length; i += 50) {
-        const chunk = statusRows.slice(i, i + 50);
-        await supabase.from('prospect_step_status').insert(chunk);
+        await supabase.from('prospect_step_status').insert(statusRows.slice(i, i + 50));
       }
 
       pendingCount = statusRows.length;
-      console.log(`[CloudLaunch] Auto-enrolled ${prospects.length} prospects × ${steps.length} steps = ${statusRows.length} rows`);
+      console.log(`[CloudLaunch] Auto-enrolled ${prospects.length} prospects × ${steps.length} steps`);
     }
 
     // Reset any stuck in_progress back to pending
@@ -241,239 +239,48 @@ router.post('/campaign/:id/launch', async (req, res) => {
       .eq('campaign_id', campaignId)
       .eq('status', 'in_progress');
 
-    // Update campaign status to active
+    // Activate campaign
     await supabase
       .from('campaigns')
       .update({ status: 'active', started_at: new Date().toISOString() })
       .eq('id', campaignId);
 
-    // Log campaign launch activity
+    // Log launch
     const teamId = campaign.team_id || await getUserTeamId(userId);
     await supabase.from('activity_logs').insert({
       user_id: userId,
       team_id: teamId,
       campaign_id: campaignId,
-      action_type: 'visit',
+      action_type: 'campaign_launch',
       status: 'success',
       prospect_name: `Campaign "${campaign.name}" launched`,
       executed_at: new Date().toISOString(),
     });
 
-    // Return immediately — cron will handle execution every minute
     res.json({
       success: true,
-      message: 'Campaign launched — cloud cron will process actions every minute',
+      message: 'Campaign launched — cron will process actions every minute',
       prospects: pendingCount,
-      steps: steps?.length || 0,
+      steps: steps.length,
     });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// POST /api/cloud/campaign/:id/tick — DISABLED: cron-only processing to prevent duplicates
-router.post('/campaign/:id/tick', async (req, res) => {
-  return res.json({ processed: false, reason: 'disabled_cron_only' });
-  // @ts-ignore — dead code below kept for reference
-  try {
-    const userId = (req as any).user?.id;
-    if (!userId) return res.status(401).json({ error: 'Auth required' });
+// ─── POST /api/cloud/campaign/:id/tick — DISABLED ──────────
+// All execution handled by /api/cron/campaign-runner
 
-    const campaignId = req.params.id;
-
-    const session = await getUserSession(userId);
-    if (!session) return res.json({ processed: false, reason: 'no_session' });
-
-    // Get campaign
-    const { data: campaign } = await supabase
-      .from('campaigns')
-      .select('id, team_id, name, status')
-      .eq('id', campaignId)
-      .single();
-
-    if (!campaign || campaign.status !== 'active') {
-      return res.json({ processed: false, reason: 'not_active' });
-    }
-
-    // Get ONE pending prospect_step_status
-    const now = new Date().toISOString();
-    const { data: pendingSteps } = await supabase
-      .from('prospect_step_status')
-      .select(`
-        id, prospect_id, step_id, status,
-        campaign_steps!inner ( step_number, step_type, name, message_template ),
-        prospects!inner ( linkedin_url, name, company )
-      `)
-      .eq('campaign_id', campaignId)
-      .eq('status', 'pending')
-      .or(`scheduled_at.is.null,scheduled_at.lte.${now}`)
-      .order('created_at', { ascending: true })
-      .limit(1);
-
-    if (!pendingSteps?.length) {
-      // Check if campaign is done
-      const { count } = await supabase
-        .from('prospect_step_status')
-        .select('*', { count: 'exact', head: true })
-        .eq('campaign_id', campaignId)
-        .in('status', ['pending', 'in_progress', 'waiting']);
-
-      if (!count) {
-        await supabase
-          .from('campaigns')
-          .update({ status: 'completed', completed_at: now })
-          .eq('id', campaignId);
-        return res.json({ processed: false, reason: 'campaign_completed' });
-      }
-      return res.json({ processed: false, reason: 'no_pending_steps' });
-    }
-
-    const pss = pendingSteps[0];
-    const stepDef = (pss as any).campaign_steps;
-    const prospect = (pss as any).prospects;
-
-    if (!prospect?.linkedin_url) return res.json({ processed: false, reason: 'no_url' });
-
-    const slug = prospect.linkedin_url.match(/\/in\/([^/?]+)/)?.[1];
-    if (!slug) return res.json({ processed: false, reason: 'bad_url' });
-
-    const actionType = stepDef.step_type === 'invitation' ? 'connect'
-      : stepDef.step_type === 'message' ? 'message' : 'visit';
-
-    // Atomic claim: only update if still 'pending' (prevents duplicate processing)
-    const { data: claimed } = await supabase
-      .from('prospect_step_status')
-      .update({ status: 'in_progress' })
-      .eq('id', pss.id)
-      .eq('status', 'pending')
-      .select('id');
-
-    if (!claimed?.length) {
-      return res.json({ processed: false, reason: 'already_claimed' });
-    }
-
-    // Log in_progress for live UI
-    await supabase.from('activity_logs').insert({
-      user_id: userId,
-      team_id: campaign.team_id,
-      campaign_id: campaignId,
-      action_type: actionType,
-      status: 'in_progress',
-      prospect_name: prospect.name || slug,
-      linkedin_url: prospect.linkedin_url,
-      executed_at: new Date().toISOString(),
-    });
-
-    let result: any = { success: false, error: 'unknown' };
-
-    try {
-      // Random delay to mimic human behavior
-      await new Promise(r => setTimeout(r, 2000 + Math.random() * 3000));
-
-      switch (actionType) {
-        case 'visit':
-          result = await visitProfile(session, slug);
-          break;
-        case 'connect': {
-          const profile = await visitProfile(session, slug);
-          if (profile.success && profile.profileId) {
-            if (prospect.name && profile.name && !profileMatchesProspect(profile.name, prospect.name)) {
-              result = { success: false, error: `identity_mismatch` };
-              break;
-            }
-            await new Promise(r => setTimeout(r, 2000 + Math.random() * 2000));
-            const note = renderTemplate(stepDef.message_template || '', prospect);
-            result = await sendInvite(session, profile.profileId, note);
-          } else {
-            result = { success: false, error: 'profile_not_found' };
-          }
-          break;
-        }
-        case 'message': {
-          const profile = await visitProfile(session, slug);
-          if (profile.success && profile.profileId) {
-            if (prospect.name && profile.name && !profileMatchesProspect(profile.name, prospect.name)) {
-              result = { success: false, error: `identity_mismatch` };
-              break;
-            }
-            const urn = `urn:li:fsd_profile:${profile.profileId}`;
-            await new Promise(r => setTimeout(r, 2000 + Math.random() * 2000));
-            const msg = renderTemplate(stepDef.message_template || '', prospect);
-            result = await sendMessage(session, urn, msg);
-          } else {
-            result = { success: false, error: 'profile_not_found' };
-          }
-          break;
-        }
-      }
-    } catch (e: any) {
-      result = { success: false, error: e.message };
-    }
-
-    const finalStatus = result.success ? 'completed' : 'failed';
-
-    // Update prospect_step_status
-    await supabase
-      .from('prospect_step_status')
-      .update({ status: finalStatus, executed_at: new Date().toISOString(), error_message: result.error || null })
-      .eq('id', pss.id);
-
-    // Log final status
-    await supabase.from('activity_logs').insert({
-      user_id: userId,
-      team_id: campaign.team_id,
-      campaign_id: campaignId,
-      action_type: actionType,
-      status: finalStatus,
-      prospect_name: prospect.name || slug,
-      linkedin_url: prospect.linkedin_url,
-      error_message: result.error || null,
-      executed_at: new Date().toISOString(),
-    });
-
-    // If success, unlock next step
-    if (result.success) {
-      const { data: nextStepDef } = await supabase
-        .from('campaign_steps')
-        .select('id, delay_days')
-        .eq('campaign_id', campaignId)
-        .eq('step_number', stepDef.step_number + 1)
-        .single();
-
-      if (nextStepDef) {
-        const delayDays = nextStepDef.delay_days || 0;
-        const scheduledAt = delayDays > 0
-          ? new Date(Date.now() + delayDays * 86400000).toISOString()
-          : new Date().toISOString();
-
-        await supabase
-          .from('prospect_step_status')
-          .update({ status: 'pending', scheduled_at: scheduledAt })
-          .eq('prospect_id', pss.prospect_id)
-          .eq('campaign_id', campaignId)
-          .eq('step_id', nextStepDef.id)
-          .eq('status', 'waiting');
-      }
-
-      if (actionType === 'connect') {
-        await supabase.from('prospects').update({ connection_status: 'pending' }).eq('id', pss.prospect_id);
-      }
-    }
-
-    res.json({
-      processed: true,
-      prospect: prospect.name || slug,
-      action: actionType,
-      step: stepDef.step_number,
-      success: result.success,
-      error: result.error || null,
-    });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
+router.post('/campaign/:id/tick', async (_req, res) => {
+  return res.json({
+    ok: true,
+    disabled: true,
+    message: 'Cron handles all execution. /tick is disabled to prevent duplicate actions.',
+  });
 });
 
-// GET /api/cloud/session-check
+// ─── GET /api/cloud/session-check ──────────────────────────
+
 router.get('/session-check', async (req, res) => {
   const userId = (req as any).user?.id;
   if (!userId) return res.json({ hasSession: false });
