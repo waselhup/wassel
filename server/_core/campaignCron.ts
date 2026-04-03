@@ -86,15 +86,6 @@ async function getUserSession(userId: string): Promise<LinkedInSession | null> {
 
   if (!data) return null;
 
-  // Check if session is expired
-  if (data.expires_at && new Date(data.expires_at) < new Date()) {
-    await supabase
-      .from('linkedin_sessions')
-      .update({ status: 'expired' })
-      .eq('id', data.id);
-    return null;
-  }
-
   let liAt = '';
   let jsessionId = '';
 
@@ -467,18 +458,15 @@ async function processCampaignAction(
   }
 
   // ── On session_expired: revert to pending for retry ──
+  // Do NOT mark the session as expired — it could be a transient LinkedIn issue.
+  // Only the extension (on next cookie refresh) or manual revoke should change session status.
   if (!result.success && result.error?.includes('session_expired')) {
     await supabase
       .from('prospect_step_status')
       .update({ status: 'pending', error_message: 'session_expired - will retry' })
       .eq('id', pss.id);
 
-    // Mark session as expired
-    await supabase
-      .from('linkedin_sessions')
-      .update({ status: 'expired' })
-      .eq('user_id', userId)
-      .eq('status', 'active');
+    console.log(`[Cron] Session may be expired for user ${userId.slice(0, 8)}… — will retry on next run`);
   }
 
   return {

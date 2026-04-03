@@ -4543,10 +4543,6 @@ function stepTypeToActionType(stepType) {
 async function getUserSession2(userId) {
   const { data } = await supabase.from("linkedin_sessions").select("*").eq("user_id", userId).eq("status", "active").single();
   if (!data) return null;
-  if (data.expires_at && new Date(data.expires_at) < /* @__PURE__ */ new Date()) {
-    await supabase.from("linkedin_sessions").update({ status: "expired" }).eq("id", data.id);
-    return null;
-  }
   let liAt = "";
   let jsessionId = "";
   try {
@@ -4781,7 +4777,7 @@ async function processCampaignAction(campaign, userId, teamId, session) {
   }
   if (!result.success && result.error?.includes("session_expired")) {
     await supabase.from("prospect_step_status").update({ status: "pending", error_message: "session_expired - will retry" }).eq("id", pss.id);
-    await supabase.from("linkedin_sessions").update({ status: "expired" }).eq("user_id", userId).eq("status", "active");
+    console.log(`[Cron] Session may be expired for user ${userId.slice(0, 8)}\u2026 \u2014 will retry on next run`);
   }
   return {
     campaign: campaign.name,
