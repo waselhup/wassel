@@ -61554,17 +61554,30 @@ router18.get("/campaign-runner", async (req, res) => {
     if (!activeCampaigns?.length) {
       return res.json({ ok: true, message: "No active campaigns", processed: 0 });
     }
-    const debug = {
-      activeCampaigns: activeCampaigns.map((c) => ({ id: c.id, name: c.name, created_by: c.created_by, team_id: c.team_id }))
-    };
-    const userCampaigns = {};
+    const teamCampaigns = {};
     for (const campaign of activeCampaigns) {
-      const userId = campaign.created_by;
-      if (!userId) continue;
-      if (!userCampaigns[userId]) userCampaigns[userId] = [];
-      userCampaigns[userId].push(campaign);
+      const key = campaign.team_id;
+      if (!key) continue;
+      if (!teamCampaigns[key]) teamCampaigns[key] = [];
+      teamCampaigns[key].push(campaign);
     }
-    debug.userGroups = Object.keys(userCampaigns).length;
+    const userCampaigns = {};
+    for (const [teamId, campaigns] of Object.entries(teamCampaigns)) {
+      const { data: members } = await supabase.from("team_members").select("user_id").eq("team_id", teamId);
+      if (!members?.length) continue;
+      let resolvedUserId = null;
+      for (const m of members) {
+        const { data: sess } = await supabase.from("linkedin_sessions").select("id").eq("user_id", m.user_id).eq("status", "active").limit(1);
+        if (sess?.length) {
+          resolvedUserId = m.user_id;
+          break;
+        }
+      }
+      if (resolvedUserId) {
+        if (!userCampaigns[resolvedUserId]) userCampaigns[resolvedUserId] = [];
+        userCampaigns[resolvedUserId].push(...campaigns);
+      }
+    }
     for (const [userId, campaigns] of Object.entries(userCampaigns)) {
       const session = await getUserSession2(userId);
       if (!session) {
@@ -61728,7 +61741,7 @@ router18.get("/campaign-runner", async (req, res) => {
       }
       if (Date.now() - startTime > 8e3) break;
     }
-    return res.json({ ok: true, processed: results.length, results, debug });
+    return res.json({ ok: true, processed: results.length, results });
   } catch (err) {
     console.error("[CampaignCron] Error:", err.message);
     return res.status(500).json({ error: err.message });

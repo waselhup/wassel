@@ -118,21 +118,46 @@ router.get('/campaign-runner', async (req: any, res: any) => {
       return res.json({ ok: true, message: 'No active campaigns', processed: 0 });
     }
 
-    // Debug: log what we found
-    const debug: any = {
-      activeCampaigns: activeCampaigns.map(c => ({ id: c.id, name: c.name, created_by: c.created_by, team_id: c.team_id })),
-    };
-
-    // Group by created_by (user) to manage sessions efficiently
-    const userCampaigns: Record<string, any[]> = {};
+    // Group by team_id, then resolve user from team_members
+    // (created_by is often null, so we look up the team owner instead)
+    const teamCampaigns: Record<string, any[]> = {};
     for (const campaign of activeCampaigns) {
-      const userId = campaign.created_by;
-      if (!userId) continue;
-      if (!userCampaigns[userId]) userCampaigns[userId] = [];
-      userCampaigns[userId].push(campaign);
+      const key = campaign.team_id;
+      if (!key) continue;
+      if (!teamCampaigns[key]) teamCampaigns[key] = [];
+      teamCampaigns[key].push(campaign);
     }
 
-    debug.userGroups = Object.keys(userCampaigns).length;
+    // Resolve team_id → user_id (first member with an active LinkedIn session)
+    const userCampaigns: Record<string, any[]> = {};
+    for (const [teamId, campaigns] of Object.entries(teamCampaigns)) {
+      const { data: members } = await supabase
+        .from('team_members')
+        .select('user_id')
+        .eq('team_id', teamId);
+
+      if (!members?.length) continue;
+
+      // Find first member who has an active LinkedIn session
+      let resolvedUserId: string | null = null;
+      for (const m of members) {
+        const { data: sess } = await supabase
+          .from('linkedin_sessions')
+          .select('id')
+          .eq('user_id', m.user_id)
+          .eq('status', 'active')
+          .limit(1);
+        if (sess?.length) {
+          resolvedUserId = m.user_id;
+          break;
+        }
+      }
+
+      if (resolvedUserId) {
+        if (!userCampaigns[resolvedUserId]) userCampaigns[resolvedUserId] = [];
+        userCampaigns[resolvedUserId].push(...campaigns);
+      }
+    }
 
     for (const [userId, campaigns] of Object.entries(userCampaigns)) {
       // Get user's LinkedIn session
@@ -387,7 +412,7 @@ router.get('/campaign-runner', async (req: any, res: any) => {
       if (Date.now() - startTime > 8000) break;
     }
 
-    return res.json({ ok: true, processed: results.length, results, debug });
+    return res.json({ ok: true, processed: results.length, results });
   } catch (err: any) {
     console.error('[CampaignCron] Error:', err.message);
     return res.status(500).json({ error: err.message });
