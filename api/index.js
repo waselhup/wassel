@@ -61368,6 +61368,7 @@ router17.post("/campaign/:id/launch", async (req, res) => {
   }
 });
 router17.post("/campaign/:id/tick", async (req, res) => {
+  return res.json({ processed: false, reason: "disabled_cron_only" });
   try {
     const userId = req.user?.id;
     if (!userId) return res.status(401).json({ error: "Auth required" });
@@ -61745,11 +61746,15 @@ router18.get("/campaign-runner", async (req, res) => {
           if (nextStepDef) {
             const delayDays = nextStepDef.delay_days || 0;
             const scheduledAt = delayDays > 0 ? new Date(Date.now() + delayDays * 864e5).toISOString() : (/* @__PURE__ */ new Date()).toISOString();
-            await supabase.from("prospect_step_status").update({ status: "pending", scheduled_at: scheduledAt }).eq("prospect_id", pss.prospect_id).eq("campaign_id", campaign.id).eq("step_id", nextStepDef.id).eq("status", "waiting");
+            const { data: unlocked } = await supabase.from("prospect_step_status").update({ status: "pending", scheduled_at: scheduledAt }).eq("prospect_id", pss.prospect_id).eq("campaign_id", campaign.id).eq("step_id", nextStepDef.id).eq("status", "waiting").select("id");
+            console.log(`[Cron] Step ${currentStepNumber}\u2192${currentStepNumber + 1} for ${prospect.name}: unlocked=${unlocked?.length || 0}`);
           }
           if (actionType === "connect") {
             await supabase.from("prospects").update({ connection_status: "pending" }).eq("id", pss.prospect_id);
           }
+        }
+        if (!result.success && result.error?.includes("session_expired")) {
+          await supabase.from("prospect_step_status").update({ status: "pending", error_message: result.error }).eq("id", pss.id);
         }
         results.push({
           campaign: campaign.name,

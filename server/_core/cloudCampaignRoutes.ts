@@ -271,10 +271,10 @@ router.post('/campaign/:id/launch', async (req, res) => {
   }
 });
 
-// POST /api/cloud/campaign/:id/tick — Process one pending step (client-driven)
-// Frontend polls this every ~10s while campaign is active, since Vercel Hobby
-// only allows daily cron. This is the real-time processing engine.
+// POST /api/cloud/campaign/:id/tick — DISABLED: cron-only processing to prevent duplicates
 router.post('/campaign/:id/tick', async (req, res) => {
+  return res.json({ processed: false, reason: 'disabled_cron_only' });
+  // @ts-ignore — dead code below kept for reference
   try {
     const userId = (req as any).user?.id;
     if (!userId) return res.status(401).json({ error: 'Auth required' });

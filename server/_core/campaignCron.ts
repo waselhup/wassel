@@ -393,13 +393,16 @@ router.get('/campaign-runner', async (req: any, res: any) => {
               : new Date().toISOString();
 
             // Unlock next step for this prospect
-            await supabase
+            const { data: unlocked } = await supabase
               .from('prospect_step_status')
               .update({ status: 'pending', scheduled_at: scheduledAt })
               .eq('prospect_id', pss.prospect_id)
               .eq('campaign_id', campaign.id)
               .eq('step_id', nextStepDef.id)
-              .eq('status', 'waiting');
+              .eq('status', 'waiting')
+              .select('id');
+
+            console.log(`[Cron] Step ${currentStepNumber}→${currentStepNumber+1} for ${prospect.name}: unlocked=${unlocked?.length || 0}`);
           }
 
           // Update prospect connection_status if invite was sent
@@ -409,6 +412,14 @@ router.get('/campaign-runner', async (req: any, res: any) => {
               .update({ connection_status: 'pending' })
               .eq('id', pss.prospect_id);
           }
+        }
+
+        // If session_expired, mark as pending again to retry later
+        if (!result.success && result.error?.includes('session_expired')) {
+          await supabase
+            .from('prospect_step_status')
+            .update({ status: 'pending', error_message: result.error })
+            .eq('id', pss.id);
         }
 
         results.push({
