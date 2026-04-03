@@ -18,6 +18,7 @@ import stripeRoutes from "./stripeRoutes";
 import sessionRoutes from "./sessionRoutes";
 import automationRoutes from "./automationRoutes";
 import cloudCampaignRoutes from "./cloudCampaignRoutes";
+import campaignCronRouter from "./campaignCron";
 import { appRouter } from "../routers";
 import { createContext, expressAuthMiddleware, requireRole } from "./context";
 
@@ -91,6 +92,9 @@ app.use("/api/automation", expressAuthMiddleware, automationRoutes);
 
 // Cloud campaign execution via LinkedIn Voyager API
 app.use("/api/cloud", expressAuthMiddleware, cloudCampaignRoutes);
+
+// Campaign cron runner (called by Vercel Cron — no user auth, uses CRON_SECRET)
+app.use("/api/cron", campaignCronRouter);
 
 // Stripe: webhook has NO auth (raw body needed), other routes need auth
 app.use("/api/stripe", stripeRoutes);
