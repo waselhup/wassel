@@ -222,7 +222,7 @@ export async function sendInvite(
       body.message = note.trim().slice(0, 300);
     }
 
-    const res = await fetch(
+    let res = await fetch(
       'https://www.linkedin.com/voyager/api/growth/normInvitations',
       {
         method: 'POST',
@@ -237,7 +237,18 @@ export async function sendInvite(
       return { success: false, error: 'session_expired' };
     }
 
-    if (res.ok || res.status === 201) {
+    if (res.status >= 300 && res.status < 400 && res.headers.get('location')) {
+      const loc = res.headers.get('location')!;
+      res = await fetch(loc.startsWith('http') ? loc : `https://www.linkedin.com${loc}`, {
+        method: 'POST',
+        headers: getHeaders(session, 'application/json'),
+        body: JSON.stringify(body),
+        redirect: 'manual',
+        ...getFetchOpts(),
+      });
+    }
+
+    if (res.ok || res.status === 201 || res.status === 200) {
       return { success: true };
     }
 
@@ -287,7 +298,7 @@ async function sendInviteV2(
       body.customMessage = note.trim().slice(0, 300);
     }
 
-    const res = await fetch(
+    let res = await fetch(
       'https://www.linkedin.com/voyager/api/voyagerRelationshipsDashMemberRelationships?action=verifyQuotaAndCreate',
       {
         method: 'POST',
@@ -302,6 +313,17 @@ async function sendInviteV2(
       return { success: false, error: 'session_expired' };
     }
 
+    if (res.status >= 300 && res.status < 400 && res.headers.get('location')) {
+      const loc = res.headers.get('location')!;
+      res = await fetch(loc.startsWith('http') ? loc : `https://www.linkedin.com${loc}`, {
+        method: 'POST',
+        headers: getHeaders(session, 'application/json'),
+        body: JSON.stringify(body),
+        redirect: 'manual',
+        ...getFetchOpts(),
+      });
+    }
+
     if (res.ok || res.status === 201 || res.status === 200) {
       return { success: true };
     }
@@ -312,7 +334,7 @@ async function sendInviteV2(
     }
 
     const errText = await res.text().catch(() => '');
-    return { success: false, error: `HTTP ${res.status} (v2): ${errText.slice(0, 300)}` };
+    return { success: false, error: `HTTP ${res.status}: ${errText.slice(0, 300)}` };
   } catch (err: any) {
     return { success: false, error: `v2_invite_error: ${err.message}` };
   }
