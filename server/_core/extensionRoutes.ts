@@ -700,7 +700,13 @@ router.post('/report-action', async (req: Request, res: Response) => {
         }
 
         // On non-session failure: revert to pending for retry (max 2 retries PER PROSPECT)
-        if (!success && errorMsg && !errorMsg.includes('session_expired') && !errorMsg.includes('delete me') && !errorMsg.includes('401')) {
+        // Skip retry for "already invited" errors (422/409) — these are not real failures
+        const isAlreadyInvited = errorMsg && (
+            errorMsg.includes('already_invited') ||
+            errorMsg.includes('422') ||
+            errorMsg.includes('409')
+        );
+        if (!success && errorMsg && !isAlreadyInvited && !errorMsg.includes('session_expired') && !errorMsg.includes('delete me') && !errorMsg.includes('401')) {
             // Count how many times THIS specific prospect+action has failed
             const { count: prospectFails } = await supabase
                 .from('activity_logs')

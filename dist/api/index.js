@@ -6592,6 +6592,12 @@ async function createContext(opts) {
   try {
     const authHeader = opts.req.headers.authorization;
     user = await getSupabaseUser(authHeader);
+    if (!user && authHeader?.startsWith("Bearer ")) {
+      user = verifyExtensionToken(authHeader.slice(7));
+    }
+    if (!user && authHeader?.startsWith("Bearer ")) {
+      user = await recoverUserFromExpiredJwt(authHeader.slice(7));
+    }
   } catch (error) {
     console.error("Context creation error:", error);
     user = null;

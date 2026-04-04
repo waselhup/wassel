@@ -59,8 +59,11 @@ function getHeaders(session: LinkedInSession, contentType?: string) {
     'user-agent': session.userAgent || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
     'x-li-lang': 'en_US',
     'x-restli-protocol-version': '2.0.0',
+    'x-li-page-instance': 'urn:li:page:d_flagship3_profile_view_base;',
     'x-li-track': '{"clientVersion":"1.13.8806","mpVersion":"1.13.8806","osName":"web","timezoneOffset":3,"timezone":"Asia/Riyadh","deviceFormFactor":"DESKTOP","mpName":"voyager-web"}',
     'accept': 'application/vnd.linkedin.normalized+json+2.1',
+    'origin': 'https://www.linkedin.com',
+    'referer': 'https://www.linkedin.com/',
   };
   if (contentType) {
     headers['content-type'] = contentType;
@@ -95,13 +98,13 @@ function isSessionExpired(status: number, locationHeader?: string | null, setCoo
         return true;
       }
     }
-    // 302 redirect to itself or to the same Voyager API = session issue
-    // (LinkedIn does this when cookie is dead)
-    if (locationHeader && locationHeader.includes('/voyager/api/')) {
-      console.warn('[LinkedIn] Redirect to Voyager API — likely session issue');
+    // 302 redirect to itself or to the same Voyager API = session issue ONLY IF it's a login challenge
+    // (LinkedIn returns 301/308 simply to normalize URLs from some datacenters)
+    if (locationHeader && locationHeader.includes('/voyager/api/') && status === 302) {
+      console.warn('[LinkedIn] 302 Redirect to Voyager API — likely session issue');
       return true;
     }
-    // Other redirects (profile moved, etc.) are NOT session expiry
+    // Other redirects (301, 308, profile moved, etc.) are NOT session expiry
     return false;
   }
   return false;
@@ -187,7 +190,14 @@ export async function visitProfile(session: LinkedInSession, profileSlug: string
   }
 }
 
-// ─── SEND CONNECTION REQUEST (INVITE) ──────────────────────
+// ─── SEND CONNECTION REQUEST (INVITE) ──────────────────────────
+
+/** Generate a trackingId matching LinkedIn's format (base64 of 16 random bytes) */
+function generateTrackingId(): string {
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  return Buffer.from(bytes).toString('base64');
+}
 
 export async function sendInvite(
   session: LinkedInSession,
@@ -195,8 +205,11 @@ export async function sendInvite(
   note?: string
 ) {
   try {
+    const trackingId = generateTrackingId();
+
     // Method 1: normInvitations (classic, still works in 2026)
     const body: any = {
+      trackingId,
       invitee: {
         'com.linkedin.voyager.growth.invitation.InviteeProfile': {
           profileId: profileId,
@@ -228,10 +241,15 @@ export async function sendInvite(
       return { success: true };
     }
 
+    // 422/409 = already invited — treat as success
+    if (res.status === 422 || res.status === 409) {
+      return { success: true, alreadyInvited: true };
+    }
+
     const errText = await res.text().catch(() => '');
 
-    // If normInvitations fails with 422, try the newer endpoint
-    if (res.status === 422 || res.status === 400) {
+    // If normInvitations fails with 400, try the newer endpoint
+    if (res.status === 400) {
       return await sendInviteV2(session, profileId, note);
     }
 
@@ -251,11 +269,13 @@ async function sendInviteV2(
   note?: string
 ) {
   try {
+    const trackingId = generateTrackingId();
     const entityUrn = profileId.startsWith('urn:')
       ? profileId
       : `urn:li:fsd_profile:${profileId}`;
 
     const body: any = {
+      trackingId,
       invitee: {
         inviteeUnion: {
           memberProfile: entityUrn,
@@ -284,6 +304,11 @@ async function sendInviteV2(
 
     if (res.ok || res.status === 201 || res.status === 200) {
       return { success: true };
+    }
+
+    // 422/409 = already invited — treat as success
+    if (res.status === 422 || res.status === 409) {
+      return { success: true, alreadyInvited: true };
     }
 
     const errText = await res.text().catch(() => '');

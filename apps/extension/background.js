@@ -1,5 +1,5 @@
 // ============================================================
-// WASSEL EXTENSION v6.0.0 — Background Service Worker
+// WASSEL EXTENSION v6.2.0 — Background Service Worker
 // HYBRID: Extension executes LinkedIn Voyager API from browser
 // (user's real IP, native cookies) — no LinkedIn tab needed.
 // Server provides pending actions, extension reports results.
@@ -11,7 +11,7 @@ const POLL_INTERVAL_MINUTES = 1; // Poll every 1 minute
 const MIN_DELAY_MS = 3000;  // Min delay between actions
 const MAX_DELAY_MS = 8000;  // Max delay between actions
 
-console.log('[Wassel] 🚀 Background v6.1.0 loaded (extension-execution)', new Date().toLocaleTimeString());
+console.log('[Wassel] 🚀 Background v6.2.0 loaded (extension-execution)', new Date().toLocaleTimeString());
 
 // ============================================================================
 // SAFE MESSAGE SENDING — prevents "Receiving end does not exist" crashes
@@ -371,6 +371,9 @@ async function executeInLinkedInContext(tabId, url, options) {
  * The ENTIRE fetch runs inside the LinkedIn tab in MAIN world —
  * the page reads its own CSRF token, sends its own cookies.
  * Zero chance of CSRF mismatch.
+ *
+ * v6.2.0 FIX: Added trackingId + origin/referer headers to match
+ * what LinkedIn's own frontend sends when clicking "Connect".
  */
 async function linkedinSendInvite(profileId, message) {
   const { liAt } = await getLinkedInCookies();
@@ -394,28 +397,44 @@ async function linkedinSendInvite(profileId, message) {
           return m ? m[1] : '';
         }
 
+        // Generate trackingId — LinkedIn's frontend sends a base64-encoded
+        // 16-byte random value with every invite request.
+        function generateTrackingId() {
+          const bytes = new Uint8Array(16);
+          crypto.getRandomValues(bytes);
+          // Convert to base64
+          let binary = '';
+          bytes.forEach(b => binary += String.fromCharCode(b));
+          return btoa(binary);
+        }
+
         const csrf = getCsrf();
         if (!csrf) return { error: 'no_csrf_token' };
 
+        const trackingId = generateTrackingId();
+
+        // Headers that match what LinkedIn's own frontend sends
+        // when you click "Connect" on a profile page.
         const headers = {
           'csrf-token': csrf,
           'accept': 'application/vnd.linkedin.normalized+json+2.1',
           'x-restli-protocol-version': '2.0.0',
           'content-type': 'application/json; charset=UTF-8',
           'x-li-lang': 'en_US',
-          'x-li-track': JSON.stringify({
-            clientVersion: '1.13.8806', mpVersion: '1.13.8806',
-            osName: 'web', timezoneOffset: 3, timezone: 'Asia/Riyadh',
-            deviceFormFactor: 'DESKTOP', mpName: 'voyager-web',
-          }),
+          'x-li-track': '{"clientVersion":"1.13.8806","mpVersion":"1.13.8806","osName":"web","timezoneOffset":3,"timezone":"Asia/Riyadh","deviceFormFactor":"DESKTOP","mpName":"voyager-web"}',
+          'x-li-page-instance': 'urn:li:page:d_flagship3_profile_view_base;' + generateTrackingId(),
         };
 
         const entityUrn = `urn:li:fsd_profile:${pid}`;
         let lastError = '';
+        let lastStatus = 0;
 
         // Method 1: Modern dash verifyQuotaAndCreate
         try {
-          const body = { invitee: { inviteeUnion: { memberProfile: entityUrn } } };
+          const body = {
+            trackingId,
+            invitee: { inviteeUnion: { memberProfile: entityUrn } },
+          };
           if (msg && msg.trim()) body.customMessage = msg.trim().substring(0, 300);
 
           const res = await fetch(
@@ -423,22 +442,26 @@ async function linkedinSendInvite(profileId, message) {
             { method: 'POST', headers, credentials: 'include', body: JSON.stringify(body) }
           );
 
+          lastStatus = res.status;
           if (res.status === 429) return { error: 'rate_limited', status: 429 };
           if (res.status === 401 || res.status === 403) return { error: 'session_expired', status: res.status };
           if (res.ok) return { success: true, method: 'dash', status: res.status };
-          // 422 = already invited or already connected — treat as success
-          if (res.status === 422) return { success: true, method: 'dash_already_invited', status: 422 };
+          // 422 = already invited, 409 = conflict/already connected — treat as success
+          if (res.status === 422 || res.status === 409) return { success: true, method: 'dash_already_invited', status: res.status };
 
           let detail = '';
-          try { detail = JSON.stringify(await res.json()).substring(0, 300); } catch {}
+          try { detail = JSON.stringify(await res.json()).substring(0, 500); } catch {}
           lastError = `dash_${res.status}: ${detail}`;
+          console.warn('[Wassel-Invite] Method 1 (dash) failed:', res.status, detail);
         } catch (e) {
           lastError = `dash_err: ${e.message}`;
+          console.warn('[Wassel-Invite] Method 1 (dash) exception:', e.message);
         }
 
         // Method 2: Legacy normInvitations
         try {
           const body = {
+            trackingId,
             invitee: {
               'com.linkedin.voyager.growth.invitation.InviteeProfile': { profileId: pid },
             },
@@ -450,41 +473,49 @@ async function linkedinSendInvite(profileId, message) {
             { method: 'POST', headers, credentials: 'include', body: JSON.stringify(body) }
           );
 
+          lastStatus = res.status;
           if (res.status === 429) return { error: 'rate_limited', status: 429 };
           if (res.status === 401 || res.status === 403) return { error: 'session_expired', status: res.status };
           if (res.ok || res.status === 201) return { success: true, method: 'growth', status: res.status };
-          // 422 = already invited — treat as success
-          if (res.status === 422) return { success: true, method: 'growth_already_invited', status: 422 };
+          // 422/409 = already invited — treat as success
+          if (res.status === 422 || res.status === 409) return { success: true, method: 'growth_already_invited', status: res.status };
 
           let detail = '';
-          try { detail = JSON.stringify(await res.json()).substring(0, 300); } catch {}
+          try { detail = JSON.stringify(await res.json()).substring(0, 500); } catch {}
           lastError = `growth_${res.status}: ${detail}`;
+          console.warn('[Wassel-Invite] Method 2 (growth) failed:', res.status, detail);
         } catch (e) {
           lastError = `growth_err: ${e.message}`;
+          console.warn('[Wassel-Invite] Method 2 (growth) exception:', e.message);
         }
 
-        // Method 3: Direct relationships invitation
+        // Method 3: Direct relationships invitation (no action= param)
         try {
           const body = {
+            trackingId,
             invitee: { inviteeUnion: { memberProfile: entityUrn } },
           };
           if (msg && msg.trim()) body.customMessage = msg.trim().substring(0, 300);
 
           const res = await fetch(
-            'https://www.linkedin.com/voyager/api/voyagerRelationshipsDashMemberRelationships',
+            'https://www.linkedin.com/voyager/api/voyagerRelationshipsDashMemberRelationships?action=verifyQuotaAndCreate',
             { method: 'POST', headers, credentials: 'include', body: JSON.stringify(body) }
           );
 
+          lastStatus = res.status;
           if (res.ok || res.status === 201) return { success: true, method: 'rel', status: res.status };
+          if (res.status === 422 || res.status === 409) return { success: true, method: 'rel_already_invited', status: res.status };
 
           let detail = '';
-          try { detail = JSON.stringify(await res.json()).substring(0, 300); } catch {}
+          try { detail = JSON.stringify(await res.json()).substring(0, 500); } catch {}
           lastError = `rel_${res.status}: ${detail}`;
+          console.warn('[Wassel-Invite] Method 3 (rel) failed:', res.status, detail);
         } catch (e) {
           lastError = `rel_err: ${e.message}`;
+          console.warn('[Wassel-Invite] Method 3 (rel) exception:', e.message);
         }
 
-        return { error: lastError || 'all_methods_failed' };
+        return { error: lastError || 'all_methods_failed', status: lastStatus };
       },
       args: [cleanId, message || ''],
     });
@@ -492,7 +523,7 @@ async function linkedinSendInvite(profileId, message) {
     const res = results?.[0]?.result;
     if (!res) return { success: false, error: 'script_no_result' };
 
-    console.log(`[Wassel] Invite result:`, JSON.stringify(res).substring(0, 200));
+    console.log(`[Wassel] Invite result for ${cleanId}:`, JSON.stringify(res).substring(0, 300));
 
     if (res.success) {
       console.log(`[Wassel] ✅ Invite sent via ${res.method} (status ${res.status})`);
@@ -1124,7 +1155,7 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
 // STARTUP
 // ============================================================================
 chrome.runtime.onInstalled.addListener(async () => {
-  console.log('[Wassel] Extension installed (v6.1.0 extension-execution)');
+  console.log('[Wassel] Extension installed (v6.2.0 extension-execution)');
   chrome.storage.local.set({ apiUrl: API_BASE });
 
   // Campaign executor: every 1 minute
@@ -1141,7 +1172,7 @@ chrome.runtime.onInstalled.addListener(async () => {
 });
 
 chrome.runtime.onStartup.addListener(async () => {
-  console.log('[Wassel] Chrome started (v6.1.0 extension-execution)');
+  console.log('[Wassel] Chrome started (v6.2.0 extension-execution)');
 
   chrome.alarms.create('campaignExecutor', { periodInMinutes: POLL_INTERVAL_MINUTES });
   chrome.alarms.create('tokenSync', { periodInMinutes: 30 });
