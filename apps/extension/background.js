@@ -426,6 +426,8 @@ async function linkedinSendInvite(profileId, message) {
           if (res.status === 429) return { error: 'rate_limited', status: 429 };
           if (res.status === 401 || res.status === 403) return { error: 'session_expired', status: res.status };
           if (res.ok) return { success: true, method: 'dash', status: res.status };
+          // 422 = already invited or already connected — treat as success
+          if (res.status === 422) return { success: true, method: 'dash_already_invited', status: 422 };
 
           let detail = '';
           try { detail = JSON.stringify(await res.json()).substring(0, 300); } catch {}
@@ -451,6 +453,8 @@ async function linkedinSendInvite(profileId, message) {
           if (res.status === 429) return { error: 'rate_limited', status: 429 };
           if (res.status === 401 || res.status === 403) return { error: 'session_expired', status: res.status };
           if (res.ok || res.status === 201) return { success: true, method: 'growth', status: res.status };
+          // 422 = already invited — treat as success
+          if (res.status === 422) return { success: true, method: 'growth_already_invited', status: 422 };
 
           let detail = '';
           try { detail = JSON.stringify(await res.json()).substring(0, 300); } catch {}

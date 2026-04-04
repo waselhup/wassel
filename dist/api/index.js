@@ -1706,10 +1706,9 @@ router5.post("/report-action", async (req, res) => {
       return res.json({ success: false, sessionExpired: true, message: "Session expired \u2014 campaigns paused" });
     }
     if (!success && errorMsg && !errorMsg.includes("session_expired") && !errorMsg.includes("delete me") && !errorMsg.includes("401")) {
-      const { data: pssRow } = await supabase.from("prospect_step_status").select("error_message").eq("id", pssId).single();
-      const { count: recentFails } = await supabase.from("activity_logs").select("*", { count: "exact", head: true }).eq("campaign_id", campaignId).eq("action_type", actionType).eq("status", "failed").gte("executed_at", new Date(Date.now() - 36e5).toISOString());
-      if ((recentFails || 0) < 5) {
-        await supabase.from("prospect_step_status").update({ status: "pending", error_message: `retry: ${errorMsg}` }).eq("id", pssId);
+      const { count: prospectFails } = await supabase.from("activity_logs").select("*", { count: "exact", head: true }).eq("campaign_id", campaignId).eq("action_type", actionType).eq("prospect_name", prospectName || "").eq("status", "failed");
+      if ((prospectFails || 0) <= 2) {
+        await supabase.from("prospect_step_status").update({ status: "pending", error_message: `retry_${prospectFails}: ${errorMsg}` }).eq("id", pssId);
       }
     }
     res.json({ success: true, recorded: true });

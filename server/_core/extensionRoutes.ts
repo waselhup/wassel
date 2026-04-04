@@ -699,33 +699,25 @@ router.post('/report-action', async (req: Request, res: Response) => {
             return res.json({ success: false, sessionExpired: true, message: 'Session expired — campaigns paused' });
         }
 
-        // On non-session failure: revert to pending for retry (max 3 retries)
+        // On non-session failure: revert to pending for retry (max 2 retries PER PROSPECT)
         if (!success && errorMsg && !errorMsg.includes('session_expired') && !errorMsg.includes('delete me') && !errorMsg.includes('401')) {
-            // Check retry count
-            const { data: pssRow } = await supabase
-                .from('prospect_step_status')
-                .select('error_message')
-                .eq('id', pssId)
-                .single();
-
-            // Simple retry: revert to pending (cron or next poll will pick it up)
-            // But limit retries by checking recent failures
-            const { count: recentFails } = await supabase
+            // Count how many times THIS specific prospect+action has failed
+            const { count: prospectFails } = await supabase
                 .from('activity_logs')
                 .select('*', { count: 'exact', head: true })
                 .eq('campaign_id', campaignId)
                 .eq('action_type', actionType)
-                .eq('status', 'failed')
-                .gte('executed_at', new Date(Date.now() - 3600000).toISOString());
+                .eq('prospect_name', prospectName || '')
+                .eq('status', 'failed');
 
-            if ((recentFails || 0) < 5) {
-                // Revert to pending for retry
+            if ((prospectFails || 0) <= 2) {
+                // Revert to pending for retry (max 2 retries per prospect)
                 await supabase
                     .from('prospect_step_status')
-                    .update({ status: 'pending', error_message: `retry: ${errorMsg}` })
+                    .update({ status: 'pending', error_message: `retry_${prospectFails}: ${errorMsg}` })
                     .eq('id', pssId);
             }
-            // If too many fails, leave as failed
+            // If 3+ fails for this prospect, leave as permanently failed
         }
 
         res.json({ success: true, recorded: true });
