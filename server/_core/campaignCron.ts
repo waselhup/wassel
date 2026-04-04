@@ -12,6 +12,7 @@
  */
 
 import { Router } from 'express';
+import fetch from 'node-fetch';
 import { supabase } from '../supabase';
 import {
   visitProfile,
@@ -126,6 +127,111 @@ async function getDailyCount(userId: string, actionType: string): Promise<number
     .gte('executed_at', today.toISOString());
   return count || 0;
 }
+
+// ─── DIAGNOSTIC ENDPOINT ──────────────────────────────────
+// Tests the full decrypt → LinkedIn API flow (same as cron does it)
+router.get('/diagnose', async (req: any, res: any) => {
+  const authHeader = req.headers['authorization'] || '';
+  if (CRON_SECRET && authHeader !== `Bearer ${CRON_SECRET}`) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  try {
+    // Step 1: Get active session (same as cron)
+    const { data: sessionData } = await supabase
+      .from('linkedin_sessions')
+      .select('*')
+      .eq('status', 'active')
+      .limit(1)
+      .single();
+
+    if (!sessionData) {
+      return res.json({ error: 'No active session found' });
+    }
+
+    // Step 2: Decrypt (same as cron)
+    let liAt = '';
+    let jsessionId = '';
+    try {
+      liAt = decrypt(sessionData.li_at);
+    } catch (e: any) {
+      return res.json({ error: 'decrypt_li_at_failed', message: e.message });
+    }
+    try {
+      jsessionId = sessionData.jsessionid ? decrypt(sessionData.jsessionid) : '';
+    } catch (e: any) {
+      return res.json({ error: 'decrypt_jsessionid_failed', message: e.message });
+    }
+
+    const diag: any = {
+      li_at_decrypted_len: liAt.length,
+      li_at_prefix: liAt.substring(0, 8),
+      li_at_suffix: liAt.substring(liAt.length - 8),
+      jsessionid_decrypted_len: jsessionId.length,
+      jsessionid_prefix: jsessionId.substring(0, 10),
+    };
+
+    // Step 3: Test /voyager/api/me (simple self-check)
+    const session: LinkedInSession = {
+      liAt,
+      jsessionId,
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+    };
+
+    try {
+      const meRes = await fetch('https://www.linkedin.com/voyager/api/me', {
+        headers: {
+          'cookie': `li_at=${liAt}${jsessionId ? `; JSESSIONID="${jsessionId}"` : ''}`,
+          'csrf-token': jsessionId.replace(/"/g, ''),
+          'user-agent': session.userAgent,
+          'x-restli-protocol-version': '2.0.0',
+          'accept': 'application/vnd.linkedin.normalized+json+2.1',
+        },
+        redirect: 'manual',
+      });
+      diag.me_status = meRes.status;
+      diag.me_headers = Object.fromEntries(meRes.headers);
+      if (meRes.ok) {
+        const meData: any = await meRes.json();
+        diag.me_name = `${meData?.firstName || ''} ${meData?.lastName || ''}`.trim();
+        diag.me_ok = true;
+      }
+    } catch (e: any) {
+      diag.me_error = e.message;
+    }
+
+    // Step 4: Test visitProfile with exact same getHeaders as linkedinApi.ts
+    try {
+      const profileRes = await fetch(
+        'https://www.linkedin.com/voyager/api/identity/profiles/me',
+        {
+          headers: {
+            'cookie': `li_at=${session.liAt}; JSESSIONID="${session.jsessionId}"`,
+            'csrf-token': session.jsessionId.replace(/"/g, ''),
+            'user-agent': session.userAgent,
+            'x-li-lang': 'en_US',
+            'x-restli-protocol-version': '2.0.0',
+            'x-li-track': '{"clientVersion":"1.13.8806","mpVersion":"1.13.8806","osName":"web","timezoneOffset":3,"timezone":"Asia/Riyadh","deviceFormFactor":"DESKTOP","mpName":"voyager-web"}',
+            'accept': 'application/vnd.linkedin.normalized+json+2.1',
+          },
+          redirect: 'manual',
+        }
+      );
+      diag.profile_status = profileRes.status;
+      if (profileRes.ok) {
+        diag.profile_ok = true;
+      } else if (profileRes.status >= 300 && profileRes.status < 400) {
+        diag.profile_redirect = profileRes.headers.get('location');
+      }
+    } catch (e: any) {
+      diag.profile_error = e.message;
+    }
+
+    return res.json({ ok: true, diag });
+  } catch (e: any) {
+    return res.status(500).json({ error: e.message });
+  }
+});
 
 // ─── MAIN CRON ENDPOINT ────────────────────────────────────
 
