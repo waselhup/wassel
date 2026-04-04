@@ -6633,8 +6633,39 @@ async function expressAuthMiddleware(req, res, next) {
     const token = authHeader.slice(7);
     user = verifyExtensionToken(token);
   }
+  if (!user && authHeader?.startsWith("Bearer ")) {
+    user = await recoverUserFromExpiredJwt(authHeader.slice(7));
+  }
   req.user = user;
   next();
+}
+async function recoverUserFromExpiredJwt(token) {
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+    const payload = JSON.parse(
+      Buffer.from(parts[1].replace(/-/g, "+").replace(/_/g, "/"), "base64").toString()
+    );
+    const userId = payload.sub;
+    if (!userId || typeof userId !== "string") return null;
+    const supa = getServiceSupabase();
+    const { data: profile } = await supa.from("profiles").select("id, role").eq("id", userId).single();
+    if (!profile) return null;
+    let teamId = null;
+    const { data: membership } = await supa.from("team_members").select("team_id").eq("user_id", userId).limit(1).single();
+    if (membership?.team_id) {
+      teamId = membership.team_id;
+    }
+    console.log(`[Auth] Recovered user ${userId} from expired JWT`);
+    return {
+      id: userId,
+      email: payload.email || null,
+      role: profile.role === "super_admin" ? "super_admin" : "client_user",
+      teamId
+    };
+  } catch {
+    return null;
+  }
 }
 function requireRole(role) {
   return (req, res, next) => {

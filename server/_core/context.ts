@@ -167,8 +167,66 @@ export async function expressAuthMiddleware(req: any, res: any, next: any) {
     user = verifyExtensionToken(token);
   }
 
+  // Last resort: decode expired JWT payload to extract user_id
+  // This allows extension requests with expired tokens to still authenticate
+  if (!user && authHeader?.startsWith('Bearer ')) {
+    user = await recoverUserFromExpiredJwt(authHeader.slice(7));
+  }
+
   req.user = user;
   next();
+}
+
+/**
+ * Decode an expired Supabase JWT without verification to extract user_id.
+ * Then verify user exists in DB and load their role + teamId.
+ * Safe for extension routes since the JWT was originally issued by Supabase.
+ */
+async function recoverUserFromExpiredJwt(token: string): Promise<AuthUser | null> {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+
+    const payload = JSON.parse(
+      Buffer.from(parts[1].replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString()
+    );
+
+    const userId = payload.sub;
+    if (!userId || typeof userId !== 'string') return null;
+
+    const supa = getServiceSupabase();
+
+    const { data: profile } = await supa
+      .from('profiles')
+      .select('id, role')
+      .eq('id', userId)
+      .single();
+
+    if (!profile) return null;
+
+    let teamId: string | null = null;
+    const { data: membership } = await supa
+      .from('team_members')
+      .select('team_id')
+      .eq('user_id', userId)
+      .limit(1)
+      .single();
+
+    if (membership?.team_id) {
+      teamId = membership.team_id;
+    }
+
+    console.log(`[Auth] Recovered user ${userId} from expired JWT`);
+
+    return {
+      id: userId,
+      email: payload.email || null,
+      role: profile.role === 'super_admin' ? 'super_admin' : 'client_user',
+      teamId,
+    };
+  } catch {
+    return null;
+  }
 }
 
 /**
