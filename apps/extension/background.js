@@ -239,23 +239,30 @@ async function linkedinVisitProfile(slug) {
   const { liAt, jsessionId } = await getLinkedInCookies();
   if (!liAt) return { success: false, error: 'no_li_at_cookie' };
 
-  const headers = getVoyagerHeaders(liAt, jsessionId);
+  let tabId;
+  try { tabId = await getLinkedInTab(); } catch (e) {
+    return { success: false, error: 'no_linkedin_tab' };
+  }
 
-  // Method 1: Modern dash endpoint (works in 2025+)
+  const fetchHeaders = {
+    'csrf-token': jsessionId,
+    'accept': 'application/vnd.linkedin.normalized+json+2.1',
+    'x-restli-protocol-version': '2.0.0',
+  };
+
+  // Method 1: Modern dash endpoint (from LinkedIn tab context)
   try {
     const dashUrl = `https://www.linkedin.com/voyager/api/identity/dash/profiles?q=memberIdentity&memberIdentity=${encodeURIComponent(slug)}&decorationId=com.linkedin.voyager.dash.deco.identity.profile.WebTopCardCore-16`;
-    const res = await fetch(dashUrl, { method: 'GET', headers });
+    const res = await executeInLinkedInContext(tabId, dashUrl, {
+      method: 'GET', headers: fetchHeaders, credentials: 'include',
+    });
 
-    const loc = res.headers.get('location');
-    const sc = res.headers.get('set-cookie');
-
-    if (isSessionExpired(res.status, loc, sc, res)) {
+    if (res.error) {
+      console.warn('[Wassel] Dash visit error:', res.error);
+    } else if (res.status === 401 || res.status === 403) {
       return { success: false, error: `session_expired: ${res.status}` };
-    }
-
-    if (res.ok) {
-      const data = await res.json();
-      // dash endpoint returns { elements: [{ entityUrn, firstName, lastName, ... }] }
+    } else if (res.ok && res.body) {
+      const data = res.body;
       const profile = data?.elements?.[0] || data?.included?.find(i => i.$type?.includes('Profile')) || data;
       const entityUrn = profile?.entityUrn || profile?.objectUrn || '';
       const profileId = entityUrn.replace('urn:li:fsd_profile:', '').replace('urn:li:fs_profile:', '');
@@ -267,7 +274,6 @@ async function linkedinVisitProfile(slug) {
         return { success: true, profileId, name, entityUrn };
       }
 
-      // Try extracting from included array
       if (data?.included?.length) {
         for (const item of data.included) {
           if (item.entityUrn && (item.entityUrn.includes('fsd_profile') || item.entityUrn.includes('fs_profile'))) {
@@ -282,20 +288,21 @@ async function linkedinVisitProfile(slug) {
     console.warn('[Wassel] Dash profile endpoint error:', e.message);
   }
 
-  // Method 2: Legacy endpoint (may return 410 but worth trying)
+  // Method 2: Legacy endpoint
   try {
     const legacyUrl = `https://www.linkedin.com/voyager/api/identity/profiles/${encodeURIComponent(slug)}`;
-    const res = await fetch(legacyUrl, { method: 'GET', headers });
+    const res = await executeInLinkedInContext(tabId, legacyUrl, {
+      method: 'GET', headers: fetchHeaders, credentials: 'include',
+    });
 
-    const loc = res.headers.get('location');
-    const sc = res.headers.get('set-cookie');
-
-    if (isSessionExpired(res.status, loc, sc, res)) {
+    if (res.error) {
+      return { success: false, error: `visit_error: ${res.error}` };
+    }
+    if (res.status === 401 || res.status === 403) {
       return { success: false, error: `session_expired: ${res.status}` };
     }
-
-    if (res.ok) {
-      const data = await res.json();
+    if (res.ok && res.body) {
+      const data = res.body;
       const entityUrn = data?.entityUrn || '';
       const profileId = entityUrn.split(':').pop() || slug;
       const name = `${data?.firstName || ''} ${data?.lastName || ''}`.trim();
@@ -309,73 +316,130 @@ async function linkedinVisitProfile(slug) {
 }
 
 /**
+ * Get or create a LinkedIn tab for executing actions.
+ * Uses existing LinkedIn tab or creates a hidden one.
+ */
+async function getLinkedInTab() {
+  const tabs = await chrome.tabs.query({});
+  const liTab = tabs.find(t => t.url && t.url.includes('linkedin.com') && t.status === 'complete');
+  if (liTab) return liTab.id;
+
+  // Create a LinkedIn tab (will be used for API calls from page context)
+  const newTab = await chrome.tabs.create({ url: 'https://www.linkedin.com/feed/', active: false });
+  // Wait for it to load
+  await new Promise(resolve => {
+    const listener = (tabId, changeInfo) => {
+      if (tabId === newTab.id && changeInfo.status === 'complete') {
+        chrome.tabs.onUpdated.removeListener(listener);
+        resolve();
+      }
+    };
+    chrome.tabs.onUpdated.addListener(listener);
+    setTimeout(() => { chrome.tabs.onUpdated.removeListener(listener); resolve(); }, 15000);
+  });
+  return newTab.id;
+}
+
+/**
+ * Execute a fetch call from within a LinkedIn tab's page context.
+ * This ensures cookies are sent automatically and LinkedIn sees a real browser origin.
+ */
+async function executeInLinkedInContext(tabId, url, options) {
+  try {
+    const results = await chrome.scripting.executeScript({
+      target: { tabId },
+      func: async (fetchUrl, fetchOptions) => {
+        try {
+          const res = await fetch(fetchUrl, fetchOptions);
+          let body = null;
+          try { body = await res.json(); } catch {}
+          return { status: res.status, ok: res.ok, body, redirected: res.redirected, url: res.url };
+        } catch (e) {
+          return { error: e.message };
+        }
+      },
+      args: [url, options],
+    });
+    return results?.[0]?.result || { error: 'no_result' };
+  } catch (e) {
+    return { error: `script_inject_failed: ${e.message}` };
+  }
+}
+
+/**
  * Send a connection invite to a profile.
- * IMPORTANT: Do NOT use redirect:'manual' — service workers return opaque
- * responses (status 0) for redirects, which breaks everything.
- * Instead, follow redirects and detect session expiry from final status.
+ * Executes from a LinkedIn tab context so cookies + CSRF work properly.
  */
 async function linkedinSendInvite(profileId, message) {
   const { liAt, jsessionId } = await getLinkedInCookies();
   if (!liAt) return { success: false, error: 'no_li_at_cookie' };
 
-  const headers = { ...getVoyagerHeaders(liAt, jsessionId), 'content-type': 'application/json; charset=UTF-8' };
   const cleanId = profileId.replace('urn:li:fsd_profile:', '').replace('urn:li:fs_profile:', '');
   const entityUrn = `urn:li:fsd_profile:${cleanId}`;
-  const trackingId = btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(16)))).replace(/[+/=]/g, '').substring(0, 16);
 
-  let lastError = '';
-
-  // Helper: check if response indicates session expired
-  function checkSessionExpiry(res) {
-    if (res.status === 401 || res.status === 403) return true;
-    // If redirected to login page, the final URL will contain 'login' or 'authwall'
-    if (res.redirected && res.url && (res.url.includes('login') || res.url.includes('authwall'))) return true;
-    return false;
+  // Get a LinkedIn tab to execute from
+  let tabId;
+  try {
+    tabId = await getLinkedInTab();
+  } catch (e) {
+    console.error('[Wassel] Cannot get LinkedIn tab:', e.message);
+    return { success: false, error: 'no_linkedin_tab' };
   }
 
-  // Method 1: Modern dash verifyQuotaAndCreate
+  const csrfToken = jsessionId;
+  let lastError = '';
+
+  // Method 1: Modern dash verifyQuotaAndCreate (from page context)
   try {
     const body = {
-      invitee: {
-        inviteeUnion: {
-          memberProfile: entityUrn,
-        },
-      },
-      trackingId,
+      invitee: { inviteeUnion: { memberProfile: entityUrn } },
     };
     if (message && message.trim()) {
       body.customMessage = message.trim().substring(0, 300);
     }
 
-    console.log(`[Wassel] Invite Method 1 (dash): ${cleanId}`);
-    const res = await fetch(
+    console.log(`[Wassel] Invite via tab context (dash): ${cleanId}`);
+    const res = await executeInLinkedInContext(tabId,
       'https://www.linkedin.com/voyager/api/voyagerRelationshipsDashMemberRelationships?action=verifyQuotaAndCreate',
-      { method: 'POST', headers, body: JSON.stringify(body) }
+      {
+        method: 'POST',
+        headers: {
+          'csrf-token': csrfToken,
+          'accept': 'application/vnd.linkedin.normalized+json+2.1',
+          'x-restli-protocol-version': '2.0.0',
+          'content-type': 'application/json; charset=UTF-8',
+        },
+        credentials: 'include',
+        body: JSON.stringify(body),
+      }
     );
 
-    console.log(`[Wassel] Method 1 response: ${res.status} redirected=${res.redirected}`);
-    if (checkSessionExpiry(res)) return { success: false, error: `session_expired_${res.status}` };
-    if (res.status === 429) return { success: false, error: 'rate_limited' };
-    if (res.ok || res.status === 201 || res.status === 200) {
-      console.log(`[Wassel] ✅ Invite sent via dash method`);
-      return { success: true };
-    }
+    console.log(`[Wassel] Dash response:`, JSON.stringify(res).substring(0, 200));
 
-    let detail = '';
-    try { const d = await res.json(); detail = JSON.stringify(d).substring(0, 300); } catch {}
-    lastError = `dash_${res.status}: ${detail}`;
-    console.warn(`[Wassel] Invite Method 1 failed: ${lastError}`);
+    if (res.error) {
+      lastError = `dash_ctx_error: ${res.error}`;
+      console.warn(`[Wassel] Method 1 error: ${res.error}`);
+    } else if (res.status === 401 || res.status === 403) {
+      return { success: false, error: `session_expired_${res.status}` };
+    } else if (res.status === 429) {
+      return { success: false, error: 'rate_limited' };
+    } else if (res.ok || res.status === 200 || res.status === 201) {
+      console.log(`[Wassel] ✅ Invite sent via dash (tab context)`);
+      return { success: true };
+    } else {
+      lastError = `dash_${res.status}: ${JSON.stringify(res.body || '').substring(0, 200)}`;
+      console.warn(`[Wassel] Method 1 failed: ${lastError}`);
+    }
   } catch (e) {
-    lastError = `dash_error: ${e.message}`;
-    console.warn(`[Wassel] Invite Method 1 exception: ${e.message}`);
+    lastError = `dash_exception: ${e.message}`;
+    console.warn(`[Wassel] Method 1 exception:`, e.message);
   }
 
   await sleep(500);
 
-  // Method 2: Legacy growth normInvitations
+  // Method 2: Legacy normInvitations (from page context)
   try {
     const body = {
-      trackingId,
       invitee: {
         'com.linkedin.voyager.growth.invitation.InviteeProfile': {
           profileId: cleanId,
@@ -386,27 +450,38 @@ async function linkedinSendInvite(profileId, message) {
       body.message = message.trim().substring(0, 280);
     }
 
-    console.log(`[Wassel] Invite Method 2 (growth): ${cleanId}`);
-    const res = await fetch(
+    console.log(`[Wassel] Invite via tab context (growth): ${cleanId}`);
+    const res = await executeInLinkedInContext(tabId,
       'https://www.linkedin.com/voyager/api/growth/normInvitations',
-      { method: 'POST', headers, body: JSON.stringify(body) }
+      {
+        method: 'POST',
+        headers: {
+          'csrf-token': csrfToken,
+          'accept': 'application/vnd.linkedin.normalized+json+2.1',
+          'x-restli-protocol-version': '2.0.0',
+          'content-type': 'application/json; charset=UTF-8',
+        },
+        credentials: 'include',
+        body: JSON.stringify(body),
+      }
     );
 
-    console.log(`[Wassel] Method 2 response: ${res.status} redirected=${res.redirected}`);
-    if (checkSessionExpiry(res)) return { success: false, error: `session_expired_${res.status}` };
-    if (res.status === 429) return { success: false, error: 'rate_limited' };
-    if (res.ok || res.status === 201) {
-      console.log(`[Wassel] ✅ Invite sent via growth method`);
-      return { success: true };
-    }
+    console.log(`[Wassel] Growth response:`, JSON.stringify(res).substring(0, 200));
 
-    let detail = '';
-    try { const d = await res.json(); detail = JSON.stringify(d).substring(0, 300); } catch {}
-    lastError = `growth_${res.status}: ${detail}`;
-    console.warn(`[Wassel] Invite Method 2 failed: ${lastError}`);
+    if (res.error) {
+      lastError = `growth_ctx_error: ${res.error}`;
+    } else if (res.status === 401 || res.status === 403) {
+      return { success: false, error: `session_expired_${res.status}` };
+    } else if (res.status === 429) {
+      return { success: false, error: 'rate_limited' };
+    } else if (res.ok || res.status === 200 || res.status === 201) {
+      console.log(`[Wassel] ✅ Invite sent via growth (tab context)`);
+      return { success: true };
+    } else {
+      lastError = `growth_${res.status}: ${JSON.stringify(res.body || '').substring(0, 200)}`;
+    }
   } catch (e) {
-    lastError = `growth_error: ${e.message}`;
-    console.warn(`[Wassel] Invite Method 2 exception: ${e.message}`);
+    lastError = `growth_exception: ${e.message}`;
   }
 
   return { success: false, error: lastError || 'all_invite_methods_failed' };
@@ -414,17 +489,25 @@ async function linkedinSendInvite(profileId, message) {
 
 /**
  * Send a message to a connected profile.
- * Tries modern messaging endpoint first, falls back to legacy.
+ * Executes from LinkedIn tab context for proper cookie handling.
  */
 async function linkedinSendMessage(profileUrn, message) {
-  const { liAt, jsessionId } = await getLinkedInCookies();
-  const headers = { ...getVoyagerHeaders(liAt, jsessionId), 'content-type': 'application/json; charset=UTF-8' };
+  const { jsessionId } = await getLinkedInCookies();
+  if (!profileUrn.startsWith('urn:')) profileUrn = `urn:li:fsd_profile:${profileUrn}`;
 
-  if (!profileUrn.startsWith('urn:')) {
-    profileUrn = `urn:li:fsd_profile:${profileUrn}`;
+  let tabId;
+  try { tabId = await getLinkedInTab(); } catch (e) {
+    return { success: false, error: 'no_linkedin_tab' };
   }
 
-  // Method 1: Modern messaging endpoint
+  const fetchHeaders = {
+    'csrf-token': jsessionId,
+    'accept': 'application/vnd.linkedin.normalized+json+2.1',
+    'x-restli-protocol-version': '2.0.0',
+    'content-type': 'application/json; charset=UTF-8',
+  };
+
+  // Method 1: Modern messaging
   try {
     const body = {
       message: { body: { text: message } },
@@ -433,12 +516,10 @@ async function linkedinSendMessage(profileUrn, message) {
       dedupeByClientGeneratedToken: false,
       hostRecipientUrns: [profileUrn],
     };
-
-    const res = await fetch(
+    const res = await executeInLinkedInContext(tabId,
       'https://www.linkedin.com/voyager/api/voyagerMessagingDashMessengerMessages?action=createMessage',
-      { method: 'POST', headers, body: JSON.stringify(body), }
+      { method: 'POST', headers: fetchHeaders, credentials: 'include', body: JSON.stringify(body) }
     );
-
     if (res.status === 401 || res.status === 403) return { success: false, error: 'session_expired' };
     if (res.status === 429) return { success: false, error: 'rate_limited' };
     if (res.ok || res.status === 201) return { success: true };
@@ -446,35 +527,22 @@ async function linkedinSendMessage(profileUrn, message) {
     console.warn('[Wassel] Modern messaging failed:', e.message);
   }
 
-  // Method 2: Legacy conversations endpoint
+  // Method 2: Legacy conversations
   try {
     const body = {
       keyVersion: 'LEGACY_INBOX',
       conversationCreate: {
-        eventCreate: {
-          value: {
-            'com.linkedin.voyager.messaging.create.MessageCreate': {
-              attributedBody: { text: message, attributes: [] },
-              attachments: [],
-            },
-          },
-        },
-        recipients: [profileUrn],
-        subtype: 'MEMBER_TO_MEMBER',
+        eventCreate: { value: { 'com.linkedin.voyager.messaging.create.MessageCreate': { attributedBody: { text: message, attributes: [] }, attachments: [] } } },
+        recipients: [profileUrn], subtype: 'MEMBER_TO_MEMBER',
       },
     };
-
-    const res = await fetch(
+    const res = await executeInLinkedInContext(tabId,
       'https://www.linkedin.com/voyager/api/messaging/conversations',
-      { method: 'POST', headers, body: JSON.stringify(body), }
+      { method: 'POST', headers: fetchHeaders, credentials: 'include', body: JSON.stringify(body) }
     );
-
     if (res.status === 401 || res.status === 403) return { success: false, error: 'session_expired' };
     if (res.ok || res.status === 201) return { success: true };
-
-    let errorDetail = '';
-    try { const errData = await res.json(); errorDetail = errData?.message || ''; } catch {}
-    return { success: false, error: `message_failed_${res.status}: ${errorDetail}` };
+    return { success: false, error: `message_failed_${res.status}` };
   } catch (e) {
     return { success: false, error: `message_error: ${e.message}` };
   }
@@ -489,28 +557,36 @@ async function linkedinFollowProfile(slug) {
     return { success: false, error: profile.error || 'profile_not_found' };
   }
 
-  const { liAt, jsessionId } = await getLinkedInCookies();
-  const headers = { ...getVoyagerHeaders(liAt, jsessionId), 'content-type': 'application/json; charset=UTF-8' };
+  const { jsessionId } = await getLinkedInCookies();
   const entityUrn = profile.entityUrn || `urn:li:fsd_profile:${profile.profileId}`;
 
-  // Try modern follow endpoint
-  try {
-    const res = await fetch(
-      'https://www.linkedin.com/voyager/api/voyagerRelationshipsDashFollows?action=followByEntityUrn',
-      { method: 'POST', headers, body: JSON.stringify({ entityUrn }), }
-    );
+  let tabId;
+  try { tabId = await getLinkedInTab(); } catch (e) {
+    return { success: false, error: 'no_linkedin_tab' };
+  }
 
+  const fetchHeaders = {
+    'csrf-token': jsessionId,
+    'accept': 'application/vnd.linkedin.normalized+json+2.1',
+    'x-restli-protocol-version': '2.0.0',
+    'content-type': 'application/json; charset=UTF-8',
+  };
+
+  try {
+    const res = await executeInLinkedInContext(tabId,
+      'https://www.linkedin.com/voyager/api/voyagerRelationshipsDashFollows?action=followByEntityUrn',
+      { method: 'POST', headers: fetchHeaders, credentials: 'include', body: JSON.stringify({ entityUrn }) }
+    );
     if (res.status === 401 || res.status === 403) return { success: false, error: 'session_expired' };
     if (res.ok || res.status === 200 || res.status === 201) return { success: true };
   } catch (e) {
-    console.warn('[Wassel] Modern follow failed:', e.message);
+    console.warn('[Wassel] Follow failed:', e.message);
   }
 
-  // Fallback: legacy follow endpoint
   try {
-    const res = await fetch(
+    const res = await executeInLinkedInContext(tabId,
       'https://www.linkedin.com/voyager/api/feed/follows',
-      { method: 'POST', headers, body: JSON.stringify({ urn: entityUrn }), }
+      { method: 'POST', headers: fetchHeaders, credentials: 'include', body: JSON.stringify({ urn: entityUrn }) }
     );
     if (res.ok || res.status === 201) return { success: true };
     return { success: false, error: `follow_failed_${res.status}` };
