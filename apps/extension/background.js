@@ -11,7 +11,7 @@ const POLL_INTERVAL_MINUTES = 1; // Poll every 1 minute
 const MIN_DELAY_MS = 3000;  // Min delay between actions
 const MAX_DELAY_MS = 8000;  // Max delay between actions
 
-console.log('[Wassel] 🚀 Background v6.0.0 loaded (extension-execution)', new Date().toLocaleTimeString());
+console.log('[Wassel] 🚀 Background v6.1.0 loaded (extension-execution)', new Date().toLocaleTimeString());
 
 // ============================================================================
 // SAFE MESSAGE SENDING — prevents "Receiving end does not exist" crashes
@@ -163,10 +163,10 @@ async function extractAndStoreCookies() {
 }
 
 // ============================================================================
-// LINKEDIN VOYAGER API — executed FROM the browser using native cookies
-// No LinkedIn tab needed — service worker makes direct fetch() calls.
-// Browser auto-includes li_at + JSESSIONID cookies for linkedin.com.
-// Requests come from user's real IP → no datacenter detection.
+// LINKEDIN VOYAGER API — executed FROM the extension service worker
+// Uses chrome.cookies API to manually build Cookie header (service workers
+// can't use credentials:'include'). Requests come from user's real IP.
+// No LinkedIn tab needed.
 // ============================================================================
 
 async function getLinkedInCookies() {
@@ -176,223 +176,283 @@ async function getLinkedInCookies() {
   return { liAt, jsessionId };
 }
 
-function getVoyagerHeaders(jsessionId) {
+function getVoyagerHeaders(liAt, jsessionId) {
   return {
+    'cookie': `li_at=${liAt}; JSESSIONID="${jsessionId}"`,
+    'csrf-token': jsessionId,
     'accept': 'application/vnd.linkedin.normalized+json+2.1',
     'x-restli-protocol-version': '2.0.0',
     'x-li-lang': 'en_US',
     'x-li-track': JSON.stringify({
-      clientVersion: '1.13.8775',
-      mpVersion: '1.13.8775',
+      clientVersion: '1.13.8806',
+      mpVersion: '1.13.8806',
       osName: 'web',
-      timezoneOffset: -3,
+      timezoneOffset: 3,
       timezone: 'Asia/Riyadh',
       deviceFormFactor: 'DESKTOP',
       mpName: 'voyager-web',
     }),
-    ...(jsessionId ? { 'csrf-token': jsessionId } : {}),
+    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
   };
+}
+
+function isSessionExpired(status, locationHeader, setCookieHeader) {
+  if (setCookieHeader && setCookieHeader.includes('li_at=delete me')) return true;
+  if (status === 401 || status === 403) return true;
+  if (status >= 300 && status < 400 && locationHeader) {
+    const loc = locationHeader.toLowerCase();
+    if (loc.includes('login') || loc.includes('authwall') || loc.includes('checkpoint') || loc.includes('uas/login')) return true;
+    if (locationHeader.includes('/voyager/api/')) return true;
+  }
+  return false;
 }
 
 /**
  * Visit a LinkedIn profile to get profileId (entity URN).
- * Uses the Voyager identity API.
+ * Uses BOTH endpoints — dash first (modern), fallback to legacy.
  */
 async function linkedinVisitProfile(slug) {
-  const { jsessionId } = await getLinkedInCookies();
+  const { liAt, jsessionId } = await getLinkedInCookies();
+  if (!liAt) return { success: false, error: 'no_li_at_cookie' };
 
-  const url = `https://www.linkedin.com/voyager/api/identity/profiles/${slug}`;
-  const res = await fetch(url, {
-    method: 'GET',
-    headers: getVoyagerHeaders(jsessionId),
-    credentials: 'include',
-  });
+  const headers = getVoyagerHeaders(liAt, jsessionId);
 
-  if (res.status === 401 || res.status === 403) {
-    return { success: false, error: 'session_expired' };
-  }
-
-  // Handle redirects (302 to login = session expired)
-  if (res.status >= 300 && res.status < 400) {
-    const loc = res.headers.get('location') || '';
-    if (loc.includes('login') || loc.includes('authwall') || loc.includes('checkpoint')) {
-      return { success: false, error: 'session_expired' };
-    }
-  }
-
-  if (!res.ok) {
-    return { success: false, error: `visit_failed_${res.status}` };
-  }
-
+  // Method 1: Modern dash endpoint (works in 2025+)
   try {
-    const data = await res.json();
-    // Extract profileId from entityUrn: "urn:li:fs_profile:ACoAAxxxxxxx"
-    const entityUrn = data?.entityUrn || data?.profile?.entityUrn || '';
-    const profileId = entityUrn.replace('urn:li:fs_profile:', '').replace('urn:li:fsd_profile:', '');
-    const firstName = data?.firstName || '';
-    const lastName = data?.lastName || '';
-    const name = `${firstName} ${lastName}`.trim();
+    const dashUrl = `https://www.linkedin.com/voyager/api/identity/dash/profiles?q=memberIdentity&memberIdentity=${encodeURIComponent(slug)}&decorationId=com.linkedin.voyager.dash.deco.identity.profile.WebTopCardCore-16`;
+    const res = await fetch(dashUrl, { method: 'GET', headers, redirect: 'manual' });
 
-    return {
-      success: true,
-      profileId: profileId || null,
-      name,
-      entityUrn,
-    };
+    const loc = res.headers.get('location');
+    const sc = res.headers.get('set-cookie');
+
+    if (isSessionExpired(res.status, loc, sc)) {
+      return { success: false, error: `session_expired: ${res.status}` };
+    }
+
+    if (res.ok) {
+      const data = await res.json();
+      // dash endpoint returns { elements: [{ entityUrn, firstName, lastName, ... }] }
+      const profile = data?.elements?.[0] || data?.included?.find(i => i.$type?.includes('Profile')) || data;
+      const entityUrn = profile?.entityUrn || profile?.objectUrn || '';
+      const profileId = entityUrn.replace('urn:li:fsd_profile:', '').replace('urn:li:fs_profile:', '');
+      const firstName = profile?.firstName || '';
+      const lastName = profile?.lastName || '';
+      const name = `${firstName} ${lastName}`.trim();
+
+      if (profileId) {
+        return { success: true, profileId, name, entityUrn };
+      }
+
+      // Try extracting from included array
+      if (data?.included?.length) {
+        for (const item of data.included) {
+          if (item.entityUrn && (item.entityUrn.includes('fsd_profile') || item.entityUrn.includes('fs_profile'))) {
+            const pid = item.entityUrn.replace('urn:li:fsd_profile:', '').replace('urn:li:fs_profile:', '');
+            const n = `${item.firstName || ''} ${item.lastName || ''}`.trim();
+            return { success: true, profileId: pid, name: n, entityUrn: item.entityUrn };
+          }
+        }
+      }
+    }
   } catch (e) {
-    return { success: false, error: 'parse_error: ' + e.message };
+    console.warn('[Wassel] Dash profile endpoint error:', e.message);
+  }
+
+  // Method 2: Legacy endpoint (may return 410 but worth trying)
+  try {
+    const legacyUrl = `https://www.linkedin.com/voyager/api/identity/profiles/${encodeURIComponent(slug)}`;
+    const res = await fetch(legacyUrl, { method: 'GET', headers, redirect: 'manual' });
+
+    const loc = res.headers.get('location');
+    const sc = res.headers.get('set-cookie');
+
+    if (isSessionExpired(res.status, loc, sc)) {
+      return { success: false, error: `session_expired: ${res.status}` };
+    }
+
+    if (res.ok) {
+      const data = await res.json();
+      const entityUrn = data?.entityUrn || '';
+      const profileId = entityUrn.split(':').pop() || slug;
+      const name = `${data?.firstName || ''} ${data?.lastName || ''}`.trim();
+      return { success: true, profileId, name, entityUrn };
+    }
+
+    return { success: false, error: `visit_failed_${res.status}` };
+  } catch (e) {
+    return { success: false, error: `visit_error: ${e.message}` };
   }
 }
 
 /**
  * Send a connection invite to a profile.
+ * Tries modern endpoint first, falls back to legacy.
  */
 async function linkedinSendInvite(profileId, message) {
-  const { jsessionId } = await getLinkedInCookies();
+  const { liAt, jsessionId } = await getLinkedInCookies();
+  const headers = { ...getVoyagerHeaders(liAt, jsessionId), 'content-type': 'application/json; charset=UTF-8' };
 
-  const trackingId = crypto.randomUUID().replace(/-/g, '').substring(0, 16);
-
-  const body = {
-    trackingId,
-    invitations: [],
-    excludeInvitations: [],
-    invitee: {
-      'com.linkedin.voyager.growth.invitation.InviteeProfile': {
-        profileId,
-      },
-    },
-  };
-
-  // Add message if provided (max 280 chars for connection notes)
-  if (message && message.trim()) {
-    body.message = message.trim().substring(0, 280);
-  }
-
-  const url = 'https://www.linkedin.com/voyager/api/growth/normInvitations';
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: {
-      ...getVoyagerHeaders(jsessionId),
-      'content-type': 'application/json; charset=UTF-8',
-    },
-    credentials: 'include',
-    body: JSON.stringify(body),
-  });
-
-  if (res.status === 401 || res.status === 403) {
-    return { success: false, error: 'session_expired' };
-  }
-
-  if (res.status === 429) {
-    return { success: false, error: 'rate_limited' };
-  }
-
-  // LinkedIn returns 201 on success
-  if (res.status === 201 || res.ok) {
-    return { success: true };
-  }
-
-  let errorDetail = '';
+  // Method 1: Modern verifyQuotaAndCreate endpoint
   try {
-    const errData = await res.json();
-    errorDetail = errData?.message || errData?.status || '';
-  } catch {}
+    const entityUrn = profileId.startsWith('urn:') ? profileId : `urn:li:fsd_profile:${profileId}`;
+    const body = {
+      invitee: {
+        inviteeUnion: {
+          memberProfile: entityUrn,
+        },
+      },
+    };
+    if (message && message.trim()) {
+      body.customMessage = message.trim().substring(0, 300);
+    }
 
-  return { success: false, error: `invite_failed_${res.status}: ${errorDetail}` };
+    const res = await fetch(
+      'https://www.linkedin.com/voyager/api/voyagerRelationshipsDashMemberRelationships?action=verifyQuotaAndCreate',
+      { method: 'POST', headers, body: JSON.stringify(body), redirect: 'manual' }
+    );
+
+    if (res.status === 401 || res.status === 403) return { success: false, error: 'session_expired' };
+    if (res.status === 429) return { success: false, error: 'rate_limited' };
+    if (res.ok || res.status === 201 || res.status === 200) return { success: true };
+  } catch (e) {
+    console.warn('[Wassel] Modern invite failed:', e.message);
+  }
+
+  // Method 2: Legacy normInvitations
+  try {
+    const body = {
+      invitee: {
+        'com.linkedin.voyager.growth.invitation.InviteeProfile': {
+          profileId: profileId.replace('urn:li:fsd_profile:', '').replace('urn:li:fs_profile:', ''),
+        },
+      },
+    };
+    if (message && message.trim()) {
+      body.message = message.trim().substring(0, 280);
+    }
+
+    const res = await fetch(
+      'https://www.linkedin.com/voyager/api/growth/normInvitations',
+      { method: 'POST', headers, body: JSON.stringify(body), redirect: 'manual' }
+    );
+
+    if (res.status === 401 || res.status === 403) return { success: false, error: 'session_expired' };
+    if (res.status === 429) return { success: false, error: 'rate_limited' };
+    if (res.ok || res.status === 201) return { success: true };
+
+    let errorDetail = '';
+    try { const errData = await res.json(); errorDetail = errData?.message || ''; } catch {}
+    return { success: false, error: `invite_failed_${res.status}: ${errorDetail}` };
+  } catch (e) {
+    return { success: false, error: `invite_error: ${e.message}` };
+  }
 }
 
 /**
  * Send a message to a connected profile.
+ * Tries modern messaging endpoint first, falls back to legacy.
  */
 async function linkedinSendMessage(profileUrn, message) {
-  const { jsessionId } = await getLinkedInCookies();
+  const { liAt, jsessionId } = await getLinkedInCookies();
+  const headers = { ...getVoyagerHeaders(liAt, jsessionId), 'content-type': 'application/json; charset=UTF-8' };
 
   if (!profileUrn.startsWith('urn:')) {
     profileUrn = `urn:li:fsd_profile:${profileUrn}`;
   }
 
-  const body = {
-    message: {
-      body: {
-        text: message,
-      },
-    },
-    mailboxUrn: 'urn:li:fsd_profile:me',
-    trackingId: crypto.randomUUID().replace(/-/g, '').substring(0, 16),
-    dedupeByClientGeneratedToken: false,
-    hostRecipientUrns: [profileUrn],
-  };
-
-  const url = 'https://www.linkedin.com/voyager/api/voyagerMessagingDashMessengerMessages?action=createMessage';
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: {
-      ...getVoyagerHeaders(jsessionId),
-      'content-type': 'application/json; charset=UTF-8',
-    },
-    credentials: 'include',
-    body: JSON.stringify(body),
-  });
-
-  if (res.status === 401 || res.status === 403) {
-    return { success: false, error: 'session_expired' };
-  }
-
-  if (res.status === 429) {
-    return { success: false, error: 'rate_limited' };
-  }
-
-  if (res.status === 201 || res.ok) {
-    return { success: true };
-  }
-
-  let errorDetail = '';
+  // Method 1: Modern messaging endpoint
   try {
-    const errData = await res.json();
-    errorDetail = errData?.message || errData?.status || '';
-  } catch {}
+    const body = {
+      message: { body: { text: message } },
+      mailboxUrn: 'urn:li:fsd_profile:me',
+      trackingId: crypto.randomUUID().replace(/-/g, '').substring(0, 16),
+      dedupeByClientGeneratedToken: false,
+      hostRecipientUrns: [profileUrn],
+    };
 
-  return { success: false, error: `message_failed_${res.status}: ${errorDetail}` };
+    const res = await fetch(
+      'https://www.linkedin.com/voyager/api/voyagerMessagingDashMessengerMessages?action=createMessage',
+      { method: 'POST', headers, body: JSON.stringify(body), redirect: 'manual' }
+    );
+
+    if (res.status === 401 || res.status === 403) return { success: false, error: 'session_expired' };
+    if (res.status === 429) return { success: false, error: 'rate_limited' };
+    if (res.ok || res.status === 201) return { success: true };
+  } catch (e) {
+    console.warn('[Wassel] Modern messaging failed:', e.message);
+  }
+
+  // Method 2: Legacy conversations endpoint
+  try {
+    const body = {
+      keyVersion: 'LEGACY_INBOX',
+      conversationCreate: {
+        eventCreate: {
+          value: {
+            'com.linkedin.voyager.messaging.create.MessageCreate': {
+              attributedBody: { text: message, attributes: [] },
+              attachments: [],
+            },
+          },
+        },
+        recipients: [profileUrn],
+        subtype: 'MEMBER_TO_MEMBER',
+      },
+    };
+
+    const res = await fetch(
+      'https://www.linkedin.com/voyager/api/messaging/conversations',
+      { method: 'POST', headers, body: JSON.stringify(body), redirect: 'manual' }
+    );
+
+    if (res.status === 401 || res.status === 403) return { success: false, error: 'session_expired' };
+    if (res.ok || res.status === 201) return { success: true };
+
+    let errorDetail = '';
+    try { const errData = await res.json(); errorDetail = errData?.message || ''; } catch {}
+    return { success: false, error: `message_failed_${res.status}: ${errorDetail}` };
+  } catch (e) {
+    return { success: false, error: `message_error: ${e.message}` };
+  }
 }
 
 /**
  * Follow a LinkedIn profile.
  */
 async function linkedinFollowProfile(slug) {
-  const { jsessionId } = await getLinkedInCookies();
-
-  // First visit to get profileId
   const profile = await linkedinVisitProfile(slug);
   if (!profile.success || !profile.profileId) {
     return { success: false, error: profile.error || 'profile_not_found' };
   }
 
-  const urn = `urn:li:fs_profile:${profile.profileId}`;
-  const body = {
-    followerUrn: 'urn:li:fsd_profile:me',
-    followeeUrn: urn,
-  };
+  const { liAt, jsessionId } = await getLinkedInCookies();
+  const headers = { ...getVoyagerHeaders(liAt, jsessionId), 'content-type': 'application/json; charset=UTF-8' };
+  const entityUrn = profile.entityUrn || `urn:li:fsd_profile:${profile.profileId}`;
 
-  const url = 'https://www.linkedin.com/voyager/api/graph/followUnfollowByEntity';
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: {
-      ...getVoyagerHeaders(jsessionId),
-      'content-type': 'application/json; charset=UTF-8',
-    },
-    credentials: 'include',
-    body: JSON.stringify(body),
-  });
+  // Try modern follow endpoint
+  try {
+    const res = await fetch(
+      'https://www.linkedin.com/voyager/api/voyagerRelationshipsDashFollows?action=followByEntityUrn',
+      { method: 'POST', headers, body: JSON.stringify({ entityUrn }), redirect: 'manual' }
+    );
 
-  if (res.status === 401 || res.status === 403) {
-    return { success: false, error: 'session_expired' };
+    if (res.status === 401 || res.status === 403) return { success: false, error: 'session_expired' };
+    if (res.ok || res.status === 200 || res.status === 201) return { success: true };
+  } catch (e) {
+    console.warn('[Wassel] Modern follow failed:', e.message);
   }
 
-  if (res.ok || res.status === 200) {
-    return { success: true };
+  // Fallback: legacy follow endpoint
+  try {
+    const res = await fetch(
+      'https://www.linkedin.com/voyager/api/feed/follows',
+      { method: 'POST', headers, body: JSON.stringify({ urn: entityUrn }), redirect: 'manual' }
+    );
+    if (res.ok || res.status === 201) return { success: true };
+    return { success: false, error: `follow_failed_${res.status}` };
+  } catch (e) {
+    return { success: false, error: `follow_error: ${e.message}` };
   }
-
-  return { success: false, error: `follow_failed_${res.status}` };
 }
 
 // ============================================================================
@@ -892,7 +952,7 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
 // STARTUP
 // ============================================================================
 chrome.runtime.onInstalled.addListener(async () => {
-  console.log('[Wassel] Extension installed (v6.0.0 extension-execution)');
+  console.log('[Wassel] Extension installed (v6.1.0 extension-execution)');
   chrome.storage.local.set({ apiUrl: API_BASE });
 
   // Campaign executor: every 1 minute
@@ -909,7 +969,7 @@ chrome.runtime.onInstalled.addListener(async () => {
 });
 
 chrome.runtime.onStartup.addListener(async () => {
-  console.log('[Wassel] Chrome started (v6.0.0 extension-execution)');
+  console.log('[Wassel] Chrome started (v6.1.0 extension-execution)');
 
   chrome.alarms.create('campaignExecutor', { periodInMinutes: POLL_INTERVAL_MINUTES });
   chrome.alarms.create('tokenSync', { periodInMinutes: 30 });

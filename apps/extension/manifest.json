@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Wassel Assistant",
-  "version": "6.0.0",
+  "version": "6.1.0",
   "description": "Wassel — LinkedIn automation from your browser. No LinkedIn tab needed.",
   "permissions": [
     "storage",
