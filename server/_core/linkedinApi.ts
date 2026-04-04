@@ -18,14 +18,25 @@ export interface LinkedInSession {
 }
 
 // ─── Proxy Agent ──────────────────────────────────────────
+// NOTE: Bright Data residential proxy blocks LinkedIn (policy_20090).
+// Authenticated Voyager API calls with li_at cookie work fine without proxy.
+// Only enable proxy if using a proper Web Unlocker zone.
 
 function getProxyAgent(): HttpsProxyAgent<string> | undefined {
   const proxyUrl = process.env.LINKEDIN_PROXY_URL;
   if (!proxyUrl) {
-    console.warn('[LinkedIn] No LINKEDIN_PROXY_URL set — requests will come from datacenter IP (may be blocked)');
     return undefined;
   }
-  // Web Unlocker uses SSL interception — must accept its certificate
+  // Check if it's a Web Unlocker zone (port 33335 is residential, not unlocker)
+  try {
+    const pu = new URL(proxyUrl);
+    // Web Unlocker typically uses port 24000 or specific zone names
+    // Regular residential (33335) blocks LinkedIn — skip it
+    if (pu.port === '33335' || pu.port === '22225') {
+      console.warn('[LinkedIn] Proxy port suggests residential/datacenter zone — LinkedIn blocked. Skipping proxy.');
+      return undefined;
+    }
+  } catch {}
   return new HttpsProxyAgent(proxyUrl, { rejectUnauthorized: false });
 }
 

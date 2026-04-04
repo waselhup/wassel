@@ -174,7 +174,9 @@ router.get('/diagnose', async (req: any, res: any) => {
 
     // Step 3: Test /voyager/api/me (simple self-check)
     const proxyUrl = process.env.LINKEDIN_PROXY_URL;
-    const agent = proxyUrl ? new HttpsProxyAgent(proxyUrl, { rejectUnauthorized: false }) : undefined;
+    // Skip proxy for residential zones that block LinkedIn (policy_20090)
+    let agent: any = undefined;
+    let proxySkipped = false;
     diag.proxy_configured = !!proxyUrl;
     if (proxyUrl) {
       try {
@@ -182,6 +184,12 @@ router.get('/diagnose', async (req: any, res: any) => {
         diag.proxy_host = pu.hostname;
         diag.proxy_port = pu.port;
         diag.proxy_user = pu.username?.substring(0, 30) + '...';
+        if (pu.port === '33335' || pu.port === '22225') {
+          diag.proxy_skipped = true;
+          proxySkipped = true;
+        } else {
+          agent = new HttpsProxyAgent(proxyUrl, { rejectUnauthorized: false });
+        }
       } catch {}
     }
 

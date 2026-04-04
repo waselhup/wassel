@@ -4183,8 +4183,15 @@ import { HttpsProxyAgent as HttpsProxyAgent2 } from "https-proxy-agent";
 function getProxyAgent() {
   const proxyUrl = process.env.LINKEDIN_PROXY_URL;
   if (!proxyUrl) {
-    console.warn("[LinkedIn] No LINKEDIN_PROXY_URL set \u2014 requests will come from datacenter IP (may be blocked)");
     return void 0;
+  }
+  try {
+    const pu = new URL(proxyUrl);
+    if (pu.port === "33335" || pu.port === "22225") {
+      console.warn("[LinkedIn] Proxy port suggests residential/datacenter zone \u2014 LinkedIn blocked. Skipping proxy.");
+      return void 0;
+    }
+  } catch {
   }
   return new HttpsProxyAgent2(proxyUrl, { rejectUnauthorized: false });
 }
@@ -4762,7 +4769,8 @@ router18.get("/diagnose", async (req, res) => {
       jsessionid_prefix: jsessionId.substring(0, 10)
     };
     const proxyUrl = process.env.LINKEDIN_PROXY_URL;
-    const agent = proxyUrl ? new HttpsProxyAgent3(proxyUrl, { rejectUnauthorized: false }) : void 0;
+    let agent = void 0;
+    let proxySkipped = false;
     diag.proxy_configured = !!proxyUrl;
     if (proxyUrl) {
       try {
@@ -4770,6 +4778,12 @@ router18.get("/diagnose", async (req, res) => {
         diag.proxy_host = pu.hostname;
         diag.proxy_port = pu.port;
         diag.proxy_user = pu.username?.substring(0, 30) + "...";
+        if (pu.port === "33335" || pu.port === "22225") {
+          diag.proxy_skipped = true;
+          proxySkipped = true;
+        } else {
+          agent = new HttpsProxyAgent3(proxyUrl, { rejectUnauthorized: false });
+        }
       } catch {
       }
     }
