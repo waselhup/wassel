@@ -368,123 +368,140 @@ async function executeInLinkedInContext(tabId, url, options) {
 
 /**
  * Send a connection invite to a profile.
- * Executes from a LinkedIn tab context so cookies + CSRF work properly.
+ * The ENTIRE fetch runs inside the LinkedIn tab in MAIN world —
+ * the page reads its own CSRF token, sends its own cookies.
+ * Zero chance of CSRF mismatch.
  */
 async function linkedinSendInvite(profileId, message) {
-  const { liAt, jsessionId } = await getLinkedInCookies();
+  const { liAt } = await getLinkedInCookies();
   if (!liAt) return { success: false, error: 'no_li_at_cookie' };
 
   const cleanId = profileId.replace('urn:li:fsd_profile:', '').replace('urn:li:fs_profile:', '');
-  const entityUrn = `urn:li:fsd_profile:${cleanId}`;
 
-  // Get a LinkedIn tab to execute from
   let tabId;
-  try {
-    tabId = await getLinkedInTab();
-  } catch (e) {
-    console.error('[Wassel] Cannot get LinkedIn tab:', e.message);
+  try { tabId = await getLinkedInTab(); } catch (e) {
     return { success: false, error: 'no_linkedin_tab' };
   }
 
-  const csrfToken = jsessionId;
-  let lastError = '';
-
-  // Method 1: Modern dash verifyQuotaAndCreate (from page context)
   try {
-    const body = {
-      invitee: { inviteeUnion: { memberProfile: entityUrn } },
-    };
-    if (message && message.trim()) {
-      body.customMessage = message.trim().substring(0, 300);
-    }
+    const results = await chrome.scripting.executeScript({
+      target: { tabId },
+      world: 'MAIN',  // Run in page's JS context — full access to LinkedIn's cookies/CSRF
+      func: async (pid, msg) => {
+        // Read CSRF token directly from LinkedIn's cookie in the page
+        function getCsrf() {
+          const m = document.cookie.match(/JSESSIONID="?([^";]+)/);
+          return m ? m[1] : '';
+        }
 
-    console.log(`[Wassel] Invite via tab context (dash): ${cleanId}`);
-    const res = await executeInLinkedInContext(tabId,
-      'https://www.linkedin.com/voyager/api/voyagerRelationshipsDashMemberRelationships?action=verifyQuotaAndCreate',
-      {
-        method: 'POST',
-        headers: {
-          'csrf-token': csrfToken,
+        const csrf = getCsrf();
+        if (!csrf) return { error: 'no_csrf_token' };
+
+        const headers = {
+          'csrf-token': csrf,
           'accept': 'application/vnd.linkedin.normalized+json+2.1',
           'x-restli-protocol-version': '2.0.0',
           'content-type': 'application/json; charset=UTF-8',
-        },
-        credentials: 'include',
-        body: JSON.stringify(body),
-      }
-    );
+          'x-li-lang': 'en_US',
+          'x-li-track': JSON.stringify({
+            clientVersion: '1.13.8806', mpVersion: '1.13.8806',
+            osName: 'web', timezoneOffset: 3, timezone: 'Asia/Riyadh',
+            deviceFormFactor: 'DESKTOP', mpName: 'voyager-web',
+          }),
+        };
 
-    console.log(`[Wassel] Dash response:`, JSON.stringify(res).substring(0, 200));
+        const entityUrn = `urn:li:fsd_profile:${pid}`;
+        let lastError = '';
 
-    if (res.error) {
-      lastError = `dash_ctx_error: ${res.error}`;
-      console.warn(`[Wassel] Method 1 error: ${res.error}`);
-    } else if (res.status === 401 || res.status === 403) {
-      return { success: false, error: `session_expired_${res.status}` };
-    } else if (res.status === 429) {
-      return { success: false, error: 'rate_limited' };
-    } else if (res.ok || res.status === 200 || res.status === 201) {
-      console.log(`[Wassel] ✅ Invite sent via dash (tab context)`);
-      return { success: true };
-    } else {
-      lastError = `dash_${res.status}: ${JSON.stringify(res.body || '').substring(0, 200)}`;
-      console.warn(`[Wassel] Method 1 failed: ${lastError}`);
-    }
-  } catch (e) {
-    lastError = `dash_exception: ${e.message}`;
-    console.warn(`[Wassel] Method 1 exception:`, e.message);
-  }
+        // Method 1: Modern dash verifyQuotaAndCreate
+        try {
+          const body = { invitee: { inviteeUnion: { memberProfile: entityUrn } } };
+          if (msg && msg.trim()) body.customMessage = msg.trim().substring(0, 300);
 
-  await sleep(500);
+          const res = await fetch(
+            'https://www.linkedin.com/voyager/api/voyagerRelationshipsDashMemberRelationships?action=verifyQuotaAndCreate',
+            { method: 'POST', headers, credentials: 'include', body: JSON.stringify(body) }
+          );
 
-  // Method 2: Legacy normInvitations (from page context)
-  try {
-    const body = {
-      invitee: {
-        'com.linkedin.voyager.growth.invitation.InviteeProfile': {
-          profileId: cleanId,
-        },
+          if (res.status === 429) return { error: 'rate_limited', status: 429 };
+          if (res.status === 401 || res.status === 403) return { error: 'session_expired', status: res.status };
+          if (res.ok) return { success: true, method: 'dash', status: res.status };
+
+          let detail = '';
+          try { detail = JSON.stringify(await res.json()).substring(0, 300); } catch {}
+          lastError = `dash_${res.status}: ${detail}`;
+        } catch (e) {
+          lastError = `dash_err: ${e.message}`;
+        }
+
+        // Method 2: Legacy normInvitations
+        try {
+          const body = {
+            invitee: {
+              'com.linkedin.voyager.growth.invitation.InviteeProfile': { profileId: pid },
+            },
+          };
+          if (msg && msg.trim()) body.message = msg.trim().substring(0, 280);
+
+          const res = await fetch(
+            'https://www.linkedin.com/voyager/api/growth/normInvitations',
+            { method: 'POST', headers, credentials: 'include', body: JSON.stringify(body) }
+          );
+
+          if (res.status === 429) return { error: 'rate_limited', status: 429 };
+          if (res.status === 401 || res.status === 403) return { error: 'session_expired', status: res.status };
+          if (res.ok || res.status === 201) return { success: true, method: 'growth', status: res.status };
+
+          let detail = '';
+          try { detail = JSON.stringify(await res.json()).substring(0, 300); } catch {}
+          lastError = `growth_${res.status}: ${detail}`;
+        } catch (e) {
+          lastError = `growth_err: ${e.message}`;
+        }
+
+        // Method 3: Direct relationships invitation
+        try {
+          const body = {
+            invitee: { inviteeUnion: { memberProfile: entityUrn } },
+          };
+          if (msg && msg.trim()) body.customMessage = msg.trim().substring(0, 300);
+
+          const res = await fetch(
+            'https://www.linkedin.com/voyager/api/voyagerRelationshipsDashMemberRelationships',
+            { method: 'POST', headers, credentials: 'include', body: JSON.stringify(body) }
+          );
+
+          if (res.ok || res.status === 201) return { success: true, method: 'rel', status: res.status };
+
+          let detail = '';
+          try { detail = JSON.stringify(await res.json()).substring(0, 300); } catch {}
+          lastError = `rel_${res.status}: ${detail}`;
+        } catch (e) {
+          lastError = `rel_err: ${e.message}`;
+        }
+
+        return { error: lastError || 'all_methods_failed' };
       },
-    };
-    if (message && message.trim()) {
-      body.message = message.trim().substring(0, 280);
-    }
+      args: [cleanId, message || ''],
+    });
 
-    console.log(`[Wassel] Invite via tab context (growth): ${cleanId}`);
-    const res = await executeInLinkedInContext(tabId,
-      'https://www.linkedin.com/voyager/api/growth/normInvitations',
-      {
-        method: 'POST',
-        headers: {
-          'csrf-token': csrfToken,
-          'accept': 'application/vnd.linkedin.normalized+json+2.1',
-          'x-restli-protocol-version': '2.0.0',
-          'content-type': 'application/json; charset=UTF-8',
-        },
-        credentials: 'include',
-        body: JSON.stringify(body),
-      }
-    );
+    const res = results?.[0]?.result;
+    if (!res) return { success: false, error: 'script_no_result' };
 
-    console.log(`[Wassel] Growth response:`, JSON.stringify(res).substring(0, 200));
+    console.log(`[Wassel] Invite result:`, JSON.stringify(res).substring(0, 200));
 
-    if (res.error) {
-      lastError = `growth_ctx_error: ${res.error}`;
-    } else if (res.status === 401 || res.status === 403) {
-      return { success: false, error: `session_expired_${res.status}` };
-    } else if (res.status === 429) {
-      return { success: false, error: 'rate_limited' };
-    } else if (res.ok || res.status === 200 || res.status === 201) {
-      console.log(`[Wassel] ✅ Invite sent via growth (tab context)`);
+    if (res.success) {
+      console.log(`[Wassel] ✅ Invite sent via ${res.method} (status ${res.status})`);
       return { success: true };
-    } else {
-      lastError = `growth_${res.status}: ${JSON.stringify(res.body || '').substring(0, 200)}`;
     }
-  } catch (e) {
-    lastError = `growth_exception: ${e.message}`;
-  }
 
-  return { success: false, error: lastError || 'all_invite_methods_failed' };
+    if (res.error?.includes('rate_limited')) return { success: false, error: 'rate_limited' };
+    if (res.error?.includes('session_expired')) return { success: false, error: `session_expired_${res.status}` };
+    return { success: false, error: res.error || 'unknown' };
+  } catch (e) {
+    console.error('[Wassel] Invite script error:', e.message);
+    return { success: false, error: `inject_error: ${e.message}` };
+  }
 }
 
 /**
