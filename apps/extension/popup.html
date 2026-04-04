@@ -5,146 +5,164 @@
   <title>Wassel</title>
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
-    body{width:340px;font-family:'Segoe UI',Inter,system-ui,sans-serif;background:#0a0a12;color:#f1f5f9}
-    .header{background:linear-gradient(135deg,#7c3aed,#ec4899);padding:14px 16px;display:flex;align-items:center;justify-content:space-between}
-    .header h1{font-size:17px;font-weight:700;color:#fff}
-    .header p{font-size:11px;color:rgba(255,255,255,.8);margin-top:2px}
-    .version{font-size:10px;background:rgba(255,255,255,.2);padding:3px 10px;border-radius:12px;font-weight:700;color:#fff}
-    .content{padding:14px}
-    .status-bar{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:8px;margin-bottom:12px;font-size:13px;font-weight:500}
-    .status-bar.ok{background:rgba(34,197,94,.1);color:#86efac;border:1px solid rgba(34,197,94,.3)}
-    .status-bar.err{background:rgba(239,68,68,.1);color:#fca5a5;border:1px solid rgba(239,68,68,.3)}
-    .status-bar.warn{background:rgba(245,158,11,.1);color:#fcd34d;border:1px solid rgba(245,158,11,.3)}
-    .status-bar.info{background:rgba(124,58,237,.1);color:#c4b5fd;border:1px solid rgba(124,58,237,.3)}
-    .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-    .dot.green{background:#22c55e}.dot.red{background:#ef4444}.dot.yellow{background:#f59e0b}
-    .dot.purple{background:#7c3aed;animation:pulse 1.5s infinite}
-    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+    body{width:360px;font-family:'Segoe UI',Inter,system-ui,sans-serif;background:#09090b;color:#f1f5f9}
 
-    /* Stats grid */
-    .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
-    .stat-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:12px;text-align:center}
-    .stat-value{font-size:22px;font-weight:800;color:#f1f5f9;margin-bottom:2px}
-    .stat-value.accent{color:#c4b5fd}
-    .stat-label{font-size:10px;color:#64748b;font-weight:500;text-transform:uppercase;letter-spacing:.5px}
-    .stat-sub{font-size:10px;color:#475569;margin-top:2px}
+    /* Header */
+    .header{background:linear-gradient(135deg,#7c3aed 0%,#a855f7 50%,#ec4899 100%);padding:16px 18px;display:flex;align-items:center;justify-content:space-between}
+    .header-left{display:flex;align-items:center;gap:10px}
+    .header-left img{width:28px;height:28px;border-radius:8px}
+    .header h1{font-size:16px;font-weight:700;color:#fff;letter-spacing:-.3px}
+    .header .subtitle{font-size:10px;color:rgba(255,255,255,.75);margin-top:1px}
+    .badge{font-size:9px;background:rgba(255,255,255,.2);padding:3px 9px;border-radius:10px;font-weight:700;color:#fff;backdrop-filter:blur(4px)}
 
-    /* Campaign row */
-    .campaign-row{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:10px 12px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
-    .campaign-name{font-size:12px;font-weight:600;color:#e2e8f0;max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .campaign-status{font-size:10px;padding:3px 8px;border-radius:12px;font-weight:600}
-    .status-active{background:rgba(34,197,94,.12);color:#86efac}
-    .status-paused{background:rgba(245,158,11,.12);color:#fcd34d}
-    .status-done{background:rgba(100,116,139,.12);color:#94a3b8}
+    .content{padding:14px 16px}
+
+    /* Engine Status Banner */
+    .engine-banner{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:10px;margin-bottom:14px;font-size:13px;font-weight:600}
+    .engine-banner.running{background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);color:#4ade80}
+    .engine-banner.idle{background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.2);color:#c4b5fd}
+    .engine-banner.error{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:#fca5a5}
+    .engine-banner.offline{background:rgba(100,116,139,.08);border:1px solid rgba(100,116,139,.2);color:#94a3b8}
+    .engine-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+    .engine-dot.pulse{animation:pulse 1.5s infinite}
+    .engine-banner.running .engine-dot{background:#22c55e}
+    .engine-banner.idle .engine-dot{background:#7c3aed}
+    .engine-banner.error .engine-dot{background:#ef4444}
+    .engine-banner.offline .engine-dot{background:#64748b}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+    .engine-sub{font-size:10px;font-weight:400;color:#64748b;margin-top:2px}
+
+    /* Stats Row */
+    .stats-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px}
+    .stat-card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:10px;text-align:center}
+    .stat-num{font-size:24px;font-weight:800;background:linear-gradient(135deg,#c4b5fd,#f0abfc);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .stat-label{font-size:9px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+
+    /* Last Action */
+    .last-action{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:12px 14px;margin-bottom:14px}
+    .la-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+    .la-title{font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.5px}
+    .la-time{font-size:10px;color:#475569}
+    .la-body{font-size:12px;color:#cbd5e1;line-height:1.5}
+    .la-body .name{color:#c4b5fd;font-weight:600}
+    .la-body .type{color:#a78bfa}
+    .la-empty{font-size:11px;color:#475569;text-align:center;padding:4px 0}
+
+    /* Cookie Status */
+    .cookie-bar{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:8px;margin-bottom:14px;font-size:12px;font-weight:500}
+    .cookie-bar.valid{background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.15);color:#86efac}
+    .cookie-bar.invalid{background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.15);color:#fca5a5}
+    .cookie-bar.checking{background:rgba(124,58,237,.06);border:1px solid rgba(124,58,237,.15);color:#c4b5fd}
+    .cookie-icon{font-size:14px}
 
     /* Buttons */
-    .btn{width:100%;padding:10px;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:6px}
-    .btn:disabled{opacity:.5;cursor:not-allowed}
-    .btn-primary{background:linear-gradient(135deg,#7c3aed,#ec4899);color:#fff}
-    .btn-primary:hover{opacity:.9}
-    .btn-secondary{background:rgba(255,255,255,.06);color:#94a3b8;border:1px solid rgba(255,255,255,.08)}
-    .btn-secondary:hover{background:rgba(255,255,255,.1)}
+    .actions{display:flex;flex-direction:column;gap:8px}
+    .btn{width:100%;padding:10px;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:6px;letter-spacing:-.2px}
+    .btn:disabled{opacity:.4;cursor:not-allowed}
+    .btn:active:not(:disabled){transform:scale(.98)}
+    .btn-primary{background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff}
+    .btn-primary:hover:not(:disabled){opacity:.9}
+    .btn-ghost{background:rgba(255,255,255,.04);color:#94a3b8;border:1px solid rgba(255,255,255,.06)}
+    .btn-ghost:hover:not(:disabled){background:rgba(255,255,255,.08);color:#e2e8f0}
+    .btn-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 
-    .actions{display:flex;flex-direction:column;gap:8px;margin-top:4px}
-    .divider{border-top:1px solid rgba(255,255,255,.06);margin:12px 0}
+    .divider{border:none;border-top:1px solid rgba(255,255,255,.05);margin:14px 0}
     .hidden{display:none!important}
-    .footer{padding:8px 16px 12px;text-align:center}
-    .footer a{color:#a855f7;text-decoration:none;font-size:11px}
-    .footer-ver{text-align:center;font-size:10px;color:#334155;padding:4px;border-top:1px solid rgba(255,255,255,.05);margin-top:6px}
 
-    /* Login view */
-    .login-prompt{text-align:center;padding:16px 0}
-    .login-prompt p{font-size:12px;color:#94a3b8;margin-bottom:12px;line-height:1.6}
-    .empty-state{text-align:center;padding:16px 0;color:#475569;font-size:12px}
-    .section-title{font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
-    .cookie-status-box{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:10px 12px;margin-bottom:8px;font-size:12px}
-    .cookie-status-box.valid{background:rgba(34,197,94,.08);border-color:rgba(34,197,94,.3)}
-    .cookie-status-box.invalid{background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.3)}
-    .cookie-text{color:#94a3b8}
-    .cookie-status-box.valid .cookie-text{color:#86efac}
-    .cookie-status-box.invalid .cookie-text{color:#fca5a5}
+    /* Login View */
+    .login-view{text-align:center;padding:20px 0}
+    .login-icon{font-size:36px;margin-bottom:10px}
+    .login-text{font-size:12px;color:#94a3b8;line-height:1.6;margin-bottom:16px;padding:0 8px}
+
+    /* Footer */
+    .footer{padding:8px 16px 10px;text-align:center;border-top:1px solid rgba(255,255,255,.04)}
+    .footer a{color:#7c3aed;text-decoration:none;font-size:10px;font-weight:500}
+    .footer a:hover{text-decoration:underline}
+    .footer-ver{font-size:9px;color:#27272a;margin-top:4px}
   </style>
 </head>
 <body>
   <div class="header">
-    <div style="display:flex;align-items:center;gap:10px">
-      <img src="icons/icon48.png" alt="Wassel" style="width:32px;height:32px;border-radius:50%;">
+    <div class="header-left">
+      <img src="icons/icon48.png" alt="Wassel">
       <div>
         <h1>Wassel</h1>
-        <p>LinkedIn Automation</p>
+        <div class="subtitle">LinkedIn Automation Engine</div>
       </div>
     </div>
-    <span class="version">v<span id="ext-version"></span></span>
+    <span class="badge">v<span id="ext-ver"></span></span>
   </div>
 
   <div class="content">
-    <div id="status" class="status-bar info">
-      <span class="dot purple"></span>
-      <span id="status-text">Connecting...</span>
+    <!-- ENGINE STATUS -->
+    <div id="engine-banner" class="engine-banner offline">
+      <span class="engine-dot"></span>
+      <div>
+        <div id="engine-text">Initializing...</div>
+        <div id="engine-sub" class="engine-sub"></div>
+      </div>
     </div>
 
     <!-- VIEW: Not Connected -->
     <div id="view-login" class="hidden">
-      <div class="login-prompt">
-        <p>Open the Wassel dashboard and log in to activate the extension.</p>
-        <button class="btn btn-primary" id="btn-open-dashboard">🚀 Open Wassel Dashboard</button>
+      <div class="login-view">
+        <div class="login-icon">🔗</div>
+        <div class="login-text">Open the Wassel dashboard and log in.<br>The extension will connect automatically.</div>
+        <button class="btn btn-primary" id="btn-open-dash">Open Wassel Dashboard</button>
+        <div style="height:8px"></div>
+        <button class="btn btn-ghost" id="btn-sync-login">Sync Connection</button>
       </div>
-      <div class="divider"></div>
-      <button class="btn btn-secondary" id="btn-sync">🔄 I'm already logged in — Sync</button>
     </div>
 
     <!-- VIEW: Connected -->
-    <div id="view-connected" class="hidden">
-
-      <!-- Today's action stats -->
-      <div class="section-title">Today's Activity</div>
-      <div class="stats-grid">
+    <div id="view-main" class="hidden">
+      <!-- Today Stats -->
+      <div class="stats-row">
         <div class="stat-card">
-          <div class="stat-value accent" id="stat-visits">—</div>
-          <div class="stat-label">Profile Visits</div>
+          <div class="stat-num" id="s-actions">0</div>
+          <div class="stat-label">Actions</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value accent" id="stat-invites">—</div>
-          <div class="stat-label">Invites Sent</div>
+          <div class="stat-num" id="s-errors">0</div>
+          <div class="stat-label">Errors</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value accent" id="stat-messages">—</div>
-          <div class="stat-label">Messages</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value" id="stat-campaigns">—</div>
-          <div class="stat-label">Active Campaigns</div>
+          <div class="stat-num" id="s-streak">0</div>
+          <div class="stat-label">Streak</div>
         </div>
       </div>
 
-      <!-- Active campaigns -->
-      <div class="section-title">Campaigns</div>
-      <div id="campaign-list">
-        <div class="empty-state">Loading campaigns...</div>
+      <!-- Last Action -->
+      <div class="last-action">
+        <div class="la-header">
+          <span class="la-title">Last Action</span>
+          <span class="la-time" id="la-time"></span>
+        </div>
+        <div id="la-body" class="la-body">
+          <div class="la-empty">No actions yet — waiting for campaign</div>
+        </div>
       </div>
 
-      <div class="divider"></div>
-
-      <!-- LinkedIn Cookie Status -->
-      <div class="section-title">LinkedIn Cookie</div>
-      <div id="cookie-status" class="cookie-status-box">
-        <span id="cookie-status-text" class="cookie-text">Click refresh to check</span>
+      <!-- Cookie Status -->
+      <div id="cookie-bar" class="cookie-bar checking">
+        <span class="cookie-icon">🔑</span>
+        <span id="cookie-text">Checking LinkedIn session...</span>
       </div>
 
-      <div class="divider"></div>
-
+      <!-- Actions -->
       <div class="actions">
-        <button class="btn btn-primary" id="btn-dashboard">📊 Open Dashboard</button>
-        <button class="btn btn-secondary" id="btn-refresh-cookie">🍪 Refresh LinkedIn Cookie</button>
-        <button class="btn btn-secondary" id="btn-resync">🔄 Sync Wassel Token</button>
-        <button class="btn btn-secondary" id="btn-manual-cookie" style="font-size:11px;color:#64748b">📋 Manual Cookie Input</button>
+        <button class="btn btn-primary" id="btn-force-exec">▶ Execute Next Action Now</button>
+        <div class="btn-row">
+          <button class="btn btn-ghost" id="btn-dashboard">Dashboard</button>
+          <button class="btn btn-ghost" id="btn-refresh-cookie">Refresh Cookie</button>
+        </div>
       </div>
     </div>
   </div>
 
   <div class="footer">
-    <a href="https://wassel-alpha.vercel.app/app/extension" target="_blank">Extension Help</a>
-    <div class="footer-ver">Wassel Extension v<span id="ext-version-footer"></span></div>
+    <a href="https://wassel-alpha.vercel.app/app" target="_blank">wassel-alpha.vercel.app</a>
+    <div class="footer-ver">Wassel Extension v<span id="ext-ver-f"></span></div>
   </div>
 
   <script src="popup.js"></script>
