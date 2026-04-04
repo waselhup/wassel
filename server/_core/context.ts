@@ -95,9 +95,20 @@ export async function createContext(
 
   try {
     const authHeader = opts.req.headers.authorization;
+
+    // Try Supabase JWT first
     user = await getSupabaseUser(authHeader);
+
+    // Fallback: try extension token
+    if (!user && authHeader?.startsWith('Bearer ')) {
+      user = verifyExtensionToken(authHeader.slice(7));
+    }
+
+    // Last resort: recover from expired JWT (same as Express middleware)
+    if (!user && authHeader?.startsWith('Bearer ')) {
+      user = await recoverUserFromExpiredJwt(authHeader.slice(7));
+    }
   } catch (error) {
-    // Authentication is optional for public procedures
     console.error("Context creation error:", error);
     user = null;
   }
