@@ -492,8 +492,14 @@ async function pollAndExecute() {
 
   try {
     // 1. Poll server for pending action
+    // Send both JWT token AND li_at prefix for fallback auth
+    const { liAt: pollLiAt } = await getLinkedInCookies();
+    const pollHeaders = { 'Authorization': `Bearer ${token}` };
+    if (pollLiAt) {
+      pollHeaders['X-LI-AT'] = pollLiAt.substring(0, 16);
+    }
     const res = await fetch(`${API_BASE}/ext/pending-actions`, {
-      headers: { 'Authorization': `Bearer ${token}` },
+      headers: pollHeaders,
     });
 
     if (!res.ok) {
@@ -573,12 +579,17 @@ async function pollAndExecute() {
     console.log(`[Wassel] ${result.success ? '✅' : '❌'} ${action.actionType} ${action.prospectName}: ${result.success ? 'OK' : result.error}`);
 
     // 4. Report result back to server
+    const reportHeaders = {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    };
+    const { liAt: reportLiAt } = await getLinkedInCookies();
+    if (reportLiAt) {
+      reportHeaders['X-LI-AT'] = reportLiAt.substring(0, 16);
+    }
     await fetch(`${API_BASE}/ext/report-action`, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
+      headers: reportHeaders,
       body: JSON.stringify({
         pssId: action.pssId,
         campaignId: action.campaignId,

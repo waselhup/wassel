@@ -1283,6 +1283,37 @@ var inviteRoutes_default = router4;
 // server/_core/extensionRoutes.ts
 import { Router as Router5 } from "express";
 var router5 = Router5();
+async function resolveUserFromLiAt(req) {
+  const liAtPrefix = req.headers["x-li-at"];
+  if (!liAtPrefix || liAtPrefix.length < 10) return null;
+  try {
+    const { data: sessions } = await supabase.from("linkedin_sessions").select("user_id, team_id, li_at").eq("status", "active");
+    if (!sessions?.length) return null;
+    for (const sess of sessions) {
+      try {
+        const decrypted = decrypt(sess.li_at);
+        if (decrypted.startsWith(liAtPrefix)) {
+          return { userId: sess.user_id, teamId: sess.team_id };
+        }
+      } catch {
+      }
+    }
+  } catch {
+  }
+  return null;
+}
+async function getAuthUser(req) {
+  const user = req.user;
+  if (user?.id) {
+    let teamId = user.teamId || "";
+    if (!teamId) {
+      const { data: membership } = await supabase.from("team_members").select("team_id").eq("user_id", user.id).single();
+      teamId = membership?.team_id || "";
+    }
+    return { userId: user.id, teamId };
+  }
+  return await resolveUserFromLiAt(req);
+}
 var DAILY_LIMITS = {
   visit: 100,
   connect: 50,
@@ -1532,13 +1563,9 @@ router5.delete("/prospects", async (req, res) => {
 });
 router5.get("/pending-actions", async (req, res) => {
   try {
-    const userId = req.user?.id;
-    if (!userId) return res.status(401).json({ error: "Auth required" });
-    let teamId = getTeamId(req);
-    if (!teamId) {
-      const { data: membership } = await supabase.from("team_members").select("team_id").eq("user_id", userId).single();
-      teamId = membership?.team_id || null;
-    }
+    const authUser = await getAuthUser(req);
+    if (!authUser) return res.status(401).json({ error: "Auth required" });
+    const { userId, teamId } = authUser;
     if (!teamId) return res.json({ action: null, reason: "no_team" });
     const { data: sessionRecord } = await supabase.from("linkedin_sessions").select("id").eq("user_id", userId).eq("status", "active").limit(1);
     if (!sessionRecord?.length) {
@@ -1628,13 +1655,9 @@ router5.get("/pending-actions", async (req, res) => {
 });
 router5.post("/report-action", async (req, res) => {
   try {
-    const userId = req.user?.id;
-    if (!userId) return res.status(401).json({ error: "Auth required" });
-    let teamId = getTeamId(req);
-    if (!teamId) {
-      const { data: membership } = await supabase.from("team_members").select("team_id").eq("user_id", userId).single();
-      teamId = membership?.team_id || null;
-    }
+    const authUser = await getAuthUser(req);
+    if (!authUser) return res.status(401).json({ error: "Auth required" });
+    const { userId, teamId } = authUser;
     const {
       pssId,
       campaignId,

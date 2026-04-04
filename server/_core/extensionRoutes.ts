@@ -1,7 +1,60 @@
 import { Router, Request, Response } from 'express';
 import { supabase } from '../supabase';
+import { decrypt } from './encryption';
+import crypto from 'crypto';
 
 const router = Router();
+
+/**
+ * Fallback auth for extension endpoints when Supabase JWT expires.
+ * Extension sends X-LI-AT header with first 16 chars of li_at cookie.
+ * We look up the user from linkedin_sessions by matching the decrypted li_at prefix.
+ */
+async function resolveUserFromLiAt(req: Request): Promise<{ userId: string; teamId: string } | null> {
+  const liAtPrefix = req.headers['x-li-at'] as string;
+  if (!liAtPrefix || liAtPrefix.length < 10) return null;
+
+  try {
+    // Get all active sessions and check if any match
+    const { data: sessions } = await supabase
+      .from('linkedin_sessions')
+      .select('user_id, team_id, li_at')
+      .eq('status', 'active');
+
+    if (!sessions?.length) return null;
+
+    for (const sess of sessions) {
+      try {
+        const decrypted = decrypt(sess.li_at);
+        if (decrypted.startsWith(liAtPrefix)) {
+          return { userId: sess.user_id, teamId: sess.team_id };
+        }
+      } catch {}
+    }
+  } catch {}
+  return null;
+}
+
+/** Get userId and teamId from req.user (JWT) or fallback to li_at header */
+async function getAuthUser(req: Request): Promise<{ userId: string; teamId: string } | null> {
+  // Primary: JWT auth from middleware
+  const user = (req as any).user;
+  if (user?.id) {
+    let teamId = user.teamId || '';
+    if (!teamId) {
+      const { data: membership } = await supabase
+        .from('team_members')
+        .select('team_id')
+        .eq('user_id', user.id)
+        .single();
+      teamId = membership?.team_id || '';
+    }
+    return { userId: user.id, teamId };
+  }
+
+  // Fallback: li_at prefix header
+  return await resolveUserFromLiAt(req);
+}
 
 // ─── Rate Limits (daily, per user, per action type) ──────
 const DAILY_LIMITS: Record<string, number> = {
@@ -413,19 +466,10 @@ router.delete('/prospects', async (req: Request, res: Response) => {
  */
 router.get('/pending-actions', async (req: Request, res: Response) => {
     try {
-        const userId = (req as any).user?.id;
-        if (!userId) return res.status(401).json({ error: 'Auth required' });
-
-        // Resolve team
-        let teamId = getTeamId(req);
-        if (!teamId) {
-            const { data: membership } = await supabase
-                .from('team_members')
-                .select('team_id')
-                .eq('user_id', userId)
-                .single();
-            teamId = membership?.team_id || null;
-        }
+        // Auth: JWT or li_at fallback
+        const authUser = await getAuthUser(req);
+        if (!authUser) return res.status(401).json({ error: 'Auth required' });
+        const { userId, teamId } = authUser;
         if (!teamId) return res.json({ action: null, reason: 'no_team' });
 
         // Check if user has active session record
@@ -577,18 +621,10 @@ router.get('/pending-actions', async (req: Request, res: Response) => {
  */
 router.post('/report-action', async (req: Request, res: Response) => {
     try {
-        const userId = (req as any).user?.id;
-        if (!userId) return res.status(401).json({ error: 'Auth required' });
-
-        let teamId = getTeamId(req);
-        if (!teamId) {
-            const { data: membership } = await supabase
-                .from('team_members')
-                .select('team_id')
-                .eq('user_id', userId)
-                .single();
-            teamId = membership?.team_id || null;
-        }
+        // Auth: JWT or li_at fallback
+        const authUser = await getAuthUser(req);
+        if (!authUser) return res.status(401).json({ error: 'Auth required' });
+        const { userId, teamId } = authUser;
 
         const {
             pssId,
