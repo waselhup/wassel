@@ -63,8 +63,8 @@ export default function ProspectCard({
       onClick={onToggleSelect}
       className={`relative flex items-center p-4 rounded-xl transition-all duration-200 cursor-pointer overflow-hidden ${
         isSelected
-          ? 'bg-blue-50/50 border-blue-400 shadow-sm'
-          : 'bg-white border-gray-100/80 hover:border-blue-200 hover:shadow-md'
+          ? 'bg-[rgba(139,92,246,0.08)] border-[#8B5CF6] shadow-sm'
+          : 'bg-[var(--bg-card)] border-gray-100/80 hover:border-[#8B5CF6] hover:shadow-md'
       } ${imported ? 'opacity-60' : ''}`}
       style={{
         borderWidth: '1px',
@@ -84,8 +84,8 @@ export default function ProspectCard({
           <div
             className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
               isSelected
-                ? 'bg-blue-600 border-blue-600'
-                : 'border-gray-300 bg-white'
+                ? 'bg-[#8B5CF6] border-[#8B5CF6]'
+                : 'border-gray-300 bg-[var(--bg-card)]'
             }`}
           >
             {isSelected && (
@@ -108,7 +108,7 @@ export default function ProspectCard({
           <img
             src={`/api/proxy-image?url=${encodeURIComponent(photo)}`}
             alt={prospect.name}
-            className="w-12 h-12 rounded-full object-cover shadow-sm bg-gray-50 border border-gray-100"
+            className="w-12 h-12 rounded-full object-cover shadow-sm bg-[var(--bg-base)] border border-gray-100"
             onError={(e) => {
               // Fallback to initial if image fails to load
               (e.target as HTMLImageElement).style.display = 'none';
@@ -164,9 +164,9 @@ export default function ProspectCard({
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
-              className="flex items-center gap-1 ml-auto text-xs font-medium text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-md transition-colors border border-blue-100/50"
+              className="flex items-center gap-1 ml-auto text-xs font-medium text-[#8B5CF6] hover:text-[#7C3AED] bg-[rgba(139,92,246,0.08)] hover:bg-[rgba(139,92,246,0.12)] px-2.5 py-1 rounded-md transition-colors border border-[rgba(139,92,246,0.2)]"
             >
-              <div className="w-3.5 h-3.5 rounded-sm flex items-center justify-center bg-blue-600 text-white flex-shrink-0">
+              <div className="w-3.5 h-3.5 rounded-sm flex items-center justify-center bg-[#8B5CF6] text-white flex-shrink-0">
                 <span className="font-bold" style={{ fontSize: '8px' }}>in</span>
               </div>
               <span>Profile</span>

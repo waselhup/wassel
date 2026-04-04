@@ -96,7 +96,7 @@ export default function CampaignMessageSurvey({
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed right-0 top-0 h-full w-96 bg-white shadow-2xl z-50 flex flex-col overflow-hidden"
+            className="fixed right-0 top-0 h-full w-96 bg-[var(--bg-card)] shadow-2xl z-50 flex flex-col overflow-hidden"
             dir={isAr ? 'rtl' : 'ltr'}
           >
             {/* Header */}
@@ -124,7 +124,7 @@ export default function CampaignMessageSurvey({
 
               {/* Sender profile card */}
               {senderProfile && (
-                <div className="flex items-center gap-3 bg-gray-50 rounded-xl p-3">
+                <div className="flex items-center gap-3 bg-[var(--bg-base)] rounded-xl p-3">
                   {senderProfile.photoUrl ? (
                     <img
                       src={`/api/proxy-image?url=${encodeURIComponent(senderProfile.photoUrl)}`}
@@ -170,7 +170,7 @@ export default function CampaignMessageSurvey({
                   <button
                     onClick={() => setOutputLang('ar')}
                     className={`flex-1 py-2 rounded-lg text-sm font-semibold flex items-center justify-center gap-1.5 transition-all ${
-                      outputLang === 'ar' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'
+                      outputLang === 'ar' ? 'bg-[var(--bg-card)] shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'
                     }`}
                   >
                     🇸🇦 <span>عربي</span>
@@ -178,7 +178,7 @@ export default function CampaignMessageSurvey({
                   <button
                     onClick={() => setOutputLang('en')}
                     className={`flex-1 py-2 rounded-lg text-sm font-semibold flex items-center justify-center gap-1.5 transition-all ${
-                      outputLang === 'en' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'
+                      outputLang === 'en' ? 'bg-[var(--bg-card)] shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'
                     }`}
                   >
                     🇬🇧 <span>English</span>
@@ -199,7 +199,7 @@ export default function CampaignMessageSurvey({
                       className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 text-sm font-medium transition-all ${
                         purpose === p.id
                           ? 'border-blue-500 bg-blue-50 text-blue-700'
-                          : 'border-gray-200 hover:border-gray-300 text-gray-600 bg-white'
+                          : 'border-gray-200 hover:border-gray-300 text-gray-600 bg-[var(--bg-card)]'
                       }`}
                     >
                       <span className="text-base">{p.icon}</span>
@@ -252,7 +252,7 @@ export default function CampaignMessageSurvey({
             </div>
 
             {/* Footer — Generate button */}
-            <div className="px-5 py-4 border-t border-gray-100 bg-white">
+            <div className="px-5 py-4 border-t border-gray-100 bg-[var(--bg-card)]">
               <button
                 onClick={handleGenerate}
                 disabled={!purpose || !tone || isGenerating}

@@ -35,14 +35,14 @@ export default function CampaignCard({
   };
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-shadow cursor-pointer group">
+    <div className="bg-[var(--bg-card)] rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-shadow cursor-pointer group">
       <div className="flex items-start justify-between mb-4 flex-row-reverse">
         <div className="text-right flex-1">
-          <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+          <h3 className="text-lg font-semibold text-gray-900 group-hover:text-[#8B5CF6] transition-colors">
             {name}
           </h3>
           <div className="flex gap-2 mt-2 flex-row-reverse">
-            <span className="text-xs font-medium px-2 py-1 bg-blue-50 text-blue-700 rounded">
+            <span className="text-xs font-medium px-2 py-1 bg-[rgba(139,92,246,0.08)] text-[#8B5CF6] rounded">
               {typeLabels[type]}
             </span>
             <span className={`text-xs font-medium px-2 py-1 rounded ${statusConfig[status].color}`}>
@@ -59,7 +59,7 @@ export default function CampaignCard({
       <div className="grid grid-cols-3 gap-4 py-4 border-t border-b border-gray-100">
         <div className="text-right">
           <div className="flex items-center gap-2 justify-end mb-1">
-            <Users size={16} className="text-blue-600" />
+            <Users size={16} className="text-[#8B5CF6]" />
             <span className="text-xs text-gray-600">جهات محتملة</span>
           </div>
           <div className="text-lg font-bold text-gray-900">{leadsCount}</div>
@@ -85,7 +85,7 @@ export default function CampaignCard({
         <span className="text-xs text-gray-500">
           {new Date(createdAt).toLocaleDateString('ar-SA')}
         </span>
-        <button className="text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors">
+        <button className="text-sm font-medium text-[#8B5CF6] hover:text-[#7C3AED] transition-colors">
           عرض التفاصيل
         </button>
       </div>

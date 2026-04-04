@@ -44,14 +44,14 @@ export default function ExtensionPairing() {
 
   const features = [
     {
-      icon: <Zap size={18} color="#f59e0b" />,
+      icon: <Zap size={18} color="#a78bfa" />,
       title: isAr ? 'تنفيذ الحملات' : 'Campaign Execution',
       desc: isAr
         ? 'يزور الملفات الشخصية، يرسل دعوات تواصل، ويرسل رسائل تلقائياً بالنيابة عنك'
         : 'Visits profiles, sends connection invites, and sends messages automatically on your behalf',
     },
     {
-      icon: <Send size={18} color="#8b5cf6" />,
+      icon: <Send size={18} color="#c4b5fd" />,
       title: isAr ? 'نشر المنشورات' : 'Post Publishing',
       desc: isAr
         ? 'يفتح محرر LinkedIn ويملأ المحتوى — أنت تضغط نشر'
@@ -103,14 +103,14 @@ export default function ExtensionPairing() {
           {extensionDetected && (
             <div
               className="flex items-center gap-3 p-4 rounded-xl mb-4"
-              style={{ background: '#ecfdf5', border: '1px solid #a7f3d0' }}
+              style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)' }}
             >
-              <CheckCircle size={20} style={{ color: '#059669', flexShrink: 0 }} />
+              <CheckCircle size={20} style={{ color: '#34d399', flexShrink: 0 }} />
               <div>
-                <p className="text-sm font-semibold" style={{ color: '#059669' }}>
+                <p className="text-sm font-semibold" style={{ color: '#34d399' }}>
                   {isAr ? '✅ الإضافة مثبتة وتعمل' : '✅ Extension installed and active'}
                 </p>
-                <p className="text-xs mt-0.5" style={{ color: '#047857' }}>
+                <p className="text-xs mt-0.5" style={{ color: '#34d399' }}>
                   Wassel Extension v2.0.0
                 </p>
               </div>
@@ -123,7 +123,7 @@ export default function ExtensionPairing() {
               <div
                 style={{
                   width: 42, height: 42, borderRadius: 10,
-                  background: 'var(--gradient-primary)',
+                  background: 'linear-gradient(135deg, #8B5CF6, #6366F1)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                 }}
               >
@@ -145,7 +145,7 @@ export default function ExtensionPairing() {
                   download
                   style={{
                     display: 'inline-flex', alignItems: 'center', gap: 8,
-                    background: 'linear-gradient(135deg, #7c3aed, #ec4899)',
+                    background: 'linear-gradient(135deg, #8B5CF6, #6366F1)',
                     color: '#fff', borderRadius: 8,
                     padding: '10px 20px', fontSize: 13, fontWeight: 600,
                     textDecoration: 'none', marginBottom: 10,
@@ -222,9 +222,9 @@ export default function ExtensionPairing() {
                   <div
                     style={{
                       width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
-                      background: 'rgba(124,58,237,0.12)', border: '1px solid rgba(124,58,237,0.2)',
+                      background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.2)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 10, fontWeight: 700, color: '#c4b5fd',
+                      fontSize: 10, fontWeight: 700, color: '#a78bfa',
                     }}
                   >
                     {i + 1}
@@ -265,8 +265,8 @@ export default function ExtensionPairing() {
           <div
             style={{
               ...card,
-              background: 'rgba(239,68,68,0.03)',
-              borderColor: 'rgba(239,68,68,0.12)',
+              background: 'rgba(239,68,68,0.05)',
+              borderColor: 'rgba(239,68,68,0.15)',
             }}
           >
             <h3 style={{ color: 'var(--text-primary)', fontSize: 14, fontWeight: 700, marginBottom: 10 }}>
@@ -291,7 +291,7 @@ export default function ExtensionPairing() {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-              <Monitor size={18} color="#22c55e" style={{ marginTop: 2, flexShrink: 0 }} />
+              <Monitor size={18} color="#34d399" style={{ marginTop: 2, flexShrink: 0 }} />
               <p style={{ color: 'var(--text-secondary)', fontSize: 12, lineHeight: 1.6 }}>
                 {isAr
                   ? 'بمجرد تسجيل الدخول في Wassel، تتصل الإضافة تلقائياً — لا حاجة لنسخ أي رمز.'

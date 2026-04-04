@@ -5,7 +5,7 @@ export default function Safety() {
   return (
     <div style={{ background: 'var(--bg-base)', color: 'var(--text-primary)', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
       {/* Navbar */}
-      <nav className="fixed top-0 left-0 right-0 z-50" style={{ background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(16px)', borderBottom: '1px solid var(--border-subtle)' }}>
+      <nav className="fixed top-0 left-0 right-0 z-50" style={{ background: 'rgba(30,41,59,0.85)', backdropFilter: 'blur(16px)', borderBottom: '1px solid var(--border-subtle)' }}>
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <Link href="/"><div className="flex items-center gap-2 cursor-pointer">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm" style={{ background: 'var(--gradient-primary)' }}>W</div>
@@ -22,8 +22,8 @@ export default function Safety() {
       {/* Hero */}
       <section className="pt-28 pb-16 px-4 text-center">
         <div className="max-w-3xl mx-auto">
-          <div className="w-16 h-16 rounded-2xl mx-auto mb-6 flex items-center justify-center" style={{ background: '#ecfdf5', border: '1px solid #a7f3d0' }}>
-            <Shield className="w-8 h-8" style={{ color: '#059669' }} />
+          <div className="w-16 h-16 rounded-2xl mx-auto mb-6 flex items-center justify-center" style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)' }}>
+            <Shield className="w-8 h-8" style={{ color: '#34d399' }} />
           </div>
           <h1 className="text-4xl sm:text-5xl font-extrabold mb-4" style={{ fontFamily: "'Outfit', sans-serif" }}>
             How Wassel Keeps Your LinkedIn Account Safe
@@ -47,8 +47,8 @@ export default function Safety() {
               { icon: AlertTriangle, title: 'Auto-Pause', desc: 'If LinkedIn shows any warning or unusual activity, Wassel automatically pauses all actions.' },
             ].map((item, i) => (
               <div key={i} className="p-6 rounded-xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-sm)' }}>
-                <div className="w-10 h-10 rounded-lg mb-4 flex items-center justify-center" style={{ background: '#ecfdf5' }}>
-                  <item.icon className="w-5 h-5" style={{ color: '#059669' }} />
+                <div className="w-10 h-10 rounded-lg mb-4 flex items-center justify-center" style={{ background: 'rgba(34,197,94,0.08)' }}>
+                  <item.icon className="w-5 h-5" style={{ color: '#34d399' }} />
                 </div>
                 <h3 className="font-bold mb-2">{item.title}</h3>
                 <p className="text-sm" style={{ color: 'var(--text-secondary)', lineHeight: 1.6 }}>{item.desc}</p>
@@ -59,7 +59,7 @@ export default function Safety() {
       </section>
 
       {/* Section 2: Extension Safety */}
-      <section className="py-16 px-4" style={{ background: '#f1f5f9' }}>
+      <section className="py-16 px-4" style={{ background: 'rgba(255,255,255,0.04)' }}>
         <div className="max-w-4xl mx-auto">
           <div className="flex flex-col md:flex-row gap-8 items-center">
             <div className="flex-1">
@@ -75,7 +75,7 @@ export default function Safety() {
                   'Open-source inspection available on request',
                 ].map((item, i) => (
                   <li key={i} className="flex items-center gap-2 text-sm">
-                    <CheckCircle className="w-4 h-4 flex-shrink-0" style={{ color: '#059669' }} />
+                    <CheckCircle className="w-4 h-4 flex-shrink-0" style={{ color: '#34d399' }} />
                     <span>{item}</span>
                   </li>
                 ))}

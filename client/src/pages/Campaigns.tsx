@@ -160,10 +160,10 @@ export default function Campaigns() {
           {/* Header */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
             <div>
-              <h2 style={{ fontSize: 22, fontWeight: 800, color: '#f1f5f9', fontFamily: "'Syne', sans-serif", marginBottom: 4 }}>
+              <h2 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text-primary)', fontFamily: "'Syne', sans-serif", marginBottom: 4 }}>
                 {t('campaigns.title')}
               </h2>
-              <p style={{ color: '#64748b', fontSize: 13 }}>{t('campaigns.manage')}</p>
+              <p style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{t('campaigns.manage')}</p>
             </div>
             <button
               onClick={() => navigate('/app/campaigns/templates')}
@@ -185,7 +185,7 @@ export default function Campaigns() {
                     style={{
                       padding: '6px 14px', borderRadius: 7, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: isActive ? 600 : 400,
                       background: isActive ? 'linear-gradient(135deg,#7c3aed,#ec4899)' : 'transparent',
-                      color: isActive ? '#fff' : '#64748b', transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: 6,
+                      color: isActive ? '#fff' : 'var(--text-secondary)', transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: 6,
                     }}>
                     {tab.label}
                     {count > 0 && (
@@ -200,12 +200,12 @@ export default function Campaigns() {
             </div>
             {/* Search */}
             <div style={{ position: 'relative', flex: 1, minWidth: 160 }}>
-              <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#475569', pointerEvents: 'none' }} />
+              <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
               <input
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 placeholder={t('common.search') + '...'}
-                style={{ width: '100%', padding: '8px 12px 8px 32px', borderRadius: 8, border: '1px solid var(--border-subtle)', background: 'var(--bg-card)', color: '#f1f5f9', fontSize: 13, outline: 'none' }}
+                style={{ width: '100%', padding: '8px 12px 8px 32px', borderRadius: 8, border: '1px solid var(--border-subtle)', background: 'var(--bg-card)', color: 'var(--text-primary)', fontSize: 13, outline: 'none' }}
               />
             </div>
           </div>
@@ -227,9 +227,9 @@ export default function Campaigns() {
           ) : filtered.length === 0 ? (
             campaigns.length === 0 ? (
               <div style={{ textAlign: 'center', padding: 60, background: 'var(--bg-card)', borderRadius: 16, border: '1px solid var(--border-subtle)' }}>
-                <Megaphone size={40} style={{ color: '#475569', margin: '0 auto 16px' }} />
-                <h3 style={{ color: '#f1f5f9', fontSize: 18, fontWeight: 700, marginBottom: 8 }}>{t('campaigns.noCampaigns')}</h3>
-                <p style={{ color: '#64748b', fontSize: 14, marginBottom: 20 }}>{t('campaigns.noCampaignsDesc')}</p>
+                <Megaphone size={40} style={{ color: 'var(--text-muted)', margin: '0 auto 16px' }} />
+                <h3 style={{ color: 'var(--text-primary)', fontSize: 18, fontWeight: 700, marginBottom: 8 }}>{t('campaigns.noCampaigns')}</h3>
+                <p style={{ color: 'var(--text-secondary)', fontSize: 14, marginBottom: 20 }}>{t('campaigns.noCampaignsDesc')}</p>
                 <button
                   onClick={() => navigate('/app/campaigns/templates')}
                   style={{ background: 'linear-gradient(135deg,#7c3aed,#ec4899)', color: '#fff', border: 'none', borderRadius: 8, padding: '12px 24px', fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
@@ -237,7 +237,7 @@ export default function Campaigns() {
                 </button>
               </div>
             ) : (
-              <div style={{ textAlign: 'center', padding: 40, color: '#64748b', fontSize: 14 }}>
+              <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-secondary)', fontSize: 14 }}>
                 {t('common.noResults')}
               </div>
             )
@@ -257,15 +257,15 @@ export default function Campaigns() {
                       <div style={{ flex: 1 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
                           <div style={{ width: 8, height: 8, borderRadius: '50%', background: st.dot, flexShrink: 0 }} />
-                          <h3 style={{ color: '#f1f5f9', fontSize: 15, fontWeight: 700, margin: 0 }}>{c.name}</h3>
+                          <h3 style={{ color: 'var(--text-primary)', fontSize: 15, fontWeight: 700, margin: 0 }}>{c.name}</h3>
                           <span style={{ background: st.bg, color: st.text, padding: '2px 8px', borderRadius: 12, fontSize: 11, fontWeight: 600, textTransform: 'uppercase' }}>
                             {statusLabel(c.status)}
                           </span>
                         </div>
                         {c.description && (
-                          <p style={{ color: '#64748b', fontSize: 12, marginBottom: 8 }}>{c.description}</p>
+                          <p style={{ color: 'var(--text-secondary)', fontSize: 12, marginBottom: 8 }}>{c.description}</p>
                         )}
-                        <div style={{ display: 'flex', gap: 16, color: '#475569', fontSize: 12, flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', gap: 16, color: 'var(--text-muted)', fontSize: 12, flexWrap: 'wrap' }}>
                           <span>{t('campaigns.created')} {formatDate(c.created_at)}</span>
                           {c.type && <span>{t('campaigns.type')}: {c.type}</span>}
                           {typeof c.prospect_count === 'number' && (
@@ -286,7 +286,7 @@ export default function Campaigns() {
                               background: c.status === 'active' ? 'rgba(245,158,11,0.12)' : 'rgba(34,197,94,0.12)',
                               border: c.status === 'active' ? '1px solid rgba(245,158,11,0.25)' : '1px solid rgba(34,197,94,0.25)',
                               borderRadius: 7, padding: '5px 10px', cursor: 'pointer',
-                              color: c.status === 'active' ? '#fcd34d' : '#86efac',
+                              color: c.status === 'active' ? '#fbbf24' : '#34d399',
                               display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 600,
                             }}>
                             {c.status === 'active' ? <><Pause size={12} /> {t('common.pause')}</> : <><Play size={12} /> {t('common.resume')}</>}
@@ -296,10 +296,10 @@ export default function Campaigns() {
                           onClick={() => setDeleteId(c.id)}
                           title={t('common.delete')}
                           className="campaign-delete-btn"
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 6, color: '#475569', opacity: 0, transition: 'all 0.15s', borderRadius: 6 }}>
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 6, color: 'var(--text-muted)', opacity: 0, transition: 'all 0.15s', borderRadius: 6 }}>
                           <Trash2 size={14} />
                         </button>
-                        <ChevronRight size={16} style={{ color: '#475569' }} onClick={() => navigate(`/app/campaigns/${c.id}`)} />
+                        <ChevronRight size={16} style={{ color: 'var(--text-muted)' }} onClick={() => navigate(`/app/campaigns/${c.id}`)} />
                       </div>
                     </div>
 
@@ -308,7 +308,7 @@ export default function Campaigns() {
                         onClick={e => e.stopPropagation()}
                         style={{ marginTop: 12, padding: '10px 14px', borderRadius: 8, background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', display: 'flex', alignItems: 'center', gap: 10 }}>
                         <span style={{ color: '#fca5a5', fontSize: 12, flex: 1 }}>{t('campaigns.deleteConfirm', { name: c.name })}</span>
-                        <button onClick={() => setDeleteId(null)} style={{ background: 'rgba(255,255,255,0.06)', color: '#94a3b8', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '4px 12px', fontSize: 11, cursor: 'pointer' }}>{t('common.cancel')}</button>
+                        <button onClick={() => setDeleteId(null)} style={{ background: 'rgba(255,255,255,0.06)', color: 'var(--text-muted)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '4px 12px', fontSize: 11, cursor: 'pointer' }}>{t('common.cancel')}</button>
                         <button onClick={() => deleteCampaign(c.id)} disabled={deleting} style={{ background: '#ef4444', color: '#fff', border: 'none', borderRadius: 6, padding: '4px 12px', fontSize: 11, fontWeight: 600, cursor: 'pointer', opacity: deleting ? 0.6 : 1 }}>
                           {deleting ? <Loader2 size={11} style={{ display: 'inline' }} /> : t('common.delete')}
                         </button>
@@ -323,7 +323,7 @@ export default function Campaigns() {
 
         {/* Toast */}
         {toast && (
-          <div style={{ position: 'fixed', bottom: 24, right: 24, background: '#1e293b', border: '1px solid rgba(124,58,237,0.3)', borderRadius: 10, padding: '12px 20px', color: '#f1f5f9', fontSize: 13, fontWeight: 500, boxShadow: '0 8px 32px rgba(0,0,0,0.3)', zIndex: 1000 }}>
+          <div style={{ position: 'fixed', bottom: 24, right: 24, background: 'var(--bg-card)', border: '1px solid rgba(124,58,237,0.3)', borderRadius: 10, padding: '12px 20px', color: 'var(--text-primary)', fontSize: 13, fontWeight: 500, boxShadow: '0 8px 32px rgba(0,0,0,0.3)', zIndex: 1000 }}>
             {toast}
           </div>
         )}

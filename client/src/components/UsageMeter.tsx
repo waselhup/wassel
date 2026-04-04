@@ -22,7 +22,7 @@ export default function UsageMeter({ compact = false }: UsageMeterProps) {
 
   if (compact) {
     return (
-      <div className="flex items-center gap-2 px-3 py-1 bg-gray-50 rounded-lg border border-gray-200">
+      <div className="flex items-center gap-2 px-3 py-1 bg-[var(--bg-base)] rounded-lg border border-gray-200">
         <TrendingUp size={14} className="text-gray-600" />
         <span className="text-xs font-medium text-gray-700">
           {usage.usedLeads} / {usage.monthlyLimit}
@@ -35,7 +35,7 @@ export default function UsageMeter({ compact = false }: UsageMeterProps) {
   }
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-4">
+    <div className="bg-[var(--bg-card)] rounded-lg border border-gray-200 p-4">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <h3 className="font-semibold text-gray-900">استخدام الخطة</h3>

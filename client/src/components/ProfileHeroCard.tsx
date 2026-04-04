@@ -149,7 +149,7 @@ export default function ProfileHeroCard({
         {/* Name */}
         <h2
           style={{
-            color: '#ffffff',
+            color: 'rgba(255,255,255,1)',
             fontSize: 22,
             fontWeight: 800,
             lineHeight: 1.2,

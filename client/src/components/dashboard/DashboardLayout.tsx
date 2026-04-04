@@ -19,13 +19,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   ];
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-[var(--bg-base)]">
       {/* Sidebar */}
-      <div className={`${sidebarOpen ? 'w-64' : 'w-20'} bg-white border-r border-gray-200 flex flex-col transition-all duration-300`}>
+      <div className={`${sidebarOpen ? 'w-64' : 'w-20'} bg-[var(--bg-card)] border-r border-gray-200 flex flex-col transition-all duration-300`}>
         {/* Logo */}
         <div className="h-16 flex items-center justify-between px-4 border-b border-gray-200">
           {sidebarOpen && (
-            <h2 className="text-xl font-bold text-blue-600">وصل</h2>
+            <h2 className="text-xl font-bold text-[#8B5CF6]">وصل</h2>
           )}
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -45,7 +45,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 onClick={() => setLocation(item.href)}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 transition-colors ${
                   window.location.pathname === item.href
-                    ? 'bg-blue-100 text-blue-600'
+                    ? 'bg-[rgba(139,92,246,0.08)] text-[#8B5CF6]'
                     : 'text-gray-700 hover:text-gray-900'
                 }`}
               >
@@ -78,12 +78,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Bar */}
-        <div className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-8">
+        <div className="h-16 bg-[var(--bg-card)] border-b border-gray-200 flex items-center justify-between px-8">
           <div className="text-gray-600 text-right">
             <span className="text-sm">أهلاً بعودتك</span>
           </div>
           <div className="flex items-center gap-4">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-400 rounded-full flex items-center justify-center text-white font-semibold">
+            <div className="w-10 h-10 bg-gradient-to-br from-[#8B5CF6] to-[#A78BFA] rounded-full flex items-center justify-center text-white font-semibold">
               أ
             </div>
           </div>

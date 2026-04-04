@@ -64,7 +64,7 @@ export default function Features() {
   ];
 
   return (
-    <section className="py-20 px-6 bg-gray-50">
+    <section className="py-20 px-6 bg-[var(--bg-base)]">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
@@ -81,10 +81,10 @@ export default function Features() {
             return (
               <div
                 key={index}
-                className="bg-white rounded-xl p-6 shadow-sm hover:shadow-lg hover:border-blue-200 transition-all duration-300 border border-gray-100"
+                className="bg-[var(--bg-card)] rounded-xl p-6 shadow-sm hover:shadow-lg hover:border-[#8B5CF6] transition-all duration-300 border border-gray-100"
               >
                 <div className="mb-4">
-                  <div className="p-3 bg-blue-50 rounded-lg w-fit">
+                  <div className="p-3 bg-[rgba(139,92,246,0.08)] rounded-lg w-fit">
                     <Icon size={24} className={feature.color} />
                   </div>
                 </div>

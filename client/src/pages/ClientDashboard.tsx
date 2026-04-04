@@ -177,15 +177,15 @@ export default function ClientDashboard() {
 
                     {/* ══ Connect LinkedIn Banner ══ */}
                     {!linkedinConnected && (
-                        <div className="flex items-center justify-between px-5 py-4 rounded-xl mb-4" style={{ background: '#eff6ff', border: '1px solid #bfdbfe' }}>
+                        <div className="flex items-center justify-between px-5 py-4 rounded-xl mb-4" style={{ background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.2)' }}>
                             <div className="flex items-center gap-3">
-                                <Linkedin className="w-5 h-5" style={{ color: '#1a56db' }} />
+                                <Linkedin className="w-5 h-5" style={{ color: '#a78bfa' }} />
                                 <div>
                                     <p className="text-sm font-semibold" style={{ color: '#1e40af' }}>{t('dashboard.connectLinkedin')}</p>
                                 </div>
                             </div>
                             <a href="/api/linkedin/connect">
-                                <button className="px-4 py-2 rounded-lg text-sm font-semibold text-white" style={{ background: '#0077b5' }}>
+                                <button className="px-4 py-2 rounded-lg text-sm font-semibold text-white" style={{ background: 'var(--gradient-primary)' }}>
                                     {t('dashboard.connectBtn')}
                                 </button>
                             </a>
@@ -194,7 +194,7 @@ export default function ClientDashboard() {
 
                     {/* ══ Extension Download Banner ══ */}
                     {!user?.extensionInstalled && (
-                        <div className="flex items-center justify-between px-5 py-4 rounded-xl mb-6" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
+                        <div className="flex items-center justify-between px-5 py-4 rounded-xl mb-6" style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)' }}>
                             <div className="flex items-center gap-3">
                                 <Download className="w-5 h-5" style={{ color: '#059669' }} />
                                 <div>
@@ -240,10 +240,10 @@ export default function ClientDashboard() {
                             {/* 4 Metric Cards */}
                             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                                 {[
-                                    { label: t('dashboard.stats.sequences'), value: campaigns.length, icon: Target, color: '#1a56db', bg: '#eff6ff' },
-                                    { label: t('dashboard.stats.prospects'), value: prospects.length, icon: Users, color: '#059669', bg: '#ecfdf5' },
-                                    { label: t('dashboard.stats.running'), value: activeCampaigns, icon: Zap, color: '#d97706', bg: '#fffbeb' },
-                                    { label: t('dashboard.stats.queue'), value: queueCount, icon: BarChart3, color: '#6366f1', bg: '#eef2ff' },
+                                    { label: t('dashboard.stats.sequences'), value: campaigns.length, icon: Target, color: '#a78bfa', bg: 'rgba(139,92,246,0.12)' },
+                                    { label: t('dashboard.stats.prospects'), value: prospects.length, icon: Users, color: '#34d399', bg: 'rgba(34,197,94,0.12)' },
+                                    { label: t('dashboard.stats.running'), value: activeCampaigns, icon: Zap, color: '#fbbf24', bg: 'rgba(245,158,11,0.12)' },
+                                    { label: t('dashboard.stats.queue'), value: queueCount, icon: BarChart3, color: '#818cf8', bg: 'rgba(99,102,241,0.12)' },
                                 ].map((stat, i) => (
                                     <div key={i} className="p-4" style={{ ...card }}>
                                         <div className="flex items-center justify-between mb-3">
@@ -290,7 +290,7 @@ export default function ClientDashboard() {
                                                     </div>
                                                     <span className="text-[10px] font-bold uppercase px-2.5 py-1 rounded-full"
                                                         style={{
-                                                            background: c.status === 'active' ? '#ecfdf5' : c.status === 'paused' ? '#fffbeb' : '#f3f4f6',
+                                                            background: c.status === 'active' ? 'rgba(34,197,94,0.08)' : c.status === 'paused' ? 'rgba(245,158,11,0.08)' : 'rgba(255,255,255,0.04)',
                                                             color: c.status === 'active' ? '#059669' : c.status === 'paused' ? '#d97706' : '#6b7280',
                                                         }}>
                                                         {c.status === 'active' ? t('common.active') : c.status === 'paused' ? t('common.paused') : c.status === 'draft' ? t('common.draft') : c.status}
@@ -348,7 +348,7 @@ export default function ClientDashboard() {
                             <div className="p-5" style={{ ...card }}>
                                 <div className="flex items-center justify-between mb-4">
                                     <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>{t('dashboard.prospectingStatus')}</p>
-                                    <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full" style={{ background: activeCampaigns > 0 ? '#ecfdf5' : '#f3f4f6', color: activeCampaigns > 0 ? '#059669' : '#6b7280' }}>
+                                    <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full" style={{ background: activeCampaigns > 0 ? 'rgba(34,197,94,0.08)' : 'rgba(255,255,255,0.04)', color: activeCampaigns > 0 ? '#34d399' : '#64748b' }}>
                                         {activeCampaigns > 0 ? t('common.active') : t('dashboard.idle')}
                                     </span>
                                 </div>
@@ -440,7 +440,7 @@ export default function ClientDashboard() {
                             </div>
 
                             {/* Extension CTA */}
-                            <div className="p-5" style={{ ...card, borderColor: 'var(--accent-primary)', background: '#eff6ff' }}>
+                            <div className="p-5" style={{ ...card, borderColor: 'var(--accent-primary)', background: 'rgba(139,92,246,0.08)' }}>
                                 <div className="flex items-center gap-3 mb-3">
                                     <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'var(--gradient-primary)' }}>
                                         <Zap className="w-4 h-4 text-white" />

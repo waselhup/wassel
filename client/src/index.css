@@ -81,67 +81,71 @@ html[dir="ltr"] select {
 }
 
 /* ============================================= */
-/* LIGHT PROFESSIONAL THEME — WASSEL             */
+/* DARK PROFESSIONAL THEME — WASSEL              */
+/* Matches landing page: #0F172A base, purple/    */
+/* pink gradients, glass cards, Cairo/Inter fonts */
 /* ============================================= */
 
 :root {
-  /* Core palette — light & clean */
-  --bg-base: #f8fafc;
-  --bg-surface: #ffffff;
-  --bg-card: #ffffff;
-  --bg-card-hover: #f1f5f9;
-  --border-subtle: #e5e7eb;
-  --border-accent: #1a56db;
-  --accent-primary: #1a56db;
-  --accent-secondary: #3b82f6;
-  --accent-pink: #6366f1;
-  --gradient-primary: linear-gradient(135deg, #1a56db, #6366f1);
-  --text-primary: #111827;
-  --text-secondary: #4b5563;
-  --text-muted: #9ca3af;
-  --success: #059669;
-  --warning: #d97706;
-  --danger: #dc2626;
+  /* Core palette — dark, matching landing page */
+  --bg-base: #0a0a14;
+  --bg-surface: #0f1629;
+  --bg-card: rgba(30, 41, 59, 0.5);
+  --bg-card-hover: rgba(30, 41, 59, 0.7);
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-accent: #8B5CF6;
+  --accent-primary: #8B5CF6;
+  --accent-secondary: #a78bfa;
+  --accent-pink: #ec4899;
+  --gradient-primary: linear-gradient(135deg, #8B5CF6, #6366F1);
+  --gradient-hero: linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #ec4899 100%);
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #ef4444;
   --radius-card: 12px;
   --radius-btn: 8px;
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
-  --shadow-md: 0 4px 6px rgba(0,0,0,0.07);
-  --shadow-lg: 0 10px 15px rgba(0,0,0,0.08);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.25);
+  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.3);
+  --blur-glass: blur(12px);
 
-  /* Tailwind/shadcn variable overrides for light */
+  /* Tailwind/shadcn variable overrides — dark */
   --radius: 0.65rem;
-  --primary: #1a56db;
+  --primary: #8B5CF6;
   --primary-foreground: #ffffff;
-  --sidebar-primary: #1a56db;
+  --sidebar-primary: #8B5CF6;
   --sidebar-primary-foreground: #ffffff;
-  --background: #f8fafc;
-  --foreground: #111827;
-  --card: #ffffff;
-  --card-foreground: #111827;
-  --popover: #ffffff;
-  --popover-foreground: #111827;
-  --secondary: #f1f5f9;
-  --secondary-foreground: #4b5563;
-  --muted: #f3f4f6;
-  --muted-foreground: #6b7280;
-  --accent: #eff6ff;
-  --accent-foreground: #1a56db;
-  --destructive: #dc2626;
+  --background: #0a0a14;
+  --foreground: #f1f5f9;
+  --card: rgba(30, 41, 59, 0.5);
+  --card-foreground: #f1f5f9;
+  --popover: #1e293b;
+  --popover-foreground: #f1f5f9;
+  --secondary: rgba(255, 255, 255, 0.06);
+  --secondary-foreground: #94a3b8;
+  --muted: rgba(255, 255, 255, 0.04);
+  --muted-foreground: #64748b;
+  --accent: rgba(139, 92, 246, 0.1);
+  --accent-foreground: #c4b5fd;
+  --destructive: #ef4444;
   --destructive-foreground: #ffffff;
-  --border: #e5e7eb;
-  --input: #e5e7eb;
-  --ring: rgba(26, 86, 219, 0.3);
-  --chart-1: #3b82f6;
-  --chart-2: #1a56db;
+  --border: rgba(255, 255, 255, 0.08);
+  --input: rgba(255, 255, 255, 0.08);
+  --ring: rgba(139, 92, 246, 0.3);
+  --chart-1: #a78bfa;
+  --chart-2: #8B5CF6;
   --chart-3: #6366f1;
-  --chart-4: #059669;
-  --chart-5: #d97706;
-  --sidebar: #ffffff;
-  --sidebar-foreground: #111827;
-  --sidebar-accent: #eff6ff;
-  --sidebar-accent-foreground: #1a56db;
-  --sidebar-border: #e5e7eb;
-  --sidebar-ring: rgba(26, 86, 219, 0.3);
+  --chart-4: #22c55e;
+  --chart-5: #f59e0b;
+  --sidebar: #0f1629;
+  --sidebar-foreground: #f1f5f9;
+  --sidebar-accent: rgba(139, 92, 246, 0.1);
+  --sidebar-accent-foreground: #c4b5fd;
+  --sidebar-border: rgba(255, 255, 255, 0.08);
+  --sidebar-ring: rgba(139, 92, 246, 0.3);
 }
 
 @layer base {
@@ -179,10 +183,15 @@ html[dir="ltr"] select {
     @apply cursor-pointer;
   }
 
-  /* Force dark colors on all headings */
+  /* Heading styles */
   h1, h2, h3, h4, h5, h6 {
     color: var(--text-primary);
-    font-family: 'Outfit', 'Plus Jakarta Sans', 'Inter', sans-serif;
+    font-family: 'Cairo', 'Inter', 'Plus Jakarta Sans', sans-serif;
+  }
+
+  html[dir="ltr"] h1, html[dir="ltr"] h2, html[dir="ltr"] h3,
+  html[dir="ltr"] h4, html[dir="ltr"] h5, html[dir="ltr"] h6 {
+    font-family: 'Inter', 'Plus Jakarta Sans', sans-serif;
   }
 
   /* Links */
@@ -433,9 +442,9 @@ tbody tr:hover {
 }
 
 .status-paused {
-  background: #fffbeb;
-  color: #92400e;
-  border: 1px solid rgba(245, 158, 11, 0.35);
+  background: rgba(245, 158, 11, 0.12);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.25);
   font-weight: 600;
 }
 
@@ -764,7 +773,9 @@ html[dir="rtl"] .campaign-card {
     position: sticky;
     top: 0;
     z-index: 50;
-    background: var(--bg-surface);
+    background: rgba(10, 10, 20, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--border-subtle);
     padding: 12px 16px;
     align-items: center;

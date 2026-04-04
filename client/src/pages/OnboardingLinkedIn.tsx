@@ -13,7 +13,7 @@ export default function OnboardingLinkedIn() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row" style={{ background: '#f8fafc' }}>
+    <div className="min-h-screen flex flex-col lg:flex-row" style={{ background: 'var(--bg-base)' }}>
       {/* LEFT SIDE */}
       <div className="flex-1 lg:w-[60%] flex items-center justify-center p-6 sm:p-10 lg:p-16">
         <div className="w-full max-w-lg">
@@ -40,7 +40,7 @@ export default function OnboardingLinkedIn() {
           <button
             onClick={handleConnect}
             className="w-full flex items-center justify-center gap-3 py-4 px-6 rounded-xl text-base font-semibold text-white transition-all hover:scale-[1.01] hover:shadow-lg mb-4"
-            style={{ background: '#0077b5', boxShadow: '0 4px 20px rgba(0,119,181,0.3)' }}
+            style={{ background: 'linear-gradient(135deg, #8B5CF6, #6366F1)', boxShadow: '0 4px 20px rgba(139,92,246,0.3)' }}
           >
             <Linkedin className="w-5 h-5" />
             ربط حساب LinkedIn
@@ -70,7 +70,7 @@ export default function OnboardingLinkedIn() {
                 'استيراد العملاء المحتملين من بحث LinkedIn',
               ].map((text, i) => (
                 <div key={i} className="flex items-center gap-2.5 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                  <Shield className="w-4 h-4 flex-shrink-0" style={{ color: '#059669' }} />
+                  <Shield className="w-4 h-4 flex-shrink-0" style={{ color: '#34d399' }} />
                   <span>{text}</span>
                 </div>
               ))}
@@ -88,9 +88,9 @@ export default function OnboardingLinkedIn() {
 
       {/* RIGHT SIDE */}
       <div className="hidden lg:flex lg:w-[40%] items-center justify-center p-10 relative overflow-hidden" style={{ background: '#0f172a' }}>
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 rounded-full" style={{ background: 'radial-gradient(circle, rgba(0,119,181,0.2) 0%, transparent 70%)' }}></div>
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 rounded-full" style={{ background: 'radial-gradient(circle, rgba(139,92,246,0.2) 0%, transparent 70%)' }}></div>
         <div className="relative z-10 w-full max-w-sm text-center">
-          <Linkedin className="w-20 h-20 mx-auto mb-6" style={{ color: '#0077b5' }} />
+          <Linkedin className="w-20 h-20 mx-auto mb-6" style={{ color: '#8B5CF6' }} />
           <h2 className="text-2xl font-bold text-white mb-3" style={{ fontFamily: "'Outfit', sans-serif" }}>
             خطوة واحدة فقط
           </h2>

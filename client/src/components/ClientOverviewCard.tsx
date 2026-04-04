@@ -28,7 +28,7 @@ export default function ClientOverviewCard({ clientId, clientName }: ClientOverv
   }
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6">
+    <div className="bg-[var(--bg-card)] rounded-lg border border-gray-200 p-6">
       {/* Header */}
       <div className="mb-6 pb-4 border-b border-gray-200">
         <h3 className="text-2xl font-bold text-gray-900">{clientName}</h3>
@@ -82,7 +82,7 @@ export default function ClientOverviewCard({ clientId, clientName }: ClientOverv
             {campaigns.slice(0, 5).map(campaign => (
               <div
                 key={campaign.id}
-                className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                className="flex items-center justify-between p-3 bg-[var(--bg-base)] rounded-lg"
               >
                 <div className="text-right flex-1">
                   <p className="font-medium text-gray-900">{campaign.name}</p>

@@ -59,7 +59,7 @@ export default function OAuthError() {
     return (
         <div style={{
             minHeight: '100vh',
-            background: 'linear-gradient(135deg, #fef2f2 0%, #fff7ed 100%)',
+            background: 'linear-gradient(135deg, rgba(239,68,68,0.08) 0%, rgba(245,158,11,0.08) 100%)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -69,45 +69,46 @@ export default function OAuthError() {
             <div style={{
                 maxWidth: '440px',
                 width: '100%',
-                backgroundColor: '#fff',
+                backgroundColor: 'rgba(30,41,59,0.6)',
                 borderRadius: '16px',
-                boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
+                boxShadow: '0 4px 24px rgba(0,0,0,0.3)',
                 padding: '40px 32px',
                 textAlign: 'center',
+                border: '1px solid rgba(255,255,255,0.1)',
             }}>
                 {/* Error icon */}
                 <div style={{
                     width: '64px',
                     height: '64px',
-                    backgroundColor: '#fef2f2',
+                    backgroundColor: 'rgba(239,68,68,0.1)',
                     borderRadius: '50%',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     margin: '0 auto 24px auto',
                 }}>
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
                     </svg>
                 </div>
 
-                <h1 style={{ fontSize: '22px', fontWeight: '700', color: '#111827', margin: '0 0 12px 0' }}>
+                <h1 style={{ fontSize: '22px', fontWeight: '700', color: 'rgba(255,255,255,0.9)', margin: '0 0 12px 0' }}>
                     {info.title}
                 </h1>
-                <p style={{ fontSize: '15px', color: '#6b7280', margin: '0 0 24px 0', lineHeight: '1.6' }}>
+                <p style={{ fontSize: '15px', color: 'rgba(255,255,255,0.6)', margin: '0 0 24px 0', lineHeight: '1.6' }}>
                     {info.message}
                 </p>
 
                 {/* Tip for in-app browsers */}
                 <div style={{
-                    backgroundColor: '#fffbeb',
-                    border: '1px solid #fde68a',
+                    backgroundColor: 'rgba(245,158,11,0.08)',
+                    border: '1px solid rgba(245,158,11,0.2)',
                     borderRadius: '8px',
                     padding: '12px 16px',
                     marginBottom: '24px',
                     textAlign: 'left',
                 }}>
-                    <p style={{ fontSize: '13px', color: '#92400e', margin: 0, lineHeight: '1.5' }}>
+                    <p style={{ fontSize: '13px', color: 'rgba(245,158,11,0.8)', margin: 0, lineHeight: '1.5' }}>
                         💡 <strong>Tip:</strong> For the best experience, open your invite link in <strong>Chrome</strong> or <strong>Safari</strong> — not inside email apps or messengers.
                     </p>
                 </div>
@@ -118,7 +119,7 @@ export default function OAuthError() {
                         style={{
                             display: 'block',
                             padding: '14px 24px',
-                            backgroundColor: '#2563eb',
+                            backgroundColor: '#8B5CF6',
                             color: '#fff',
                             borderRadius: '10px',
                             fontWeight: '600',
@@ -134,12 +135,13 @@ export default function OAuthError() {
                         style={{
                             display: 'block',
                             padding: '14px 24px',
-                            backgroundColor: '#f3f4f6',
-                            color: '#374151',
+                            backgroundColor: 'rgba(255,255,255,0.08)',
+                            color: 'rgba(255,255,255,0.8)',
                             borderRadius: '10px',
                             fontWeight: '600',
                             fontSize: '15px',
                             textDecoration: 'none',
+                            border: '1px solid rgba(255,255,255,0.1)',
                         }}
                     >
                         Go to Homepage
@@ -147,7 +149,7 @@ export default function OAuthError() {
                 </div>
 
                 {reason && (
-                    <p style={{ fontSize: '11px', color: '#d1d5db', marginTop: '20px' }}>
+                    <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '20px' }}>
                         Error: {reason}
                     </p>
                 )}

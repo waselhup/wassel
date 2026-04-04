@@ -38,7 +38,7 @@ export default function ClientSwitcher({ selectedClientId, onClientChange }: Cli
     <div className="relative" dir="rtl">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+        className="flex items-center gap-2 px-4 py-2 bg-[var(--bg-card)] border border-gray-300 rounded-lg hover:bg-[var(--bg-base)] transition-colors"
       >
         <span className="text-sm font-medium text-gray-900">
           {selectedClient?.name || 'اختر عميل'}
@@ -50,15 +50,15 @@ export default function ClientSwitcher({ selectedClientId, onClientChange }: Cli
       </button>
 
       {isOpen && (
-        <div className="absolute top-full right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+        <div className="absolute top-full right-0 mt-2 w-64 bg-[var(--bg-card)] border border-gray-200 rounded-lg shadow-lg z-50">
           <div className="p-2 max-h-64 overflow-y-auto">
             {/* All Clients Option */}
             <button
               onClick={() => handleSelectClient(null)}
               className={`w-full text-right px-3 py-2 rounded-lg transition-colors ${
                 selectedClientId === null
-                  ? 'bg-blue-100 text-blue-900'
-                  : 'hover:bg-gray-100 text-gray-900'
+                  ? 'bg-[rgba(139,92,246,0.08)] text-[#8B5CF6]'
+                  : 'hover:bg-[var(--bg-base)] text-gray-900'
               }`}
             >
               جميع العملاء
@@ -74,8 +74,8 @@ export default function ClientSwitcher({ selectedClientId, onClientChange }: Cli
                     onClick={() => handleSelectClient(client.id)}
                     className={`w-full text-right px-3 py-2 rounded-lg transition-colors ${
                       selectedClientId === client.id
-                        ? 'bg-blue-100 text-blue-900'
-                        : 'hover:bg-gray-100 text-gray-900'
+                        ? 'bg-[rgba(139,92,246,0.08)] text-[#8B5CF6]'
+                        : 'hover:bg-[var(--bg-base)] text-gray-900'
                     }`}
                   >
                     <div className="font-medium">{client.name}</div>
@@ -90,7 +90,7 @@ export default function ClientSwitcher({ selectedClientId, onClientChange }: Cli
             {!showNewClient ? (
               <button
                 onClick={() => setShowNewClient(true)}
-                className="w-full text-right px-3 py-2 rounded-lg hover:bg-gray-100 text-gray-900 flex items-center justify-end gap-2"
+                className="w-full text-right px-3 py-2 rounded-lg hover:bg-[var(--bg-base)] text-gray-900 flex items-center justify-end gap-2"
               >
                 <span className="text-sm">إضافة عميل جديد</span>
                 <Plus size={16} />

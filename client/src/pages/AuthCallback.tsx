@@ -76,7 +76,7 @@ export default function AuthCallback() {
 
   if (isProcessing && !error) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: '#f8fafc' }}>
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'var(--bg-base)' }}>
         <div className="text-center">
           <div className="w-14 h-14 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-6"></div>
           <p className="font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>جاري تسجيل دخولك...</p>
@@ -88,12 +88,12 @@ export default function AuthCallback() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: '#f8fafc' }}>
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'var(--bg-base)' }}>
         <div className="w-full max-w-md">
           <div className="rounded-2xl p-8" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
             <div className="flex justify-center mb-6">
-              <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ background: '#fef2f2' }}>
-                <AlertCircle className="w-7 h-7" style={{ color: '#dc2626' }} />
+              <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ background: 'rgba(239,68,68,0.1)' }}>
+                <AlertCircle className="w-7 h-7" style={{ color: '#ef4444' }} />
               </div>
             </div>
             <h1 className="text-xl font-bold text-center mb-3" style={{ color: 'var(--text-primary)' }}>
@@ -105,7 +105,7 @@ export default function AuthCallback() {
             <Button
               onClick={() => { window.location.href = '/login'; }}
               className="w-full text-white font-semibold"
-              style={{ background: 'var(--gradient-primary)' }}
+              style={{ background: 'linear-gradient(135deg, #8B5CF6, #6366F1)' }}
             >
               العودة إلى تسجيل الدخول
             </Button>

@@ -30,7 +30,7 @@ export default function OnboardingNav() {
                   background: isCompleted
                     ? '#059669'
                     : isActive
-                    ? 'var(--accent-primary, #1a56db)'
+                    ? 'var(--accent-primary, #8B5CF6)'
                     : '#e2e8f0',
                   color: isCompleted || isActive ? 'white' : '#94a3b8',
                   fontWeight: 700,
@@ -47,7 +47,7 @@ export default function OnboardingNav() {
                   color: isCompleted
                     ? '#059669'
                     : isActive
-                    ? 'var(--accent-primary, #1a56db)'
+                    ? 'var(--accent-primary, #8B5CF6)'
                     : '#94a3b8',
                 }}
               >
@@ -93,7 +93,7 @@ export default function OnboardingNav() {
           disabled={!next}
           className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all hover:scale-[1.02]"
           style={{
-            background: next ? 'var(--accent-primary, #1a56db)' : '#e2e8f0',
+            background: next ? 'var(--accent-primary, #8B5CF6)' : '#e2e8f0',
             color: next ? 'white' : '#94a3b8',
             opacity: next ? 1 : 0.3,
             cursor: next ? 'pointer' : 'not-allowed',

@@ -6,40 +6,40 @@ const features = [
     icon: Zap,
     name: 'Smart Campaign Sequences',
     desc: 'Build multi-step automation flows: Profile Visit → Connection Invite → Message → Follow Up. Each step triggers automatically when the previous one succeeds.',
-    color: '#1a56db',
-    bg: '#eff6ff',
+    color: '#a78bfa',
+    bg: 'rgba(139,92,246,0.08)',
     details: ['Auto-visit profiles before sending invites', 'Customizable delays between steps', 'Conditional branching based on responses', 'Pause/resume campaigns anytime'],
   },
   {
     icon: Users,
     name: 'LinkedIn Prospect Import',
     desc: 'Import up to 500 prospects at once directly from LinkedIn search results using our Chrome extension. Multi-page scraping with automatic deduplication.',
-    color: '#059669',
-    bg: '#ecfdf5',
+    color: '#34d399',
+    bg: 'rgba(34,197,94,0.08)',
     details: ['Scan multiple LinkedIn search pages', 'Quantity selector: 25, 50, 100, 200, 500', 'Auto-deduplication of existing prospects', 'Import with name, title, company data'],
   },
   {
     icon: Brain,
     name: 'AI-Powered Messaging',
     desc: 'Claude AI writes personalized invitation and follow-up messages based on each prospect\'s profile. Higher acceptance rates through genuine personalization.',
-    color: '#6366f1',
-    bg: '#eef2ff',
+    color: '#a78bfa',
+    bg: 'rgba(99,102,241,0.08)',
     details: ['AI reads prospect profile context', 'Generates unique messages per person', 'Template variables for full personalization', 'A/B test different message styles'],
   },
   {
     icon: BarChart3,
     name: 'Real-Time Analytics',
     desc: 'Track acceptance rates, reply rates, and funnel performance across every campaign. Live dashboards with actionable metrics.',
-    color: '#d97706',
-    bg: '#fffbeb',
+    color: '#fbbf24',
+    bg: 'rgba(245,158,11,0.08)',
     details: ['Live acceptance rate tracking', 'Campaign funnel visualization', 'Daily activity charts', 'Export analytics data'],
   },
   {
     icon: Shield,
     name: 'Safe Automation',
     desc: 'Conservative daily limits, human-like timing delays, and automatic pause if LinkedIn shows any warnings. Your account safety comes first.',
-    color: '#059669',
-    bg: '#ecfdf5',
+    color: '#34d399',
+    bg: 'rgba(34,197,94,0.08)',
     details: ['Max 20 invites per day limit', 'Random 30-90 second delays', 'Auto-pause on LinkedIn warnings', 'Daily monitoring and alerts'],
   },
 ];
@@ -48,7 +48,7 @@ export default function Features() {
   return (
     <div style={{ background: 'var(--bg-base)', color: 'var(--text-primary)', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
       {/* Navbar */}
-      <nav className="fixed top-0 left-0 right-0 z-50" style={{ background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(16px)', borderBottom: '1px solid var(--border-subtle)' }}>
+      <nav className="fixed top-0 left-0 right-0 z-50" style={{ background: 'rgba(30,41,59,0.85)', backdropFilter: 'blur(16px)', borderBottom: '1px solid var(--border-subtle)' }}>
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <Link href="/"><div className="flex items-center gap-2 cursor-pointer">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm" style={{ background: 'var(--gradient-primary)' }}>W</div>
@@ -102,7 +102,7 @@ export default function Features() {
       </section>
 
       {/* CTA */}
-      <section className="py-16 px-4 text-center" style={{ background: '#f1f5f9' }}>
+      <section className="py-16 px-4 text-center" style={{ background: 'rgba(255,255,255,0.04)' }}>
         <h2 className="text-2xl font-extrabold mb-4" style={{ fontFamily: "'Outfit', sans-serif" }}>Ready to automate your LinkedIn outreach?</h2>
         <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>Start free. No credit card required.</p>
         <Link href="/login">

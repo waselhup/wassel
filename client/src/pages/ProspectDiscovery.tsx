@@ -51,16 +51,17 @@ function MultiSelect({
       <div className="relative">
         <button
           onClick={() => setOpen(!open)}
-          className="w-full flex items-center justify-between px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 hover:border-blue-400 transition-all focus:outline-none"
+          className="w-full flex items-center justify-between px-3 py-2.5 border rounded-xl text-sm transition-all focus:outline-none"
+          style={{ background: 'rgba(255,255,255,0.04)', borderColor: 'var(--border-subtle)', color: 'var(--text-primary)' }}
         >
           <span className="truncate">{selected.length > 0 ? `${selected.length} selected` : placeholder}</span>
           <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform flex-shrink-0 ${open ? 'rotate-180' : ''}`} />
         </button>
         {open && (
-          <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-20 max-h-48 overflow-y-auto">
+          <div className="absolute top-full left-0 right-0 mt-1 rounded-xl shadow-lg z-20 max-h-48 overflow-y-auto" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
             {options.map(opt => (
-              <button key={opt} onClick={() => toggle(opt)} className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-gray-50 text-sm text-left transition-colors">
-                <div className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 ${selected.includes(opt) ? 'bg-blue-600 border-blue-600' : 'border-gray-300'}`}>
+              <button key={opt} onClick={() => toggle(opt)} className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left transition-colors" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-primary)' }} onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'} onMouseOut={(e) => e.currentTarget.style.background = 'none'}>
+                <div className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0`} style={{ borderColor: selected.includes(opt) ? '#8B5CF6' : 'var(--border-subtle)', background: selected.includes(opt) ? '#8B5CF6' : 'transparent', transition: 'all 0.2s' }}>
                   {selected.includes(opt) && <Check className="w-2.5 h-2.5 text-white" />}
                 </div>
                 <span className="truncate">{opt}</span>
@@ -349,8 +350,8 @@ export default function ProspectDiscovery() {
               onChange={e => setKeywords(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSearch()}
               placeholder={isAr ? 'مثال: أرامكو، رؤية 2030...' : 'e.g. Aramco, fintech...'}
-              className="w-full px-3 py-2.5 rounded-xl text-sm focus:outline-none transition-all placeholder:text-gray-400"
-              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border-subtle)', color: 'var(--text-primary)', direction: isAr ? 'rtl' : 'ltr' }}
+              className="w-full px-3 py-2.5 rounded-xl text-sm focus:outline-none transition-all"
+              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border-subtle)', color: 'var(--text-primary)', direction: isAr ? 'rtl' : 'ltr' }}
             />
           </div>
 
@@ -376,7 +377,7 @@ export default function ProspectDiscovery() {
               background: hasFilters && !loading ? 'linear-gradient(135deg, #6366F1, #8B5CF6)' : 'rgba(255,255,255,0.06)',
               color: hasFilters && !loading ? '#fff' : 'var(--text-muted)',
               cursor: hasFilters && !loading ? 'pointer' : 'not-allowed',
-              boxShadow: hasFilters && !loading ? '0 4px 20px rgba(99,102,241,0.35)' : 'none',
+              boxShadow: hasFilters && !loading ? '0 4px 20px rgba(139,92,246,0.35)' : 'none',
             }}
           >
             {loading
@@ -409,7 +410,7 @@ export default function ProspectDiscovery() {
               <span className="text-sm" style={{ color: 'var(--text-muted)' }}>
                 {selected.size} {isAr ? 'محدد' : 'selected'}
               </span>
-              <button onClick={selectAll} className="text-xs" style={{ color: '#6366F1', background: 'none', border: 'none', cursor: 'pointer' }}>
+              <button onClick={selectAll} className="text-xs" style={{ color: '#a78bfa', background: 'none', border: 'none', cursor: 'pointer' }}>
                 {isAr ? 'تحديد الكل' : 'Select all'}
               </button>
               <button onClick={clearAll} className="text-xs" style={{ color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}>
@@ -420,8 +421,8 @@ export default function ProspectDiscovery() {
                 disabled={!selected.size || importing}
                 className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
                 style={{
-                  background: selected.size && !importing ? '#10B981' : 'rgba(255,255,255,0.06)',
-                  color: selected.size && !importing ? '#fff' : 'var(--text-muted)',
+                  background: selected.size && !importing ? '#34d399' : 'rgba(255,255,255,0.06)',
+                  color: selected.size && !importing ? '#000' : 'var(--text-muted)',
                   border: 'none', cursor: selected.size && !importing ? 'pointer' : 'not-allowed',
                 }}
               >
@@ -434,12 +435,12 @@ export default function ProspectDiscovery() {
 
         {/* Import success banner */}
         {importedCount > 0 && (
-          <div className="mx-6 mt-4 flex items-center gap-2 px-4 py-3 rounded-xl" style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)' }}>
-            <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
-            <p className="text-sm font-medium" style={{ color: '#10B981' }}>
+          <div className="mx-6 mt-4 flex items-center gap-2 px-4 py-3 rounded-xl" style={{ background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.2)' }}>
+            <Check className="w-4 h-4 text-green-400 flex-shrink-0" />
+            <p className="text-sm font-medium" style={{ color: '#34d399' }}>
               {isAr ? `تم إضافة ${importedCount} عميل إلى قائمة العملاء ✅` : `${importedCount} prospects added to your leads ✅`}
             </p>
-            <a href="/app/leads" className="text-xs underline ms-auto" style={{ color: '#10B981' }}>
+            <a href="/app/leads" className="text-xs underline ms-auto" style={{ color: '#34d399' }}>
               {isAr ? 'عرض القائمة' : 'View leads'}
             </a>
           </div>
@@ -451,8 +452,8 @@ export default function ProspectDiscovery() {
           {/* Empty state */}
           {!searched && !loading && (
             <div className="flex flex-col items-center justify-center text-center" style={{ minHeight: 200 }}>
-              <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4" style={{ background: 'rgba(99,102,241,0.1)' }}>
-                <Search className="w-8 h-8" style={{ color: '#6366F1' }} />
+              <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4" style={{ background: 'rgba(139,92,246,0.1)' }}>
+                <Search className="w-8 h-8" style={{ color: '#a78bfa' }} />
               </div>
               <h4 className="font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
                 {isAr ? 'ابدأ البحث عن عملائك' : 'Start finding your prospects'}
@@ -467,7 +468,7 @@ export default function ProspectDiscovery() {
           {loading && (
             <div className="h-full flex items-center justify-center">
               <div className="text-center max-w-xs">
-                <Loader2 className="w-10 h-10 animate-spin mx-auto mb-4" style={{ color: '#6366F1' }} />
+                <Loader2 className="w-10 h-10 animate-spin mx-auto mb-4" style={{ color: '#a78bfa' }} />
                 <p className="font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
                   {isAr ? 'جاري البحث عن عملائك...' : 'Finding your prospects...'}
                 </p>
@@ -476,7 +477,7 @@ export default function ProspectDiscovery() {
                 </p>
                 <div className="mt-4 flex justify-center gap-1">
                   {[0, 1, 2].map(i => (
-                    <div key={i} className="w-2 h-2 rounded-full animate-bounce" style={{ background: '#6366F1', animationDelay: `${i * 0.15}s` }} />
+                    <div key={i} className="w-2 h-2 rounded-full animate-bounce" style={{ background: '#a78bfa', animationDelay: `${i * 0.15}s` }} />
                   ))}
                 </div>
               </div>
@@ -561,7 +562,7 @@ export default function ProspectDiscovery() {
                     {p.location && (
                       <div className="hidden md:flex items-center gap-1 w-32 flex-shrink-0">
                         <MapPin className="w-3 h-3 flex-shrink-0" style={{ color: 'var(--text-muted)' }} />
-                        <span className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>{p.location}</span>
+                        <span className="text-xs truncate" style={{ color: 'rgba(255,255,255,0.5)' }}>{p.location}</span>
                       </div>
                     )}
 
@@ -572,14 +573,14 @@ export default function ProspectDiscovery() {
 
                     {/* Status / Add button */}
                     {p.addedToLeads ? (
-                      <span className="text-xs px-2 py-1 rounded-full font-medium flex-shrink-0" style={{ background: '#ecfdf5', color: '#059669' }}>
+                      <span className="text-xs px-2 py-1 rounded-full font-medium flex-shrink-0" style={{ background: 'rgba(34,197,94,0.15)', color: '#34d399' }}>
                         ✓ {isAr ? 'مضاف' : 'Added'}
                       </span>
                     ) : (
                       <button
                         onClick={() => handleAddSingle(idx)}
                         className="text-xs px-3 py-1 rounded-full font-medium flex-shrink-0 transition-colors"
-                        style={{ background: '#eff6ff', color: '#1a56db', border: 'none', cursor: 'pointer' }}
+                        style={{ background: 'rgba(139,92,246,0.15)', color: '#a78bfa', border: 'none', cursor: 'pointer' }}
                       >
                         + {isAr ? 'أضف' : 'Add'}
                       </button>

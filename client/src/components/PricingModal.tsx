@@ -80,7 +80,7 @@ export default function PricingModal({ isOpen, onClose, currentPlan = 'starter' 
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" dir="rtl">
-      <div className="bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-[var(--bg-card)] rounded-lg max-w-6xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-2xl font-bold text-gray-900">خطط وصل</h2>
@@ -103,7 +103,7 @@ export default function PricingModal({ isOpen, onClose, currentPlan = 'starter' 
                     ? 'border-blue-600 bg-blue-50'
                     : plan.popular
                     ? 'border-purple-600 bg-purple-50'
-                    : 'border-gray-200 bg-white'
+                    : 'border-gray-200 bg-[var(--bg-card)]'
                 } p-6`}
               >
                 {/* Popular Badge */}
@@ -129,7 +129,7 @@ export default function PricingModal({ isOpen, onClose, currentPlan = 'starter' 
                 </div>
 
                 {/* Limits */}
-                <div className="bg-gray-50 rounded-lg p-3 mb-4 text-sm text-gray-700">
+                <div className="bg-[var(--bg-base)] rounded-lg p-3 mb-4 text-sm text-gray-700">
                   <div>• {plan.monthlyLeadLimit} عميل/شهر</div>
                   <div>• {plan.maxCampaigns} حملات</div>
                 </div>
@@ -163,7 +163,7 @@ export default function PricingModal({ isOpen, onClose, currentPlan = 'starter' 
                   <button
                     onClick={() => handleUpgrade(plan.id)}
                     disabled={isPending}
-                    className="w-full py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+                    className="w-full py-2 bg-[#8B5CF6] text-white rounded-lg font-medium hover:bg-[#7C3AED] transition-colors disabled:opacity-50"
                   >
                     {isPending ? 'جاري المعالجة...' : 'تواصل معنا للترقية'}
                   </button>

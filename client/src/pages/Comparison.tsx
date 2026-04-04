@@ -17,7 +17,7 @@ const rows = [
 export default function Comparison() {
   return (
     <div style={{ background: 'var(--bg-base)', color: 'var(--text-primary)', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-      <nav className="fixed top-0 left-0 right-0 z-50" style={{ background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(16px)', borderBottom: '1px solid var(--border-subtle)' }}>
+      <nav className="fixed top-0 left-0 right-0 z-50" style={{ background: 'rgba(30,41,59,0.85)', backdropFilter: 'blur(16px)', borderBottom: '1px solid var(--border-subtle)' }}>
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <Link href="/"><div className="flex items-center gap-2 cursor-pointer">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm" style={{ background: 'var(--gradient-primary)' }}>W</div>
@@ -36,15 +36,15 @@ export default function Comparison() {
 
       <section className="pb-20 px-4">
         <div className="max-w-3xl mx-auto rounded-2xl overflow-hidden" style={{ border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-md)' }}>
-          <div className="grid grid-cols-3 text-center py-4 text-sm font-bold" style={{ background: '#f1f5f9', borderBottom: '1px solid var(--border-subtle)' }}>
+          <div className="grid grid-cols-3 text-center py-4 text-sm font-bold" style={{ background: 'rgba(255,255,255,0.04)', borderBottom: '1px solid var(--border-subtle)' }}>
             <span>Feature</span>
             <span style={{ color: 'var(--accent-primary)' }}>Wassel</span>
             <span>Other Tools</span>
           </div>
           {rows.map((r, i) => (
-            <div key={i} className="grid grid-cols-3 text-center py-3.5 text-sm" style={{ borderBottom: '1px solid var(--border-subtle)', background: r.wasselWin ? '#f0fdf4' : 'white' }}>
+            <div key={i} className="grid grid-cols-3 text-center py-3.5 text-sm" style={{ borderBottom: '1px solid var(--border-subtle)', background: r.wasselWin ? 'rgba(34,197,94,0.08)' : 'rgba(30,41,59,0.5)' }}>
               <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{r.feature}</span>
-              <span style={{ color: r.wasselWin ? '#059669' : 'var(--text-secondary)' }}>{r.wassel}</span>
+              <span style={{ color: r.wasselWin ? '#34d399' : 'var(--text-secondary)' }}>{r.wassel}</span>
               <span style={{ color: 'var(--text-muted)' }}>{r.other}</span>
             </div>
           ))}

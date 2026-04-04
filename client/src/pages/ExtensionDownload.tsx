@@ -28,9 +28,9 @@ export default function ExtensionDownload() {
         {/* Icon */}
         <div style={{
           width: 80, height: 80, borderRadius: 20, margin: '0 auto 24px',
-          background: 'linear-gradient(135deg, #7c3aed, #ec4899)',
+          background: 'linear-gradient(135deg, #8B5CF6, #6366F1)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 40, boxShadow: '0 8px 40px rgba(124,58,237,0.3)',
+          fontSize: 40, boxShadow: '0 8px 40px rgba(139,92,246,0.3)',
         }}>⚡</div>
 
         <h1 style={{
@@ -51,15 +51,15 @@ export default function ExtensionDownload() {
           download
           style={{
             display: 'inline-flex', alignItems: 'center', gap: 10,
-            background: 'linear-gradient(135deg, #7c3aed, #ec4899)',
+            background: 'linear-gradient(135deg, #8B5CF6, #6366F1)',
             color: '#fff', border: 'none', borderRadius: 12,
             padding: '16px 40px', fontSize: 18, fontWeight: 700,
             textDecoration: 'none', cursor: 'pointer',
-            boxShadow: '0 4px 24px rgba(124,58,237,0.4)',
+            boxShadow: '0 4px 24px rgba(139,92,246,0.4)',
             transition: 'transform 0.2s, box-shadow 0.2s',
           }}
-          onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 32px rgba(124,58,237,0.5)'; }}
-          onMouseOut={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 24px rgba(124,58,237,0.4)'; }}
+          onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 32px rgba(139,92,246,0.5)'; }}
+          onMouseOut={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 24px rgba(139,92,246,0.4)'; }}
         >
           ⬇ Download Extension
         </a>
@@ -70,7 +70,7 @@ export default function ExtensionDownload() {
 
         {/* Install Steps */}
         <div style={{
-          background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
+          background: 'rgba(30,41,59,0.5)', border: '1px solid rgba(255,255,255,0.06)',
           borderRadius: 16, padding: '32px 28px', marginTop: 48, textAlign: 'left',
         }}>
           <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 20, fontFamily: "'Syne', sans-serif" }}>
@@ -89,10 +89,10 @@ export default function ExtensionDownload() {
               <div key={s.n} style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
                 <div style={{
                   width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
-                  background: 'linear-gradient(135deg, rgba(124,58,237,0.2), rgba(236,72,153,0.2))',
-                  border: '1px solid rgba(124,58,237,0.3)',
+                  background: 'linear-gradient(135deg, rgba(139,92,246,0.15), rgba(99,102,241,0.15))',
+                  border: '1px solid rgba(139,92,246,0.3)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 12, fontWeight: 700, color: '#c4b5fd',
+                  fontSize: 12, fontWeight: 700, color: '#a78bfa',
                 }}>{s.n}</div>
                 <p style={{ color: '#cbd5e1', fontSize: 14, lineHeight: 1.5, paddingTop: 3 }}>{s.text}</p>
               </div>
@@ -105,7 +105,7 @@ export default function ExtensionDownload() {
           background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.15)',
           borderRadius: 12, padding: '16px 20px', marginTop: 24, textAlign: 'left',
         }}>
-          <p style={{ color: '#86efac', fontSize: 13, fontWeight: 600, marginBottom: 4 }}>💡 Tip</p>
+          <p style={{ color: '#34d399', fontSize: 13, fontWeight: 600, marginBottom: 4 }}>💡 Tip</p>
           <p style={{ color: '#94a3b8', fontSize: 13, lineHeight: 1.6 }}>
             Already have an account? Log in to Wassel first, then install the extension.
             It connects to your dashboard automatically — no setup needed.
@@ -115,11 +115,11 @@ export default function ExtensionDownload() {
         {/* Share link */}
         <div style={{
           marginTop: 40, padding: '16px 20px', borderRadius: 10,
-          background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
+          background: 'rgba(30,41,59,0.5)', border: '1px solid rgba(255,255,255,0.06)',
         }}>
-          <p style={{ color: '#64748b', fontSize: 12, marginBottom: 6 }}>Share with your team:</p>
+          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, marginBottom: 6 }}>Share with your team:</p>
           <code style={{
-            color: '#c4b5fd', fontSize: 13, background: 'rgba(124,58,237,0.1)',
+            color: '#a78bfa', fontSize: 13, background: 'rgba(139,92,246,0.1)',
             padding: '6px 12px', borderRadius: 6, display: 'inline-block',
             userSelect: 'all',
           }}>wassel-alpha.vercel.app/extension-download</code>

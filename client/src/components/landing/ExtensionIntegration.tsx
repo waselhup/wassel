@@ -70,7 +70,7 @@ export default function ExtensionIntegration() {
               ))}
             </div>
             <Link href="/extension">
-              <button className="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-all inline-flex items-center gap-2 cursor-pointer">
+              <button className="bg-[#8B5CF6] text-white px-8 py-3 rounded-lg font-semibold hover:bg-[#7C3AED] transition-all inline-flex items-center gap-2 cursor-pointer">
                 Download Extension
                 <ArrowRight size={20} />
               </button>
@@ -85,8 +85,8 @@ export default function ExtensionIntegration() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {steps.map((step, index) => (
               <div key={index} className="relative">
-                <div className="bg-white rounded-xl p-8 shadow-sm hover:shadow-md transition-shadow">
-                  <div className="absolute -top-4 -left-4 w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-lg">
+                <div className="bg-[var(--bg-card)] rounded-xl p-8 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="absolute -top-4 -left-4 w-12 h-12 bg-[#8B5CF6] text-white rounded-full flex items-center justify-center font-bold text-lg">
                     {step.number}
                   </div>
 
@@ -112,7 +112,7 @@ export default function ExtensionIntegration() {
             Join thousands of users achieving remarkable results with Wassel
           </p>
           <Link href="/login">
-            <button className="bg-white text-blue-600 font-semibold px-8 py-4 rounded-lg hover:shadow-lg transition-all inline-flex items-center gap-2 cursor-pointer">
+            <button className="bg-[var(--bg-card)] text-[#8B5CF6] font-semibold px-8 py-4 rounded-lg hover:shadow-lg transition-all inline-flex items-center gap-2 cursor-pointer">
               Start Free Trial
               <ArrowRight size={20} />
             </button>

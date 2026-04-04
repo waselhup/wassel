@@ -11,9 +11,9 @@ export default function CTA() {
   ];
 
   return (
-    <section className="py-20 px-6 bg-gray-50">
+    <section className="py-20 px-6 bg-[var(--bg-base)]">
       <div className="max-w-4xl mx-auto">
-        <div className="bg-white rounded-2xl shadow-xl p-12 md:p-16">
+        <div className="bg-[var(--bg-card)] rounded-2xl shadow-xl p-12 md:p-16">
           <div className="text-center mb-12">
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
               Ready to Transform Your Campaigns?
@@ -25,7 +25,7 @@ export default function CTA() {
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
             <Link href="/login">
-              <button className="bg-blue-600 text-white px-10 py-4 text-lg rounded-lg font-semibold hover:bg-blue-700 transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer">
+              <button className="bg-[#8B5CF6] text-white px-10 py-4 text-lg rounded-lg font-semibold hover:bg-[#7C3AED] transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer">
                 Start Free Now
                 <ArrowRight size={20} />
               </button>
@@ -49,17 +49,17 @@ export default function CTA() {
 
         <div className="mt-12 flex flex-col sm:flex-row gap-8 justify-center items-center text-center">
           <div>
-            <div className="text-3xl font-bold text-blue-600">4.9/5</div>
+            <div className="text-3xl font-bold text-[#8B5CF6]">4.9/5</div>
             <div className="text-sm text-gray-600">User Rating</div>
           </div>
           <div className="hidden sm:block w-px h-12 bg-gray-200" />
           <div>
-            <div className="text-3xl font-bold text-blue-600">5,000+</div>
+            <div className="text-3xl font-bold text-[#8B5CF6]">5,000+</div>
             <div className="text-sm text-gray-600">Active Users</div>
           </div>
           <div className="hidden sm:block w-px h-12 bg-gray-200" />
           <div>
-            <div className="text-3xl font-bold text-blue-600">24/7</div>
+            <div className="text-3xl font-bold text-[#8B5CF6]">24/7</div>
             <div className="text-sm text-gray-600">Support</div>
           </div>
         </div>

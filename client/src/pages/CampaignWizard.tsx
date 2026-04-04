@@ -67,7 +67,7 @@ function ProgressBar({ current }: { current: number }) {
             }}>
               {i < current ? '✓' : i + 1}
             </div>
-            <span style={{ fontSize: 13, fontWeight: i === current ? 700 : 400, color: i <= current ? '#f1f5f9' : '#475569' }}>{s}</span>
+            <span style={{ fontSize: 13, fontWeight: i === current ? 700 : 400, color: i <= current ? 'var(--bg-base)' : '#475569' }}>{s}</span>
           </div>
           {i < steps.length - 1 && <div style={{ flex: 1, height: 2, background: i < current ? '#22c55e' : 'rgba(255,255,255,0.08)', marginLeft: 12, marginRight: 4, minWidth: 20 }} />}
         </div>
@@ -377,7 +377,7 @@ export default function CampaignWizard() {
 
   // ─── Styles ──────────────────────────────────────────────
   const card: React.CSSProperties = { background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', borderRadius: 12, padding: 20, marginBottom: 16 };
-  const input: React.CSSProperties = { width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.04)', color: '#f1f5f9', fontSize: 14, outline: 'none' };
+  const input: React.CSSProperties = { width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.04)', color: 'var(--bg-base)', fontSize: 14, outline: 'none' };
   const textarea: React.CSSProperties = { ...input, minHeight: 80, resize: 'vertical', fontFamily: 'inherit' };
   const btnPrimary: React.CSSProperties = { background: 'linear-gradient(135deg,#7c3aed,#ec4899)', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 24px', fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 };
   const btnSecondary: React.CSSProperties = { background: 'rgba(255,255,255,0.06)', color: '#94a3b8', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, padding: '10px 24px', fontSize: 14, fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 };
@@ -446,9 +446,9 @@ export default function CampaignWizard() {
         <main className="flex-1 overflow-y-auto p-6 lg:p-8 flex items-center justify-center">
           <div style={{ ...card, maxWidth: 480, textAlign: 'center', padding: 40 }}>
             <div style={{ fontSize: 48, marginBottom: 16 }}>🎉</div>
-            <h2 style={{ fontSize: 22, fontWeight: 800, color: '#f1f5f9', fontFamily: "'Syne', sans-serif", marginBottom: 8 }}>{t('wizard.campaignLaunched')}</h2>
+            <h2 style={{ fontSize: 22, fontWeight: 800, color: 'var(--bg-base)', fontFamily: "'Syne', sans-serif", marginBottom: 8 }}>{t('wizard.campaignLaunched')}</h2>
             <p style={{ color: '#94a3b8', fontSize: 14, marginBottom: 24 }}>
-              <strong style={{ color: '#f1f5f9' }}>"{launched.name}"</strong> {t('wizard.isNowRunning')}
+              <strong style={{ color: 'var(--bg-base)' }}>"{launched.name}"</strong> {t('wizard.isNowRunning')}
             </p>
             <div style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 10, padding: 16, marginBottom: 24, textAlign: 'left' }}>
               <p style={{ color: '#86efac', fontSize: 13, marginBottom: 8 }}>{t('wizard.willAutomatically')}</p>
@@ -472,7 +472,7 @@ export default function CampaignWizard() {
       <ClientNav />
       <main className="flex-1 overflow-y-auto p-6 lg:p-8" style={{ maxHeight: '100vh' }}>
         <div style={{ maxWidth: 700 }}>
-          <h2 style={{ fontSize: 22, fontWeight: 800, color: '#f1f5f9', fontFamily: "'Syne', sans-serif", marginBottom: 4 }}>{t('wizard.createCampaign')}</h2>
+          <h2 style={{ fontSize: 22, fontWeight: 800, color: 'var(--bg-base)', fontFamily: "'Syne', sans-serif", marginBottom: 4 }}>{t('wizard.createCampaign')}</h2>
           <p style={{ color: '#64748b', fontSize: 13, marginBottom: 24 }}>{t('wizard.subtitle')}</p>
           <ProgressBar current={step} />
 
@@ -486,7 +486,7 @@ export default function CampaignWizard() {
           {step === 0 && (
             <div>
               <div style={card}>
-                <h3 style={{ color: '#f1f5f9', fontSize: 16, fontWeight: 700, marginBottom: 16 }}>{t('wizard.setupTitle')}</h3>
+                <h3 style={{ color: 'var(--bg-base)', fontSize: 16, fontWeight: 700, marginBottom: 16 }}>{t('wizard.setupTitle')}</h3>
                 <div style={{ marginBottom: 16 }}>
                   <label style={lbl}>{t('wizard.campaignName')}</label>
                   <input style={input} value={name} onChange={e => setName(e.target.value)} placeholder={t('wizard.campaignNamePlaceholder')} />
@@ -509,7 +509,7 @@ export default function CampaignWizard() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
                   <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(59,130,246,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>👁</div>
                   <div>
-                    <h4 style={{ color: '#f1f5f9', fontSize: 14, fontWeight: 600 }}>{t('wizard.visitProfile')}</h4>
+                    <h4 style={{ color: 'var(--bg-base)', fontSize: 14, fontWeight: 600 }}>{t('wizard.visitProfile')}</h4>
                     <p style={{ color: '#64748b', fontSize: 11 }}>{t('wizard.visitDesc')}</p>
                   </div>
                 </div>
@@ -526,7 +526,7 @@ export default function CampaignWizard() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
                       <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(34,197,94,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>🤝</div>
                       <div>
-                        <h4 style={{ color: '#f1f5f9', fontSize: 14, fontWeight: 600 }}>{t('wizard.sendInvite')}</h4>
+                        <h4 style={{ color: 'var(--bg-base)', fontSize: 14, fontWeight: 600 }}>{t('wizard.sendInvite')}</h4>
                         <p style={{ color: '#64748b', fontSize: 11 }}>{t('wizard.inviteDesc')}</p>
                       </div>
                     </div>
@@ -581,7 +581,7 @@ export default function CampaignWizard() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
                       <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(124,58,237,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>💬</div>
                       <div>
-                        <h4 style={{ color: '#f1f5f9', fontSize: 14, fontWeight: 600 }}>{t('wizard.firstMessage')}</h4>
+                        <h4 style={{ color: 'var(--bg-base)', fontSize: 14, fontWeight: 600 }}>{t('wizard.firstMessage')}</h4>
                         <p style={{ color: '#64748b', fontSize: 11 }}>{t('wizard.sentAfterAccepted')}</p>
                       </div>
                     </div>
@@ -617,7 +617,7 @@ export default function CampaignWizard() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
                       <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(236,72,153,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>↩️</div>
                       <div>
-                        <h4 style={{ color: '#f1f5f9', fontSize: 14, fontWeight: 600 }}>{t('wizard.followUpMessage')}</h4>
+                        <h4 style={{ color: 'var(--bg-base)', fontSize: 14, fontWeight: 600 }}>{t('wizard.followUpMessage')}</h4>
                         <p style={{ color: '#64748b', fontSize: 11 }}>{t('wizard.sentIfNoReply')}</p>
                       </div>
                     </div>
@@ -655,7 +655,7 @@ export default function CampaignWizard() {
           {step === 2 && (
             <div style={card}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                <h3 style={{ color: '#f1f5f9', fontSize: 16, fontWeight: 700 }}>{t('wizard.selectProspects')}</h3>
+                <h3 style={{ color: 'var(--bg-base)', fontSize: 16, fontWeight: 700 }}>{t('wizard.selectProspects')}</h3>
                 <span style={{ background: 'rgba(124,58,237,0.15)', color: '#c4b5fd', padding: '4px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600 }}>{selected.size} {t('wizard.selected')}</span>
               </div>
               <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
@@ -709,35 +709,35 @@ export default function CampaignWizard() {
           {step === 3 && (
             <div>
               <div style={card}>
-                <h3 style={{ color: '#f1f5f9', fontSize: 16, fontWeight: 700, marginBottom: 16 }}>{t('wizard.reviewLaunch')}</h3>
+                <h3 style={{ color: 'var(--bg-base)', fontSize: 16, fontWeight: 700, marginBottom: 16 }}>{t('wizard.reviewLaunch')}</h3>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 20 }}>
                   <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: 14, textAlign: 'center' }}>
                     <div style={{ color: '#64748b', fontSize: 11, marginBottom: 4 }}>{t('wizard.campaign')}</div>
-                    <div style={{ color: '#f1f5f9', fontSize: 14, fontWeight: 600 }}>{name}</div>
+                    <div style={{ color: 'var(--bg-base)', fontSize: 14, fontWeight: 600 }}>{name}</div>
                   </div>
                   <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: 14, textAlign: 'center' }}>
                     <div style={{ color: '#64748b', fontSize: 11, marginBottom: 4 }}>{t('wizard.sequence')}</div>
-                    <div style={{ color: '#f1f5f9', fontSize: 14, fontWeight: 600 }}>{activeStepCount} {t('wizard.stepsLabel')}</div>
+                    <div style={{ color: 'var(--bg-base)', fontSize: 14, fontWeight: 600 }}>{activeStepCount} {t('wizard.stepsLabel')}</div>
                   </div>
                   <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: 14, textAlign: 'center' }}>
                     <div style={{ color: '#64748b', fontSize: 11, marginBottom: 4 }}>{t('wizard.prospects')}</div>
-                    <div style={{ color: '#f1f5f9', fontSize: 14, fontWeight: 600 }}>{selected.size} {t('wizard.selected')}</div>
+                    <div style={{ color: 'var(--bg-base)', fontSize: 14, fontWeight: 600 }}>{selected.size} {t('wizard.selected')}</div>
                   </div>
                 </div>
 
                 <h4 style={{ color: '#94a3b8', fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>{t('wizard.sequencePreview')}</h4>
                 <div style={{ borderLeft: '2px solid rgba(124,58,237,0.3)', paddingLeft: 16 }}>
                   {enabledSteps.visit && (
-                    <div style={{ marginBottom: 14 }}><span style={{ color: '#64748b', fontSize: 11 }}>Day 0</span><br /><span style={{ color: '#f1f5f9', fontSize: 13 }}>👁 {t('wizard.visitProfile')}</span></div>
+                    <div style={{ marginBottom: 14 }}><span style={{ color: '#64748b', fontSize: 11 }}>Day 0</span><br /><span style={{ color: 'var(--bg-base)', fontSize: 13 }}>👁 {t('wizard.visitProfile')}</span></div>
                   )}
                   {enabledSteps.invite && (
-                    <div style={{ marginBottom: 14 }}><span style={{ color: '#64748b', fontSize: 11 }}>Day {inviteDelay}</span><br /><span style={{ color: '#f1f5f9', fontSize: 13 }}>🤝 {t('wizard.sendInvite')} {inviteNote ? `— "${inviteNote.slice(0, 50)}${inviteNote.length > 50 ? '...' : ''}"` : ''}</span></div>
+                    <div style={{ marginBottom: 14 }}><span style={{ color: '#64748b', fontSize: 11 }}>Day {inviteDelay}</span><br /><span style={{ color: 'var(--bg-base)', fontSize: 13 }}>🤝 {t('wizard.sendInvite')} {inviteNote ? `— "${inviteNote.slice(0, 50)}${inviteNote.length > 50 ? '...' : ''}"` : ''}</span></div>
                   )}
                   {enabledSteps.message && (
-                    <div style={{ marginBottom: 14 }}><span style={{ color: '#64748b', fontSize: 11 }}>+{msg1Delay}d {t('wizard.daysAfterAcceptance')}</span><br /><span style={{ color: '#f1f5f9', fontSize: 13 }}>💬 "{msg1.slice(0, 60)}{msg1.length > 60 ? '...' : ''}"</span></div>
+                    <div style={{ marginBottom: 14 }}><span style={{ color: '#64748b', fontSize: 11 }}>+{msg1Delay}d {t('wizard.daysAfterAcceptance')}</span><br /><span style={{ color: 'var(--bg-base)', fontSize: 13 }}>💬 "{msg1.slice(0, 60)}{msg1.length > 60 ? '...' : ''}"</span></div>
                   )}
                   {enabledSteps.follow && (
-                    <div><span style={{ color: '#64748b', fontSize: 11 }}>+{followDelay}d {t('wizard.days')}</span><br /><span style={{ color: '#f1f5f9', fontSize: 13 }}>↩️ "{followUp.slice(0, 60)}{followUp.length > 60 ? '...' : ''}"</span></div>
+                    <div><span style={{ color: '#64748b', fontSize: 11 }}>+{followDelay}d {t('wizard.days')}</span><br /><span style={{ color: 'var(--bg-base)', fontSize: 13 }}>↩️ "{followUp.slice(0, 60)}{followUp.length > 60 ? '...' : ''}"</span></div>
                   )}
                 </div>
               </div>

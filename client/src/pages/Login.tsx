@@ -72,7 +72,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row" style={{ background: '#f8fafc' }}>
+    <div className="min-h-screen flex flex-col lg:flex-row" style={{ background: 'var(--bg-base)' }}>
 
       {/* ═══════════════════════════════════════════════
           LEFT SIDE — LinkedIn login (60%)
@@ -97,16 +97,16 @@ export default function Login() {
 
           {/* OAuth error message */}
           {error && (
-            <div className="flex items-start gap-2.5 p-3 rounded-xl mb-4" style={{ background: '#fef2f2', border: '1px solid #fecaca' }}>
-              <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: '#dc2626' }} />
-              <p className="text-sm" style={{ color: '#991b1b' }}>{error}</p>
+            <div className="flex items-start gap-2.5 p-3 rounded-xl mb-4" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
+              <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: '#ef4444' }} />
+              <p className="text-sm" style={{ color: '#fca5a5' }}>{error}</p>
             </div>
           )}
 
           {/* OAuth success message (e.g. LinkedIn connected, magic link fallback) */}
           {successMsg && (
-            <div className="flex items-start gap-2.5 p-3 rounded-xl mb-4" style={{ background: '#ecfdf5', border: '1px solid #a7f3d0' }}>
-              <p className="text-sm" style={{ color: '#065f46' }}>✅ {successMsg}</p>
+            <div className="flex items-start gap-2.5 p-3 rounded-xl mb-4" style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)' }}>
+              <p className="text-sm" style={{ color: '#34d399' }}>✅ {successMsg}</p>
             </div>
           )}
 
@@ -114,7 +114,7 @@ export default function Login() {
           <button
             onClick={handleLinkedInLogin}
             className="w-full flex items-center justify-center gap-3 py-4 px-6 rounded-xl text-base font-semibold text-white transition-all hover:shadow-lg hover:scale-[1.01]"
-            style={{ background: '#0077b5', boxShadow: '0 4px 14px rgba(0,119,181,0.3)' }}
+            style={{ background: 'linear-gradient(135deg, #8B5CF6, #6366F1)', boxShadow: '0 4px 14px rgba(139,92,246,0.3)' }}
           >
             <Linkedin className="w-5 h-5" />
             Continue with LinkedIn
@@ -130,7 +130,7 @@ export default function Login() {
             <button
               onClick={() => setShowAdmin(true)}
               className="font-semibold hover:underline"
-              style={{ color: '#0077b5' }}
+              style={{ color: '#a78bfa' }}
             >
               Sign in with email →
             </button>
@@ -180,9 +180,9 @@ export default function Login() {
                   />
                 </div>
                 {error && (
-                  <div className="flex items-start gap-2 p-2 rounded-lg" style={{ background: '#fef2f2', border: '1px solid #fecaca' }}>
-                    <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: '#dc2626' }} />
-                    <p className="text-xs" style={{ color: '#991b1b' }}>{error}</p>
+                  <div className="flex items-start gap-2 p-2 rounded-lg" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
+                    <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: '#ef4444' }} />
+                    <p className="text-xs" style={{ color: '#fca5a5' }}>{error}</p>
                   </div>
                 )}
                 <Button type="submit" disabled={loading || !email || !password} className="w-full text-white text-xs" style={{ background: '#374151' }}>
@@ -198,10 +198,10 @@ export default function Login() {
           RIGHT SIDE — Dashboard mockup (40%)
           ═══════════════════════════════════════════════ */}
       <div className="hidden lg:flex lg:w-[40%] items-center justify-center p-10 relative overflow-hidden" style={{ background: '#0f172a' }}>
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 rounded-full" style={{ background: 'radial-gradient(circle, rgba(0,119,181,0.2) 0%, transparent 70%)' }}></div>
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 rounded-full" style={{ background: 'radial-gradient(circle, rgba(139,92,246,0.2) 0%, transparent 70%)' }}></div>
 
         {/* Badge */}
-        <div className="absolute top-6 right-6 px-3 py-1.5 rounded-full text-xs font-bold" style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', color: '#22c55e' }}>
+        <div className="absolute top-6 right-6 px-3 py-1.5 rounded-full text-xs font-bold" style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', color: '#34d399' }}>
           FREE TRIAL — No credit card needed
         </div>
 
@@ -227,7 +227,7 @@ export default function Login() {
             </div>
           </div>
           <div className="absolute -bottom-4 -left-4 px-4 py-3 rounded-xl" style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', backdropFilter: 'blur(8px)' }}>
-            <p className="text-xs font-semibold" style={{ color: '#22c55e' }}>🟢 12 invites sent today</p>
+            <p className="text-xs font-semibold" style={{ color: '#34d399' }}>🟢 12 invites sent today</p>
           </div>
         </div>
       </div>

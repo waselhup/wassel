@@ -50,7 +50,7 @@ export default function OnboardingExtension() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row" style={{ background: '#f8fafc' }}>
+    <div className="min-h-screen flex flex-col lg:flex-row" style={{ background: 'var(--bg-base)' }}>
       {/* LEFT SIDE */}
       <div className="flex-1 lg:w-[60%] flex items-center justify-center p-6 sm:p-10 lg:p-16">
         <div className="w-full max-w-lg">
@@ -75,11 +75,11 @@ export default function OnboardingExtension() {
 
           {/* Extension detected banner */}
           {extensionDetected && (
-            <div className="flex items-center gap-3 p-4 rounded-xl mb-6" style={{ background: '#ecfdf5', border: '1px solid #a7f3d0' }}>
-              <CheckCircle className="w-5 h-5 flex-shrink-0" style={{ color: '#059669' }} />
+            <div className="flex items-center gap-3 p-4 rounded-xl mb-6" style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)' }}>
+              <CheckCircle className="w-5 h-5 flex-shrink-0" style={{ color: '#34d399' }} />
               <div>
-                <p className="text-sm font-semibold" style={{ color: '#059669' }}>تم تثبيت إضافة Wassel بنجاح ✅</p>
-                <p className="text-xs mt-0.5" style={{ color: '#047857' }}>Wassel Chrome Extension v1.1.0</p>
+                <p className="text-sm font-semibold" style={{ color: '#34d399' }}>تم تثبيت إضافة Wassel بنجاح ✅</p>
+                <p className="text-xs mt-0.5" style={{ color: '#34d399' }}>Wassel Chrome Extension v1.1.0</p>
               </div>
             </div>
           )}
@@ -112,15 +112,15 @@ export default function OnboardingExtension() {
           {/* After clicking Install — show "Continue to Dashboard" */}
           {(showContinue && !extensionDetected) && (
             <>
-              <div className="p-4 rounded-xl mb-4" style={{ background: '#fffbeb', border: '1px solid #fef08a' }}>
-                <p className="text-sm" style={{ color: '#92400e' }}>
+              <div className="p-4 rounded-xl mb-4" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)' }}>
+                <p className="text-sm" style={{ color: 'rgba(245,158,11,0.8)' }}>
                   🔍 جاري البحث عن الإضافة تلقائياً... إذا ثبّتها، ستظهر هنا.
                 </p>
               </div>
               <button
                 onClick={handleContinue}
                 className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-xl text-base font-semibold text-white transition-all hover:scale-[1.01]"
-                style={{ background: '#059669', boxShadow: '0 4px 14px rgba(5,150,105,0.3)' }}
+                style={{ background: '#34d399', boxShadow: '0 4px 14px rgba(52,211,153,0.3)' }}
               >
                 <ArrowLeft className="w-5 h-5" />
                 متابعة للوحة التحكم
@@ -133,7 +133,7 @@ export default function OnboardingExtension() {
             <button
               onClick={handleContinue}
               className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-xl text-base font-semibold text-white transition-all hover:scale-[1.01]"
-              style={{ background: '#059669', boxShadow: '0 4px 14px rgba(5,150,105,0.3)' }}
+              style={{ background: '#34d399', boxShadow: '0 4px 14px rgba(52,211,153,0.3)' }}
             >
               <CheckCircle className="w-5 h-5" />
               تم اكتشاف الإضافة — متابعة للوحة التحكم
@@ -171,7 +171,7 @@ export default function OnboardingExtension() {
 
       {/* RIGHT SIDE */}
       <div className="hidden lg:flex lg:w-[40%] items-center justify-center p-10 relative overflow-hidden" style={{ background: '#0f172a' }}>
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 rounded-full" style={{ background: 'radial-gradient(circle, rgba(26,86,219,0.2) 0%, transparent 70%)' }}></div>
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 rounded-full" style={{ background: 'radial-gradient(circle, rgba(139,92,246,0.2) 0%, transparent 70%)' }}></div>
         <div className="relative z-10 w-full max-w-sm">
           <div className="rounded-2xl p-6" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(12px)' }}>
             <div className="flex items-center gap-3 mb-5">

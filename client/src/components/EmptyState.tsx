@@ -47,15 +47,15 @@ export default function EmptyState({
   const Icon = state.icon;
 
   const colorClasses: Record<string, string> = {
-    blue: 'bg-blue-50 text-blue-600',
-    purple: 'bg-purple-50 text-purple-600',
-    green: 'bg-green-50 text-green-600',
-    gray: 'bg-gray-50 text-gray-600',
+    blue: 'bg-[rgba(139,92,246,0.08)] text-[#8B5CF6]',
+    purple: 'bg-[rgba(139,92,246,0.08)] text-[#8B5CF6]',
+    green: 'bg-[rgba(34,197,94,0.08)] text-green-600',
+    gray: 'bg-[var(--bg-base)] text-gray-600',
   };
 
   const buttonClasses: Record<string, string> = {
-    blue: 'bg-blue-600 hover:bg-blue-700',
-    purple: 'bg-purple-600 hover:bg-purple-700',
+    blue: 'bg-[#8B5CF6] hover:bg-[#7C3AED]',
+    purple: 'bg-[#8B5CF6] hover:bg-[#7C3AED]',
     green: 'bg-green-600 hover:bg-green-700',
     gray: 'bg-gray-600 hover:bg-gray-700',
   };

@@ -2,7 +2,7 @@ import React from 'react';
 
 export function SkeletonCard() {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6 animate-pulse">
+    <div className="bg-[var(--bg-card)] rounded-xl border border-gray-200 p-6 animate-pulse">
       <div className="flex items-start justify-between mb-4">
         <div className="h-6 bg-gray-200 rounded w-32"></div>
         <div className="h-6 bg-gray-200 rounded w-20"></div>
@@ -15,7 +15,7 @@ export function SkeletonCard() {
 
 export function SkeletonTable() {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+    <div className="bg-[var(--bg-card)] rounded-xl border border-gray-200 overflow-hidden">
       <div className="p-6 space-y-4">
         {[...Array(5)].map((_, i) => (
           <div key={i} className="flex items-center gap-4 animate-pulse">

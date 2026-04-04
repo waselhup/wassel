@@ -155,7 +155,7 @@ export default function Leads() {
           {/* Header */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
             <div>
-              <h2 style={{ fontSize: 22, fontWeight: 800, color: '#f1f5f9', fontFamily: "'Syne', sans-serif", marginBottom: 4 }}>{t('leads.title')}</h2>
+              <h2 style={{ fontSize: 22, fontWeight: 800, color: '#a78bfa', fontFamily: "'Syne', sans-serif", marginBottom: 4 }}>{t('leads.title')}</h2>
               <p style={{ color: '#64748b', fontSize: 13 }}>{prospects.length} {t('leads.prospectsImported')}</p>
             </div>
             {prospects.length > 0 && (
@@ -184,7 +184,7 @@ export default function Leads() {
               style={{
                 width: '100%', padding: '10px 14px 10px 34px', borderRadius: 8,
                 border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.04)',
-                color: '#f1f5f9', fontSize: 14, outline: 'none',
+                color: '#a78bfa', fontSize: 14, outline: 'none',
               }}
             />
           </div>
@@ -253,7 +253,7 @@ export default function Leads() {
             ) : prospects.length === 0 ? (
               <div style={{ textAlign: 'center', padding: 48 }}>
                 <Users size={36} style={{ color: '#475569', margin: '0 auto 12px' }} />
-                <h3 style={{ color: '#f1f5f9', fontSize: 16, fontWeight: 700, marginBottom: 8 }}>{t('leads.noProspects')}</h3>
+                <h3 style={{ color: '#a78bfa', fontSize: 16, fontWeight: 700, marginBottom: 8 }}>{t('leads.noProspects')}</h3>
                 <p style={{ color: '#64748b', fontSize: 13, marginBottom: 16 }}>{t('leads.noProspectsDesc')}</p>
               </div>
             ) : (
@@ -294,7 +294,7 @@ export default function Leads() {
             position: 'fixed', bottom: 24, right: 24,
             background: '#1e293b', border: '1px solid rgba(124,58,237,0.3)',
             borderRadius: 10, padding: '12px 20px',
-            color: '#f1f5f9', fontSize: 13, fontWeight: 500,
+            color: '#a78bfa', fontSize: 13, fontWeight: 500,
             boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
             zIndex: 1000, animation: 'slideUp 0.3s ease',
           }}>

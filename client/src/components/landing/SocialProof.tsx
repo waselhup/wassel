@@ -42,16 +42,16 @@ export default function SocialProof() {
   ];
 
   return (
-    <section className="py-20 px-6 bg-gray-50">
+    <section className="py-20 px-6 bg-[var(--bg-base)]">
       <div className="max-w-6xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20">
           {metrics.map((metric, index) => {
             const Icon = metric.icon;
             return (
-              <div key={index} className="bg-white rounded-xl p-8 shadow-sm hover:shadow-md transition-shadow">
+              <div key={index} className="bg-[var(--bg-card)] rounded-xl p-8 shadow-sm hover:shadow-md transition-shadow">
                 <div className="flex justify-center mb-4">
-                  <div className="p-3 bg-blue-100 rounded-lg">
-                    <Icon size={24} className="text-blue-600" />
+                  <div className="p-3 bg-[rgba(139,92,246,0.08)] rounded-lg">
+                    <Icon size={24} className="text-[#8B5CF6]" />
                   </div>
                 </div>
                 <div className="text-3xl font-bold text-gray-900 mb-2 text-center">
@@ -75,7 +75,7 @@ export default function SocialProof() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {testimonials.map((testimonial, index) => (
-              <div key={index} className="bg-white rounded-xl p-8 shadow-sm hover:shadow-md transition-shadow">
+              <div key={index} className="bg-[var(--bg-card)] rounded-xl p-8 shadow-sm hover:shadow-md transition-shadow">
                 <div className="flex gap-1 mb-4">
                   {[...Array(5)].map((_, i) => (
                     <Star key={i} size={16} className="fill-yellow-400 text-yellow-400" />

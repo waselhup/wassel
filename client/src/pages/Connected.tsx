@@ -167,13 +167,13 @@ export default function Connected() {
                             {/* Step card */}
                             <div style={{
                                 ...styles.stepCard,
-                                borderColor: step.status === 'current' ? '#2563eb' : step.status === 'complete' ? '#10b981' : '#e5e7eb',
-                                backgroundColor: step.status === 'current' ? '#eff6ff' : step.status === 'complete' ? '#f0fdf4' : '#fff',
+                                borderColor: step.status === 'current' ? '#8B5CF6' : step.status === 'complete' ? '#34d399' : 'rgba(255,255,255,0.1)',
+                                backgroundColor: step.status === 'current' ? 'rgba(139,92,246,0.08)' : step.status === 'complete' ? 'rgba(34,197,94,0.08)' : 'rgba(30,41,59,0.5)',
                             }}>
                                 <div style={styles.stepHeader}>
                                     <div style={{
                                         ...styles.stepNumber,
-                                        backgroundColor: step.status === 'complete' ? '#10b981' : step.status === 'current' ? '#2563eb' : '#9ca3af',
+                                        backgroundColor: step.status === 'complete' ? '#34d399' : step.status === 'current' ? '#8B5CF6' : 'rgba(255,255,255,0.2)',
                                     }}>
                                         {step.status === 'complete' ? '✓' : step.id}
                                     </div>
@@ -237,7 +237,7 @@ export default function Connected() {
 const styles: Record<string, React.CSSProperties> = {
     container: {
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #eff6ff 0%, #e0e7ff 100%)',
+        background: 'linear-gradient(135deg, rgba(139,92,246,0.08) 0%, rgba(99,102,241,0.08) 100%)',
         display: 'flex',
         alignItems: 'flex-start',
         justifyContent: 'center',
@@ -256,12 +256,12 @@ const styles: Record<string, React.CSSProperties> = {
         width: '72px',
         height: '72px',
         borderRadius: '50%',
-        background: 'linear-gradient(135deg, #10b981, #059669)',
+        background: 'linear-gradient(135deg, #34d399, #10b981)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         margin: '0 auto 20px auto',
-        boxShadow: '0 4px 20px rgba(16, 185, 129, 0.3)',
+        boxShadow: '0 4px 20px rgba(52, 211, 153, 0.3)',
     },
     successCheckmark: {
         color: '#fff',
@@ -271,12 +271,12 @@ const styles: Record<string, React.CSSProperties> = {
     title: {
         fontSize: '28px',
         fontWeight: '700',
-        color: '#111827',
+        color: 'rgba(255,255,255,0.9)',
         margin: '0 0 8px 0',
     },
     subtitle: {
         fontSize: '16px',
-        color: '#6b7280',
+        color: 'rgba(255,255,255,0.7)',
         margin: '0',
         lineHeight: '1.5',
     },
@@ -302,6 +302,7 @@ const styles: Record<string, React.CSSProperties> = {
         padding: '20px 24px',
         marginBottom: '16px',
         transition: 'all 0.2s ease',
+        background: 'rgba(30, 41, 59, 0.5)',
     },
     stepHeader: {
         display: 'flex',
@@ -326,7 +327,7 @@ const styles: Record<string, React.CSSProperties> = {
     stepTitle: {
         fontSize: '16px',
         fontWeight: '600',
-        color: '#111827',
+        color: 'rgba(255,255,255,0.9)',
         display: 'flex',
         alignItems: 'center',
         gap: '8px',
@@ -337,29 +338,29 @@ const styles: Record<string, React.CSSProperties> = {
     },
     stepDescription: {
         fontSize: '14px',
-        color: '#6b7280',
+        color: 'rgba(255,255,255,0.6)',
         margin: '0',
         lineHeight: '1.4',
     },
     stepDetail: {
         fontSize: '12px',
-        color: '#10b981',
+        color: '#34d399',
         margin: '4px 0 0 0',
         fontStyle: 'italic',
     },
     doneLabel: {
         fontSize: '11px',
         fontWeight: '600',
-        color: '#059669',
-        backgroundColor: '#d1fae5',
+        color: '#34d399',
+        backgroundColor: 'rgba(34,197,94,0.15)',
         padding: '2px 8px',
         borderRadius: '10px',
     },
     currentLabel: {
         fontSize: '11px',
         fontWeight: '600',
-        color: '#2563eb',
-        backgroundColor: '#dbeafe',
+        color: '#a78bfa',
+        backgroundColor: 'rgba(139,92,246,0.15)',
         padding: '2px 8px',
         borderRadius: '10px',
     },
@@ -367,7 +368,7 @@ const styles: Record<string, React.CSSProperties> = {
         marginTop: '12px',
         marginLeft: '52px',
         padding: '10px 20px',
-        backgroundColor: '#2563eb',
+        backgroundColor: '#8B5CF6',
         color: '#fff',
         border: 'none',
         borderRadius: '8px',
@@ -380,13 +381,13 @@ const styles: Record<string, React.CSSProperties> = {
         textAlign: 'center' as const,
         marginTop: '24px',
         padding: '20px',
-        backgroundColor: '#fff',
+        backgroundColor: 'rgba(30, 41, 59, 0.5)',
         borderRadius: '12px',
-        border: '1px solid #e5e7eb',
+        border: '1px solid rgba(255,255,255,0.1)',
     },
     helpText: {
         fontSize: '14px',
-        color: '#6b7280',
+        color: 'rgba(255,255,255,0.6)',
         margin: '0 0 12px 0',
     },
     skipButtons: {
@@ -396,7 +397,7 @@ const styles: Record<string, React.CSSProperties> = {
         gap: '8px',
     },
     skipLink: {
-        color: '#2563eb',
+        color: '#a78bfa',
         textDecoration: 'none',
         fontSize: '14px',
         fontWeight: '500',
@@ -406,22 +407,23 @@ const styles: Record<string, React.CSSProperties> = {
         padding: '0',
     },
     separator: {
-        color: '#d1d5db',
+        color: 'rgba(255,255,255,0.2)',
     },
     card: {
         maxWidth: '480px',
-        backgroundColor: '#fff',
+        backgroundColor: 'rgba(30, 41, 59, 0.5)',
         borderRadius: '16px',
         padding: '48px',
-        boxShadow: '0 4px 24px rgba(0,0,0,0.06)',
+        boxShadow: '0 4px 24px rgba(0,0,0,0.3)',
         textAlign: 'center' as const,
         margin: '60px auto',
+        border: '1px solid rgba(255,255,255,0.1)',
     },
     errorIcon: {
         width: '64px',
         height: '64px',
         borderRadius: '50%',
-        backgroundColor: '#fef2f2',
+        backgroundColor: 'rgba(239,68,68,0.1)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -433,19 +435,19 @@ const styles: Record<string, React.CSSProperties> = {
     errorTitle: {
         fontSize: '24px',
         fontWeight: '700',
-        color: '#111827',
+        color: 'rgba(255,255,255,0.9)',
         margin: '0 0 8px 0',
     },
     errorText: {
         fontSize: '16px',
-        color: '#6b7280',
+        color: 'rgba(255,255,255,0.6)',
         margin: '0 0 8px 0',
     },
     primaryButton: {
         display: 'inline-block',
         marginTop: '20px',
         padding: '12px 24px',
-        backgroundColor: '#2563eb',
+        backgroundColor: '#8B5CF6',
         color: '#fff',
         borderRadius: '8px',
         textDecoration: 'none',

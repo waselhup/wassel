@@ -51,7 +51,7 @@ export default function Onboarding() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row" style={{ background: '#f8fafc' }}>
+    <div className="min-h-screen flex flex-col lg:flex-row" style={{ background: 'var(--bg-base)' }}>
 
       {/* LEFT SIDE */}
       <div className="flex-1 lg:w-[60%] flex items-center justify-center p-6 sm:p-10 lg:p-16">
@@ -71,32 +71,32 @@ export default function Onboarding() {
 
           {/* Progress Steps */}
           <div className="space-y-3 mb-8">
-            <div className="flex items-center gap-3 px-4 py-3 rounded-xl" style={{ background: '#ecfdf5', border: '1px solid #a7f3d0' }}>
-              <CheckCircle className="w-5 h-5 flex-shrink-0" style={{ color: '#059669' }} />
-              <span className="text-sm font-medium" style={{ color: '#065f46' }}>Account created</span>
+            <div className="flex items-center gap-3 px-4 py-3 rounded-xl" style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)' }}>
+              <CheckCircle className="w-5 h-5 flex-shrink-0" style={{ color: '#34d399' }} />
+              <span className="text-sm font-medium" style={{ color: '#34d399' }}>Account created</span>
             </div>
-            <div className="flex items-center gap-3 px-4 py-3 rounded-xl" style={{ background: extensionDetected ? '#ecfdf5' : '#eff6ff', border: extensionDetected ? '1px solid #a7f3d0' : '1px solid #bfdbfe' }}>
+            <div className="flex items-center gap-3 px-4 py-3 rounded-xl" style={{ background: extensionDetected ? 'rgba(34,197,94,0.08)' : 'rgba(139,92,246,0.08)', border: extensionDetected ? '1px solid rgba(34,197,94,0.2)' : '1px solid rgba(139,92,246,0.2)' }}>
               {extensionDetected ? (
-                <CheckCircle className="w-5 h-5 flex-shrink-0" style={{ color: '#059669' }} />
+                <CheckCircle className="w-5 h-5 flex-shrink-0" style={{ color: '#34d399' }} />
               ) : (
-                <div className="w-5 h-5 rounded-full border-2 border-blue-400 border-t-transparent animate-spin flex-shrink-0"></div>
+                <div className="w-5 h-5 rounded-full border-2 border-violet-400 border-t-transparent animate-spin flex-shrink-0"></div>
               )}
-              <span className="text-sm font-medium" style={{ color: extensionDetected ? '#065f46' : '#1e40af' }}>
+              <span className="text-sm font-medium" style={{ color: extensionDetected ? '#34d399' : '#a78bfa' }}>
                 {extensionDetected ? 'Extension installed!' : 'Install Chrome Extension'}
               </span>
             </div>
-            <div className="flex items-center gap-3 px-4 py-3 rounded-xl" style={{ background: '#f3f4f6', border: '1px solid #e5e7eb' }}>
-              <Circle className="w-5 h-5 flex-shrink-0" style={{ color: '#9ca3af' }} />
-              <span className="text-sm font-medium" style={{ color: '#6b7280' }}>Start importing prospects</span>
+            <div className="flex items-center gap-3 px-4 py-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <Circle className="w-5 h-5 flex-shrink-0" style={{ color: 'rgba(255,255,255,0.4)' }} />
+              <span className="text-sm font-medium" style={{ color: 'rgba(255,255,255,0.6)' }}>Start importing prospects</span>
             </div>
           </div>
 
           {extensionDetected ? (
-            <div className="flex items-center gap-3 px-6 py-4 rounded-xl" style={{ background: '#ecfdf5', border: '1px solid #a7f3d0' }}>
+            <div className="flex items-center gap-3 px-6 py-4 rounded-xl" style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)' }}>
               <span className="text-2xl">✅</span>
               <div>
-                <p className="font-semibold" style={{ color: '#065f46' }}>Extension detected!</p>
-                <p className="text-sm" style={{ color: '#059669' }}>Redirecting to dashboard...</p>
+                <p className="font-semibold" style={{ color: '#34d399' }}>Extension detected!</p>
+                <p className="text-sm" style={{ color: '#34d399' }}>Redirecting to dashboard...</p>
               </div>
             </div>
           ) : (
@@ -129,7 +129,7 @@ export default function Onboarding() {
 
       {/* RIGHT SIDE — Dark panel */}
       <div className="hidden lg:flex lg:w-[40%] items-center justify-center p-10 relative overflow-hidden" style={{ background: '#0f172a' }}>
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 rounded-full" style={{ background: 'radial-gradient(circle, rgba(26,86,219,0.2) 0%, transparent 70%)' }}></div>
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 rounded-full" style={{ background: 'radial-gradient(circle, rgba(139,92,246,0.2) 0%, transparent 70%)' }}></div>
 
         <div className="relative z-10 w-full max-w-sm">
           {/* Extension preview mockup */}
