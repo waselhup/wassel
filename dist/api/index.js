@@ -40,6 +40,7 @@ var HttpError = class extends Error {
     this.statusCode = statusCode;
     this.name = "HttpError";
   }
+  statusCode;
 };
 var ForbiddenError = (msg) => new HttpError(403, msg);
 
@@ -74,6 +75,7 @@ var OAuthService = class {
       );
     }
   }
+  client;
   decodeState(state) {
     const redirectUri = atob(state);
     return redirectUri;
@@ -3812,7 +3814,41 @@ var stripeRoutes_default = router14;
 
 // server/_core/sessionRoutes.ts
 import { Router as Router15 } from "express";
+import fetch2 from "node-fetch";
+import { HttpsProxyAgent } from "https-proxy-agent";
 var router15 = Router15();
+async function verifyLinkedInCookie(liAt, jsessionId) {
+  try {
+    const csrfToken = (jsessionId || "").replace(/"/g, "");
+    const headers = {
+      "cookie": `li_at=${liAt}${jsessionId ? `; JSESSIONID="${jsessionId}"` : ""}`,
+      "csrf-token": csrfToken,
+      "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+      "x-restli-protocol-version": "2.0.0",
+      "accept": "application/vnd.linkedin.normalized+json+2.1"
+    };
+    const proxyUrl = process.env.LINKEDIN_PROXY_URL;
+    const agent = proxyUrl ? new HttpsProxyAgent(proxyUrl) : void 0;
+    const res = await fetch2("https://www.linkedin.com/voyager/api/me", {
+      headers,
+      redirect: "manual",
+      ...agent ? { agent } : {}
+    });
+    if (res.status >= 300 && res.status < 400 || res.status === 401 || res.status === 403) {
+      return { valid: false, reason: `LinkedIn rejected cookie (HTTP ${res.status})` };
+    }
+    if (res.ok) {
+      const data = await res.json();
+      const firstName = data?.firstName || data?.miniProfile?.firstName || "";
+      const lastName = data?.lastName || data?.miniProfile?.lastName || "";
+      const name = `${firstName} ${lastName}`.trim();
+      return { valid: true, name: name || "Unknown" };
+    }
+    return { valid: false, reason: `Unexpected HTTP ${res.status}` };
+  } catch (err) {
+    return { valid: false, reason: err.message };
+  }
+}
 function getTeamId6(req) {
   const user = req.user;
   if (!user) return null;
@@ -3849,7 +3885,23 @@ router15.post("/store", async (req, res) => {
       return res.status(500).json({ error: error.message });
     }
     console.log(`[Session] Stored for user=${userId.slice(0, 8)}\u2026`);
-    res.json({ success: true, id: data?.id, status: "active" });
+    const verification = await verifyLinkedInCookie(
+      li_at,
+      jsessionid || ""
+    );
+    if (verification.valid) {
+      console.log(`[Session] \u2705 Cookie verified for ${verification.name}`);
+    } else {
+      console.log(`[Session] \u26A0\uFE0F Cookie stored but INVALID: ${verification.reason}`);
+    }
+    res.json({
+      success: true,
+      id: data?.id,
+      status: "active",
+      verified: verification.valid,
+      linkedinName: verification.name || null,
+      verifyError: verification.reason || null
+    });
   } catch (err) {
     console.error("[Session] Store exception:", err.message);
     res.status(500).json({ error: err.message });
@@ -3878,6 +3930,86 @@ router15.get("/status", async (req, res) => {
     });
   } catch (err) {
     res.json({ hasSession: false, error: err.message });
+  }
+});
+router15.get("/verify", async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+    const { data } = await supabase.from("linkedin_sessions").select("*").eq("user_id", userId).eq("status", "active").single();
+    if (!data) {
+      return res.json({ hasSession: false, verified: false, reason: "No active session stored" });
+    }
+    try {
+      const liAt = decrypt(data.li_at);
+      const jsessionId = data.jsessionid ? decrypt(data.jsessionid) : "";
+      if (!liAt) {
+        return res.json({ hasSession: true, verified: false, reason: "Decrypted cookie is empty" });
+      }
+      const result = await verifyLinkedInCookie(liAt, jsessionId);
+      if (result.valid) {
+        await supabase.from("linkedin_sessions").update({ last_verified_at: (/* @__PURE__ */ new Date()).toISOString() }).eq("id", data.id);
+      }
+      return res.json({
+        hasSession: true,
+        verified: result.valid,
+        linkedinName: result.name || null,
+        reason: result.reason || null,
+        lastUpdated: data.updated_at,
+        cookieLength: liAt.length
+      });
+    } catch (decryptErr) {
+      return res.json({ hasSession: true, verified: false, reason: `Decryption failed: ${decryptErr.message}` });
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+router15.post("/manual-store", async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+    const { li_at, jsessionid } = req.body;
+    if (!li_at || typeof li_at !== "string" || li_at.length < 50) {
+      return res.status(400).json({ error: "Invalid li_at cookie. Must be a long string from LinkedIn." });
+    }
+    const verification = await verifyLinkedInCookie(li_at, jsessionid || "");
+    if (!verification.valid) {
+      return res.status(400).json({
+        error: "Cookie is not valid with LinkedIn",
+        reason: verification.reason,
+        hint: "Make sure you are logged into LinkedIn and copied the correct li_at cookie value"
+      });
+    }
+    const teamId = getTeamId6(req);
+    const encryptedLiAt = encrypt(li_at);
+    const encryptedJsession = jsessionid ? encrypt(jsessionid) : null;
+    const { data, error } = await supabase.from("linkedin_sessions").upsert({
+      user_id: userId,
+      team_id: teamId,
+      li_at: encryptedLiAt,
+      jsessionid: encryptedJsession,
+      status: "active",
+      last_verified_at: (/* @__PURE__ */ new Date()).toISOString(),
+      expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1e3).toISOString(),
+      updated_at: (/* @__PURE__ */ new Date()).toISOString()
+    }, { onConflict: "user_id" }).select("id").single();
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+    console.log(`[Session] \u2705 Manual store for user=${userId.slice(0, 8)}\u2026 verified as ${verification.name}`);
+    res.json({
+      success: true,
+      verified: true,
+      linkedinName: verification.name,
+      id: data?.id
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 router15.delete("/revoke", async (req, res) => {
@@ -4046,7 +4178,23 @@ var automationRoutes_default = router16;
 import { Router as Router17 } from "express";
 
 // server/_core/linkedinApi.ts
-import fetch2 from "node-fetch";
+import fetch3 from "node-fetch";
+import { HttpsProxyAgent as HttpsProxyAgent2 } from "https-proxy-agent";
+function getProxyAgent() {
+  const proxyUrl = process.env.LINKEDIN_PROXY_URL;
+  if (!proxyUrl) {
+    console.warn("[LinkedIn] No LINKEDIN_PROXY_URL set \u2014 requests will come from datacenter IP (may be blocked)");
+    return void 0;
+  }
+  return new HttpsProxyAgent2(proxyUrl);
+}
+var _cachedAgent = null;
+function getAgent() {
+  if (_cachedAgent === null) {
+    _cachedAgent = getProxyAgent();
+  }
+  return _cachedAgent;
+}
 function getHeaders(session, contentType) {
   const csrfToken = session.jsessionId.replace(/"/g, "");
   const headers = {
@@ -4063,6 +4211,10 @@ function getHeaders(session, contentType) {
   }
   return headers;
 }
+function getFetchOpts(extra) {
+  const agent = getAgent();
+  return { ...agent ? { agent } : {}, ...extra };
+}
 function isSessionExpired(status) {
   return status >= 300 && status < 400 || status === 401 || status === 403;
 }
@@ -4072,11 +4224,12 @@ function extractSlug(linkedinUrl) {
 }
 async function visitProfile(session, profileSlug) {
   try {
-    const res = await fetch2(
+    const res = await fetch3(
       `https://www.linkedin.com/voyager/api/identity/profiles/${encodeURIComponent(profileSlug)}`,
       {
         headers: getHeaders(session),
-        redirect: "manual"
+        redirect: "manual",
+        ...getFetchOpts()
       }
     );
     if (isSessionExpired(res.status)) {
@@ -4113,13 +4266,14 @@ async function sendInvite(session, profileId, note) {
     if (note && note.trim()) {
       body.message = note.trim().slice(0, 300);
     }
-    const res = await fetch2(
+    const res = await fetch3(
       "https://www.linkedin.com/voyager/api/growth/normInvitations",
       {
         method: "POST",
         headers: getHeaders(session, "application/json"),
         body: JSON.stringify(body),
-        redirect: "manual"
+        redirect: "manual",
+        ...getFetchOpts()
       }
     );
     if (isSessionExpired(res.status)) {
@@ -4150,13 +4304,14 @@ async function sendInviteV2(session, profileId, note) {
     if (note && note.trim()) {
       body.customMessage = note.trim().slice(0, 300);
     }
-    const res = await fetch2(
+    const res = await fetch3(
       "https://www.linkedin.com/voyager/api/voyagerRelationshipsDashMemberRelationships?action=verifyQuotaAndCreate",
       {
         method: "POST",
         headers: getHeaders(session, "application/json"),
         body: JSON.stringify(body),
-        redirect: "manual"
+        redirect: "manual",
+        ...getFetchOpts()
       }
     );
     if (isSessionExpired(res.status)) {
@@ -4188,13 +4343,14 @@ async function sendMessage(session, profileUrn, message) {
         subtype: "MEMBER_TO_MEMBER"
       }
     };
-    const res = await fetch2(
+    const res = await fetch3(
       "https://www.linkedin.com/voyager/api/messaging/conversations",
       {
         method: "POST",
         headers: getHeaders(session, "application/json"),
         body: JSON.stringify(body),
-        redirect: "manual"
+        redirect: "manual",
+        ...getFetchOpts()
       }
     );
     if (isSessionExpired(res.status)) {
@@ -4223,13 +4379,14 @@ async function sendMessageV2(session, profileUrn, message) {
       mailboxUrn: profileUrn,
       trackingId: crypto.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`
     };
-    const res = await fetch2(
+    const res = await fetch3(
       "https://www.linkedin.com/voyager/api/voyagerMessagingDashMessengerMessages?action=createMessage",
       {
         method: "POST",
         headers: getHeaders(session, "application/json"),
         body: JSON.stringify(body),
-        redirect: "manual"
+        redirect: "manual",
+        ...getFetchOpts()
       }
     );
     if (isSessionExpired(res.status)) {
@@ -4251,7 +4408,7 @@ async function followProfile(session, profileSlug) {
       return { success: false, error: "profile_not_found_for_follow" };
     }
     const entityUrn = profile.entityUrn || `urn:li:fsd_profile:${profile.profileId}`;
-    const res = await fetch2(
+    const res = await fetch3(
       "https://www.linkedin.com/voyager/api/feed/follows",
       {
         method: "POST",
@@ -4266,7 +4423,7 @@ async function followProfile(session, profileSlug) {
     if (res.ok || res.status === 201 || res.status === 200) {
       return { success: true, name: profile.name };
     }
-    const res2 = await fetch2(
+    const res2 = await fetch3(
       `https://www.linkedin.com/voyager/api/voyagerRelationshipsDashFollows?action=followByEntityUrn`,
       {
         method: "POST",
@@ -4285,11 +4442,12 @@ async function followProfile(session, profileSlug) {
 }
 async function checkConnectionStatus(session, profileSlug) {
   try {
-    const res = await fetch2(
+    const res = await fetch3(
       `https://www.linkedin.com/voyager/api/identity/profiles/${encodeURIComponent(profileSlug)}/networkinfo`,
       {
         headers: getHeaders(session),
-        redirect: "manual"
+        redirect: "manual",
+        ...getFetchOpts()
       }
     );
     if (isSessionExpired(res.status)) {
@@ -4503,6 +4661,8 @@ var cloudCampaignRoutes_default = router17;
 
 // server/_core/campaignCron.ts
 import { Router as Router18 } from "express";
+import fetch4 from "node-fetch";
+import { HttpsProxyAgent as HttpsProxyAgent3 } from "https-proxy-agent";
 var router18 = Router18();
 var CRON_SECRET = process.env.CRON_SECRET || "";
 var DAILY_LIMITS = {
@@ -4572,6 +4732,105 @@ async function getDailyCount(userId, actionType) {
   const { count } = await supabase.from("activity_logs").select("*", { count: "exact", head: true }).eq("user_id", userId).eq("action_type", actionType).in("status", ["success", "completed"]).gte("executed_at", today.toISOString());
   return count || 0;
 }
+router18.get("/diagnose", async (req, res) => {
+  const authHeader = req.headers["authorization"] || "";
+  if (CRON_SECRET && authHeader !== `Bearer ${CRON_SECRET}`) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  try {
+    const { data: sessionData } = await supabase.from("linkedin_sessions").select("*").eq("status", "active").limit(1).single();
+    if (!sessionData) {
+      return res.json({ error: "No active session found" });
+    }
+    let liAt = "";
+    let jsessionId = "";
+    try {
+      liAt = decrypt(sessionData.li_at);
+    } catch (e) {
+      return res.json({ error: "decrypt_li_at_failed", message: e.message });
+    }
+    try {
+      jsessionId = sessionData.jsessionid ? decrypt(sessionData.jsessionid) : "";
+    } catch (e) {
+      return res.json({ error: "decrypt_jsessionid_failed", message: e.message });
+    }
+    const diag = {
+      li_at_decrypted_len: liAt.length,
+      li_at_prefix: liAt.substring(0, 8),
+      li_at_suffix: liAt.substring(liAt.length - 8),
+      jsessionid_decrypted_len: jsessionId.length,
+      jsessionid_prefix: jsessionId.substring(0, 10)
+    };
+    const proxyUrl = process.env.LINKEDIN_PROXY_URL;
+    const agent = proxyUrl ? new HttpsProxyAgent3(proxyUrl) : void 0;
+    diag.proxy_configured = !!proxyUrl;
+    if (proxyUrl) {
+      try {
+        const pu = new URL(proxyUrl);
+        diag.proxy_host = pu.hostname;
+        diag.proxy_port = pu.port;
+        diag.proxy_user = pu.username?.substring(0, 30) + "...";
+      } catch {
+      }
+    }
+    const session = {
+      liAt,
+      jsessionId,
+      userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+    };
+    try {
+      const meRes = await fetch4("https://www.linkedin.com/voyager/api/me", {
+        headers: {
+          "cookie": `li_at=${liAt}${jsessionId ? `; JSESSIONID="${jsessionId}"` : ""}`,
+          "csrf-token": jsessionId.replace(/"/g, ""),
+          "user-agent": session.userAgent,
+          "x-restli-protocol-version": "2.0.0",
+          "accept": "application/vnd.linkedin.normalized+json+2.1"
+        },
+        redirect: "manual",
+        ...agent ? { agent } : {}
+      });
+      diag.me_status = meRes.status;
+      diag.me_headers = Object.fromEntries(meRes.headers);
+      if (meRes.ok) {
+        const meData = await meRes.json();
+        diag.me_name = `${meData?.firstName || ""} ${meData?.lastName || ""}`.trim();
+        diag.me_ok = true;
+      }
+    } catch (e) {
+      diag.me_error = e.message;
+    }
+    try {
+      const profileRes = await fetch4(
+        "https://www.linkedin.com/voyager/api/identity/profiles/me",
+        {
+          headers: {
+            "cookie": `li_at=${session.liAt}; JSESSIONID="${session.jsessionId}"`,
+            "csrf-token": session.jsessionId.replace(/"/g, ""),
+            "user-agent": session.userAgent,
+            "x-li-lang": "en_US",
+            "x-restli-protocol-version": "2.0.0",
+            "x-li-track": '{"clientVersion":"1.13.8806","mpVersion":"1.13.8806","osName":"web","timezoneOffset":3,"timezone":"Asia/Riyadh","deviceFormFactor":"DESKTOP","mpName":"voyager-web"}',
+            "accept": "application/vnd.linkedin.normalized+json+2.1"
+          },
+          redirect: "manual",
+          ...agent ? { agent } : {}
+        }
+      );
+      diag.profile_status = profileRes.status;
+      if (profileRes.ok) {
+        diag.profile_ok = true;
+      } else if (profileRes.status >= 300 && profileRes.status < 400) {
+        diag.profile_redirect = profileRes.headers.get("location");
+      }
+    } catch (e) {
+      diag.profile_error = e.message;
+    }
+    return res.json({ ok: true, diag });
+  } catch (e) {
+    return res.status(500).json({ error: e.message });
+  }
+});
 router18.get("/campaign-runner", async (req, res) => {
   const authHeader = req.headers["authorization"] || "";
   if (CRON_SECRET && authHeader !== `Bearer ${CRON_SECRET}`) {
@@ -4777,7 +5036,16 @@ async function processCampaignAction(campaign, userId, teamId, session) {
   }
   if (!result.success && result.error?.includes("session_expired")) {
     await supabase.from("prospect_step_status").update({ status: "pending", error_message: "session_expired - will retry" }).eq("id", pss.id);
-    console.log(`[Cron] Session may be expired for user ${userId.slice(0, 8)}\u2026 \u2014 will retry on next run`);
+    const { data: recentLogs } = await supabase.from("activity_logs").select("status, error_message").eq("campaign_id", campaign.id).order("executed_at", { ascending: false }).limit(5);
+    const allSessionExpired = recentLogs?.every(
+      (l) => l.status === "failed" && l.error_message?.includes("session_expired")
+    );
+    if (recentLogs?.length === 5 && allSessionExpired) {
+      await supabase.from("campaigns").update({ status: "paused" }).eq("id", campaign.id);
+      console.log(`[Cron] \u26A0\uFE0F Auto-paused campaign "${campaign.name}" after 5 consecutive session_expired errors. User needs to refresh LinkedIn cookies.`);
+    } else {
+      console.log(`[Cron] Session may be expired for user ${userId.slice(0, 8)}\u2026 \u2014 will retry on next run`);
+    }
   }
   return {
     campaign: campaign.name,

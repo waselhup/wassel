@@ -176,6 +176,14 @@ router.get('/diagnose', async (req: any, res: any) => {
     const proxyUrl = process.env.LINKEDIN_PROXY_URL;
     const agent = proxyUrl ? new HttpsProxyAgent(proxyUrl) : undefined;
     diag.proxy_configured = !!proxyUrl;
+    if (proxyUrl) {
+      try {
+        const pu = new URL(proxyUrl);
+        diag.proxy_host = pu.hostname;
+        diag.proxy_port = pu.port;
+        diag.proxy_user = pu.username?.substring(0, 30) + '...';
+      } catch {}
+    }
 
     const session: LinkedInSession = {
       liAt,
