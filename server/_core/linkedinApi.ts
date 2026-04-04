@@ -61,17 +61,6 @@ function getHeaders(session: LinkedInSession, contentType?: string) {
     'x-restli-protocol-version': '2.0.0',
     'x-li-track': '{"clientVersion":"1.13.8806","mpVersion":"1.13.8806","osName":"web","timezoneOffset":3,"timezone":"Asia/Riyadh","deviceFormFactor":"DESKTOP","mpName":"voyager-web"}',
     'accept': 'application/vnd.linkedin.normalized+json+2.1',
-    // Browser-like headers to prevent LinkedIn anti-bot 302 redirects
-    'origin': 'https://www.linkedin.com',
-    'referer': 'https://www.linkedin.com/feed/',
-    'sec-fetch-dest': 'empty',
-    'sec-fetch-mode': 'cors',
-    'sec-fetch-site': 'same-origin',
-    'sec-ch-ua': '"Chromium";v="131", "Not_A Brand";v="24"',
-    'sec-ch-ua-mobile': '?0',
-    'sec-ch-ua-platform': '"Windows"',
-    'accept-language': 'en-US,en;q=0.9,ar;q=0.8',
-    'accept-encoding': 'gzip, deflate, br',
   };
   if (contentType) {
     headers['content-type'] = contentType;
@@ -88,14 +77,28 @@ function getFetchOpts(extra?: Record<string, any>): Record<string, any> {
 /**
  * Check if a response indicates the LinkedIn session is expired.
  * Only 401 and 403 are definitive session failures.
- * For 3xx redirects, check the Location header — only redirects to
- * login/authwall/checkpoint mean the session is dead.
+ * For 3xx redirects, check the Location header and Set-Cookie —
+ * LinkedIn sends "li_at=delete me" when actively invalidating a session.
  */
-function isSessionExpired(status: number, locationHeader?: string | null): boolean {
+function isSessionExpired(status: number, locationHeader?: string | null, setCookieHeader?: string | null): boolean {
+  // LinkedIn actively invalidating session cookie
+  if (setCookieHeader && setCookieHeader.includes('li_at=delete me')) {
+    console.error('[LinkedIn] Session INVALIDATED by LinkedIn (li_at=delete me). User must re-login.');
+    return true;
+  }
   if (status === 401 || status === 403) return true;
-  if (status >= 300 && status < 400 && locationHeader) {
-    const loc = locationHeader.toLowerCase();
-    if (loc.includes('login') || loc.includes('authwall') || loc.includes('checkpoint') || loc.includes('uas/login')) {
+  if (status >= 300 && status < 400) {
+    // Check location for login/auth redirects
+    if (locationHeader) {
+      const loc = locationHeader.toLowerCase();
+      if (loc.includes('login') || loc.includes('authwall') || loc.includes('checkpoint') || loc.includes('uas/login')) {
+        return true;
+      }
+    }
+    // 302 redirect to itself or to the same Voyager API = session issue
+    // (LinkedIn does this when cookie is dead)
+    if (locationHeader && locationHeader.includes('/voyager/api/')) {
+      console.warn('[LinkedIn] Redirect to Voyager API — likely session issue');
       return true;
     }
     // Other redirects (profile moved, etc.) are NOT session expiry
@@ -128,7 +131,7 @@ export async function visitProfile(session: LinkedInSession, profileSlug: string
 
     const location = res.headers.get('location');
 
-    if (isSessionExpired(res.status, location)) {
+    if (isSessionExpired(res.status, location, res.headers.get('set-cookie'))) {
       return { success: false, error: `session_expired: HTTP ${res.status} → ${location || 'no location'}` };
     }
 
@@ -217,7 +220,7 @@ export async function sendInvite(
       }
     );
 
-    if (isSessionExpired(res.status, res.headers.get('location'))) {
+    if (isSessionExpired(res.status, res.headers.get('location'), res.headers.get('set-cookie'))) {
       return { success: false, error: 'session_expired' };
     }
 
@@ -275,7 +278,7 @@ async function sendInviteV2(
       }
     );
 
-    if (isSessionExpired(res.status, res.headers.get('location'))) {
+    if (isSessionExpired(res.status, res.headers.get('location'), res.headers.get('set-cookie'))) {
       return { success: false, error: 'session_expired' };
     }
 
@@ -326,7 +329,7 @@ export async function sendMessage(
       }
     );
 
-    if (isSessionExpired(res.status, res.headers.get('location'))) {
+    if (isSessionExpired(res.status, res.headers.get('location'), res.headers.get('set-cookie'))) {
       return { success: false, error: 'session_expired' };
     }
 
@@ -376,7 +379,7 @@ async function sendMessageV2(
       }
     );
 
-    if (isSessionExpired(res.status, res.headers.get('location'))) {
+    if (isSessionExpired(res.status, res.headers.get('location'), res.headers.get('set-cookie'))) {
       return { success: false, error: 'session_expired' };
     }
 
@@ -413,7 +416,7 @@ export async function followProfile(session: LinkedInSession, profileSlug: strin
       }
     );
 
-    if (isSessionExpired(res.status, res.headers.get('location'))) {
+    if (isSessionExpired(res.status, res.headers.get('location'), res.headers.get('set-cookie'))) {
       return { success: false, error: 'session_expired' };
     }
 
@@ -462,7 +465,7 @@ export async function checkConnectionStatus(
       }
     );
 
-    if (isSessionExpired(res.status, res.headers.get('location'))) {
+    if (isSessionExpired(res.status, res.headers.get('location'), res.headers.get('set-cookie'))) {
       return { status: 'error', error: 'session_expired' };
     }
 
@@ -558,7 +561,7 @@ export async function publishPost(
       }
     );
 
-    if (isSessionExpired(res.status, res.headers.get('location'))) {
+    if (isSessionExpired(res.status, res.headers.get('location'), res.headers.get('set-cookie'))) {
       return { success: false, error: 'session_expired' };
     }
 

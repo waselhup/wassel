@@ -567,35 +567,58 @@ async function processCampaignAction(
 
   // ── On session_expired: revert to pending + track consecutive failures ──
   // Do NOT mark the session as expired — only extension/manual can do that.
-  // But DO auto-pause campaigns after 5 consecutive session failures to avoid hammering LinkedIn.
+  // But DO auto-pause ALL active campaigns immediately when session is confirmed dead.
   if (!result.success && result.error?.includes('session_expired')) {
     await supabase
       .from('prospect_step_status')
       .update({ status: 'pending', error_message: 'session_expired - will retry' })
       .eq('id', pss.id);
 
-    // Count recent consecutive session_expired failures for this campaign
-    const { data: recentLogs } = await supabase
-      .from('activity_logs')
-      .select('status, error_message')
-      .eq('campaign_id', campaign.id)
-      .order('executed_at', { ascending: false })
-      .limit(5);
+    // If LinkedIn explicitly invalidated the cookie ("li_at=delete me" or redirect to Voyager API),
+    // mark the session as expired and pause ALL campaigns for this user immediately.
+    const sessionInvalidated = result.error?.includes('delete me') || result.error?.includes('Voyager API');
 
-    const allSessionExpired = recentLogs?.every(
-      (l: any) => l.status === 'failed' && l.error_message?.includes('session_expired')
-    );
-
-    if (recentLogs?.length === 5 && allSessionExpired) {
-      // Auto-pause the campaign — LinkedIn cookie is dead
+    if (sessionInvalidated) {
+      // Mark session as expired
       await supabase
-        .from('campaigns')
-        .update({ status: 'paused' })
-        .eq('id', campaign.id);
+        .from('linkedin_sessions')
+        .update({ status: 'expired' })
+        .eq('user_id', userId)
+        .eq('status', 'active');
 
-      console.log(`[Cron] ⚠️ Auto-paused campaign "${campaign.name}" after 5 consecutive session_expired errors. User needs to refresh LinkedIn cookies.`);
+      // Pause ALL active campaigns for this team
+      const { data: teamCampaigns } = await supabase
+        .from('campaigns')
+        .select('id')
+        .eq('team_id', teamId)
+        .eq('status', 'active');
+
+      if (teamCampaigns?.length) {
+        for (const c of teamCampaigns) {
+          await supabase.from('campaigns').update({ status: 'paused' }).eq('id', c.id);
+        }
+      }
+
+      console.log(`[Cron] 🛑 Session INVALIDATED by LinkedIn for user ${userId.slice(0, 8)}… — paused all ${teamCampaigns?.length || 0} campaigns. User must re-login to LinkedIn.`);
     } else {
-      console.log(`[Cron] Session may be expired for user ${userId.slice(0, 8)}… — will retry on next run`);
+      // Count recent consecutive session_expired failures
+      const { data: recentLogs } = await supabase
+        .from('activity_logs')
+        .select('status, error_message')
+        .eq('campaign_id', campaign.id)
+        .order('executed_at', { ascending: false })
+        .limit(3);
+
+      const allSessionExpired = recentLogs?.every(
+        (l: any) => l.status === 'failed' && l.error_message?.includes('session_expired')
+      );
+
+      if (recentLogs?.length === 3 && allSessionExpired) {
+        await supabase.from('campaigns').update({ status: 'paused' }).eq('id', campaign.id);
+        console.log(`[Cron] ⚠️ Auto-paused campaign "${campaign.name}" after 3 consecutive session_expired errors.`);
+      } else {
+        console.log(`[Cron] Session may be expired for user ${userId.slice(0, 8)}… — will retry on next run`);
+      }
     }
   }
 
