@@ -216,13 +216,17 @@ function getVoyagerHeaders(liAt, jsessionId) {
   };
 }
 
-function isSessionExpired(status, locationHeader, setCookieHeader) {
+function isSessionExpired(status, locationHeader, setCookieHeader, res) {
   if (setCookieHeader && setCookieHeader.includes('li_at=delete me')) return true;
   if (status === 401 || status === 403) return true;
+  // With redirect:'follow' (default), check if we were redirected to a login page
+  if (res && res.redirected && res.url) {
+    const url = res.url.toLowerCase();
+    if (url.includes('login') || url.includes('authwall') || url.includes('checkpoint') || url.includes('uas/login')) return true;
+  }
   if (status >= 300 && status < 400 && locationHeader) {
     const loc = locationHeader.toLowerCase();
     if (loc.includes('login') || loc.includes('authwall') || loc.includes('checkpoint') || loc.includes('uas/login')) return true;
-    if (locationHeader.includes('/voyager/api/')) return true;
   }
   return false;
 }
@@ -240,12 +244,12 @@ async function linkedinVisitProfile(slug) {
   // Method 1: Modern dash endpoint (works in 2025+)
   try {
     const dashUrl = `https://www.linkedin.com/voyager/api/identity/dash/profiles?q=memberIdentity&memberIdentity=${encodeURIComponent(slug)}&decorationId=com.linkedin.voyager.dash.deco.identity.profile.WebTopCardCore-16`;
-    const res = await fetch(dashUrl, { method: 'GET', headers, redirect: 'manual' });
+    const res = await fetch(dashUrl, { method: 'GET', headers });
 
     const loc = res.headers.get('location');
     const sc = res.headers.get('set-cookie');
 
-    if (isSessionExpired(res.status, loc, sc)) {
+    if (isSessionExpired(res.status, loc, sc, res)) {
       return { success: false, error: `session_expired: ${res.status}` };
     }
 
@@ -281,12 +285,12 @@ async function linkedinVisitProfile(slug) {
   // Method 2: Legacy endpoint (may return 410 but worth trying)
   try {
     const legacyUrl = `https://www.linkedin.com/voyager/api/identity/profiles/${encodeURIComponent(slug)}`;
-    const res = await fetch(legacyUrl, { method: 'GET', headers, redirect: 'manual' });
+    const res = await fetch(legacyUrl, { method: 'GET', headers });
 
     const loc = res.headers.get('location');
     const sc = res.headers.get('set-cookie');
 
-    if (isSessionExpired(res.status, loc, sc)) {
+    if (isSessionExpired(res.status, loc, sc, res)) {
       return { success: false, error: `session_expired: ${res.status}` };
     }
 
@@ -306,7 +310,9 @@ async function linkedinVisitProfile(slug) {
 
 /**
  * Send a connection invite to a profile.
- * Tries 3 methods: modern dash, modern growth, legacy normInvitations.
+ * IMPORTANT: Do NOT use redirect:'manual' — service workers return opaque
+ * responses (status 0) for redirects, which breaks everything.
+ * Instead, follow redirects and detect session expiry from final status.
  */
 async function linkedinSendInvite(profileId, message) {
   const { liAt, jsessionId } = await getLinkedInCookies();
@@ -318,6 +324,14 @@ async function linkedinSendInvite(profileId, message) {
   const trackingId = btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(16)))).replace(/[+/=]/g, '').substring(0, 16);
 
   let lastError = '';
+
+  // Helper: check if response indicates session expired
+  function checkSessionExpiry(res) {
+    if (res.status === 401 || res.status === 403) return true;
+    // If redirected to login page, the final URL will contain 'login' or 'authwall'
+    if (res.redirected && res.url && (res.url.includes('login') || res.url.includes('authwall'))) return true;
+    return false;
+  }
 
   // Method 1: Modern dash verifyQuotaAndCreate
   try {
@@ -336,10 +350,11 @@ async function linkedinSendInvite(profileId, message) {
     console.log(`[Wassel] Invite Method 1 (dash): ${cleanId}`);
     const res = await fetch(
       'https://www.linkedin.com/voyager/api/voyagerRelationshipsDashMemberRelationships?action=verifyQuotaAndCreate',
-      { method: 'POST', headers, body: JSON.stringify(body), redirect: 'manual' }
+      { method: 'POST', headers, body: JSON.stringify(body) }
     );
 
-    if (res.status === 401 || res.status === 403) return { success: false, error: `session_expired_${res.status}` };
+    console.log(`[Wassel] Method 1 response: ${res.status} redirected=${res.redirected}`);
+    if (checkSessionExpiry(res)) return { success: false, error: `session_expired_${res.status}` };
     if (res.status === 429) return { success: false, error: 'rate_limited' };
     if (res.ok || res.status === 201 || res.status === 200) {
       console.log(`[Wassel] ✅ Invite sent via dash method`);
@@ -347,7 +362,7 @@ async function linkedinSendInvite(profileId, message) {
     }
 
     let detail = '';
-    try { const d = await res.json(); detail = JSON.stringify(d).substring(0, 200); } catch {}
+    try { const d = await res.json(); detail = JSON.stringify(d).substring(0, 300); } catch {}
     lastError = `dash_${res.status}: ${detail}`;
     console.warn(`[Wassel] Invite Method 1 failed: ${lastError}`);
   } catch (e) {
@@ -357,27 +372,28 @@ async function linkedinSendInvite(profileId, message) {
 
   await sleep(500);
 
-  // Method 2: Modern growth invitation create
+  // Method 2: Legacy growth normInvitations
   try {
     const body = {
       trackingId,
-      message: (message && message.trim()) ? message.trim().substring(0, 300) : '',
-      invitations: [],
-      excludeInvitations: [],
       invitee: {
         'com.linkedin.voyager.growth.invitation.InviteeProfile': {
           profileId: cleanId,
         },
       },
     };
+    if (message && message.trim()) {
+      body.message = message.trim().substring(0, 280);
+    }
 
     console.log(`[Wassel] Invite Method 2 (growth): ${cleanId}`);
     const res = await fetch(
       'https://www.linkedin.com/voyager/api/growth/normInvitations',
-      { method: 'POST', headers, body: JSON.stringify(body), redirect: 'manual' }
+      { method: 'POST', headers, body: JSON.stringify(body) }
     );
 
-    if (res.status === 401 || res.status === 403) return { success: false, error: `session_expired_${res.status}` };
+    console.log(`[Wassel] Method 2 response: ${res.status} redirected=${res.redirected}`);
+    if (checkSessionExpiry(res)) return { success: false, error: `session_expired_${res.status}` };
     if (res.status === 429) return { success: false, error: 'rate_limited' };
     if (res.ok || res.status === 201) {
       console.log(`[Wassel] ✅ Invite sent via growth method`);
@@ -385,49 +401,12 @@ async function linkedinSendInvite(profileId, message) {
     }
 
     let detail = '';
-    try { const d = await res.json(); detail = JSON.stringify(d).substring(0, 200); } catch {}
+    try { const d = await res.json(); detail = JSON.stringify(d).substring(0, 300); } catch {}
     lastError = `growth_${res.status}: ${detail}`;
     console.warn(`[Wassel] Invite Method 2 failed: ${lastError}`);
   } catch (e) {
     lastError = `growth_error: ${e.message}`;
     console.warn(`[Wassel] Invite Method 2 exception: ${e.message}`);
-  }
-
-  await sleep(500);
-
-  // Method 3: Relationships endpoint (another modern variant)
-  try {
-    const body = {
-      invitee: {
-        inviteeUnion: {
-          memberProfile: entityUrn,
-        },
-      },
-    };
-    if (message && message.trim()) {
-      body.customMessage = message.trim().substring(0, 300);
-    }
-
-    console.log(`[Wassel] Invite Method 3 (relationships): ${cleanId}`);
-    const res = await fetch(
-      'https://www.linkedin.com/voyager/api/relationships/invitations',
-      { method: 'POST', headers, body: JSON.stringify(body), redirect: 'manual' }
-    );
-
-    if (res.status === 401 || res.status === 403) return { success: false, error: `session_expired_${res.status}` };
-    if (res.status === 429) return { success: false, error: 'rate_limited' };
-    if (res.ok || res.status === 201 || res.status === 200) {
-      console.log(`[Wassel] ✅ Invite sent via relationships method`);
-      return { success: true };
-    }
-
-    let detail = '';
-    try { const d = await res.json(); detail = JSON.stringify(d).substring(0, 200); } catch {}
-    lastError = `rel_${res.status}: ${detail}`;
-    console.warn(`[Wassel] Invite Method 3 failed: ${lastError}`);
-  } catch (e) {
-    lastError = `rel_error: ${e.message}`;
-    console.warn(`[Wassel] Invite Method 3 exception: ${e.message}`);
   }
 
   return { success: false, error: lastError || 'all_invite_methods_failed' };
@@ -457,7 +436,7 @@ async function linkedinSendMessage(profileUrn, message) {
 
     const res = await fetch(
       'https://www.linkedin.com/voyager/api/voyagerMessagingDashMessengerMessages?action=createMessage',
-      { method: 'POST', headers, body: JSON.stringify(body), redirect: 'manual' }
+      { method: 'POST', headers, body: JSON.stringify(body), }
     );
 
     if (res.status === 401 || res.status === 403) return { success: false, error: 'session_expired' };
@@ -487,7 +466,7 @@ async function linkedinSendMessage(profileUrn, message) {
 
     const res = await fetch(
       'https://www.linkedin.com/voyager/api/messaging/conversations',
-      { method: 'POST', headers, body: JSON.stringify(body), redirect: 'manual' }
+      { method: 'POST', headers, body: JSON.stringify(body), }
     );
 
     if (res.status === 401 || res.status === 403) return { success: false, error: 'session_expired' };
@@ -518,7 +497,7 @@ async function linkedinFollowProfile(slug) {
   try {
     const res = await fetch(
       'https://www.linkedin.com/voyager/api/voyagerRelationshipsDashFollows?action=followByEntityUrn',
-      { method: 'POST', headers, body: JSON.stringify({ entityUrn }), redirect: 'manual' }
+      { method: 'POST', headers, body: JSON.stringify({ entityUrn }), }
     );
 
     if (res.status === 401 || res.status === 403) return { success: false, error: 'session_expired' };
@@ -531,7 +510,7 @@ async function linkedinFollowProfile(slug) {
   try {
     const res = await fetch(
       'https://www.linkedin.com/voyager/api/feed/follows',
-      { method: 'POST', headers, body: JSON.stringify({ urn: entityUrn }), redirect: 'manual' }
+      { method: 'POST', headers, body: JSON.stringify({ urn: entityUrn }), }
     );
     if (res.ok || res.status === 201) return { success: true };
     return { success: false, error: `follow_failed_${res.status}` };
