@@ -69,49 +69,69 @@ async function getToken() {
 async function syncTokenFromDashboard() {
   try {
     const tabs = await chrome.tabs.query({});
-    const wasselTab = tabs.find(t => t.url && t.url.includes('wassel-alpha.vercel.app'));
+    const wasselTab = tabs.find(t =>
+      t.url && t.url.includes('wassel-alpha.vercel.app') && t.status === 'complete'
+    );
 
     if (!wasselTab || !wasselTab.id) {
-      console.log('[Wassel] No dashboard tab found');
+      console.log('[Wassel] No ready dashboard tab found');
       return { synced: false, reason: 'no_tab' };
     }
 
-    const results = await chrome.scripting.executeScript({
-      target: { tabId: wasselTab.id },
-      func: () => {
-        const keys = Object.keys(localStorage);
-        const directToken = localStorage.getItem('supabase_token');
-        if (directToken) return { token: directToken, source: 'supabase_token' };
+    // Method 1: Try sending message to content script (wassel_detect.js)
+    try {
+      const response = await chrome.tabs.sendMessage(wasselTab.id, { type: 'GET_SUPABASE_TOKEN' });
+      if (response?.token) {
+        await chrome.storage.local.set({ wasselToken: response.token });
+        console.log(`[Wassel] ✅ Token synced via content script (${response.source})`);
+        extractAndStoreCookies();
+        return { synced: true, source: response.source };
+      }
+    } catch (msgErr) {
+      console.log('[Wassel] Content script msg failed, trying executeScript:', msgErr.message);
+    }
 
-        const sbKey = keys.find(k => k.startsWith('sb-') && k.endsWith('-auth-token'));
-        if (sbKey) {
-          try {
-            const parsed = JSON.parse(localStorage.getItem(sbKey));
-            const t = parsed?.access_token || parsed?.currentSession?.access_token;
-            if (t) return { token: t, source: sbKey };
-          } catch {}
-        }
+    // Method 2: Fallback to executeScript (requires host_permissions)
+    try {
+      const results = await chrome.scripting.executeScript({
+        target: { tabId: wasselTab.id },
+        func: () => {
+          const keys = Object.keys(localStorage);
+          const directToken = localStorage.getItem('supabase_token');
+          if (directToken) return { token: directToken, source: 'supabase_token' };
 
-        const fallbackKey = keys.find(k =>
-          k.toLowerCase().includes('supabase') && k.toLowerCase().includes('auth')
-        );
-        if (fallbackKey) {
-          try {
-            const parsed = JSON.parse(localStorage.getItem(fallbackKey));
-            const t = parsed?.access_token || parsed?.currentSession?.access_token;
-            if (t) return { token: t, source: fallbackKey };
-          } catch {}
-        }
-        return null;
-      },
-    });
+          const sbKey = keys.find(k => k.startsWith('sb-') && k.endsWith('-auth-token'));
+          if (sbKey) {
+            try {
+              const parsed = JSON.parse(localStorage.getItem(sbKey));
+              const t = parsed?.access_token || parsed?.currentSession?.access_token;
+              if (t) return { token: t, source: sbKey };
+            } catch {}
+          }
 
-    if (results?.[0]?.result) {
-      const { token, source } = results[0].result;
-      await chrome.storage.local.set({ wasselToken: token });
-      console.log(`[Wassel] ✅ Token synced (${source})`);
-      extractAndStoreCookies();
-      return { synced: true, source };
+          const fallbackKey = keys.find(k =>
+            k.toLowerCase().includes('supabase') && k.toLowerCase().includes('auth')
+          );
+          if (fallbackKey) {
+            try {
+              const parsed = JSON.parse(localStorage.getItem(fallbackKey));
+              const t = parsed?.access_token || parsed?.currentSession?.access_token;
+              if (t) return { token: t, source: fallbackKey };
+            } catch {}
+          }
+          return null;
+        },
+      });
+
+      if (results?.[0]?.result) {
+        const { token, source } = results[0].result;
+        await chrome.storage.local.set({ wasselToken: token });
+        console.log(`[Wassel] ✅ Token synced via executeScript (${source})`);
+        extractAndStoreCookies();
+        return { synced: true, source };
+      }
+    } catch (scriptErr) {
+      console.warn('[Wassel] executeScript failed:', scriptErr.message);
     }
 
     return { synced: false, reason: 'no_token' };
