@@ -74,8 +74,23 @@ function getFetchOpts(extra?: Record<string, any>): Record<string, any> {
   return { ...(agent ? { agent } : {}), ...extra };
 }
 
-function isSessionExpired(status: number): boolean {
-  return status >= 300 && status < 400 || status === 401 || status === 403;
+/**
+ * Check if a response indicates the LinkedIn session is expired.
+ * Only 401 and 403 are definitive session failures.
+ * For 3xx redirects, check the Location header — only redirects to
+ * login/authwall/checkpoint mean the session is dead.
+ */
+function isSessionExpired(status: number, locationHeader?: string | null): boolean {
+  if (status === 401 || status === 403) return true;
+  if (status >= 300 && status < 400 && locationHeader) {
+    const loc = locationHeader.toLowerCase();
+    if (loc.includes('login') || loc.includes('authwall') || loc.includes('checkpoint') || loc.includes('uas/login')) {
+      return true;
+    }
+    // Other redirects (profile moved, etc.) are NOT session expiry
+    return false;
+  }
+  return false;
 }
 
 /**
@@ -100,8 +115,37 @@ export async function visitProfile(session: LinkedInSession, profileSlug: string
       }
     );
 
-    if (isSessionExpired(res.status)) {
-      return { success: false, error: 'session_expired: LinkedIn redirected (li_at cookie invalid)' };
+    const location = res.headers.get('location');
+
+    if (isSessionExpired(res.status, location)) {
+      return { success: false, error: `session_expired: HTTP ${res.status} → ${location || 'no location'}` };
+    }
+
+    // Handle non-login redirects (profile moved, etc.) — follow them
+    if (res.status >= 300 && res.status < 400 && location) {
+      console.log(`[LinkedIn] Profile ${profileSlug} redirected (${res.status}) to: ${location}`);
+      // Try following the redirect manually
+      try {
+        const res2 = await fetch(location.startsWith('http') ? location : `https://www.linkedin.com${location}`, {
+          headers: getHeaders(session),
+          redirect: 'manual',
+          ...getFetchOpts(),
+        });
+        if (res2.ok) {
+          const data: any = await res2.json();
+          const firstName = data?.firstName || data?.miniProfile?.firstName || '';
+          const lastName = data?.lastName || data?.miniProfile?.lastName || '';
+          const name = `${firstName} ${lastName}`.trim();
+          const profileId = data?.entityUrn?.split(':').pop() ||
+                            data?.miniProfile?.entityUrn?.split(':').pop() ||
+                            data?.profileId ||
+                            profileSlug;
+          return { success: true, name, profileId, entityUrn: data?.entityUrn || `urn:li:fsd_profile:${profileId}` };
+        }
+        return { success: false, error: `HTTP ${res.status}→${res2.status}: redirect not resolved` };
+      } catch (e2: any) {
+        return { success: false, error: `redirect_follow_failed: ${e2.message}` };
+      }
     }
 
     if (res.ok) {
@@ -162,7 +206,7 @@ export async function sendInvite(
       }
     );
 
-    if (isSessionExpired(res.status)) {
+    if (isSessionExpired(res.status, res.headers.get('location'))) {
       return { success: false, error: 'session_expired' };
     }
 
@@ -220,7 +264,7 @@ async function sendInviteV2(
       }
     );
 
-    if (isSessionExpired(res.status)) {
+    if (isSessionExpired(res.status, res.headers.get('location'))) {
       return { success: false, error: 'session_expired' };
     }
 
@@ -271,7 +315,7 @@ export async function sendMessage(
       }
     );
 
-    if (isSessionExpired(res.status)) {
+    if (isSessionExpired(res.status, res.headers.get('location'))) {
       return { success: false, error: 'session_expired' };
     }
 
@@ -321,7 +365,7 @@ async function sendMessageV2(
       }
     );
 
-    if (isSessionExpired(res.status)) {
+    if (isSessionExpired(res.status, res.headers.get('location'))) {
       return { success: false, error: 'session_expired' };
     }
 
@@ -358,7 +402,7 @@ export async function followProfile(session: LinkedInSession, profileSlug: strin
       }
     );
 
-    if (isSessionExpired(res.status)) {
+    if (isSessionExpired(res.status, res.headers.get('location'))) {
       return { success: false, error: 'session_expired' };
     }
 
@@ -407,7 +451,7 @@ export async function checkConnectionStatus(
       }
     );
 
-    if (isSessionExpired(res.status)) {
+    if (isSessionExpired(res.status, res.headers.get('location'))) {
       return { status: 'error', error: 'session_expired' };
     }
 
@@ -503,7 +547,7 @@ export async function publishPost(
       }
     );
 
-    if (isSessionExpired(res.status)) {
+    if (isSessionExpired(res.status, res.headers.get('location'))) {
       return { success: false, error: 'session_expired' };
     }
 

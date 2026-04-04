@@ -4222,8 +4222,16 @@ function getFetchOpts(extra) {
   const agent = getAgent();
   return { ...agent ? { agent } : {}, ...extra };
 }
-function isSessionExpired(status) {
-  return status >= 300 && status < 400 || status === 401 || status === 403;
+function isSessionExpired(status, locationHeader) {
+  if (status === 401 || status === 403) return true;
+  if (status >= 300 && status < 400 && locationHeader) {
+    const loc = locationHeader.toLowerCase();
+    if (loc.includes("login") || loc.includes("authwall") || loc.includes("checkpoint") || loc.includes("uas/login")) {
+      return true;
+    }
+    return false;
+  }
+  return false;
 }
 function extractSlug(linkedinUrl) {
   const match = linkedinUrl.match(/\/in\/([^/?#]+)/);
@@ -4239,8 +4247,30 @@ async function visitProfile(session, profileSlug) {
         ...getFetchOpts()
       }
     );
-    if (isSessionExpired(res.status)) {
-      return { success: false, error: "session_expired: LinkedIn redirected (li_at cookie invalid)" };
+    const location = res.headers.get("location");
+    if (isSessionExpired(res.status, location)) {
+      return { success: false, error: `session_expired: HTTP ${res.status} \u2192 ${location || "no location"}` };
+    }
+    if (res.status >= 300 && res.status < 400 && location) {
+      console.log(`[LinkedIn] Profile ${profileSlug} redirected (${res.status}) to: ${location}`);
+      try {
+        const res2 = await fetch3(location.startsWith("http") ? location : `https://www.linkedin.com${location}`, {
+          headers: getHeaders(session),
+          redirect: "manual",
+          ...getFetchOpts()
+        });
+        if (res2.ok) {
+          const data = await res2.json();
+          const firstName = data?.firstName || data?.miniProfile?.firstName || "";
+          const lastName = data?.lastName || data?.miniProfile?.lastName || "";
+          const name = `${firstName} ${lastName}`.trim();
+          const profileId = data?.entityUrn?.split(":").pop() || data?.miniProfile?.entityUrn?.split(":").pop() || data?.profileId || profileSlug;
+          return { success: true, name, profileId, entityUrn: data?.entityUrn || `urn:li:fsd_profile:${profileId}` };
+        }
+        return { success: false, error: `HTTP ${res.status}\u2192${res2.status}: redirect not resolved` };
+      } catch (e2) {
+        return { success: false, error: `redirect_follow_failed: ${e2.message}` };
+      }
     }
     if (res.ok) {
       const data = await res.json();
@@ -4283,7 +4313,7 @@ async function sendInvite(session, profileId, note) {
         ...getFetchOpts()
       }
     );
-    if (isSessionExpired(res.status)) {
+    if (isSessionExpired(res.status, res.headers.get("location"))) {
       return { success: false, error: "session_expired" };
     }
     if (res.ok || res.status === 201) {
@@ -4321,7 +4351,7 @@ async function sendInviteV2(session, profileId, note) {
         ...getFetchOpts()
       }
     );
-    if (isSessionExpired(res.status)) {
+    if (isSessionExpired(res.status, res.headers.get("location"))) {
       return { success: false, error: "session_expired" };
     }
     if (res.ok || res.status === 201 || res.status === 200) {
@@ -4360,7 +4390,7 @@ async function sendMessage(session, profileUrn, message) {
         ...getFetchOpts()
       }
     );
-    if (isSessionExpired(res.status)) {
+    if (isSessionExpired(res.status, res.headers.get("location"))) {
       return { success: false, error: "session_expired" };
     }
     if (res.ok || res.status === 201) {
@@ -4396,7 +4426,7 @@ async function sendMessageV2(session, profileUrn, message) {
         ...getFetchOpts()
       }
     );
-    if (isSessionExpired(res.status)) {
+    if (isSessionExpired(res.status, res.headers.get("location"))) {
       return { success: false, error: "session_expired" };
     }
     if (res.ok || res.status === 201 || res.status === 200) {
@@ -4424,7 +4454,7 @@ async function followProfile(session, profileSlug) {
         redirect: "manual"
       }
     );
-    if (isSessionExpired(res.status)) {
+    if (isSessionExpired(res.status, res.headers.get("location"))) {
       return { success: false, error: "session_expired" };
     }
     if (res.ok || res.status === 201 || res.status === 200) {
@@ -4457,7 +4487,7 @@ async function checkConnectionStatus(session, profileSlug) {
         ...getFetchOpts()
       }
     );
-    if (isSessionExpired(res.status)) {
+    if (isSessionExpired(res.status, res.headers.get("location"))) {
       return { status: "error", error: "session_expired" };
     }
     if (res.ok) {
