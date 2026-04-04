@@ -3,6 +3,46 @@ import { supabase } from '../supabase';
 
 const router = Router();
 
+// ─── Rate Limits (daily, per user, per action type) ──────
+const DAILY_LIMITS: Record<string, number> = {
+  visit: 100,
+  connect: 50,
+  message: 60,
+  follow: 50,
+};
+
+/** Map step_type → action_type */
+function stepTypeToActionType(stepType: string): string | null {
+  const map: Record<string, string> = {
+    visit: 'visit',
+    invitation: 'connect',
+    invite: 'connect',
+    connect: 'connect',
+    message: 'message',
+    followup: 'message',
+    follow_up: 'message',
+    follow: 'follow',
+  };
+  return map[stepType] || null;
+}
+
+function renderTemplate(template: string, prospect: any): string {
+  if (!template) return '';
+  const name = prospect?.name || '';
+  const firstName = name.split(' ')[0] || '';
+  const lastName = name.split(' ').slice(1).join(' ') || '';
+  const company = prospect?.company || '';
+  const title = prospect?.title || '';
+  return template
+    .replace(/\{\{firstName\}\}/gi, firstName)
+    .replace(/\{\{lastName\}\}/gi, lastName)
+    .replace(/\{\{name\}\}/gi, name)
+    .replace(/\{\{fullName\}\}/gi, name)
+    .replace(/\{\{company\}\}/gi, company)
+    .replace(/\{\{jobTitle\}\}/gi, title)
+    .replace(/\{\{title\}\}/gi, title);
+}
+
 // NOTE: Auth is handled by expressAuthMiddleware in vercel.ts
 // req.user is always available with { id, email, role, teamId }
 
@@ -359,5 +399,401 @@ router.delete('/prospects', async (req: Request, res: Response) => {
         res.status(500).json({ error: 'Server error' });
     }
 });
+
+// ═══════════════════════════════════════════════════════════════
+// EXTENSION-BASED CAMPAIGN EXECUTION (Waalaxy approach)
+// Extension polls for pending actions, executes via browser fetch,
+// then reports results back. No LinkedIn tab needed.
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * GET /api/ext/pending-actions
+ * Returns the next pending campaign action for the authenticated user's team.
+ * Extension polls this every 30-60 seconds.
+ */
+router.get('/pending-actions', async (req: Request, res: Response) => {
+    try {
+        const userId = (req as any).user?.id;
+        if (!userId) return res.status(401).json({ error: 'Auth required' });
+
+        // Resolve team
+        let teamId = getTeamId(req);
+        if (!teamId) {
+            const { data: membership } = await supabase
+                .from('team_members')
+                .select('team_id')
+                .eq('user_id', userId)
+                .single();
+            teamId = membership?.team_id || null;
+        }
+        if (!teamId) return res.json({ action: null, reason: 'no_team' });
+
+        // Check if user has active session record
+        const { data: sessionRecord } = await supabase
+            .from('linkedin_sessions')
+            .select('id')
+            .eq('user_id', userId)
+            .eq('status', 'active')
+            .limit(1);
+
+        if (!sessionRecord?.length) {
+            return res.json({ action: null, reason: 'no_session' });
+        }
+
+        // Get active campaigns for this team
+        const { data: activeCampaigns } = await supabase
+            .from('campaigns')
+            .select('id, name, team_id')
+            .eq('team_id', teamId)
+            .eq('status', 'active');
+
+        if (!activeCampaigns?.length) {
+            return res.json({ action: null, reason: 'no_active_campaigns' });
+        }
+
+        const campaignIds = activeCampaigns.map(c => c.id);
+        const now = new Date().toISOString();
+
+        // Get ONE pending action across all active campaigns
+        const { data: pendingSteps } = await supabase
+            .from('prospect_step_status')
+            .select(`
+                id,
+                prospect_id,
+                step_id,
+                campaign_id,
+                status,
+                campaign_steps!inner (
+                    id,
+                    step_number,
+                    step_type,
+                    name,
+                    message_template,
+                    delay_days
+                ),
+                prospects!inner (
+                    id,
+                    linkedin_url,
+                    name,
+                    company,
+                    title,
+                    connection_status
+                )
+            `)
+            .in('campaign_id', campaignIds)
+            .eq('status', 'pending')
+            .or(`scheduled_at.is.null,scheduled_at.lte.${now}`)
+            .order('created_at', { ascending: true })
+            .limit(1);
+
+        if (!pendingSteps?.length) {
+            return res.json({ action: null, reason: 'no_pending_actions' });
+        }
+
+        const pss = pendingSteps[0];
+        const stepDef = (pss as any).campaign_steps;
+        const prospect = (pss as any).prospects;
+
+        if (!prospect?.linkedin_url) {
+            return res.json({ action: null, reason: 'no_linkedin_url' });
+        }
+
+        const actionType = stepTypeToActionType(stepDef.step_type);
+        if (!actionType) {
+            return res.json({ action: null, reason: 'unknown_step_type' });
+        }
+
+        // Rate limit check
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const { count: dailyCount } = await supabase
+            .from('activity_logs')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', userId)
+            .eq('action_type', actionType)
+            .in('status', ['success', 'completed'])
+            .gte('executed_at', today.toISOString());
+
+        const limit = DAILY_LIMITS[actionType] || 50;
+        if ((dailyCount || 0) >= limit) {
+            return res.json({ action: null, reason: `daily_limit_${actionType}`, dailyCount, limit });
+        }
+
+        // For message steps: check if prospect is actually connected
+        if (actionType === 'message' && prospect.connection_status !== 'accepted') {
+            // Extension will check connection status — skip for now, return as action
+            // but set a flag so extension knows to verify first
+        }
+
+        // Atomic claim: mark as in_progress
+        const { data: claimed } = await supabase
+            .from('prospect_step_status')
+            .update({ status: 'in_progress' })
+            .eq('id', pss.id)
+            .eq('status', 'pending')
+            .select('id');
+
+        if (!claimed?.length) {
+            return res.json({ action: null, reason: 'already_claimed' });
+        }
+
+        // Render message template
+        const renderedMessage = renderTemplate(stepDef.message_template || '', prospect);
+
+        // Extract slug from LinkedIn URL
+        const linkedinUrl = prospect.linkedin_url || '';
+        const slugMatch = linkedinUrl.match(/\/in\/([^/?#]+)/);
+        const slug = slugMatch ? slugMatch[1].replace(/\/$/, '') : '';
+
+        const campaign = activeCampaigns.find(c => c.id === pss.campaign_id);
+
+        res.json({
+            action: {
+                pssId: pss.id,
+                campaignId: pss.campaign_id,
+                campaignName: campaign?.name || '',
+                prospectId: prospect.id,
+                prospectName: prospect.name || '',
+                prospectCompany: prospect.company || '',
+                prospectTitle: prospect.title || '',
+                linkedinUrl: prospect.linkedin_url,
+                slug,
+                actionType,
+                stepNumber: stepDef.step_number,
+                message: renderedMessage,
+                connectionStatus: prospect.connection_status,
+            },
+        });
+    } catch (error: any) {
+        console.error('[ExtExec] pending-actions error:', error.message);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+/**
+ * POST /api/ext/report-action
+ * Extension reports the result of executing a LinkedIn action.
+ * Body: { pssId, campaignId, prospectId, actionType, success, error?, profileId?, name? }
+ */
+router.post('/report-action', async (req: Request, res: Response) => {
+    try {
+        const userId = (req as any).user?.id;
+        if (!userId) return res.status(401).json({ error: 'Auth required' });
+
+        let teamId = getTeamId(req);
+        if (!teamId) {
+            const { data: membership } = await supabase
+                .from('team_members')
+                .select('team_id')
+                .eq('user_id', userId)
+                .single();
+            teamId = membership?.team_id || null;
+        }
+
+        const {
+            pssId,
+            campaignId,
+            prospectId,
+            actionType,
+            success,
+            error: errorMsg,
+            profileId,
+            prospectName,
+            linkedinUrl,
+        } = req.body;
+
+        if (!pssId) {
+            return res.status(400).json({ error: 'pssId required' });
+        }
+
+        const finalStatus = success ? 'completed' : 'failed';
+
+        // Update prospect_step_status
+        await supabase
+            .from('prospect_step_status')
+            .update({
+                status: finalStatus,
+                executed_at: new Date().toISOString(),
+                error_message: errorMsg || null,
+            })
+            .eq('id', pssId);
+
+        // Log activity
+        await supabase.from('activity_logs').insert({
+            user_id: userId,
+            team_id: teamId,
+            campaign_id: campaignId || null,
+            action_type: actionType,
+            status: success ? 'success' : 'failed',
+            prospect_name: prospectName || '',
+            linkedin_url: linkedinUrl || '',
+            error_message: errorMsg || null,
+            executed_at: new Date().toISOString(),
+        });
+
+        // On success: unlock next step
+        if (success && campaignId && prospectId) {
+            await unlockNextStepFromExtension(pssId, campaignId, prospectId, actionType, userId, teamId || '');
+        }
+
+        // On session_expired error: mark session as expired and pause campaigns
+        if (!success && errorMsg && (errorMsg.includes('session_expired') || errorMsg.includes('delete me') || errorMsg.includes('401'))) {
+            console.log(`[ExtExec] Session error from extension for user ${userId.slice(0, 8)}… — marking expired`);
+
+            await supabase
+                .from('linkedin_sessions')
+                .update({ status: 'expired' })
+                .eq('user_id', userId)
+                .eq('status', 'active');
+
+            if (teamId) {
+                const { data: teamCampaigns } = await supabase
+                    .from('campaigns')
+                    .select('id')
+                    .eq('team_id', teamId)
+                    .eq('status', 'active');
+
+                if (teamCampaigns?.length) {
+                    for (const c of teamCampaigns) {
+                        await supabase.from('campaigns').update({ status: 'paused' }).eq('id', c.id);
+                    }
+                }
+            }
+
+            return res.json({ success: false, sessionExpired: true, message: 'Session expired — campaigns paused' });
+        }
+
+        // On non-session failure: revert to pending for retry (max 3 retries)
+        if (!success && errorMsg && !errorMsg.includes('session_expired') && !errorMsg.includes('delete me') && !errorMsg.includes('401')) {
+            // Check retry count
+            const { data: pssRow } = await supabase
+                .from('prospect_step_status')
+                .select('error_message')
+                .eq('id', pssId)
+                .single();
+
+            // Simple retry: revert to pending (cron or next poll will pick it up)
+            // But limit retries by checking recent failures
+            const { count: recentFails } = await supabase
+                .from('activity_logs')
+                .select('*', { count: 'exact', head: true })
+                .eq('campaign_id', campaignId)
+                .eq('action_type', actionType)
+                .eq('status', 'failed')
+                .gte('executed_at', new Date(Date.now() - 3600000).toISOString());
+
+            if ((recentFails || 0) < 5) {
+                // Revert to pending for retry
+                await supabase
+                    .from('prospect_step_status')
+                    .update({ status: 'pending', error_message: `retry: ${errorMsg}` })
+                    .eq('id', pssId);
+            }
+            // If too many fails, leave as failed
+        }
+
+        res.json({ success: true, recorded: true });
+    } catch (error: any) {
+        console.error('[ExtExec] report-action error:', error.message);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+/**
+ * After a successful action, unlock the next step in the campaign sequence.
+ */
+async function unlockNextStepFromExtension(
+    pssId: string,
+    campaignId: string,
+    prospectId: string,
+    actionType: string,
+    userId: string,
+    teamId: string,
+) {
+    // Get current step info
+    const { data: currentPss } = await supabase
+        .from('prospect_step_status')
+        .select('step_id')
+        .eq('id', pssId)
+        .single();
+
+    if (!currentPss) return;
+
+    // Get current step number
+    const { data: currentStep } = await supabase
+        .from('campaign_steps')
+        .select('step_number')
+        .eq('id', currentPss.step_id)
+        .single();
+
+    if (!currentStep) return;
+
+    // Get next step definition
+    const { data: nextStepDef } = await supabase
+        .from('campaign_steps')
+        .select('id, step_number, step_type, delay_days')
+        .eq('campaign_id', campaignId)
+        .eq('step_number', currentStep.step_number + 1)
+        .single();
+
+    if (!nextStepDef) return; // No more steps
+
+    const nextActionType = stepTypeToActionType(nextStepDef.step_type);
+
+    // Special case: if current was CONNECT and next needs connection (message)
+    // → create acceptance check job instead of unlocking immediately
+    if (actionType === 'connect' && nextActionType === 'message') {
+        // Update prospect connection_status to pending
+        await supabase
+            .from('prospects')
+            .update({ connection_status: 'pending' })
+            .eq('id', prospectId);
+
+        // Get the next step's prospect_step_status row
+        const { data: nextPss } = await supabase
+            .from('prospect_step_status')
+            .select('id')
+            .eq('prospect_id', prospectId)
+            .eq('campaign_id', campaignId)
+            .eq('step_id', nextStepDef.id)
+            .single();
+
+        if (nextPss) {
+            const nextCheckAt = new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString();
+            await supabase.from('acceptance_check_jobs').insert({
+                prospect_step_status_id: nextPss.id,
+                prospect_id: prospectId,
+                campaign_id: campaignId,
+                next_check_at: nextCheckAt,
+                checks_remaining: 56,
+            });
+            console.log(`[ExtExec] Created acceptance check for prospect ${prospectId}`);
+        }
+        return;
+    }
+
+    // Normal case: unlock next step with delay
+    if (actionType === 'connect') {
+        await supabase
+            .from('prospects')
+            .update({ connection_status: 'pending' })
+            .eq('id', prospectId);
+    }
+
+    const delayDays = nextStepDef.delay_days || 0;
+    const scheduledAt = delayDays > 0
+        ? new Date(Date.now() + delayDays * 86400000).toISOString()
+        : new Date().toISOString();
+
+    await supabase
+        .from('prospect_step_status')
+        .update({ status: 'pending', scheduled_at: scheduledAt })
+        .eq('prospect_id', prospectId)
+        .eq('campaign_id', campaignId)
+        .eq('step_id', nextStepDef.id)
+        .eq('status', 'waiting');
+
+    console.log(`[ExtExec] Step ${currentStep.step_number}→${currentStep.step_number + 1} unlocked for prospect ${prospectId}`);
+}
 
 export default router;

@@ -1,136 +1,23 @@
 /**
- * Campaign Cron Runner — THE SINGLE EXECUTOR
+ * Campaign Cron Runner — SCHEDULER ONLY
  * Vercel Cron: runs every minute via GET /api/cron/campaign-runner
  *
- * Architecture:
- * - Only this cron processes campaign actions (no /tick, no frontend triggers)
- * - Processes ONE action per active campaign per run
- * - Atomic row claiming prevents duplicate actions
- * - Includes acceptance checker for invite→message sequences
- * - Human-like random delays between actions
- * - Daily rate limits per user per action type
+ * Architecture (v6 — Extension Execution):
+ * - Cron does NOT execute LinkedIn API calls (extension handles that)
+ * - Cron handles: auto-enrollment, stuck row recovery, acceptance checks,
+ *   campaign completion detection, and scheduling
+ * - Extension polls GET /api/ext/pending-actions for work
+ * - Extension reports results via POST /api/ext/report-action
  */
 
 import { Router } from 'express';
-import fetch from 'node-fetch';
-import { HttpsProxyAgent } from 'https-proxy-agent';
 import { supabase } from '../supabase';
-import {
-  visitProfile,
-  sendInvite,
-  sendMessage,
-  followProfile,
-  checkConnectionStatus,
-  extractSlug,
-} from './linkedinApi';
-import type { LinkedInSession } from './linkedinApi';
-import { decrypt } from './encryption';
 
 const router = Router();
 
 const CRON_SECRET = process.env.CRON_SECRET || '';
 
-// ─── Rate Limits (Medium: balanced safety + throughput) ────
-const DAILY_LIMITS: Record<string, number> = {
-  visit: 100,
-  connect: 50,
-  message: 60,
-  follow: 50,
-};
-
-function renderTemplate(template: string, prospect: any): string {
-  if (!template) return '';
-  const name = prospect?.name || '';
-  const firstName = name.split(' ')[0] || '';
-  const lastName = name.split(' ').slice(1).join(' ') || '';
-  const company = prospect?.company || '';
-  const title = prospect?.title || '';
-  return template
-    .replace(/\{\{firstName\}\}/gi, firstName)
-    .replace(/\{\{lastName\}\}/gi, lastName)
-    .replace(/\{\{name\}\}/gi, name)
-    .replace(/\{\{fullName\}\}/gi, name)
-    .replace(/\{\{company\}\}/gi, company)
-    .replace(/\{\{jobTitle\}\}/gi, title)
-    .replace(/\{\{title\}\}/gi, title);
-}
-
-function profileMatchesProspect(profileName: string, prospectName: string): boolean {
-  if (!profileName || !prospectName) return true;
-  const normalize = (s: string) => s.toLowerCase().replace(/[^a-z\u0600-\u06ff0-9]/g, '');
-  const pn = normalize(profileName);
-  const sn = normalize(prospectName);
-  return pn.includes(sn) || sn.includes(pn) || pn === sn;
-}
-
-/** Map step_type → action_type for logging and rate limiting */
-function stepTypeToActionType(stepType: string): string | null {
-  const map: Record<string, string> = {
-    visit: 'visit',
-    invitation: 'connect',
-    invite: 'connect',
-    connect: 'connect',
-    message: 'message',
-    followup: 'message',
-    follow_up: 'message',
-    follow: 'follow',
-  };
-  return map[stepType] || null;
-}
-
-async function getUserSession(userId: string): Promise<LinkedInSession | null> {
-  const { data } = await supabase
-    .from('linkedin_sessions')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('status', 'active')
-    .single();
-
-  if (!data) return null;
-
-  let liAt = '';
-  let jsessionId = '';
-
-  try {
-    liAt = decrypt(data.li_at);
-  } catch (e: any) {
-    console.error('[Cron] Failed to decrypt li_at:', e.message);
-    return null;
-  }
-
-  try {
-    jsessionId = data.jsessionid ? decrypt(data.jsessionid) : '';
-  } catch (e: any) {
-    console.error('[Cron] Failed to decrypt jsessionid:', e.message);
-  }
-
-  if (!liAt) {
-    console.error('[Cron] Decrypted li_at is empty');
-    return null;
-  }
-
-  return {
-    liAt,
-    jsessionId,
-    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-  };
-}
-
-async function getDailyCount(userId: string, actionType: string): Promise<number> {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const { count } = await supabase
-    .from('activity_logs')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', userId)
-    .eq('action_type', actionType)
-    .in('status', ['success', 'completed'])
-    .gte('executed_at', today.toISOString());
-  return count || 0;
-}
-
 // ─── DIAGNOSTIC ENDPOINT ──────────────────────────────────
-// Tests the full decrypt → LinkedIn API flow (same as cron does it)
 router.get('/diagnose', async (req: any, res: any) => {
   const authHeader = req.headers['authorization'] || '';
   if (CRON_SECRET && authHeader !== `Bearer ${CRON_SECRET}`) {
@@ -138,99 +25,47 @@ router.get('/diagnose', async (req: any, res: any) => {
   }
 
   try {
-    // Step 1: Get active session (same as cron)
-    const { data: sessionData } = await supabase
+    // Check active sessions
+    const { data: sessions, count: sessionCount } = await supabase
       .from('linkedin_sessions')
-      .select('*')
-      .eq('status', 'active')
-      .limit(1)
-      .single();
+      .select('user_id, status, updated_at', { count: 'exact' })
+      .eq('status', 'active');
 
-    if (!sessionData) {
-      return res.json({ error: 'No active session found' });
-    }
+    // Check active campaigns
+    const { data: campaigns, count: campaignCount } = await supabase
+      .from('campaigns')
+      .select('id, name, status')
+      .eq('status', 'active');
 
-    // Step 2: Decrypt (same as cron)
-    let liAt = '';
-    let jsessionId = '';
-    try {
-      liAt = decrypt(sessionData.li_at);
-    } catch (e: any) {
-      return res.json({ error: 'decrypt_li_at_failed', message: e.message });
-    }
-    try {
-      jsessionId = sessionData.jsessionid ? decrypt(sessionData.jsessionid) : '';
-    } catch (e: any) {
-      return res.json({ error: 'decrypt_jsessionid_failed', message: e.message });
-    }
+    // Check pending actions
+    const { count: pendingCount } = await supabase
+      .from('prospect_step_status')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'pending');
 
-    const diag: any = {
-      li_at_decrypted_len: liAt.length,
-      li_at_prefix: liAt.substring(0, 8),
-      li_at_suffix: liAt.substring(liAt.length - 8),
-      jsessionid_decrypted_len: jsessionId.length,
-      jsessionid_prefix: jsessionId.substring(0, 10),
-    };
+    // Check in_progress (claimed by extension)
+    const { count: inProgressCount } = await supabase
+      .from('prospect_step_status')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'in_progress');
 
-    // Step 3: Test /voyager/api/me (simple self-check)
-    const proxyUrl = process.env.LINKEDIN_PROXY_URL;
-    // Skip proxy for residential zones that block LinkedIn (policy_20090)
-    let agent: any = undefined;
-    let proxySkipped = false;
-    diag.proxy_configured = !!proxyUrl;
-    if (proxyUrl) {
-      try {
-        const pu = new URL(proxyUrl);
-        diag.proxy_host = pu.hostname;
-        diag.proxy_port = pu.port;
-        diag.proxy_user = pu.username?.substring(0, 30) + '...';
-        if (pu.port === '33335' || pu.port === '22225') {
-          diag.proxy_skipped = true;
-          proxySkipped = true;
-        } else {
-          agent = new HttpsProxyAgent(proxyUrl, { rejectUnauthorized: false });
-        }
-      } catch {}
-    }
+    // Recent activity
+    const { data: recentLogs } = await supabase
+      .from('activity_logs')
+      .select('action_type, status, prospect_name, executed_at, error_message')
+      .order('executed_at', { ascending: false })
+      .limit(10);
 
-    const session: LinkedInSession = {
-      liAt,
-      jsessionId,
-      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-    };
-
-    try {
-      const meRes = await fetch('https://www.linkedin.com/voyager/api/me', {
-        headers: {
-          'cookie': `li_at=${liAt}${jsessionId ? `; JSESSIONID="${jsessionId}"` : ''}`,
-          'csrf-token': jsessionId.replace(/"/g, ''),
-          'user-agent': session.userAgent,
-          'x-restli-protocol-version': '2.0.0',
-          'accept': 'application/vnd.linkedin.normalized+json+2.1',
-        },
-        redirect: 'manual',
-        ...(agent ? { agent } : {}),
-      });
-      diag.me_status = meRes.status;
-      diag.me_headers = Object.fromEntries(meRes.headers);
-      if (meRes.ok) {
-        const meData: any = await meRes.json();
-        diag.me_name = `${meData?.firstName || ''} ${meData?.lastName || ''}`.trim();
-        diag.me_ok = true;
-      }
-    } catch (e: any) {
-      diag.me_error = e.message;
-    }
-
-    // Step 4: Test visitProfile using the actual linkedinApi function (same headers)
-    try {
-      const testResult = await visitProfile(session, 'aishaalb9');
-      diag.visit_test = testResult;
-    } catch (e: any) {
-      diag.visit_error = e.message;
-    }
-
-    return res.json({ ok: true, diag });
+    return res.json({
+      ok: true,
+      mode: 'extension-execution',
+      activeSessions: sessionCount || 0,
+      activeCampaigns: campaignCount || 0,
+      pendingActions: pendingCount || 0,
+      inProgressActions: inProgressCount || 0,
+      campaigns: campaigns || [],
+      recentActivity: recentLogs || [],
+    });
   } catch (e: any) {
     return res.status(500).json({ error: e.message });
   }
@@ -239,7 +74,6 @@ router.get('/diagnose', async (req: any, res: any) => {
 // ─── MAIN CRON ENDPOINT ────────────────────────────────────
 
 router.get('/campaign-runner', async (req: any, res: any) => {
-  // Verify cron secret if set
   const authHeader = req.headers['authorization'] || '';
   if (CRON_SECRET && authHeader !== `Bearer ${CRON_SECRET}`) {
     return res.status(401).json({ error: 'Unauthorized' });
@@ -249,17 +83,18 @@ router.get('/campaign-runner', async (req: any, res: any) => {
   const startTime = Date.now();
 
   try {
-    // ── Step 1: Recovery — reset stuck in_progress older than 10 min ──
-    const tenMinAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+    // ── Step 1: Recovery — reset stuck in_progress older than 5 min ──
+    const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
     const { data: stuckRows } = await supabase
       .from('prospect_step_status')
       .update({ status: 'pending' })
       .eq('status', 'in_progress')
-      .lt('created_at', tenMinAgo)
+      .lt('created_at', fiveMinAgo)
       .select('id');
 
     if (stuckRows?.length) {
       console.log(`[Cron] Recovered ${stuckRows.length} stuck rows`);
+      results.push({ recovery: stuckRows.length });
     }
 
     // ── Step 2: Get all active campaigns ──
@@ -269,67 +104,42 @@ router.get('/campaign-runner', async (req: any, res: any) => {
       .eq('status', 'active');
 
     if (!activeCampaigns?.length) {
-      return res.json({ ok: true, message: 'No active campaigns', processed: 0 });
+      return res.json({ ok: true, mode: 'scheduler', message: 'No active campaigns', processed: 0 });
     }
 
-    // ── Step 3: Resolve campaigns → users with active LinkedIn sessions ──
-    const teamCampaigns: Record<string, any[]> = {};
-    for (const c of activeCampaigns) {
-      if (!c.team_id) continue;
-      if (!teamCampaigns[c.team_id]) teamCampaigns[c.team_id] = [];
-      teamCampaigns[c.team_id].push(c);
-    }
-
-    const userCampaigns: Record<string, { campaigns: any[]; teamId: string }> = {};
-    for (const [teamId, campaigns] of Object.entries(teamCampaigns)) {
-      const { data: members } = await supabase
-        .from('team_members')
-        .select('user_id')
-        .eq('team_id', teamId);
-
-      if (!members?.length) continue;
-
-      // Find first member with active LinkedIn session
-      for (const m of members) {
-        const { data: sess } = await supabase
-          .from('linkedin_sessions')
-          .select('id')
-          .eq('user_id', m.user_id)
-          .eq('status', 'active')
-          .limit(1);
-
-        if (sess?.length) {
-          if (!userCampaigns[m.user_id]) {
-            userCampaigns[m.user_id] = { campaigns: [], teamId };
-          }
-          userCampaigns[m.user_id].campaigns.push(...campaigns);
-          break;
-        }
-      }
-    }
-
-    // ── Step 4: Process ONE action per campaign per user ──
-    for (const [userId, { campaigns, teamId }] of Object.entries(userCampaigns)) {
-      const session = await getUserSession(userId);
-      if (!session) {
-        results.push({ userId, error: 'no_session' });
-        continue;
-      }
-
-      for (const campaign of campaigns) {
-        // Abort if approaching Vercel's 10s timeout
-        if (Date.now() - startTime > 8000) break;
-
-        try {
-          const result = await processCampaignAction(campaign, userId, teamId, session);
-          if (result) results.push(result);
-        } catch (err: any) {
-          console.error(`[Cron] Error processing campaign ${campaign.name}:`, err.message);
-          results.push({ campaign: campaign.name, error: err.message });
-        }
-      }
-
+    // ── Step 3: Auto-enroll prospects for campaigns with no status rows ──
+    for (const campaign of activeCampaigns) {
       if (Date.now() - startTime > 8000) break;
+
+      const { count: totalRows } = await supabase
+        .from('prospect_step_status')
+        .select('*', { count: 'exact', head: true })
+        .eq('campaign_id', campaign.id);
+
+      if (!totalRows) {
+        await autoEnrollProspects(campaign.id);
+        results.push({ campaign: campaign.name, action: 'auto_enrolled' });
+      }
+    }
+
+    // ── Step 4: Check campaign completion ──
+    for (const campaign of activeCampaigns) {
+      if (Date.now() - startTime > 8500) break;
+
+      const { count: remaining } = await supabase
+        .from('prospect_step_status')
+        .select('*', { count: 'exact', head: true })
+        .eq('campaign_id', campaign.id)
+        .in('status', ['pending', 'in_progress', 'waiting']);
+
+      if (!remaining) {
+        await supabase
+          .from('campaigns')
+          .update({ status: 'completed', completed_at: new Date().toISOString() })
+          .eq('id', campaign.id);
+        results.push({ campaign: campaign.name, status: 'completed' });
+        console.log(`[Cron] Campaign "${campaign.name}" completed — all steps done`);
+      }
     }
 
     // ── Step 5: Run acceptance checker ──
@@ -344,378 +154,19 @@ router.get('/campaign-runner', async (req: any, res: any) => {
       }
     }
 
-    return res.json({ ok: true, processed: results.length, results, elapsed: Date.now() - startTime });
+    return res.json({
+      ok: true,
+      mode: 'scheduler',
+      message: 'Extension handles LinkedIn execution. Cron handles scheduling.',
+      processed: results.length,
+      results,
+      elapsed: Date.now() - startTime,
+    });
   } catch (err: any) {
     console.error('[CampaignCron] Fatal error:', err.message);
     return res.status(500).json({ error: err.message });
   }
 });
-
-// ─── Process ONE action for a campaign ─────────────────────
-
-async function processCampaignAction(
-  campaign: any,
-  userId: string,
-  teamId: string,
-  session: LinkedInSession
-): Promise<any> {
-  // Auto-enroll: if campaign active but no prospect_step_status rows, create them
-  const { count: totalRows } = await supabase
-    .from('prospect_step_status')
-    .select('*', { count: 'exact', head: true })
-    .eq('campaign_id', campaign.id);
-
-  if (!totalRows) {
-    await autoEnrollProspects(campaign.id);
-  }
-
-  // Get ONE pending action (scheduled_at <= now)
-  const now = new Date().toISOString();
-  const { data: pendingSteps } = await supabase
-    .from('prospect_step_status')
-    .select(`
-      id,
-      prospect_id,
-      step_id,
-      status,
-      campaign_steps!inner (
-        id,
-        step_number,
-        step_type,
-        name,
-        message_template,
-        delay_days
-      ),
-      prospects!inner (
-        id,
-        linkedin_url,
-        name,
-        company,
-        title,
-        connection_status
-      )
-    `)
-    .eq('campaign_id', campaign.id)
-    .eq('status', 'pending')
-    .or(`scheduled_at.is.null,scheduled_at.lte.${now}`)
-    .order('created_at', { ascending: true })
-    .limit(1);
-
-  if (!pendingSteps?.length) {
-    // Check if campaign should be marked complete
-    const { count: remaining } = await supabase
-      .from('prospect_step_status')
-      .select('*', { count: 'exact', head: true })
-      .eq('campaign_id', campaign.id)
-      .in('status', ['pending', 'in_progress', 'waiting']);
-
-    if (!remaining) {
-      await supabase
-        .from('campaigns')
-        .update({ status: 'completed', completed_at: new Date().toISOString() })
-        .eq('id', campaign.id);
-      return { campaign: campaign.name, status: 'completed' };
-    }
-    return null; // Nothing pending right now
-  }
-
-  const pss = pendingSteps[0];
-  const stepDef = (pss as any).campaign_steps;
-  const prospect = (pss as any).prospects;
-
-  if (!prospect?.linkedin_url) return null;
-
-  const slug = extractSlug(prospect.linkedin_url);
-  if (!slug) return null;
-
-  const actionType = stepTypeToActionType(stepDef.step_type);
-  if (!actionType) return null;
-
-  // ── Rate limit check ──
-  const dailyCount = await getDailyCount(userId, actionType);
-  const limit = DAILY_LIMITS[actionType] || 50;
-  if (dailyCount >= limit) {
-    return { campaign: campaign.name, prospect: prospect.name, skipped: `daily_limit_${actionType} (${dailyCount}/${limit})` };
-  }
-
-  // ── For message steps: check if prospect is actually connected ──
-  if (actionType === 'message' && prospect.connection_status !== 'accepted') {
-    // Can't message someone who hasn't accepted our invite
-    // Skip this step or wait for acceptance checker
-    const connectionCheck = await checkConnectionStatus(session, slug);
-    if (connectionCheck.status === 'connected') {
-      // Update prospect status
-      await supabase
-        .from('prospects')
-        .update({ connection_status: 'accepted' })
-        .eq('id', prospect.id);
-    } else {
-      // Skip — can't message yet, acceptance checker will unlock when ready
-      return { campaign: campaign.name, prospect: prospect.name, skipped: 'not_connected_yet' };
-    }
-  }
-
-  // ── Atomic claim: UPDATE ... WHERE status='pending' ──
-  const { data: claimed } = await supabase
-    .from('prospect_step_status')
-    .update({ status: 'in_progress' })
-    .eq('id', pss.id)
-    .eq('status', 'pending')  // This is the atomic guard
-    .select('id');
-
-  if (!claimed?.length) {
-    return null; // Another process already claimed it
-  }
-
-  // ── Execute the action ──
-  let result: { success: boolean; error?: string; name?: string; profileId?: string } = {
-    success: false,
-    error: 'unknown',
-  };
-
-  try {
-    switch (actionType) {
-      case 'visit': {
-        result = await visitProfile(session, slug);
-        break;
-      }
-
-      case 'connect': {
-        // Visit first to get profileId
-        const profile = await visitProfile(session, slug);
-        if (!profile.success || !profile.profileId) {
-          result = { success: false, error: 'profile_not_found' };
-          break;
-        }
-
-        // Identity verification
-        if (prospect.name && profile.name && !profileMatchesProspect(profile.name, prospect.name)) {
-          result = { success: false, error: `identity_mismatch: expected "${prospect.name}" got "${profile.name}"` };
-          break;
-        }
-
-        // Human-like delay between visit and connect (2-5s)
-        await new Promise(r => setTimeout(r, 2000 + Math.random() * 3000));
-
-        // Render template and send invite
-        const note = renderTemplate(stepDef.message_template || '', prospect);
-        result = await sendInvite(session, profile.profileId, note);
-        break;
-      }
-
-      case 'message': {
-        // Visit first to get profileId
-        const profile = await visitProfile(session, slug);
-        if (!profile.success || !profile.profileId) {
-          result = { success: false, error: 'profile_not_found' };
-          break;
-        }
-
-        // Identity verification
-        if (prospect.name && profile.name && !profileMatchesProspect(profile.name, prospect.name)) {
-          result = { success: false, error: `identity_mismatch: expected "${prospect.name}" got "${profile.name}"` };
-          break;
-        }
-
-        // Human-like delay (2-5s)
-        await new Promise(r => setTimeout(r, 2000 + Math.random() * 3000));
-
-        const urn = `urn:li:fsd_profile:${profile.profileId}`;
-        const msg = renderTemplate(stepDef.message_template || '', prospect);
-        result = await sendMessage(session, urn, msg);
-        break;
-      }
-
-      case 'follow': {
-        result = await followProfile(session, slug);
-        break;
-      }
-    }
-  } catch (e: any) {
-    result = { success: false, error: e.message };
-  }
-
-  const finalStatus = result.success ? 'completed' : 'failed';
-
-  // ── Update prospect_step_status ──
-  await supabase
-    .from('prospect_step_status')
-    .update({
-      status: finalStatus,
-      executed_at: new Date().toISOString(),
-      error_message: result.error || null,
-    })
-    .eq('id', pss.id);
-
-  // ── Log activity ──
-  await supabase.from('activity_logs').insert({
-    user_id: userId,
-    team_id: teamId,
-    campaign_id: campaign.id,
-    action_type: actionType,
-    status: finalStatus === 'completed' ? 'success' : 'failed',
-    prospect_name: prospect.name || slug,
-    linkedin_url: prospect.linkedin_url,
-    error_message: result.error || null,
-    executed_at: new Date().toISOString(),
-  });
-
-  // ── On SUCCESS: unlock next step + create acceptance job if needed ──
-  if (result.success) {
-    await unlockNextStep(pss, stepDef, campaign, prospect, actionType, userId, teamId);
-  }
-
-  // ── On session_expired: revert to pending + track consecutive failures ──
-  // Do NOT mark the session as expired — only extension/manual can do that.
-  // But DO auto-pause ALL active campaigns immediately when session is confirmed dead.
-  if (!result.success && result.error?.includes('session_expired')) {
-    await supabase
-      .from('prospect_step_status')
-      .update({ status: 'pending', error_message: 'session_expired - will retry' })
-      .eq('id', pss.id);
-
-    // If LinkedIn explicitly invalidated the cookie ("li_at=delete me" or redirect to Voyager API),
-    // mark the session as expired and pause ALL campaigns for this user immediately.
-    const sessionInvalidated = result.error?.includes('delete me') || result.error?.includes('Voyager API');
-
-    if (sessionInvalidated) {
-      // Mark session as expired
-      await supabase
-        .from('linkedin_sessions')
-        .update({ status: 'expired' })
-        .eq('user_id', userId)
-        .eq('status', 'active');
-
-      // Pause ALL active campaigns for this team
-      const { data: teamCampaigns } = await supabase
-        .from('campaigns')
-        .select('id')
-        .eq('team_id', teamId)
-        .eq('status', 'active');
-
-      if (teamCampaigns?.length) {
-        for (const c of teamCampaigns) {
-          await supabase.from('campaigns').update({ status: 'paused' }).eq('id', c.id);
-        }
-      }
-
-      console.log(`[Cron] 🛑 Session INVALIDATED by LinkedIn for user ${userId.slice(0, 8)}… — paused all ${teamCampaigns?.length || 0} campaigns. User must re-login to LinkedIn.`);
-    } else {
-      // Count recent consecutive session_expired failures
-      const { data: recentLogs } = await supabase
-        .from('activity_logs')
-        .select('status, error_message')
-        .eq('campaign_id', campaign.id)
-        .order('executed_at', { ascending: false })
-        .limit(3);
-
-      const allSessionExpired = recentLogs?.every(
-        (l: any) => l.status === 'failed' && l.error_message?.includes('session_expired')
-      );
-
-      if (recentLogs?.length === 3 && allSessionExpired) {
-        await supabase.from('campaigns').update({ status: 'paused' }).eq('id', campaign.id);
-        console.log(`[Cron] ⚠️ Auto-paused campaign "${campaign.name}" after 3 consecutive session_expired errors.`);
-      } else {
-        console.log(`[Cron] Session may be expired for user ${userId.slice(0, 8)}… — will retry on next run`);
-      }
-    }
-  }
-
-  return {
-    campaign: campaign.name,
-    prospect: prospect.name || slug,
-    action: actionType,
-    step: stepDef.step_number,
-    success: result.success,
-    error: result.error || null,
-  };
-}
-
-// ─── Unlock Next Step ──────────────────────────────────────
-
-async function unlockNextStep(
-  pss: any,
-  stepDef: any,
-  campaign: any,
-  prospect: any,
-  actionType: string,
-  userId: string,
-  teamId: string
-) {
-  const currentStepNumber = stepDef.step_number;
-
-  // Get next step definition
-  const { data: nextStepDef } = await supabase
-    .from('campaign_steps')
-    .select('id, step_number, step_type, delay_days')
-    .eq('campaign_id', campaign.id)
-    .eq('step_number', currentStepNumber + 1)
-    .single();
-
-  if (!nextStepDef) return; // No more steps
-
-  const nextActionType = stepTypeToActionType(nextStepDef.step_type);
-
-  // ── Special case: if current step was CONNECT and next step needs connection ──
-  // Don't unlock next step immediately — create acceptance check job instead
-  if (actionType === 'connect' && (nextActionType === 'message')) {
-    // Update prospect connection_status
-    await supabase
-      .from('prospects')
-      .update({ connection_status: 'pending' })
-      .eq('id', pss.prospect_id);
-
-    // Get the next step's prospect_step_status row
-    const { data: nextPss } = await supabase
-      .from('prospect_step_status')
-      .select('id')
-      .eq('prospect_id', pss.prospect_id)
-      .eq('campaign_id', campaign.id)
-      .eq('step_id', nextStepDef.id)
-      .single();
-
-    if (nextPss) {
-      // Create acceptance check job (check every 6 hours for 14 days = 56 checks)
-      const nextCheckAt = new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(); // 6 hours from now
-
-      await supabase.from('acceptance_check_jobs').insert({
-        prospect_step_status_id: nextPss.id,
-        prospect_id: pss.prospect_id,
-        campaign_id: campaign.id,
-        next_check_at: nextCheckAt,
-        checks_remaining: 56, // 14 days × 4 checks/day
-      });
-
-      console.log(`[Cron] Created acceptance check job for ${prospect.name} (step ${currentStepNumber}→${currentStepNumber + 1})`);
-    }
-    return; // Don't unlock — acceptance checker will handle it
-  }
-
-  // ── Normal case: unlock next step with delay ──
-  if (actionType === 'connect') {
-    await supabase
-      .from('prospects')
-      .update({ connection_status: 'pending' })
-      .eq('id', pss.prospect_id);
-  }
-
-  const delayDays = nextStepDef.delay_days || 0;
-  const scheduledAt = delayDays > 0
-    ? new Date(Date.now() + delayDays * 86400000).toISOString()
-    : new Date().toISOString();
-
-  const { data: unlocked } = await supabase
-    .from('prospect_step_status')
-    .update({ status: 'pending', scheduled_at: scheduledAt })
-    .eq('prospect_id', pss.prospect_id)
-    .eq('campaign_id', campaign.id)
-    .eq('step_id', nextStepDef.id)
-    .eq('status', 'waiting')
-    .select('id');
-
-  console.log(`[Cron] Step ${currentStepNumber}→${currentStepNumber + 1} for ${prospect.name}: unlocked=${unlocked?.length || 0}, scheduled=${scheduledAt}`);
-}
 
 // ─── Auto-Enroll Prospects ─────────────────────────────────
 
@@ -748,7 +199,6 @@ async function autoEnrollProspects(campaignId: string) {
     }
   }
 
-  // Insert in chunks of 50
   for (let i = 0; i < rows.length; i += 50) {
     await supabase.from('prospect_step_status').insert(rows.slice(i, i + 50));
   }
@@ -757,9 +207,10 @@ async function autoEnrollProspects(campaignId: string) {
 }
 
 // ─── ACCEPTANCE CHECKER ────────────────────────────────────
-// Checks if prospects accepted connection requests
-// If accepted → unlocks the next step (message)
-// If expired (14 days) → marks as skipped
+// NOTE: In v6 the acceptance checker no longer calls LinkedIn directly.
+// Instead, it just checks if enough time has passed and unlocks steps
+// based on optimistic scheduling or marks as timed-out.
+// The extension will verify connection status when it picks up message actions.
 
 async function processAcceptanceChecks(startTime: number): Promise<any[]> {
   const results: any[] = [];
@@ -782,129 +233,77 @@ async function processAcceptanceChecks(startTime: number): Promise<any[]> {
     `)
     .lte('next_check_at', now)
     .gt('checks_remaining', 0)
-    .limit(5); // Process up to 5 checks per cron run
+    .limit(10);
 
   if (!jobs?.length) return results;
 
-  // We need a session to check connection status — find any active session
-  const { data: anySession } = await supabase
-    .from('linkedin_sessions')
-    .select('user_id')
-    .eq('status', 'active')
-    .limit(1)
-    .single();
-
-  if (!anySession) return results;
-
-  const session = await getUserSession(anySession.user_id);
-  if (!session) return results;
-
   for (const job of jobs) {
-    if (Date.now() - startTime > 8500) break; // Don't exceed timeout
+    if (Date.now() - startTime > 8500) break;
 
     const prospect = (job as any).prospects;
-    if (!prospect?.linkedin_url) continue;
+    const checksRemaining = job.checks_remaining - 1;
 
-    const slug = extractSlug(prospect.linkedin_url);
-    if (!slug) continue;
+    // If prospect was already marked as accepted (e.g., by extension),
+    // unlock the next step immediately
+    if (prospect.connection_status === 'accepted') {
+      const { data: pss } = await supabase
+        .from('prospect_step_status')
+        .select('id, step_id')
+        .eq('id', job.prospect_step_status_id)
+        .single();
 
-    try {
-      const connectionCheck = await checkConnectionStatus(session, slug);
-
-      if (connectionCheck.status === 'connected') {
-        // 🎉 Accepted! Unlock the next step (message)
-        // Update prospect
-        await supabase
-          .from('prospects')
-          .update({ connection_status: 'accepted' })
-          .eq('id', job.prospect_id);
-
-        // Get the prospect_step_status for the message step
-        const { data: pss } = await supabase
-          .from('prospect_step_status')
-          .select('id, step_id')
-          .eq('id', job.prospect_step_status_id)
+      if (pss) {
+        const { data: stepDef } = await supabase
+          .from('campaign_steps')
+          .select('delay_days')
+          .eq('id', pss.step_id)
           .single();
 
-        if (pss) {
-          // Get the step's delay_days
-          const { data: stepDef } = await supabase
-            .from('campaign_steps')
-            .select('delay_days')
-            .eq('id', pss.step_id)
-            .single();
+        const delayDays = stepDef?.delay_days || 0;
+        const scheduledAt = delayDays > 0
+          ? new Date(Date.now() + delayDays * 86400000).toISOString()
+          : new Date().toISOString();
 
-          const delayDays = stepDef?.delay_days || 0;
-          const scheduledAt = delayDays > 0
-            ? new Date(Date.now() + delayDays * 86400000).toISOString()
-            : new Date().toISOString();
-
-          // Unlock the message step
-          await supabase
-            .from('prospect_step_status')
-            .update({ status: 'pending', scheduled_at: scheduledAt })
-            .eq('id', job.prospect_step_status_id)
-            .eq('status', 'waiting');
-
-          console.log(`[AcceptanceCheck] ${prospect.name} ACCEPTED → message step unlocked, scheduled for ${scheduledAt}`);
-        }
-
-        // Delete the check job (done!)
         await supabase
-          .from('acceptance_check_jobs')
-          .delete()
-          .eq('id', job.id);
+          .from('prospect_step_status')
+          .update({ status: 'pending', scheduled_at: scheduledAt })
+          .eq('id', job.prospect_step_status_id)
+          .eq('status', 'waiting');
 
-        results.push({ prospect: prospect.name, status: 'accepted', unlocked: true });
-
-      } else if (connectionCheck.status === 'error' && connectionCheck.error?.includes('session_expired')) {
-        // Session expired — don't decrement, just reschedule
-        await supabase
-          .from('acceptance_check_jobs')
-          .update({ next_check_at: new Date(Date.now() + 30 * 60 * 1000).toISOString() }) // retry in 30 min
-          .eq('id', job.id);
-
-      } else {
-        // Still pending — schedule next check and decrement
-        const checksRemaining = job.checks_remaining - 1;
-
-        if (checksRemaining <= 0) {
-          // 14 days passed, no acceptance — skip the message step
-          await supabase
-            .from('prospect_step_status')
-            .update({ status: 'skipped', error_message: 'invite_not_accepted_14d' })
-            .eq('id', job.prospect_step_status_id);
-
-          // Also skip all subsequent steps for this prospect in this campaign
-          await supabase
-            .from('prospect_step_status')
-            .update({ status: 'skipped', error_message: 'invite_not_accepted_cascade' })
-            .eq('prospect_id', job.prospect_id)
-            .eq('campaign_id', job.campaign_id)
-            .eq('status', 'waiting');
-
-          // Delete the check job
-          await supabase
-            .from('acceptance_check_jobs')
-            .delete()
-            .eq('id', job.id);
-
-          results.push({ prospect: prospect.name, status: 'expired', skipped: true });
-          console.log(`[AcceptanceCheck] ${prospect.name} NOT ACCEPTED after 14 days → skipped`);
-
-        } else {
-          // Schedule next check in 6 hours
-          const nextCheck = new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString();
-          await supabase
-            .from('acceptance_check_jobs')
-            .update({ checks_remaining: checksRemaining, next_check_at: nextCheck })
-            .eq('id', job.id);
-
-          results.push({ prospect: prospect.name, status: 'still_pending', checksRemaining });
-        }
+        console.log(`[AcceptanceCheck] ${prospect.name} already ACCEPTED → message step unlocked`);
       }
-    } catch (err: any) {
-      console.error(`[AcceptanceCheck] Error for ${prospect.name}:`, err.message);
+
+      await supabase.from('acceptance_check_jobs').delete().eq('id', job.id);
+      results.push({ prospect: prospect.name, status: 'accepted', unlocked: true });
+      continue;
+    }
+
+    if (checksRemaining <= 0) {
+      // 14 days passed, no acceptance — skip the message step
+      await supabase
+        .from('prospect_step_status')
+        .update({ status: 'skipped', error_message: 'invite_not_accepted_14d' })
+        .eq('id', job.prospect_step_status_id);
+
+      await supabase
+        .from('prospect_step_status')
+        .update({ status: 'skipped', error_message: 'invite_not_accepted_cascade' })
+        .eq('prospect_id', job.prospect_id)
+        .eq('campaign_id', job.campaign_id)
+        .eq('status', 'waiting');
+
+      await supabase.from('acceptance_check_jobs').delete().eq('id', job.id);
+      results.push({ prospect: prospect.name, status: 'expired', skipped: true });
+      console.log(`[AcceptanceCheck] ${prospect.name} NOT ACCEPTED after 14 days → skipped`);
+    } else {
+      // Schedule next check in 6 hours
+      const nextCheck = new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString();
+      await supabase
+        .from('acceptance_check_jobs')
+        .update({ checks_remaining: checksRemaining, next_check_at: nextCheck })
+        .eq('id', job.id);
+
+      results.push({ prospect: prospect.name, status: 'still_pending', checksRemaining });
     }
   }
 

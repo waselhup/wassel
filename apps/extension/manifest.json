@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Wassel Assistant",
-  "version": "5.0.0",
-  "description": "Wassel — Cloud LinkedIn automation. Extension syncs cookies for cloud execution.",
+  "version": "6.0.0",
+  "description": "Wassel — LinkedIn automation from your browser. No LinkedIn tab needed.",
   "permissions": [
     "storage",
     "tabs",

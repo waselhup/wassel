@@ -1,13 +1,17 @@
 // ============================================================
-// WASSEL EXTENSION v5.0.0 — Background Service Worker
-// Cloud-first: All LinkedIn actions via Voyager API on server.
-// Extension role: cookie extraction, token sync, prospect collection.
+// WASSEL EXTENSION v6.0.0 — Background Service Worker
+// HYBRID: Extension executes LinkedIn Voyager API from browser
+// (user's real IP, native cookies) — no LinkedIn tab needed.
+// Server provides pending actions, extension reports results.
 // ============================================================
 
 const API_BASE = 'https://wassel-alpha.vercel.app/api';
 const DASHBOARD_ORIGIN = 'https://wassel-alpha.vercel.app';
+const POLL_INTERVAL_MINUTES = 1; // Poll every 1 minute
+const MIN_DELAY_MS = 3000;  // Min delay between actions
+const MAX_DELAY_MS = 8000;  // Max delay between actions
 
-console.log('[Wassel] 🚀 Background v5.0.0 loaded (cloud-only)', new Date().toLocaleTimeString());
+console.log('[Wassel] 🚀 Background v6.0.0 loaded (extension-execution)', new Date().toLocaleTimeString());
 
 // ============================================================================
 // SAFE MESSAGE SENDING — prevents "Receiving end does not exist" crashes
@@ -50,45 +54,8 @@ async function ensureContentScript(tabId) {
   }
 }
 
-// ============================================================================
-// LINKEDIN COOKIE EXTRACTION — sends li_at + JSESSIONID to server
-// ============================================================================
-async function extractAndStoreCookies() {
-  try {
-    const token = await getToken();
-    if (!token) {
-      console.log('[Wassel] No token — skipping cookie extraction');
-      return { success: false, reason: 'no_token' };
-    }
-
-    const cookies = await chrome.cookies.getAll({ domain: '.linkedin.com' });
-    const liAt = cookies.find(c => c.name === 'li_at');
-    const jsessionId = cookies.find(c => c.name === 'JSESSIONID');
-
-    if (!liAt?.value) {
-      console.log('[Wassel] No li_at cookie — user may not be logged into LinkedIn');
-      return { success: false, reason: 'no_li_at' };
-    }
-
-    const res = await fetch(`${API_BASE}/session/store`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        li_at: liAt.value,
-        jsessionid: jsessionId?.value ? jsessionId.value.replace(/"/g, '') : '',
-      }),
-    });
-
-    const data = await res.json();
-    console.log('[Wassel] 🍪 Cookie store:', data.success ? 'OK' : (data.error || 'failed'));
-    return data;
-  } catch (e) {
-    console.warn('[Wassel] Cookie extraction error:', e.message);
-    return { success: false, reason: e.message };
-  }
+function sleep(ms) {
+  return new Promise(r => setTimeout(r, ms));
 }
 
 // ============================================================================
@@ -143,7 +110,6 @@ async function syncTokenFromDashboard() {
       const { token, source } = results[0].result;
       await chrome.storage.local.set({ wasselToken: token });
       console.log(`[Wassel] ✅ Token synced (${source})`);
-      // After token sync, also extract LinkedIn cookies for cloud automation
       extractAndStoreCookies();
       return { synced: true, source };
     }
@@ -155,8 +121,451 @@ async function syncTokenFromDashboard() {
   }
 }
 
-function sleep(ms) {
-  return new Promise(r => setTimeout(r, ms));
+// ============================================================================
+// LINKEDIN COOKIE EXTRACTION — sends li_at + JSESSIONID to server
+// ============================================================================
+async function extractAndStoreCookies() {
+  try {
+    const token = await getToken();
+    if (!token) {
+      console.log('[Wassel] No token — skipping cookie extraction');
+      return { success: false, reason: 'no_token' };
+    }
+
+    const cookies = await chrome.cookies.getAll({ domain: '.linkedin.com' });
+    const liAt = cookies.find(c => c.name === 'li_at');
+    const jsessionId = cookies.find(c => c.name === 'JSESSIONID');
+
+    if (!liAt?.value) {
+      console.log('[Wassel] No li_at cookie — user may not be logged into LinkedIn');
+      return { success: false, reason: 'no_li_at' };
+    }
+
+    const res = await fetch(`${API_BASE}/session/store`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        li_at: liAt.value,
+        jsessionid: jsessionId?.value ? jsessionId.value.replace(/"/g, '') : '',
+      }),
+    });
+
+    const data = await res.json();
+    console.log('[Wassel] 🍪 Cookie store:', data.success ? 'OK' : (data.error || 'failed'));
+    return data;
+  } catch (e) {
+    console.warn('[Wassel] Cookie extraction error:', e.message);
+    return { success: false, reason: e.message };
+  }
+}
+
+// ============================================================================
+// LINKEDIN VOYAGER API — executed FROM the browser using native cookies
+// No LinkedIn tab needed — service worker makes direct fetch() calls.
+// Browser auto-includes li_at + JSESSIONID cookies for linkedin.com.
+// Requests come from user's real IP → no datacenter detection.
+// ============================================================================
+
+async function getLinkedInCookies() {
+  const cookies = await chrome.cookies.getAll({ domain: '.linkedin.com' });
+  const liAt = cookies.find(c => c.name === 'li_at')?.value || '';
+  const jsessionId = cookies.find(c => c.name === 'JSESSIONID')?.value?.replace(/"/g, '') || '';
+  return { liAt, jsessionId };
+}
+
+function getVoyagerHeaders(jsessionId) {
+  return {
+    'accept': 'application/vnd.linkedin.normalized+json+2.1',
+    'x-restli-protocol-version': '2.0.0',
+    'x-li-lang': 'en_US',
+    'x-li-track': JSON.stringify({
+      clientVersion: '1.13.8775',
+      mpVersion: '1.13.8775',
+      osName: 'web',
+      timezoneOffset: -3,
+      timezone: 'Asia/Riyadh',
+      deviceFormFactor: 'DESKTOP',
+      mpName: 'voyager-web',
+    }),
+    ...(jsessionId ? { 'csrf-token': jsessionId } : {}),
+  };
+}
+
+/**
+ * Visit a LinkedIn profile to get profileId (entity URN).
+ * Uses the Voyager identity API.
+ */
+async function linkedinVisitProfile(slug) {
+  const { jsessionId } = await getLinkedInCookies();
+
+  const url = `https://www.linkedin.com/voyager/api/identity/profiles/${slug}`;
+  const res = await fetch(url, {
+    method: 'GET',
+    headers: getVoyagerHeaders(jsessionId),
+    credentials: 'include',
+  });
+
+  if (res.status === 401 || res.status === 403) {
+    return { success: false, error: 'session_expired' };
+  }
+
+  // Handle redirects (302 to login = session expired)
+  if (res.status >= 300 && res.status < 400) {
+    const loc = res.headers.get('location') || '';
+    if (loc.includes('login') || loc.includes('authwall') || loc.includes('checkpoint')) {
+      return { success: false, error: 'session_expired' };
+    }
+  }
+
+  if (!res.ok) {
+    return { success: false, error: `visit_failed_${res.status}` };
+  }
+
+  try {
+    const data = await res.json();
+    // Extract profileId from entityUrn: "urn:li:fs_profile:ACoAAxxxxxxx"
+    const entityUrn = data?.entityUrn || data?.profile?.entityUrn || '';
+    const profileId = entityUrn.replace('urn:li:fs_profile:', '').replace('urn:li:fsd_profile:', '');
+    const firstName = data?.firstName || '';
+    const lastName = data?.lastName || '';
+    const name = `${firstName} ${lastName}`.trim();
+
+    return {
+      success: true,
+      profileId: profileId || null,
+      name,
+      entityUrn,
+    };
+  } catch (e) {
+    return { success: false, error: 'parse_error: ' + e.message };
+  }
+}
+
+/**
+ * Send a connection invite to a profile.
+ */
+async function linkedinSendInvite(profileId, message) {
+  const { jsessionId } = await getLinkedInCookies();
+
+  const trackingId = crypto.randomUUID().replace(/-/g, '').substring(0, 16);
+
+  const body = {
+    trackingId,
+    invitations: [],
+    excludeInvitations: [],
+    invitee: {
+      'com.linkedin.voyager.growth.invitation.InviteeProfile': {
+        profileId,
+      },
+    },
+  };
+
+  // Add message if provided (max 280 chars for connection notes)
+  if (message && message.trim()) {
+    body.message = message.trim().substring(0, 280);
+  }
+
+  const url = 'https://www.linkedin.com/voyager/api/growth/normInvitations';
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      ...getVoyagerHeaders(jsessionId),
+      'content-type': 'application/json; charset=UTF-8',
+    },
+    credentials: 'include',
+    body: JSON.stringify(body),
+  });
+
+  if (res.status === 401 || res.status === 403) {
+    return { success: false, error: 'session_expired' };
+  }
+
+  if (res.status === 429) {
+    return { success: false, error: 'rate_limited' };
+  }
+
+  // LinkedIn returns 201 on success
+  if (res.status === 201 || res.ok) {
+    return { success: true };
+  }
+
+  let errorDetail = '';
+  try {
+    const errData = await res.json();
+    errorDetail = errData?.message || errData?.status || '';
+  } catch {}
+
+  return { success: false, error: `invite_failed_${res.status}: ${errorDetail}` };
+}
+
+/**
+ * Send a message to a connected profile.
+ */
+async function linkedinSendMessage(profileUrn, message) {
+  const { jsessionId } = await getLinkedInCookies();
+
+  if (!profileUrn.startsWith('urn:')) {
+    profileUrn = `urn:li:fsd_profile:${profileUrn}`;
+  }
+
+  const body = {
+    message: {
+      body: {
+        text: message,
+      },
+    },
+    mailboxUrn: 'urn:li:fsd_profile:me',
+    trackingId: crypto.randomUUID().replace(/-/g, '').substring(0, 16),
+    dedupeByClientGeneratedToken: false,
+    hostRecipientUrns: [profileUrn],
+  };
+
+  const url = 'https://www.linkedin.com/voyager/api/voyagerMessagingDashMessengerMessages?action=createMessage';
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      ...getVoyagerHeaders(jsessionId),
+      'content-type': 'application/json; charset=UTF-8',
+    },
+    credentials: 'include',
+    body: JSON.stringify(body),
+  });
+
+  if (res.status === 401 || res.status === 403) {
+    return { success: false, error: 'session_expired' };
+  }
+
+  if (res.status === 429) {
+    return { success: false, error: 'rate_limited' };
+  }
+
+  if (res.status === 201 || res.ok) {
+    return { success: true };
+  }
+
+  let errorDetail = '';
+  try {
+    const errData = await res.json();
+    errorDetail = errData?.message || errData?.status || '';
+  } catch {}
+
+  return { success: false, error: `message_failed_${res.status}: ${errorDetail}` };
+}
+
+/**
+ * Follow a LinkedIn profile.
+ */
+async function linkedinFollowProfile(slug) {
+  const { jsessionId } = await getLinkedInCookies();
+
+  // First visit to get profileId
+  const profile = await linkedinVisitProfile(slug);
+  if (!profile.success || !profile.profileId) {
+    return { success: false, error: profile.error || 'profile_not_found' };
+  }
+
+  const urn = `urn:li:fs_profile:${profile.profileId}`;
+  const body = {
+    followerUrn: 'urn:li:fsd_profile:me',
+    followeeUrn: urn,
+  };
+
+  const url = 'https://www.linkedin.com/voyager/api/graph/followUnfollowByEntity';
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      ...getVoyagerHeaders(jsessionId),
+      'content-type': 'application/json; charset=UTF-8',
+    },
+    credentials: 'include',
+    body: JSON.stringify(body),
+  });
+
+  if (res.status === 401 || res.status === 403) {
+    return { success: false, error: 'session_expired' };
+  }
+
+  if (res.ok || res.status === 200) {
+    return { success: true };
+  }
+
+  return { success: false, error: `follow_failed_${res.status}` };
+}
+
+// ============================================================================
+// CAMPAIGN EXECUTION ENGINE — polls server, executes actions, reports back
+// ============================================================================
+
+let isExecuting = false;
+let executionStats = {
+  lastPoll: null,
+  lastAction: null,
+  actionsToday: 0,
+  errors: 0,
+  consecutiveErrors: 0,
+};
+
+async function pollAndExecute() {
+  if (isExecuting) {
+    console.log('[Wassel] ⏳ Already executing, skipping poll');
+    return;
+  }
+
+  const token = await getToken();
+  if (!token) {
+    console.log('[Wassel] No token — skipping execution poll');
+    return;
+  }
+
+  // Check LinkedIn cookies exist
+  const { liAt } = await getLinkedInCookies();
+  if (!liAt) {
+    console.log('[Wassel] No li_at cookie — user not logged into LinkedIn');
+    return;
+  }
+
+  isExecuting = true;
+  executionStats.lastPoll = new Date().toISOString();
+
+  try {
+    // 1. Poll server for pending action
+    const res = await fetch(`${API_BASE}/ext/pending-actions`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+
+    if (!res.ok) {
+      console.warn('[Wassel] Poll failed:', res.status);
+      executionStats.errors++;
+      executionStats.consecutiveErrors++;
+      return;
+    }
+
+    const data = await res.json();
+
+    if (!data.action) {
+      // No pending actions — that's fine
+      if (data.reason && data.reason !== 'no_pending_actions') {
+        console.log('[Wassel] No action:', data.reason);
+      }
+      executionStats.consecutiveErrors = 0;
+      return;
+    }
+
+    const action = data.action;
+    console.log(`[Wassel] 🎯 Got action: ${action.actionType} for ${action.prospectName} (${action.slug})`);
+
+    // 2. Human-like random delay before executing
+    const delay = MIN_DELAY_MS + Math.random() * (MAX_DELAY_MS - MIN_DELAY_MS);
+    await sleep(delay);
+
+    // 3. Execute the LinkedIn action
+    let result = { success: false, error: 'unknown_action' };
+
+    switch (action.actionType) {
+      case 'visit': {
+        result = await linkedinVisitProfile(action.slug);
+        break;
+      }
+
+      case 'connect': {
+        // Visit first to get profileId
+        const profile = await linkedinVisitProfile(action.slug);
+        if (!profile.success || !profile.profileId) {
+          result = { success: false, error: profile.error || 'profile_not_found' };
+          break;
+        }
+
+        // Human delay between visit and invite
+        await sleep(1500 + Math.random() * 2500);
+
+        result = await linkedinSendInvite(profile.profileId, action.message || '');
+        break;
+      }
+
+      case 'message': {
+        // Visit first to get profileId
+        const profile = await linkedinVisitProfile(action.slug);
+        if (!profile.success || !profile.profileId) {
+          result = { success: false, error: profile.error || 'profile_not_found' };
+          break;
+        }
+
+        // Human delay
+        await sleep(1500 + Math.random() * 2500);
+
+        const profileUrn = `urn:li:fsd_profile:${profile.profileId}`;
+        result = await linkedinSendMessage(profileUrn, action.message || '');
+        break;
+      }
+
+      case 'follow': {
+        result = await linkedinFollowProfile(action.slug);
+        break;
+      }
+
+      default:
+        result = { success: false, error: `unknown_action_type: ${action.actionType}` };
+    }
+
+    console.log(`[Wassel] ${result.success ? '✅' : '❌'} ${action.actionType} ${action.prospectName}: ${result.success ? 'OK' : result.error}`);
+
+    // 4. Report result back to server
+    await fetch(`${API_BASE}/ext/report-action`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        pssId: action.pssId,
+        campaignId: action.campaignId,
+        prospectId: action.prospectId,
+        actionType: action.actionType,
+        success: result.success,
+        error: result.error || null,
+        prospectName: action.prospectName,
+        linkedinUrl: action.linkedinUrl,
+      }),
+    });
+
+    executionStats.lastAction = {
+      time: new Date().toISOString(),
+      type: action.actionType,
+      prospect: action.prospectName,
+      success: result.success,
+    };
+
+    if (result.success) {
+      executionStats.actionsToday++;
+      executionStats.consecutiveErrors = 0;
+    } else {
+      executionStats.errors++;
+      executionStats.consecutiveErrors++;
+
+      // If session expired, stop polling until cookies refresh
+      if (result.error?.includes('session_expired') || result.error?.includes('401')) {
+        console.log('[Wassel] 🛑 Session expired — stopping execution until re-login');
+        // Try to refresh cookies from browser
+        await extractAndStoreCookies();
+      }
+    }
+
+    // If too many consecutive errors, back off
+    if (executionStats.consecutiveErrors >= 5) {
+      console.log('[Wassel] ⚠️ Too many errors — backing off for 10 minutes');
+      // The alarm will still fire, but isExecuting guard prevents overlap
+    }
+
+  } catch (e) {
+    console.error('[Wassel] Execution error:', e.message);
+    executionStats.errors++;
+    executionStats.consecutiveErrors++;
+  } finally {
+    isExecuting = false;
+  }
 }
 
 // ============================================================================
@@ -434,7 +843,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   if (message.type === 'GET_AUTOMATION_STATUS') {
-    sendResponse({ isProcessing: false, mode: 'cloud' });
+    sendResponse({
+      isProcessing: isExecuting,
+      mode: 'extension',
+      stats: executionStats,
+    });
     return true;
   }
 
@@ -442,12 +855,31 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     extractAndStoreCookies().then(result => sendResponse(result));
     return true;
   }
+
+  // Manual trigger for execution (from popup)
+  if (message.type === 'FORCE_POLL') {
+    pollAndExecute().then(() => sendResponse({ ok: true, stats: executionStats }));
+    return true;
+  }
 });
 
 // ============================================================================
-// ALARMS — cookie refresh and token sync
+// ALARMS — campaign execution, cookie refresh, token sync
 // ============================================================================
 chrome.alarms.onAlarm.addListener(async (alarm) => {
+  if (alarm.name === 'campaignExecutor') {
+    // Skip if too many consecutive errors (back off)
+    if (executionStats.consecutiveErrors >= 5) {
+      // Reset after 10 minutes of backing off
+      const lastErr = executionStats.lastAction?.time;
+      if (lastErr && (Date.now() - new Date(lastErr).getTime()) > 600000) {
+        executionStats.consecutiveErrors = 0;
+      } else {
+        return;
+      }
+    }
+    await pollAndExecute();
+  }
   if (alarm.name === 'tokenSync') {
     await syncTokenFromDashboard();
   }
@@ -460,24 +892,32 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
 // STARTUP
 // ============================================================================
 chrome.runtime.onInstalled.addListener(async () => {
-  console.log('[Wassel] Extension installed (v5.0.0 cloud-only)');
+  console.log('[Wassel] Extension installed (v6.0.0 extension-execution)');
   chrome.storage.local.set({ apiUrl: API_BASE });
 
-  // Cookie refresh every 12 hours, token sync every 30 minutes
+  // Campaign executor: every 1 minute
+  chrome.alarms.create('campaignExecutor', { periodInMinutes: POLL_INTERVAL_MINUTES });
+  // Token sync every 30 minutes
   chrome.alarms.create('tokenSync', { periodInMinutes: 30 });
-  chrome.alarms.create('cookieRefresh', { periodInMinutes: 720 });
+  // Cookie refresh every 4 hours (also syncs to server)
+  chrome.alarms.create('cookieRefresh', { periodInMinutes: 240 });
 
   await syncTokenFromDashboard();
   setTimeout(extractAndStoreCookies, 5000);
+  // First execution poll after 15s
+  setTimeout(pollAndExecute, 15000);
 });
 
 chrome.runtime.onStartup.addListener(async () => {
-  console.log('[Wassel] Chrome started (v5.0.0 cloud-only)');
+  console.log('[Wassel] Chrome started (v6.0.0 extension-execution)');
+
+  chrome.alarms.create('campaignExecutor', { periodInMinutes: POLL_INTERVAL_MINUTES });
   chrome.alarms.create('tokenSync', { periodInMinutes: 30 });
-  chrome.alarms.create('cookieRefresh', { periodInMinutes: 720 });
+  chrome.alarms.create('cookieRefresh', { periodInMinutes: 240 });
 
   await syncTokenFromDashboard();
   setTimeout(extractAndStoreCookies, 3000);
+  setTimeout(pollAndExecute, 10000);
 });
 
 // Service worker wake fallback
@@ -487,6 +927,7 @@ chrome.runtime.onStartup.addListener(async () => {
   if (!token) {
     await syncTokenFromDashboard();
   }
-  // Always try to refresh cookies on wake
   setTimeout(extractAndStoreCookies, 5000);
+  // Start polling after wake
+  setTimeout(pollAndExecute, 8000);
 })();
