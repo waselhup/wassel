@@ -25,7 +25,8 @@ function getProxyAgent(): HttpsProxyAgent<string> | undefined {
     console.warn('[LinkedIn] No LINKEDIN_PROXY_URL set — requests will come from datacenter IP (may be blocked)');
     return undefined;
   }
-  return new HttpsProxyAgent(proxyUrl);
+  // Web Unlocker uses SSL interception — must accept its certificate
+  return new HttpsProxyAgent(proxyUrl, { rejectUnauthorized: false });
 }
 
 // Cache the agent so we don't create a new one per request

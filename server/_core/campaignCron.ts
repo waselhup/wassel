@@ -174,7 +174,7 @@ router.get('/diagnose', async (req: any, res: any) => {
 
     // Step 3: Test /voyager/api/me (simple self-check)
     const proxyUrl = process.env.LINKEDIN_PROXY_URL;
-    const agent = proxyUrl ? new HttpsProxyAgent(proxyUrl) : undefined;
+    const agent = proxyUrl ? new HttpsProxyAgent(proxyUrl, { rejectUnauthorized: false }) : undefined;
     diag.proxy_configured = !!proxyUrl;
     if (proxyUrl) {
       try {

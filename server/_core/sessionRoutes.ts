@@ -22,7 +22,7 @@ async function verifyLinkedInCookie(liAt: string, jsessionId?: string): Promise<
     };
 
     const proxyUrl = process.env.LINKEDIN_PROXY_URL;
-    const agent = proxyUrl ? new HttpsProxyAgent(proxyUrl) : undefined;
+    const agent = proxyUrl ? new HttpsProxyAgent(proxyUrl, { rejectUnauthorized: false }) : undefined;
 
     const res = await fetch('https://www.linkedin.com/voyager/api/me', {
       headers,

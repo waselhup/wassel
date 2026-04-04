@@ -3828,7 +3828,7 @@ async function verifyLinkedInCookie(liAt, jsessionId) {
       "accept": "application/vnd.linkedin.normalized+json+2.1"
     };
     const proxyUrl = process.env.LINKEDIN_PROXY_URL;
-    const agent = proxyUrl ? new HttpsProxyAgent(proxyUrl) : void 0;
+    const agent = proxyUrl ? new HttpsProxyAgent(proxyUrl, { rejectUnauthorized: false }) : void 0;
     const res = await fetch2("https://www.linkedin.com/voyager/api/me", {
       headers,
       redirect: "manual",
@@ -4186,7 +4186,7 @@ function getProxyAgent() {
     console.warn("[LinkedIn] No LINKEDIN_PROXY_URL set \u2014 requests will come from datacenter IP (may be blocked)");
     return void 0;
   }
-  return new HttpsProxyAgent2(proxyUrl);
+  return new HttpsProxyAgent2(proxyUrl, { rejectUnauthorized: false });
 }
 var _cachedAgent = null;
 function getAgent() {
@@ -4762,7 +4762,7 @@ router18.get("/diagnose", async (req, res) => {
       jsessionid_prefix: jsessionId.substring(0, 10)
     };
     const proxyUrl = process.env.LINKEDIN_PROXY_URL;
-    const agent = proxyUrl ? new HttpsProxyAgent3(proxyUrl) : void 0;
+    const agent = proxyUrl ? new HttpsProxyAgent3(proxyUrl, { rejectUnauthorized: false }) : void 0;
     diag.proxy_configured = !!proxyUrl;
     if (proxyUrl) {
       try {
