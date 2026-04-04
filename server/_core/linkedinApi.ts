@@ -2,14 +2,39 @@
  * LinkedIn Voyager API — Server-side LinkedIn actions
  * Uses li_at + JSESSIONID cookies for authentication
  * All actions go through LinkedIn's internal Voyager REST API
+ *
+ * IMPORTANT: LinkedIn blocks datacenter IPs (AWS/Vercel).
+ * Set LINKEDIN_PROXY_URL env var to a residential proxy to avoid blocks.
+ * Format: http://user:pass@host:port
  */
 
 import fetch from 'node-fetch';
+import { HttpsProxyAgent } from 'https-proxy-agent';
 
 export interface LinkedInSession {
   liAt: string;
   jsessionId: string;
   userAgent: string;
+}
+
+// ─── Proxy Agent ──────────────────────────────────────────
+
+function getProxyAgent(): HttpsProxyAgent<string> | undefined {
+  const proxyUrl = process.env.LINKEDIN_PROXY_URL;
+  if (!proxyUrl) {
+    console.warn('[LinkedIn] No LINKEDIN_PROXY_URL set — requests will come from datacenter IP (may be blocked)');
+    return undefined;
+  }
+  return new HttpsProxyAgent(proxyUrl);
+}
+
+// Cache the agent so we don't create a new one per request
+let _cachedAgent: HttpsProxyAgent<string> | undefined | null = null;
+function getAgent(): HttpsProxyAgent<string> | undefined {
+  if (_cachedAgent === null) {
+    _cachedAgent = getProxyAgent();
+  }
+  return _cachedAgent;
 }
 
 // ─── Helpers ───────────────────────────────────────────────
@@ -29,6 +54,12 @@ function getHeaders(session: LinkedInSession, contentType?: string) {
     headers['content-type'] = contentType;
   }
   return headers;
+}
+
+/** Get fetch options with proxy agent if configured */
+function getFetchOpts(extra?: Record<string, any>): Record<string, any> {
+  const agent = getAgent();
+  return { ...(agent ? { agent } : {}), ...extra };
 }
 
 function isSessionExpired(status: number): boolean {
@@ -53,6 +84,7 @@ export async function visitProfile(session: LinkedInSession, profileSlug: string
       {
         headers: getHeaders(session),
         redirect: 'manual',
+        ...getFetchOpts(),
       }
     );
 
@@ -114,6 +146,7 @@ export async function sendInvite(
         headers: getHeaders(session, 'application/json'),
         body: JSON.stringify(body),
         redirect: 'manual',
+        ...getFetchOpts(),
       }
     );
 
@@ -171,6 +204,7 @@ async function sendInviteV2(
         headers: getHeaders(session, 'application/json'),
         body: JSON.stringify(body),
         redirect: 'manual',
+        ...getFetchOpts(),
       }
     );
 
@@ -221,6 +255,7 @@ export async function sendMessage(
         headers: getHeaders(session, 'application/json'),
         body: JSON.stringify(body),
         redirect: 'manual',
+        ...getFetchOpts(),
       }
     );
 
@@ -270,6 +305,7 @@ async function sendMessageV2(
         headers: getHeaders(session, 'application/json'),
         body: JSON.stringify(body),
         redirect: 'manual',
+        ...getFetchOpts(),
       }
     );
 
@@ -355,6 +391,7 @@ export async function checkConnectionStatus(
       {
         headers: getHeaders(session),
         redirect: 'manual',
+        ...getFetchOpts(),
       }
     );
 
@@ -403,6 +440,7 @@ export async function getConnectionDegree(
       {
         headers: getHeaders(session),
         redirect: 'manual',
+        ...getFetchOpts(),
       }
     );
 
@@ -449,6 +487,7 @@ export async function publishPost(
         headers: getHeaders(session, 'application/json'),
         body: JSON.stringify(body),
         redirect: 'manual',
+        ...getFetchOpts(),
       }
     );
 

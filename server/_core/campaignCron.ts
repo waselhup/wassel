@@ -13,6 +13,7 @@
 
 import { Router } from 'express';
 import fetch from 'node-fetch';
+import { HttpsProxyAgent } from 'https-proxy-agent';
 import { supabase } from '../supabase';
 import {
   visitProfile,
@@ -172,6 +173,10 @@ router.get('/diagnose', async (req: any, res: any) => {
     };
 
     // Step 3: Test /voyager/api/me (simple self-check)
+    const proxyUrl = process.env.LINKEDIN_PROXY_URL;
+    const agent = proxyUrl ? new HttpsProxyAgent(proxyUrl) : undefined;
+    diag.proxy_configured = !!proxyUrl;
+
     const session: LinkedInSession = {
       liAt,
       jsessionId,
@@ -188,6 +193,7 @@ router.get('/diagnose', async (req: any, res: any) => {
           'accept': 'application/vnd.linkedin.normalized+json+2.1',
         },
         redirect: 'manual',
+        ...(agent ? { agent } : {}),
       });
       diag.me_status = meRes.status;
       diag.me_headers = Object.fromEntries(meRes.headers);
@@ -215,6 +221,7 @@ router.get('/diagnose', async (req: any, res: any) => {
             'accept': 'application/vnd.linkedin.normalized+json+2.1',
           },
           redirect: 'manual',
+          ...(agent ? { agent } : {}),
         }
       );
       diag.profile_status = profileRes.status;

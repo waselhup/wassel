@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { supabase } from '../supabase';
 import { encrypt, decrypt } from './encryption';
 import fetch from 'node-fetch';
+import { HttpsProxyAgent } from 'https-proxy-agent';
 
 const router = Router();
 
@@ -20,9 +21,13 @@ async function verifyLinkedInCookie(liAt: string, jsessionId?: string): Promise<
       'accept': 'application/vnd.linkedin.normalized+json+2.1',
     };
 
+    const proxyUrl = process.env.LINKEDIN_PROXY_URL;
+    const agent = proxyUrl ? new HttpsProxyAgent(proxyUrl) : undefined;
+
     const res = await fetch('https://www.linkedin.com/voyager/api/me', {
       headers,
       redirect: 'manual',
+      ...(agent ? { agent } : {}),
     });
 
     if (res.status >= 300 && res.status < 400 || res.status === 401 || res.status === 403) {
