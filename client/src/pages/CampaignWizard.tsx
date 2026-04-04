@@ -319,14 +319,17 @@ export default function CampaignWizard() {
 
   // LAUNCH
   const launch = async () => {
-    // Check extension is installed before launching
-    if (document.documentElement.getAttribute('data-wassel-extension') !== 'true') {
-      setShowExtModal(true);
-      return;
-    }
     setLaunching(true);
     setError('');
     try {
+      // Check LinkedIn session before launching (cloud-based execution)
+      const sessionCheck = await apiFetch('/api/cloud/session-check', token);
+      if (!sessionCheck.hasSession) {
+        setShowExtModal(true);
+        setLaunching(false);
+        return;
+      }
+
       let campType = 'combined';
       if (enabledSteps.visit && !enabledSteps.invite && !enabledSteps.message && !enabledSteps.follow) campType = 'visit';
       else if (enabledSteps.invite && !enabledSteps.message) campType = 'invitation';
@@ -341,10 +344,10 @@ export default function CampaignWizard() {
       if (!campaignId) throw new Error(campRes?.error?.message || 'Failed to create campaign');
 
       const stepsPayload: any[] = [];
-      if (enabledSteps.visit) stepsPayload.push({ step_type: 'visit', name: 'Visit Profile', delay_days: 0, configuration: {} });
-      if (enabledSteps.invite) stepsPayload.push({ step_type: 'invitation', name: 'Send Invite', message_template: inviteNote || null, delay_days: inviteDelay, configuration: {} });
-      if (enabledSteps.message) stepsPayload.push({ step_type: 'message', name: 'First Message', message_template: msg1, delay_days: msg1Delay, configuration: {} });
-      if (enabledSteps.follow) stepsPayload.push({ step_type: 'follow', name: 'Follow Up', message_template: followUp, delay_days: followDelay, configuration: {} });
+      if (enabledSteps.visit) stepsPayload.push({ step_type: 'visit', name: t('wizard.visitProfile'), delay_days: 0, configuration: {} });
+      if (enabledSteps.invite) stepsPayload.push({ step_type: 'invitation', name: t('wizard.sendInvite'), message_template: inviteNote || null, delay_days: inviteDelay, configuration: {} });
+      if (enabledSteps.message) stepsPayload.push({ step_type: 'message', name: t('wizard.firstMessage'), message_template: msg1, delay_days: msg1Delay, configuration: {} });
+      if (enabledSteps.follow) stepsPayload.push({ step_type: 'follow', name: t('wizard.followUpMessage'), message_template: followUp, delay_days: followDelay, configuration: {} });
 
       const stepsRes = await apiFetch(`/api/sequence/campaigns/${campaignId}/steps`, token, {
         method: 'POST',
@@ -358,11 +361,11 @@ export default function CampaignWizard() {
       });
       if (enrollRes.error) throw new Error(enrollRes.error);
 
-      const activateRes = await apiFetch('/api/trpc/campaigns.updateStatus', token, {
+      // Use the cloud launch endpoint — does session check, sets started_at, activates campaign
+      const launchRes = await apiFetch(`/api/cloud/campaign/${campaignId}/launch`, token, {
         method: 'POST',
-        body: JSON.stringify({ json: { id: campaignId, status: 'active' } }),
       });
-      console.log('[Wizard] Campaign activated:', activateRes);
+      if (!launchRes.success) throw new Error(launchRes.error || 'Failed to launch campaign');
 
       setLaunchedData({ id: campaignId, name, count: selected.size });
     } catch (e: any) {

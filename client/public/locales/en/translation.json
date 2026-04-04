@@ -201,7 +201,11 @@
     "allContacted": "All prospects already contacted",
     "justLaunched": "Campaign just launched (wait 1 min)",
     "noProspects": "No prospects enrolled",
-    "noStepsDesc": "This campaign has no sequence steps. Create a new campaign to set up steps."
+    "noStepsDesc": "This campaign has no sequence steps. Create a new campaign to set up steps.",
+    "activateFailed": "Failed to activate campaign",
+    "activated": "Campaign activated",
+    "paused": "Campaign paused",
+    "pauseFailed": "Failed to pause campaign"
   },
   "wizard": {
     "createCampaign": "Create Campaign",
@@ -263,7 +267,12 @@
     "useThis": "✓ Use This",
     "regenerate": "↻ Regenerate",
     "close": "✕ Close",
-    "steps": ["Setup", "Sequence", "Prospects", "Launch"],
+    "steps": [
+      "Setup",
+      "Sequence",
+      "Prospects",
+      "Launch"
+    ],
     "selectSteps": "Select steps",
     "visitOnly": "Visit Only",
     "inviteOnly": "Invite Only",
@@ -414,20 +423,47 @@
     "features": {
       "title": "Everything you need to scale outreach",
       "items": {
-        "sequences": { "name": "Smart Sequences", "desc": "Build multi-step campaigns: visit, invite, message, follow up — fully automated." },
-        "import": { "name": "Prospect Import", "desc": "Import leads directly from LinkedIn search in one click via our Chrome extension." },
-        "analytics": { "name": "Real-Time Analytics", "desc": "Track acceptance rates, reply rates, and funnel drop-off across every campaign." },
-        "safe": { "name": "Safe Automation", "desc": "Built-in rate limits and human-like delays keep your LinkedIn account protected." },
-        "sync": { "name": "Connection Sync", "desc": "Auto-detects when invites are accepted and unlocks the next message instantly." },
-        "team": { "name": "Team Management", "desc": "Invite your team, manage seats, and monitor all campaigns from one admin view." }
+        "sequences": {
+          "name": "Smart Sequences",
+          "desc": "Build multi-step campaigns: visit, invite, message, follow up — fully automated."
+        },
+        "import": {
+          "name": "Prospect Import",
+          "desc": "Import leads directly from LinkedIn search in one click via our Chrome extension."
+        },
+        "analytics": {
+          "name": "Real-Time Analytics",
+          "desc": "Track acceptance rates, reply rates, and funnel drop-off across every campaign."
+        },
+        "safe": {
+          "name": "Safe Automation",
+          "desc": "Built-in rate limits and human-like delays keep your LinkedIn account protected."
+        },
+        "sync": {
+          "name": "Connection Sync",
+          "desc": "Auto-detects when invites are accepted and unlocks the next message instantly."
+        },
+        "team": {
+          "name": "Team Management",
+          "desc": "Invite your team, manage seats, and monitor all campaigns from one admin view."
+        }
       }
     },
     "how": {
       "title": "Up and running in 3 steps",
       "steps": {
-        "s1": { "name": "Install the Extension", "desc": "Add Wassel to Chrome. Connect your LinkedIn account in one click." },
-        "s2": { "name": "Build Your Sequence", "desc": "Set up your visit → invite → message flow. Customize templates with personalization." },
-        "s3": { "name": "Launch & Watch", "desc": "Start your campaign. Wassel runs automatically while you track results live." }
+        "s1": {
+          "name": "Install the Extension",
+          "desc": "Add Wassel to Chrome. Connect your LinkedIn account in one click."
+        },
+        "s2": {
+          "name": "Build Your Sequence",
+          "desc": "Set up your visit → invite → message flow. Customize templates with personalization."
+        },
+        "s3": {
+          "name": "Launch & Watch",
+          "desc": "Start your campaign. Wassel runs automatically while you track results live."
+        }
       }
     },
     "pricing": {
@@ -469,7 +505,12 @@
     "online": "Online",
     "deleting": "Deleting...",
     "success": "Success",
-    "error": "Error"
+    "error": "Error",
+    "all": "All",
+    "pause": "Pause",
+    "resume": "Resume",
+    "name": "Name",
+    "noResults": "No results found"
   },
   "campaign": {
     "running": "Campaign Running",
@@ -478,20 +519,30 @@
     "completed": "Campaign Complete",
     "extensionExecuting": "Wassel is executing actions in the cloud",
     "keepLinkedIn": "No need to keep LinkedIn open",
-    "automationStatus": "Cloud Automation Status",
+    "automationStatus": "Automation Status",
     "testAutomation": "Check Automation",
     "checking": "Checking...",
-    "working": "Cloud automation is working! ☁️✅",
+    "working": "Automation running ✓",
     "queue": "Queue:",
     "actionPending": "action(s) pending",
-    "executeSoon": "Actions execute automatically in the cloud",
+    "executeSoon": "Actions will execute on the next cron cycle",
     "queueEmpty": "Queue is empty ⚠️",
-    "noActivity": "No activity yet.",
+    "noActivity": "No activity yet",
     "keepChrome": "Cloud automation runs automatically — no need to keep browser open.",
     "recentActivity": "Recent Activity",
-    "live": "Live",
+    "live": "live",
     "noSteps": "No steps configured",
     "launchNow": "🚀 Launch Now",
-    "resume": "▶ Resume"
+    "resume": "▶ Resume",
+    "loading": "Loading campaign...",
+    "notFound": "Campaign not found",
+    "backToCampaigns": "Back to Campaigns",
+    "cloudRunning": "Cloud automation running — no need to keep browser open",
+    "tabSequence": "Sequence",
+    "tabProspects": "Prospects",
+    "tabStats": "Analytics",
+    "loadingProspects": "Loading prospects...",
+    "noProspectsEnrolled": "No prospects enrolled",
+    "noProspectsEnrolledDesc": "Add prospects from the Leads section and enroll them in this campaign."
   }
 }

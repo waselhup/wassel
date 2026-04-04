@@ -41,20 +41,29 @@ async function seqApi(path: string, options: RequestInit = {}) {
 }
 
 // Step type config
-const STEP_TYPES = {
-  visit: { icon: Eye, label: 'زيارة الملف', color: 'blue', emoji: '👁️' },
-  invitation: { icon: UserPlus, label: 'إرسال دعوة', color: 'green', emoji: '🤝' },
-  message: { icon: MessageSquare, label: 'إرسال رسالة', color: 'purple', emoji: '💬' },
+// Step types — labels resolved via t() at usage site
+const STEP_TYPE_EMOJI: Record<string, string> = {
+  visit: '👁️',
+  invitation: '🤝',
+  message: '💬',
+  follow: '↩️',
 };
 
-// Status badge config
-const STATUS_CONFIG: Record<string, { icon: any; color: string; bg: string; label: string }> = {
-  waiting: { icon: Lock, color: 'text-gray-400', bg: 'bg-gray-100', label: 'بانتظار' },
-  pending: { icon: Clock, color: 'text-amber-500', bg: 'bg-amber-50', label: 'معلق' },
-  in_progress: { icon: Loader2, color: 'text-blue-500', bg: 'bg-blue-50', label: 'جاري' },
-  completed: { icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-50', label: 'مكتمل' },
-  failed: { icon: XCircle, color: 'text-red-500', bg: 'bg-red-50', label: 'فشل' },
-  skipped: { icon: AlertTriangle, color: 'text-gray-500', bg: 'bg-gray-50', label: 'تخطي' },
+const STEP_TYPE_ICON: Record<string, any> = {
+  visit: Eye,
+  invitation: UserPlus,
+  message: MessageSquare,
+  follow: Reply,
+};
+
+// Status badge config — labels resolved via t() at usage site
+const STATUS_CONFIG_KEYS: Record<string, { icon: any; color: string; bg: string }> = {
+  waiting: { icon: Lock, color: 'text-gray-400', bg: 'bg-gray-800' },
+  pending: { icon: Clock, color: 'text-amber-400', bg: 'bg-amber-900/30' },
+  in_progress: { icon: Loader2, color: 'text-blue-400', bg: 'bg-blue-900/30' },
+  completed: { icon: CheckCircle, color: 'text-green-400', bg: 'bg-green-900/30' },
+  failed: { icon: XCircle, color: 'text-red-400', bg: 'bg-red-900/30' },
+  skipped: { icon: AlertTriangle, color: 'text-gray-400', bg: 'bg-gray-800' },
 };
 
 type Step = {
@@ -156,9 +165,7 @@ export default function CampaignDetail() {
   const [activity, setActivity] = useState<any[]>([]);
   const [loadingActivity, setLoadingActivity] = useState(false);
 
-  // Test automation state
-  const [testResult, setTestResult] = useState<any>(null);
-  const [testLoading, setTestLoading] = useState(false);
+  // (test automation removed — cron handles all execution)
 
   // Load recent activity from activity-log endpoint
   const loadActivity = useCallback(async () => {
@@ -192,59 +199,8 @@ export default function CampaignDetail() {
     return () => clearInterval(interval);
   }, [loadActivity]);
 
-  // Drive campaign processing via /tick while campaign is active
-  useEffect(() => {
-    if (campaign?.status !== 'active') return;
-    let stopped = false;
-    const token = localStorage.getItem('supabase_token') || localStorage.getItem('supabase_access_token') || '';
-    const runTick = async () => {
-      if (stopped) return;
-      try {
-        const res = await fetch(`/api/cloud/campaign/${campaignId}/tick`, {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-        });
-        const data = await res.json();
-        if (data.processed) {
-          loadActivity();
-          // If something was processed, tick again after a short delay
-          if (!stopped) setTimeout(runTick, 8000);
-          return;
-        }
-        if (data.reason === 'campaign_completed') {
-          utils.campaigns.get.invalidate({ id: campaignId });
-          return;
-        }
-      } catch {}
-      // Nothing processed or error — wait longer before next tick
-      if (!stopped) setTimeout(runTick, 15000);
-    };
-    // Start first tick after 2s
-    const timer = setTimeout(runTick, 2000);
-    return () => { stopped = true; clearTimeout(timer); };
-  }, [campaign?.status, campaignId]);
-
-  // Test automation handler — checks cloud session + queue
-  const testAutomation = async () => {
-    setTestLoading(true);
-    try {
-      const token = localStorage.getItem('supabase_token') || localStorage.getItem('supabase_access_token') || '';
-      const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
-
-      // Check cloud session
-      const sessionRes = await fetch('/api/cloud/session-check', { headers });
-      const { hasSession } = await sessionRes.json();
-
-      // Also check old queue for backward compatibility
-      const queueRes = await fetch(`${API_BASE}/sequence/queue/active`, { headers });
-      const queueData = await queueRes.json();
-
-      setTestResult({ ...queueData, hasSession, mode: 'cloud' });
-    } catch (e: any) {
-      setTestResult({ error: e.message });
-    }
-    setTestLoading(false);
-  };
+  // Campaign processing is handled by the cron job (/api/cron/campaign-runner)
+  // No client-side tick needed — activity feed auto-refreshes every 4s
 
   // Load steps
   useEffect(() => {
@@ -315,7 +271,7 @@ export default function CampaignDetail() {
       ...prev,
       {
         step_type: type,
-        name: STEP_TYPES[type as keyof typeof STEP_TYPES]?.label || type,
+        name: STEP_TYPE_EMOJI[type] ? `${STEP_TYPE_EMOJI[type]} ${type}` : type,
         delay_days: type === 'visit' ? 0 : 1,
         message_template: '',
         configuration: {},
@@ -357,10 +313,10 @@ export default function CampaignDetail() {
   // Default template for 4-step sequence
   const loadDefaultSequence = () => {
     setSteps([
-      { step_type: 'visit', name: 'زيارة الملف', delay_days: 0, message_template: '', configuration: {} },
-      { step_type: 'invitation', name: 'إرسال دعوة', delay_days: 1, message_template: 'مرحباً {{firstName}}، أود التواصل معك. أرى أنك تعمل في {{company}} كـ {{jobTitle}}.', configuration: {} },
-      { step_type: 'message', name: 'رسالة 1', delay_days: 2, message_template: 'شكراً لقبول الدعوة {{firstName}}! أود أن أعرض عليك كيف يمكننا مساعدتك في {{company}}.', configuration: {} },
-      { step_type: 'message', name: 'رسالة 2', delay_days: 3, message_template: 'مرحباً {{firstName}}، أتمنى أن تكون بخير. هل لديك وقت لمكالمة قصيرة هذا الأسبوع؟', configuration: {} },
+      { step_type: 'visit', name: t('wizard.visitProfile'), delay_days: 0, message_template: '', configuration: {} },
+      { step_type: 'invitation', name: t('wizard.sendInvite'), delay_days: 1, message_template: 'مرحباً {{firstName}}، أود التواصل معك. أرى أنك تعمل في {{company}} كـ {{jobTitle}}.', configuration: {} },
+      { step_type: 'message', name: t('wizard.firstMessage'), delay_days: 2, message_template: 'شكراً لقبول الدعوة {{firstName}}! أود أن أعرض عليك كيف يمكننا مساعدتك في {{company}}.', configuration: {} },
+      { step_type: 'follow', name: t('wizard.followUpMessage'), delay_days: 3, message_template: 'مرحباً {{firstName}}، أتابع معك. هل لديك وقت لمكالمة قصيرة هذا الأسبوع؟', configuration: {} },
     ]);
   };
 
@@ -369,7 +325,7 @@ export default function CampaignDetail() {
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">جاري تحميل الحملة...</p>
+          <p className="text-gray-600">{t('campaign.loading')}</p>
         </div>
       </div>
     );
@@ -380,11 +336,11 @@ export default function CampaignDetail() {
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
         <Card className="p-8 text-center max-w-md">
           <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">الحملة غير موجودة</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">{t('campaign.notFound')}</h2>
           <Link href="/app/campaigns">
             <Button className="mt-4">
               <ArrowLeft className="w-4 h-4 mr-2" />
-              العودة للحملات
+              {t('campaign.backToCampaigns')}
             </Button>
           </Link>
         </Card>
@@ -568,7 +524,7 @@ export default function CampaignDetail() {
               {activity.length === 0 ? (
                 <div className="text-center py-8">
                   <p className="text-gray-400 text-sm">{t('campaign.noActivity')}</p>
-                  <p className="text-gray-400 text-xs mt-1">الأتمتة السحابية تعمل — لا حاجة لإبقاء المتصفح مفتوحاً</p>
+                  <p className="text-gray-400 text-xs mt-1">{t('campaign.cloudRunning')}</p>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -596,51 +552,19 @@ export default function CampaignDetail() {
             </Card>
           </div>
 
-          {/* Test Automation */}
+          {/* Cloud Execution Status */}
           {campaign?.status === 'active' && (
             <div className="lg:col-span-1">
               <Card className="p-4">
                 <h3 className="text-sm font-semibold text-gray-800 mb-3">{t('campaign.automationStatus')}</h3>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={testAutomation}
-                  disabled={testLoading}
-                  className="w-full mb-3"
-                >
-                  {testLoading ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : '🧪'}
-                  {testLoading ? t('campaign.checking') : t('campaign.testAutomation')}
-                </Button>
-                {testResult && (
-                  <div className={`text-xs rounded-lg p-3 ${
-                    testResult.hasSession
-                      ? 'bg-green-50 text-green-800 border border-green-200'
-                      : 'bg-amber-50 text-amber-800 border border-amber-200'
-                  }`}>
-                    {testResult.error ? (
-                      <p>❌ Error: {testResult.error}</p>
-                    ) : testResult.hasSession ? (
-                      <>
-                        <p className="font-semibold">{t('campaign.working')}</p>
-                        <p className="mt-1">☁️ LinkedIn session active — cloud execution ready</p>
-                        {testResult.queue?.length > 0 && (
-                          <p>{t('campaign.queue')} {testResult.queue.length} {t('campaign.actionPending')}</p>
-                        )}
-                        <p className="mt-1 text-green-600">{t('campaign.executeSoon')}</p>
-                      </>
-                    ) : (
-                      <>
-                        <p className="font-semibold">{t('campaign.queueEmpty')}</p>
-                        <p className="mt-1">{t('campaigns.possibleReasons')}:</p>
-                        <ul className="list-disc ml-4 mt-0.5">
-                          <li>{t('campaigns.allContacted')}</li>
-                          <li>{t('campaigns.justLaunched')}</li>
-                          <li>{t('campaigns.noProspects')}</li>
-                        </ul>
-                      </>
-                    )}
-                  </div>
-                )}
+                <div className="text-xs rounded-lg p-3 bg-green-50 text-green-800 border border-green-200">
+                  <p className="font-semibold flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse inline-block" />
+                    {t('campaign.working')}
+                  </p>
+                  <p className="mt-1">☁️ {t('campaign.cloudRunning')}</p>
+                  <p className="mt-2 text-green-700 font-medium">{t('campaign.executeSoon')}</p>
+                </div>
               </Card>
             </div>
           )}
@@ -651,9 +575,9 @@ export default function CampaignDetail() {
       <div className="max-w-6xl mx-auto px-6 pt-4">
         <div className="flex gap-1 bg-white/60 rounded-lg p-1 w-fit">
           {[
-            { key: 'sequence', label: 'التسلسل', icon: Zap },
-            { key: 'prospects', label: 'العملاء المحتملين', icon: Users },
-            { key: 'stats', label: 'الإحصائيات', icon: BarChart3 },
+            { key: 'sequence', label: t('campaign.tabSequence'), icon: Zap },
+            { key: 'prospects', label: t('campaign.tabProspects'), icon: Users },
+            { key: 'stats', label: t('campaign.tabStats'), icon: BarChart3 },
           ].map(tab => (
             <button
               key={tab.key}
@@ -684,8 +608,7 @@ export default function CampaignDetail() {
               </Card>
             ) : (
               steps.map((s, i) => {
-                const cfg = STEP_TYPES[s.step_type as keyof typeof STEP_TYPES];
-                const Icon = cfg?.icon || Eye;
+                const Icon = STEP_TYPE_ICON[s.step_type] || Eye;
                 return (
                   <div key={i}>
                     {i > 0 && (
@@ -732,12 +655,12 @@ export default function CampaignDetail() {
             {loadingStats ? (
               <div className="text-center py-12">
                 <Loader2 className="w-8 h-8 animate-spin text-blue-500 mx-auto mb-3" />
-                <p className="text-gray-500 text-sm">جاري تحميل بيانات العملاء...</p>
+                <p className="text-gray-500 text-sm">{t('campaign.loadingProspects')}</p>
               </div>
             ) : prospectGrid.length === 0 ? (
               <Card className="p-8 text-center">
                 <Users className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">لا يوجد عملاء مسجلين</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('campaign.noProspectsEnrolled')}</h3>
                 <p className="text-gray-600 text-sm">قم بإضافة عملاء محتملين من الإضافة ثم سجلهم في هذه الحملة</p>
               </Card>
             ) : (
@@ -746,7 +669,7 @@ export default function CampaignDetail() {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="bg-gray-50/80 border-b">
-                        <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">الاسم</th>
+                        <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('common.name')}</th>
                         <th className="text-center px-3 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                           <div className="flex items-center justify-center gap-1">
                             <Link2 className="w-3 h-3" />
@@ -827,12 +750,12 @@ export default function CampaignDetail() {
                             const stepNum = stepIdx + 1;
                             const stepData = prospect.steps?.[stepNum];
                             const status = stepData?.status || 'waiting';
-                            const config = STATUS_CONFIG[status] || STATUS_CONFIG.waiting;
+                            const config = STATUS_CONFIG_KEYS[status] || STATUS_CONFIG_KEYS.waiting;
                             const StatusIcon = config.icon;
 
                             return (
                               <td key={stepIdx} className="text-center px-3 py-3">
-                                <div className="flex items-center justify-center" title={`${config.label}${stepData?.executedAt ? ` — ${new Date(stepData.executedAt).toLocaleString('ar')}` : ''}${stepData?.errorMessage ? ` — ${stepData.errorMessage}` : ''}`}>
+                                <div className="flex items-center justify-center" title={`${status}${stepData?.executedAt ? ` — ${new Date(stepData.executedAt).toLocaleString('ar')}` : ''}${stepData?.errorMessage ? ` — ${stepData.errorMessage}` : ''}`}>
                                   <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full ${config.bg}`}>
                                     <StatusIcon className={`w-4 h-4 ${config.color} ${status === 'in_progress' ? 'animate-spin' : ''}`} />
                                   </span>
