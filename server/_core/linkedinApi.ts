@@ -61,6 +61,17 @@ function getHeaders(session: LinkedInSession, contentType?: string) {
     'x-restli-protocol-version': '2.0.0',
     'x-li-track': '{"clientVersion":"1.13.8806","mpVersion":"1.13.8806","osName":"web","timezoneOffset":3,"timezone":"Asia/Riyadh","deviceFormFactor":"DESKTOP","mpName":"voyager-web"}',
     'accept': 'application/vnd.linkedin.normalized+json+2.1',
+    // Browser-like headers to prevent LinkedIn anti-bot 302 redirects
+    'origin': 'https://www.linkedin.com',
+    'referer': 'https://www.linkedin.com/feed/',
+    'sec-fetch-dest': 'empty',
+    'sec-fetch-mode': 'cors',
+    'sec-fetch-site': 'same-origin',
+    'sec-ch-ua': '"Chromium";v="131", "Not_A Brand";v="24"',
+    'sec-ch-ua-mobile': '?0',
+    'sec-ch-ua-platform': '"Windows"',
+    'accept-language': 'en-US,en;q=0.9,ar;q=0.8',
+    'accept-encoding': 'gzip, deflate, br',
   };
   if (contentType) {
     headers['content-type'] = contentType;

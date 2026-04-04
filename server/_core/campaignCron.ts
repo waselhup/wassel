@@ -222,32 +222,12 @@ router.get('/diagnose', async (req: any, res: any) => {
       diag.me_error = e.message;
     }
 
-    // Step 4: Test visitProfile with exact same getHeaders as linkedinApi.ts
+    // Step 4: Test visitProfile using the actual linkedinApi function (same headers)
     try {
-      const profileRes = await fetch(
-        'https://www.linkedin.com/voyager/api/identity/profiles/me',
-        {
-          headers: {
-            'cookie': `li_at=${session.liAt}; JSESSIONID="${session.jsessionId}"`,
-            'csrf-token': session.jsessionId.replace(/"/g, ''),
-            'user-agent': session.userAgent,
-            'x-li-lang': 'en_US',
-            'x-restli-protocol-version': '2.0.0',
-            'x-li-track': '{"clientVersion":"1.13.8806","mpVersion":"1.13.8806","osName":"web","timezoneOffset":3,"timezone":"Asia/Riyadh","deviceFormFactor":"DESKTOP","mpName":"voyager-web"}',
-            'accept': 'application/vnd.linkedin.normalized+json+2.1',
-          },
-          redirect: 'manual',
-          ...(agent ? { agent } : {}),
-        }
-      );
-      diag.profile_status = profileRes.status;
-      if (profileRes.ok) {
-        diag.profile_ok = true;
-      } else if (profileRes.status >= 300 && profileRes.status < 400) {
-        diag.profile_redirect = profileRes.headers.get('location');
-      }
+      const testResult = await visitProfile(session, 'aishaalb9');
+      diag.visit_test = testResult;
     } catch (e: any) {
-      diag.profile_error = e.message;
+      diag.visit_error = e.message;
     }
 
     return res.json({ ok: true, diag });
@@ -572,7 +552,6 @@ async function processCampaignAction(
     user_id: userId,
     team_id: teamId,
     campaign_id: campaign.id,
-    prospect_id: prospect.id,
     action_type: actionType,
     status: finalStatus === 'completed' ? 'success' : 'failed',
     prospect_name: prospect.name || slug,
