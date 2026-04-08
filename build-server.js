@@ -1,10 +1,2 @@
-import { build } from 'esbuild';
-
-build({
-  entryPoints: ['server/_core/vercel.ts'],
-  platform: 'node',
-  bundle: true,
-  format: 'cjs',
-  outfile: 'api/index.js',
-  // Bundle everything — no externals for Vercel serverless
-}).catch(() => process.exit(1));
+// Temporarily skip esbuild — using hand-written api/index.js for testing
+console.log('Skipping server build — using manual api/index.js');

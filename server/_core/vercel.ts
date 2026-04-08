@@ -41,5 +41,5 @@ app.use((req: Request, res: Response) => {
   res.status(404).json({ error: 'Not found' });
 });
 
-// Vercel serverless handler (CJS for api/package.json type:commonjs)
-module.exports = app;
+// Vercel serverless handler (ESM export)
+export default app;
