@@ -29410,6 +29410,123 @@ var coerce = {
 var NEVER = INVALID;
 
 // server/_core/routes/linkedin.ts
+var APIFY_TOKEN = process.env.APIFY_TOKEN || "";
+var ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || "";
+var APIFY_ACTOR_ID = "harvestapi/linkedin-profile-search";
+async function fetchLinkedInProfile(profileUrl) {
+  if (!APIFY_TOKEN) {
+    throw new Error("APIFY_TOKEN not configured");
+  }
+  const cleanUrl = profileUrl.replace(/\/$/, "");
+  const runRes = await fetch(
+    `https://api.apify.com/v2/acts/${APIFY_ACTOR_ID}/run-sync-get-dataset-items?token=${APIFY_TOKEN}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        searchUrls: [cleanUrl],
+        maxResults: 1
+      })
+    }
+  );
+  if (!runRes.ok) {
+    const errText = await runRes.text();
+    console.error("Apify error:", runRes.status, errText);
+    throw new Error(`Apify API failed: ${runRes.status}`);
+  }
+  const results = await runRes.json();
+  if (!Array.isArray(results) || results.length === 0) {
+    throw new Error("No profile data returned from Apify");
+  }
+  return results[0];
+}
+async function analyzeWithClaude(profileData) {
+  if (!ANTHROPIC_API_KEY) {
+    throw new Error("ANTHROPIC_API_KEY not configured");
+  }
+  const prompt = `You are a LinkedIn profile optimization expert specializing in the Saudi/GCC job market. Analyze this LinkedIn profile and provide detailed improvement suggestions.
+
+Profile Data:
+- Name: ${profileData.fullName || profileData.name || "Unknown"}
+- Headline: ${profileData.headline || "No headline"}
+- Summary/About: ${profileData.summary || profileData.about || "No summary"}
+- Location: ${profileData.location || "Unknown"}
+- Current Position: ${profileData.positions?.length ? JSON.stringify(profileData.positions[0]) : "Unknown"}
+- Experience: ${JSON.stringify(profileData.positions || profileData.experience || []).slice(0, 2e3)}
+- Skills: ${JSON.stringify(profileData.skills || []).slice(0, 500)}
+- Education: ${JSON.stringify(profileData.educations || profileData.education || []).slice(0, 500)}
+
+Return a JSON response with EXACTLY this structure (no markdown, no code blocks, just raw JSON):
+{
+  "score": <number 0-100>,
+  "headlineCurrent": "<current headline>",
+  "headlineSuggestion": "<improved headline optimized for visibility>",
+  "summaryCurrent": "<current summary or 'No summary provided'>",
+  "summarySuggestion": "<improved 3-4 sentence professional summary>",
+  "keywords": ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5", "keyword6"],
+  "experienceSuggestions": [
+    {
+      "role": "<role title>",
+      "suggestion": "<specific improvement suggestion>"
+    }
+  ],
+  "strengthPoints": ["<strength 1>", "<strength 2>", "<strength 3>"],
+  "improvementAreas": ["<area 1>", "<area 2>", "<area 3>"]
+}
+
+Score criteria:
+- 90-100: Excellent profile, minor tweaks
+- 70-89: Good profile, needs optimization
+- 50-69: Average, significant improvements needed
+- Below 50: Weak profile, major overhaul needed
+
+Consider Vision 2030 alignment for Saudi-based professionals.`;
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": ANTHROPIC_API_KEY,
+      "anthropic-version": "2023-06-01"
+    },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 1500,
+      messages: [
+        {
+          role: "user",
+          content: prompt
+        }
+      ]
+    })
+  });
+  if (!res.ok) {
+    const errText = await res.text();
+    console.error("Claude API error:", res.status, errText);
+    throw new Error(`Claude API failed: ${res.status}`);
+  }
+  const data = await res.json();
+  const text = data.content?.[0]?.text || "";
+  let cleaned = text.trim();
+  if (cleaned.startsWith("```")) {
+    cleaned = cleaned.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "");
+  }
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    console.error("Failed to parse Claude response:", text);
+    return {
+      score: 60,
+      headlineCurrent: profileData.headline || "No headline",
+      headlineSuggestion: `${profileData.headline || "Professional"} | Open to Opportunities`,
+      summaryCurrent: profileData.summary || "No summary provided",
+      summarySuggestion: "Consider adding a professional summary that highlights your key skills and experience.",
+      keywords: ["leadership", "innovation", "strategy", "growth", "technology"],
+      experienceSuggestions: [{ role: "General", suggestion: "Add metrics and quantify your impact in each role" }],
+      strengthPoints: ["Profile exists on LinkedIn"],
+      improvementAreas: ["Add more detail to profile sections"]
+    };
+  }
+}
 var linkedinRouter = router({
   analyze: protectedProcedure.input(external_exports.object({ profileUrl: external_exports.string().url() })).mutation(async ({ input, ctx }) => {
     try {
@@ -29417,25 +29534,39 @@ var linkedinRouter = router({
       if (!profile || profile.token_balance < 5) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "Insufficient tokens"
+          message: "Insufficient tokens. You need 5 tokens for LinkedIn analysis."
         });
       }
-      const analysis = {
-        score: 72,
-        headlineCurrent: "Software Engineer",
-        headlineSuggestion: "Senior Software Engineer | React & Node.js Expert | Building Scalable SaaS Solutions",
-        summaryCurrent: "I am a software engineer with experience.",
-        summarySuggestion: "Experienced software engineer specializing in full-stack development with 5+ years of expertise in React, Node.js, and cloud architecture.",
-        keywords: ["React", "Node.js", "TypeScript", "SaaS", "Cloud", "AI"],
-        experienceSuggestions: [
-          {
-            role: "Software Engineer",
-            suggestion: "Add metrics and quantify your impact"
-          }
-        ]
-      };
+      let profileData;
+      try {
+        profileData = await fetchLinkedInProfile(input.profileUrl);
+      } catch (apifyErr) {
+        console.error("Apify fetch failed:", apifyErr.message);
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Could not fetch LinkedIn profile. Please check the URL and try again."
+        });
+      }
+      let analysis;
+      try {
+        analysis = await analyzeWithClaude(profileData);
+      } catch (claudeErr) {
+        console.error("Claude analysis failed:", claudeErr.message);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "AI analysis failed. Please try again."
+        });
+      }
       const { error: updateError } = await ctx.supabase.from("profiles").update({ token_balance: (profile.token_balance || 0) - 5 }).eq("id", ctx.user.id);
       if (updateError) throw updateError;
+      await ctx.supabase.from("token_transactions").insert([
+        {
+          user_id: ctx.user.id,
+          type: "spend",
+          amount: -5,
+          description: "LinkedIn profile analysis"
+        }
+      ]);
       const { error: insertError } = await ctx.supabase.from("linkedin_analyses").insert([
         {
           user_id: ctx.user.id,
@@ -29444,10 +29575,13 @@ var linkedinRouter = router({
           analysis_data: analysis
         }
       ]);
-      if (insertError) throw insertError;
+      if (insertError) {
+        console.error("Insert analysis error:", insertError);
+      }
       return analysis;
     } catch (err) {
       if (err instanceof TRPCError) throw err;
+      console.error("LinkedIn analyze error:", err);
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
         message: "Failed to analyze LinkedIn profile"
@@ -29468,32 +29602,135 @@ var linkedinRouter = router({
 });
 
 // server/_core/routes/cv.ts
+var ANTHROPIC_API_KEY2 = process.env.ANTHROPIC_API_KEY || "";
+async function generateCVWithClaude(fields, userProfile) {
+  if (!ANTHROPIC_API_KEY2) {
+    throw new Error("ANTHROPIC_API_KEY not configured");
+  }
+  const fieldsText = fields.map((f, i) => `${i + 1}. ${f}`).join("\n");
+  const prompt = `You are an expert CV/resume writer specializing in the Saudi/GCC job market. Generate tailored CV content for a professional targeting multiple career fields.
+
+User Info:
+- Name: ${userProfile.full_name || "Professional"}
+- Email: ${userProfile.email || ""}
+
+Target Fields:
+${fieldsText}
+
+For EACH field, generate a tailored CV version. Return a JSON array (no markdown, no code blocks):
+[
+  {
+    "fieldName": "<field name>",
+    "headline": "<professional headline optimized for this field, max 120 chars>",
+    "summary": "<3-4 sentence professional summary tailored to this field>",
+    "skills": ["skill1", "skill2", "skill3", "skill4", "skill5", "skill6", "skill7", "skill8"],
+    "experience": [
+      {
+        "title": "<job title tailored to field>",
+        "company": "<suggest type of company>",
+        "duration": "<suggested duration>",
+        "description": "<2-3 bullet points as single string, with measurable achievements>"
+      },
+      {
+        "title": "<second role>",
+        "company": "<company type>",
+        "duration": "<duration>",
+        "description": "<achievements>"
+      }
+    ],
+    "certifications": ["<relevant certification 1>", "<relevant certification 2>"],
+    "keywords": ["<ATS keyword 1>", "<ATS keyword 2>", "<ATS keyword 3>", "<ATS keyword 4>", "<ATS keyword 5>"]
+  }
+]
+
+Requirements:
+- Use formal Modern Standard Arabic if field names are in Arabic
+- Reference Vision 2030 for Saudi government/public sector fields
+- Include ATS-optimized keywords
+- Each experience entry should have quantified achievements
+- Skills should be a mix of technical and soft skills relevant to the field`;
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": ANTHROPIC_API_KEY2,
+      "anthropic-version": "2023-06-01"
+    },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 3e3,
+      messages: [
+        {
+          role: "user",
+          content: prompt
+        }
+      ]
+    })
+  });
+  if (!res.ok) {
+    const errText = await res.text();
+    console.error("Claude CV error:", res.status, errText);
+    throw new Error(`Claude API failed: ${res.status}`);
+  }
+  const data = await res.json();
+  const text = data.content?.[0]?.text || "";
+  let cleaned = text.trim();
+  if (cleaned.startsWith("```")) {
+    cleaned = cleaned.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "");
+  }
+  try {
+    const parsed = JSON.parse(cleaned);
+    return Array.isArray(parsed) ? parsed : [parsed];
+  } catch {
+    console.error("Failed to parse Claude CV response:", text);
+    return fields.map((field) => ({
+      fieldName: field,
+      headline: `${field} Professional | Experienced & Results-Driven`,
+      summary: `Experienced professional seeking opportunities in ${field}. Strong track record of delivering results and driving growth in competitive environments.`,
+      skills: ["Leadership", "Communication", "Problem Solving", "Project Management", "Strategic Planning", "Team Building", "Analytics", "Innovation"],
+      experience: [
+        {
+          title: `${field} Specialist`,
+          company: "Industry-leading organization",
+          duration: "3+ years",
+          description: `Led key ${field} initiatives resulting in measurable improvements. Managed cross-functional teams and delivered projects on time and within budget.`
+        }
+      ],
+      certifications: ["Relevant industry certification"],
+      keywords: [field, "professional", "experienced", "results-driven", "strategic"]
+    }));
+  }
+}
 var cvRouter = router({
   generate: protectedProcedure.input(external_exports.object({ fields: external_exports.array(external_exports.string()).min(1).max(3) })).mutation(async ({ input, ctx }) => {
     try {
-      const { data: profile } = await ctx.supabase.from("profiles").select("token_balance").eq("id", ctx.user.id).single();
+      const { data: profile } = await ctx.supabase.from("profiles").select("token_balance, full_name, email").eq("id", ctx.user.id).single();
       if (!profile || profile.token_balance < 10) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "Insufficient tokens"
+          message: "Insufficient tokens. You need 10 tokens for CV generation."
         });
       }
-      const versions = input.fields.map((field) => ({
-        fieldName: field,
-        headline: `Senior ${field} Professional | Expert in Modern Technologies`,
-        summary: `Experienced professional specializing in ${field} with proven track record of delivering high-impact solutions and driving organizational growth.`,
-        skills: ["Skill 1", "Skill 2", "Skill 3", "Skill 4", "Skill 5"],
-        experience: [
-          {
-            title: `Senior ${field} Professional`,
-            company: "Company",
-            duration: "3+ years",
-            description: `Led ${field} initiatives, improved processes, and delivered measurable results. Managed cross-functional teams and drove innovation in the field.`
-          }
-        ]
-      }));
+      let versions;
+      try {
+        versions = await generateCVWithClaude(input.fields, profile);
+      } catch (claudeErr) {
+        console.error("Claude CV generation failed:", claudeErr.message);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "AI CV generation failed. Please try again."
+        });
+      }
       const { error: updateError } = await ctx.supabase.from("profiles").update({ token_balance: (profile.token_balance || 0) - 10 }).eq("id", ctx.user.id);
       if (updateError) throw updateError;
+      await ctx.supabase.from("token_transactions").insert([
+        {
+          user_id: ctx.user.id,
+          type: "spend",
+          amount: -10,
+          description: `CV generation for ${input.fields.length} field(s): ${input.fields.join(", ")}`
+        }
+      ]);
       const { error: insertError } = await ctx.supabase.from("cv_versions").insert([
         {
           user_id: ctx.user.id,
@@ -29501,10 +29738,13 @@ var cvRouter = router({
           versions_data: versions
         }
       ]);
-      if (insertError) throw insertError;
+      if (insertError) {
+        console.error("Insert CV error:", insertError);
+      }
       return { versions };
     } catch (err) {
       if (err instanceof TRPCError) throw err;
+      console.error("CV generate error:", err);
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
         message: "Failed to generate CV versions"
@@ -29525,6 +29765,124 @@ var cvRouter = router({
 });
 
 // server/_core/routes/campaign.ts
+var APIFY_TOKEN2 = process.env.APIFY_TOKEN || "";
+var ANTHROPIC_API_KEY3 = process.env.ANTHROPIC_API_KEY || "";
+var APIFY_PEOPLE_ACTOR = "harvestapi/linkedin-profile-search";
+async function findProspects(jobTitle, companies, count) {
+  if (!APIFY_TOKEN2) {
+    throw new Error("APIFY_TOKEN not configured");
+  }
+  const searchQueries = companies.map(
+    (company) => `${jobTitle} ${company}`
+  );
+  const runRes = await fetch(
+    `https://api.apify.com/v2/acts/${APIFY_PEOPLE_ACTOR}/run-sync-get-dataset-items?token=${APIFY_TOKEN2}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        searchTerms: searchQueries,
+        maxResults: Math.min(count, 50)
+      })
+    }
+  );
+  if (!runRes.ok) {
+    const errText = await runRes.text();
+    console.error("Apify prospects error:", runRes.status, errText);
+    throw new Error(`Apify API failed: ${runRes.status}`);
+  }
+  const results = await runRes.json();
+  if (!Array.isArray(results)) return [];
+  return results.slice(0, count).map((person) => ({
+    name: person.fullName || person.name || "Unknown",
+    email: person.email || person.workEmail || null,
+    company: person.company || person.companyName || companies[0] || "Unknown",
+    title: person.headline || person.title || jobTitle,
+    linkedinUrl: person.profileUrl || person.url || null
+  }));
+}
+async function generateEmails(recipients, campaignContext) {
+  if (!ANTHROPIC_API_KEY3) {
+    throw new Error("ANTHROPIC_API_KEY not configured");
+  }
+  const recipientsList = recipients.map(
+    (r, i) => `${i + 1}. Name: ${r.name}, Company: ${r.company}, Title: ${r.title}`
+  ).join("\n");
+  const langInstruction = campaignContext.language === "ar" ? "Write ALL emails in formal Modern Standard Arabic. Start with the prospect's first name. Never use generic openers. Reference Vision 2030 for Saudi government sector prospects." : "Write all emails in professional English. Start with the prospect's first name. Keep it concise and personal.";
+  const prompt = `You are an expert B2B cold email writer. Generate personalized outreach emails for the following prospects.
+
+Sender: ${campaignContext.senderName}
+Context: Reaching out regarding ${campaignContext.jobTitle} opportunities/collaboration
+
+Recipients:
+${recipientsList}
+
+${langInstruction}
+
+For EACH recipient, generate a personalized email. Return a JSON array (no markdown, no code blocks):
+[
+  {
+    "recipientIndex": 0,
+    "subject": "<compelling subject line, max 60 chars>",
+    "body": "<personalized email body, 3-5 sentences, professional, with clear CTA>",
+    "followUp": "<follow-up email body if no response after 5 days, 2-3 sentences>"
+  }
+]
+
+Rules:
+- Each email MUST reference the recipient's company or title
+- Max 500 characters per email body
+- Include a clear call-to-action
+- Don't be pushy, be helpful and value-focused
+- No generic templates \u2014 each email should feel personal`;
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": ANTHROPIC_API_KEY3,
+      "anthropic-version": "2023-06-01"
+    },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 4e3,
+      messages: [{ role: "user", content: prompt }]
+    })
+  });
+  if (!res.ok) {
+    const errText = await res.text();
+    console.error("Claude email error:", res.status, errText);
+    throw new Error(`Claude API failed: ${res.status}`);
+  }
+  const data = await res.json();
+  const text = data.content?.[0]?.text || "";
+  let cleaned = text.trim();
+  if (cleaned.startsWith("```")) {
+    cleaned = cleaned.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "");
+  }
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    console.error("Failed to parse Claude email response:", text);
+    return recipients.map((r, i) => ({
+      recipientIndex: i,
+      subject: `Collaboration opportunity - ${r.company}`,
+      body: `Hi ${r.name.split(" ")[0]},
+
+I noticed your work at ${r.company} and would love to discuss potential collaboration opportunities related to ${campaignContext.jobTitle}.
+
+Would you be open to a brief conversation this week?
+
+Best regards,
+${campaignContext.senderName}`,
+      followUp: `Hi ${r.name.split(" ")[0]},
+
+Just following up on my previous message. I'd love to connect and explore how we might work together.
+
+Best,
+${campaignContext.senderName}`
+    }));
+  }
+}
 var campaignRouter = router({
   list: protectedProcedure.query(async ({ ctx }) => {
     try {
@@ -29561,17 +29919,17 @@ var campaignRouter = router({
       campaignName: external_exports.string().min(1),
       jobTitle: external_exports.string().min(1),
       targetCompanies: external_exports.array(external_exports.string()).min(1),
-      recipientCount: external_exports.number().int().positive(),
+      recipientCount: external_exports.number().int().positive().max(100),
       language: external_exports.enum(["ar", "en"])
     })
   ).mutation(async ({ input, ctx }) => {
     try {
-      const { data: profile } = await ctx.supabase.from("profiles").select("token_balance").eq("id", ctx.user.id).single();
+      const { data: profile } = await ctx.supabase.from("profiles").select("token_balance, full_name").eq("id", ctx.user.id).single();
       const tokensNeeded = input.recipientCount;
       if (!profile || profile.token_balance < tokensNeeded) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "Insufficient tokens"
+          message: `Insufficient tokens. You need ${tokensNeeded} tokens for this campaign.`
         });
       }
       const { data: campaign, error: createError } = await ctx.supabase.from("email_campaigns").insert([
@@ -29580,27 +29938,85 @@ var campaignRouter = router({
           name: input.campaignName,
           job_title: input.jobTitle,
           target_companies: input.targetCompanies,
-          status: "draft",
+          status: "finding_prospects",
           language: input.language
         }
       ]).select().single();
       if (createError) throw createError;
-      const mockRecipients = Array.from({ length: input.recipientCount }).map(
-        (_, i) => ({
-          campaign_id: campaign.id,
-          email: `recipient${i + 1}@company.com`,
-          name: `Recipient ${i + 1}`,
-          company: input.targetCompanies[0],
-          status: "pending"
-        })
-      );
-      await ctx.supabase.from("profiles").update({ token_balance: (profile.token_balance || 0) - tokensNeeded }).eq("id", ctx.user.id);
-      if (mockRecipients.length > 0) {
-        await ctx.supabase.from("campaign_recipients").insert(mockRecipients);
+      let prospects;
+      try {
+        prospects = await findProspects(
+          input.jobTitle,
+          input.targetCompanies,
+          input.recipientCount
+        );
+      } catch (apifyErr) {
+        console.error("Prospect finding failed:", apifyErr.message);
+        await ctx.supabase.from("email_campaigns").update({ status: "error" }).eq("id", campaign.id);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to find prospects. Please try again."
+        });
       }
+      if (prospects.length === 0) {
+        await ctx.supabase.from("email_campaigns").update({ status: "no_prospects" }).eq("id", campaign.id);
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "No prospects found for the given criteria. Try different companies or job titles."
+        });
+      }
+      await ctx.supabase.from("email_campaigns").update({ status: "generating_emails" }).eq("id", campaign.id);
+      let emails;
+      try {
+        emails = await generateEmails(prospects, {
+          jobTitle: input.jobTitle,
+          language: input.language,
+          senderName: profile.full_name || "Professional"
+        });
+      } catch (claudeErr) {
+        console.error("Email generation failed:", claudeErr.message);
+        await ctx.supabase.from("email_campaigns").update({ status: "error" }).eq("id", campaign.id);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to generate emails. Please try again."
+        });
+      }
+      const actualTokens = prospects.length;
+      await ctx.supabase.from("profiles").update({ token_balance: (profile.token_balance || 0) - actualTokens }).eq("id", ctx.user.id);
+      await ctx.supabase.from("token_transactions").insert([
+        {
+          user_id: ctx.user.id,
+          type: "spend",
+          amount: -actualTokens,
+          description: `Email campaign: ${input.campaignName} (${actualTokens} recipients)`
+        }
+      ]);
+      const recipientRecords = prospects.map((prospect, i) => {
+        const email = emails[i] || emails[0];
+        return {
+          campaign_id: campaign.id,
+          name: prospect.name,
+          email: prospect.email || `pending_${i}@discovery.wassel`,
+          company: prospect.company,
+          title: prospect.title,
+          linkedin_url: prospect.linkedinUrl,
+          email_subject: email.subject,
+          email_body: email.body,
+          follow_up_body: email.followUp,
+          status: "draft"
+        };
+      });
+      if (recipientRecords.length > 0) {
+        await ctx.supabase.from("campaign_recipients").insert(recipientRecords);
+      }
+      await ctx.supabase.from("email_campaigns").update({
+        status: "ready",
+        recipient_count: prospects.length
+      }).eq("id", campaign.id);
       return campaign;
     } catch (err) {
       if (err instanceof TRPCError) throw err;
+      console.error("Campaign create error:", err);
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
         message: "Failed to create campaign"
@@ -29892,7 +30308,13 @@ async function createContext({ req }) {
 // server/_core/vercel.ts
 var app = (0, import_express.default)();
 app.use((0, import_cors.default)({
-  origin: process.env.NODE_ENV === "production" ? ["https://wassel.vercel.app", "https://wassel.sa"] : "http://localhost:5173",
+  origin: process.env.NODE_ENV === "production" ? [
+    "https://wassel.vercel.app",
+    "https://wassel-alpha.vercel.app",
+    "https://wassel-waselhupsas-projects.vercel.app",
+    "https://wassel-git-master-waselhupsas-projects.vercel.app",
+    "https://wassel.sa"
+  ] : "http://localhost:5173",
   credentials: true
 }));
 app.use(import_express.default.json());

@@ -8,7 +8,13 @@ const app: Express = express();
 
 app.use(cors({
   origin: process.env.NODE_ENV === 'production'
-    ? ['https://wassel.vercel.app', 'https://wassel.sa']
+    ? [
+        'https://wassel.vercel.app',
+        'https://wassel-alpha.vercel.app',
+        'https://wassel-waselhupsas-projects.vercel.app',
+        'https://wassel-git-master-waselhupsas-projects.vercel.app',
+        'https://wassel.sa',
+      ]
     : 'http://localhost:5173',
   credentials: true,
 }));
