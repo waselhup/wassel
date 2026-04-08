@@ -1,6 +1,7 @@
 @echo off
-cd C:\Users\WIN11-24H2GPT\Desktop\wassel-v2
-"C:\Program Files\Git\cmd\git.exe" add -A
-"C:\Program Files\Git\cmd\git.exe" commit -m "feat: replace all mock data with real Apify + Claude API integrations, fix CORS for alpha domain"
+cd /d C:\Users\WIN11-24H2GPT\Desktop\wassel-v2
+if exist .git\index.lock del .git\index.lock
+"C:\Program Files\Git\cmd\git.exe" status
+"C:\Program Files\Git\cmd\git.exe" commit --allow-empty -m "chore: trigger clean Vercel deploy for CJS fix"
 "C:\Program Files\Git\cmd\git.exe" push origin master
-echo DONE
+echo DONE=%errorlevel%
