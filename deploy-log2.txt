@@ -1,0 +1,96 @@
+=== Building === 
+
+> wassel-v2@1.0.0 build
+> vite build && node build-server.js
+
+[36mvite v6.4.2 [32mbuilding for production...[36m[39m
+transforming...
+[32m✓[39m 2053 modules transformed.
+rendering chunks...
+computing gzip size...
+[2m../dist/[22m[32mindex.html                           [39m[1m[2m  0.81 kB[22m[1m[22m[2m │ gzip:   0.45 kB[22m
+[2m../dist/[22m[35massets/index-DlV62KXi.css            [39m[1m[2m 34.57 kB[22m[1m[22m[2m │ gzip:   6.79 kB[22m
+[2m../dist/[22m[36massets/browser-ponyfill-cjci5WJE.js  [39m[1m[2m 11.08 kB[22m[1m[22m[2m │ gzip:   3.89 kB[22m[2m │ map:    34.14 kB[22m
+[2m../dist/[22m[36massets/index-gGKzI8z9.js             [39m[1m[33m772.62 kB[39m[22m[2m │ gzip: 213.81 kB[22m[2m │ map: 3,455.75 kB[22m
+[33m
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.[39m
+[32m✓ built in 8.06s[39m
+▲ [WARNING] The CommonJS "module" variable is treated as a global variable in an ECMAScript module and may not work as expected [commonjs-variable-in-esm]
+
+    server/_core/vercel.ts:45:0:
+      45 │ module.exports = app;
+         ╵ ~~~~~~
+
+  This file is considered to be an ECMAScript module because the enclosing "package.json" file sets the type of this file to "module":
+
+    package.json:5:10:
+      5 │   "type": "module",
+        ╵           ~~~~~~~~
+
+  Node's package format requires that CommonJS files in a "type": "module" package use the ".cjs" file extension. If you are using TypeScript, you can use the ".cts" file extension with esbuild instead.
+
+BUILD=0 
+=== Deploying to WASSEL project (prod) === 
+Retrieving project…
+Deploying waselhupsas-projects/wassel
+Uploading [--------------------] (0.0B/5.6KB)
+Uploading [========------------] (2.3KB/5.6KB)
+Uploading [====================] (5.6KB/5.6KB)
+Inspect: https://vercel.com/waselhupsas-projects/wassel/QHZtQ9kbufT913aAw2QzCJZmtBNy [60s]
+Production: https://wassel-8ta0moack-waselhupsas-projects.vercel.app [60s]
+https://wassel-8ta0moack-waselhupsas-projects.vercel.appBuilding...
+Building...
+Building: Running build in Washington, D.C., USA (East) – iad1 (Turbo Build Machine)
+Building: Build machine configuration: 30 cores, 60 GB
+Building: Retrieving list of deployment files...
+Building: Downloading 93 deployment files...
+Building: Skipping build cache since Package Manager changed from "pnpm" to "npm"
+Building: Running "vercel build"
+Building: Vercel CLI 50.38.2
+Building: Running "install" command: `npm install`...
+Building: added 307 packages, and audited 308 packages in 4s
+Building: 46 packages are looking for funding
+Building: run `npm fund` for details
+Building: 1 moderate severity vulnerability
+Building: To address all issues (including breaking changes), run:
+Building: npm audit fix --force
+Building: Run `npm audit` for details.
+Building: > wassel-v2@1.0.0 build
+Building: > vite build && node build-server.js
+Building: vite v6.4.2 building for production...
+Building: transforming...
+Building: ✓ 2053 modules transformed.
+Building: rendering chunks...
+Building: computing gzip size...
+Building: ../dist/index.html                             0.81 kB │ gzip:   0.45 kB
+Building: ../dist/assets/index-DlV62KXi.css             34.57 kB │ gzip:   6.79 kB
+Building: ../dist/assets/browser-ponyfill-BLrNneyl.js   11.08 kB │ gzip:   3.88 kB │ map:    34.14 kB
+Building: ../dist/assets/index-DgGytmJR.js             772.83 kB │ gzip: 213.99 kB │ map: 3,455.75 kB
+Building: (!) Some chunks are larger than 500 kB after minification. Consider:
+Building: - Using dynamic import() to code-split the application
+Building: - Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+Building: - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+Building: ✓ built in 3.60s
+Building: ▲ [WARNING] The CommonJS "module" variable is treated as a global variable in an ECMAScript module and may not work as expected [commonjs-variable-in-esm]
+Building: server/_core/vercel.ts:45:0:
+Building: 45 │ module.exports = app;
+Building: ╵ ~~~~~~
+Building: This file is considered to be an ECMAScript module because the enclosing "package.json" file sets the type of this file to "module":
+Building: package.json:5:10:
+Building: 5 │   "type": "module",
+Building: ╵           ~~~~~~~~
+Building: Node's package format requires that CommonJS files in a "type": "module" package use the ".cjs" file extension. If you are using TypeScript, you can use the ".cts" file extension with esbuild instead.
+Building: Installing dependencies...
+Building: up to date in 164ms
+Building: Build Completed in /vercel/output [10s]
+Building: Deploying outputs...
+Building: Deployment completed
+Building: Creating build cache...
+[2K[1A[2K[GProduction: https://wassel-8ta0moack-waselhupsas-projects.vercel.app [1m]
+Completing...
+Aliased: https://wassel-alpha.vercel.app [1m]
+DEPLOY=0 
+DONE at Wed 04/08/2026 19:57:30.60 
