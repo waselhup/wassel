@@ -22,8 +22,8 @@ app.use(cors({
 app.use(express.json());
 
 app.get('/api/health', (req: Request, res: Response) => {
-  res.json({ 
-    status: 'ok', 
+  res.json({
+    status: 'ok',
     timestamp: new Date().toISOString(),
     version: '2.0.0',
   });
@@ -41,5 +41,5 @@ app.use((req: Request, res: Response) => {
   res.status(404).json({ error: 'Not found' });
 });
 
-// Vercel serverless handler
-export default app;
+// Vercel serverless handler (CJS for api/package.json type:commonjs)
+module.exports = app;
