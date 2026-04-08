@@ -4,7 +4,7 @@ build({
   entryPoints: ['server/_core/vercel.ts'],
   platform: 'node',
   bundle: true,
-  format: 'cjs',
+  format: 'esm',
   outfile: 'api/index.js',
   // Bundle everything — no externals for Vercel serverless
 }).catch(() => process.exit(1));

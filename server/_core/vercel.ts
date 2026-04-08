@@ -25,7 +25,7 @@ app.get('/api/health', (req: Request, res: Response) => {
   res.json({ 
     status: 'ok', 
     timestamp: new Date().toISOString(),
-    version: '1.0.0',
+    version: '2.0.0',
   });
 });
 
@@ -42,4 +42,4 @@ app.use((req: Request, res: Response) => {
 });
 
 // Vercel serverless handler
-module.exports = app;
+export default app;
