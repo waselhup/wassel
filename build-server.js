@@ -6,5 +6,5 @@ build({
   bundle: true,
   format: 'cjs',
   outfile: 'api/index.js',
-  external: ['@supabase/supabase-js'],
+  // Bundle everything — no externals for Vercel serverless
 }).catch(() => process.exit(1));
