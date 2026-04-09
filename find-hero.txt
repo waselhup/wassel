@@ -1,0 +1,118 @@
+C:\Users\WIN11-24H2GPT\Desktop\ALI HASSAN\HERO SKILL\WASSEL_USER_MANUAL.pptx
+C:\Users\WIN11-24H2GPT\Desktop\ALI HASSAN\HERO SKILL\wassel-v2\WASSEL_USER_MANUAL.pptx
+C:\Users\WIN11-24H2GPT\Desktop\ALI HASSAN\HERO SKILL\WASSEL_USER_MANUAL.pptx
+C:\Users\WIN11-24H2GPT\Desktop\ALI HASSAN\HERO SKILL\wassel-v2\WASSEL_USER_MANUAL.pptx
+File Not Found
+Access.lnk
+Adobe Photoshop 2020.lnk
+Ajmy_S091.mp3
+ALI HASSAN
+Antigravity.lnk
+build-wassel.bat
+build2.bat
+build3.bat
+build4.bat
+build5.bat
+build_deploy.bat
+build_name_fix.bat
+build_push.bat
+build_result.txt
+build_result3.txt
+build_result4.txt
+build_result5.txt
+build_status.txt
+build_v8.bat
+build_wassel.bat
+build_wassel2.bat
+build_wassel3.bat
+build_wassel4.bat
+build_worker_fix.bat
+check_git.bat
+Chrome for Developers.lnk
+Claude.lnk
+CLAUDE.md
+deploy.bat
+deploy_err.txt
+deploy_now.bat
+deploy_out.txt
+deploy_result.txt
+deploy_wassel.bat
+extension new
+extension new 2
+extension new 3
+extension new 4
+extension new 5
+extension new 6
+extension new 7
+extenstion update 2
+find_git.bat
+fix_proxy_build.bat
+ga.txt
+gc.txt
+gce.txt
+ge.txt
+git-fix.bat
+git-push.bat
+gitcmd.bat
+gitlog.txt
+gitlog2.txt
+gitlog3.txt
+gitlog4.txt
+gitlog5.txt
+gitout.txt
+gitpush.bat
+gitpush2.bat
+gitpush2.txt
+gitpush3.bat
+gitresult.txt
+git_check.txt
+git_check2.txt
+git_claudemd.bat
+git_err.txt
+git_log.txt
+git_out.txt
+git_out2.txt
+git_output.txt
+git_push.txt
+git_push2.txt
+git_push3.txt
+git_push_fix.bat
+git_result.txt
+git_result2.txt
+git_status.txt
+gl.txt
+gp.txt
+gs.txt
+health.txt
+Internet Download Manager.lnk
+Manus.lnk
+Microsoft Teams.lnk
+New folder
+New folder (2)
+Now I have the full picture. Let me execute all the fixes in parallel - fixing all 4 remaining landing components and creating the missing pages.txt
+npm_list.txt
+npm_out.txt
+push_fix.bat
+rungit.bat
+Telegram.lnk
+test_node_proxy.bat
+test_proxy.bat
+test_proxy_node.bat
+test_proxy_node.mjs
+test_residential.bat
+Visual Studio Code.lnk
+walkthrough.md
+Waselhup - Chrome.lnk
+wassel-extension
+wassel-v2
+wassel_commit.bat
+wassel_done.txt
+wassel_out.txt
+wassel_v2_deploy.bat
+Word.lnk
+Zoom.lnk
+éçá¡ Ÿé¬Ÿ¬¡ 2026-03-13 132722.png
+ê§©«¢ï.url
+íŸ¢«Ÿ  íï .lnk
+í­é_Wassel_-_Founder_Testing_Guide.pdf
+--- 

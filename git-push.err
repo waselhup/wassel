@@ -1,0 +1,10 @@
+warning: in the working copy of 'api/index.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'server/_core/routes/admin.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'server/_core/routes/campaign.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'server/_core/routes/cv.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'server/_core/routes/linkedin.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'server/_core/routes/tokens.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'server/_core/trpc.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'server/_core/trpc-init.ts', LF will be replaced by CRLF the next time Git touches it
+To https://github.com/waselhup/wassel.git
+   c14da62..d7dfca6  master -> master

@@ -1,0 +1,10 @@
+warning: in the working copy of '.deploy-trigger', LF will be replaced by CRLF the next time Git touches it
+[master 6c69cb1] chore: force fresh deploy
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+To https://github.com/waselhup/wassel.git
+   ccc4ba8..6c69cb1  master -> master
+6c69cb1 chore: force fresh deploy
+ccc4ba8 chore: trigger deploy after wassel-v2 vercel project deletion
+f4d0188 chore: trigger deploy after wassel-v2 vercel project deletion
+d7dfca6 fix: break tRPC circular import + bundle api/index.js with esbuild
+c14da62 fix: add api runtime dependencies for Vercel
