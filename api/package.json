@@ -1,1 +1,10 @@
-{"type": "commonjs"}
+{
+  "type": "commonjs",
+  "dependencies": {
+    "express": "^4.21.0",
+    "cors": "^2.8.5",
+    "@trpc/server": "^10.45.0",
+    "@supabase/supabase-js": "^2.49.0",
+    "zod": "^3.24.0"
+  }
+}
