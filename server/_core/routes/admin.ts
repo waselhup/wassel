@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { router, protectedProcedure } from '../trpc';
+import { router, protectedProcedure } from '../trpc-init';
 import { TRPCError } from '@trpc/server';
 
 // Middleware to check if user is admin
