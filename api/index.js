@@ -41878,7 +41878,7 @@ var NEVER = INVALID;
 // server/_core/routes/linkedin.ts
 var APIFY_TOKEN = process.env.APIFY_TOKEN || "";
 var ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || "";
-var APIFY_ACTOR_ID = "harvestapi/linkedin-profile-search";
+var APIFY_ACTOR_ID = "dev_fusion~Linkedin-Profile-Scraper";
 async function fetchLinkedInProfile(profileUrl) {
   if (!APIFY_TOKEN) {
     throw new Error("APIFY_TOKEN not configured");
@@ -41890,8 +41890,7 @@ async function fetchLinkedInProfile(profileUrl) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        searchUrls: [cleanUrl],
-        maxResults: 1
+        profileUrls: [cleanUrl]
       })
     }
   );
@@ -41915,12 +41914,13 @@ async function analyzeWithClaude(profileData) {
 Profile Data:
 - Name: ${profileData.fullName || profileData.name || "Unknown"}
 - Headline: ${profileData.headline || "No headline"}
-- Summary/About: ${profileData.summary || profileData.about || "No summary"}
-- Location: ${profileData.location || "Unknown"}
-- Current Position: ${profileData.positions?.length ? JSON.stringify(profileData.positions[0]) : "Unknown"}
-- Experience: ${JSON.stringify(profileData.positions || profileData.experience || []).slice(0, 2e3)}
-- Skills: ${JSON.stringify(profileData.skills || []).slice(0, 500)}
-- Education: ${JSON.stringify(profileData.educations || profileData.education || []).slice(0, 500)}
+- About/Summary: ${profileData.about || profileData.summary || "No summary"}
+- Location: ${profileData.addressWithCountry || profileData.location || "Unknown"}
+- Current Title: ${profileData.jobTitle || "Unknown"} at ${profileData.companyName || "Unknown"}
+- Total Experience Years: ${profileData.totalExperienceYears || "Unknown"}
+- Experience: ${JSON.stringify(profileData.experiences || []).slice(0, 2500)}
+- Skills: ${JSON.stringify(profileData.skills || []).slice(0, 600)}
+- Education: ${JSON.stringify(profileData.educations || []).slice(0, 600)}
 
 Return a JSON response with EXACTLY this structure (no markdown, no code blocks, just raw JSON):
 {
@@ -42037,8 +42037,13 @@ var linkedinRouter = router({
         {
           user_id: ctx.user.id,
           profile_url: input.profileUrl,
-          score: analysis.score,
-          analysis_data: analysis
+          score: analysis.score ?? 0,
+          headline_current: analysis.headlineCurrent ?? null,
+          headline_suggestion: analysis.headlineSuggestion ?? null,
+          summary_current: analysis.summaryCurrent ?? null,
+          summary_suggestion: analysis.summarySuggestion ?? null,
+          keywords_suggestions: Array.isArray(analysis.keywords) ? analysis.keywords : [],
+          experience_suggestions: analysis.experienceSuggestions ?? []
         }
       ]);
       if (insertError) {
@@ -42197,13 +42202,12 @@ var cvRouter = router({
           description: `CV generation for ${input.fields.length} field(s): ${input.fields.join(", ")}`
         }
       ]);
-      const { error: insertError } = await ctx.supabase.from("cv_versions").insert([
-        {
-          user_id: ctx.user.id,
-          fields: input.fields,
-          versions_data: versions
-        }
-      ]);
+      const rows = input.fields.map((field, i) => ({
+        user_id: ctx.user.id,
+        field_name: field,
+        cv_content: versions[i] ?? versions[0] ?? {}
+      }));
+      const { error: insertError } = await ctx.supabase.from("cv_versions").insert(rows);
       if (insertError) {
         console.error("Insert CV error:", insertError);
       }
@@ -42233,7 +42237,7 @@ var cvRouter = router({
 // server/_core/routes/campaign.ts
 var APIFY_TOKEN2 = process.env.APIFY_TOKEN || "";
 var ANTHROPIC_API_KEY3 = process.env.ANTHROPIC_API_KEY || "";
-var APIFY_PEOPLE_ACTOR = "harvestapi/linkedin-profile-search";
+var APIFY_PEOPLE_ACTOR = "harvestapi~linkedin-profile-search";
 async function findProspects(jobTitle, companies, count) {
   if (!APIFY_TOKEN2) {
     throw new Error("APIFY_TOKEN not configured");
@@ -42370,7 +42374,7 @@ var campaignRouter = router({
           message: "Campaign not found"
         });
       }
-      const { data: recipients } = await ctx.supabase.from("campaign_recipients").select("*").eq("campaign_id", input.id);
+      const { data: recipients } = await ctx.supabase.from("email_recipients").select("*").eq("campaign_id", input.id);
       return { campaign, recipients: recipients || [] };
     } catch (err) {
       if (err instanceof TRPCError) throw err;
@@ -42401,11 +42405,14 @@ var campaignRouter = router({
       const { data: campaign, error: createError } = await ctx.supabase.from("email_campaigns").insert([
         {
           user_id: ctx.user.id,
-          name: input.campaignName,
+          campaign_name: input.campaignName,
           job_title: input.jobTitle,
           target_companies: input.targetCompanies,
           status: "finding_prospects",
-          language: input.language
+          total_recipients: 0,
+          emails_sent: 0,
+          opens_count: 0,
+          replies_count: 0
         }
       ]).select().single();
       if (createError) throw createError;
@@ -42458,26 +42465,31 @@ var campaignRouter = router({
         }
       ]);
       const recipientRecords = prospects.map((prospect, i) => {
-        const email = emails[i] || emails[0];
+        const email = emails[i] || emails[0] || {};
+        const bodyWithSubject = email.subject ? `Subject: ${email.subject}
+
+${email.body || ""}${email.followUp ? `
+
+---
+Follow-up:
+${email.followUp}` : ""}` : email.body || "";
         return {
           campaign_id: campaign.id,
-          name: prospect.name,
+          full_name: prospect.name,
           email: prospect.email || `pending_${i}@discovery.wassel`,
           company: prospect.company,
-          title: prospect.title,
+          job_title: prospect.title,
           linkedin_url: prospect.linkedinUrl,
-          email_subject: email.subject,
-          email_body: email.body,
-          follow_up_body: email.followUp,
+          email_body: bodyWithSubject,
           status: "draft"
         };
       });
       if (recipientRecords.length > 0) {
-        await ctx.supabase.from("campaign_recipients").insert(recipientRecords);
+        await ctx.supabase.from("email_recipients").insert(recipientRecords);
       }
       await ctx.supabase.from("email_campaigns").update({
         status: "ready",
-        recipient_count: prospects.length
+        total_recipients: prospects.length
       }).eq("id", campaign.id);
       return campaign;
     } catch (err) {
@@ -42579,8 +42591,8 @@ var adminRouter = router({
       const activeUsers = users?.filter(
         (u) => new Date(u.created_at) > sevenDaysAgo
       ).length || 0;
-      const { data: campaigns } = await ctx.supabase.from("email_campaigns").select("id, sent_count");
-      const emailsSent = campaigns?.reduce((sum, c) => sum + (c.sent_count || 0), 0) || 0;
+      const { data: campaigns } = await ctx.supabase.from("email_campaigns").select("id, emails_sent");
+      const emailsSent = campaigns?.reduce((sum, c) => sum + (c.emails_sent || 0), 0) || 0;
       const { data: transactions } = await ctx.supabase.from("token_transactions").select("amount").eq("type", "purchase");
       const tokensPurchased = transactions?.reduce((sum, t2) => sum + Math.max(0, t2.amount || 0), 0) || 0;
       const planPrices = { free: 0, starter: 99, pro: 199, elite: 299 };
@@ -42673,8 +42685,15 @@ var adminRouter = router({
   }),
   campaigns: adminProcedure.query(async ({ ctx }) => {
     try {
-      const { data } = await ctx.supabase.from("email_campaigns").select("*, profiles(full_name, email)").order("created_at", { ascending: false });
-      return data || [];
+      const { data: campaigns } = await ctx.supabase.from("email_campaigns").select("*").order("created_at", { ascending: false });
+      if (!campaigns || campaigns.length === 0) return [];
+      const userIds = Array.from(new Set(campaigns.map((c) => c.user_id).filter(Boolean)));
+      const { data: profiles } = await ctx.supabase.from("profiles").select("id, full_name, email").in("id", userIds);
+      const profileMap = new Map((profiles || []).map((p) => [p.id, p]));
+      return campaigns.map((c) => ({
+        ...c,
+        profiles: profileMap.get(c.user_id) || null
+      }));
     } catch (err) {
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
@@ -42689,14 +42708,14 @@ var adminRouter = router({
     })
   ).mutation(async ({ input, ctx }) => {
     try {
-      const { data: existing } = await ctx.supabase.from("system_settings").select("*").single();
-      const settings = existing || {};
-      const { error } = await ctx.supabase.from("system_settings").upsert({
-        id: "main",
-        ...settings,
-        [input.key]: input.value
-      });
-      if (error) throw error;
+      const { data: existing } = await ctx.supabase.from("system_settings").select("id").eq("key", input.key).maybeSingle();
+      if (existing?.id) {
+        const { error } = await ctx.supabase.from("system_settings").update({ value: input.value, updated_at: (/* @__PURE__ */ new Date()).toISOString() }).eq("id", existing.id);
+        if (error) throw error;
+      } else {
+        const { error } = await ctx.supabase.from("system_settings").insert([{ key: input.key, value: input.value }]);
+        if (error) throw error;
+      }
       return { success: true };
     } catch (err) {
       throw new TRPCError({
@@ -51684,4 +51703,3 @@ object-assign/index.js:
 @trpc/server/dist/nodeHTTPRequestHandler-97af83bc.mjs:
   (* istanbul ignore if -- @preserve *)
 */
-module.exports = module.exports.default || module.exports;

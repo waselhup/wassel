@@ -4,7 +4,7 @@ import { TRPCError } from '@trpc/server';
 
 const APIFY_TOKEN = process.env.APIFY_TOKEN || '';
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || '';
-const APIFY_ACTOR_ID = 'harvestapi/linkedin-profile-search';
+const APIFY_ACTOR_ID = 'dev_fusion~Linkedin-Profile-Scraper';
 
 // Fetch LinkedIn profile data via Apify
 async function fetchLinkedInProfile(profileUrl: string): Promise<any> {
@@ -20,8 +20,7 @@ async function fetchLinkedInProfile(profileUrl: string): Promise<any> {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        searchUrls: [cleanUrl],
-        maxResults: 1,
+        profileUrls: [cleanUrl],
       }),
     }
   );
@@ -51,12 +50,13 @@ async function analyzeWithClaude(profileData: any): Promise<any> {
 Profile Data:
 - Name: ${profileData.fullName || profileData.name || 'Unknown'}
 - Headline: ${profileData.headline || 'No headline'}
-- Summary/About: ${profileData.summary || profileData.about || 'No summary'}
-- Location: ${profileData.location || 'Unknown'}
-- Current Position: ${profileData.positions?.length ? JSON.stringify(profileData.positions[0]) : 'Unknown'}
-- Experience: ${JSON.stringify(profileData.positions || profileData.experience || []).slice(0, 2000)}
-- Skills: ${JSON.stringify(profileData.skills || []).slice(0, 500)}
-- Education: ${JSON.stringify(profileData.educations || profileData.education || []).slice(0, 500)}
+- About/Summary: ${profileData.about || profileData.summary || 'No summary'}
+- Location: ${profileData.addressWithCountry || profileData.location || 'Unknown'}
+- Current Title: ${profileData.jobTitle || 'Unknown'} at ${profileData.companyName || 'Unknown'}
+- Total Experience Years: ${profileData.totalExperienceYears || 'Unknown'}
+- Experience: ${JSON.stringify(profileData.experiences || []).slice(0, 2500)}
+- Skills: ${JSON.stringify(profileData.skills || []).slice(0, 600)}
+- Education: ${JSON.stringify(profileData.educations || []).slice(0, 600)}
 
 Return a JSON response with EXACTLY this structure (no markdown, no code blocks, just raw JSON):
 {
@@ -204,8 +204,13 @@ export const linkedinRouter = router({
             {
               user_id: ctx.user.id,
               profile_url: input.profileUrl,
-              score: analysis.score,
-              analysis_data: analysis,
+              score: analysis.score ?? 0,
+              headline_current: analysis.headlineCurrent ?? null,
+              headline_suggestion: analysis.headlineSuggestion ?? null,
+              summary_current: analysis.summaryCurrent ?? null,
+              summary_suggestion: analysis.summarySuggestion ?? null,
+              keywords_suggestions: Array.isArray(analysis.keywords) ? analysis.keywords : [],
+              experience_suggestions: analysis.experienceSuggestions ?? [],
             },
           ]);
 

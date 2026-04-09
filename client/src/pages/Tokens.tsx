@@ -1,291 +1,143 @@
-import React, { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabase';
-import { motion } from 'framer-motion';
-import DashboardLayout from '@/components/DashboardLayout';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Coins, Zap, FileText, Mail, TrendingUp, Lock } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
+import { Coins, Zap, Crown, Sparkles, Check, TrendingUp, ArrowDownRight, ArrowUpRight } from "lucide-react";
+import DashboardLayout from "@/components/DashboardLayout";
+import { trpc } from "@/lib/trpc";
 
-interface Transaction {
-  id: string;
-  created_at: string;
-  type: 'purchase' | 'usage';
-  amount: number;
-  description: string;
-  status: 'completed' | 'pending';
-}
+const packages = [
+  { key: "starter", name: "البداية", tokens: 500, price: 49, pop: false, color: "from-blue-500 to-cyan-500", icon: Zap,
+    features: ["500 توكن", "صالحة لمدة سنة", "دعم بالبريد"] },
+  { key: "pro", name: "المحترف", tokens: 2000, price: 149, pop: true, color: "from-[#ff6b35] to-[#f7931e]", icon: Sparkles,
+    features: ["2000 توكن", "خصم 25%", "صالحة لمدة سنة", "دعم أولوية"] },
+  { key: "elite", name: "النخبة", tokens: 5000, price: 299, pop: false, color: "from-purple-600 to-fuchsia-600", icon: Crown,
+    features: ["5000 توكن", "خصم 40%", "صلاحية دائمة", "مدير حساب مخصص"] },
+];
 
-const Tokens: React.FC = () => {
+type HistoryItem = { id: string; type: string; desc: string; amount: number; date: string };
+
+export default function Tokens() {
   const { t } = useTranslation();
-  const { user, profile } = useAuth();
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [loading, setLoading] = useState(true);
-
+  const [selected, setSelected] = useState("pro");
+  const [balance, setBalance] = useState<number>(0);
+  const [history, setHistory] = useState<HistoryItem[]>([]);
   useEffect(() => {
-    if (user) {
-      fetchTransactions();
-    }
-  }, [user]);
-
-  const fetchTransactions = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('token_transactions')
-        .select('*')
-        .eq('user_id', user?.id)
-        .order('created_at', { ascending: false })
-        .limit(50);
-
-      if (!error && data) {
-        setTransactions(data);
-      }
-    } catch (err) {
-      console.error('Error fetching transactions:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-  const packages = [
-    { tokens: 100, price: 50, savings: 0 },
-    { tokens: 500, price: 200, savings: 10 },
-    { tokens: 1000, price: 350, savings: 25 },
-  ];
-
-  const costs = [
-    {
-      label: t('tokens.linkedinAnalysis'),
-      cost: 5,
-      icon: Zap,
-      color: 'text-[var(--accent-secondary)]',
-    },
-    {
-      label: t('tokens.cvTailor'),
-      cost: 10,
-      icon: FileText,
-      color: 'text-blue-600',
-    },
-    {
-      label: t('tokens.emailCampaign'),
-      cost: 1,
-      icon: Mail,
-      color: 'text-green-600',
-    },
-  ];
-
-  const getTransactionBadgeColor = (type: string) => {
-    if (type === 'purchase') return 'success';
-    return 'warning';
-  };
-
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-      },
-    },
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0 },
-  };
+    (async () => {
+      try {
+        const b = await trpc.token.balance();
+        setBalance(b?.balance ?? 0);
+      } catch {}
+      try {
+        const h = await trpc.token.history();
+        setHistory(
+          (Array.isArray(h) ? h : []).map((r: any) => ({
+            id: String(r.id ?? Math.random()),
+            type: (r.amount ?? 0) < 0 ? "spend" : "purchase",
+            desc: r.description || r.reason || (r.amount < 0 ? "استهلاك" : "إضافة رصيد"),
+            amount: Number(r.amount ?? 0),
+            date: r.created_at ? new Date(r.created_at).toLocaleDateString() : "",
+          }))
+        );
+      } catch {}
+    })();
+  }, []);
   return (
-    <DashboardLayout pageTitle={t('tokens.title')}>
-      <motion.div
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-        className="space-y-6"
-      >
-        {/* Balance card */}
-        <motion.div variants={itemVariants}>
-          <Card className="bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-secondary)] text-white">
-            <CardContent className="p-8">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-white/80 mb-2">{t('tokens.balance')}</p>
-                  <h2 className="text-5xl font-bold font-cairo">
-                    {profile?.token_balance || 0}
-                  </h2>
-                </div>
-                <Coins className="w-24 h-24 text-white/20" />
-              </div>
-            </CardContent>
-          </Card>
+    <DashboardLayout>
+      <div className="p-6 md:p-8 max-w-6xl space-y-8">
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
+          <h1 className="text-2xl md:text-3xl font-bold text-[#1a1a2e] flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-md">
+              <Coins className="w-5 h-5 text-white" />
+            </div>
+            {t("tk.title", "الرصيد والتوكنز")}
+          </h1>
+          <p className="text-gray-500 mt-2">{t("tk.subtitle", "أدر رصيدك واشتر باقات جديدة بأسعار الخليج")}</p>
         </motion.div>
 
-        {/* Service costs */}
-        <motion.div variants={itemVariants}>
-          <h3 className="text-xl font-cairo font-semibold text-[var(--text-primary)] mb-4">
-            {t('tokens.costs')}
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {costs.map((cost, idx) => {
-              const Icon = cost.icon;
+        <motion.div
+          initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+          className="rounded-2xl bg-gradient-to-br from-[#1e3a5f] via-[#264978] to-[#2c5282] text-white p-6 md:p-8 shadow-xl overflow-hidden relative"
+        >
+          <div className="absolute -top-20 -end-20 w-64 h-64 rounded-full bg-[#ff6b35]/20 blur-3xl" />
+          <div className="relative">
+            <div className="text-white/70 text-sm mb-2">{t("tk.balance", "رصيدك الحالي")}</div>
+            <div className="flex items-baseline gap-2">
+              <div className="text-5xl md:text-6xl font-bold tabular-nums">{balance.toLocaleString("en-US")}</div>
+              <div className="text-white/60">{t("tk.tokens", "توكن")}</div>
+            </div>
+            <div className="flex items-center gap-2 mt-4 text-emerald-300 text-sm font-semibold">
+              <TrendingUp className="w-4 h-4" /> +1500 {t("tk.thisMonth", "هذا الشهر")}
+            </div>
+          </div>
+        </motion.div>
+
+        <div>
+          <h2 className="font-bold text-[#1a1a2e] mb-4">{t("tk.packages", "اختر باقة")}</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {packages.map((p, i) => {
+              const active = selected === p.key;
               return (
-                <Card key={idx}>
-                  <CardContent className="p-6">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-10 h-10 rounded-lg bg-[var(--bg-surface)] flex items-center justify-center">
-                        <Icon className={`w-6 h-6 ${cost.color}`} />
-                      </div>
-                      <h4 className="font-semibold text-[var(--text-primary)]">
-                        {cost.label}
-                      </h4>
+                <motion.button
+                  key={p.key} onClick={() => setSelected(p.key)} whileHover={{ y: -4 }}
+                  initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
+                  className={`text-start rounded-2xl p-6 border-2 transition-all relative ${active ? "border-[#ff6b35] shadow-xl bg-white" : "border-gray-100 bg-white shadow-sm hover:shadow-lg"} ${p.pop ? "md:-mt-4 md:mb-4" : ""}`}
+                >
+                  {p.pop && (
+                    <div className="absolute -top-3 start-1/2 -translate-x-1/2 rtl:translate-x-1/2 px-3 py-1 rounded-full bg-[#ff6b35] text-white text-xs font-bold shadow-lg">
+                      {t("tk.popular", "الأكثر طلبًا")}
                     </div>
-                    <p className="text-3xl font-bold text-[var(--accent-primary)]">
-                      {cost.cost}
-                    </p>
-                    <p className="text-xs text-[var(--text-secondary)] mt-1">
-                      {t('tokens.tokens')}
-                    </p>
-                  </CardContent>
-                </Card>
+                  )}
+                  <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${p.color} flex items-center justify-center mb-4 shadow-md`}>
+                    <p.icon className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="font-bold text-[#1a1a2e] text-lg">{p.name}</div>
+                  <div className="mt-3 mb-4">
+                    <span className="text-3xl font-bold text-[#1a1a2e] tabular-nums">{p.price}</span>
+                    <span className="text-gray-500 ms-1">SAR</span>
+                  </div>
+                  <ul className="space-y-2 mb-5">
+                    {p.features.map((f, j) => (
+                      <li key={j} className="flex items-center gap-2 text-sm text-gray-600">
+                        <Check className="w-4 h-4 text-emerald-500 shrink-0" /> {f}
+                      </li>
+                    ))}
+                  </ul>
+                  <div className={`w-full py-3 rounded-xl font-semibold text-center transition ${active ? "bg-[#ff6b35] text-white shadow-lg shadow-[#ff6b35]/30" : "bg-gray-50 text-gray-700"}`}>
+                    {active ? t("tk.selected", "محدّد ✓") : t("tk.select", "اختر")}
+                  </div>
+                </motion.button>
               );
             })}
           </div>
-        </motion.div>
-        {/* Purchase section */}
-        <motion.div variants={itemVariants}>
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-cairo font-semibold text-[var(--text-primary)]">
-                {t('tokens.packages')}
-              </h3>
-              <Badge variant="warning" className="flex items-center gap-2">
-                <Lock className="w-3 h-3" />
-                {t('tokens.coming')}
-              </Badge>
-            </div>
+        </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {packages.map((pkg, idx) => (
-                <Card key={idx} className="relative overflow-hidden hover:shadow-lg transition-shadow">
-                  {pkg.savings > 0 && (
-                    <div className="absolute top-0 right-0 bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-bl-lg">
-                      Save {pkg.savings}%
+        <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+          className="rounded-2xl bg-white border border-gray-100 shadow-sm p-6"
+        >
+          <h3 className="font-bold text-[#1a1a2e] mb-5">{t("tk.history", "سجل المعاملات")}</h3>
+          <ul className="space-y-3">
+            {history.map((h) => {
+              const isSpend = h.amount < 0;
+              return (
+                <li key={h.id} className="flex items-center justify-between py-3 border-b border-gray-50 last:border-0">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-xl ${isSpend ? "bg-red-50 text-red-500" : "bg-emerald-50 text-emerald-600"} flex items-center justify-center`}>
+                      {isSpend ? <ArrowUpRight className="w-5 h-5" /> : <ArrowDownRight className="w-5 h-5" />}
                     </div>
-                  )}
-                  <CardContent className="p-6">
-                    <div className="text-center space-y-4">
-                      <div>
-                        <p className="text-sm text-[var(--text-secondary)] mb-2">
-                          {t('tokens.tokens')}
-                        </p>
-                        <p className="text-4xl font-bold text-[var(--accent-primary)]">
-                          {pkg.tokens}
-                        </p>
-                      </div>
-
-                      <div className="border-t border-b border-[var(--border-subtle)] py-4">
-                        <p className="text-3xl font-bold text-[var(--text-primary)]">
-                          {pkg.price}
-                        </p>
-                        <p className="text-sm text-[var(--text-secondary)]">SAR</p>
-                      </div>
-
-                      <Button
-                        disabled
-                        className="w-full opacity-50 cursor-not-allowed"
-                      >
-                        {t('tokens.coming')}
-                      </Button>
+                    <div>
+                      <div className="font-semibold text-[#1a1a2e] text-sm">{h.desc}</div>
+                      <div className="text-xs text-gray-400 mt-0.5">{h.date}</div>
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
+                  </div>
+                  <div className={`font-bold tabular-nums ${isSpend ? "text-red-500" : "text-emerald-600"}`}>
+                    {isSpend ? "" : "+"}{h.amount.toLocaleString("en-US")}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
         </motion.div>
-        {/* Transaction history */}
-        <motion.div variants={itemVariants}>
-          <Card>
-            <CardHeader>
-              <CardTitle className="font-cairo flex items-center gap-2">
-                <TrendingUp className="w-5 h-5" />
-                {t('tokens.transactionHistory')}
-              </CardTitle>
-              <CardDescription>
-                {transactions.length} {t('tokens.transactions')}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="text-center py-8">
-                  <p className="text-[var(--text-secondary)]">{t('common.loading')}</p>
-                </div>
-              ) : transactions.length === 0 ? (
-                <div className="text-center py-8">
-                  <Coins className="w-12 h-12 text-[var(--text-secondary)] opacity-50 mx-auto mb-3" />
-                  <p className="text-[var(--text-secondary)]">
-                    {t('tokens.noTransactions')}
-                  </p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-[var(--border-subtle)]">
-                        <th className="text-left py-3 px-4 font-semibold text-[var(--text-secondary)]">
-                          {t('tokens.date')}
-                        </th>
-                        <th className="text-left py-3 px-4 font-semibold text-[var(--text-secondary)]">
-                          {t('tokens.type')}
-                        </th>
-                        <th className="text-right py-3 px-4 font-semibold text-[var(--text-secondary)]">
-                          {t('tokens.amount')}
-                        </th>
-                        <th className="text-left py-3 px-4 font-semibold text-[var(--text-secondary)]">
-                          {t('tokens.description')}
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {transactions.map((tx, idx) => (
-                        <tr
-                          key={tx.id}
-                          className={`border-b border-[var(--border-subtle)] ${
-                            idx % 2 === 0 ? 'bg-[var(--bg-surface)]' : ''
-                          }`}
-                        >
-                          <td className="py-3 px-4">
-                            {new Date(tx.created_at).toLocaleDateString()}
-                          </td>
-                          <td className="py-3 px-4">
-                            <Badge
-                              variant={getTransactionBadgeColor(tx.type)}
-                              className="capitalize"
-                            >
-                              {tx.type}
-                            </Badge>
-                          </td>
-                          <td className={`py-3 px-4 text-right font-semibold ${
-                            tx.type === 'purchase'
-                              ? 'text-green-600'
-                              : 'text-red-600'
-                          }`}>
-                            {tx.type === 'purchase' ? '+' : '-'}{tx.amount}
-                          </td>
-                          <td className="py-3 px-4 text-[var(--text-secondary)]">
-                            {tx.description}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </motion.div>
-      </motion.div>
+      </div>
     </DashboardLayout>
   );
-};
-
-export default Tokens;
+}

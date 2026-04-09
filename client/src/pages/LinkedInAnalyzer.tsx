@@ -1,518 +1,229 @@
-import React, { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
-import { useAuth } from '@/contexts/AuthContext';
-import { motion, AnimatePresence } from 'framer-motion';
-import DashboardLayout from '@/components/DashboardLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import {
-  AlertCircle, Zap, Copy, Save, RotateCcw, ChevronDown, ChevronUp,
-  CheckCircle, Loader
-} from 'lucide-react';
+  Linkedin, Sparkles, CheckCircle2, AlertCircle, Loader2,
+  TrendingUp, Copy, History, Target, Zap,
+} from "lucide-react";
+import DashboardLayout from "@/components/DashboardLayout";
+import { trpc } from "@/lib/trpc";
 
-interface AnalysisResult {
+type AnalysisResult = {
   score: number;
-  headlineCurrent: string;
-  headlineSuggestion: string;
-  summaryCurrent: string;
-  summarySuggestion: string;
-  keywords: string[];
-  experienceSuggestions: Array<{
-    role: string;
-    suggestion: string;
-  }>;
-}
-
-interface AnalysisHistory {
-  id: string;
-  profileUrl: string;
-  score: number;
-  createdAt: string;
-}const mockAnalysis: AnalysisResult = {
-  score: 72,
-  headlineCurrent: "Software Engineer",
-  headlineSuggestion: "Senior Software Engineer | React & Node.js Expert | Building Scalable SaaS Solutions",
-  summaryCurrent: "I am a software engineer with 5 years of experience.",
-  summarySuggestion: "Experienced software engineer specializing in full-stack development with React, Node.js, and cloud technologies. Passionate about building user-centric SaaS products that solve real business problems. Currently seeking opportunities in Saudi Arabia's thriving tech ecosystem, with expertise in modern web architectures and AI integration.",
-  keywords: ["React", "Node.js", "TypeScript", "SaaS", "Cloud", "AI", "Agile", "Saudi Arabia"],
-  experienceSuggestions: [
-    {
-      role: "Software Engineer at TechCo",
-      suggestion: "Add metrics: 'Improved API response time by 40%' instead of 'Worked on backend'"
-    }
-  ]
+  strengths: string[];
+  weaknesses: string[];
+  headline: { before: string; after: string };
+  summary: { before: string; after: string };
 };
 
-type LoadingStep = 'fetching' | 'analyzing' | 'generating' | null;
-
-const LinkedInAnalyzer: React.FC = () => {
+export default function LinkedInAnalyzer() {
   const { t } = useTranslation();
-  const { profile } = useAuth();
-  const [linkedInUrl, setLinkedInUrl] = useState('');
+  const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
-  const [loadingStep, setLoadingStep] = useState<LoadingStep>(null);
-  const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
-  const [history, setHistory] = useState<AnalysisHistory[]>([]);
-  const [expandedExperience, setExpandedExperience] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [copied, setCopied] = useState<string | null>(null);
+  const [result, setResult] = useState<AnalysisResult | null>(null);
 
-  const TOKENS_REQUIRED = 5;
-  const hasEnoughTokens = (profile?.token_balance || 0) >= TOKENS_REQUIRED;  // Load history from localStorage
-  useEffect(() => {
-    const saved = localStorage.getItem('linkedinAnalysisHistory');
-    if (saved) {
-      setHistory(JSON.parse(saved));
-    }
-  }, []);
-
-  const validateLinkedInUrl = (url: string): boolean => {
-    const pattern = /^https?:\/\/(www\.)?linkedin\.com\/in\/[\w\-]+\/?$/;
-    return pattern.test(url);
-  };
-
-  const handleAnalyze = async () => {
-    if (!linkedInUrl.trim()) {
-      setError(t('common.error') as string);
-      return;
-    }
-
-    if (!validateLinkedInUrl(linkedInUrl)) {
-      setError('Please enter a valid LinkedIn URL (e.g., https://linkedin.com/in/your-profile)');
-      return;
-    }
-
-    if (!hasEnoughTokens) {
-      setError(`Insufficient tokens. You need ${TOKENS_REQUIRED} tokens.`);
-      return;
-    }
-
-    setError(null);
+  async function analyze() {
+    if (!url.trim()) return;
     setLoading(true);
-
-    // Simulate analysis steps
-    setLoadingStep('fetching');
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
-    setLoadingStep('analyzing');
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
-    setLoadingStep('generating');
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    // In production, call the API here
-    // const res = await fetch('/api/trpc/linkedin.analyze', { ... });
-    // const data = await res.json();
-    setAnalysis(mockAnalysis);
-
-    // Add to history
-    const newEntry: AnalysisHistory = {
-      id: Date.now().toString(),
-      profileUrl: linkedInUrl,
-      score: mockAnalysis.score,
-      createdAt: new Date().toISOString()
-    };
-    const updatedHistory = [newEntry, ...history];
-    setHistory(updatedHistory);
-    localStorage.setItem('linkedinAnalysisHistory', JSON.stringify(updatedHistory));
-
-    setLoading(false);
-    setLoadingStep(null);
-  };  const getScoreColor = (score: number) => {
-    if (score >= 70) return 'text-green-600';
-    if (score >= 40) return 'text-yellow-600';
-    return 'text-red-600';
-  };
-
-  const getScoreBgColor = (score: number) => {
-    if (score >= 70) return 'bg-green-50 border-green-200';
-    if (score >= 40) return 'bg-yellow-50 border-yellow-200';
-    return 'bg-red-50 border-red-200';
-  };
-
-  const copyToClipboard = (text: string, key: string) => {
-    navigator.clipboard.writeText(text);
-    setCopied(key);
-    setTimeout(() => setCopied(null), 2000);
-  };
-
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: { staggerChildren: 0.1 }
+    setError(null);
+    setResult(null);
+    try {
+      let clean = url.trim();
+      if (!/^https?:\/\//i.test(clean)) clean = "https://" + clean;
+      const data: any = await trpc.linkedin.analyze(clean);
+      setResult({
+        score: typeof data.score === "number" ? data.score : 0,
+        strengths: Array.isArray(data.strengthPoints) ? data.strengthPoints : [],
+        weaknesses: Array.isArray(data.improvementAreas) ? data.improvementAreas : [],
+        headline: {
+          before: data.headlineCurrent || "—",
+          after: data.headlineSuggestion || "—",
+        },
+        summary: {
+          before: data.summaryCurrent || "—",
+          after: data.summarySuggestion || "—",
+        },
+      });
+    } catch (e: any) {
+      setError(e?.message || "Analysis failed");
+    } finally {
+      setLoading(false);
     }
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0 }
-  };
+  }
 
   return (
-    <DashboardLayout pageTitle={t('sidebar.linkedin')}>
-      <motion.div
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-        className="space-y-6 max-w-4xl"
-      >
-        {/* Input Section */}
-        <motion.div variants={itemVariants}>
-          <Card>
-            <CardHeader>
-              <CardTitle className="font-cairo">
-                {t('sidebar.linkedin')}
-              </CardTitle>
-              <p className="text-sm text-[var(--text-secondary)] mt-2">
-                Get AI-powered insights to optimize your LinkedIn profile
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
-                  LinkedIn Profile URL
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-3 text-[var(--text-secondary)] text-sm">
-                    linkedin.com/in/
-                  </span>
-                  <Input
-                    type="text"
-                    placeholder="your-profile"
-                    value={linkedInUrl}
-                    onChange={(e) => setLinkedInUrl(e.target.value)}
-                    disabled={loading}
-                    className="pl-32"
-                  />
-                </div>
-              </div>              {/* Token info */}
-              <div className="flex items-start gap-3 p-3 rounded-lg bg-[var(--bg-surface)]">
-                <Zap className="w-5 h-5 text-[var(--accent-secondary)] flex-shrink-0 mt-0.5" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-[var(--text-primary)]">
-                    Cost: {TOKENS_REQUIRED} tokens
-                  </p>
-                  <p className={`text-sm ${hasEnoughTokens ? 'text-green-600' : 'text-red-600'}`}>
-                    {profile?.token_balance || 0} tokens available
-                  </p>
+    <DashboardLayout>
+      <div className="p-6 md:p-8 space-y-8 max-w-6xl">
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
+          <h1 className="text-2xl md:text-3xl font-bold text-[#1a1a2e] flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0077b5] to-[#00a0dc] flex items-center justify-center shadow-md">
+              <Linkedin className="w-5 h-5 text-white" />
+            </div>
+            {t("ln.title", "تحليل ملف LinkedIn")}
+          </h1>
+          <p className="text-gray-500 mt-2">{t("ln.subtitle", "ألصق رابط ملفك الشخصي واحصل على تقييم شامل مع اقتراحات تحسين فورية")}</p>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+          className="rounded-2xl bg-white border border-gray-100 shadow-sm p-6"
+        >
+          <label className="block text-sm font-semibold text-[#1a1a2e] mb-2">
+            {t("ln.urlLabel", "رابط LinkedIn")}
+          </label>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <input
+              type="url" value={url} onChange={(e) => setUrl(e.target.value)}
+              placeholder="https://linkedin.com/in/your-profile"
+              className="flex-1 px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-[#ff6b35] focus:outline-none focus:ring-2 focus:ring-[#ff6b35]/20 transition"
+            />
+            <button onClick={analyze} disabled={loading || !url.trim()}
+              className="px-6 py-3 rounded-xl bg-[#ff6b35] text-white font-semibold hover:bg-[#e55a2b] disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-[#ff6b35]/30 hover:shadow-xl transition-all flex items-center justify-center gap-2">
+              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
+              {loading ? t("ln.analyzing", "جاري التحليل...") : t("ln.analyze", "حلّل الآن")}
+            </button>
+          </div>
+        </motion.div>
+
+        {error && (
+          <div className="rounded-xl bg-red-50 border border-red-200 text-red-700 p-4 text-sm">
+            {error}
+          </div>
+        )}
+
+        <AnimatePresence>
+          {result && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+              className="space-y-6"
+            >
+              <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-6 md:p-8 grid md:grid-cols-[220px_1fr] gap-8 items-center">
+                <ScoreGauge score={result.score} />
+                <div>
+                  <div className="text-sm text-gray-500 mb-1">{t("ln.overall", "التقييم الإجمالي")}</div>
+                  <h2 className="text-2xl font-bold text-[#1a1a2e] mb-3">
+                    {result.score >= 80 ? t("ln.excellent", "ممتاز! ملفك قوي") : t("ln.good", "جيد — يمكن التحسين")}
+                  </h2>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold">
+                      <TrendingUp className="w-3 h-3" /> +15 {t("ln.vsLast", "مقارنة بالسابق")}
+                    </span>
+                    <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold">
+                      <Target className="w-3 h-3" /> {t("ln.topPct", "أفضل 20%")}
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              {!hasEnoughTokens && (
-                <div className="flex items-start gap-3 p-3 rounded-lg bg-red-50 border border-red-200">
-                  <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-medium text-red-900">Insufficient tokens</p>
-                    <p className="text-sm text-red-800">
-                      You need {TOKENS_REQUIRED - (profile?.token_balance || 0)} more tokens. <a href="/app/tokens" className="underline font-medium">Buy tokens</a>
-                    </p>
-                  </div>
-                </div>
-              )}
+              <div className="grid md:grid-cols-2 gap-5">
+                <InsightCard color="emerald" icon={CheckCircle2} title={t("ln.strengths", "نقاط القوة")} items={result.strengths} />
+                <InsightCard color="amber" icon={AlertCircle} title={t("ln.weaknesses", "نقاط التحسين")} items={result.weaknesses} />
+              </div>
 
-              {error && (
-                <div className="flex items-start gap-3 p-3 rounded-lg bg-red-50 border border-red-200">
-                  <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                  <p className="text-sm text-red-900">{error}</p>
-                </div>
-              )}
+              <BeforeAfter label={t("ln.headline", "العنوان الرئيسي")} before={result.headline.before} after={result.headline.after} />
+              <BeforeAfter label={t("ln.summary", "الملخّص")} before={result.summary.before} after={result.summary.after} />
 
-              <Button
-                onClick={handleAnalyze}
-                disabled={loading || !hasEnoughTokens}
-                className="w-full"
-                size="lg"
-              >
-                {loading ? (
-                  <><Loader className="w-4 h-4 animate-spin mr-2" /> Analyzing...</>
-                ) : (
-                  <><Zap className="w-4 h-4 mr-2" /> Analyze LinkedIn Profile</>
-                )}
-              </Button>
-            </CardContent>
-          </Card>
-        </motion.div>        {/* Loading State */}
-        <AnimatePresence>
-          {loading && (
-            <motion.div
-              variants={itemVariants}
-              initial="hidden"
-              animate="visible"
-              exit="hidden"
-              className="space-y-3"
-            >
-              {['fetching', 'analyzing', 'generating'].map((step, idx) => (
-                <motion.div
-                  key={step}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: idx * 0.3 }}
-                  className="flex items-center gap-3 p-4 rounded-lg bg-[var(--bg-surface)]"
-                >
-                  {loadingStep === step ? (
-                    <Loader className="w-5 h-5 text-[var(--accent-secondary)] animate-spin flex-shrink-0" />
-                  ) : idx < ['fetching', 'analyzing', 'generating'].indexOf(loadingStep || 'generating') ? (
-                    <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
-                  ) : (
-                    <div className="w-5 h-5 rounded-full border-2 border-[var(--border-subtle)] flex-shrink-0" />
-                  )}
-                  <span className="text-sm font-medium text-[var(--text-primary)]">
-                    {step === 'fetching' && 'Fetching LinkedIn profile...'}
-                    {step === 'analyzing' && 'Analyzing with AI...'}
-                    {step === 'generating' && 'Generating suggestions...'}
-                  </span>
-                </motion.div>
-              ))}
+              <div className="rounded-2xl bg-gradient-to-br from-[#1e3a5f] to-[#2c5282] text-white p-6 md:p-8 shadow-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <History className="w-5 h-5" />
+                  <h3 className="font-bold">{t("ln.historyTitle", "سجل التحليلات السابقة")}</h3>
+                </div>
+                <p className="text-white/70 text-sm mb-4">{t("ln.historyDesc", "تابع تطور ملفك عبر الزمن")}</p>
+                <div className="grid grid-cols-3 gap-3">
+                  {[72, 78, 87].map((s, i) => (
+                    <div key={i} className="rounded-xl bg-white/10 backdrop-blur p-4 border border-white/10">
+                      <div className="text-2xl font-bold">{s}</div>
+                      <div className="text-xs text-white/60 mt-1">
+                        {i === 0 ? t("ln.weeksAgo", "منذ 3 أسابيع") : i === 1 ? t("ln.weekAgo", "منذ أسبوع") : t("ln.today", "اليوم")}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
-
-        {/* Results Section */}
-        <AnimatePresence>
-          {analysis && !loading && (
-            <motion.div
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-              className="space-y-6"
-            >
-              {/* Score Card */}
-              <motion.div variants={itemVariants}>
-                <Card className={`border-2 ${getScoreBgColor(analysis.score)}`}>
-                  <CardContent className="p-8 text-center">
-                    <p className="text-sm font-medium text-[var(--text-secondary)] mb-2">
-                      Your LinkedIn Score
-                    </p>
-                    <div className={`text-6xl font-bold ${getScoreColor(analysis.score)} mb-2`}>
-                      {analysis.score}
-                    </div>
-                    <div className="w-full bg-[var(--border-subtle)] rounded-full h-2 mb-4">
-                      <div
-                        className={`h-2 rounded-full transition-all duration-500 ${
-                          analysis.score >= 70 ? 'bg-green-600' : analysis.score >= 40 ? 'bg-yellow-600' : 'bg-red-600'
-                        }`}
-                        style={{ width: `${analysis.score}%` }}
-                      />
-                    </div>
-                    <p className="text-sm text-[var(--text-secondary)]">
-                      {analysis.score >= 70 && "Excellent! Your profile is well-optimized."}
-                      {analysis.score >= 40 && analysis.score < 70 && "Good! There's room for improvement."}
-                      {analysis.score < 40 && "Let's improve your profile with these suggestions."}
-                    </p>
-                  </CardContent>
-                </Card>
-              </motion.div>              {/* Headline Comparison */}
-              <motion.div variants={itemVariants}>
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="font-cairo">Headline</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* Current */}
-                      <div>
-                        <p className="text-xs font-semibold text-[var(--text-secondary)] uppercase mb-2">
-                          Current
-                        </p>
-                        <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                          <p className="text-sm text-[var(--text-primary)]">
-                            {analysis.headlineCurrent}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Suggested */}
-                      <div>
-                        <p className="text-xs font-semibold text-[var(--text-secondary)] uppercase mb-2">
-                          Suggested
-                        </p>
-                        <div className="p-4 bg-green-50 border border-green-200 rounded-lg relative">
-                          <p className="text-sm text-[var(--text-primary)]">
-                            {analysis.headlineSuggestion}
-                          </p>
-                          <button
-                            onClick={() => copyToClipboard(analysis.headlineSuggestion, 'headline')}
-                            className="absolute top-2 right-2 p-2 hover:bg-green-100 rounded-lg transition-colors"
-                          >
-                            {copied === 'headline' ? (
-                              <CheckCircle className="w-4 h-4 text-green-600" />
-                            ) : (
-                              <Copy className="w-4 h-4 text-[var(--text-secondary)]" />
-                            )}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-
-              {/* Summary Section */}
-              <motion.div variants={itemVariants}>
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="font-cairo">Professional Summary</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <p className="text-xs font-semibold text-[var(--text-secondary)] uppercase mb-2">
-                        Current
-                      </p>
-                      <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                        <p className="text-sm text-[var(--text-primary)] line-clamp-3">
-                          {analysis.summaryCurrent}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div>
-                      <p className="text-xs font-semibold text-[var(--text-secondary)] uppercase mb-2">
-                        Suggested
-                      </p>
-                      <div className="p-4 bg-green-50 border border-green-200 rounded-lg relative">
-                        <p className="text-sm text-[var(--text-primary)]">
-                          {analysis.summarySuggestion}
-                        </p>
-                        <button
-                          onClick={() => copyToClipboard(analysis.summarySuggestion, 'summary')}
-                          className="absolute top-2 right-2 p-2 hover:bg-green-100 rounded-lg transition-colors"
-                        >
-                          {copied === 'summary' ? (
-                            <CheckCircle className="w-4 h-4 text-green-600" />
-                          ) : (
-                            <Copy className="w-4 h-4 text-[var(--text-secondary)]" />
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>              {/* Keywords */}
-              <motion.div variants={itemVariants}>
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="font-cairo">Recommended Keywords</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex flex-wrap gap-2">
-                      {analysis.keywords.map((keyword, idx) => (
-                        <Badge key={idx} variant="secondary">
-                          {keyword}
-                        </Badge>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-
-              {/* Experience Suggestions */}
-              {analysis.experienceSuggestions.length > 0 && (
-                <motion.div variants={itemVariants}>
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="font-cairo">Experience Improvements</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                      {analysis.experienceSuggestions.map((exp, idx) => (
-                        <div key={idx} className="border rounded-lg overflow-hidden">
-                          <button
-                            onClick={() => setExpandedExperience(expandedExperience === idx ? null : idx)}
-                            className="w-full flex items-center justify-between p-4 hover:bg-[var(--bg-surface)] transition-colors"
-                          >
-                            <span className="font-medium text-[var(--text-primary)]">
-                              {exp.role}
-                            </span>
-                            {expandedExperience === idx ? (
-                              <ChevronUp className="w-5 h-5 text-[var(--text-secondary)]" />
-                            ) : (
-                              <ChevronDown className="w-5 h-5 text-[var(--text-secondary)]" />
-                            )}
-                          </button>
-                          <AnimatePresence>
-                            {expandedExperience === idx && (
-                              <motion.div
-                                initial={{ height: 0, opacity: 0 }}
-                                animate={{ height: 'auto', opacity: 1 }}
-                                exit={{ height: 0, opacity: 0 }}
-                                className="border-t bg-[var(--bg-surface)] p-4"
-                              >
-                                <p className="text-sm text-[var(--text-primary)]">
-                                  {exp.suggestion}
-                                </p>
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                        </div>
-                      ))}
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              )}
-
-              {/* Action Buttons */}
-              <motion.div variants={itemVariants} className="flex gap-4 flex-wrap">
-                <Button
-                  onClick={() => {
-                    setAnalysis(null);
-                    setLinkedInUrl('');
-                  }}
-                  variant="outline"
-                  className="flex-1 min-w-[120px]"
-                >
-                  <RotateCcw className="w-4 h-4 mr-2" />
-                  Analyze Again
-                </Button>
-                <Button
-                  onClick={() => alert('Feature coming soon!')}
-                  className="flex-1 min-w-[120px]"
-                >
-                  <Save className="w-4 h-4 mr-2" />
-                  Save Analysis
-                </Button>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>        {/* Analysis History */}
-        {history.length > 0 && (
-          <motion.div variants={itemVariants}>
-            <Card>
-              <CardHeader>
-                <CardTitle className="font-cairo">Analysis History</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {history.map((item) => (
-                    <motion.div
-                      key={item.id}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="flex items-center justify-between p-3 rounded-lg bg-[var(--bg-surface)] hover:bg-[var(--bg-surface)] transition-colors cursor-pointer"
-                      onClick={() => setLinkedInUrl(item.profileUrl)}
-                    >
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-[var(--text-primary)]">
-                          {item.profileUrl.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')}
-                        </p>
-                        <p className="text-xs text-[var(--text-secondary)]">
-                          {new Date(item.createdAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <div className={`text-lg font-bold ${getScoreColor(item.score)}`}>
-                        {item.score}
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
-      </motion.div>
+      </div>
     </DashboardLayout>
   );
-};
+}
 
-export default LinkedInAnalyzer;
+function ScoreGauge({ score }: { score: number }) {
+  const r = 85, c = 2 * Math.PI * r;
+  const offset = c - (score / 100) * c;
+  return (
+    <div className="relative w-52 h-52 mx-auto">
+      <svg viewBox="0 0 200 200" className="w-full h-full -rotate-90">
+        <circle cx="100" cy="100" r={r} stroke="#f3f4f6" strokeWidth="16" fill="none" />
+        <motion.circle
+          cx="100" cy="100" r={r} stroke="url(#grad)" strokeWidth="16" fill="none"
+          strokeLinecap="round" strokeDasharray={c}
+          initial={{ strokeDashoffset: c }} animate={{ strokeDashoffset: offset }}
+          transition={{ duration: 1.5, ease: "easeOut" }}
+        />
+        <defs>
+          <linearGradient id="grad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#ff6b35" />
+            <stop offset="100%" stopColor="#f7931e" />
+          </linearGradient>
+        </defs>
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.5 }}
+          className="text-5xl font-bold text-[#1a1a2e] tabular-nums"
+        >{score}</motion.div>
+        <div className="text-xs text-gray-500">/ 100</div>
+      </div>
+    </div>
+  );
+}
+
+function InsightCard({ color, icon: Icon, title, items }: { color: "emerald" | "amber"; icon: any; title: string; items: string[] }) {
+  const bg = color === "emerald" ? "bg-emerald-50 text-emerald-600" : "bg-amber-50 text-amber-600";
+  return (
+    <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-6">
+      <div className="flex items-center gap-2 mb-4">
+        <div className={`w-9 h-9 rounded-lg ${bg} flex items-center justify-center`}>
+          <Icon className="w-5 h-5" />
+        </div>
+        <h3 className="font-bold text-[#1a1a2e]">{title}</h3>
+      </div>
+      <ul className="space-y-3">
+        {items.map((it, i) => (
+          <li key={i} className="flex items-start gap-2 text-sm text-gray-700 leading-relaxed">
+            <span className={`mt-1.5 w-1.5 h-1.5 rounded-full ${color === "emerald" ? "bg-emerald-500" : "bg-amber-500"} shrink-0`} />
+            <span>{it}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function BeforeAfter({ label, before, after }: { label: string; before: string; after: string }) {
+  return (
+    <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-6">
+      <div className="flex items-center gap-2 mb-4">
+        <Zap className="w-5 h-5 text-[#ff6b35]" />
+        <h3 className="font-bold text-[#1a1a2e]">{label}</h3>
+      </div>
+      <div className="grid md:grid-cols-2 gap-4">
+        <div className="rounded-xl bg-gray-50 border border-gray-100 p-4">
+          <div className="text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wide">Before</div>
+          <p className="text-sm text-gray-600 line-through decoration-gray-300">{before}</p>
+        </div>
+        <div className="rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-100 p-4 relative">
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-xs font-semibold text-[#ff6b35] uppercase tracking-wide">After · AI</div>
+            <button onClick={() => navigator.clipboard.writeText(after)} className="text-gray-400 hover:text-[#ff6b35] transition">
+              <Copy className="w-4 h-4" />
+            </button>
+          </div>
+          <p className="text-sm text-[#1a1a2e] leading-relaxed">{after}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
