@@ -1,18 +1,3 @@
-import { build } from 'esbuild';
-
-build({
-  entryPoints: ['server/_core/vercel.ts'],
-  platform: 'node',
-  bundle: true,
-  format: 'cjs',
-  outfile: 'api/index.js',
-  // Keep node built-in modules external
-  external: [],
-  // Ensure proper CJS output
-  mainFields: ['module', 'main'],
-  conditions: ['node', 'import', 'require'],
-  target: 'node20',
-}).catch((err) => {
-  console.error('Build failed:', err);
-  process.exit(1);
-});
+// No bundling — api/index.js is hand-written plain CJS
+// Dependencies come from root node_modules via Vercel's npm install
+console.log('Server: using pre-built api/index.js (no esbuild)');
