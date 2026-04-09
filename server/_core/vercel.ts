@@ -1,10 +1,11 @@
-import express, { Express, Request, Response } from 'express';
+import express from 'express';
 import cors from 'cors';
 import { createExpressMiddleware } from '@trpc/server/adapters/express';
 import { appRouter } from './trpc';
 import { createContext } from './context';
+import type { IncomingMessage, ServerResponse } from 'http';
 
-const app: Express = express();
+const app = express();
 
 app.use(cors({
   origin: process.env.NODE_ENV === 'production'
@@ -21,7 +22,7 @@ app.use(cors({
 
 app.use(express.json());
 
-app.get('/api/health', (req: Request, res: Response) => {
+app.get('/api/health', (_req, res) => {
   res.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
@@ -37,9 +38,11 @@ app.use(
   })
 );
 
-app.use((req: Request, res: Response) => {
+app.use((_req, res) => {
   res.status(404).json({ error: 'Not found' });
 });
 
-// Vercel serverless handler (ESM export)
-export default app;
+// Vercel serverless handler — export as a function that calls Express
+module.exports = (req: IncomingMessage, res: ServerResponse) => {
+  return app(req, res);
+};

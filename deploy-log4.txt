@@ -20,3 +20,61 @@ computing gzip size...
 [32m✓ built in 8.67s[39m
 Skipping server build — using manual api/index.js
 BUILD=0 
+warning: in the working copy of 'build-server.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deploy-log4.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deploy-minimal.bat', LF will be replaced by CRLF the next time Git touches it
+[master 1d336c6] test: minimal serverless handler to debug FUNCTION_INVOCATION_FAILED
+ 2 files changed, 28 insertions(+), 5 deletions(-)
+=== Deploying === 
+Retrieving project…
+Deploying waselhupsas-projects/wassel
+Uploading [--------------------] (0.0B/2.5KB)
+Uploading [=====---------------] (759.0B/2.5KB)
+Uploading [====================] (2.5KB/2.5KB)
+Inspect: https://vercel.com/waselhupsas-projects/wassel/4BX8RhsxPDJWvHFW4waqi1ws8R8F [3s]
+Production: https://wassel-lgn5wpymf-waselhupsas-projects.vercel.app [3s]
+https://wassel-lgn5wpymf-waselhupsas-projects.vercel.appBuilding...
+Building...
+Building: Running build in Washington, D.C., USA (East) – iad1 (Turbo Build Machine)
+Building: Build machine configuration: 30 cores, 60 GB
+Building: Retrieving list of deployment files...
+Building: Downloading 97 deployment files...
+Building: Restored build cache from previous deployment (FNyM7qtoQBesLuwnvh2ommfqpLMq)
+Building: Running "vercel build"
+Building: Vercel CLI 50.38.2
+Building: Running "install" command: `npm install`...
+Building: up to date, audited 308 packages in 900ms
+Building: 46 packages are looking for funding
+Building: run `npm fund` for details
+Building: 1 moderate severity vulnerability
+Building: To address all issues (including breaking changes), run:
+Building: npm audit fix --force
+Building: Run `npm audit` for details.
+Building: > wassel-v2@1.0.0 build
+Building: > vite build && node build-server.js
+Building: vite v6.4.2 building for production...
+Building: transforming...
+Building: ✓ 2053 modules transformed.
+Building: rendering chunks...
+Building: computing gzip size...
+Building: ../dist/index.html                             0.81 kB │ gzip:   0.45 kB
+Building: ../dist/assets/index-DlV62KXi.css             34.57 kB │ gzip:   6.79 kB
+Building: ../dist/assets/browser-ponyfill-BLrNneyl.js   11.08 kB │ gzip:   3.88 kB │ map:    34.14 kB
+Building: ../dist/assets/index-DgGytmJR.js             772.83 kB │ gzip: 213.99 kB │ map: 3,455.75 kB
+Building: ✓ built in 3.74s
+Building: (!) Some chunks are larger than 500 kB after minification. Consider:
+Building: - Using dynamic import() to code-split the application
+Building: - Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+Building: - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+Building: Skipping server build — using manual api/index.js
+Building: Installing dependencies...
+Building: up to date in 160ms
+Building: Build Completed in /vercel/output [6s]
+Building: Deploying outputs...
+[2K[1A[2K[GProduction: https://wassel-lgn5wpymf-waselhupsas-projects.vercel.app [18s]
+Completing...
+Aliased: https://wassel-alpha.vercel.app [18s]
+DEPLOY=0 
+=== Testing === 
+{"status":"ok","timestamp":"2026-04-09T05:40:11.680Z","version":"2.0.0-minimal"} 
+DONE at Thu 04/09/2026  8:40:10.95 
