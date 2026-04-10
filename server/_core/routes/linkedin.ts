@@ -2,145 +2,190 @@ import { z } from 'zod';
 import { router, protectedProcedure } from '../trpc-init';
 import { TRPCError } from '@trpc/server';
 
-const APIFY_TOKEN = process.env.APIFY_TOKEN || '';
+const APIFY_TOKEN = process.env.APIFY_TOKEN || process.env.APIFY_API_TOKEN || '';
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || '';
-const APIFY_ACTOR_ID = 'dev_fusion~Linkedin-Profile-Scraper';
+const CLAUDE_MODEL = 'claude-sonnet-4-6';
 
-// Fetch LinkedIn profile data via Apify
-async function fetchLinkedInProfile(profileUrl: string): Promise<any> {
-  if (!APIFY_TOKEN) {
-    throw new Error('APIFY_TOKEN not configured');
-  }
-
-  const cleanUrl = profileUrl.replace(/\/$/, '');
+async function scrapeLinkedInProfile(profileUrl: string): Promise<any> {
+  console.log('[APIFY] Starting scrape for:', profileUrl);
 
   const runRes = await fetch(
-    `https://api.apify.com/v2/acts/${APIFY_ACTOR_ID}/run-sync-get-dataset-items?token=${APIFY_TOKEN}`,
+    `https://api.apify.com/v2/acts/dev_fusion~Linkedin-Profile-Scraper/runs?token=${APIFY_TOKEN}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        profileUrls: [cleanUrl],
-      }),
+      body: JSON.stringify({ profileUrls: [profileUrl] }),
     }
   );
 
   if (!runRes.ok) {
     const errText = await runRes.text();
-    console.error('Apify error:', runRes.status, errText);
-    throw new Error(`Apify API failed: ${runRes.status}`);
+    console.error('[APIFY] Run failed:', runRes.status, errText);
+    throw new Error(`Apify run failed: ${runRes.status}`);
   }
 
-  const results = await runRes.json();
-  if (!Array.isArray(results) || results.length === 0) {
+  const runData = await runRes.json();
+  const runId = runData?.data?.id;
+  console.log('[APIFY] Run started, ID:', runId);
+
+  // Poll for completion (max 120s)
+  let status = runData?.data?.status;
+  let attempts = 0;
+  while (status !== 'SUCCEEDED' && status !== 'FAILED' && status !== 'ABORTED' && attempts < 40) {
+    await new Promise((r) => setTimeout(r, 3000));
+    const pollRes = await fetch(
+      `https://api.apify.com/v2/actor-runs/${runId}?token=${APIFY_TOKEN}`
+    );
+    const pollData = await pollRes.json();
+    status = pollData?.data?.status;
+    attempts++;
+    console.log('[APIFY] Poll attempt', attempts, '- status:', status);
+  }
+
+  if (status !== 'SUCCEEDED') {
+    throw new Error(`Apify run did not succeed: ${status}`);
+  }
+
+  // Get dataset items
+  const datasetId = runData?.data?.defaultDatasetId;
+  const itemsRes = await fetch(
+    `https://api.apify.com/v2/datasets/${datasetId}/items?token=${APIFY_TOKEN}`
+  );
+  const items = await itemsRes.json();
+  console.log('[APIFY] Got', Array.isArray(items) ? items.length : 0, 'profile(s)');
+
+  if (!Array.isArray(items) || items.length === 0) {
     throw new Error('No profile data returned from Apify');
   }
 
-  return results[0];
+  return items[0];
 }
 
-// Analyze LinkedIn profile using Claude API
 async function analyzeWithClaude(profileData: any): Promise<any> {
-  if (!ANTHROPIC_API_KEY) {
-    throw new Error('ANTHROPIC_API_KEY not configured');
-  }
+  // Build a concise profile summary for Claude
+  const name = profileData.fullName || profileData.firstName + ' ' + profileData.lastName || 'Unknown';
+  const headline = profileData.headline || '';
+  const summary = profileData.summary || profileData.about || '';
+  const location = profileData.location || profileData.addressCountryFull || '';
+  const connections = profileData.connectionsCount || profileData.connections || 0;
 
-  const prompt = `You are a LinkedIn profile optimization expert specializing in the Saudi/GCC job market. Analyze this LinkedIn profile and provide detailed improvement suggestions.
+  const experiences = (profileData.experience || profileData.positions || [])
+    .slice(0, 5)
+    .map((e: any) => `- ${e.title || e.role || ''} at ${e.companyName || e.company || ''} (${e.duration || e.timePeriod || ''})`)
+    .join('\n');
 
-Profile Data:
-- Name: ${profileData.fullName || profileData.name || 'Unknown'}
-- Headline: ${profileData.headline || 'No headline'}
-- About/Summary: ${profileData.about || profileData.summary || 'No summary'}
-- Location: ${profileData.addressWithCountry || profileData.location || 'Unknown'}
-- Current Title: ${profileData.jobTitle || 'Unknown'} at ${profileData.companyName || 'Unknown'}
-- Total Experience Years: ${profileData.totalExperienceYears || 'Unknown'}
-- Experience: ${JSON.stringify(profileData.experiences || []).slice(0, 2500)}
-- Skills: ${JSON.stringify(profileData.skills || []).slice(0, 600)}
-- Education: ${JSON.stringify(profileData.educations || []).slice(0, 600)}
+  const education = (profileData.education || [])
+    .slice(0, 3)
+    .map((e: any) => `- ${e.degree || e.degreeName || ''} from ${e.schoolName || e.school || ''}`)
+    .join('\n');
 
-Return a JSON response with EXACTLY this structure (no markdown, no code blocks, just raw JSON):
+  const skills = (profileData.skills || [])
+    .slice(0, 15)
+    .map((s: any) => typeof s === 'string' ? s : s.name || s.skill || '')
+    .filter(Boolean)
+    .join(', ');
+
+  const profileText = `
+Name: ${name}
+Headline: ${headline}
+Location: ${location}
+Connections: ${connections}
+Summary: ${summary}
+
+Experience:
+${experiences || 'None listed'}
+
+Education:
+${education || 'None listed'}
+
+Skills: ${skills || 'None listed'}
+`.trim();
+
+  console.log('[CLAUDE] Sending analysis request, model:', CLAUDE_MODEL);
+  console.log('[CLAUDE] Profile text length:', profileText.length);
+
+  const claudeBody = {
+    model: CLAUDE_MODEL,
+    max_tokens: 2000,
+    messages: [
+      {
+        role: 'user',
+        content: `You are an expert LinkedIn profile optimizer specializing in the Saudi/GCC job market. Analyze this LinkedIn profile and return a JSON object with EXACTLY this structure (no markdown, no code blocks, just raw JSON):
+
 {
   "score": <number 0-100>,
   "headlineCurrent": "<current headline>",
-  "headlineSuggestion": "<improved headline optimized for visibility>",
+  "headlineSuggestion": "<improved headline>",
   "summaryCurrent": "<current summary or 'No summary provided'>",
-  "summarySuggestion": "<improved 3-4 sentence professional summary>",
-  "keywords": ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5", "keyword6"],
-  "experienceSuggestions": [
-    {
-      "role": "<role title>",
-      "suggestion": "<specific improvement suggestion>"
-    }
-  ],
-  "strengthPoints": ["<strength 1>", "<strength 2>", "<strength 3>"],
-  "improvementAreas": ["<area 1>", "<area 2>", "<area 3>"]
+  "summarySuggestion": "<improved professional summary in 2-3 sentences>",
+  "keywords": ["keyword1", "keyword2", ...up to 8 relevant keywords],
+  "experienceSuggestions": [{"role": "<role>", "suggestion": "<specific improvement tip>"}],
+  "strengths": ["<strength1>", "<strength2>", "<strength3>"],
+  "weaknesses": ["<weakness1>", "<weakness2>", "<weakness3>"]
 }
 
 Score criteria:
-- 90-100: Excellent profile, minor tweaks
-- 70-89: Good profile, needs optimization
-- 50-69: Average, significant improvements needed
-- Below 50: Weak profile, major overhaul needed
+- Photo/banner: +10 if likely present (connections > 100 suggests active profile)
+- Headline quality: up to 15 points
+- Summary quality: up to 15 points
+- Experience detail: up to 20 points
+- Skills: up to 10 points
+- Education: up to 10 points
+- Connections: up to 10 points
+- Keywords/SEO: up to 10 points
 
-Consider Vision 2030 alignment for Saudi-based professionals.`;
+Profile data:
+${profileText}`
+      }
+    ]
+  };
 
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+  console.log('[CLAUDE] Request body model:', claudeBody.model);
+
+  const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': ANTHROPIC_API_KEY,
       'anthropic-version': '2023-06-01',
     },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1500,
-      messages: [
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
-    }),
+    body: JSON.stringify(claudeBody),
   });
 
-  if (!res.ok) {
-    const errText = await res.text();
-    console.error('Claude API error:', res.status, errText);
-    throw new Error(`Claude API failed: ${res.status}`);
+  if (!claudeRes.ok) {
+    const errText = await claudeRes.text();
+    console.error('[CLAUDE] API error:', claudeRes.status, errText);
+    throw new Error(`Claude API error: ${claudeRes.status} - ${errText}`);
   }
 
-  const data = await res.json();
-  const text = data.content?.[0]?.text || '';
+  const claudeData = await claudeRes.json();
+  console.log('[CLAUDE] Response received, stop_reason:', claudeData.stop_reason);
 
-  // Parse JSON from response (handle potential markdown wrapping)
-  let cleaned = text.trim();
-  if (cleaned.startsWith('```')) {
-    cleaned = cleaned.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
+  const text = claudeData.content?.[0]?.text || '';
+
+  // Extract JSON from response (handle possible markdown wrapping)
+  let jsonStr = text;
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  if (jsonMatch) {
+    jsonStr = jsonMatch[0];
   }
 
   try {
-    return JSON.parse(cleaned);
-  } catch {
-    console.error('Failed to parse Claude response:', text);
-    return {
-      score: 60,
-      headlineCurrent: profileData.headline || 'No headline',
-      headlineSuggestion: `${profileData.headline || 'Professional'} | Open to Opportunities`,
-      summaryCurrent: profileData.summary || 'No summary provided',
-      summarySuggestion: 'Consider adding a professional summary that highlights your key skills and experience.',
-      keywords: ['leadership', 'innovation', 'strategy', 'growth', 'technology'],
-      experienceSuggestions: [{ role: 'General', suggestion: 'Add metrics and quantify your impact in each role' }],
-      strengthPoints: ['Profile exists on LinkedIn'],
-      improvementAreas: ['Add more detail to profile sections'],
-    };
+    const analysis = JSON.parse(jsonStr);
+    return analysis;
+  } catch (parseErr) {
+    console.error('[CLAUDE] Failed to parse JSON response:', text.substring(0, 500));
+    throw new Error('Failed to parse Claude analysis response');
   }
 }
 
 export const linkedinRouter = router({
   analyze: protectedProcedure
-    .input(z.object({ profileUrl: z.string().url() }))
+    .input(z.object({ profileUrl: z.string() }))
     .mutation(async ({ input, ctx }) => {
       try {
+        console.log('[LINKEDIN] Analyze request for:', input.profileUrl);
+
         // Check token balance (need 5 tokens)
         const { data: profile } = await ctx.supabase
           .from('profiles')
@@ -148,36 +193,22 @@ export const linkedinRouter = router({
           .eq('id', ctx.user.id)
           .single();
 
+        console.log('[LINKEDIN] User token balance:', profile?.token_balance);
+
         if (!profile || profile.token_balance < 5) {
           throw new TRPCError({
             code: 'BAD_REQUEST',
-            message: 'Insufficient tokens. You need 5 tokens for LinkedIn analysis.',
+            message: 'Insufficient tokens. Need 5 tokens for analysis.',
           });
         }
 
-        // Step 1: Fetch LinkedIn profile data via Apify
-        let profileData: any;
-        try {
-          profileData = await fetchLinkedInProfile(input.profileUrl);
-        } catch (apifyErr: any) {
-          console.error('Apify fetch failed:', apifyErr.message);
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'Could not fetch LinkedIn profile. Please check the URL and try again.',
-          });
-        }
+        // Step 1: Scrape LinkedIn profile via Apify
+        const profileData = await scrapeLinkedInProfile(input.profileUrl);
+        console.log('[LINKEDIN] Profile scraped:', profileData?.fullName || profileData?.firstName);
 
         // Step 2: Analyze with Claude AI
-        let analysis: any;
-        try {
-          analysis = await analyzeWithClaude(profileData);
-        } catch (claudeErr: any) {
-          console.error('Claude analysis failed:', claudeErr.message);
-          throw new TRPCError({
-            code: 'INTERNAL_SERVER_ERROR',
-            message: 'AI analysis failed. Please try again.',
-          });
-        }
+        const analysis = await analyzeWithClaude(profileData);
+        console.log('[LINKEDIN] Analysis score:', analysis?.score);
 
         // Step 3: Deduct 5 tokens
         const { error: updateError } = await ctx.supabase
@@ -185,46 +216,35 @@ export const linkedinRouter = router({
           .update({ token_balance: (profile.token_balance || 0) - 5 })
           .eq('id', ctx.user.id);
 
-        if (updateError) throw updateError;
+        if (updateError) {
+          console.error('[LINKEDIN] Token deduction error:', updateError);
+          throw updateError;
+        }
 
-        // Step 4: Log token transaction
-        await ctx.supabase.from('token_transactions').insert([
-          {
-            user_id: ctx.user.id,
-            type: 'spend',
-            amount: -5,
-            description: 'LinkedIn profile analysis',
-          },
-        ]);
-
-        // Step 5: Save analysis to linkedin_analyses table
+        // Step 4: Save to linkedin_analyses table
         const { error: insertError } = await ctx.supabase
           .from('linkedin_analyses')
           .insert([
             {
               user_id: ctx.user.id,
               profile_url: input.profileUrl,
-              score: analysis.score ?? 0,
-              headline_current: analysis.headlineCurrent ?? null,
-              headline_suggestion: analysis.headlineSuggestion ?? null,
-              summary_current: analysis.summaryCurrent ?? null,
-              summary_suggestion: analysis.summarySuggestion ?? null,
-              keywords_suggestions: Array.isArray(analysis.keywords) ? analysis.keywords : [],
-              experience_suggestions: analysis.experienceSuggestions ?? [],
+              score: analysis.score || 0,
+              analysis_data: analysis,
             },
           ]);
 
         if (insertError) {
-          console.error('Insert analysis error:', insertError);
+          console.error('[LINKEDIN] Insert error:', insertError);
+          // Don't throw — analysis still succeeded
         }
 
         return analysis;
-      } catch (err) {
+      } catch (err: any) {
+        console.error('[LINKEDIN] Error:', err?.message || err);
         if (err instanceof TRPCError) throw err;
-        console.error('LinkedIn analyze error:', err);
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to analyze LinkedIn profile',
+          message: err?.message || 'Failed to analyze LinkedIn profile',
         });
       }
     }),
