@@ -1,432 +1,130 @@
-import React, { useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { motion } from 'framer-motion';
-import AdminLayout from '@/components/AdminLayout';
-import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import {
-  Search, MoreVertical, Lock, Unlock, CheckCircle, AlertCircle,
-  Plus, X
-} from 'lucide-react';
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
+import { Search, Filter, MoreVertical, UserPlus, Ban, Coins, CheckCircle2, X } from "lucide-react";
+import DashboardLayout from "@/components/DashboardLayout";
 
-interface User {
-  id: string;
-  email: string;
-  full_name: string;
-  plan: 'free' | 'starter' | 'pro' | 'elite';
-  token_balance: number;
-  created_at: string;
-  is_banned: boolean;
-  verified: boolean;
-}
+const users = [
+  { id: "1", name: "أحمد الراشد", email: "ahmed@example.com", plan: "Pro", tokens: 2450, status: "active", joined: "2025-11-12" },
+  { id: "2", name: "نورة العتيبي", email: "noura@example.com", plan: "Free", tokens: 120, status: "active", joined: "2026-01-04" },
+  { id: "3", name: "خالد الشمري", email: "khalid@example.com", plan: "Elite", tokens: 4200, status: "active", joined: "2025-09-22" },
+  { id: "4", name: "سارة القحطاني", email: "sara@example.com", plan: "Pro", tokens: 890, status: "banned", joined: "2025-12-01" },
+  { id: "5", name: "فيصل الدوسري", email: "faisal@example.com", plan: "Free", tokens: 50, status: "active", joined: "2026-02-14" },
+];
 
-const AdminUsers: React.FC = () => {
+export default function AdminUsers() {
   const { t } = useTranslation();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedPlan, setSelectedPlan] = useState<string>('all');
-  const [users, setUsers] = useState<User[]>([
-    {
-      id: '1',
-      email: 'ahmed@example.com',
-      full_name: 'Ahmed Al-Rashid',
-      plan: 'pro',
-      token_balance: 500,
-      created_at: '2024-03-15',
-      is_banned: false,
-      verified: true,
-    },
-    {
-      id: '2',
-      email: 'fatima@example.com',
-      full_name: 'Fatima Al-Zahrani',
-      plan: 'starter',
-      token_balance: 100,
-      created_at: '2024-03-10',
-      is_banned: false,
-      verified: true,
-    },
-    {
-      id: '3',
-      email: 'mohammed@example.com',
-      full_name: 'Mohammed Al-Otaibi',
-      plan: 'free',
-      token_balance: 0,
-      created_at: '2024-03-08',
-      is_banned: true,
-      verified: false,
-    },
-    {
-      id: '4',
-      email: 'noor@example.com',
-      full_name: 'Noor Al-Dosari',
-      plan: 'elite',
-      token_balance: 2000,
-      created_at: '2024-03-05',
-      is_banned: false,
-      verified: true,
-    },
-    {
-      id: '5',
-      email: 'layla@example.com',
-      full_name: 'Layla Al-Kharji',
-      plan: 'starter',
-      token_balance: 250,
-      created_at: '2024-03-01',
-      is_banned: false,
-      verified: true,
-    },
-  ]);
+  const [q, setQ] = useState("");
+  const [modal, setModal] = useState<string | null>(null);
+  const [addAmt, setAddAmt] = useState(500);
 
-  const [showTokenModal, setShowTokenModal] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [tokenAmount, setTokenAmount] = useState('');
-  const [tokenReason, setTokenReason] = useState('');
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-
-  const planColors = {
-    free: 'bg-gray-500',
-    starter: 'bg-blue-500',
-    pro: 'bg-purple-500',
-    elite: 'bg-amber-500',
-  };
-
-  const filteredUsers = users.filter((user) => {
-    const matchesSearch =
-      user.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchQuery.toLowerCase());
-
-    const matchesPlan = selectedPlan === 'all' || user.plan === selectedPlan;
-
-    if (selectedPlan === 'banned') return user.is_banned && matchesSearch;
-    if (selectedPlan === 'all') return matchesSearch && !user.is_banned;
-
-    return matchesSearch && matchesPlan;
-  });
-
-  const handleAddTokens = () => {
-    if (!selectedUser || !tokenAmount || !tokenReason) return;
-
-    setUsers(
-      users.map((u) =>
-        u.id === selectedUser.id
-          ? {
-              ...u,
-              token_balance: u.token_balance + parseInt(tokenAmount),
-            }
-          : u
-      )
-    );
-
-    setShowTokenModal(false);
-    setTokenAmount('');
-    setTokenReason('');
-    setSelectedUser(null);
-  };
-
-  const handleToggleBan = (user: User) => {
-    setUsers(
-      users.map((u) =>
-        u.id === user.id ? { ...u, is_banned: !u.is_banned } : u
-      )
-    );
-  };
-
-  const handleToggleVerify = (user: User) => {
-    setUsers(
-      users.map((u) =>
-        u.id === user.id ? { ...u, verified: !u.verified } : u
-      )
-    );
-  };
+  const filtered = users.filter((u) =>
+    u.name.includes(q) || u.email.toLowerCase().includes(q.toLowerCase())
+  );
 
   return (
-    <AdminLayout pageTitle={t('admin.users')}>
-      <div className="space-y-6">
-        {/* Search and Filter */}
-        <Card className="p-6">
-          <div className="space-y-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[var(--text-secondary)]" />
-              <Input
-                type="text"
-                placeholder={t('admin.searchUsers')}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              {['all', 'free', 'starter', 'pro', 'elite', 'banned'].map(
-                (plan) => (
-                  <button
-                    key={plan}
-                    onClick={() => setSelectedPlan(plan)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      selectedPlan === plan
-                        ? 'bg-[var(--accent-primary)] text-white'
-                        : 'bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:bg-[var(--border-subtle)]'
-                    }`}
-                  >
-                    {t(`admin.filter${plan.charAt(0).toUpperCase() + plan.slice(1)}`)}
-                  </button>
-                )
-              )}
-            </div>
+    <DashboardLayout>
+      <div className="p-6 md:p-8 max-w-6xl space-y-6">
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold text-[#1a1a2e]">{t("au.title", "المستخدمون")}</h1>
+            <p className="text-gray-500 mt-2">{t("au.subtitle", "إدارة حسابات المستخدمين والتوكنز")}</p>
           </div>
-        </Card>
+          <button className="px-5 py-3 rounded-xl bg-[#ff6b35] hover:bg-[#e55a2b] text-white font-semibold shadow-lg shadow-[#ff6b35]/30 flex items-center gap-2 transition">
+            <UserPlus className="w-5 h-5" /> {t("au.add", "إضافة مستخدم")}
+          </button>
+        </motion.div>
 
-        {/* Users Table */}
-        <Card className="overflow-hidden">
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+          className="rounded-2xl bg-white border border-gray-100 shadow-sm p-6">
+          <div className="flex flex-col md:flex-row gap-3 mb-5">
+            <div className="relative flex-1">
+              <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("au.search", "ابحث بالاسم أو البريد...")}
+                className="w-full ps-10 pe-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-[#ff6b35] focus:outline-none focus:ring-2 focus:ring-[#ff6b35]/20 transition" />
+            </div>
+            <button className="px-4 py-3 rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-700 font-semibold flex items-center gap-2 transition">
+              <Filter className="w-4 h-4" /> {t("au.filter", "تصفية")}
+            </button>
+          </div>
+
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-[var(--bg-surface)] border-b border-[var(--border-subtle)]">
-                <tr>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-[var(--text-secondary)]">
-                    {t('admin.name')}
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-[var(--text-secondary)]">
-                    {t('admin.email')}
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-[var(--text-secondary)]">
-                    {t('admin.plan')}
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-[var(--text-secondary)]">
-                    {t('admin.tokens')}
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-[var(--text-secondary)]">
-                    {t('admin.status')}
-                  </th>
-                  <th className="px-6 py-4 text-right text-sm font-semibold text-[var(--text-secondary)]">
-                    {t('admin.actions')}
-                  </th>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-start text-xs font-semibold text-gray-500 border-b border-gray-100">
+                  <th className="pb-3 text-start">{t("au.name", "الاسم")}</th>
+                  <th className="pb-3 text-start">{t("au.plan", "الخطة")}</th>
+                  <th className="pb-3 text-start">{t("au.tokens", "التوكنز")}</th>
+                  <th className="pb-3 text-start">{t("au.status", "الحالة")}</th>
+                  <th className="pb-3 text-start">{t("au.joined", "انضم")}</th>
+                  <th className="pb-3 text-end">{t("au.actions", "")}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[var(--border-subtle)]">
-                {filteredUsers.map((user) => (
-                  <motion.tr
-                    key={user.id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="hover:bg-[var(--bg-surface)] transition-colors"
-                  >
-                    <td className="px-6 py-4">
-                      <p className="font-medium text-[var(--text-primary)]">
-                        {user.full_name}
-                      </p>
+              <tbody>
+                {filtered.map((u) => (
+                  <tr key={u.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50 transition">
+                    <td className="py-3">
+                      <div className="font-semibold text-[#1a1a2e]">{u.name}</div>
+                      <div className="text-xs text-gray-400 mt-0.5" dir="ltr">{u.email}</div>
                     </td>
-                    <td className="px-6 py-4">
-                      <p className="text-sm text-[var(--text-secondary)]">
-                        {user.email}
-                      </p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-semibold text-white ${
-                          planColors[user.plan]
-                        }`}
-                      >
-                        {user.plan.charAt(0).toUpperCase() + user.plan.slice(1)}
+                    <td className="py-3">
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${u.plan === "Free" ? "bg-gray-100 text-gray-600" : u.plan === "Pro" ? "bg-orange-50 text-[#ff6b35]" : "bg-purple-50 text-purple-700"}`}>
+                        {u.plan}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
-                      <p className="text-sm font-medium text-[var(--text-primary)]">
-                        {user.token_balance}
-                      </p>
+                    <td className="py-3 font-semibold text-[#1a1a2e] tabular-nums">{u.tokens.toLocaleString("en-US")}</td>
+                    <td className="py-3">
+                      <span className={`inline-flex items-center gap-1 text-xs font-semibold ${u.status === "active" ? "text-emerald-600" : "text-red-500"}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${u.status === "active" ? "bg-emerald-500" : "bg-red-500"}`} />
+                        {u.status === "active" ? t("au.active", "نشط") : t("au.banned", "محظور")}
+                      </span>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        {user.verified && (
-                          <div className="flex items-center gap-1">
-                            <CheckCircle className="w-4 h-4 text-green-600" />
-                            <span className="text-xs text-[var(--text-secondary)]">
-                              {t('admin.verified')}
-                            </span>
-                          </div>
-                        )}
-                        {user.is_banned && (
-                          <span className="px-2 py-1 text-xs font-semibold rounded bg-red-500/20 text-red-600">
-                            {t('admin.banned')}
-                          </span>
-                        )}
-                      </div>
+                    <td className="py-3 text-xs text-gray-500 tabular-nums" dir="ltr">{u.joined}</td>
+                    <td className="py-3 text-end">
+                      <button onClick={() => setModal(u.id)} className="w-8 h-8 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-[#ff6b35] inline-flex items-center justify-center transition">
+                        <MoreVertical className="w-4 h-4" />
+                      </button>
                     </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="relative inline-block">
-                        <button
-                          onClick={() =>
-                            setOpenMenuId(
-                              openMenuId === user.id ? null : user.id
-                            )
-                          }
-                          className="p-2 hover:bg-[var(--bg-surface)] rounded-lg"
-                        >
-                          <MoreVertical className="w-5 h-5" />
-                        </button>
-
-                        {openMenuId === user.id && (
-                          <motion.div
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            className="absolute right-0 mt-2 w-48 bg-[var(--bg-base)] rounded-lg border border-[var(--border-subtle)] shadow-lg z-10"
-                          >
-                            <button
-                              onClick={() => {
-                                setSelectedUser(user);
-                                setShowTokenModal(true);
-                                setOpenMenuId(null);
-                              }}
-                              className="w-full flex items-center gap-2 px-4 py-3 hover:bg-[var(--bg-surface)] transition-colors text-left border-b border-[var(--border-subtle)]"
-                            >
-                              <Plus className="w-4 h-4" />
-                              <span className="text-sm">
-                                {t('admin.addTokens')}
-                              </span>
-                            </button>
-
-                            <button
-                              onClick={() => {
-                                handleToggleBan(user);
-                                setOpenMenuId(null);
-                              }}
-                              className="w-full flex items-center gap-2 px-4 py-3 hover:bg-[var(--bg-surface)] transition-colors text-left border-b border-[var(--border-subtle)]"
-                            >
-                              {user.is_banned ? (
-                                <>
-                                  <Unlock className="w-4 h-4" />
-                                  <span className="text-sm">
-                                    {t('admin.unban')}
-                                  </span>
-                                </>
-                              ) : (
-                                <>
-                                  <Lock className="w-4 h-4" />
-                                  <span className="text-sm">
-                                    {t('admin.ban')}
-                                  </span>
-                                </>
-                              )}
-                            </button>
-
-                            <button
-                              onClick={() => {
-                                handleToggleVerify(user);
-                                setOpenMenuId(null);
-                              }}
-                              className="w-full flex items-center gap-2 px-4 py-3 hover:bg-[var(--bg-surface)] transition-colors text-left"
-                            >
-                              <CheckCircle className="w-4 h-4" />
-                              <span className="text-sm">
-                                {user.verified
-                                  ? t('admin.unverify')
-                                  : t('admin.verify')}
-                              </span>
-                            </button>
-                          </motion.div>
-                        )}
-                      </div>
-                    </td>
-                  </motion.tr>
+                  </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        </Card>
+        </motion.div>
 
-        {filteredUsers.length === 0 && (
-          <Card className="p-12">
-            <div className="text-center">
-              <AlertCircle className="w-12 h-12 mx-auto mb-4 text-[var(--text-secondary)]" />
-              <p className="text-[var(--text-secondary)]">
-                {t('admin.noUsersFound')}
-              </p>
-            </div>
-          </Card>
+        {modal && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+            onClick={() => setModal(null)}
+          >
+            <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md"
+            >
+              <div className="flex items-center justify-between mb-5">
+                <h3 className="font-bold text-[#1a1a2e] text-lg">{t("au.addTokens", "إضافة توكنز")}</h3>
+                <button onClick={() => setModal(null)} className="w-8 h-8 rounded-lg hover:bg-gray-100 text-gray-500 inline-flex items-center justify-center">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1.5">{t("au.amount", "الكمية")}</label>
+              <div className="relative">
+                <Coins className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-500" />
+                <input type="number" value={addAmt} onChange={(e) => setAddAmt(+e.target.value)}
+                  className="w-full ps-10 pe-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-[#ff6b35] focus:outline-none focus:ring-2 focus:ring-[#ff6b35]/20 transition" />
+              </div>
+              <div className="flex gap-3 mt-5">
+                <button onClick={() => setModal(null)} className="flex-1 py-3 rounded-xl border border-gray-200 text-gray-700 font-semibold hover:bg-gray-50 transition">
+                  {t("au.cancel", "إلغاء")}
+                </button>
+                <button onClick={() => setModal(null)} className="flex-1 py-3 rounded-xl bg-[#ff6b35] hover:bg-[#e55a2b] text-white font-semibold shadow-lg shadow-[#ff6b35]/30 inline-flex items-center justify-center gap-2 transition">
+                  <CheckCircle2 className="w-4 h-4" /> {t("au.confirm", "تأكيد")}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
         )}
       </div>
-
-      {/* Add Tokens Modal */}
-      {showTokenModal && selectedUser && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-        >
-          <motion.div
-            initial={{ scale: 0.95 }}
-            animate={{ scale: 1 }}
-            className="bg-[var(--bg-base)] rounded-lg p-6 max-w-md w-full mx-4"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-[var(--text-primary)]">
-                {t('admin.addTokens')}
-              </h3>
-              <button
-                onClick={() => {
-                  setShowTokenModal(false);
-                  setSelectedUser(null);
-                }}
-                className="p-1 hover:bg-[var(--bg-surface)] rounded"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <p className="text-sm text-[var(--text-secondary)] mb-4">
-              {t('admin.addTokensDesc', { name: selectedUser.full_name })}
-            </p>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
-                  {t('admin.tokenAmount')}
-                </label>
-                <Input
-                  type="number"
-                  min="1"
-                  value={tokenAmount}
-                  onChange={(e) => setTokenAmount(e.target.value)}
-                  placeholder="100"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
-                  {t('admin.reason')}
-                </label>
-                <Input
-                  type="text"
-                  value={tokenReason}
-                  onChange={(e) => setTokenReason(e.target.value)}
-                  placeholder={t('admin.reasonPlaceholder')}
-                />
-              </div>
-
-              <div className="flex gap-3 mt-6">
-                <Button
-                  onClick={() => {
-                    setShowTokenModal(false);
-                    setSelectedUser(null);
-                  }}
-                  variant="outline"
-                  className="flex-1"
-                >
-                  {t('common.cancel')}
-                </Button>
-                <Button
-                  onClick={handleAddTokens}
-                  className="flex-1"
-                >
-                  {t('common.save')}
-                </Button>
-              </div>
-            </div>
-          </motion.div>
-        </motion.div>
-      )}
-    </AdminLayout>
+    </DashboardLayout>
   );
-};
-
-export default AdminUsers;
+}

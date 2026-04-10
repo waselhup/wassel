@@ -1,457 +1,154 @@
-import React, { useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { useAuth } from '@/contexts/AuthContext';
-import { useLocation } from 'wouter';
-import { motion, AnimatePresence } from 'framer-motion';
-import { supabase } from '@/lib/supabase';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Upload, CheckCircle, ChevronRight } from 'lucide-react';
+import { useState } from "react";
+import { useLocation } from "wouter";
+import { motion, AnimatePresence } from "framer-motion";
+import { useTranslation } from "react-i18next";
+import { ChevronLeft, ChevronRight, Linkedin, User, Target, Sparkles, CheckCircle2 } from "lucide-react";
 
-type Step = 1 | 2 | 3;
+export default function Onboarding() {
+  const { t } = useTranslation();
+  const [, setLocation] = useLocation();
+  const [step, setStep] = useState(0);
+  const [data, setData] = useState({ linkedin: "", role: "", goal: "" });
+  const set = (k: string, v: string) => setData((d) => ({ ...d, [k]: v }));
 
-interface FormData {
-  fullName: string;
-  title: string;
-  company: string;
-  phone: string;
-  location: string;
-  linkedinUrl: string;
-  resumeFile: File | null;
-}
+  const steps = [
+    { key: "link", title: t("on.s1.title", "اربط ملفك على LinkedIn"), desc: t("on.s1.desc", "ألصق رابط ملفك الشخصي لنقوم بتحليله"), icon: Linkedin },
+    { key: "role", title: t("on.s2.title", "ما دورك الحالي؟"), desc: t("on.s2.desc", "ساعدنا على تخصيص التجربة لك"), icon: User },
+    { key: "goal", title: t("on.s3.title", "ما هدفك من وصّل؟"), desc: t("on.s3.desc", "سنرشدك للميزة الأنسب"), icon: Target },
+  ];
 
-const Onboarding: React.FC = () => {
-  const { t, i18n } = useTranslation();
-  const { user, profile } = useAuth();
-  const [, navigate] = useLocation();
-  const [currentStep, setCurrentStep] = useState<Step>(1);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [formData, setFormData] = useState<FormData>({
-    fullName: profile?.full_name || '',
-    title: profile?.title || '',
-    company: profile?.company || '',
-    phone: profile?.phone || '',
-    location: profile?.location || '',
-    linkedinUrl: profile?.linkedin_url || '',
-    resumeFile: null,
-  });
-  const isArabic = i18n.language === 'ar';
+  const goals = [
+    t("on.goal.job", "البحث عن وظيفة"),
+    t("on.goal.clients", "جذب عملاء B2B"),
+    t("on.goal.brand", "بناء علامتي الشخصية"),
+    t("on.goal.network", "توسيع شبكة العلاقات"),
+  ];
+  const roles = [
+    t("on.role.exec", "تنفيذي / إداري"),
+    t("on.role.sales", "مبيعات / تسويق"),
+    t("on.role.tech", "مهندس / تقني"),
+    t("on.role.founder", "مؤسس / مستقل"),
+  ];
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    setError('');
-  };
-
-  const validateStep1 = () => {
-    if (!formData.fullName.trim()) {
-      setError(t('onboarding.fullName'));
-      return false;
-    }
-    if (!formData.title.trim()) {
-      setError(t('onboarding.title'));
-      return false;
-    }
-    if (!formData.company.trim()) {
-      setError(t('onboarding.company'));
-      return false;
-    }
-    return true;
-  };
-
-  const validateStep2 = () => {
-    if (!formData.linkedinUrl.trim()) {
-      setError(t('onboarding.linkedinUrl'));
-      return false;
-    }
-    if (!formData.linkedinUrl.includes('linkedin.com/in/')) {
-      setError(t('onboarding.linkedinInvalid'));
-      return false;
-    }
-    return true;
-  };
-
-  const saveStep1 = async () => {
-    if (!validateStep1()) return false;
-    if (!user) return false;
-
-    try {
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({
-          full_name: formData.fullName,
-          title: formData.title,
-          company: formData.company,
-          phone: formData.phone,
-          location: formData.location,
-        })
-        .eq('id', user.id);
-
-      if (updateError) {
-        setError(t('common.error'));
-        return false;
-      }
-      return true;
-    } catch (err) {
-      setError(t('common.error'));
-      return false;
-    }
-  };
-  const saveStep2 = async () => {
-    if (!validateStep2()) return false;
-    if (!user) return false;
-
-    try {
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({
-          linkedin_url: formData.linkedinUrl,
-        })
-        .eq('id', user.id);
-
-      if (updateError) {
-        setError(t('common.error'));
-        return false;
-      }
-      return true;
-    } catch (err) {
-      setError(t('common.error'));
-      return false;
-    }
-  };
-
-  const handleNext = async () => {
-    setLoading(true);
-    setError('');
-
-    if (currentStep === 1) {
-      const saved = await saveStep1();
-      if (saved) {
-        setCurrentStep(2);
-      }
-    } else if (currentStep === 2) {
-      const saved = await saveStep2();
-      if (saved) {
-        setCurrentStep(3);
-      }
-    }
-
-    setLoading(false);
-  };
-
-  const handleBack = () => {
-    if (currentStep > 1) {
-      setCurrentStep((currentStep - 1) as Step);
-      setError('');
-    }
-  };
-
-  const handleSkip = async () => {
-    if (currentStep < 3) {
-      setCurrentStep((currentStep + 1) as Step);
-    } else {
-      navigate('/app');
-    }
-  };
-  const handleResumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        setError(t('onboarding.resumeSize'));
-        return;
-      }
-      setFormData(prev => ({ ...prev, resumeFile: file }));
-      setError('');
-    }
-  };
-
-  const handleFinish = async () => {
-    setLoading(true);
-    setError('');
-
-    try {
-      if (formData.resumeFile && user) {
-        const fileName = `${user.id}/resume-${Date.now()}.pdf`;
-        const { error: uploadError } = await supabase.storage
-          .from('resumes')
-          .upload(fileName, formData.resumeFile);
-
-        if (uploadError) {
-          setError(t('common.error'));
-          setLoading(false);
-          return;
-        }
-
-        const { data } = supabase.storage
-          .from('resumes')
-          .getPublicUrl(fileName);
-
-        await supabase
-          .from('profiles')
-          .update({
-            resume_url: data.publicUrl,
-          })
-          .eq('id', user.id);
-      }
-
-      navigate('/app');
-    } catch (err) {
-      setError(t('common.error'));
-    }
-
-    setLoading(false);
-  };
+  const done = step === steps.length;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[var(--bg-surface)] to-[var(--bg-base)] flex items-center justify-center p-4">
-      <div className="w-full max-w-2xl">
-        {/* Progress bar */}
-        <div className="mb-8">
-          <div className="flex items-center gap-2 mb-4">
-            <span className="text-sm font-semibold text-[var(--text-secondary)]">
-              {t('onboarding.progressStep')} {currentStep} {t('onboarding.of')} 3
-            </span>
+    <div className="min-h-screen bg-[#fafafa] flex items-center justify-center p-4 relative overflow-hidden">
+      <div className="absolute top-10 -start-20 w-96 h-96 rounded-full bg-orange-100/40 blur-3xl" />
+      <div className="absolute bottom-10 -end-20 w-96 h-96 rounded-full bg-blue-100/40 blur-3xl" />
+
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+        className="relative w-full max-w-xl bg-white rounded-3xl shadow-2xl p-8 md:p-10"
+      >
+        {!done && (
+          <div className="flex items-center justify-center gap-2 mb-8">
+            {steps.map((_, i) => (
+              <motion.div key={i}
+                animate={{ width: step === i ? 32 : 8, backgroundColor: step >= i ? "#ff6b35" : "#e5e7eb" }}
+                className="h-2 rounded-full"
+              />
+            ))}
           </div>
-          <div className="w-full h-2 bg-[var(--border-subtle)] rounded-full overflow-hidden">
-            <motion.div
-              className="h-full bg-[var(--accent-primary)]"
-              initial={{ width: '0%' }}
-              animate={{ width: `${(currentStep / 3) * 100}%` }}
-              transition={{ duration: 0.5 }}
-            />
-          </div>
-        </div>
-        <Card className="p-8">
-          <AnimatePresence mode="wait">
-            {/* Step 1: Profile */}
-            {currentStep === 1 && (
-              <motion.div
-                key="step1"
-                initial={{ opacity: 0, x: isArabic ? -50 : 50 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: isArabic ? 50 : -50 }}
-                transition={{ duration: 0.3 }}
-              >
-                <h2 className="text-2xl font-cairo font-bold text-[var(--text-primary)] mb-2">
-                  {t('onboarding.step1Title')}
-                </h2>
-                <p className="text-[var(--text-secondary)] mb-6">
-                  {t('onboarding.step1Description')}
-                </p>
+        )}
 
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
-                      {t('onboarding.fullName')}
-                    </label>
-                    <Input
-                      type="text"
-                      name="fullName"
-                      placeholder={t('onboarding.fullName')}
-                      value={formData.fullName}
-                      onChange={handleInputChange}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
-                      {t('onboarding.title')}
-                    </label>
-                    <Input
-                      type="text"
-                      name="title"
-                      placeholder={t('onboarding.title')}
-                      value={formData.title}
-                      onChange={handleInputChange}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
-                      {t('onboarding.company')}
-                    </label>
-                    <Input
-                      type="text"
-                      name="company"
-                      placeholder={t('onboarding.company')}
-                      value={formData.company}
-                      onChange={handleInputChange}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
-                        {t('onboarding.phone')}
-                      </label>
-                      <Input
-                        type="tel"
-                        name="phone"
-                        placeholder={t('onboarding.phone')}
-                        value={formData.phone}
-                        onChange={handleInputChange}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
-                        {t('onboarding.location')}
-                      </label>
-                      <Input
-                        type="text"
-                        name="location"
-                        placeholder={t('onboarding.location')}
-                        value={formData.location}
-                        onChange={handleInputChange}
-                      />
-                    </div>
-                  </div>
-
-                  {error && (
-                    <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
-                      {error}
-                    </div>
-                  )}
+        <AnimatePresence mode="wait">
+          {!done ? (
+            <motion.div key={step}
+              initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <div className="flex justify-center mb-5">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#ff6b35] to-[#f7931e] flex items-center justify-center shadow-xl shadow-[#ff6b35]/30">
+                  {(() => { const Icon = steps[step].icon; return <Icon className="w-8 h-8 text-white" />; })()}
                 </div>
-              </motion.div>
-            )}
-            {/* Step 2: LinkedIn */}
-            {currentStep === 2 && (
-              <motion.div
-                key="step2"
-                initial={{ opacity: 0, x: isArabic ? -50 : 50 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: isArabic ? 50 : -50 }}
-                transition={{ duration: 0.3 }}
-              >
-                <h2 className="text-2xl font-cairo font-bold text-[var(--text-primary)] mb-2">
-                  {t('onboarding.step2Title')}
-                </h2>
-                <p className="text-[var(--text-secondary)] mb-6">
-                  {t('onboarding.step2Description')}
-                </p>
+              </div>
+              <h2 className="text-2xl font-bold text-[#1a1a2e] text-center mb-2">{steps[step].title}</h2>
+              <p className="text-gray-500 text-center mb-7">{steps[step].desc}</p>
 
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
-                      {t('onboarding.linkedinUrl')}
-                    </label>
-                    <Input
-                      type="url"
-                      name="linkedinUrl"
-                      placeholder={t('onboarding.linkedinPlaceholder')}
-                      value={formData.linkedinUrl}
-                      onChange={handleInputChange}
-                    />
-                  </div>
-
-                  {error && (
-                    <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
-                      {error}
-                    </div>
-                  )}
-                </div>
-              </motion.div>
-            )}
-            {/* Step 3: Resume */}
-            {currentStep === 3 && (
-              <motion.div
-                key="step3"
-                initial={{ opacity: 0, x: isArabic ? -50 : 50 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: isArabic ? 50 : -50 }}
-                transition={{ duration: 0.3 }}
-              >
-                <h2 className="text-2xl font-cairo font-bold text-[var(--text-primary)] mb-2">
-                  {t('onboarding.step3Title')}
-                </h2>
-                <p className="text-[var(--text-secondary)] mb-6">
-                  {t('onboarding.step3Description')}
-                </p>
-
-                <div className="space-y-4">
-                  <label className="block">
-                    <input
-                      type="file"
-                      accept=".pdf"
-                      onChange={handleResumeChange}
-                      className="hidden"
-                    />
-                    <div className="border-2 border-dashed border-[var(--border-subtle)] rounded-lg p-8 text-center cursor-pointer hover:border-[var(--accent-primary)] hover:bg-[var(--accent-primary)] hover:bg-opacity-5 transition-colors">
-                      <Upload className="w-8 h-8 text-[var(--accent-secondary)] mx-auto mb-3" />
-                      <p className="font-medium text-[var(--text-primary)] mb-1">
-                        {t('onboarding.resumeHint')}
-                      </p>
-                      <p className="text-sm text-[var(--text-secondary)]">
-                        {t('onboarding.resumeSize')}
-                      </p>
-                    </div>
-                  </label>
-
-                  {formData.resumeFile && (
-                    <div className="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-                      <CheckCircle className="w-5 h-5 text-green-600" />
-                      <span className="text-sm text-green-700">{formData.resumeFile.name}</span>
-                    </div>
-                  )}
-
-                  {error && (
-                    <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
-                      {error}
-                    </div>
-                  )}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-          {/* Actions */}
-          <div className="flex gap-3 mt-8 justify-between">
-            <div className="flex gap-3">
-              {currentStep > 1 && (
-                <Button
-                  onClick={handleBack}
-                  variant="outline"
-                  disabled={loading}
-                >
-                  {t('common.back')}
-                </Button>
+              {step === 0 && (
+                <input value={data.linkedin} onChange={(e) => set("linkedin", e.target.value)}
+                  placeholder="https://linkedin.com/in/your-profile"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-[#ff6b35] focus:outline-none focus:ring-2 focus:ring-[#ff6b35]/20 transition text-center"
+                />
               )}
-            </div>
-
-            <div className="flex gap-3">
-              <Button
-                onClick={handleSkip}
-                variant="ghost"
-                disabled={loading}
-              >
-                {currentStep === 3 ? 'Skip' : t('common.skip')}
-              </Button>
-
-              {currentStep < 3 ? (
-                <Button
-                  onClick={handleNext}
-                  disabled={loading}
-                  className="gap-2"
-                >
-                  {loading ? t('common.loading') : t('common.next')}
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
-              ) : (
-                <Button
-                  onClick={handleFinish}
-                  disabled={loading}
-                  className="gap-2"
-                >
-                  {loading ? t('common.loading') : t('common.submit')}
-                  <CheckCircle className="w-4 h-4" />
-                </Button>
+              {step === 1 && (
+                <div className="grid grid-cols-2 gap-3">
+                  {roles.map((r) => (
+                    <button key={r} onClick={() => set("role", r)}
+                      className={`p-4 rounded-xl border-2 text-sm font-semibold transition ${data.role === r ? "border-[#ff6b35] bg-orange-50 text-[#ff6b35]" : "border-gray-200 text-gray-700 hover:border-gray-300"}`}>
+                      {r}
+                    </button>
+                  ))}
+                </div>
               )}
-            </div>
+              {step === 2 && (
+                <div className="grid grid-cols-1 gap-3">
+                  {goals.map((g) => (
+                    <button key={g} onClick={() => set("goal", g)}
+                      className={`p-4 rounded-xl border-2 text-sm font-semibold transition text-start ${data.goal === g ? "border-[#ff6b35] bg-orange-50 text-[#ff6b35]" : "border-gray-200 text-gray-700 hover:border-gray-300"}`}>
+                      {g}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          ) : (
+            <Done onFinish={() => setLocation("/app")} />
+          )}
+        </AnimatePresence>
+
+        {!done && (
+          <div className="flex items-center justify-between mt-8">
+            <button onClick={() => setStep(Math.max(0, step - 1))} disabled={step === 0}
+              className="px-5 py-3 rounded-xl text-gray-500 font-semibold hover:bg-gray-50 disabled:opacity-40 flex items-center gap-2 transition">
+              <ChevronRight className="w-4 h-4 rtl:rotate-180" /> {t("on.back", "رجوع")}
+            </button>
+            <button onClick={() => setStep(step + 1)}
+              className="px-6 py-3 rounded-xl bg-[#ff6b35] hover:bg-[#e55a2b] text-white font-semibold shadow-lg shadow-[#ff6b35]/30 flex items-center gap-2 transition">
+              {step === steps.length - 1 ? t("on.finish", "إنهاء") : t("on.next", "التالي")}
+              <ChevronLeft className="w-4 h-4 rtl:rotate-180" />
+            </button>
           </div>
-        </Card>
-      </div>
+        )}
+      </motion.div>
     </div>
   );
-};
+}
 
-export default Onboarding;
+function Done({ onFinish }: { onFinish: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-4">
+      <Confetti />
+      <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", delay: 0.2 }}
+        className="w-20 h-20 mx-auto rounded-full bg-emerald-100 flex items-center justify-center mb-5"
+      >
+        <CheckCircle2 className="w-10 h-10 text-emerald-600" />
+      </motion.div>
+      <h2 className="text-2xl font-bold text-[#1a1a2e] mb-2">{t("on.done.title", "مرحبًا بك في وصّل!")}</h2>
+      <p className="text-gray-500 mb-6">{t("on.done.desc", "حسابك جاهز. لنبدأ رحلتك نحو الفرصة التالية")}</p>
+      <button onClick={onFinish}
+        className="px-8 py-3 rounded-xl bg-[#ff6b35] hover:bg-[#e55a2b] text-white font-semibold shadow-lg shadow-[#ff6b35]/30 inline-flex items-center gap-2 transition">
+        <Sparkles className="w-5 h-5" /> {t("on.start", "ابدأ الآن")}
+      </button>
+    </motion.div>
+  );
+}
+
+function Confetti() {
+  const pieces = Array.from({ length: 24 });
+  const colors = ["#ff6b35", "#f7931e", "#1e3a5f", "#10b981", "#a855f7"];
+  return (
+    <div className="pointer-events-none absolute inset-0 overflow-hidden">
+      {pieces.map((_, i) => (
+        <motion.div key={i}
+          initial={{ y: -20, x: (i % 2 ? 1 : -1) * (20 + Math.random() * 100), opacity: 1, rotate: 0 }}
+          animate={{ y: 400, opacity: 0, rotate: 360 + Math.random() * 180 }}
+          transition={{ duration: 2 + Math.random(), delay: Math.random() * 0.4 }}
+          className="absolute start-1/2 top-1/4 w-2 h-3 rounded-sm"
+          style={{ backgroundColor: colors[i % colors.length] }}
+        />
+      ))}
+    </div>
+  );
+}

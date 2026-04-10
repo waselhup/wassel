@@ -1,0 +1,44 @@
+[harvestapi~linkedin-profile-scraper] 201 [{
+  "id": "ACoAAEH0kgwBuJoSwjB0d1nF51yVthQ3iQ1XhIQ",
+  "publicIdentifier": "ali-alhashim-b786b626a",
+  "linkedinUrl": "https://www.linkedin.com/in/ali-alhashim-b786b626a",
+  "firstName": "Ali",
+  "lastName": "Alhashim",
+  "headline": "Drilling Professional | IADC Well Control supervisor Level Certified | Rig Operations & Administration",
+  "openToWork": false,
+  "hiring": false,
+  "premium": false,
+  "influencer": false,
+  "memorialized": false,
+  "location": {
+    "linkedinText": "Al Ahsa, Eas
+[dev_fusion~Linkedin-Profile-Scraper] 201 [{
+  "linkedinUrl": "https://www.linkedin.com/in/ali-alhashim-b786b626a",
+  "firstName": "Ali",
+  "lastName": "Alhashim",
+  "fullName": "Ali Alhashim",
+  "headline": "Drilling Professional | IADC Well Control supervisor Level Certified | Rig Operations & Administration",
+  "connections": 414,
+  "followers": 417,
+  "email": "ali.alhashim@saipem.com",
+  "mobileNumber": null,
+  "jobTitle": "Roughneck",
+  "jobStartedOn": "2024",
+  "jobLocation": "Eastern, Saudi Arabia",
+  "jobStillWorking": true,
+  
+[apimaestro~linkedin-profile-detail] 201 [{
+  "basic_info": {
+    "fullname": "Sarp Tecimer",
+    "first_name": "Sarp",
+    "last_name": "Tecimer",
+    "headline": "Cybersecurity Consultant, Advisor, Vendor and Channel Management Professional",
+    "public_identifier": "sarptecimer",
+    "profile_url": "https://linkedin.com/in/sarptecimer",
+    "profile_picture_url": "https://media.licdn.com/dms/image/v2/C4D03AQEV_svXrnWb9A/profile-displayphoto-shrink_400_400/profile-displayphoto-shrink_400_400/0/1516802592049?e=1777507200&v=beta&t=0FX
+[curious_coder~linkedin-profile-scraper] 400 {
+  "error": {
+    "type": "invalid-input",
+    "message": "Input is not valid: Field input.cookie is required, Field input.proxy is required"
+  }
+}

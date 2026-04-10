@@ -1,273 +1,104 @@
-import React, { useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { motion } from 'framer-motion';
-import AdminLayout from '@/components/AdminLayout';
-import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Settings, Save, AlertCircle } from 'lucide-react';
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
+import { Settings, Save, Flag, DollarSign, Zap } from "lucide-react";
+import DashboardLayout from "@/components/DashboardLayout";
 
-interface Settings {
-  linkedinOptimizer: boolean;
-  cvTailor: boolean;
-  emailCampaign: boolean;
-  freePlan: number;
-  starterPlan: number;
-  proPlan: number;
-  elitePlan: number;
-  token100Price: number;
-  token500Price: number;
-  token1000Price: number;
-  dailyLimitFree: number;
-  dailyLimitStarter: number;
-  dailyLimitPro: number;
-  dailyLimitElite: number;
-}
-
-const AdminSettings: React.FC = () => {
+export default function AdminSettings() {
   const { t } = useTranslation();
-  const [settings, setSettings] = useState<Settings>({
-    linkedinOptimizer: true,
+  const [flags, setFlags] = useState({
+    linkedinAnalyzer: true,
     cvTailor: true,
-    emailCampaign: true,
-    freePlan: 0,
-    starterPlan: 99,
-    proPlan: 199,
-    elitePlan: 299,
-    token100Price: 50,
-    token500Price: 200,
-    token1000Price: 350,
-    dailyLimitFree: 1,
-    dailyLimitStarter: 5,
-    dailyLimitPro: 20,
-    dailyLimitElite: 999,
+    campaigns: true,
+    aiMessages: true,
+    newSignups: true,
+    payments: true,
   });
-
+  const [prices, setPrices] = useState({ starter: 49, pro: 149, elite: 299 });
   const [saved, setSaved] = useState(false);
 
-  const handleToggleFeature = (feature: keyof Settings) => {
-    if (typeof settings[feature] === 'boolean') {
-      setSettings({
-        ...settings,
-        [feature]: !settings[feature],
-      });
-    }
+  const flagKeys = Object.keys(flags) as (keyof typeof flags)[];
+  const flagLabels: Record<string, string> = {
+    linkedinAnalyzer: "تحليل LinkedIn",
+    cvTailor: "تخصيص السيرة",
+    campaigns: "الحملات البريدية",
+    aiMessages: "رسائل AI",
+    newSignups: "تسجيل جديد",
+    payments: "المدفوعات",
   };
 
-  const handleChange = (key: keyof Settings, value: any) => {
-    setSettings({
-      ...settings,
-      [key]: value,
-    });
-  };
-
-  const handleSave = async () => {
-    // TODO: Save settings to backend
+  function save() {
     setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
-  };
+    setTimeout(() => setSaved(false), 2000);
+  }
 
   return (
-    <AdminLayout pageTitle={t('admin.settings')}>
-      <div className="space-y-6 max-w-4xl">
-        {/* Feature Flags */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-        >
-          <Card className="p-6">
-            <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4 flex items-center gap-2">
-              <Settings className="w-5 h-5" />
-              {t('admin.featureFlags')}
-            </h3>
-
-            <div className="space-y-4">
-              {[
-                {
-                  key: 'linkedinOptimizer' as const,
-                  label: t('admin.linkedinOptimizer'),
-                },
-                { key: 'cvTailor' as const, label: t('admin.cvTailor') },
-                {
-                  key: 'emailCampaign' as const,
-                  label: t('admin.emailCampaign'),
-                },
-              ].map((item) => (
-                <div
-                  key={item.key}
-                  className="flex items-center justify-between py-3 border-b border-[var(--border-subtle)] last:border-0"
-                >
-                  <label className="text-sm font-medium text-[var(--text-primary)]">
-                    {item.label}
-                  </label>
-                  <button
-                    onClick={() => handleToggleFeature(item.key)}
-                    className={`relative w-14 h-8 rounded-full transition-colors ${
-                      settings[item.key]
-                        ? 'bg-[var(--accent-primary)]'
-                        : 'bg-[var(--border-subtle)]'
-                    }`}
-                  >
-                    <motion.div
-                      animate={{
-                        x: settings[item.key] ? '100%' : '0%',
-                      }}
-                      className="absolute top-1 left-1 w-6 h-6 bg-white rounded-full"
-                    />
-                  </button>
-                </div>
-              ))}
+    <DashboardLayout>
+      <div className="p-6 md:p-8 max-w-4xl space-y-8">
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
+          <h1 className="text-2xl md:text-3xl font-bold text-[#1a1a2e] flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-gray-600 to-gray-800 flex items-center justify-center shadow-md">
+              <Settings className="w-5 h-5 text-white" />
             </div>
-          </Card>
+            {t("as.title", "إعدادات النظام")}
+          </h1>
+          <p className="text-gray-500 mt-2">{t("as.subtitle", "إدارة الميزات والأسعار وبيانات النظام")}</p>
         </motion.div>
 
-        {/* Plan Prices */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.1 }}
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+          className="rounded-2xl bg-white border border-gray-100 shadow-sm p-6"
         >
-          <Card className="p-6">
-            <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">
-              {t('admin.planPrices')}
-            </h3>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {[
-                { key: 'freePlan' as const, label: 'Free' },
-                { key: 'starterPlan' as const, label: 'Starter' },
-                { key: 'proPlan' as const, label: 'Pro' },
-                { key: 'elitePlan' as const, label: 'Elite' },
-              ].map((plan) => (
-                <div key={plan.key}>
-                  <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
-                    {plan.label} ({t('admin.sar')})
-                  </label>
-                  <Input
-                    type="number"
-                    min="0"
-                    value={settings[plan.key]}
-                    onChange={(e) =>
-                      handleChange(plan.key, parseInt(e.target.value) || 0)
-                    }
+          <div className="flex items-center gap-2 mb-5">
+            <Flag className="w-5 h-5 text-[#ff6b35]" />
+            <h3 className="font-bold text-[#1a1a2e]">{t("as.flags", "الميزات المفعّلة (Feature Flags)")}</h3>
+          </div>
+          <div className="space-y-3">
+            {flagKeys.map((k) => (
+              <label key={k} className="flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 cursor-pointer transition">
+                <div className="flex items-center gap-3">
+                  <Zap className="w-4 h-4 text-gray-400" />
+                  <span className="text-sm font-semibold text-[#1a1a2e]">{flagLabels[k]}</span>
+                </div>
+                <button onClick={() => setFlags({ ...flags, [k]: !flags[k] })}
+                  className={`relative w-11 h-6 rounded-full transition ${flags[k] ? "bg-[#ff6b35]" : "bg-gray-300"}`}>
+                  <motion.span
+                    animate={{ x: flags[k] ? 20 : 0 }}
+                    className="absolute top-0.5 start-0.5 w-5 h-5 rounded-full bg-white shadow"
                   />
-                </div>
-              ))}
-            </div>
-          </Card>
+                </button>
+              </label>
+            ))}
+          </div>
         </motion.div>
 
-        {/* Token Prices */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.2 }}
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
+          className="rounded-2xl bg-white border border-gray-100 shadow-sm p-6"
         >
-          <Card className="p-6">
-            <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">
-              {t('admin.tokenPrices')}
-            </h3>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {[
-                { key: 'token100Price' as const, label: '100 Tokens' },
-                { key: 'token500Price' as const, label: '500 Tokens' },
-                { key: 'token1000Price' as const, label: '1000 Tokens' },
-              ].map((token) => (
-                <div key={token.key}>
-                  <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
-                    {token.label} ({t('admin.sar')})
-                  </label>
-                  <Input
-                    type="number"
-                    min="0"
-                    value={settings[token.key]}
-                    onChange={(e) =>
-                      handleChange(token.key, parseInt(e.target.value) || 0)
-                    }
-                  />
+          <div className="flex items-center gap-2 mb-5">
+            <DollarSign className="w-5 h-5 text-[#ff6b35]" />
+            <h3 className="font-bold text-[#1a1a2e]">{t("as.prices", "أسعار الباقات (SAR)")}</h3>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {(["starter", "pro", "elite"] as const).map((k) => (
+              <div key={k}>
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5 capitalize">{k}</label>
+                <div className="relative">
+                  <input type="number" value={prices[k]} onChange={(e) => setPrices({ ...prices, [k]: +e.target.value })}
+                    className="w-full px-4 py-3 pe-14 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-[#ff6b35] focus:outline-none focus:ring-2 focus:ring-[#ff6b35]/20 transition tabular-nums" />
+                  <span className="absolute end-4 top-1/2 -translate-y-1/2 text-xs font-semibold text-gray-400">SAR</span>
                 </div>
-              ))}
-            </div>
-          </Card>
+              </div>
+            ))}
+          </div>
         </motion.div>
 
-        {/* Daily Limits */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.3 }}
-        >
-          <Card className="p-6">
-            <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">
-              {t('admin.dailyLimits')}
-            </h3>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {[
-                {
-                  key: 'dailyLimitFree' as const,
-                  label: 'Free {t("admin.limit")}',
-                },
-                {
-                  key: 'dailyLimitStarter' as const,
-                  label: 'Starter {t("admin.limit")}',
-                },
-                { key: 'dailyLimitPro' as const, label: 'Pro {t("admin.limit")}' },
-                {
-                  key: 'dailyLimitElite' as const,
-                  label: 'Elite {t("admin.limit")}',
-                },
-              ].map((limit) => (
-                <div key={limit.key}>
-                  <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
-                    {limit.label.includes('{')
-                      ? limit.label.split('{')[0]
-                      : limit.label}
-                  </label>
-                  <Input
-                    type="number"
-                    min="1"
-                    value={settings[limit.key]}
-                    onChange={(e) =>
-                      handleChange(limit.key, parseInt(e.target.value) || 1)
-                    }
-                  />
-                </div>
-              ))}
-            </div>
-          </Card>
-        </motion.div>
-
-        {/* Save Button */}
         <div className="flex justify-end">
-          <Button
-            onClick={handleSave}
-            className="flex items-center gap-2"
-          >
-            <Save className="w-4 h-4" />
-            {t('common.save')}
-          </Button>
+          <button onClick={save}
+            className="px-6 py-3 rounded-xl bg-[#ff6b35] hover:bg-[#e55a2b] text-white font-semibold shadow-lg shadow-[#ff6b35]/30 inline-flex items-center gap-2 transition">
+            <Save className="w-5 h-5" /> {saved ? t("as.saved", "تم الحفظ ✓") : t("as.save", "حفظ التغييرات")}
+          </button>
         </div>
-
-        {/* Success Message */}
-        {saved && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg flex items-center gap-2 text-green-600"
-          >
-            <AlertCircle className="w-5 h-5" />
-            <span className="text-sm font-medium">
-              {t('admin.settingsSaved')}
-            </span>
-          </motion.div>
-        )}
       </div>
-    </AdminLayout>
+    </DashboardLayout>
   );
-};
-
-export default AdminSettings;
+}

@@ -1,0 +1,132 @@
+STATUS 201
+LEN 24023
+BODY [{
+  "linkedinUrl": "https://www.linkedin.com/in/ali-alhashim-b786b626a",
+  "firstName": "Ali",
+  "lastName": "Alhashim",
+  "fullName": "Ali Alhashim",
+  "headline": "Drilling Professional | IADC Well Control supervisor Level Certified | Rig Operations & Administration",
+  "connections": 414,
+  "followers": 417,
+  "email": "ali.alhashim@saipem.com",
+  "mobileNumber": null,
+  "jobTitle": "Roughneck",
+  "jobStartedOn": "2024",
+  "jobLocation": "Eastern, Saudi Arabia",
+  "jobStillWorking": true,
+  "companyName": "Saipem",
+  "companyIndustry": "Engineering Services",
+  "companyWebsite": "http://www.saipem.com",
+  "companyLinkedin": "https://www.linkedin.com/company/saipem/",
+  "companyFoundedIn": null,
+  "companySize": "10001-0",
+  "currentJobDuration": null,
+  "currentJobDurationInYrs": null,
+  "topSkillsByEndorsements": null,
+  "addressCountryOnly": "Saudi Arabia",
+  "addressWithCountry": "Al Ahsa, Eastern, Saudi Arabia",
+  "addressWithoutCountry": "Al Ahsa, Eastern",
+  "profilePic": "https://media.licdn.com/dms/image/v2/D4D03AQFWWhcTRXI_dA/profile-displayphoto-crop_800_800/B4DZlH9qH6IcAI-/0/1757848978825?e=1777507200&v=beta&t=aUY28pkY5SkPZjE7I0GhSiu2vuNyz1VDg4ug08ecbgY",
+  "profilePicHighQuality": "https://media.licdn.com/dms/image/v2/D4D03AQFWWhcTRXI_dA/profile-displayphoto-crop_800_800/B4DZlH9qH6IcAI-/0/1757848978825?e=1777507200&v=beta&t=aUY28pkY5SkPZjE7I0GhSiu2vuNyz1VDg4ug08ecbgY",
+  "backgroundPic": "https://media.licdn.com/dms/image/v2/D4D16AQFLBLVtjFkFXA/profile-displaybackgroundimage-shrink_200_800/B4DZlIIQyjGQAU-/0/1757851751394?e=1777507200&v=beta&t=NPusUZZHCwCTqPuEqH80DlzQoOR2Y8gLsuw2XzsxfuU",
+  "linkedinId": "1106547212",
+  "isPremium": false,
+  "isVerified": false,
+  "isJobSeeker": false,
+  "isRetired": false,
+  "isCreator": false,
+  "isInfluencer": false,
+  "isCurrentlyEmployed": true,
+  "about": "I am a drilling professional with hands-on experience in rig operations and administration, backed by a strong academic foundation in mathematics. Currently working as a Roughneck at Saipem, I specialize in drilling machinery, mud systems, and equipment maintenance. I hold an IADC Well Control supervisor Level certification (2025–2027) and have additional expertise in rig administration and communication. I am committed to continuous professional growth and contributing to successful drilling projects.",
+  "publicIdentifier": "ali-alhashim-b786b626a",
+  "linkedinPublicUrl": "https://linkedin.com/in/ali-alhashim-b786b626a",
+  "openConnection": false,
+  "urn": "ACoAAEH0kgwBuJoSwjB0d1nF51yVthQ3iQ1XhIQ",
+  "totalRecommendationsReceived": 0,
+  "totalRecommendationsGiven": 0,
+  "birthday": {
+    "day": "",
+    "month": "",
+    "year": ""
+  },
+  "associatedHashtag": [],
+  "firstRoleYear": 2019,
+  "totalExperienceYears": 6.6,
+  "experiencesCount": 2,
+  "experiences": [
+    {
+      "companyId": "3592",
+      "companyUrn": "urn:li:fsd_company:3592",
+      "companyLink1": "https://www.linkedin.com/company/saipem/",
+      "companyName": "Saipem",
+      "companySize": "10001-0",
+      "companyWebsite": "http://www.saipem.com",
+      "companyIndustry": "Engineering Services",
+      "logo": "https://media.licdn.com/dms/image/v2/C4E0BAQGDiP-Ae4UqnA/company-logo_400_400/company-logo_400_400/0/1631319014444?e=1777507200&v=beta&t=o2pgk3HeiRelgXcrYFHkVUKk-ZsallcNYW4NdDd5SpQ",
+      "title": "Roughneck",
+      "jobDescription": "1- Operate and maintain drilling machinery, including pumps.\n2- Perform routine checks and maintenance on drilling equipment.\n3- Manage mud system including mixing and monitoring drilling fluids.\n4- Assist in the transportation and handling of drilling materials and tools.\n5- Collaborate with the drilling crew to execute daily operations and achieve drilling targets.",
+      "jobStartedOn": "2024",
+      "jobEndedOn": null,
+      "jobLocation": "Eastern, Saudi Arabia",
+      "jobStillWorking": true,
+      "jobLocationCountry": "IT",
+      "employmentType": "Full-time"
+    },
+    {
+      "companyId": "5380358",
+      "companyUrn": "urn:li:fsd_company:5380358",
+      "companyLink1": "https://www.linkedin.com/company/adesdrilling/",
+      "companyName": "ADES - Advanced Energy Systems",
+      "companySize": "5001-10000",
+      "companyWebsite": "www.adesgroup.com",
+      "companyIndustry": "Oil and Gas",
+      "logo": "https://media.licdn.com/dms/image/v2/C4D0BAQF9xz9UZ-WyxQ/company-logo_400_400/company-logo_400_400/0/1631319808881?e=1777507200&v=beta&t=E68RMkEPoNqjKJbprujChYogliPvnf7qFjfXcApsakQ",
+      "title": "Rig Administrator",
+      "jobDescription": "1- Coordinated external communication on the rig.\n2- Maintained telecommunications and rig documentation.\n3- Managed communication with supply and stand-by vessels.",
+      "jobStartedOn": "9-2019",
+      "jobEndedOn": "12-2020",
+      "jobLocation": "Eastern, Saudi Arabia",
+      "jobStillWorking": false,
+      "jobLocationCountry": "SA",
+      "employmentType": "Full-time"
+    }
+  ],
+  "updates": [],
+  "skills": [
+    {
+      "title": "IADC Well Control Certification"
+    },
+    {
+      "title": "Drilling Operations & Rig Administration"
+    },
+    {
+      "title": "Equipment Maintenance & Fluid Management"
+    },
+    {
+      "title": "Microsoft Office (Word, Excel)"
+    },
+    {
+      "title": "Time Management & Communication"
+    },
+    {
+      "title": "Microsoft Excel"
+    },
+    {
+      "title": "English"
+    },
+    {
+      "title": "Communication"
+    },
+    {
+      "title": "Customer Follow-Up"
+    }
+  ],
+  "creatorWebsite": [],
+  "profilePicAllDimensions": [],
+  "educations": [
+    {
+      "companyId": "19608",
+      "companyUrn": "urn:li:fsd_company:19608",
+      "companyLink1": "https://www.linkedin.com/school/virginia-commonwealth-university/",
+      "logo": "https://media.licdn.com/dms/image/v2/C4E0BAQHY-pnQLhvFtQ/company-logo_200_200/company-logo_200_200/0/1630600618760/virginia_commonwealth_university_logo?e=1777507200&v=beta&t=xkIQiJZkg5nlGKJb1yjrBxiF-QNuj_Fv64g1A6oByVI",
+      "title": "Virginia Commonw

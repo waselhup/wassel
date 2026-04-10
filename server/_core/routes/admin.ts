@@ -46,10 +46,10 @@ export const adminRouter = router({
       // Get campaign stats
       const { data: campaigns } = await ctx.supabase
         .from('email_campaigns')
-        .select('id, sent_count');
+        .select('id, emails_sent');
 
       const emailsSent =
-        campaigns?.reduce((sum, c) => sum + (c.sent_count || 0), 0) || 0;
+        campaigns?.reduce((sum, c) => sum + (c.emails_sent || 0), 0) || 0;
 
       // Get token purchases
       const { data: transactions } = await ctx.supabase
@@ -197,12 +197,25 @@ export const adminRouter = router({
 
   campaigns: adminProcedure.query(async ({ ctx }) => {
     try {
-      const { data } = await ctx.supabase
+      const { data: campaigns } = await ctx.supabase
         .from('email_campaigns')
-        .select('*, profiles(full_name, email)')
+        .select('*')
         .order('created_at', { ascending: false });
 
-      return data || [];
+      if (!campaigns || campaigns.length === 0) return [];
+
+      // Attach user profile info separately (no FK join needed)
+      const userIds = Array.from(new Set(campaigns.map((c: any) => c.user_id).filter(Boolean)));
+      const { data: profiles } = await ctx.supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .in('id', userIds);
+
+      const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
+      return campaigns.map((c: any) => ({
+        ...c,
+        profiles: profileMap.get(c.user_id) || null,
+      }));
     } catch (err) {
       throw new TRPCError({
         code: 'INTERNAL_SERVER_ERROR',
@@ -220,24 +233,25 @@ export const adminRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       try {
-        // Get existing settings
+        // Look up by key (system_settings schema: id uuid, key varchar, value jsonb)
         const { data: existing } = await ctx.supabase
           .from('system_settings')
-          .select('*')
-          .single();
+          .select('id')
+          .eq('key', input.key)
+          .maybeSingle();
 
-        const settings = existing || {};
-
-        // Update settings
-        const { error } = await ctx.supabase
-          .from('system_settings')
-          .upsert({
-            id: 'main',
-            ...settings,
-            [input.key]: input.value,
-          });
-
-        if (error) throw error;
+        if (existing?.id) {
+          const { error } = await ctx.supabase
+            .from('system_settings')
+            .update({ value: input.value, updated_at: new Date().toISOString() })
+            .eq('id', existing.id);
+          if (error) throw error;
+        } else {
+          const { error } = await ctx.supabase
+            .from('system_settings')
+            .insert([{ key: input.key, value: input.value }]);
+          if (error) throw error;
+        }
 
         return { success: true };
       } catch (err) {

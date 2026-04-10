@@ -1,143 +1,100 @@
-import React, { useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { useAuth } from '../contexts/AuthContext';
-import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
-import { Card } from '../components/ui/card';
-import { Globe, Check, AlertCircle } from 'lucide-react';
+import { useState, type FormEvent } from "react";
+import { Link } from "wouter";
+import { useTranslation } from "react-i18next";
+import { motion } from "framer-motion";
+import { Mail, ArrowRight, CheckCircle2, Loader2, AlertCircle } from "lucide-react";
+import AuthLayout from "@/components/AuthLayout";
+import { useAuth } from "@/contexts/AuthContext";
 
-const ResetPassword: React.FC = () => {
+export default function ResetPassword() {
   const { t, i18n } = useTranslation();
   const { resetPassword } = useAuth();
-  
-  const [email, setEmail] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const isRTL = i18n.language === "ar";
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
-    
-    if (!email) {
-      setError(t('auth.errors.invalidEmail'));
-      return;
-    }
-
     setLoading(true);
-    const { error: resetError } = await resetPassword(email);
-    setLoading(false);
-
-    if (resetError) {
-      setError(resetError.message || t('auth.errors.invalidEmail'));
-    } else {
+    try {
+      await resetPassword?.(email);
       setSuccess(true);
+    } catch (err: any) {
+      setError(err?.message || t("auth.reset.error", "فشل الإرسال. حاول مجدداً."));
+    } finally {
+      setLoading(false);
     }
-  };
-  const toggleLanguage = () => {
-    const newLang = i18n.language === 'ar' ? 'en' : 'ar';
-    i18n.changeLanguage(newLang);
-    document.documentElement.lang = newLang;
-    document.documentElement.dir = newLang === 'ar' ? 'rtl' : 'ltr';
-  };
-
-  if (success) {
-    return (
-      <div className="min-h-screen bg-[var(--bg-surface)] flex items-center justify-center p-4">
-        <button
-          onClick={toggleLanguage}
-          className="absolute top-4 right-4 md:top-6 md:right-6 p-2 rounded-lg bg-[var(--bg-base)] border border-[var(--border-subtle)] hover:bg-[var(--bg-surface-hover)] transition-colors flex items-center gap-2 text-sm text-[var(--text-secondary)]"
-        >
-          <Globe className="w-4 h-4" />
-          {i18n.language === 'ar' ? 'EN' : 'AR'}
-        </button>
-
-        <Card className="w-full max-w-md">
-          <div className="p-8 space-y-6 text-center">
-            <div className="flex justify-center">
-              <div className="w-12 h-12 bg-[var(--success)] rounded-full flex items-center justify-center">
-                <Check className="w-6 h-6 text-white" />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <h2 className="text-xl font-semibold text-[var(--text-primary)]">
-                {t('common.success')}
-              </h2>
-              <p className="text-sm text-[var(--text-secondary)]">
-                {t('auth.resetPassword.checkEmail')}
-              </p>
-            </div>
-            <a href="/login" className="text-[var(--accent-secondary)] font-semibold hover:underline">
-              {t('auth.hasAccount')}
-            </a>
-          </div>
-        </Card>
-      </div>
-    );
   }
+
   return (
-    <div className="min-h-screen bg-[var(--bg-surface)] flex items-center justify-center p-4">
-      <button
-        onClick={toggleLanguage}
-        className="absolute top-4 right-4 md:top-6 md:right-6 p-2 rounded-lg bg-[var(--bg-base)] border border-[var(--border-subtle)] hover:bg-[var(--bg-surface-hover)] transition-colors flex items-center gap-2 text-sm text-[var(--text-secondary)]"
-      >
-        <Globe className="w-4 h-4" />
-        {i18n.language === 'ar' ? 'EN' : 'AR'}
-      </button>
-
-      <Card className="w-full max-w-md">
-        <div className="p-8 space-y-6">
-          <div className="text-center space-y-2">
-            <h1 className="text-4xl font-cairo font-bold text-[var(--accent-primary)]">
-              وصّل
-            </h1>
-            <h2 className="text-xl font-semibold text-[var(--text-primary)]">
-              {t('auth.resetPassword.title')}
-            </h2>
-            <p className="text-sm text-[var(--text-secondary)]">
-              {t('auth.resetPassword.subtitle')}
-            </p>
+    <AuthLayout
+      title={t("auth.reset.title", "استعادة كلمة المرور")}
+      subtitle={t("auth.reset.subtitle", "أدخل بريدك وسنرسل لك رابط إعادة التعيين")}
+    >
+      {success ? (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="p-8 rounded-2xl bg-green-50 border border-green-200 text-center"
+        >
+          <div className="w-16 h-16 rounded-full bg-green-100 mx-auto mb-4 flex items-center justify-center">
+            <CheckCircle2 className="w-8 h-8 text-green-600" />
           </div>
-
+          <h3 className="text-xl font-bold text-[#1e3a5f] mb-2">
+            {t("auth.reset.sent.title", "تم الإرسال!")}
+          </h3>
+          <p className="text-[#6b7280] mb-6">
+            {t("auth.reset.sent.desc", "تحقق من بريدك الإلكتروني واتبع الرابط لإعادة تعيين كلمة المرور.")}
+          </p>
+          <Link
+            href="/login"
+            className="inline-flex items-center gap-2 text-[#ff6b35] font-semibold hover:underline"
+          >
+            {t("auth.reset.backToLogin", "العودة لتسجيل الدخول")}
+            <ArrowRight className={`w-4 h-4 ${isRTL ? "rotate-180" : ""}`} />
+          </Link>
+        </motion.div>
+      ) : (
+        <form onSubmit={onSubmit} className="space-y-5">
           {error && (
-            <div className="p-3 bg-[var(--danger)] bg-opacity-10 border border-[var(--danger)] rounded-lg flex gap-2">
-              <AlertCircle className="w-5 h-5 text-[var(--danger)] flex-shrink-0" />
-              <p className="text-sm text-[var(--danger)]">{error}</p>
-            </div>
+            <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3 p-4 rounded-xl bg-red-50 border border-red-200 text-sm text-red-700">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              {error}
+            </motion.div>
           )}
-
-          <form onSubmit={handleSubmit} className="space-y-4">            <div className="space-y-2">
-              <label htmlFor="email" className="block text-sm font-medium text-[var(--text-primary)]">
-                {t('auth.email')}
-              </label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder={t('auth.email')}
-                disabled={loading}
-              />
-            </div>
-
-            <Button
-              type="submit"
-              disabled={loading}
-              className="w-full"
-            >
-              {loading ? t('common.loading') : t('auth.submit')}
-            </Button>
-          </form>
-
-          <div className="text-center">
-            <a href="/login" className="text-sm text-[var(--accent-secondary)] font-semibold hover:underline">
-              {t('common.back')} {t('auth.login.title')}
-            </a>
+          <div className="relative">
+            <Mail className={`absolute top-1/2 -translate-y-1/2 ${isRTL ? "end-4" : "start-4"} w-5 h-5 text-[#6b7280]`} />
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder={t("auth.email", "البريد الإلكتروني")}
+              className={`w-full h-14 ${isRTL ? "pe-12 ps-4" : "ps-12 pe-4"} rounded-xl border border-gray-200 bg-white focus:border-[#ff6b35] focus:ring-2 focus:ring-[#ff6b35]/20 outline-none transition`}
+            />
           </div>
-        </div>
-      </Card>
-    </div>
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full h-14 rounded-xl bg-[#ff6b35] text-white font-bold shadow-lg shadow-[#ff6b35]/30 hover:bg-[#ff8a5c] transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+          >
+            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
+              <>
+                {t("auth.reset.cta", "أرسل رابط الاستعادة")}
+                <ArrowRight className={`w-4 h-4 ${isRTL ? "rotate-180" : ""}`} />
+              </>
+            )}
+          </button>
+          <div className="text-center text-sm text-[#6b7280]">
+            <Link href="/login" className="text-[#ff6b35] font-semibold hover:underline">
+              {t("auth.reset.backToLogin", "العودة لتسجيل الدخول")}
+            </Link>
+          </div>
+        </form>
+      )}
+    </AuthLayout>
   );
-};
-
-export default ResetPassword;
+}

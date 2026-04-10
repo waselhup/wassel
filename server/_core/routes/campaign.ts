@@ -4,7 +4,7 @@ import { TRPCError } from '@trpc/server';
 
 const APIFY_TOKEN = process.env.APIFY_TOKEN || '';
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || '';
-const APIFY_PEOPLE_ACTOR = 'harvestapi/linkedin-profile-search';
+const APIFY_PEOPLE_ACTOR = 'harvestapi~linkedin-profile-search';
 
 // Find prospects via Apify LinkedIn search
 async function findProspects(
@@ -176,7 +176,7 @@ export const campaignRouter = router({
         }
 
         const { data: recipients } = await ctx.supabase
-          .from('campaign_recipients')
+          .from('email_recipients')
           .select('*')
           .eq('campaign_id', input.id);
 
@@ -223,11 +223,14 @@ export const campaignRouter = router({
           .insert([
             {
               user_id: ctx.user.id,
-              name: input.campaignName,
+              campaign_name: input.campaignName,
               job_title: input.jobTitle,
               target_companies: input.targetCompanies,
               status: 'finding_prospects',
-              language: input.language,
+              total_recipients: 0,
+              emails_sent: 0,
+              opens_count: 0,
+              replies_count: 0,
             },
           ])
           .select()
@@ -312,25 +315,26 @@ export const campaignRouter = router({
           },
         ]);
 
-        // Step 5: Insert recipients with their generated emails
+        // Step 5: Insert recipients with their generated emails (email_recipients schema)
         const recipientRecords = prospects.map((prospect, i) => {
-          const email = emails[i] || emails[0];
+          const email = emails[i] || emails[0] || {};
+          const bodyWithSubject = email.subject
+            ? `Subject: ${email.subject}\n\n${email.body || ''}${email.followUp ? `\n\n---\nFollow-up:\n${email.followUp}` : ''}`
+            : (email.body || '');
           return {
             campaign_id: campaign.id,
-            name: prospect.name,
+            full_name: prospect.name,
             email: prospect.email || `pending_${i}@discovery.wassel`,
             company: prospect.company,
-            title: prospect.title,
+            job_title: prospect.title,
             linkedin_url: prospect.linkedinUrl,
-            email_subject: email.subject,
-            email_body: email.body,
-            follow_up_body: email.followUp,
+            email_body: bodyWithSubject,
             status: 'draft',
           };
         });
 
         if (recipientRecords.length > 0) {
-          await ctx.supabase.from('campaign_recipients').insert(recipientRecords);
+          await ctx.supabase.from('email_recipients').insert(recipientRecords);
         }
 
         // Update campaign to ready
@@ -338,7 +342,7 @@ export const campaignRouter = router({
           .from('email_campaigns')
           .update({
             status: 'ready',
-            recipient_count: prospects.length,
+            total_recipients: prospects.length,
           })
           .eq('id', campaign.id);
 

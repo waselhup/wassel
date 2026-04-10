@@ -1,0 +1,7 @@
+b66e15ea1a9aa9264abfc434270f3edb3717df86
+[master 28529a6] chore: redeploy bundled api fix
+--- PUSH --- 
+To https://github.com/waselhup/wassel.git
+   b66e15e..28529a6  master -> master
+--- NEW HEAD --- 
+28529a694b35de384dd65845c38eeabb3d3ef66f

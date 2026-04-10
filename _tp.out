@@ -1,0 +1,4 @@
+JWT_OK
+[raw] 400: {"error":{"message":"Could not fetch LinkedIn profile. Please check the URL and try again.","code":-32600,"data":{"code":"BAD_REQUEST","httpStatus":400,"path":"linkedin.analyze"}}}
+[json-wrap] 400: {"error":{"message":"[\n  {\n    \"code\": \"invalid_type\",\n    \"expected\": \"string\",\n    \"received\": \"undefined\",\n    \"path\": [\n      \"profileUrl\"\n    ],\n    \"message\": \"Required\"\n  }\n]","code":-32600,"data":{"code":"BAD_REQUEST","httpStatus":400,"path":"linkedin.analyze"}}
+[zero-wrap] 400: {"error":{"message":"[\n  {\n    \"code\": \"invalid_type\",\n    \"expected\": \"string\",\n    \"received\": \"undefined\",\n    \"path\": [\n      \"profileUrl\"\n    ],\n    \"message\": \"Required\"\n  }\n]","code":-32600,"data":{"code":"BAD_REQUEST","httpStatus":400,"path":"linkedin.analyze"}}

@@ -51,20 +51,143 @@
   },
   "howItWorks": {
     "title": "How Wassel Works",
-    "subtitle": "Three simple steps to results"
+    "subtitle": "Three simple steps to results",
+    "step1": {
+      "title": "Optimize Your Profile",
+      "description": "Our AI analyzes your LinkedIn profile, scores it, and rewrites your headline and summary to attract Saudi recruiters."
+    },
+    "step2": {
+      "title": "Launch a Smart Campaign",
+      "description": "We find decision-makers in your target companies and write 500 personalized emails that sound human — not automated."
+    },
+    "step3": {
+      "title": "Track Results & Connect",
+      "description": "Monitor open and reply rates in real time, then connect directly on LinkedIn with one click."
+    }
   },
   "pricing": {
     "title": "Flexible Plans for Everyone",
-    "subtitle": "Choose your plan and get started today"
+    "subtitle": "Choose your plan and get started today",
+    "plans": [
+      {
+        "name": "Free",
+        "price": "0",
+        "period": "/month",
+        "description": "Perfect for exploring the platform",
+        "popular": false,
+        "features": [
+          "1 LinkedIn analysis",
+          "1 tailored CV",
+          "No email campaigns",
+          "Community support"
+        ]
+      },
+      {
+        "name": "Starter",
+        "price": "99",
+        "period": "/month",
+        "description": "For active job seekers",
+        "popular": false,
+        "features": [
+          "5 LinkedIn analyses",
+          "5 tailored CVs",
+          "100 campaign emails",
+          "Email support"
+        ]
+      },
+      {
+        "name": "Pro",
+        "price": "199",
+        "period": "/month",
+        "description": "For serious professionals",
+        "popular": true,
+        "features": [
+          "15 LinkedIn analyses",
+          "Unlimited CVs",
+          "500 campaign emails",
+          "Priority support",
+          "Advanced analytics"
+        ]
+      },
+      {
+        "name": "Elite",
+        "price": "299",
+        "period": "/month",
+        "description": "For teams and consultants",
+        "popular": false,
+        "features": [
+          "Unlimited analyses",
+          "Unlimited CVs",
+          "Unlimited campaigns",
+          "Dedicated support",
+          "Custom branding"
+        ]
+      }
+    ]
   },
   "faq": {
     "title": "Frequently Asked Questions",
-    "subtitle": "Answers to common questions"
+    "subtitle": "Answers to common questions",
+    "items": [
+      {
+        "question": "Is Wassel free to try?",
+        "answer": "Yes. You can sign up for free and get starter tokens to analyze your LinkedIn profile and tailor a CV before upgrading."
+      },
+      {
+        "question": "Is my data private and secure?",
+        "answer": "Absolutely. Your data is stored on Supabase with row-level security and fully complies with Saudi PDPL."
+      },
+      {
+        "question": "Do I need a LinkedIn Premium account?",
+        "answer": "No. Wassel works with any free LinkedIn account — no premium subscription required."
+      },
+      {
+        "question": "How does AI write the emails?",
+        "answer": "Wassel uses Claude AI to craft personalized, professional B2B emails in Arabic or English, tailored to each decision-maker."
+      },
+      {
+        "question": "Do you support Arabic and English?",
+        "answer": "Yes. Wassel is Arabic-first with full RTL support and Cairo font, plus complete English localization."
+      },
+      {
+        "question": "Can I cancel anytime?",
+        "answer": "Yes. All subscriptions are month-to-month and you can cancel from the dashboard at any time with no hidden fees."
+      }
+    ]
   },
   "footer": {
     "description": "Wassel - Your Smart Platform for Saudi Job Search",
     "copyright": "All rights reserved 2026 Wassel. Made in Saudi Arabia.",
-    "madeIn": "Made in Saudi Arabia with love"
+    "madeIn": "Made in Saudi Arabia with love",
+    "links": {
+      "product": {
+        "title": "Product",
+        "items": [
+          "Features",
+          "Pricing",
+          "How It Works",
+          "FAQ"
+        ]
+      },
+      "company": {
+        "title": "Company",
+        "items": [
+          "About Us",
+          "Blog",
+          "Careers",
+          "Contact"
+        ]
+      },
+      "legal": {
+        "title": "Legal",
+        "items": [
+          "Privacy Policy",
+          "Terms of Service",
+          "PDPL Compliance",
+          "Refund Policy"
+        ]
+      }
+    }
   },
   "auth": {
     "login": {
@@ -82,7 +205,6 @@
       "checkEmail": "Check your email for a password reset link"
     },
     "email": "Email Address",
-    "password": "Password",
     "confirmPassword": "Confirm Password",
     "fullName": "Full Name",
     "rememberMe": "Remember me",
@@ -92,30 +214,43 @@
     "submit": "Submit",
     "signIn": "Sign In",
     "signUp": "Sign Up",
-    "password": {
-      "weak": "Weak password",
-      "medium": "Medium password",
-      "strong": "Strong password"
-    },
     "errors": {
       "invalidEmail": "Invalid email address",
       "passwordTooShort": "Password must be at least 8 characters",
       "passwordMismatch": "Passwords do not match",
       "emailExists": "Email already exists",
       "invalidCredentials": "Invalid credentials"
-    }
+    },
+    "passwordStrength": {
+      "weak": "Weak password",
+      "medium": "Medium password",
+      "strong": "Strong password"
+    },
+    "password": "Password"
   },
   "dashboard": {
-    "title": "Dashboard",
-    "welcome": "Welcome back",
-    "subtitle": "Your intelligent career platform is ready",
-    "comingSoon": "Coming soon",
+    "home": "Dashboard",
+    "welcomeBack": "Welcome back",
+    "tokenBalance": "Token Balance",
+    "linkedinScore": "LinkedIn Score",
+    "cvsGenerated": "CVs Generated",
+    "campaignsSent": "Campaigns Sent",
+    "analyzeLinkedin": "Analyze LinkedIn",
+    "createCv": "Create CV",
+    "newCampaign": "New Campaign",
+    "completeSetup": "Complete Your Setup",
+    "completeSetupDesc": "You have a few steps remaining",
+    "recentActivity": "Recent Activity",
+    "notAnalyzed": "Not analyzed yet",
+    "welcome": "Welcome",
+    "subtitle": "Here's what's happening with your career today",
     "campaigns": "Email Campaigns",
-    "campaignsDesc": "Manage and track your outreach",
-    "analytics": "Analytics",
-    "analyticsDesc": "Track opens, clicks, and replies",
-    "betaMessage": "Phase 1 Coming Soon",
-    "betaDescription": "We are building the LinkedIn Optimizer, Email Campaign, and Analytics features. Features will be released in phases starting in the next update."
+    "campaignsDesc": "Reach 500 decision-makers with personalized outreach",
+    "analytics": "Analytics Dashboard",
+    "analyticsDesc": "Track opens, replies, and conversions in real time",
+    "comingSoon": "Coming Soon",
+    "betaMessage": "You're using the beta version",
+    "betaDescription": "Thanks for being an early user! Your feedback shapes the product."
   },
   "common": {
     "loading": "Loading...",
@@ -130,7 +265,8 @@
     "comingSoon": "Coming Soon",
     "skip": "Skip",
     "email": "Email",
-    "name": "Name"
+    "name": "Name",
+    "plan": "plan"
   },
   "sidebar": {
     "home": "Home",
@@ -142,7 +278,7 @@
     "profile": "Profile"
   },
   "onboarding": {
-    "title": "Set Up Your Account",
+    "title": "Job Title",
     "step1Title": "Complete Your Profile",
     "step1Description": "Let us know more about you",
     "step2Title": "LinkedIn URL",
@@ -150,7 +286,6 @@
     "step3Title": "Resume",
     "step3Description": "Upload your resume",
     "fullName": "Full Name",
-    "title": "Job Title",
     "company": "Company Name",
     "phone": "Phone Number",
     "location": "City / Region",
@@ -166,11 +301,10 @@
     "setupCompleteDesc": "You can now start using Wassel"
   },
   "profile": {
-    "title": "Profile",
+    "title": "Job Title",
     "editProfile": "Edit Profile",
     "fullName": "Full Name",
     "email": "Email Address",
-    "title": "Job Title",
     "company": "Company Name",
     "phone": "Phone Number",
     "location": "City / Region",
@@ -182,21 +316,6 @@
     "saveChanges": "Save Changes",
     "saved": "Changes saved successfully",
     "error": "Error saving changes"
-  },
-  "dashboard": {
-    "home": "Dashboard",
-    "welcomeBack": "Welcome back",
-    "tokenBalance": "Token Balance",
-    "linkedinScore": "LinkedIn Score",
-    "cvsGenerated": "CVs Generated",
-    "campaignsSent": "Campaigns Sent",
-    "analyzeLinkedin": "Analyze LinkedIn",
-    "createCv": "Create CV",
-    "newCampaign": "New Campaign",
-    "completeSetup": "Complete Your Setup",
-    "completeSetupDesc": "You have a few steps remaining",
-    "recentActivity": "Recent Activity",
-    "notAnalyzed": "Not analyzed yet"
   },
   "tokens": {
     "title": "Tokens",
@@ -213,7 +332,9 @@
     "amount": "Amount",
     "description": "Description",
     "noTransactions": "No transactions yet",
-    "coming": "Coming Soon"
+    "coming": "Coming Soon",
+    "tokens": "tokens",
+    "transactions": "transactions"
   },
   "linkedInAnalyzer": {
     "title": "LinkedIn Analyzer",
@@ -294,10 +415,10 @@
     "statusReplied": "Replied",
     "statusBounced": "Bounced",
     "wizard": {
-      "step1": "Campaign Details",
-      "step2": "Find Recipients",
-      "step3": "Email Preview",
-      "step4": "Confirm & Send",
+      "step1": "Choose Target",
+      "step2": "Define Audience",
+      "step3": "Write Message",
+      "step4": "Review & Launch",
       "campaignName": "Campaign Name",
       "campaignNamePlaceholder": "e.g., Senior Engineers at TechCo",
       "targetJobTitle": "Target Job Title",
@@ -327,7 +448,8 @@
       "confirmSend": "Start Campaign",
       "insufficientTokens": "Insufficient tokens",
       "reviewDetails": "Review campaign details before sending",
-      "backToList": "Back to Campaigns"
+      "backToList": "Back to Campaigns",
+      "step": "Step"
     },
     "report": {
       "title": "Campaign Report",
@@ -418,14 +540,15 @@
     "dailyLimits": "Daily Limits",
     "sar": "SAR",
     "limit": "Limit",
-    "settingsSaved": "Settings saved successfully!"
+    "settingsSaved": "Settings saved successfully!",
+    "recipients": "Recipients"
   },
   "payment": {
     "title": "Tokens & Subscription",
     "comingSoon": "Payment Coming Soon",
     "comingSoonDesc": "We're preparing secure payment processing. This feature will be available shortly.",
     "contactSupport": "Please contact support for more information.",
-    "currentBalance": "Current Token Balance",
+    "currentBalance": "Current Balance",
     "tokensAvailable": "Tokens Available",
     "tokens": "Purchase Tokens",
     "subscription": "Subscription Plans",
@@ -439,7 +562,6 @@
     "applyPay": "Pay with Apple Pay",
     "visaMada": "Pay with Visa/Mada",
     "paymentNote": "Payment methods are coming soon. Moyasar and Tap integration in progress.",
-    "currentBalance": "Current Balance",
     "transactionHistory": "Transaction History",
     "purchase": "Token Purchase",
     "spend": "Token Spend",
@@ -458,6 +580,7 @@
     "featureAnalytics": "Advanced analytics",
     "featureUnlimitedAnalyses": "Unlimited analyses",
     "featureUnlimitedCampaigns": "Unlimited campaigns",
-    "featureDedicatedSupport": "Dedicated support"
+    "featureDedicatedSupport": "Dedicated support",
+    "sar": "SAR"
   }
 }

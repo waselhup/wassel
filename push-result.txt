@@ -1,0 +1,7 @@
+fdf67ee chore: trigger fresh deploy
+43152ac fix: add api runtime dependencies for Vercel
+6c69cb1 chore: force fresh deploy
+--- PUSH --- 
+Everything up-to-date
+--- HEAD --- 
+fdf67ee95e7300f626dee853692acc214d74bcc2

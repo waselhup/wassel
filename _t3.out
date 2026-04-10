@@ -1,0 +1,35 @@
+* Host wassel-alpha.vercel.app:443 was resolved.
+* IPv6: (none)
+* IPv4: 216.198.79.131, 64.29.17.131
+*   Trying 216.198.79.131:443...
+* schannel: disabled automatic use of client certificate
+* ALPN: curl offers http/1.1
+* ALPN: server accepted http/1.1
+* Established connection to wassel-alpha.vercel.app (216.198.79.131 port 443) from 172.20.10.9 port 56083 
+* using HTTP/1.x
+> GET /api/trpc/token.balance HTTP/1.1
+> Host: wassel-alpha.vercel.app
+> User-Agent: curl/8.18.0
+> Accept: */*
+> 
+* Request completely sent off
+* schannel: remote party requests renegotiation
+* schannel: renegotiating SSL/TLS connection
+* schannel: SSL/TLS connection renegotiated
+< HTTP/1.1 401 Unauthorized
+< Access-Control-Allow-Credentials: true
+< Age: 0
+< Cache-Control: public, max-age=0, must-revalidate
+< Content-Length: 126
+< Content-Type: application/json
+< Date: Thu, 09 Apr 2026 20:32:32 GMT
+< Server: Vercel
+< Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+< Vary: Origin
+< X-Powered-By: Express
+< X-Vercel-Cache: MISS
+< X-Vercel-Id: bom1::iad1::2l9r8-1775766752198-41c0eeb7dea9
+< 
+{ [126 bytes data]
+* Connection #0 to host wassel-alpha.vercel.app:443 left intact
+{"error":{"message":"Not authenticated","code":-32001,"data":{"code":"UNAUTHORIZED","httpStatus":401,"path":"token.balance"}}}

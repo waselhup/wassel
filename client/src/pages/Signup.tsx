@@ -1,245 +1,159 @@
-import React, { useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { useAuth } from '../contexts/AuthContext';
-import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
-import { Card } from '../components/ui/card';
-import { Globe, Check, AlertCircle } from 'lucide-react';
+import { useState, useMemo, type FormEvent } from "react";
+import { Link, useLocation } from "wouter";
+import { useTranslation } from "react-i18next";
+import { motion } from "framer-motion";
+import { Mail, Lock, User, ArrowRight, AlertCircle, Loader2, Check } from "lucide-react";
+import AuthLayout from "@/components/AuthLayout";
+import { useAuth } from "@/contexts/AuthContext";
 
-type PasswordStrength = 'weak' | 'medium' | 'strong';
+function strengthOf(pw: string) {
+  let s = 0;
+  if (pw.length >= 8) s++;
+  if (/[A-Z]/.test(pw)) s++;
+  if (/[0-9]/.test(pw)) s++;
+  if (/[^A-Za-z0-9]/.test(pw)) s++;
+  return s; // 0..4
+}
 
-const Signup: React.FC = () => {
+export default function Signup() {
   const { t, i18n } = useTranslation();
+  const [, setLocation] = useLocation();
   const { signUp } = useAuth();
-  
-  const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [passwordStrength, setPasswordStrength] = useState<PasswordStrength>('weak');
+  const [error, setError] = useState<string | null>(null);
+  const [shake, setShake] = useState(false);
+  const isRTL = i18n.language === "ar";
+  const strength = useMemo(() => strengthOf(password), [password]);
+  const strengthColor = ["#e5e7eb", "#ef4444", "#f59e0b", "#eab308", "#10b981"][strength];
+  const strengthLabel = [
+    t("auth.strength.none", "أدخل كلمة مرور"),
+    t("auth.strength.weak", "ضعيفة"),
+    t("auth.strength.fair", "مقبولة"),
+    t("auth.strength.good", "جيدة"),
+    t("auth.strength.strong", "قوية"),
+  ][strength];
 
-  const calculatePasswordStrength = (pwd: string): PasswordStrength => {
-    if (pwd.length < 8) return 'weak';
-    const hasUpperCase = /[A-Z]/.test(pwd);
-    const hasLowerCase = /[a-z]/.test(pwd);
-    const hasNumbers = /\d/.test(pwd);
-    const hasSpecialChar = /[!@#$%^&*]/.test(pwd);    
-    const strength = [hasUpperCase, hasLowerCase, hasNumbers, hasSpecialChar].filter(Boolean).length;
-    if (strength >= 3) return 'strong';
-    if (strength >= 2) return 'medium';
-    return 'weak';
-  };
-
-  const handlePasswordChange = (pwd: string) => {
-    setPassword(pwd);
-    setPasswordStrength(calculatePasswordStrength(pwd));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
-    
-    if (!fullName || !email || !password || !confirmPassword) {
-      setError(t('auth.errors.invalidCredentials'));
+    if (strength < 2) {
+      setError(t("auth.error.weak", "كلمة المرور ضعيفة جداً"));
+      setShake(true);
+      setTimeout(() => setShake(false), 500);
       return;
     }
-
-    if (password !== confirmPassword) {
-      setError(t('auth.errors.passwordMismatch'));
-      return;
-    }
-
-    if (password.length < 8) {
-      setError(t('auth.errors.passwordTooShort'));
-      return;
-    }
-
     setLoading(true);
-    const { error: signUpError } = await signUp(email, password, fullName);
-    setLoading(false);
-
-    if (signUpError) {
-      setError(signUpError.message || t('auth.errors.emailExists'));
-    } else {
-      setSuccess(true);
+    try {
+      await signUp?.(email, password, name);
+      setLocation("/app/setup");
+    } catch (err: any) {
+      setError(err?.message || t("auth.error.signup", "فشل إنشاء الحساب"));
+      setShake(true);
+      setTimeout(() => setShake(false), 500);
+    } finally {
+      setLoading(false);
     }
-  };
-  const toggleLanguage = () => {
-    const newLang = i18n.language === 'ar' ? 'en' : 'ar';
-    i18n.changeLanguage(newLang);
-    document.documentElement.lang = newLang;
-    document.documentElement.dir = newLang === 'ar' ? 'rtl' : 'ltr';
-  };
-
-  if (success) {
-    return (
-      <div className="min-h-screen bg-[var(--bg-surface)] flex items-center justify-center p-4">
-        <button
-          onClick={toggleLanguage}
-          className="absolute top-4 right-4 md:top-6 md:right-6 p-2 rounded-lg bg-[var(--bg-base)] border border-[var(--border-subtle)] hover:bg-[var(--bg-surface-hover)] transition-colors flex items-center gap-2 text-sm text-[var(--text-secondary)]"
-        >
-          <Globe className="w-4 h-4" />
-          {i18n.language === 'ar' ? 'EN' : 'AR'}
-        </button>
-
-        <Card className="w-full max-w-md">
-          <div className="p-8 space-y-6 text-center">
-            <div className="flex justify-center">
-              <div className="w-12 h-12 bg-[var(--success)] rounded-full flex items-center justify-center">
-                <Check className="w-6 h-6 text-white" />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <h2 className="text-xl font-semibold text-[var(--text-primary)]">
-                {t('common.success')}
-              </h2>
-              <p className="text-sm text-[var(--text-secondary)]">
-                {t('auth.signup.checkEmail')}
-              </p>
-            </div>
-            <a href="/login" className="text-[var(--accent-secondary)] font-semibold hover:underline">
-              {t('auth.hasAccount')}
-            </a>
-          </div>
-        </Card>
-      </div>
-    );
   }
+
   return (
-    <div className="min-h-screen bg-[var(--bg-surface)] flex items-center justify-center p-4">
-      <button
-        onClick={toggleLanguage}
-        className="absolute top-4 right-4 md:top-6 md:right-6 p-2 rounded-lg bg-[var(--bg-base)] border border-[var(--border-subtle)] hover:bg-[var(--bg-surface-hover)] transition-colors flex items-center gap-2 text-sm text-[var(--text-secondary)]"
+    <AuthLayout
+      title={t("auth.signup.title", "ابدأ رحلتك المهنية")}
+      subtitle={t("auth.signup.subtitle", "أنشئ حساباً مجانياً خلال 30 ثانية")}
+    >
+      <motion.form
+        animate={shake ? { x: [0, -10, 10, -10, 10, 0] } : {}}
+        transition={{ duration: 0.4 }}
+        onSubmit={onSubmit}
+        className="space-y-5"
       >
-        <Globe className="w-4 h-4" />
-        {i18n.language === 'ar' ? 'EN' : 'AR'}
-      </button>
+        {error && (
+          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3 p-4 rounded-xl bg-red-50 border border-red-200 text-sm text-red-700">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            {error}
+          </motion.div>
+        )}
 
-      <Card className="w-full max-w-md">
-        <div className="p-8 space-y-6">
-          <div className="text-center space-y-2">
-            <h1 className="text-4xl font-cairo font-bold text-[var(--accent-primary)]">
-              وصّل
-            </h1>
-            <h2 className="text-xl font-semibold text-[var(--text-primary)]">
-              {t('auth.signup.title')}
-            </h2>
-            <p className="text-sm text-[var(--text-secondary)]">
-              {t('auth.signup.subtitle')}
-            </p>
-          </div>
+        <div className="relative">
+          <User className={`absolute top-1/2 -translate-y-1/2 ${isRTL ? "end-4" : "start-4"} w-5 h-5 text-[#6b7280]`} />
+          <input
+            type="text"
+            required
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder={t("auth.name", "الاسم الكامل")}
+            className={`w-full h-14 ${isRTL ? "pe-12 ps-4" : "ps-12 pe-4"} rounded-xl border border-gray-200 bg-white focus:border-[#ff6b35] focus:ring-2 focus:ring-[#ff6b35]/20 outline-none transition`}
+          />
+        </div>
 
-          {error && (
-            <div className="p-3 bg-[var(--danger)] bg-opacity-10 border border-[var(--danger)] rounded-lg flex gap-2">
-              <AlertCircle className="w-5 h-5 text-[var(--danger)] flex-shrink-0" />
-              <p className="text-sm text-[var(--danger)]">{error}</p>
-            </div>
+        <div className="relative">
+          <Mail className={`absolute top-1/2 -translate-y-1/2 ${isRTL ? "end-4" : "start-4"} w-5 h-5 text-[#6b7280]`} />
+          <input
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder={t("auth.email", "البريد الإلكتروني")}
+            className={`w-full h-14 ${isRTL ? "pe-12 ps-4" : "ps-12 pe-4"} rounded-xl border border-gray-200 bg-white focus:border-[#ff6b35] focus:ring-2 focus:ring-[#ff6b35]/20 outline-none transition`}
+          />
+          {email.includes("@") && email.includes(".") && (
+            <Check className={`absolute top-1/2 -translate-y-1/2 ${isRTL ? "start-4" : "end-4"} w-5 h-5 text-green-500`} />
           )}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <label htmlFor="fullName" className="block text-sm font-medium text-[var(--text-primary)]">
-                {t('auth.fullName')}
-              </label>
-              <Input
-                id="fullName"
-                type="text"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder={t('auth.fullName')}
-                disabled={loading}
+        </div>
+
+        <div>
+          <div className="relative">
+            <Lock className={`absolute top-1/2 -translate-y-1/2 ${isRTL ? "end-4" : "start-4"} w-5 h-5 text-[#6b7280]`} />
+            <input
+              type="password"
+              required
+              minLength={8}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder={t("auth.password.placeholder", "كلمة المرور (8 أحرف أو أكثر)")}
+              className={`w-full h-14 ${isRTL ? "pe-12 ps-4" : "ps-12 pe-4"} rounded-xl border border-gray-200 bg-white focus:border-[#ff6b35] focus:ring-2 focus:ring-[#ff6b35]/20 outline-none transition`}
+            />
+          </div>
+          <div className="mt-2 flex items-center gap-2">
+            <div className="flex-1 h-1.5 rounded-full bg-gray-100 overflow-hidden">
+              <motion.div
+                animate={{ width: `${(strength / 4) * 100}%`, backgroundColor: strengthColor }}
+                className="h-full rounded-full"
               />
             </div>
-
-            <div className="space-y-2">
-              <label htmlFor="email" className="block text-sm font-medium text-[var(--text-primary)]">
-                {t('auth.email')}
-              </label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder={t('auth.email')}
-                disabled={loading}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label htmlFor="password" className="block text-sm font-medium text-[var(--text-primary)]">
-                {t('auth.password')}
-              </label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => handlePasswordChange(e.target.value)}
-                placeholder={t('auth.password')}
-                disabled={loading}
-              />              
-              {password && (
-                <div className="space-y-2">
-                  <div className="h-1 bg-[var(--bg-surface)] rounded-full overflow-hidden">
-                    <div
-                      className={`h-full transition-all ${
-                        passwordStrength === 'strong'
-                          ? 'w-full bg-[var(--success)]'
-                          : passwordStrength === 'medium'
-                          ? 'w-2/3 bg-[var(--warning)]'
-                          : 'w-1/3 bg-[var(--danger)]'
-                      }`}
-                    />
-                  </div>
-                  <p className="text-xs text-[var(--text-secondary)]">
-                    {passwordStrength === 'strong'
-                      ? t('auth.passwordStrength.strong', 'Strong password')
-                      : passwordStrength === 'medium'
-                      ? t('auth.passwordStrength.medium', 'Medium password')
-                      : t('auth.passwordStrength.weak', 'Weak password')}
-                  </p>
-                </div>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-[var(--text-primary)]">
-                {t('auth.confirmPassword')}
-              </label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder={t('auth.confirmPassword')}
-                disabled={loading}
-              />
-            </div>
-
-            <Button
-              type="submit"
-              disabled={loading}
-              className="w-full"
-            >
-              {loading ? t('common.loading') : t('auth.signUp')}
-            </Button>
-          </form>
-          <div className="text-center">
-            <p className="text-sm text-[var(--text-secondary)]">
-              {t('auth.hasAccount')}{' '}
-              <a
-                href="/login"
-                className="text-[var(--accent-secondary)] font-semibold hover:underline"
-              >
-                {t('auth.signIn')}
-              </a>
-            </p>
+            <span className="text-xs text-[#6b7280]">{strengthLabel}</span>
           </div>
         </div>
-      </Card>
-    </div>
-  );
-};
 
-export default Signup;
+        <div className="text-xs text-[#6b7280] leading-relaxed">
+          {t("auth.terms", "بإنشاء الحساب فإنك توافق على")}{" "}
+          <a href="#" className="text-[#ff6b35] hover:underline">{t("auth.terms.link", "الشروط والأحكام")}</a>
+          {" "}{t("auth.and", "و")}{" "}
+          <a href="#" className="text-[#ff6b35] hover:underline">{t("auth.privacy.link", "سياسة الخصوصية")}</a>
+        </div>
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full h-14 rounded-xl bg-[#ff6b35] text-white font-bold text-base shadow-lg shadow-[#ff6b35]/30 hover:bg-[#ff8a5c] hover:shadow-xl transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+        >
+          {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
+            <>
+              {t("auth.signup.cta", "أنشئ حسابي المجاني")}
+              <ArrowRight className={`w-4 h-4 ${isRTL ? "rotate-180" : ""}`} />
+            </>
+          )}
+        </button>
+
+        <div className="text-center text-sm text-[#6b7280]">
+          {t("auth.haveAccount", "لديك حساب بالفعل؟")}{" "}
+          <Link href="/login" className="text-[#ff6b35] font-semibold hover:underline">
+            {t("auth.login.link", "سجّل دخولك")}
+          </Link>
+        </div>
+      </motion.form>
+    </AuthLayout>
+  );
+}

@@ -161,16 +161,15 @@ export const cvRouter = router({
           },
         ]);
 
-        // Save to cv_versions table
+        // Save to cv_versions table (one row per generated version)
+        const rows = input.fields.map((field, i) => ({
+          user_id: ctx.user.id,
+          field_name: field,
+          cv_content: versions[i] ?? versions[0] ?? {},
+        }));
         const { error: insertError } = await ctx.supabase
           .from('cv_versions')
-          .insert([
-            {
-              user_id: ctx.user.id,
-              fields: input.fields,
-              versions_data: versions,
-            },
-          ]);
+          .insert(rows);
 
         if (insertError) {
           console.error('Insert CV error:', insertError);
