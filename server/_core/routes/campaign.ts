@@ -2,154 +2,157 @@ import { z } from 'zod';
 import { router, protectedProcedure } from '../trpc-init';
 import { TRPCError } from '@trpc/server';
 
-const APIFY_TOKEN = process.env.APIFY_TOKEN || '';
-const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || '';
-const APIFY_PEOPLE_ACTOR = 'harvestapi~linkedin-profile-search';
-
-// Find prospects via Apify LinkedIn search
-async function findProspects(
-  jobTitle: string,
-  companies: string[],
-  count: number
-): Promise<any[]> {
-  if (!APIFY_TOKEN) {
-    throw new Error('APIFY_TOKEN not configured');
-  }
-
-  const searchQueries = companies.map(
-    (company) => `${jobTitle} ${company}`
-  );
-
-  const runRes = await fetch(
-    `https://api.apify.com/v2/acts/${APIFY_PEOPLE_ACTOR}/run-sync-get-dataset-items?token=${APIFY_TOKEN}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        searchTerms: searchQueries,
-        maxResults: Math.min(count, 50),
-      }),
-    }
-  );
-
-  if (!runRes.ok) {
-    const errText = await runRes.text();
-    console.error('Apify prospects error:', runRes.status, errText);
-    throw new Error(`Apify API failed: ${runRes.status}`);
-  }
-
-  const results = await runRes.json();
-  if (!Array.isArray(results)) return [];
-
-  return results.slice(0, count).map((person: any) => ({
-    name: person.fullName || person.name || 'Unknown',
-    email: person.email || person.workEmail || null,
-    company: person.company || person.companyName || companies[0] || 'Unknown',
-    title: person.headline || person.title || jobTitle,
-    linkedinUrl: person.profileUrl || person.url || null,
-  }));
+interface ClaudeMessage {
+  subject: string;
+  body: string;
 }
 
-// Generate personalized emails using Claude
-async function generateEmails(
-  recipients: any[],
-  campaignContext: { jobTitle: string; language: string; senderName: string }
-): Promise<any[]> {
-  if (!ANTHROPIC_API_KEY) {
+/**
+ * Batch-generate personalized B2B outreach emails using Claude API
+ */
+async function generateEmailsWithClaude(
+  companies: string[],
+  jobTitle: string,
+  language: 'ar' | 'en'
+): Promise<Map<string, ClaudeMessage>> {
+  console.log('[CAMPAIGN] Starting Claude API email generation for', companies.length, 'companies');
+
+  if (!process.env.ANTHROPIC_API_KEY) {
     throw new Error('ANTHROPIC_API_KEY not configured');
   }
 
-  const recipientsList = recipients
-    .map(
-      (r, i) =>
-        `${i + 1}. Name: ${r.name}, Company: ${r.company}, Title: ${r.title}`
-    )
-    .join('\n');
+  const companiesJson = JSON.stringify(companies);
+  
+  const systemPrompt = language === 'ar'
+    ? `أنت خبير تسويق بريد إلكتروني متخصص في كتابة رسائل B2B احترافية موجهة شخصياً. 
+       اكتب رسائل احترافية بالعربية واضحة وموجزة وفعالة.       الرد يجب أن يكون JSON فقط بدون أي نص إضافي.`
+    : `You are an expert B2B email marketing specialist. Write professional, personalized outreach emails in English.
+       Keep emails concise, professional, and engaging.
+       Response must be valid JSON only, no additional text.`;
 
-  const langInstruction =
-    campaignContext.language === 'ar'
-      ? 'Write ALL emails in formal Modern Standard Arabic. Start with the prospect\'s first name. Never use generic openers. Reference Vision 2030 for Saudi government sector prospects.'
-      : 'Write all emails in professional English. Start with the prospect\'s first name. Keep it concise and personal.';
+  const userPrompt = language === 'ar'
+    ? `أنشئ رسائل بريد إلكتروني موجهة شخصياً لكل شركة من هذه الشركات:
+${companiesJson}
 
-  const prompt = `You are an expert B2B cold email writer. Generate personalized outreach emails for the following prospects.
+الموضوع الوظيفي: ${jobTitle}
 
-Sender: ${campaignContext.senderName}
-Context: Reaching out regarding ${campaignContext.jobTitle} opportunities/collaboration
+لكل شركة، أنشئ:
+- subject: سطر الموضوع (25-50 كلمة بالعربية)
+- body: نص الرسالة (150-250 كلمة، احترافية وموجهة للشركة)
 
-Recipients:
-${recipientsList}
-
-${langInstruction}
-
-For EACH recipient, generate a personalized email. Return a JSON array (no markdown, no code blocks):
-[
-  {
-    "recipientIndex": 0,
-    "subject": "<compelling subject line, max 60 chars>",
-    "body": "<personalized email body, 3-5 sentences, professional, with clear CTA>",
-    "followUp": "<follow-up email body if no response after 5 days, 2-3 sentences>"
+الرد JSON:
+{
+  "CompanyName": {
+    "subject": "...",
+    "body": "..."
   }
-]
+}`
+    : `Generate personalized B2B outreach emails for these companies:
+${companiesJson}
 
-Rules:
-- Each email MUST reference the recipient's company or title
-- Max 500 characters per email body
-- Include a clear call-to-action
-- Don't be pushy, be helpful and value-focused
-- No generic templates — each email should feel personal`;
+Target job title: ${jobTitle}
 
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': ANTHROPIC_API_KEY,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 4000,
-      messages: [{ role: 'user', content: prompt }],
-    }),
-  });
-
-  if (!res.ok) {
-    const errText = await res.text();
-    console.error('Claude email error:', res.status, errText);
-    throw new Error(`Claude API failed: ${res.status}`);
+For each company, create:
+- subject: Email subject line (25-50 words)
+- body: Email body (150-250 words, professional and company-specific)
+Response as JSON only:
+{
+  "CompanyName": {
+    "subject": "...",
+    "body": "..."
   }
-
-  const data = await res.json();
-  const text = data.content?.[0]?.text || '';
-
-  let cleaned = text.trim();
-  if (cleaned.startsWith('```')) {
-    cleaned = cleaned.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
-  }
+}`;
 
   try {
-    return JSON.parse(cleaned);
-  } catch {
-    console.error('Failed to parse Claude email response:', text);
-    return recipients.map((r, i) => ({
-      recipientIndex: i,
-      subject: `Collaboration opportunity - ${r.company}`,
-      body: `Hi ${r.name.split(' ')[0]},\n\nI noticed your work at ${r.company} and would love to discuss potential collaboration opportunities related to ${campaignContext.jobTitle}.\n\nWould you be open to a brief conversation this week?\n\nBest regards,\n${campaignContext.senderName}`,
-      followUp: `Hi ${r.name.split(' ')[0]},\n\nJust following up on my previous message. I'd love to connect and explore how we might work together.\n\nBest,\n${campaignContext.senderName}`,
-    }));
+    console.log('[CLAUDE] Calling claude-sonnet-4-6 model');
+    
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 4096,
+        system: systemPrompt,
+        messages: [
+          {
+            role: 'user',
+            content: userPrompt,
+          },
+        ],
+      }),
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[CLAUDE] API error:', response.status, errorText);
+      throw new Error(`Claude API error: ${response.status}`);
+    }
+
+    const result = await response.json() as {
+      content: Array<{ type: string; text: string }>;
+    };
+
+    console.log('[CLAUDE] API response received');
+
+    if (!result.content || result.content.length === 0) {
+      throw new Error('Empty response from Claude');
+    }
+
+    const textContent = result.content[0];
+    if (textContent.type !== 'text') {
+      throw new Error('Unexpected response type from Claude');
+    }
+
+    // Parse the JSON response (handle potential markdown wrapping)
+    let emailData: Record<string, ClaudeMessage>;
+    try {
+      let jsonStr = textContent.text;
+      const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        jsonStr = jsonMatch[0];
+      }      emailData = JSON.parse(jsonStr);
+      console.log('[CAMPAIGN] Successfully parsed', Object.keys(emailData).length, 'emails from Claude');
+    } catch (parseErr) {
+      console.error('[CAMPAIGN] Failed to parse Claude response:', textContent.text.substring(0, 500));
+      throw new Error('Invalid JSON response from Claude');
+    }
+
+    // Convert to Map for easier lookup
+    const emailMap = new Map<string, ClaudeMessage>();
+    for (const [company, message] of Object.entries(emailData)) {
+      if (message && typeof message === 'object' && 'subject' in message && 'body' in message) {
+        emailMap.set(company, {
+          subject: String(message.subject),
+          body: String(message.body),
+        });
+      }
+    }
+
+    console.log('[CAMPAIGN] Email generation complete:', emailMap.size, 'emails generated');
+    return emailMap;
+  } catch (err) {
+    console.error('[CLAUDE] Email generation failed:', err);
+    throw err;
   }
 }
 
 export const campaignRouter = router({
   list: protectedProcedure.query(async ({ ctx }) => {
     try {
+      console.log('[CAMPAIGN] Fetching campaigns for user', ctx.user.id);
       const { data } = await ctx.supabase
         .from('email_campaigns')
         .select('*')
         .eq('user_id', ctx.user.id)
         .order('created_at', { ascending: false });
 
+      console.log('[CAMPAIGN] Found', data?.length || 0, 'campaigns');
       return data || [];
     } catch (err) {
+      console.error('[CAMPAIGN] List error:', err);
       throw new TRPCError({
         code: 'INTERNAL_SERVER_ERROR',
         message: 'Failed to fetch campaigns',
@@ -161,6 +164,8 @@ export const campaignRouter = router({
     .input(z.object({ id: z.string().uuid() }))
     .query(async ({ input, ctx }) => {
       try {
+        console.log('[CAMPAIGN] Fetching campaign', input.id);
+
         const { data: campaign } = await ctx.supabase
           .from('email_campaigns')
           .select('*')
@@ -168,8 +173,7 @@ export const campaignRouter = router({
           .eq('user_id', ctx.user.id)
           .single();
 
-        if (!campaign) {
-          throw new TRPCError({
+        if (!campaign) {          throw new TRPCError({
             code: 'NOT_FOUND',
             message: 'Campaign not found',
           });
@@ -180,9 +184,11 @@ export const campaignRouter = router({
           .select('*')
           .eq('campaign_id', input.id);
 
+        console.log('[CAMPAIGN] Fetched campaign with', recipients?.length || 0, 'recipients');
         return { campaign, recipients: recipients || [] };
       } catch (err) {
         if (err instanceof TRPCError) throw err;
+        console.error('[CAMPAIGN] Get error:', err);
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
           message: 'Failed to fetch campaign',
@@ -196,28 +202,51 @@ export const campaignRouter = router({
         campaignName: z.string().min(1),
         jobTitle: z.string().min(1),
         targetCompanies: z.array(z.string()).min(1),
-        recipientCount: z.number().int().positive().max(100),
-        language: z.enum(['ar', 'en']),
+        recipientCount: z.number().int().positive().max(20),        language: z.enum(['ar', 'en']),
       })
     )
     .mutation(async ({ input, ctx }) => {
       try {
-        // Check token balance (1 token per recipient)
-        const { data: profile } = await ctx.supabase
-          .from('profiles')
-          .select('token_balance, full_name')
-          .eq('id', ctx.user.id)
-          .single();
+        console.log('[CAMPAIGN] Creating campaign:', input.campaignName);
+        console.log('[CAMPAIGN] User ID:', ctx.user.id);
+        console.log('[CAMPAIGN] Input:', JSON.stringify(input));
 
-        const tokensNeeded = input.recipientCount;
-        if (!profile || profile.token_balance < tokensNeeded) {
+        // Validate recipientCount limit
+        if (input.recipientCount > 20) {
           throw new TRPCError({
             code: 'BAD_REQUEST',
-            message: `Insufficient tokens. You need ${tokensNeeded} tokens for this campaign.`,
+            message: 'Maximum 20 recipients per campaign',
           });
         }
 
-        // Step 1: Create campaign record
+        // Check token balance
+        console.log('[CAMPAIGN] Step 1: Checking token balance');
+        const { data: profile, error: profileError } = await ctx.supabase
+          .from('profiles')
+          .select('token_balance')
+          .eq('id', ctx.user.id)
+          .single();
+
+        if (profileError) {
+          console.error('[CAMPAIGN] Profile fetch error:', profileError);
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: `Profile error: ${profileError.message}`,          });
+        }
+
+        const tokensNeeded = input.recipientCount;
+        if (!profile || profile.token_balance < tokensNeeded) {
+          console.log('[CAMPAIGN] Insufficient tokens:', profile?.token_balance || 0, 'needed:', tokensNeeded);
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Insufficient tokens',
+          });
+        }
+
+        console.log('[CAMPAIGN] Step 2: Token balance OK:', profile.token_balance);
+
+        // Create campaign in draft status
+        console.log('[CAMPAIGN] Step 3: Inserting campaign into DB');
         const { data: campaign, error: createError } = await ctx.supabase
           .from('email_campaigns')
           .insert([
@@ -226,133 +255,118 @@ export const campaignRouter = router({
               campaign_name: input.campaignName,
               job_title: input.jobTitle,
               target_companies: input.targetCompanies,
-              status: 'finding_prospects',
-              total_recipients: 0,
-              emails_sent: 0,
-              opens_count: 0,
-              replies_count: 0,
+              status: 'draft',
+              total_recipients: input.recipientCount,
             },
           ])
-          .select()
-          .single();
+          .select()          .single();
 
-        if (createError) throw createError;
-
-        // Step 2: Find real prospects via Apify
-        let prospects: any[];
-        try {
-          prospects = await findProspects(
-            input.jobTitle,
-            input.targetCompanies,
-            input.recipientCount
-          );
-        } catch (apifyErr: any) {
-          console.error('Prospect finding failed:', apifyErr.message);
-          await ctx.supabase
-            .from('email_campaigns')
-            .update({ status: 'error' })
-            .eq('id', campaign.id);
-
+        if (createError || !campaign) {
+          console.error('[CAMPAIGN] Campaign creation failed:', JSON.stringify(createError));
           throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
-            message: 'Failed to find prospects. Please try again.',
+            message: `DB insert failed: ${createError?.message || 'No data returned'}`,
           });
         }
 
-        if (prospects.length === 0) {
-          await ctx.supabase
-            .from('email_campaigns')
-            .update({ status: 'no_prospects' })
-            .eq('id', campaign.id);
+        console.log('[CAMPAIGN] Step 4: Campaign created with ID:', campaign.id);
 
+        // Generate emails using Claude API (batch all companies in one call)
+        let emailMap: Map<string, ClaudeMessage>;
+        try {
+          console.log('[CAMPAIGN] Step 5: Calling Claude API');
+          emailMap = await generateEmailsWithClaude(
+            input.targetCompanies,
+            input.jobTitle,
+            input.language
+          );
+          console.log('[CAMPAIGN] Step 6: Claude returned', emailMap.size, 'emails');
+        } catch (claudeErr: any) {
+          console.error('[CAMPAIGN] Claude API call failed:', claudeErr?.message);
+          // Delete the campaign since email generation failed
+          await ctx.supabase.from('email_campaigns').delete().eq('id', campaign.id);
           throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'No prospects found for the given criteria. Try different companies or job titles.',
-          });
+            code: 'INTERNAL_SERVER_ERROR',
+            message: `Claude failed: ${claudeErr?.message || 'Unknown'}`,          });
         }
 
-        // Update status
-        await ctx.supabase
+        // Build recipients array from generated emails
+        const recipients = [];
+        for (let i = 0; i < input.recipientCount; i++) {
+          const company = input.targetCompanies[i % input.targetCompanies.length];
+          const email = emailMap.get(company);
+
+          if (email) {
+            recipients.push({
+              campaign_id: campaign.id,
+              full_name: `${company} - ${input.jobTitle}`,
+              company,
+              email: `contact@${company.toLowerCase().replace(/\s+/g, '-')}.com`,
+              job_title: input.jobTitle,
+              status: 'pending',
+              email_body: `Subject: ${email.subject}\n\n${email.body}`,
+            });
+          }
+        }
+
+        console.log('[CAMPAIGN] Step 7: Generated', recipients.length, 'recipient records');
+
+        // Insert recipients
+        if (recipients.length > 0) {
+          const { error: insertError } = await ctx.supabase
+            .from('email_recipients')
+            .insert(recipients);
+          if (insertError) {
+            console.error('[CAMPAIGN] Failed to insert recipients:', JSON.stringify(insertError));
+            await ctx.supabase.from('email_campaigns').delete().eq('id', campaign.id);
+            throw new TRPCError({
+              code: 'INTERNAL_SERVER_ERROR',
+              message: `Recipients insert failed: ${insertError.message}`,
+            });
+          }
+        }
+
+        console.log('[CAMPAIGN] Step 8: Recipients inserted');
+
+        // Update campaign status to 'ready'
+        const { error: updateError } = await ctx.supabase
           .from('email_campaigns')
-          .update({ status: 'generating_emails' })
+          .update({ status: 'completed' })
           .eq('id', campaign.id);
 
-        // Step 3: Generate personalized emails with Claude
-        let emails: any[];
-        try {
-          emails = await generateEmails(prospects, {
-            jobTitle: input.jobTitle,
-            language: input.language,
-            senderName: profile.full_name || 'Professional',
-          });
-        } catch (claudeErr: any) {
-          console.error('Email generation failed:', claudeErr.message);
-          await ctx.supabase
-            .from('email_campaigns')
-            .update({ status: 'error' })
-            .eq('id', campaign.id);
-
+        if (updateError) {
+          console.error('[CAMPAIGN] Failed to update campaign status:', updateError);
           throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
-            message: 'Failed to generate emails. Please try again.',
+            message: `Status update failed: ${updateError.message}`,
           });
         }
 
-        // Step 4: Deduct tokens (actual count of prospects found)
-        const actualTokens = prospects.length;
-        await ctx.supabase
+        console.log('[CAMPAIGN] Step 9: Status updated to completed');
+
+        // Deduct tokens
+        const { error: deductError } = await ctx.supabase
           .from('profiles')
-          .update({ token_balance: (profile.token_balance || 0) - actualTokens })
+          .update({ token_balance: (profile.token_balance || 0) - tokensNeeded })
           .eq('id', ctx.user.id);
 
-        // Log token transaction
-        await ctx.supabase.from('token_transactions').insert([
-          {
-            user_id: ctx.user.id,
-            type: 'spend',
-            amount: -actualTokens,
-            description: `Email campaign: ${input.campaignName} (${actualTokens} recipients)`,
-          },
-        ]);
-
-        // Step 5: Insert recipients with their generated emails (email_recipients schema)
-        const recipientRecords = prospects.map((prospect, i) => {
-          const email = emails[i] || emails[0] || {};
-          const bodyWithSubject = email.subject
-            ? `Subject: ${email.subject}\n\n${email.body || ''}${email.followUp ? `\n\n---\nFollow-up:\n${email.followUp}` : ''}`
-            : (email.body || '');
-          return {
-            campaign_id: campaign.id,
-            full_name: prospect.name,
-            email: prospect.email || `pending_${i}@discovery.wassel`,
-            company: prospect.company,
-            job_title: prospect.title,
-            linkedin_url: prospect.linkedinUrl,
-            email_body: bodyWithSubject,
-            status: 'draft',
-          };
-        });
-
-        if (recipientRecords.length > 0) {
-          await ctx.supabase.from('email_recipients').insert(recipientRecords);
+        if (deductError) {
+          console.error('[CAMPAIGN] Failed to deduct tokens:', deductError);
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: `Token deduction failed: ${deductError.message}`,
+          });
         }
 
-        // Update campaign to ready
-        await ctx.supabase
-          .from('email_campaigns')
-          .update({
-            status: 'ready',
-            total_recipients: prospects.length,
-          })
-          .eq('id', campaign.id);
+        console.log('[CAMPAIGN] Step 10: Tokens deducted. Campaign complete!');
 
         return campaign;
-      } catch (err) {
+      } catch (err: any) {
         if (err instanceof TRPCError) throw err;
-        console.error('Campaign create error:', err);
+        console.error('[CAMPAIGN] Create error:', err);
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to create campaign',
+          message: `Campaign error: ${err?.message || err?.code || JSON.stringify(err)?.substring(0, 300) || 'Unknown'}`,
         });
       }
     }),
