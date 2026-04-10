@@ -24,8 +24,7 @@ async function scrapeLinkedInProfile(profileUrl: string): Promise<any> {
     throw new Error(`Apify run failed: ${runRes.status}`);
   }
 
-  const runData = await runRes.json();
-  const runId = runData?.data?.id;
+  const runData = await runRes.json();  const runId = runData?.data?.id;
   console.log('[APIFY] Run started, ID:', runId);
 
   // Poll for completion (max 120s)
@@ -53,7 +52,6 @@ async function scrapeLinkedInProfile(profileUrl: string): Promise<any> {
   );
   const items = await itemsRes.json();
   console.log('[APIFY] Got', Array.isArray(items) ? items.length : 0, 'profile(s)');
-
   if (!Array.isArray(items) || items.length === 0) {
     throw new Error('No profile data returned from Apify');
   }
@@ -62,7 +60,6 @@ async function scrapeLinkedInProfile(profileUrl: string): Promise<any> {
 }
 
 async function analyzeWithClaude(profileData: any): Promise<any> {
-  // Build a concise profile summary for Claude
   const name = profileData.fullName || profileData.firstName + ' ' + profileData.lastName || 'Unknown';
   const headline = profileData.headline || '';
   const summary = profileData.summary || profileData.about || '';
@@ -84,7 +81,6 @@ async function analyzeWithClaude(profileData: any): Promise<any> {
     .map((s: any) => typeof s === 'string' ? s : s.name || s.skill || '')
     .filter(Boolean)
     .join(', ');
-
   const profileText = `
 Name: ${name}
 Headline: ${headline}
@@ -111,7 +107,6 @@ Skills: ${skills || 'None listed'}
       {
         role: 'user',
         content: `You are an expert LinkedIn profile optimizer specializing in the Saudi/GCC job market. Analyze this LinkedIn profile and return a JSON object with EXACTLY this structure (no markdown, no code blocks, just raw JSON):
-
 {
   "score": <number 0-100>,
   "headlineCurrent": "<current headline>",
@@ -139,7 +134,6 @@ ${profileText}`
       }
     ]
   };
-
   console.log('[CLAUDE] Request body model:', claudeBody.model);
 
   const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
@@ -163,13 +157,11 @@ ${profileText}`
 
   const text = claudeData.content?.[0]?.text || '';
 
-  // Extract JSON from response (handle possible markdown wrapping)
   let jsonStr = text;
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   if (jsonMatch) {
     jsonStr = jsonMatch[0];
   }
-
   try {
     const analysis = JSON.parse(jsonStr);
     return analysis;
@@ -186,7 +178,6 @@ export const linkedinRouter = router({
       try {
         console.log('[LINKEDIN] Analyze request for:', input.profileUrl);
 
-        // Check token balance (need 5 tokens)
         const { data: profile } = await ctx.supabase
           .from('profiles')
           .select('token_balance')
@@ -201,16 +192,12 @@ export const linkedinRouter = router({
             message: 'Insufficient tokens. Need 5 tokens for analysis.',
           });
         }
-
-        // Step 1: Scrape LinkedIn profile via Apify
         const profileData = await scrapeLinkedInProfile(input.profileUrl);
         console.log('[LINKEDIN] Profile scraped:', profileData?.fullName || profileData?.firstName);
 
-        // Step 2: Analyze with Claude AI
         const analysis = await analyzeWithClaude(profileData);
         console.log('[LINKEDIN] Analysis score:', analysis?.score);
 
-        // Step 3: Deduct 5 tokens
         const { error: updateError } = await ctx.supabase
           .from('profiles')
           .update({ token_balance: (profile.token_balance || 0) - 5 })
@@ -221,7 +208,7 @@ export const linkedinRouter = router({
           throw updateError;
         }
 
-        // Step 4: Save to linkedin_analyses table
+        // Save to linkedin_analyses table (individual columns)
         const { error: insertError } = await ctx.supabase
           .from('linkedin_analyses')
           .insert([
@@ -229,13 +216,16 @@ export const linkedinRouter = router({
               user_id: ctx.user.id,
               profile_url: input.profileUrl,
               score: analysis.score || 0,
-              analysis_data: analysis,
+              headline_current: analysis.headlineCurrent || '',
+              headline_suggestion: analysis.headlineSuggestion || '',
+              summary_current: analysis.summaryCurrent || '',
+              summary_suggestion: analysis.summarySuggestion || '',              keywords_suggestions: analysis.keywords || [],
+              experience_suggestions: analysis.experienceSuggestions || [],
             },
           ]);
 
         if (insertError) {
           console.error('[LINKEDIN] Insert error:', insertError);
-          // Don't throw — analysis still succeeded
         }
 
         return analysis;
@@ -257,8 +247,7 @@ export const linkedinRouter = router({
         .eq('user_id', ctx.user.id)
         .order('created_at', { ascending: false });
 
-      return data || [];
-    } catch (err) {
+      return data || [];    } catch (err) {
       throw new TRPCError({
         code: 'INTERNAL_SERVER_ERROR',
         message: 'Failed to fetch LinkedIn analysis history',

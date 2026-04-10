@@ -202,7 +202,7 @@ export const campaignRouter = router({
         campaignName: z.string().min(1),
         jobTitle: z.string().min(1),
         targetCompanies: z.array(z.string()).min(1),
-        recipientCount: z.number().int().positive().max(20),        language: z.enum(['ar', 'en']),
+        recipientCount: z.number().int().positive().max(100),        language: z.enum(['ar', 'en']),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -212,10 +212,10 @@ export const campaignRouter = router({
         console.log('[CAMPAIGN] Input:', JSON.stringify(input));
 
         // Validate recipientCount limit
-        if (input.recipientCount > 20) {
+        if (input.recipientCount > 100) {
           throw new TRPCError({
             code: 'BAD_REQUEST',
-            message: 'Maximum 20 recipients per campaign',
+            message: 'Maximum 100 recipients per campaign',
           });
         }
 

@@ -341,7 +341,7 @@
     "description": "احصل على رؤى مدعومة بالذكاء الاصطناعي لتحسين ملفك على LinkedIn",
     "urlLabel": "رابط ملف LinkedIn",
     "urlPlaceholder": "ملفك الشخصي",
-    "cost": "التكلفة: 5 رموز",
+    "cost": "التكلفة: {{count}} رموز",
     "analyze": "تحليل ملف LinkedIn",
     "analyzing": "جاري التحليل...",
     "scoreLabel": "نقاط LinkedIn الخاصة بك",
@@ -582,5 +582,20 @@
     "featureUnlimitedCampaigns": "حملات غير محدودة",
     "featureDedicatedSupport": "دعم مخصص",
     "sar": "ريال"
+  },
+  "camp": {
+    "title": "حملات البريد الإلكتروني",
+    "subtitle": "أدر حملاتك البريدية من مكان واحد",
+    "new": "حملة جديدة",
+    "empty": "لا توجد حملات بعد",
+    "emptyDesc": "أنشئ أول حملة بريدية",
+    "statusRunning": "نشطة",
+    "statusCompleted": "مكتملة",
+    "statusPaused": "متوقفة",
+    "statusDraft": "مسودة",
+    "sent": "مُرسل",
+    "opens": "فتح",
+    "replies": "رد",
+    "openRate": "فتح"
   }
 }

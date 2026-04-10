@@ -341,7 +341,7 @@
     "description": "Get AI-powered insights to optimize your LinkedIn profile",
     "urlLabel": "LinkedIn Profile URL",
     "urlPlaceholder": "your-profile",
-    "cost": "Cost: 5 tokens",
+    "cost": "Cost: {{count}} tokens",
     "analyze": "Analyze LinkedIn Profile",
     "analyzing": "Analyzing...",
     "scoreLabel": "Your LinkedIn Score",
@@ -582,5 +582,20 @@
     "featureUnlimitedCampaigns": "Unlimited campaigns",
     "featureDedicatedSupport": "Dedicated support",
     "sar": "SAR"
+  },
+  "camp": {
+    "title": "Email Campaigns",
+    "subtitle": "Manage your email campaigns and client outreach from one place",
+    "new": "New Campaign",
+    "empty": "No campaigns yet",
+    "emptyDesc": "Create your first email campaign to reach clients",
+    "statusRunning": "Running",
+    "statusCompleted": "Completed",
+    "statusPaused": "Paused",
+    "statusDraft": "Draft",
+    "sent": "Sent",
+    "opens": "Opens",
+    "replies": "Replies",
+    "openRate": "open rate"
   }
 }

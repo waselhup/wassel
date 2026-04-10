@@ -1,3 +1,5 @@
+console.log('WASSEL v2.1 - BUILD ' + new Date().toISOString());
+
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';

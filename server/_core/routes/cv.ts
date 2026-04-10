@@ -2,203 +2,224 @@ import { z } from 'zod';
 import { router, protectedProcedure } from '../trpc-init';
 import { TRPCError } from '@trpc/server';
 
-const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || '';
-
-// Generate tailored CV versions using Claude API
-async function generateCVWithClaude(fields: string[], userProfile: any): Promise<any[]> {
-  if (!ANTHROPIC_API_KEY) {
-    throw new Error('ANTHROPIC_API_KEY not configured');
-  }
-
-  const fieldsText = fields.map((f, i) => `${i + 1}. ${f}`).join('\n');
-
-  const prompt = `You are an expert CV/resume writer specializing in the Saudi/GCC job market. Generate tailored CV content for a professional targeting multiple career fields.
-
-User Info:
-- Name: ${userProfile.full_name || 'Professional'}
-- Email: ${userProfile.email || ''}
-
-Target Fields:
-${fieldsText}
-
-For EACH field, generate a tailored CV version. Return a JSON array (no markdown, no code blocks):
-[
-  {
-    "fieldName": "<field name>",
-    "headline": "<professional headline optimized for this field, max 120 chars>",
-    "summary": "<3-4 sentence professional summary tailored to this field>",
-    "skills": ["skill1", "skill2", "skill3", "skill4", "skill5", "skill6", "skill7", "skill8"],
-    "experience": [
-      {
-        "title": "<job title tailored to field>",
-        "company": "<suggest type of company>",
-        "duration": "<suggested duration>",
-        "description": "<2-3 bullet points as single string, with measurable achievements>"
-      },
-      {
-        "title": "<second role>",
-        "company": "<company type>",
-        "duration": "<duration>",
-        "description": "<achievements>"
-      }
-    ],
-    "certifications": ["<relevant certification 1>", "<relevant certification 2>"],
-    "keywords": ["<ATS keyword 1>", "<ATS keyword 2>", "<ATS keyword 3>", "<ATS keyword 4>", "<ATS keyword 5>"]
-  }
-]
-
-Requirements:
-- Use formal Modern Standard Arabic if field names are in Arabic
-- Reference Vision 2030 for Saudi government/public sector fields
-- Include ATS-optimized keywords
-- Each experience entry should have quantified achievements
-- Skills should be a mix of technical and soft skills relevant to the field`;
-
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': ANTHROPIC_API_KEY,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 3000,
-      messages: [
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
-    }),
-  });
-
-  if (!res.ok) {
-    const errText = await res.text();
-    console.error('Claude CV error:', res.status, errText);
-    throw new Error(`Claude API failed: ${res.status}`);
-  }
-
-  const data = await res.json();
-  const text = data.content?.[0]?.text || '';
-
-  // Parse JSON from response
-  let cleaned = text.trim();
-  if (cleaned.startsWith('```')) {
-    cleaned = cleaned.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
-  }
-
-  try {
-    const parsed = JSON.parse(cleaned);
-    return Array.isArray(parsed) ? parsed : [parsed];
-  } catch {
-    console.error('Failed to parse Claude CV response:', text);
-    return fields.map((field) => ({
-      fieldName: field,
-      headline: `${field} Professional | Experienced & Results-Driven`,
-      summary: `Experienced professional seeking opportunities in ${field}. Strong track record of delivering results and driving growth in competitive environments.`,
-      skills: ['Leadership', 'Communication', 'Problem Solving', 'Project Management', 'Strategic Planning', 'Team Building', 'Analytics', 'Innovation'],
-      experience: [
-        {
-          title: `${field} Specialist`,
-          company: 'Industry-leading organization',
-          duration: '3+ years',
-          description: `Led key ${field} initiatives resulting in measurable improvements. Managed cross-functional teams and delivered projects on time and within budget.`,
-        },
-      ],
-      certifications: ['Relevant industry certification'],
-      keywords: [field, 'professional', 'experienced', 'results-driven', 'strategic'],
-    }));
-  }
+interface VersionData {
+  fieldName: string;
+  headline: string;
+  summary: string;
+  skills: string[];
+  experience: Array<{
+    title: string;
+    company: string;
+    duration: string;
+    description: string;
+  }>;
 }
 
+interface ClaudeMessage {
+  content: Array<{
+    type: string;
+    text?: string;
+  }>;
+}
+
+const callClaudeAPI = async (field: string): Promise<VersionData> => {
+  console.log(`[CLAUDE] Starting API call for field: ${field}`);
+
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    console.error('[CLAUDE] ANTHROPIC_API_KEY not set');    throw new TRPCError({
+      code: 'INTERNAL_SERVER_ERROR',
+      message: 'Claude API key not configured',
+    });
+  }
+
+  const prompt = `You are a professional CV optimizer. Generate a tailored CV version for someone specializing in: ${field}
+
+Return a JSON object with EXACTLY this structure (no markdown, just JSON):
+{
+  "headline": "A professional headline (max 10 words)",
+  "summary": "A 2-3 sentence professional summary tailored to ${field}",
+  "skills": ["skill1", "skill2", "skill3", "skill4", "skill5"],
+  "experience": [
+    {
+      "title": "Job title",
+      "company": "Company name",
+      "duration": "Duration string",
+      "description": "1-2 sentence description of relevant achievements"
+    }
+  ]
+}
+
+Make the content specific to ${field} and professional.`;
+
+  try {
+    console.log('[CLAUDE] Sending request to api.anthropic.com');
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1024,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    });
+
+    console.log(`[CLAUDE] Response status: ${response.status}`);
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('[CLAUDE] API error:', errorData);
+      throw new TRPCError({
+        code: 'INTERNAL_SERVER_ERROR',
+        message: `Claude API error: ${errorData.error?.message || 'Unknown error'}`,
+      });
+    }
+
+    const data = (await response.json()) as ClaudeMessage;
+    console.log('[CLAUDE] Successfully received response');
+
+    const textContent = data.content.find((c) => c.type === 'text');
+    if (!textContent || !textContent.text) {
+      console.error('[CLAUDE] No text content in response');
+      throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Invalid response format from Claude API' });    }
+
+    console.log(`[CLAUDE] Parsing JSON response for field: ${field}`);
+
+    const jsonMatch = textContent.text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      console.error('[CLAUDE] Could not extract JSON from response');
+      throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to parse Claude API response' });
+    }
+
+    const parsedData = JSON.parse(jsonMatch[0]);
+
+    const versionData: VersionData = {
+      fieldName: field,
+      headline: parsedData.headline || 'Professional',
+      summary: parsedData.summary || 'Experienced professional',
+      skills: Array.isArray(parsedData.skills) ? parsedData.skills : [],
+      experience: Array.isArray(parsedData.experience) ? parsedData.experience : [],
+    };
+
+    console.log(`[CLAUDE] Successfully parsed CV data for field: ${field}`);
+    return versionData;
+  } catch (error) {
+    console.error(`[CLAUDE] Error calling API for field ${field}:`, error);
+    if (error instanceof TRPCError) throw error;
+    throw new TRPCError({
+      code: 'INTERNAL_SERVER_ERROR',
+      message: error instanceof Error ? error.message : 'Failed to call Claude API',
+    });
+  }
+};
 export const cvRouter = router({
   generate: protectedProcedure
     .input(z.object({ fields: z.array(z.string()).min(1).max(3) }))
     .mutation(async ({ input, ctx }) => {
+      console.log(`[CV] Starting CV generation for user: ${ctx.user.id}`);
+      console.log(`[CV] Requested fields: ${input.fields.join(', ')}`);
+
       try {
-        // Check token balance (need 10 tokens)
-        const { data: profile } = await ctx.supabase
+        console.log('[CV] Checking token balance');
+
+        const { data: profile, error: selectError } = await ctx.supabase
           .from('profiles')
-          .select('token_balance, full_name, email')
+          .select('token_balance')
           .eq('id', ctx.user.id)
           .single();
 
-        if (!profile || profile.token_balance < 10) {
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'Insufficient tokens. You need 10 tokens for CV generation.',
-          });
+        if (selectError) {
+          console.error('[CV] Error fetching profile:', selectError);
+          throw selectError;
         }
 
-        // Generate with Claude AI
-        let versions: any[];
-        try {
-          versions = await generateCVWithClaude(input.fields, profile);
-        } catch (claudeErr: any) {
-          console.error('Claude CV generation failed:', claudeErr.message);
-          throw new TRPCError({
-            code: 'INTERNAL_SERVER_ERROR',
-            message: 'AI CV generation failed. Please try again.',
-          });
+        if (!profile) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'User profile not found' });
         }
 
-        // Deduct 10 tokens
+        console.log(`[CV] Current token balance: ${profile.token_balance}`);
+
+        if (profile.token_balance < 10) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Insufficient tokens. Need 10 tokens, have ' + profile.token_balance });        }
+
+        console.log(`[CV] Calling Claude API for ${input.fields.length} field(s)`);
+        const versions: VersionData[] = [];
+
+        for (const field of input.fields) {
+          console.log(`[CV] Processing field: ${field}`);
+          const versionData = await callClaudeAPI(field);
+          versions.push(versionData);
+          console.log(`[CV] Successfully generated CV for field: ${field}`);
+        }
+
+        console.log('[CV] Deducting 10 tokens from balance');
+        const newBalance = (profile.token_balance || 0) - 10;
+
         const { error: updateError } = await ctx.supabase
           .from('profiles')
-          .update({ token_balance: (profile.token_balance || 0) - 10 })
+          .update({ token_balance: newBalance })
           .eq('id', ctx.user.id);
 
-        if (updateError) throw updateError;
-
-        // Log token transaction
-        await ctx.supabase.from('token_transactions').insert([
-          {
-            user_id: ctx.user.id,
-            type: 'spend',
-            amount: -10,
-            description: `CV generation for ${input.fields.length} field(s): ${input.fields.join(', ')}`,
-          },
-        ]);
-
-        // Save to cv_versions table (one row per generated version)
-        const rows = input.fields.map((field, i) => ({
-          user_id: ctx.user.id,
-          field_name: field,
-          cv_content: versions[i] ?? versions[0] ?? {},
-        }));
-        const { error: insertError } = await ctx.supabase
-          .from('cv_versions')
-          .insert(rows);
-
-        if (insertError) {
-          console.error('Insert CV error:', insertError);
+        if (updateError) {
+          console.error('[CV] Error updating token balance:', updateError);
+          throw updateError;
         }
 
-        return { versions };
+        console.log(`[CV] Token balance updated to: ${newBalance}`);
+
+        // Save to cv_versions table (one row per field)
+        console.log('[CV] Saving CV versions to database');
+        for (const version of versions) {
+          const { error: insertError } = await ctx.supabase
+            .from('cv_versions')
+            .insert([{
+              user_id: ctx.user.id,
+              field_name: version.fieldName,
+              cv_content: version,
+            }]);
+
+          if (insertError) {
+            console.error('[CV] Error saving CV version for field:', version.fieldName, insertError);
+          }
+        }
+
+        console.log(`[CV] Successfully saved CV versions for user: ${ctx.user.id}`);
+
+        return { versions, tokensRemaining: newBalance };
       } catch (err) {
+        console.error('[CV] Mutation error:', err);
         if (err instanceof TRPCError) throw err;
-        console.error('CV generate error:', err);
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to generate CV versions',
+          message: err instanceof Error ? err.message : 'Failed to generate CV versions',
         });
       }
     }),
 
   history: protectedProcedure.query(async ({ ctx }) => {
-    try {
-      const { data } = await ctx.supabase
+    console.log(`[CV] Fetching history for user: ${ctx.user.id}`);    try {
+      const { data, error } = await ctx.supabase
         .from('cv_versions')
         .select('*')
         .eq('user_id', ctx.user.id)
         .order('created_at', { ascending: false });
 
+      if (error) {
+        console.error('[CV] Error fetching history:', error);
+        throw error;
+      }
+
+      console.log(`[CV] Found ${(data || []).length} CV versions in history`);
       return data || [];
     } catch (err) {
+      console.error('[CV] Query error:', err);
       throw new TRPCError({
         code: 'INTERNAL_SERVER_ERROR',
-        message: 'Failed to fetch CV history',
+        message: err instanceof Error ? err.message : 'Failed to fetch CV history',
       });
     }
   }),
