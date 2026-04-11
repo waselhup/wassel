@@ -47,11 +47,11 @@ export default function Profile() {
           >
             <div className="flex flex-col items-center">
               <CompletenessRing pct={pct}>
-                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#ff6b35] to-[#f7931e] flex items-center justify-center text-white text-2xl font-bold shadow-lg">
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#0A8F84] to-[#f7931e] flex items-center justify-center text-white text-2xl font-bold shadow-lg">
                   {initials}
                 </div>
               </CompletenessRing>
-              <button className="mt-3 text-xs font-semibold text-[#ff6b35] inline-flex items-center gap-1 hover:underline">
+              <button className="mt-3 text-xs font-semibold text-[#0A8F84] inline-flex items-center gap-1 hover:underline">
                 <Camera className="w-3 h-3" /> {t("pr.changePhoto", "تغيير الصورة")}
               </button>
               <div className="font-bold text-[#1a1a2e] mt-4">{form.name || t("pr.noName", "لم يُضف اسم")}</div>
@@ -59,11 +59,11 @@ export default function Profile() {
               <div className="mt-5 w-full pt-5 border-t border-gray-100">
                 <div className="flex items-center justify-between text-xs mb-1">
                   <span className="text-gray-500">{t("pr.completeness", "اكتمال الملف")}</span>
-                  <span className="font-bold text-[#ff6b35]">{pct}%</span>
+                  <span className="font-bold text-[#0A8F84]">{pct}%</span>
                 </div>
                 <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
                   <motion.div initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.8, ease: "easeOut" }}
-                    className="h-full bg-gradient-to-r from-[#ff6b35] to-[#f7931e]" />
+                    className="h-full bg-gradient-to-r from-[#0A8F84] to-[#f7931e]" />
                 </div>
               </div>
             </div>
@@ -104,7 +104,7 @@ export default function Profile() {
             </div>
             <div className="flex justify-end pt-2">
               <button onClick={save}
-                className="px-6 py-3 rounded-xl bg-[#ff6b35] hover:bg-[#e55a2b] text-white font-semibold shadow-lg shadow-[#ff6b35]/30 inline-flex items-center gap-2 transition">
+                className="px-6 py-3 rounded-xl bg-[#0A8F84] hover:bg-[#e55a2b] text-white font-semibold shadow-lg shadow-[#0A8F84]/30 inline-flex items-center gap-2 transition">
                 <Save className="w-5 h-5" /> {saved ? t("pr.saved", "تم الحفظ ✓") : t("pr.save", "حفظ")}
               </button>
             </div>
@@ -115,7 +115,7 @@ export default function Profile() {
   );
 }
 
-const cls = "w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-[#ff6b35] focus:outline-none focus:ring-2 focus:ring-[#ff6b35]/20 transition";
+const cls = "w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-[#0A8F84] focus:outline-none focus:ring-2 focus:ring-[#0A8F84]/20 transition";
 
 function FieldIcon({ icon: Icon, label, children }: { icon: any; label: string; children: React.ReactNode }) {
   return (
@@ -135,7 +135,7 @@ function CompletenessRing({ pct, children }: { pct: number; children: React.Reac
     <div className="relative w-32 h-32">
       <svg viewBox="0 0 120 120" className="w-full h-full -rotate-90">
         <circle cx="60" cy="60" r={r} stroke="#f3f4f6" strokeWidth="7" fill="none" />
-        <motion.circle cx="60" cy="60" r={r} stroke="#ff6b35" strokeWidth="7" fill="none" strokeLinecap="round"
+        <motion.circle cx="60" cy="60" r={r} stroke="#0A8F84" strokeWidth="7" fill="none" strokeLinecap="round"
           strokeDasharray={c} initial={{ strokeDashoffset: c }} animate={{ strokeDashoffset: off }} transition={{ duration: 1.2, ease: "easeOut" }} />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">{children}</div>

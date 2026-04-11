@@ -379,14 +379,14 @@ const Payment: React.FC = () => {
                       className={`w-10 h-10 rounded-full flex items-center justify-center ${
                         tx.type === 'purchase'
                           ? 'bg-green-500/20'
-                          : 'bg-orange-500/20'
+                          : 'bg-teal-600/20'
                       }`}
                     >
                       <TrendingUp
                         className={`w-5 h-5 ${
                           tx.type === 'purchase'
                             ? 'text-green-600'
-                            : 'text-orange-600'
+                            : 'text-teal-700'
                         }`}
                       />
                     </div>
@@ -407,7 +407,7 @@ const Payment: React.FC = () => {
                       className={`font-semibold ${
                         tx.type === 'purchase'
                           ? 'text-green-600'
-                          : 'text-orange-600'
+                          : 'text-teal-700'
                       }`}
                     >
                       {tx.type === 'purchase' ? '+' : ''}{tx.tokens}

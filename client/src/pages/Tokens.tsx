@@ -8,7 +8,7 @@ import { trpc } from "@/lib/trpc";
 const packages = [
   { key: "starter", name: "البداية", tokens: 500, price: 49, pop: false, color: "from-blue-500 to-cyan-500", icon: Zap,
     features: ["500 توكن", "صالحة لمدة سنة", "دعم بالبريد"] },
-  { key: "pro", name: "المحترف", tokens: 2000, price: 149, pop: true, color: "from-[#ff6b35] to-[#f7931e]", icon: Sparkles,
+  { key: "pro", name: "المحترف", tokens: 2000, price: 149, pop: true, color: "from-[#0A8F84] to-[#f7931e]", icon: Sparkles,
     features: ["2000 توكن", "خصم 25%", "صالحة لمدة سنة", "دعم أولوية"] },
   { key: "elite", name: "النخبة", tokens: 5000, price: 299, pop: false, color: "from-purple-600 to-fuchsia-600", icon: Crown,
     features: ["5000 توكن", "خصم 40%", "صلاحية دائمة", "مدير حساب مخصص"] },
@@ -56,9 +56,9 @@ export default function Tokens() {
 
         <motion.div
           initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-          className="rounded-2xl bg-gradient-to-br from-[#1e3a5f] via-[#264978] to-[#2c5282] text-white p-6 md:p-8 shadow-xl overflow-hidden relative"
+          className="rounded-2xl bg-gradient-to-br from-[#0B1220] via-[#264978] to-[#2c5282] text-white p-6 md:p-8 shadow-xl overflow-hidden relative"
         >
-          <div className="absolute -top-20 -end-20 w-64 h-64 rounded-full bg-[#ff6b35]/20 blur-3xl" />
+          <div className="absolute -top-20 -end-20 w-64 h-64 rounded-full bg-[#0A8F84]/20 blur-3xl" />
           <div className="relative">
             <div className="text-white/70 text-sm mb-2">{t("tk.balance", "رصيدك الحالي")}</div>
             <div className="flex items-baseline gap-2">
@@ -80,10 +80,10 @@ export default function Tokens() {
                 <motion.button
                   key={p.key} onClick={() => setSelected(p.key)} whileHover={{ y: -4 }}
                   initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
-                  className={`text-start rounded-2xl p-6 border-2 transition-all relative ${active ? "border-[#ff6b35] shadow-xl bg-white" : "border-gray-100 bg-white shadow-sm hover:shadow-lg"} ${p.pop ? "md:-mt-4 md:mb-4" : ""}`}
+                  className={`text-start rounded-2xl p-6 border-2 transition-all relative ${active ? "border-[#0A8F84] shadow-xl bg-white" : "border-gray-100 bg-white shadow-sm hover:shadow-lg"} ${p.pop ? "md:-mt-4 md:mb-4" : ""}`}
                 >
                   {p.pop && (
-                    <div className="absolute -top-3 start-1/2 -translate-x-1/2 rtl:translate-x-1/2 px-3 py-1 rounded-full bg-[#ff6b35] text-white text-xs font-bold shadow-lg">
+                    <div className="absolute -top-3 start-1/2 -translate-x-1/2 rtl:translate-x-1/2 px-3 py-1 rounded-full bg-[#0A8F84] text-white text-xs font-bold shadow-lg">
                       {t("tk.popular", "الأكثر طلبًا")}
                     </div>
                   )}
@@ -102,7 +102,7 @@ export default function Tokens() {
                       </li>
                     ))}
                   </ul>
-                  <div className={`w-full py-3 rounded-xl font-semibold text-center transition ${active ? "bg-[#ff6b35] text-white shadow-lg shadow-[#ff6b35]/30" : "bg-gray-50 text-gray-700"}`}>
+                  <div className={`w-full py-3 rounded-xl font-semibold text-center transition ${active ? "bg-[#0A8F84] text-white shadow-lg shadow-[#0A8F84]/30" : "bg-gray-50 text-gray-700"}`}>
                     {active ? t("tk.selected", "محدّد ✓") : t("tk.select", "اختر")}
                   </div>
                 </motion.button>

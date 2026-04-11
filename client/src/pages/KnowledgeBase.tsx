@@ -115,7 +115,7 @@ export default function KnowledgeBase() {
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div>
               <h1 className="text-2xl font-bold text-[#1a1a2e] flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#1e3a5f] to-[#2c5282] flex items-center justify-center shadow-md">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0B1220] to-[#2c5282] flex items-center justify-center shadow-md">
                   <BookOpen className="w-5 h-5 text-white" />
                 </div>
                 {t('kb.title', 'قاعدة المعرفة')}
@@ -125,7 +125,7 @@ export default function KnowledgeBase() {
             <Button
               onClick={handleExport}
               disabled={exporting}
-              className="bg-[#1e3a5f] hover:bg-[#2c5282] text-white flex items-center gap-2"
+              className="bg-[#0B1220] hover:bg-[#2c5282] text-white flex items-center gap-2"
             >
               {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
               {t('kb.export', 'تصدير للـ NotebookLM')}
@@ -141,8 +141,8 @@ export default function KnowledgeBase() {
               onClick={() => setActiveTab(tab.key)}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${
                 activeTab === tab.key
-                  ? 'bg-[#ff6b35] text-white shadow-md'
-                  : 'bg-white text-gray-600 border border-gray-200 hover:border-[#ff6b35] hover:text-[#ff6b35]'
+                  ? 'bg-[#0A8F84] text-white shadow-md'
+                  : 'bg-white text-gray-600 border border-gray-200 hover:border-[#0A8F84] hover:text-[#0A8F84]'
               }`}
             >
               {tab.label} ({tab.count})
@@ -151,10 +151,10 @@ export default function KnowledgeBase() {
         </div>
 
         {/* Export Info Card */}
-        <Card className="border-[#1e3a5f]/20 bg-gradient-to-r from-[#1e3a5f]/5 to-[#2c5282]/5">
+        <Card className="border-[#0B1220]/20 bg-gradient-to-r from-[#0B1220]/5 to-[#2c5282]/5">
           <CardContent className="p-5">
             <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#1e3a5f] to-[#2c5282] flex items-center justify-center flex-shrink-0">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#0B1220] to-[#2c5282] flex items-center justify-center flex-shrink-0">
                 <ExternalLink className="w-6 h-6 text-white" />
               </div>
               <div>
@@ -166,7 +166,7 @@ export default function KnowledgeBase() {
                   href="https://notebooklm.google.com"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-sm text-[#ff6b35] hover:underline mt-2 font-medium"
+                  className="inline-flex items-center gap-1 text-sm text-[#0A8F84] hover:underline mt-2 font-medium"
                 >
                   {t('kb.openNotebook', 'افتح NotebookLM')} <ExternalLink className="w-3 h-3" />
                 </a>
@@ -178,7 +178,7 @@ export default function KnowledgeBase() {
         {/* Knowledge Items List */}
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-[#ff6b35]" />
+            <Loader2 className="w-8 h-8 animate-spin text-[#0A8F84]" />
           </div>
         ) : filteredItems.length === 0 ? (
           <Card>
@@ -214,7 +214,7 @@ export default function KnowledgeBase() {
                             {item.tags.length > 0 && (
                               <div className="flex gap-1 mt-2 flex-wrap">
                                 {item.tags.map((tag, i) => (
-                                  <span key={i} className="text-xs px-2 py-0.5 rounded-full bg-[#ff6b35]/10 text-[#ff6b35]">{tag}</span>
+                                  <span key={i} className="text-xs px-2 py-0.5 rounded-full bg-[#0A8F84]/10 text-[#0A8F84]">{tag}</span>
                                 ))}
                               </div>
                             )}

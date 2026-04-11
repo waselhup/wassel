@@ -2,19 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLocation, Link } from 'wouter';
-import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
+import { WasselLogo } from './WasselLogo';
 import {
-  Home, UserCog, Linkedin, FileText, Mail, Coins, User,
-  LogOut, Globe, Menu, X, ChevronDown, BookOpen
+  Home, BarChart2, FileText, Send, Coins, User, BookOpen,
+  LogOut, Globe, Menu, X, ChevronDown, Settings
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-
-interface NavItem {
-  label: string;
-  icon: React.ReactNode;
-  href: string;
-}
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -25,246 +18,195 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, page
   const { t, i18n } = useTranslation();
   const { user, profile, signOut } = useAuth();
   const [location] = useLocation();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [isDesktop, setIsDesktop] = useState(typeof window !== 'undefined' ? window.innerWidth >= 1024 : true);
-
-  React.useEffect(() => {
-    const handleResize = () => setIsDesktop(window.innerWidth >= 1024);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
   const [tokenBalance, setTokenBalance] = useState<number | null>(null);
-  const [plan, setPlan] = useState<string | null>(null);
+  const [userPlan, setUserPlan] = useState<string>('free');
+  const isRTL = i18n.language === 'ar';
 
-  // Direct Supabase fetch for token_balance and plan on every navigation
-  // Initialize from AuthContext profile immediately (no flicker)
   useEffect(() => {
-    if (profile) {
-      if (tokenBalance === null) setTokenBalance(profile.token_balance ?? 0);
-      if (plan === null) setPlan(profile.plan ?? 'free');
-    }
-  }, [profile]);
-
-  // Fetch fresh data from Supabase ONCE on mount (not on every navigation)
-  useEffect(() => {
-    const fetchFreshData = async () => {
-      if (!user?.id) return;
-      try {
-        const { data } = await supabase
-          .from('profiles')
-          .select('token_balance, plan')
-          .eq('id', user.id)
-          .single();
+    if (!user?.id) return;
+    supabase.from('profiles').select('token_balance,plan').eq('id', user.id).single()
+      .then(({ data }) => {
         if (data) {
           setTokenBalance(data.token_balance ?? 0);
-          setPlan(data.plan ?? 'free');
+          setUserPlan(data.plan ?? 'free');
         }
-      } catch (err) {
-        console.error('[DashboardLayout] Failed to fetch profile:', err);
-      }
-    };
-    fetchFreshData();
+      });
   }, [user?.id]);
 
-  const displayTokens = tokenBalance !== null ? tokenBalance : '...';
-  const displayPlan = (() => {
-    if (!plan) return '...';
-    switch (plan) {
-      case 'free': return t('nav.plan.free');
-      case 'starter': return t('nav.plan.starter');
-      case 'pro': return t('nav.plan.pro');
-      case 'elite': return t('nav.plan.elite');
-      default: return plan;
-    }
-  })();
-
-  const handleLogout = async () => {
-    const { error } = await signOut();
-    if (!error) {
-      window.location.href = '/';
-    }
+  const planLabel: Record<string, string> = {
+    free: isRTL ? '\u0645\u062c\u0627\u0646\u064a' : 'Free',
+    starter: isRTL ? '\u0645\u0628\u062a\u062f\u0626' : 'Starter',
+    pro: isRTL ? '\u0627\u062d\u062a\u0631\u0627\u0641\u064a' : 'Pro',
+    elite: isRTL ? '\u0625\u0644\u064a\u062a' : 'Elite',
   };
 
-  const toggleLanguage = () => {
-    const newLang = i18n.language === 'ar' ? 'en' : 'ar';
-    i18n.changeLanguage(newLang);
-    document.documentElement.lang = newLang;
-    document.documentElement.dir = newLang === 'ar' ? 'rtl' : 'ltr';
-  };
-
-  const isArabic = i18n.language === 'ar';
-
-  const navItems: NavItem[] = [
-    { label: t('sidebar.home'), icon: <Home className="w-5 h-5" />, href: '/app' },
-    { label: t('sidebar.setup'), icon: <UserCog className="w-5 h-5" />, href: '/app/setup' },
-    { label: t('sidebar.linkedin'), icon: <Linkedin className="w-5 h-5" />, href: '/app/linkedin' },
-    { label: t('sidebar.cv'), icon: <FileText className="w-5 h-5" />, href: '/app/cv' },
-    { label: t('sidebar.campaigns'), icon: <Mail className="w-5 h-5" />, href: '/app/campaigns' },
-    { label: t('sidebar.knowledge'), icon: <BookOpen className="w-5 h-5" />, href: '/app/knowledge' },
-    { label: t('sidebar.tokens'), icon: <Coins className="w-5 h-5" />, href: '/app/tokens' },
-    { label: t('sidebar.profile'), icon: <User className="w-5 h-5" />, href: '/app/profile' },
+  const nav = [
+    { href: '/app', icon: Home, label: t('nav.home', '\u0627\u0644\u0631\u0626\u064a\u0633\u064a\u0629') },
+    { href: '/app/linkedin', icon: BarChart2, label: t('nav.linkedin', 'LinkedIn') },
+    { href: '/app/cv', icon: FileText, label: t('nav.cv', '\u0627\u0644\u0633\u064a\u0631\u0629') },
+    { href: '/app/campaigns', icon: Send, label: t('nav.campaigns', '\u0627\u0644\u062d\u0645\u0644\u0627\u062a') },
+    { href: '/app/tokens', icon: Coins, label: t('nav.tokens', '\u0627\u0644\u0631\u0635\u064a\u062f') },
+    { href: '/app/knowledge', icon: BookOpen, label: t('nav.knowledge', '\u0627\u0644\u0645\u0639\u0631\u0641\u0629') },
+    { href: '/app/profile', icon: User, label: t('nav.profile', '\u0627\u0644\u0645\u0644\u0641') },
   ];
 
-  const isActive = (href: string) => {
-    if (href === '/app') return location === '/app';
-    return location.startsWith(href);
+  const isActive = (href: string) => href === '/app' ? location === '/app' : location.startsWith(href);
+
+  const handleLogout = async () => {
+    await signOut();
+    window.location.href = '/';
   };
 
-  return (
-    <div className="flex h-screen bg-[var(--bg-surface)] overflow-hidden">
-      <AnimatePresence>
-        {sidebarOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setSidebarOpen(false)}
-            className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-          />
-        )}
-      </AnimatePresence>
+  const toggleLang = () => {
+    const nl = i18n.language === 'ar' ? 'en' : 'ar';
+    i18n.changeLanguage(nl);
+    document.documentElement.lang = nl;
+    document.documentElement.dir = nl === 'ar' ? 'rtl' : 'ltr';
+  };
 
-      <aside className="hidden lg:flex lg:flex-col h-screen w-72 bg-[var(--bg-base)] border-e border-[var(--border-subtle)] overflow-y-auto flex-shrink-0"
-      >
-        <button
-          onClick={() => setSidebarOpen(false)}
-          className="lg:hidden absolute top-4 right-4 p-2 hover:bg-[var(--bg-surface)] rounded-lg"
-        >
-          <X className="w-5 h-5" />
-        </button>
+  const SidebarContent = () => (
+    <aside style={{
+      width: '240px', minWidth: '240px', height: '100vh',
+      background: 'var(--wsl-surf)', borderInlineEnd: '1px solid var(--wsl-border)',
+      display: 'flex', flexDirection: 'column', overflow: 'auto', flexShrink: 0,
+    }}>
+      {/* Logo */}
+      <div style={{ padding: '20px 16px 16px', borderBottom: '1px solid var(--wsl-border)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <WasselLogo size={32} />
+        <span style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: '16px', color: 'var(--wsl-teal)' }}>
+          {'\u0648\u0635\u0651\u0644'}
+        </span>
+      </div>
 
-        <div className="p-6 pt-8 border-b border-[var(--border-subtle)]">
-          <h1 className="text-2xl font-cairo font-bold text-[var(--accent-primary)]">
-            وصّل
-          </h1>
-        </div>
-
-        <nav className="flex-1 p-4 space-y-2">
-          {navItems.map((item) => (
-            <Link key={item.href} href={item.href}>
-              <a
-                onClick={() => setSidebarOpen(false)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-150 ${
-                  isActive(item.href)
-                    ? 'bg-[var(--accent-primary)] text-white'
-                    : 'text-[var(--text-secondary)] hover:bg-[var(--bg-surface)]'
-                }`}
-              >
-                {item.icon}
-                <span className="font-medium">{item.label}</span>
-              </a>
+      {/* Nav */}
+      <nav style={{ flex: 1, padding: '12px 8px' }}>
+        {nav.map(item => {
+          const active = isActive(item.href);
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={() => setMobileOpen(false)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '10px',
+                padding: '9px 12px', borderRadius: '8px', marginBottom: '2px',
+                background: active ? 'var(--wsl-teal-bg)' : 'transparent',
+                color: active ? 'var(--wsl-ink)' : 'var(--wsl-ink-3)',
+                fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: '13px',
+                textDecoration: 'none', cursor: 'pointer',
+                borderInlineStart: active ? '2.5px solid var(--wsl-teal)' : '2.5px solid transparent',
+                transition: 'all 150ms ease',
+              }}
+            >
+              <item.icon size={16} />
+              <span>{item.label}</span>
+              {active && <span style={{ marginInlineStart: 'auto', width: '4px', height: '4px', borderRadius: '50%', background: 'var(--wsl-teal)' }} />}
             </Link>
-          ))}
-        </nav>
+          );
+        })}
+      </nav>
 
-        <div className="border-t border-[var(--border-subtle)] p-4">
-          <div className="bg-[var(--bg-surface)] rounded-lg p-4">
-            <p className="text-xs text-[var(--text-secondary)] mb-1">{t('sidebar.tokens')}</p>
-            <p className="text-2xl font-bold text-[var(--accent-primary)]">
-              {displayTokens}
-            </p>
-            <p className="text-xs text-[var(--text-secondary)] mt-2">
-              {t('nav.balance')}: <span className="font-semibold text-[var(--text-primary)]">{displayPlan}</span>
-            </p>
+      {/* Token Balance */}
+      <div style={{ padding: '12px 16px', borderTop: '1px solid var(--wsl-border)', background: 'var(--wsl-surf-2)' }}>
+        <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--wsl-ink-3)', marginBottom: '4px', fontFamily: 'Cairo, sans-serif' }}>
+          {t('nav.tokens', '\u0627\u0644\u0631\u0635\u064a\u062f')}
+        </div>
+        <div style={{ fontSize: '22px', fontWeight: 900, color: 'var(--wsl-teal)', fontFamily: 'Inter, sans-serif' }}>
+          {tokenBalance !== null ? tokenBalance : '...'}
+        </div>
+        <div style={{ fontSize: '10px', color: 'var(--wsl-ink-4)', marginTop: '2px', fontFamily: 'Cairo, sans-serif' }}>
+          {planLabel[userPlan] || userPlan}
+        </div>
+      </div>
+
+      {/* Bottom actions */}
+      <div style={{ padding: '12px 8px', borderTop: '1px solid var(--wsl-border)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+        <button onClick={toggleLang} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', borderRadius: '8px', border: 'none', background: 'transparent', color: 'var(--wsl-ink-3)', fontWeight: 900, fontSize: '12px', cursor: 'pointer', width: '100%' }}>
+          <Globe size={14} />
+          {i18n.language === 'ar' ? 'EN' : 'AR'}
+        </button>
+        <button onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', borderRadius: '8px', border: 'none', background: 'transparent', color: '#DC2626', fontWeight: 900, fontSize: '12px', cursor: 'pointer', width: '100%', fontFamily: 'Cairo, sans-serif' }}>
+          <LogOut size={14} />
+          {t('nav.logout', '\u062e\u0631\u0648\u062c')}
+        </button>
+      </div>
+    </aside>
+  );
+
+  return (
+    <div style={{ display: 'flex', height: '100vh', background: 'var(--wsl-bg)', overflow: 'hidden' }}>
+      {/* Desktop sidebar - always visible */}
+      <div className="hidden lg:flex" style={{ height: '100vh' }}>
+        <SidebarContent />
+      </div>
+
+      {/* Mobile overlay */}
+      {mobileOpen && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex' }} className="lg:hidden">
+          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)' }} onClick={() => setMobileOpen(false)} />
+          <div style={{ position: 'relative', zIndex: 51, height: '100vh' }}>
+            <SidebarContent />
           </div>
         </div>
+      )}
 
-        <div className="border-t border-[var(--border-subtle)] p-4 space-y-3">
-          <button
-            onClick={toggleLanguage}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-[var(--bg-surface)] hover:bg-[var(--bg-surface-hover)] text-[var(--text-secondary)] transition-colors"
-          >
-            <Globe className="w-4 h-4" />
-            {i18n.language === 'ar' ? 'EN' : 'AR'}
+      {/* Main content */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
+        {/* Header */}
+        <header style={{
+          background: 'rgba(244,247,251,0.94)', backdropFilter: 'blur(16px)',
+          borderBottom: '1px solid var(--wsl-border)', padding: '12px 20px',
+          display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0,
+          position: 'sticky', top: 0, zIndex: 40,
+        }}>
+          <button className="lg:hidden" onClick={() => setMobileOpen(!mobileOpen)} style={{ padding: '6px', borderRadius: '8px', border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--wsl-ink-2)' }}>
+            <Menu size={20} />
           </button>
-          <Button
-            onClick={handleLogout}
-            variant="destructive"
-            className="w-full flex items-center justify-center gap-2"
-          >
-            <LogOut className="w-4 h-4" />
-            {t('nav.logout')}
-          </Button>
-        </div>
-      </aside>
-
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="bg-[var(--bg-base)] border-b border-[var(--border-subtle)] sticky top-0 z-40">
-          <div className="px-4 md:px-6 py-4 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="lg:hidden p-2 hover:bg-[var(--bg-surface)] rounded-lg transition-colors"
-              >
-                <Menu className="w-6 h-6" />
-              </button>
-              {pageTitle && (
-                <h2 className="text-xl font-cairo font-semibold text-[var(--text-primary)]">
-                  {pageTitle}
-                </h2>
-              )}
+          {pageTitle && (
+            <h1 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: '20px', color: 'var(--wsl-ink)', letterSpacing: '-0.4px', margin: 0 }}>
+              {pageTitle}
+            </h1>
+          )}
+          <div style={{ marginInlineStart: 'auto', display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', borderRadius: '8px', background: 'var(--wsl-teal-bg)', border: '1px solid var(--wsl-teal-border)' }}>
+              <Coins size={14} style={{ color: 'var(--wsl-teal)' }} />
+              <span style={{ fontWeight: 900, fontSize: '13px', color: 'var(--wsl-teal)', fontFamily: 'Inter, sans-serif' }}>
+                {tokenBalance !== null ? tokenBalance : '...'}
+              </span>
             </div>
-
-            <div className="flex items-center gap-4">
-              <div className="hidden md:flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--accent-primary)] bg-opacity-10">
-                <Coins className="w-4 h-4 text-[var(--accent-primary)]" />
-                <span className="text-sm font-semibold text-[var(--accent-primary)]">
-                  {displayTokens}
+            <div style={{ position: 'relative' }}>
+              <button onClick={() => setUserMenuOpen(!userMenuOpen)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 10px', borderRadius: '8px', border: '1px solid var(--wsl-border)', background: 'var(--wsl-surf)', cursor: 'pointer' }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--wsl-teal)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 900, fontSize: '13px', fontFamily: 'Cairo, sans-serif' }}>
+                  {profile?.full_name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || '?'}
+                </div>
+                <span style={{ fontWeight: 700, fontSize: '12px', color: 'var(--wsl-ink-2)', fontFamily: 'Cairo, sans-serif' }}>
+                  {profile?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || ''}
                 </span>
-              </div>
-
-              <div className="relative">
-                <button
-                  onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-[var(--bg-surface)] transition-colors"
-                >
-                  <div className="w-8 h-8 rounded-full bg-[var(--accent-secondary)] flex items-center justify-center text-white font-semibold">
-                    {profile?.full_name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || '?'}
-                  </div>
-                  <span className="hidden sm:inline text-sm font-medium text-[var(--text-primary)]">
-                    {profile?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || ''}
-                  </span>
-                  <ChevronDown className="w-4 h-4 text-[var(--text-secondary)]" />
-                </button>
-
-                <AnimatePresence>
-                  {userMenuOpen && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      className={`absolute top-full ${isArabic ? 'left-0' : 'right-0'} mt-2 w-48 bg-[var(--bg-base)] rounded-lg border border-[var(--border-subtle)] shadow-lg overflow-hidden z-50`}
-                    >
-                      <Link href="/app/profile">
-                        <a
-                          onClick={() => setUserMenuOpen(false)}
-                          className="flex items-center gap-3 px-4 py-3 hover:bg-[var(--bg-surface)] transition-colors border-b border-[var(--border-subtle)]"
-                        >
-                          <User className="w-4 h-4" />
-                          <span className="text-sm">{t('sidebar.profile')}</span>
-                        </a>
-                      </Link>
-                      <button
-                        onClick={() => {
-                          setUserMenuOpen(false);
-                          handleLogout();
-                        }}
-                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[var(--bg-surface)] transition-colors text-red-600"
-                      >
-                        <LogOut className="w-4 h-4" />
-                        <span className="text-sm">{t('nav.logout')}</span>
-                      </button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
+                <ChevronDown size={12} style={{ color: 'var(--wsl-ink-3)' }} />
+              </button>
+              {userMenuOpen && (
+                <div style={{ position: 'absolute', top: '100%', insetInlineEnd: 0, marginTop: '4px', width: '160px', background: 'var(--wsl-surf)', border: '1px solid var(--wsl-border)', borderRadius: '10px', boxShadow: '0 4px 20px rgba(0,0,0,0.08)', overflow: 'hidden', zIndex: 50 }}>
+                  <Link
+                    href="/app/profile"
+                    onClick={() => setUserMenuOpen(false)}
+                    style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', color: 'var(--wsl-ink-2)', fontWeight: 700, fontSize: '12px', textDecoration: 'none', borderBottom: '1px solid var(--wsl-border)', fontFamily: 'Cairo, sans-serif' }}
+                  >
+                    <User size={13} /> {t('nav.profile', '\u0627\u0644\u0645\u0644\u0641')}
+                  </Link>
+                  <button onClick={() => { setUserMenuOpen(false); handleLogout(); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', color: '#DC2626', fontWeight: 700, fontSize: '12px', border: 'none', background: 'transparent', cursor: 'pointer', width: '100%', fontFamily: 'Cairo, sans-serif' }}>
+                    <LogOut size={13} /> {t('nav.logout', '\u062e\u0631\u0648\u062c')}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto">
-          <div className="p-4 md:p-6">{children}</div>
+        {/* Page content */}
+        <main style={{ flex: 1, overflow: 'auto', padding: '24px' }}>
+          {children}
         </main>
       </div>
     </div>
@@ -272,7 +214,3 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, page
 };
 
 export default DashboardLayout;
-
-
-
-

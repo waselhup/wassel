@@ -126,15 +126,15 @@ export default function CampaignNew() {
         <div className="flex items-center justify-between relative">
           <div className="absolute top-5 start-0 end-0 h-0.5 bg-gray-200" />
           <motion.div
-            className="absolute top-5 start-0 h-0.5 bg-[#ff6b35]"
+            className="absolute top-5 start-0 h-0.5 bg-[#0A8F84]"
             initial={{ width: "0%" }} animate={{ width: `${(Math.min(step, steps.length - 1) / (steps.length - 1)) * 100}%` }}
             transition={{ duration: 0.4 }}
           />
           {steps.map((s, i) => (
             <div key={s.key} className="relative z-10 flex flex-col items-center gap-2">
               <motion.div
-                animate={{ scale: step === i ? 1.1 : 1, backgroundColor: step >= i ? "#ff6b35" : "#ffffff" }}
-                className={`w-10 h-10 rounded-full border-2 flex items-center justify-center shadow ${step >= i ? "border-[#ff6b35] text-white" : "border-gray-200 text-gray-400"}`}
+                animate={{ scale: step === i ? 1.1 : 1, backgroundColor: step >= i ? "#0A8F84" : "#ffffff" }}
+                className={`w-10 h-10 rounded-full border-2 flex items-center justify-center shadow ${step >= i ? "border-[#0A8F84] text-white" : "border-gray-200 text-gray-400"}`}
               >
                 {step > i ? <CheckCircle2 className="w-5 h-5" /> : <s.icon className="w-5 h-5" />}
               </motion.div>
@@ -197,7 +197,7 @@ export default function CampaignNew() {
                     <div className="flex flex-wrap gap-2">
                       {["professional", "friendly", "formal"].map((tn) => (
                         <button key={tn} onClick={() => set("tone", tn)}
-                          className={`px-4 py-2 rounded-xl border text-sm font-semibold transition ${data.tone === tn ? "border-[#ff6b35] bg-orange-50 text-[#ff6b35]" : "border-gray-200 text-gray-600 hover:bg-gray-50"}`}>
+                          className={`px-4 py-2 rounded-xl border text-sm font-semibold transition ${data.tone === tn ? "border-[#0A8F84] bg-orange-50 text-[#0A8F84]" : "border-gray-200 text-gray-600 hover:bg-gray-50"}`}>
                           {tn === "professional" ? t("new.tp", "احترافي") : tn === "friendly" ? t("new.tf", "ودّي") : t("new.tfm", "رسمي")}
                         </button>
                       ))}
@@ -210,7 +210,7 @@ export default function CampaignNew() {
                     <textarea value={data.body} onChange={(e) => set("body", e.target.value)} rows={4} placeholder={t("new.ph.body", "سيتم توليد الرسالة تلقائيًا بالذكاء الاصطناعي وتخصيصها لكل مستلم...")} className={inputCls + " resize-none"} />
                   </Field>
                   <div className="flex items-center gap-2 p-3 rounded-xl bg-orange-50 border border-orange-200">
-                    <Sparkles className="w-5 h-5 text-[#ff6b35] flex-shrink-0" />
+                    <Sparkles className="w-5 h-5 text-[#0A8F84] flex-shrink-0" />
                     <p className="text-sm text-[#1a1a2e]">{t("new.aiNote", "سينشئ الذكاء الاصطناعي رسائل مخصصة لكل شركة في الخطوة التالية")}</p>
                   </div>
                 </>
@@ -221,7 +221,7 @@ export default function CampaignNew() {
                 <div className="space-y-5">
                   <div className="flex items-center justify-between">
                     <h3 className="text-lg font-bold text-[#1a1a2e] flex items-center gap-2">
-                      <Eye className="w-5 h-5 text-[#ff6b35]" />
+                      <Eye className="w-5 h-5 text-[#0A8F84]" />
                       {t("new.reviewTitle", "مراجعة الرسائل")}
                     </h3>
                     {messages.length > 0 && !allApproved && (
@@ -234,7 +234,7 @@ export default function CampaignNew() {
 
                   {generating && (
                     <div className="flex flex-col items-center py-12 gap-4">
-                      <Loader2 className="w-10 h-10 animate-spin text-[#ff6b35]" />
+                      <Loader2 className="w-10 h-10 animate-spin text-[#0A8F84]" />
                       <p className="text-gray-500 font-medium">{t("new.generating", "الذكاء الاصطناعي ينشئ رسائل مخصصة لكل شركة...")}</p>
                       <p className="text-xs text-gray-400">{t("new.generatingWait", "قد يستغرق 15-30 ثانية")}</p>
                     </div>
@@ -245,7 +245,7 @@ export default function CampaignNew() {
                       <Sparkles className="w-12 h-12 text-gray-300 mx-auto mb-4" />
                       <p className="text-gray-500">{t("new.noMessages", "اضغط لإنشاء رسائل مخصصة بالذكاء الاصطناعي")}</p>
                       <button onClick={generatePreview}
-                        className="mt-4 px-6 py-3 rounded-xl bg-[#ff6b35] hover:bg-[#e55a2b] text-white font-semibold inline-flex items-center gap-2 transition">
+                        className="mt-4 px-6 py-3 rounded-xl bg-[#0A8F84] hover:bg-[#e55a2b] text-white font-semibold inline-flex items-center gap-2 transition">
                         <Sparkles className="w-5 h-5" /> {t("new.generateBtn", "إنشاء الرسائل")}
                       </button>
                     </div>
@@ -264,7 +264,7 @@ export default function CampaignNew() {
                             <Edit3 className="w-4 h-4" />
                           </button>
                           <button onClick={() => toggleApprove(idx)}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition ${msg.approved ? "bg-emerald-100 text-emerald-700 border border-emerald-300" : "bg-gray-100 text-gray-600 border border-gray-200 hover:bg-orange-50 hover:text-[#ff6b35] hover:border-orange-200"}`}>
+                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition ${msg.approved ? "bg-emerald-100 text-emerald-700 border border-emerald-300" : "bg-gray-100 text-gray-600 border border-gray-200 hover:bg-orange-50 hover:text-[#0A8F84] hover:border-orange-200"}`}>
                             {msg.approved ? <><CheckCircle2 className="w-3 h-3" /> {t("new.approved", "تمت الموافقة")}</> : t("new.approve", "موافق")}
                           </button>
                         </div>
@@ -302,14 +302,14 @@ export default function CampaignNew() {
               {/* Step 4: Launch */}
               {step === 4 && (
                 <div className="text-center py-8">
-                  <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-[#ff6b35] to-[#f7931e] flex items-center justify-center shadow-xl shadow-[#ff6b35]/30 mb-5">
+                  <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-[#0A8F84] to-[#f7931e] flex items-center justify-center shadow-xl shadow-[#0A8F84]/30 mb-5">
                     <Rocket className="w-10 h-10 text-white" />
                   </div>
                   <h3 className="text-xl font-bold text-[#1a1a2e] mb-2">{t("new.confirm", "كل شيء جاهز!")}</h3>
                   <p className="text-gray-500 mb-2">{data.name || "Campaign"} — {companies.length} {t("new.companies", "شركات")} — {data.count} {t("new.emails", "إيميل")}</p>
                   <p className="text-gray-400 text-sm mb-6">{t("new.tokenCost", "التكلفة")}: {data.count} {t("new.tokensUnit", "رمز")}</p>
                   <button onClick={launch} disabled={launching}
-                    className="px-8 py-3 rounded-xl bg-[#ff6b35] hover:bg-[#e55a2b] disabled:opacity-50 text-white font-semibold shadow-lg shadow-[#ff6b35]/30 inline-flex items-center gap-2 transition">
+                    className="px-8 py-3 rounded-xl bg-[#0A8F84] hover:bg-[#e55a2b] disabled:opacity-50 text-white font-semibold shadow-lg shadow-[#0A8F84]/30 inline-flex items-center gap-2 transition">
                     {launching ? <Loader2 className="w-5 h-5 animate-spin" /> : <Rocket className="w-5 h-5" />}
                     {launching ? t("new.launching", "جاري الإطلاق...") : t("new.launch", "إطلاق الحملة")}
                   </button>
@@ -346,12 +346,12 @@ export default function CampaignNew() {
             </button>
             {step === 3 ? (
               <button onClick={() => goToStep(4)} disabled={!allApproved}
-                className="px-5 py-3 rounded-xl bg-[#1e3a5f] hover:bg-[#2c5282] disabled:opacity-40 text-white font-semibold flex items-center gap-2 transition">
+                className="px-5 py-3 rounded-xl bg-[#0B1220] hover:bg-[#2c5282] disabled:opacity-40 text-white font-semibold flex items-center gap-2 transition">
                 {t("new.toLaunch", "متابعة الإطلاق")} <ChevronLeft className="w-4 h-4 rtl:rotate-180" />
               </button>
             ) : (
               <button onClick={() => goToStep(step + 1)}
-                className="px-5 py-3 rounded-xl bg-[#1e3a5f] hover:bg-[#2c5282] text-white font-semibold flex items-center gap-2 transition">
+                className="px-5 py-3 rounded-xl bg-[#0B1220] hover:bg-[#2c5282] text-white font-semibold flex items-center gap-2 transition">
                 {t("new.next", "التالي")} <ChevronLeft className="w-4 h-4 rtl:rotate-180" />
               </button>
             )}
@@ -362,7 +362,7 @@ export default function CampaignNew() {
   );
 }
 
-const inputCls = "w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-[#ff6b35] focus:outline-none focus:ring-2 focus:ring-[#ff6b35]/20 transition";
+const inputCls = "w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-[#0A8F84] focus:outline-none focus:ring-2 focus:ring-[#0A8F84]/20 transition";
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (

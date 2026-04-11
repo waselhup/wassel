@@ -44,7 +44,7 @@ export default function CampaignList() {
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-[#1a1a2e] flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#ff6b35] to-[#f7931e] flex items-center justify-center shadow-md">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0A8F84] to-[#f7931e] flex items-center justify-center shadow-md">
                 <Send className="w-5 h-5 text-white" />
               </div>
               {t("camp.title", "حملات البريد الإلكتروني")}
@@ -52,14 +52,14 @@ export default function CampaignList() {
             <p className="text-gray-500 mt-2">{t("camp.subtitle", "أدر حملاتك البريدية والتواصل مع العملاء من مكان واحد")}</p>
           </div>
           <Link href="/app/campaigns/new">
-            <a className="px-5 py-3 rounded-xl bg-[#ff6b35] hover:bg-[#e55a2b] text-white font-semibold shadow-lg shadow-[#ff6b35]/30 flex items-center gap-2 transition-all">
+            <a className="px-5 py-3 rounded-xl bg-[#0A8F84] hover:bg-[#e55a2b] text-white font-semibold shadow-lg shadow-[#0A8F84]/30 flex items-center gap-2 transition-all">
               <Plus className="w-5 h-5" /> {t("camp.new", "حملة جديدة")}
             </a>
           </Link>
         </motion.div>
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-8 h-8 animate-spin text-[#ff6b35]" />
+            <Loader2 className="w-8 h-8 animate-spin text-[#0A8F84]" />
           </div>
         ) : campaigns.length === 0 ? (
           <div className="text-center py-20 text-gray-400">
@@ -95,7 +95,7 @@ export default function CampaignList() {
                       </div>
                       <div className="flex items-center justify-between mt-4">
                         <div className="text-xs text-gray-400">{c.completed_at ? new Date(c.completed_at).toLocaleDateString('ar-SA') : new Date(c.created_at).toLocaleDateString('ar-SA')}</div>
-                        <div className="text-sm font-semibold text-[#ff6b35]">{openRate}% {t("camp.openRate", "فتح")}</div>
+                        <div className="text-sm font-semibold text-[#0A8F84]">{openRate}% {t("camp.openRate", "فتح")}</div>
                       </div>
                     </a>
                   </Link>

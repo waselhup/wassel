@@ -70,7 +70,7 @@ export default function CampaignReport() {
         >
           <div className="flex items-center justify-between mb-5">
             <h3 className="font-bold text-[#1a1a2e]">{t("rep.contacts", "قائمة جهات الاتصال")}</h3>
-            <button className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-[#ff6b35] transition">
+            <button className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-[#0A8F84] transition">
               <Filter className="w-4 h-4" /> {t("rep.filter", "تصفية")}
             </button>
           </div>

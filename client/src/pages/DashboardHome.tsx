@@ -89,7 +89,7 @@ export default function DashboardHome() {
       href: "/app/cv", icon: FileText, color: "from-emerald-500 to-teal-600" },
     { key: "campaign", title: t("home.actions.campaign.title", "أطلق حملة جديدة"),
       desc: t("home.actions.campaign.desc", "ابحث عن متخذي القرار وأرسل إيميلات ذكية"),
-      href: "/app/campaigns/new", icon: Send, color: "from-[#ff6b35] to-[#f7931e]" },
+      href: "/app/campaigns/new", icon: Send, color: "from-[#0A8F84] to-[#f7931e]" },
   ];
 
   const activity: ActivityItem[] = [
@@ -102,7 +102,7 @@ export default function DashboardHome() {
     { id: "4", icon: Coins, title: t("home.activity.tokens", "تم شراء 1000 توكن"),
       time: t("home.time.days", "منذ يومين"), color: "bg-amber-100 text-amber-600" },
     { id: "5", icon: Sparkles, title: t("home.activity.welcome", "مرحباً بك في وصّل — أكمل ملفك لتبدأ"),
-      time: t("home.time.week", "منذ أسبوع"), color: "bg-orange-100 text-orange-600" },
+      time: t("home.time.week", "منذ أسبوع"), color: "bg-orange-100 text-teal-700" },
   ];
 
   const chartData = [32, 45, 28, 67, 52, 78, 61];
@@ -146,7 +146,7 @@ export default function DashboardHome() {
                         <h3 className="font-bold text-[#1a1a2e] mb-1">{a.title}</h3>
                         <p className="text-sm text-gray-500 leading-relaxed">{a.desc}</p>
                       </div>
-                      <ArrowUpRight className="w-5 h-5 text-gray-400 group-hover:text-[#ff6b35] group-hover:rotate-45 transition-all shrink-0" />
+                      <ArrowUpRight className="w-5 h-5 text-gray-400 group-hover:text-[#0A8F84] group-hover:rotate-45 transition-all shrink-0" />
                     </div>
                   </a>
                 </Link>
@@ -164,7 +164,7 @@ export default function DashboardHome() {
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h3 className="font-bold text-[#1a1a2e] flex items-center gap-2">
-                  <Activity className="w-5 h-5 text-[#ff6b35]" />
+                  <Activity className="w-5 h-5 text-[#0A8F84]" />
                   {t("home.chart.title", "نشاط آخر 7 أيام")}
                 </h3>
                 <p className="text-sm text-gray-500 mt-1">{t("home.chart.subtitle", "إجمالي الأنشطة المنفذة")}</p>
@@ -179,7 +179,7 @@ export default function DashboardHome() {
                   <motion.div
                     initial={{ height: 0 }} whileInView={{ height: `${(v / maxVal) * 100}%` }}
                     viewport={{ once: true }} transition={{ delay: i * 0.08, duration: 0.6, ease: "easeOut" }}
-                    className="w-full rounded-t-lg bg-gradient-to-t from-[#ff6b35] to-[#ff8f5e] min-h-[4px]"
+                    className="w-full rounded-t-lg bg-gradient-to-t from-[#0A8F84] to-[#ff8f5e] min-h-[4px]"
                   />
                   <span className="text-xs text-gray-400">{days[i]}</span>
                 </div>
@@ -193,7 +193,7 @@ export default function DashboardHome() {
             className="rounded-2xl bg-white border border-gray-100 shadow-sm p-6"
           >
             <h3 className="font-bold text-[#1a1a2e] flex items-center gap-2 mb-5">
-              <Clock className="w-5 h-5 text-[#ff6b35]" />
+              <Clock className="w-5 h-5 text-[#0A8F84]" />
               {t("home.activity.title", "آخر النشاطات")}
             </h3>
             <ul className="space-y-4">

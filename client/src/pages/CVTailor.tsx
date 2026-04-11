@@ -83,8 +83,8 @@ export default function CVTailor() {
   ];
 
   const templates: { key: Template; name: string; desc: string; color: string; icon: any }[] = [
-    { key: "modern", name: t("cv.t.modern", "عصري"), desc: t("cv.t.modernD", "تصميم نظيف بألوان جريئة"), color: "from-[#ff6b35] to-[#f7931e]", icon: Sparkles },
-    { key: "classic", name: t("cv.t.classic", "كلاسيكي"), desc: t("cv.t.classicD", "احترافي وملائم للقطاعات الرسمية"), color: "from-[#1e3a5f] to-[#2c5282]", icon: Briefcase },
+    { key: "modern", name: t("cv.t.modern", "عصري"), desc: t("cv.t.modernD", "تصميم نظيف بألوان جريئة"), color: "from-[#0A8F84] to-[#f7931e]", icon: Sparkles },
+    { key: "classic", name: t("cv.t.classic", "كلاسيكي"), desc: t("cv.t.classicD", "احترافي وملائم للقطاعات الرسمية"), color: "from-[#0B1220] to-[#2c5282]", icon: Briefcase },
     { key: "creative", name: t("cv.t.creative", "إبداعي"), desc: t("cv.t.creativeD", "مميز للأدوار التصميمية والتسويقية"), color: "from-purple-600 to-fuchsia-600", icon: Palette },
   ];
 
@@ -179,7 +179,7 @@ export default function CVTailor() {
           className="rounded-2xl bg-white border border-gray-100 shadow-sm p-6 md:p-8"
         >
           <div className="flex items-center gap-2 mb-5">
-            <Target className="w-5 h-5 text-[#ff6b35]" />
+            <Target className="w-5 h-5 text-[#0A8F84]" />
             <h2 className="font-bold text-[#1a1a2e]">{t("cv.info", "معلوماتك")}</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -189,12 +189,12 @@ export default function CVTailor() {
                 {f.full ? (
                   <textarea
                     value={(form as any)[f.key]} onChange={(e) => set(f.key, e.target.value)} placeholder={f.ph} rows={3}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-[#ff6b35] focus:outline-none focus:ring-2 focus:ring-[#ff6b35]/20 transition resize-none"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-[#0A8F84] focus:outline-none focus:ring-2 focus:ring-[#0A8F84]/20 transition resize-none"
                   />
                 ) : (
                   <input
                     value={(form as any)[f.key]} onChange={(e) => set(f.key, e.target.value)} placeholder={f.ph}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-[#ff6b35] focus:outline-none focus:ring-2 focus:ring-[#ff6b35]/20 transition"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-[#0A8F84] focus:outline-none focus:ring-2 focus:ring-[#0A8F84]/20 transition"
                   />
                 )}
               </div>
@@ -210,13 +210,13 @@ export default function CVTailor() {
               return (
                 <motion.button
                   key={tpl.key} onClick={() => setTemplate(tpl.key)} whileHover={{ y: -4 }}
-                  className={`text-start rounded-2xl p-5 border-2 transition-all ${active ? "border-[#ff6b35] shadow-xl bg-white" : "border-gray-100 bg-white shadow-sm hover:shadow-lg"}`}
+                  className={`text-start rounded-2xl p-5 border-2 transition-all ${active ? "border-[#0A8F84] shadow-xl bg-white" : "border-gray-100 bg-white shadow-sm hover:shadow-lg"}`}
                 >
                   <div className={`w-full h-32 rounded-xl bg-gradient-to-br ${tpl.color} mb-4 flex items-center justify-center relative overflow-hidden`}>
                     <tpl.icon className="w-12 h-12 text-white/90" />
                     {active && (
                       <motion.div layoutId="cvCheck" className="absolute top-2 end-2 w-7 h-7 rounded-full bg-white flex items-center justify-center shadow">
-                        <CheckCircle2 className="w-5 h-5 text-[#ff6b35]" />
+                        <CheckCircle2 className="w-5 h-5 text-[#0A8F84]" />
                       </motion.div>
                     )}
                   </div>
@@ -238,7 +238,7 @@ export default function CVTailor() {
             {versions.map((v, i) => (
               <motion.div key={i} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
                 className="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
-                <div className="bg-gradient-to-r from-[#1e3a5f] to-[#2c5282] px-5 py-3">
+                <div className="bg-gradient-to-r from-[#0B1220] to-[#2c5282] px-5 py-3">
                   <h4 className="text-white font-bold text-lg">{v.headline || v.fieldName || form.jobTitle}</h4>
                   <p className="text-white/70 text-sm mt-1">{v.fieldName || `Version ${i + 1}`}</p>
                 </div>
@@ -254,7 +254,7 @@ export default function CVTailor() {
                       <h5 className="text-xs font-bold text-gray-400 uppercase mb-2">{t("cv.section.skills", "المهارات")}</h5>
                       <div className="flex flex-wrap gap-2">
                         {v.skills.map((s: string, si: number) => (
-                          <span key={si} className="px-3 py-1 rounded-full bg-orange-50 text-[#ff6b35] text-xs font-semibold border border-orange-200">{s}</span>
+                          <span key={si} className="px-3 py-1 rounded-full bg-orange-50 text-[#0A8F84] text-xs font-semibold border border-orange-200">{s}</span>
                         ))}
                       </div>
                     </div>
@@ -269,7 +269,7 @@ export default function CVTailor() {
                               <span className="font-semibold text-[#1a1a2e] text-sm">{exp.title}</span>
                               <span className="text-xs text-gray-400">{exp.duration}</span>
                             </div>
-                            <span className="text-xs text-[#ff6b35] font-medium">{exp.company}</span>
+                            <span className="text-xs text-[#0A8F84] font-medium">{exp.company}</span>
                             <p className="text-sm text-gray-600 mt-1.5 leading-relaxed">{exp.description}</p>
                           </div>
                         ))}
@@ -282,7 +282,7 @@ export default function CVTailor() {
           </div>
         )}
 
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 rounded-2xl bg-gradient-to-br from-[#1e3a5f] to-[#2c5282] p-6 md:p-8 shadow-lg">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 rounded-2xl bg-gradient-to-br from-[#0B1220] to-[#2c5282] p-6 md:p-8 shadow-lg">
           <div className="text-white">
             <h3 className="font-bold text-lg">{t("cv.ready", "جاهز للإنشاء؟")}</h3>
             <p className="text-white/70 text-sm mt-1">{t("cv.cost", "يستخدم 10 رموز لكل سيرة ذاتية")}</p>
@@ -294,7 +294,7 @@ export default function CVTailor() {
               </button>
             )}
             <button onClick={generate} disabled={loading}
-              className="px-6 py-3 rounded-xl bg-[#ff6b35] hover:bg-[#e55a2b] disabled:opacity-50 text-white font-semibold shadow-lg shadow-[#ff6b35]/30 flex items-center gap-2 transition-all">
+              className="px-6 py-3 rounded-xl bg-[#0A8F84] hover:bg-[#e55a2b] disabled:opacity-50 text-white font-semibold shadow-lg shadow-[#0A8F84]/30 flex items-center gap-2 transition-all">
               {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
               {loading ? t("cv.generating", "جاري الإنشاء...") : done ? t("cv.regen", "إعادة الإنشاء") : t("cv.generate", "أنشئ السيرة")}
             </button>
