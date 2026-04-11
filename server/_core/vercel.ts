@@ -36,7 +36,7 @@ const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '';
 const GOOGLE_REDIRECT_URI = 'https://wassel-alpha.vercel.app/api/auth/google/callback';
 
-app.get('/api/auth/google', (req: Request, res: Response) => {
+app.get('/api/auth/google', (req, res) => {
   const userId = req.query.userId as string;
   if (!userId) {
     return res.status(400).json({ error: 'userId is required' });
@@ -47,7 +47,7 @@ app.get('/api/auth/google', (req: Request, res: Response) => {
   res.redirect(authUrl);
 });
 
-app.get('/api/auth/google/callback', async (req: Request, res: Response) => {
+app.get('/api/auth/google/callback', async (req, res) => {
   const code = req.query.code as string;
   const userId = decodeURIComponent(req.query.state as string);
   if (!code || !userId) {
