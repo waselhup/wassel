@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLocation, Link } from 'wouter';
@@ -27,6 +27,13 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, page
   const [location] = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(typeof window !== 'undefined' ? window.innerWidth >= 1024 : true);
+
+  React.useEffect(() => {
+    const handleResize = () => setIsDesktop(window.innerWidth >= 1024);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
   const [tokenBalance, setTokenBalance] = useState<number | null>(null);
   const [plan, setPlan] = useState<string | null>(null);
 
@@ -64,10 +71,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, page
   const displayPlan = (() => {
     if (!plan) return '...';
     switch (plan) {
-      case 'free': return t('nav.plan.free', 'مجاني');
-      case 'starter': return t('nav.plan.starter', 'مبتدئ');
-      case 'pro': return t('nav.plan.pro', 'احترافي');
-      case 'elite': return t('nav.plan.elite', 'إليت');
+      case 'free': return t('nav.plan.free');
+      case 'starter': return t('nav.plan.starter');
+      case 'pro': return t('nav.plan.pro');
+      case 'elite': return t('nav.plan.elite');
       default: return plan;
     }
   })();
@@ -94,7 +101,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, page
     { label: t('sidebar.linkedin'), icon: <Linkedin className="w-5 h-5" />, href: '/app/linkedin' },
     { label: t('sidebar.cv'), icon: <FileText className="w-5 h-5" />, href: '/app/cv' },
     { label: t('sidebar.campaigns'), icon: <Mail className="w-5 h-5" />, href: '/app/campaigns' },
-    { label: t('sidebar.knowledge', 'قاعدة المعرفة'), icon: <BookOpen className="w-5 h-5" />, href: '/app/knowledge' },
+    { label: t('sidebar.knowledge'), icon: <BookOpen className="w-5 h-5" />, href: '/app/knowledge' },
     { label: t('sidebar.tokens'), icon: <Coins className="w-5 h-5" />, href: '/app/tokens' },
     { label: t('sidebar.profile'), icon: <User className="w-5 h-5" />, href: '/app/profile' },
   ];
@@ -105,7 +112,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, page
   };
 
   return (
-    <div className="flex h-screen bg-[var(--bg-surface)]">
+    <div className="flex h-screen bg-[var(--bg-surface)] overflow-hidden">
       <AnimatePresence>
         {sidebarOpen && (
           <motion.div
@@ -118,13 +125,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, page
         )}
       </AnimatePresence>
 
-      <motion.aside
-        initial={false}
-        animate={{
-          x: isArabic ? (sidebarOpen ? 0 : 280) : (sidebarOpen ? 0 : -280),
-        }}
-        transition={{ duration: 0.3 }}
-        className={`fixed ${isArabic ? 'right-0' : 'left-0'} top-0 h-screen w-80 bg-[var(--bg-base)] border-${isArabic ? 'l' : 'r'} border-[var(--border-subtle)] z-50 lg:relative lg:translate-x-0 overflow-y-auto flex flex-col`}
+      <aside className="hidden lg:flex lg:flex-col h-screen w-72 bg-[var(--bg-base)] border-e border-[var(--border-subtle)] overflow-y-auto flex-shrink-0"
       >
         <button
           onClick={() => setSidebarOpen(false)}
@@ -164,7 +165,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, page
               {displayTokens}
             </p>
             <p className="text-xs text-[var(--text-secondary)] mt-2">
-              {t('nav.balance', 'الخطة')}: <span className="font-semibold text-[var(--text-primary)]">{displayPlan}</span>
+              {t('nav.balance')}: <span className="font-semibold text-[var(--text-primary)]">{displayPlan}</span>
             </p>
           </div>
         </div>
@@ -186,7 +187,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, page
             {t('nav.logout')}
           </Button>
         </div>
-      </motion.aside>
+      </aside>
 
       <div className="flex-1 flex flex-col overflow-hidden">
         <header className="bg-[var(--bg-base)] border-b border-[var(--border-subtle)] sticky top-0 z-40">
@@ -271,3 +272,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, page
 };
 
 export default DashboardLayout;
+
+
+
+

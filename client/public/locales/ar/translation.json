@@ -1,4 +1,4 @@
-ï»¿{
+{
   "nav": {
     "home": "الرئيسية",
     "features": "المميزات",
@@ -331,7 +331,12 @@
     "tokenBalance": "رصيد الرموز",
     "saveChanges": "حفظ التغييرات",
     "saved": "تم الحفظ بنجاح",
-    "error": "حدث خطأ في الحفظ"
+    "error": "حدث خطأ في الحفظ",
+    "gmailConnection": "Gmail ربط",
+    "connectGmail": "ربط Gmail لإرسال الحملات",
+    "gmailConnected": "تم ربط Gmail بنجاح",
+    "gmailConnectedDesc": "يمكنك الآن إرسال حملات البريد من حسابك",
+    "gmailDesc": "اربط حساب Gmail لتتمكن من إرسال حملات البريد مباشرة"
   },
   "tokens": {
     "title": "الرموز",
