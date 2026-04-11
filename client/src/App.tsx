@@ -1,30 +1,41 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { useRoute, useLocation } from 'wouter';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import * as Sentry from '@sentry/react';
 
-// Pages
+// Loading fallback
+const PageLoader = () => (
+  <div className="flex items-center justify-center min-h-screen bg-[var(--bg-surface)]">
+    <div className="flex flex-col items-center gap-4">
+      <div className="w-8 h-8 border-4 border-[var(--accent-secondary)] border-t-[var(--accent-primary)] rounded-full animate-spin" />
+    </div>
+  </div>
+);
+
+// Eagerly loaded pages (needed immediately)
 import LandingPage from './pages/LandingPage';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import ResetPassword from './pages/ResetPassword';
-import DashboardHome from './pages/DashboardHome';
-import Onboarding from './pages/Onboarding';
-import Profile from './pages/Profile';
-import Tokens from './pages/Tokens';
-import Payment from './pages/Payment';
-import LinkedInAnalyzer from './pages/LinkedInAnalyzer';
-import CVTailor from './pages/CVTailor';
-import CampaignList from './pages/CampaignList';
-import CampaignNew from './pages/CampaignNew';
-import CampaignReport from './pages/CampaignReport';
+
+// Lazy loaded pages (loaded on demand)
+const DashboardHome = lazy(() => import('./pages/DashboardHome'));
+const Onboarding = lazy(() => import('./pages/Onboarding'));
+const Profile = lazy(() => import('./pages/Profile'));
+const Tokens = lazy(() => import('./pages/Tokens'));
+const Payment = lazy(() => import('./pages/Payment'));
+const LinkedInAnalyzer = lazy(() => import('./pages/LinkedInAnalyzer'));
+const CVTailor = lazy(() => import('./pages/CVTailor'));
+const CampaignList = lazy(() => import('./pages/CampaignList'));
+const CampaignNew = lazy(() => import('./pages/CampaignNew'));
+const CampaignReport = lazy(() => import('./pages/CampaignReport'));
 
 // Admin Pages
-import AdminDashboard from './pages/admin/AdminDashboard';
-import AdminUsers from './pages/admin/AdminUsers';
-import AdminCampaigns from './pages/admin/AdminCampaigns';
-import AdminSettings from './pages/admin/AdminSettings';
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
+const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'));
+const AdminCampaigns = lazy(() => import('./pages/admin/AdminCampaigns'));
+const AdminSettings = lazy(() => import('./pages/admin/AdminSettings'));
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -176,7 +187,9 @@ const App: React.FC = () => {
   return (
     <Sentry.ErrorBoundary fallback={<div className="p-8 text-center text-red-500">Something went wrong. Please refresh.</div>}>
       <AuthProvider>
-        <AppRoutes />
+        <Suspense fallback={<PageLoader />}>
+          <AppRoutes />
+        </Suspense>
       </AuthProvider>
     </Sentry.ErrorBoundary>
   );

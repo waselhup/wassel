@@ -104,21 +104,24 @@ const LinkedInAnalyzer: React.FC = () => {
     loadHistory();
   }, []);
 
-  // Build full LinkedIn URL from input (handles both username and full URL)
-  const buildFullUrl = (input: string): string => {
-    const trimmed = input.trim();
-    if (trimmed.startsWith('http')) return trimmed;
-    return `https://linkedin.com/in/${trimmed}`;
+  // Normalize any LinkedIn input to a full URL
+  const normalizeLinkedInUrl = (input: string): string => {
+    let url = input.trim();
+    if (url.startsWith('/')) url = url.slice(1);
+    if (!url.startsWith('http')) url = 'https://' + url;
+    url = url.replace(/\/$/, '');
+    return url;
   };
 
-  // Validate input - accepts username or full URL
-  const validateInput = (input: string): boolean => {
+  // Validate input - accepts username, partial URL, or full URL
+  const validateLinkedInUrl = (input: string): boolean => {
     const trimmed = input.trim();
     if (!trimmed) return false;
-    if (trimmed.startsWith('http')) {
-      return /^https?:\/\/(www\.)?linkedin\.com\/in\/[\w\-]+\/?$/.test(trimmed);
-    }
-    return /^[\w\-]{2,}$/.test(trimmed);
+    // If it looks like a plain username (no dots, no slashes)
+    if (/^[\w-]{2,}$/.test(trimmed)) return true;
+    // Otherwise normalize and check
+    const normalized = normalizeLinkedInUrl(trimmed);
+    return /linkedin\.com\/in\/[\w-]+/i.test(normalized);
   };
 
   // Auto-fill user's own LinkedIn URL
@@ -136,7 +139,7 @@ const LinkedInAnalyzer: React.FC = () => {
       return;
     }
 
-    if (!validateInput(linkedInInput)) {
+    if (!validateLinkedInUrl(linkedInInput)) {
       setError(t('linkedInAnalyzer.invalidUrl', 'يرجى إدخال رابط LinkedIn صحيح'));
       return;
     }
@@ -151,7 +154,10 @@ const LinkedInAnalyzer: React.FC = () => {
 
     try {
       setLoadingStep('fetching');
-      const fullUrl = buildFullUrl(linkedInInput);
+      // If plain username, prepend full LinkedIn URL; otherwise normalize
+      const fullUrl = /^[\w-]+$/.test(linkedInInput.trim())
+        ? `https://linkedin.com/in/${linkedInInput.trim()}`
+        : normalizeLinkedInUrl(linkedInInput);
       const response = await trpc.linkedin.analyze(fullUrl);
       setLoadingStep('analyzing');
       setLoadingStep('generating');

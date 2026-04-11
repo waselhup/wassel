@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { ChevronLeft, ChevronRight, Target, Users, Mail, Eye, Rocket, CheckCircle2, Sparkles, Loader2, Edit3, Check } from "lucide-react";
@@ -46,16 +46,26 @@ export default function CampaignNew() {
     setGenerating(true);
     setError(null);
     try {
-      const result = await trpc.campaign.previewMessages({
-        jobTitle: data.titles || "Marketing Manager",
-        targetCompanies: companies.slice(0, 10),
-        language: i18n.language === "ar" ? "ar" : "en",
-      });
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('timeout')), 45000)
+      );
+      const result = await Promise.race([
+        trpc.campaign.previewMessages({
+          jobTitle: data.titles || "Marketing Manager",
+          targetCompanies: companies.slice(0, 10),
+          language: i18n.language === "ar" ? "ar" : "en",
+        }),
+        timeoutPromise,
+      ]) as { messages: Array<{ company: string; subject: string; body: string }> };
       setMessages(
         (result.messages || []).map((m) => ({ ...m, approved: false }))
       );
     } catch (e: any) {
-      setError(e?.message || t("new.err.genFailed", "فشل إنشاء الرسائل"));
+      if (e?.message === 'timeout') {
+        setError('انتهت المهلة (45 ثانية). حاول مرة أخرى.');
+      } else {
+        setError(e?.message || t("new.err.genFailed", "فشل إنشاء الرسائل"));
+      }
     } finally {
       setGenerating(false);
     }

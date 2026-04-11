@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { FileText, Download, Sparkles, Loader2, CheckCircle2, Briefcase, Target, Palette } from "lucide-react";
@@ -64,11 +64,21 @@ export default function CVTailor() {
         achievements: form.achievements,
         languages: form.languages,
       };
-      const result = await trpc.cv.generate(fields, context);
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('timeout')), 60000)
+      );
+      const result = await Promise.race([
+        trpc.cv.generate(fields, context),
+        timeoutPromise,
+      ]) as { versions: any[]; tokensRemaining: number };
       setVersions(Array.isArray(result?.versions) ? result.versions : []);
       setDone(true);
     } catch (e: any) {
-      setError(e?.message || t("cv.err.failed", "فشل الإنشاء. حاول مرة أخرى."));
+      if (e?.message === 'timeout') {
+        setError('انتهت المهلة (60 ثانية). حاول مرة أخرى.');
+      } else {
+        setError(e?.message || t("cv.err.failed", "فشل الإنشاء. حاول مرة أخرى."));
+      }
     } finally {
       setLoading(false);
     }

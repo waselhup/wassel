@@ -31,6 +31,15 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, page
   const [plan, setPlan] = useState<string | null>(null);
 
   // Direct Supabase fetch for token_balance and plan on every navigation
+  // Initialize from AuthContext profile immediately (no flicker)
+  useEffect(() => {
+    if (profile) {
+      if (tokenBalance === null) setTokenBalance(profile.token_balance ?? 0);
+      if (plan === null) setPlan(profile.plan ?? 'free');
+    }
+  }, [profile]);
+
+  // Fetch fresh data from Supabase ONCE on mount (not on every navigation)
   useEffect(() => {
     const fetchFreshData = async () => {
       if (!user?.id) return;
@@ -49,15 +58,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, page
       }
     };
     fetchFreshData();
-  }, [user?.id, location]);
-
-  // Also sync from AuthContext profile when it loads
-  useEffect(() => {
-    if (profile) {
-      if (tokenBalance === null) setTokenBalance(profile.token_balance ?? 0);
-      if (plan === null) setPlan(profile.plan ?? 'free');
-    }
-  }, [profile]);
+  }, [user?.id]);
 
   const displayTokens = tokenBalance !== null ? tokenBalance : '...';
   const displayPlan = (() => {
@@ -142,7 +143,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, page
             <Link key={item.href} href={item.href}>
               <a
                 onClick={() => setSidebarOpen(false)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-150 ${
                   isActive(item.href)
                     ? 'bg-[var(--accent-primary)] text-white'
                     : 'text-[var(--text-secondary)] hover:bg-[var(--bg-surface)]'
