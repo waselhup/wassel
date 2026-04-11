@@ -1,4 +1,4 @@
-# Wassel (وصّل) — Project Identity
+﻿# Wassel (وصّل) — Project Identity
 
 ## Live URLs
 - Production: https://wassel-alpha.vercel.app
@@ -63,7 +63,27 @@ Plan: pro
 | PostHog | Analytics (installed) |
 | Sentry | Error tracking (installed) |
 
-## Current Status
-✅ Working: Dashboard, Auth, LinkedIn Analyzer (routes exist), CV Tailor (routes exist), Campaigns (routes exist)
-❌ Broken: LinkedIn page shows 0 tokens (reads wrong source), Campaign messages not AI-personalized
-🔴 Missing: Moyasar payment page, Early Access page
+## tRPC Client Pattern (CRITICAL - do NOT use .mutate()/.query())
+The client uses a CUSTOM fetch-based wrapper in client/src/lib/trpc.ts.
+Calls are direct function invocations - NO .mutate() or .query() suffixes:
+- trpc.linkedin.analyze(profileUrl)
+- trpc.linkedin.history()
+- trpc.cv.generate(fields, context)
+- trpc.campaign.previewMessages({...}) / trpc.campaign.create({...})
+- trpcQuery("campaign.list") for direct imports
+
+## Token Balance Pattern (CRITICAL)
+DashboardLayout.tsx fetches token_balance and plan directly from Supabase
+on every navigation (useEffect on [user?.id, location]).
+Never rely solely on AuthContext profile - it can be stale.
+
+## Current Status (Updated 2026-04-11)
+Working: Dashboard, Auth, DashboardLayout (fresh token/plan from Supabase)
+Working: LinkedIn Analyzer (analyze button, auto-fill, progress bar, history, results)
+Working: CV Tailor (form-based input, context sent to Claude, results display)
+Working: Campaigns (list, create 5-step flow, AI message preview, inline editing, launch)
+Working: Token balance and plan display on ALL pages (direct Supabase fetch)
+Pending: Moyasar payment integration
+Pending: Early Access / Pricing page
+Pending: Privacy Policy / ToS pages
+Pending: Analytics Dashboard
