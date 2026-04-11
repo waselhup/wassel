@@ -22,7 +22,7 @@ interface Campaign {
 const AdminCampaigns: React.FC = () => {
   const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
-  const [campaigns, setCampaigns] = useState<Campaign[]>([
+  const [campaigns, _setCampaigns] = useState<Campaign[]>([
     {
       id: '1',
       userName: 'Ahmed Al-Rashid',

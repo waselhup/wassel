@@ -97,7 +97,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setLoading(false);
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
-          async (event, updatedSession) => {
+          async (_event, updatedSession) => {
             if (updatedSession) {
               setSession(updatedSession);
               setUser(updatedSession.user);
@@ -116,6 +116,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       } catch (err) {
         console.error('Auth initialization error:', err);
         setLoading(false);
+        return undefined;
       }
     };
 

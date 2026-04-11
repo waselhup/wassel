@@ -5,7 +5,7 @@ import { useLocation, Link } from 'wouter';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
 import {
-  Home, UserCog, Linkedin, FileText, Mail, Coins, User, Shield,
+  Home, UserCog, Linkedin, FileText, Mail, Coins, User,
   LogOut, Globe, Menu, X, ChevronDown, BookOpen
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';

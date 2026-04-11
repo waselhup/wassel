@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import {
-  AlertCircle, Zap, Copy, Save, RotateCcw, ChevronDown, ChevronUp,
+  AlertCircle, Zap, Copy, RotateCcw, ChevronDown, ChevronUp,
   CheckCircle, Loader, History as HistoryIcon, UserCheck, BookOpen
 } from 'lucide-react';
 
@@ -49,7 +49,7 @@ const LinkedInAnalyzer: React.FC = () => {
   const { user, profile, refreshProfile } = useAuth();
   const [linkedInInput, setLinkedInInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [loadingStep, setLoadingStep] = useState<LoadingStep>(null);
+  const [_loadingStep, setLoadingStep] = useState<LoadingStep>(null);
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [history, setHistory] = useState<AnalysisHistoryItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);

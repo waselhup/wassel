@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { Search, Filter, MoreVertical, UserPlus, Ban, Coins, CheckCircle2, X } from "lucide-react";
+import { Search, Filter, MoreVertical, UserPlus, Coins, CheckCircle2, X } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 
 const users = [

@@ -2,8 +2,8 @@ import { useTranslation } from "react-i18next";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import {
-  Sparkles, Linkedin, FileText, Mail, BarChart3, Shield, Zap,
-  Check, ArrowRight, Star, Globe2, Users, Briefcase
+  Sparkles, Linkedin, FileText, Mail, BarChart3, Shield,
+  Check, ArrowRight, Star, Globe2, Users
 } from "lucide-react";
 
 const fadeUp = {
