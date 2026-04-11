@@ -34,6 +34,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<{ error: Error | null }>;
   resetPassword: (email: string) => Promise<{ error: Error | null }>;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -57,9 +58,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return;
       }
 
+      console.log('[AuthContext] Profile fetched:', { email: data?.email, token_balance: data?.token_balance, plan: data?.plan });
       setProfile(data as Profile);
+
+      // Analytics: identify user
+      try {
+        const { identifyUser } = await import('../lib/analytics');
+        identifyUser(userId, { email: data?.email, plan: data?.plan });
+      } catch (_) {}
     } catch (err) {
       console.error('Error fetching profile:', err);
+    }
+  };
+
+  const refreshProfile = async () => {
+    if (user?.id) {
+      await fetchProfile(user.id);
     }
   };
 
@@ -189,6 +203,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     signUp,
     signOut,
     resetPassword,
+    refreshProfile,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -2,6 +2,7 @@ import React from 'react';
 import { useRoute, useLocation } from 'wouter';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
+import * as Sentry from '@sentry/react';
 
 // Pages
 import LandingPage from './pages/LandingPage';
@@ -173,9 +174,11 @@ const AppRoutes: React.FC = () => {
 
 const App: React.FC = () => {
   return (
-    <AuthProvider>
-      <AppRoutes />
-    </AuthProvider>
+    <Sentry.ErrorBoundary fallback={<div className="p-8 text-center text-red-500">Something went wrong. Please refresh.</div>}>
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
+    </Sentry.ErrorBoundary>
   );
 };
 
