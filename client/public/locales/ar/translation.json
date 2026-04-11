@@ -367,7 +367,18 @@
     "saveAnalysis": "حفظ التحليل",
     "historyLabel": "سجل التحليلات",
     "insufficientTokens": "رموز غير كافية",
-    "insufficientTokensDesc": "تحتاج رموز إضافية. شراء رموز"
+    "insufficientTokensDesc": "تحتاج رموز إضافية. شراء رموز",
+    "analyzeMyProfile": "تحليل ملفي",
+    "invalidUrl": "رابط LinkedIn غير صحيح",
+    "analysisFailed": "فشل التحليل. حاول مرة أخرى.",
+    "needMore": "تحتاج {{count}} رموز إضافية.",
+    "buyTokens": "شراء رموز",
+    "stepFetching": "جلب بيانات الملف الشخصي...",
+    "stepAnalyzing": "تحليل الملف بالذكاء الاصطناعي...",
+    "stepGenerating": "إنشاء الاقتراحات...",
+    "strengthsLabel": "نقاط القوة",
+    "weaknessesLabel": "نقاط الضعف",
+    "historyDesc": "تحليلاتك السابقة"
   },
   "cvTailor": {
     "title": "تخصيص السيرة الذاتية",

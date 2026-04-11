@@ -44,18 +44,31 @@ export default function CVTailor() {
   ];
 
   async function generate() {
+    if (!form.jobTitle.trim()) {
+      setError(t("cv.err.noTitle", "أدخل الوظيفة المستهدفة أولاً"));
+      return;
+    }
     setLoading(true); setDone(false); setError(null); setVersions([]);
     try {
-      const selectedFields = [
-        form.jobTitle, form.currentRole, form.skills, form.experience,
-        form.education, form.achievements, form.languages,
-      ].filter(Boolean);
-      const input = selectedFields.length > 0 ? selectedFields : [form.jobTitle || "General"];
-      const data = await trpc.cv.generate(input);
-      setVersions(Array.isArray(data?.versions) ? data.versions : []);
+      // Send job title as the field, with full context
+      const fields = [form.jobTitle];
+      const context = {
+        name: form.name,
+        jobTitle: form.jobTitle,
+        company: form.company,
+        jobDescription: form.jobDescription,
+        currentRole: form.currentRole,
+        experience: form.experience,
+        skills: form.skills,
+        education: form.education,
+        achievements: form.achievements,
+        languages: form.languages,
+      };
+      const result = await trpc.cv.generate(fields, context);
+      setVersions(Array.isArray(result?.versions) ? result.versions : []);
       setDone(true);
     } catch (e: any) {
-      setError(e?.message || "Generation failed");
+      setError(e?.message || t("cv.err.failed", "فشل الإنشاء. حاول مرة أخرى."));
     } finally {
       setLoading(false);
     }
@@ -133,13 +146,51 @@ export default function CVTailor() {
         )}
 
         {versions.length > 0 && (
-          <div className="space-y-4">
-            <h3 className="font-bold text-[#1a1a2e]">{t("cv.versions", "النسخ المُنشأة")}</h3>
+          <div className="space-y-6">
+            <h3 className="font-bold text-[#1a1a2e] text-lg">{t("cv.versions", "النسخ المُنشأة")}</h3>
             {versions.map((v, i) => (
-              <div key={i} className="rounded-2xl bg-white border border-gray-100 shadow-sm p-6">
-                <div className="text-sm font-semibold text-[#ff6b35] mb-2">{v.title || v.field || `Version ${i + 1}`}</div>
-                <pre className="whitespace-pre-wrap text-sm text-gray-700 leading-relaxed font-sans">{typeof v === "string" ? v : (v.content || v.summary || JSON.stringify(v, null, 2))}</pre>
-              </div>
+              <motion.div key={i} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
+                className="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
+                <div className="bg-gradient-to-r from-[#1e3a5f] to-[#2c5282] px-6 py-4">
+                  <h4 className="text-white font-bold text-lg">{v.headline || v.fieldName || form.jobTitle}</h4>
+                  <p className="text-white/70 text-sm mt-1">{v.fieldName || `Version ${i + 1}`}</p>
+                </div>
+                <div className="p-6 space-y-5">
+                  {v.summary && (
+                    <div>
+                      <h5 className="text-xs font-bold text-gray-400 uppercase mb-2">{t("cv.section.summary", "الملخص المهني")}</h5>
+                      <p className="text-sm text-gray-700 leading-relaxed">{v.summary}</p>
+                    </div>
+                  )}
+                  {v.skills && v.skills.length > 0 && (
+                    <div>
+                      <h5 className="text-xs font-bold text-gray-400 uppercase mb-2">{t("cv.section.skills", "المهارات")}</h5>
+                      <div className="flex flex-wrap gap-2">
+                        {v.skills.map((s: string, si: number) => (
+                          <span key={si} className="px-3 py-1 rounded-full bg-orange-50 text-[#ff6b35] text-xs font-semibold border border-orange-200">{s}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {v.experience && v.experience.length > 0 && (
+                    <div>
+                      <h5 className="text-xs font-bold text-gray-400 uppercase mb-3">{t("cv.section.experience", "الخبرات")}</h5>
+                      <div className="space-y-3">
+                        {v.experience.map((exp: any, ei: number) => (
+                          <div key={ei} className="p-3 rounded-xl bg-gray-50 border border-gray-100">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="font-semibold text-[#1a1a2e] text-sm">{exp.title}</span>
+                              <span className="text-xs text-gray-400">{exp.duration}</span>
+                            </div>
+                            <span className="text-xs text-[#ff6b35] font-medium">{exp.company}</span>
+                            <p className="text-sm text-gray-600 mt-1.5 leading-relaxed">{exp.description}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
             ))}
           </div>
         )}
@@ -147,7 +198,7 @@ export default function CVTailor() {
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 rounded-2xl bg-gradient-to-br from-[#1e3a5f] to-[#2c5282] p-6 md:p-8 shadow-lg">
           <div className="text-white">
             <h3 className="font-bold text-lg">{t("cv.ready", "جاهز للإنشاء؟")}</h3>
-            <p className="text-white/70 text-sm mt-1">{t("cv.cost", "يستخدم 50 توكن لكل سيرة ذاتية")}</p>
+            <p className="text-white/70 text-sm mt-1">{t("cv.cost", "يستخدم 10 رموز لكل سيرة ذاتية")}</p>
           </div>
           <div className="flex gap-3">
             {done && (

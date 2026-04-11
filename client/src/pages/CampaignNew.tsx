@@ -1,18 +1,28 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { ChevronLeft, ChevronRight, Target, Users, Mail, Rocket, CheckCircle2, Search, Sparkles, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Target, Users, Mail, Eye, Rocket, CheckCircle2, Sparkles, Loader2, Edit3, Check } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { trpc } from "@/lib/trpc";
+
+interface PreviewMessage {
+  company: string;
+  subject: string;
+  body: string;
+  approved: boolean;
+}
 
 export default function CampaignNew() {
   const { t, i18n } = useTranslation();
   const [step, setStep] = useState(0);
   const [launching, setLaunching] = useState(false);
+  const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [messages, setMessages] = useState<PreviewMessage[]>([]);
+  const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [data, setData] = useState({
     name: "", goal: "", industry: "", country: "SA",
-    titles: "", count: 100, tone: "professional",
+    titles: "", count: 10, tone: "professional",
     subject: "", body: "",
   });
   const set = (k: string, v: any) => setData((d) => ({ ...d, [k]: v }));
@@ -21,8 +31,47 @@ export default function CampaignNew() {
     { key: "target", label: t("new.s1", "الهدف"), icon: Target },
     { key: "audience", label: t("new.s2", "الجمهور"), icon: Users },
     { key: "message", label: t("new.s3", "الرسالة"), icon: Mail },
-    { key: "launch", label: t("new.s4", "الإطلاق"), icon: Rocket },
+    { key: "review", label: t("new.s4review", "مراجعة الرسائل"), icon: Eye },
+    { key: "launch", label: t("new.s5", "الإطلاق"), icon: Rocket },
   ];
+
+  const companies = (data.industry || "").split(",").map((s) => s.trim()).filter(Boolean);
+  const allApproved = messages.length > 0 && messages.every((m) => m.approved);
+
+  async function generatePreview() {
+    if (companies.length === 0) {
+      setError(t("new.err.noCompanies", "أدخل شركات مستهدفة أولاً"));
+      return;
+    }
+    setGenerating(true);
+    setError(null);
+    try {
+      const result = await trpc.campaign.previewMessages({
+        jobTitle: data.titles || "Marketing Manager",
+        targetCompanies: companies.slice(0, 10),
+        language: i18n.language === "ar" ? "ar" : "en",
+      });
+      setMessages(
+        (result.messages || []).map((m) => ({ ...m, approved: false }))
+      );
+    } catch (e: any) {
+      setError(e?.message || t("new.err.genFailed", "فشل إنشاء الرسائل"));
+    } finally {
+      setGenerating(false);
+    }
+  }
+
+  function updateMessage(idx: number, field: "subject" | "body", value: string) {
+    setMessages((prev) => prev.map((m, i) => i === idx ? { ...m, [field]: value } : m));
+  }
+
+  function toggleApprove(idx: number) {
+    setMessages((prev) => prev.map((m, i) => i === idx ? { ...m, approved: !m.approved } : m));
+  }
+
+  function approveAll() {
+    setMessages((prev) => prev.map((m) => ({ ...m, approved: true })));
+  }
 
   async function launch() {
     setLaunching(true);
@@ -31,16 +80,25 @@ export default function CampaignNew() {
       await trpc.campaign.create({
         campaignName: data.name || "Untitled Campaign",
         jobTitle: data.titles || "Marketing",
-        targetCompanies: (data.industry || "")
-          .split(",").map((s) => s.trim()).filter(Boolean),
-        recipientCount: Number(data.count) || 100,
+        targetCompanies: companies,
+        recipientCount: Math.min(Number(data.count) || 10, 100),
         language: i18n.language === "ar" ? "ar" : "en",
       });
-      setStep(4);
+      setStep(5);
     } catch (e: any) {
       setError(e?.message || "Launch failed");
     } finally {
       setLaunching(false);
+    }
+  }
+
+  // When entering review step, auto-generate if no messages yet
+  function goToStep(target: number) {
+    if (target === 3 && messages.length === 0) {
+      setStep(3);
+      generatePreview();
+    } else {
+      setStep(target);
     }
   }
 
@@ -51,14 +109,15 @@ export default function CampaignNew() {
           <h1 className="text-2xl md:text-3xl font-bold text-[#1a1a2e]">
             {t("new.title", "حملة جديدة")}
           </h1>
-          <p className="text-gray-500 mt-2">{t("new.subtitle", "أربع خطوات لإطلاق حملتك الذكية")}</p>
+          <p className="text-gray-500 mt-2">{t("new.subtitle5", "خمس خطوات لإطلاق حملتك الذكية")}</p>
         </motion.div>
 
+        {/* Stepper */}
         <div className="flex items-center justify-between relative">
           <div className="absolute top-5 start-0 end-0 h-0.5 bg-gray-200" />
           <motion.div
             className="absolute top-5 start-0 h-0.5 bg-[#ff6b35]"
-            initial={{ width: "0%" }} animate={{ width: `${(step / (steps.length - 1)) * 100}%` }}
+            initial={{ width: "0%" }} animate={{ width: `${(Math.min(step, steps.length - 1) / (steps.length - 1)) * 100}%` }}
             transition={{ duration: 0.4 }}
           />
           {steps.map((s, i) => (
@@ -69,11 +128,12 @@ export default function CampaignNew() {
               >
                 {step > i ? <CheckCircle2 className="w-5 h-5" /> : <s.icon className="w-5 h-5" />}
               </motion.div>
-              <span className={`text-xs font-semibold ${step >= i ? "text-[#1a1a2e]" : "text-gray-400"}`}>{s.label}</span>
+              <span className={`text-xs font-semibold hidden sm:block ${step >= i ? "text-[#1a1a2e]" : "text-gray-400"}`}>{s.label}</span>
             </div>
           ))}
         </div>
 
+        {/* Content */}
         <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-6 md:p-8 min-h-[360px]">
           <AnimatePresence mode="wait">
             <motion.div key={step}
@@ -81,6 +141,7 @@ export default function CampaignNew() {
               transition={{ duration: 0.25 }}
               className="space-y-5"
             >
+              {/* Step 0: Target */}
               {step === 0 && (
                 <>
                   <Field label={t("new.f.name", "اسم الحملة")}>
@@ -91,11 +152,13 @@ export default function CampaignNew() {
                   </Field>
                 </>
               )}
+
+              {/* Step 1: Audience */}
               {step === 1 && (
                 <>
                   <div className="grid md:grid-cols-2 gap-4">
-                    <Field label={t("new.f.industry", "القطاع")}>
-                      <input value={data.industry} onChange={(e) => set("industry", e.target.value)} placeholder="SaaS, Fintech" className={inputCls} />
+                    <Field label={t("new.f.industry", "الشركات المستهدفة")}>
+                      <input value={data.industry} onChange={(e) => set("industry", e.target.value)} placeholder="أرامكو, STC, stc pay, Tamara" className={inputCls} />
                     </Field>
                     <Field label={t("new.f.country", "الدولة")}>
                       <select value={data.country} onChange={(e) => set("country", e.target.value)} className={inputCls}>
@@ -111,11 +174,13 @@ export default function CampaignNew() {
                     <input value={data.titles} onChange={(e) => set("titles", e.target.value)} placeholder="CMO, Head of Marketing" className={inputCls} />
                   </Field>
                   <Field label={t("new.f.count", "عدد الإيميلات المستهدف")}>
-                    <input type="number" value={data.count} onChange={(e) => set("count", +e.target.value)} className={inputCls} />
+                    <input type="number" min={1} max={100} value={data.count} onChange={(e) => set("count", Math.min(100, +e.target.value))} className={inputCls} />
+                    <p className="text-xs text-gray-400 mt-1">{t("new.maxCount", "الحد الأقصى 100 مستلم لكل حملة")}</p>
                   </Field>
                 </>
               )}
 
+              {/* Step 2: Message settings */}
               {step === 2 && (
                 <>
                   <Field label={t("new.f.tone", "نبرة الكتابة")}>
@@ -128,37 +193,124 @@ export default function CampaignNew() {
                       ))}
                     </div>
                   </Field>
-                  <Field label={t("new.f.subject", "عنوان الإيميل")}>
-                    <div className="relative">
-                      <input value={data.subject} onChange={(e) => set("subject", e.target.value)} placeholder="فكرة سريعة لـ {company}" className={inputCls + " pe-11"} />
-                      <button className="absolute end-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg bg-orange-50 text-[#ff6b35] flex items-center justify-center hover:bg-orange-100 transition">
-                        <Sparkles className="w-4 h-4" />
-                      </button>
-                    </div>
+                  <Field label={t("new.f.subject", "عنوان الإيميل (اختياري)")}>
+                    <input value={data.subject} onChange={(e) => set("subject", e.target.value)} placeholder={t("new.ph.subject", "فكرة سريعة لـ {company}")} className={inputCls} />
                   </Field>
-                  <Field label={t("new.f.body", "نص الرسالة")}>
-                    <textarea value={data.body} onChange={(e) => set("body", e.target.value)} rows={6} placeholder={t("new.ph.body", "سيتم توليد الرسالة تلقائيًا بالذكاء الاصطناعي وتخصيصها لكل مستلم...")} className={inputCls + " resize-none"} />
+                  <Field label={t("new.f.body", "ملاحظات إضافية (اختياري)")}>
+                    <textarea value={data.body} onChange={(e) => set("body", e.target.value)} rows={4} placeholder={t("new.ph.body", "سيتم توليد الرسالة تلقائيًا بالذكاء الاصطناعي وتخصيصها لكل مستلم...")} className={inputCls + " resize-none"} />
                   </Field>
+                  <div className="flex items-center gap-2 p-3 rounded-xl bg-orange-50 border border-orange-200">
+                    <Sparkles className="w-5 h-5 text-[#ff6b35] flex-shrink-0" />
+                    <p className="text-sm text-[#1a1a2e]">{t("new.aiNote", "سينشئ الذكاء الاصطناعي رسائل مخصصة لكل شركة في الخطوة التالية")}</p>
+                  </div>
                 </>
               )}
+
+              {/* Step 3: Message Review (NEW) */}
               {step === 3 && (
+                <div className="space-y-5">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-bold text-[#1a1a2e] flex items-center gap-2">
+                      <Eye className="w-5 h-5 text-[#ff6b35]" />
+                      {t("new.reviewTitle", "مراجعة الرسائل")}
+                    </h3>
+                    {messages.length > 0 && !allApproved && (
+                      <button onClick={approveAll}
+                        className="px-4 py-2 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 text-sm font-semibold hover:bg-emerald-100 transition flex items-center gap-1.5">
+                        <Check className="w-4 h-4" /> {t("new.approveAll", "موافقة على الكل")}
+                      </button>
+                    )}
+                  </div>
+
+                  {generating && (
+                    <div className="flex flex-col items-center py-12 gap-4">
+                      <Loader2 className="w-10 h-10 animate-spin text-[#ff6b35]" />
+                      <p className="text-gray-500 font-medium">{t("new.generating", "الذكاء الاصطناعي ينشئ رسائل مخصصة لكل شركة...")}</p>
+                      <p className="text-xs text-gray-400">{t("new.generatingWait", "قد يستغرق 15-30 ثانية")}</p>
+                    </div>
+                  )}
+
+                  {!generating && messages.length === 0 && (
+                    <div className="text-center py-12">
+                      <Sparkles className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                      <p className="text-gray-500">{t("new.noMessages", "اضغط لإنشاء رسائل مخصصة بالذكاء الاصطناعي")}</p>
+                      <button onClick={generatePreview}
+                        className="mt-4 px-6 py-3 rounded-xl bg-[#ff6b35] hover:bg-[#e55a2b] text-white font-semibold inline-flex items-center gap-2 transition">
+                        <Sparkles className="w-5 h-5" /> {t("new.generateBtn", "إنشاء الرسائل")}
+                      </button>
+                    </div>
+                  )}
+
+                  {!generating && messages.map((msg, idx) => (
+                    <motion.div key={idx}
+                      initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}
+                      className={`rounded-xl border-2 p-5 transition-all ${msg.approved ? "border-emerald-300 bg-emerald-50/50" : "border-gray-200 bg-white"}`}
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-sm font-bold text-[#1a1a2e]">{msg.company}</span>
+                        <div className="flex items-center gap-2">
+                          <button onClick={() => setEditingIdx(editingIdx === idx ? null : idx)}
+                            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition">
+                            <Edit3 className="w-4 h-4" />
+                          </button>
+                          <button onClick={() => toggleApprove(idx)}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition ${msg.approved ? "bg-emerald-100 text-emerald-700 border border-emerald-300" : "bg-gray-100 text-gray-600 border border-gray-200 hover:bg-orange-50 hover:text-[#ff6b35] hover:border-orange-200"}`}>
+                            {msg.approved ? <><CheckCircle2 className="w-3 h-3" /> {t("new.approved", "تمت الموافقة")}</> : t("new.approve", "موافق")}
+                          </button>
+                        </div>
+                      </div>
+
+                      {editingIdx === idx ? (
+                        <div className="space-y-3">
+                          <div>
+                            <label className="text-xs font-semibold text-gray-500 mb-1 block">{t("new.subject", "الموضوع")}</label>
+                            <input value={msg.subject} onChange={(e) => updateMessage(idx, "subject", e.target.value)} className={inputCls + " text-sm"} />
+                          </div>
+                          <div>
+                            <label className="text-xs font-semibold text-gray-500 mb-1 block">{t("new.body", "النص")}</label>
+                            <textarea value={msg.body} onChange={(e) => updateMessage(idx, "body", e.target.value)} rows={5} className={inputCls + " text-sm resize-none"} />
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <p className="text-xs font-semibold text-gray-400 mb-1">{msg.subject}</p>
+                          <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line line-clamp-4">{msg.body}</p>
+                        </>
+                      )}
+                    </motion.div>
+                  ))}
+
+                  {!generating && messages.length > 0 && (
+                    <button onClick={generatePreview}
+                      className="w-full py-2.5 rounded-xl border border-dashed border-gray-300 text-gray-500 text-sm font-medium hover:bg-gray-50 transition flex items-center justify-center gap-2">
+                      <Sparkles className="w-4 h-4" /> {t("new.regenerate", "إعادة إنشاء الرسائل")}
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Step 4: Launch */}
+              {step === 4 && (
                 <div className="text-center py-8">
                   <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-[#ff6b35] to-[#f7931e] flex items-center justify-center shadow-xl shadow-[#ff6b35]/30 mb-5">
                     <Rocket className="w-10 h-10 text-white" />
                   </div>
                   <h3 className="text-xl font-bold text-[#1a1a2e] mb-2">{t("new.confirm", "كل شيء جاهز!")}</h3>
-                  <p className="text-gray-500 mb-6">{t("new.confirmD", "سيتم البحث عن {count} جهة اتصال وإرسال الإيميلات خلال 24 ساعة").replace("{count}", String(data.count))}</p>
+                  <p className="text-gray-500 mb-2">{data.name || "Campaign"} — {companies.length} {t("new.companies", "شركات")} — {data.count} {t("new.emails", "إيميل")}</p>
+                  <p className="text-gray-400 text-sm mb-6">{t("new.tokenCost", "التكلفة")}: {data.count} {t("new.tokensUnit", "رمز")}</p>
                   <button onClick={launch} disabled={launching}
                     className="px-8 py-3 rounded-xl bg-[#ff6b35] hover:bg-[#e55a2b] disabled:opacity-50 text-white font-semibold shadow-lg shadow-[#ff6b35]/30 inline-flex items-center gap-2 transition">
                     {launching ? <Loader2 className="w-5 h-5 animate-spin" /> : <Rocket className="w-5 h-5" />}
-                    {launching ? t("new.launching", "جاري الإطلاق...") : t("new.launch", "أطلق الحملة")}
+                    {launching ? t("new.launching", "جاري الإطلاق...") : t("new.launch", "إطلاق الحملة")}
                   </button>
                   {error && (
                     <div className="mt-4 rounded-xl bg-red-50 border border-red-200 text-red-700 p-3 text-sm">{error}</div>
                   )}
                 </div>
               )}
-              {step === 4 && (
+
+              {/* Step 5: Success */}
+              {step === 5 && (
                 <div className="text-center py-8">
                   <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring" }} className="w-20 h-20 mx-auto rounded-full bg-emerald-100 flex items-center justify-center mb-5">
                     <CheckCircle2 className="w-10 h-10 text-emerald-600" />
@@ -171,16 +323,28 @@ export default function CampaignNew() {
           </AnimatePresence>
         </div>
 
-        {step < 3 && (
+        {/* Navigation */}
+        {error && step !== 4 && step !== 5 && (
+          <div className="rounded-xl bg-red-50 border border-red-200 text-red-700 p-3 text-sm">{error}</div>
+        )}
+
+        {step < 4 && (
           <div className="flex items-center justify-between">
             <button onClick={() => setStep(Math.max(0, step - 1))} disabled={step === 0}
               className="px-5 py-3 rounded-xl border border-gray-200 text-gray-700 font-semibold hover:bg-gray-50 disabled:opacity-40 flex items-center gap-2 transition">
               <ChevronRight className="w-4 h-4 rtl:rotate-180" /> {t("new.prev", "السابق")}
             </button>
-            <button onClick={() => setStep(step + 1)}
-              className="px-5 py-3 rounded-xl bg-[#1e3a5f] hover:bg-[#2c5282] text-white font-semibold flex items-center gap-2 transition">
-              {t("new.next", "التالي")} <ChevronLeft className="w-4 h-4 rtl:rotate-180" />
-            </button>
+            {step === 3 ? (
+              <button onClick={() => goToStep(4)} disabled={!allApproved}
+                className="px-5 py-3 rounded-xl bg-[#1e3a5f] hover:bg-[#2c5282] disabled:opacity-40 text-white font-semibold flex items-center gap-2 transition">
+                {t("new.toLaunch", "متابعة الإطلاق")} <ChevronLeft className="w-4 h-4 rtl:rotate-180" />
+              </button>
+            ) : (
+              <button onClick={() => goToStep(step + 1)}
+                className="px-5 py-3 rounded-xl bg-[#1e3a5f] hover:bg-[#2c5282] text-white font-semibold flex items-center gap-2 transition">
+                {t("new.next", "التالي")} <ChevronLeft className="w-4 h-4 rtl:rotate-180" />
+              </button>
+            )}
           </div>
         )}
       </div>

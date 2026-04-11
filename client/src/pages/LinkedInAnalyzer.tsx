@@ -55,9 +55,18 @@ const LinkedInAnalyzer: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
 
-  const TOKENS_REQUIRED = 5;  const hasEnoughTokens = (profile?.token_balance || 0) >= TOKENS_REQUIRED;
+  const TOKENS_REQUIRED = 5;
+  const [tokenBalance, setTokenBalance] = useState<number>(profile?.token_balance ?? 0);
+  const hasEnoughTokens = tokenBalance >= TOKENS_REQUIRED;
 
-  // Load history on mount
+  // Sync tokenBalance when profile loads/updates
+  useEffect(() => {
+    if (profile?.token_balance !== undefined && profile?.token_balance !== null) {
+      setTokenBalance(profile.token_balance);
+    }
+  }, [profile?.token_balance]);
+
+  // Load history on mount + fetch balance directly from tRPC as fallback
   useEffect(() => {
     const loadHistory = async () => {
       try {
@@ -71,11 +80,41 @@ const LinkedInAnalyzer: React.FC = () => {
       }
     };
     loadHistory();
+
+    // Fallback: fetch token balance via tRPC if profile hasn't loaded yet
+    const fetchBalance = async () => {
+      try {
+        const data = await trpc.token.balance();
+        if (data?.balance !== undefined) setTokenBalance(data.balance);
+      } catch (_) {}
+    };
+    fetchBalance();
   }, []);
 
-  const validateLinkedInUrl = (url: string): boolean => {
-    const pattern = /^https?:\/\/(www\.)?linkedin\.com\/in\/[\w\-]+\/?$/;
-    return pattern.test(url);
+  // Build full LinkedIn URL from username input
+  const buildFullUrl = (input: string): string => {
+    const trimmed = input.trim();
+    if (trimmed.startsWith('http')) return trimmed;
+    return `https://linkedin.com/in/${trimmed}`;
+  };
+
+  const validateInput = (input: string): boolean => {
+    const trimmed = input.trim();
+    if (!trimmed) return false;
+    // Accept username only (no slashes, at least 2 chars) or full URL
+    if (trimmed.startsWith('http')) {
+      return /^https?:\/\/(www\.)?linkedin\.com\/in\/[\w\-]+\/?$/.test(trimmed);
+    }
+    return /^[\w\-]{2,}$/.test(trimmed);
+  };
+
+  // Auto-fill user's LinkedIn URL from profile
+  const fillMyProfile = () => {
+    const url = profile?.linkedin_url;
+    if (url) {
+      const match = url.match(/linkedin\.com\/in\/([^/?#]+)/i);
+      setLinkedInUrl(match ? match[1] : url);
+    }
   };
 
   const handleAnalyze = async () => {
@@ -83,8 +122,9 @@ const LinkedInAnalyzer: React.FC = () => {
       setError(t('common.error') as string);
       return;
     }
-    if (!validateLinkedInUrl(linkedInUrl)) {
-      setError(t('linkedInAnalyzer.invalidUrl'));      return;
+    if (!validateInput(linkedInUrl)) {
+      setError(t('linkedInAnalyzer.invalidUrl', 'رابط LinkedIn غير صحيح'));
+      return;
     }
     if (!hasEnoughTokens) {
       setError(t('linkedInAnalyzer.insufficientTokensDesc'));
@@ -93,10 +133,11 @@ const LinkedInAnalyzer: React.FC = () => {
 
     setError(null);
     setLoading(true);
+    const fullUrl = buildFullUrl(linkedInUrl);
 
     try {
       setLoadingStep('fetching');
-      const response = await trpc.linkedin.analyze(linkedInUrl);
+      const response = await trpc.linkedin.analyze(fullUrl);
       setLoadingStep('analyzing');
       setLoadingStep('generating');
 
@@ -114,6 +155,8 @@ const LinkedInAnalyzer: React.FC = () => {
       setAnalysis(analysisData);
 
       await refreshProfile();
+      // Update local balance immediately
+      setTokenBalance((prev) => Math.max(0, prev - TOKENS_REQUIRED));
       const updatedHistory = await trpc.linkedin.history();
       setHistory(updatedHistory as AnalysisHistoryItem[]);
     } catch (err) {
@@ -229,12 +272,21 @@ const LinkedInAnalyzer: React.FC = () => {
                 </div>
               </div>
 
+              {/* Auto-fill my profile button */}
+              {profile?.linkedin_url && (
+                <button onClick={fillMyProfile}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-[var(--accent-secondary)]/30 bg-orange-50 hover:bg-orange-100 text-[var(--accent-secondary)] font-semibold text-sm transition">
+                  <Zap className="w-4 h-4" />
+                  {t('linkedInAnalyzer.analyzeMyProfile', 'تحليل ملفي')}
+                </button>
+              )}
+
               <div className="flex items-start gap-3 p-3 rounded-lg bg-[var(--bg-surface)]">
                 <Zap className="w-5 h-5 text-[var(--accent-secondary)] flex-shrink-0 mt-0.5" />
                 <div className="flex-1">
                   <p className="text-sm font-medium text-[var(--text-primary)]">{t('linkedInAnalyzer.cost', {count: TOKENS_REQUIRED})}</p>
                   <p className={`text-sm ${hasEnoughTokens ? 'text-green-600' : 'text-red-600'}`}>
-                    {profile?.token_balance || 0} {t('linkedInAnalyzer.tokensAvailable')}
+                    {tokenBalance} {t('linkedInAnalyzer.tokensAvailable')}
                   </p>
                 </div>
               </div>
@@ -245,7 +297,7 @@ const LinkedInAnalyzer: React.FC = () => {
                   <div>
                     <p className="text-sm font-medium text-red-900">{t('linkedInAnalyzer.insufficientTokens')}</p>
                     <p className="text-sm text-red-800">
-                      You need {TOKENS_REQUIRED - (profile?.token_balance || 0)} more tokens. <a href="/app/tokens" className="underline font-medium">Buy tokens</a>
+                      {t('linkedInAnalyzer.needMore', {count: TOKENS_REQUIRED - tokenBalance})} <a href="/app/tokens" className="underline font-medium">{t('linkedInAnalyzer.buyTokens', 'شراء رموز')}</a>
                     </p>
                   </div>
                 </div>
@@ -259,9 +311,9 @@ const LinkedInAnalyzer: React.FC = () => {
 
               <Button onClick={handleAnalyze} disabled={loading} className="w-full" size="lg">
                 {loading ? (
-                  <><Loader className="w-4 h-4 animate-spin mr-2" /> Analyzing...</>
+                  <><Loader className="w-4 h-4 animate-spin me-2" /> {t('linkedInAnalyzer.analyzing')}</>
                 ) : (
-                  <><Zap className="w-4 h-4 mr-2" /> Analyze LinkedIn Profile</>
+                  <><Zap className="w-4 h-4 me-2" /> {t('linkedInAnalyzer.analyze')}</>
                 )}
               </Button>
             </CardContent>

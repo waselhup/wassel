@@ -22,35 +22,51 @@ interface ClaudeMessage {
   }>;
 }
 
-const callClaudeAPI = async (field: string): Promise<VersionData> => {
+const callClaudeAPI = async (field: string, context?: any): Promise<VersionData> => {
   console.log(`[CLAUDE] Starting API call for field: ${field}`);
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    console.error('[CLAUDE] ANTHROPIC_API_KEY not set');    throw new TRPCError({
+    console.error('[CLAUDE] ANTHROPIC_API_KEY not set');
+    throw new TRPCError({
       code: 'INTERNAL_SERVER_ERROR',
       message: 'Claude API key not configured',
     });
   }
 
-  const prompt = `You are a professional CV optimizer. Generate a tailored CV version for someone specializing in: ${field}
+  const contextBlock = context ? `
+Candidate Info:
+- Name: ${context.name || 'Not provided'}
+- Target Job: ${context.jobTitle || field}
+- Target Company: ${context.company || 'Not specified'}
+- Current Role: ${context.currentRole || 'Not provided'}
+- Experience: ${context.experience || 'Not provided'} years
+- Skills: ${context.skills || 'Not provided'}
+- Education: ${context.education || 'Not provided'}
+- Achievements: ${context.achievements || 'Not provided'}
+- Languages: ${context.languages || 'Not provided'}
+- Job Description: ${context.jobDescription || 'Not provided'}
+` : '';
 
+  const prompt = `You are a professional CV/resume optimizer specializing in the Saudi/GCC job market. Generate a tailored CV version for: ${field}
+${contextBlock}
 Return a JSON object with EXACTLY this structure (no markdown, just JSON):
 {
   "headline": "A professional headline (max 10 words)",
   "summary": "A 2-3 sentence professional summary tailored to ${field}",
-  "skills": ["skill1", "skill2", "skill3", "skill4", "skill5"],
+  "skills": ["skill1", "skill2", "skill3", "skill4", "skill5", "skill6", "skill7", "skill8"],
   "experience": [
     {
       "title": "Job title",
       "company": "Company name",
       "duration": "Duration string",
-      "description": "1-2 sentence description of relevant achievements"
+      "description": "2-3 sentence description of relevant achievements with metrics"
     }
   ]
 }
 
-Make the content specific to ${field} and professional.`;
+${context?.jobDescription ? 'IMPORTANT: Tailor the CV specifically to match the job description provided. Use relevant keywords from it.' : ''}
+Make the content specific to ${field}, professional, and optimized for ATS systems.`;
 
   try {
     console.log('[CLAUDE] Sending request to api.anthropic.com');
@@ -118,7 +134,21 @@ Make the content specific to ${field} and professional.`;
 };
 export const cvRouter = router({
   generate: protectedProcedure
-    .input(z.object({ fields: z.array(z.string()).min(1).max(3) }))
+    .input(z.object({
+      fields: z.array(z.string()).min(1).max(3),
+      context: z.object({
+        name: z.string().optional(),
+        jobTitle: z.string().optional(),
+        company: z.string().optional(),
+        jobDescription: z.string().optional(),
+        currentRole: z.string().optional(),
+        experience: z.string().optional(),
+        skills: z.string().optional(),
+        education: z.string().optional(),
+        achievements: z.string().optional(),
+        languages: z.string().optional(),
+      }).optional(),
+    }))
     .mutation(async ({ input, ctx }) => {
       console.log(`[CV] Starting CV generation for user: ${ctx.user.id}`);
       console.log(`[CV] Requested fields: ${input.fields.join(', ')}`);
@@ -151,7 +181,7 @@ export const cvRouter = router({
 
         for (const field of input.fields) {
           console.log(`[CV] Processing field: ${field}`);
-          const versionData = await callClaudeAPI(field);
+          const versionData = await callClaudeAPI(field, input.context);
           versions.push(versionData);
           console.log(`[CV] Successfully generated CV for field: ${field}`);
         }

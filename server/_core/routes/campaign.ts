@@ -140,6 +140,42 @@ Response as JSON only:
 }
 
 export const campaignRouter = router({
+  previewMessages: protectedProcedure
+    .input(
+      z.object({
+        jobTitle: z.string().min(1),
+        targetCompanies: z.array(z.string()).min(1).max(10),
+        language: z.enum(['ar', 'en']),
+      })
+    )
+    .mutation(async ({ input }) => {
+      try {
+        console.log('[CAMPAIGN] Generating preview messages for', input.targetCompanies.length, 'companies');
+        const emailMap = await generateEmailsWithClaude(
+          input.targetCompanies,
+          input.jobTitle,
+          input.language
+        );
+        const messages: Array<{ company: string; subject: string; body: string }> = [];
+        for (const company of input.targetCompanies) {
+          const msg = emailMap.get(company);
+          if (msg) {
+            messages.push({ company, subject: msg.subject, body: msg.body });
+          } else {
+            messages.push({ company, subject: '', body: '' });
+          }
+        }
+        console.log('[CAMPAIGN] Preview generated:', messages.length, 'messages');
+        return { messages };
+      } catch (err: any) {
+        console.error('[CAMPAIGN] Preview error:', err?.message);
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: `Preview failed: ${err?.message || 'Unknown'}`,
+        });
+      }
+    }),
+
   list: protectedProcedure.query(async ({ ctx }) => {
     try {
       console.log('[CAMPAIGN] Fetching campaigns for user', ctx.user.id);

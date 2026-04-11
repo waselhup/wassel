@@ -48,12 +48,17 @@ export const trpc = {
     history: () => trpcQuery<any[]>('linkedin.history'),
   },
   cv: {
-    generate: (fields: string[]) =>
-      trpcMutation<{ versions: any[] }>('cv.generate', { fields }),
+    generate: (fields: string[], context?: Record<string, string>) =>
+      trpcMutation<{ versions: any[]; tokensRemaining: number }>('cv.generate', { fields, context }),
     history: () => trpcQuery<any[]>('cv.history'),
   },
   campaign: {
     list: () => trpcQuery<any[]>('campaign.list'),
+    previewMessages: (input: {
+      jobTitle: string;
+      targetCompanies: string[];
+      language: 'ar' | 'en';
+    }) => trpcMutation<{ messages: Array<{ company: string; subject: string; body: string }> }>('campaign.previewMessages', input),
     create: (input: {
       campaignName: string;
       jobTitle: string;

@@ -367,7 +367,18 @@
     "saveAnalysis": "Save Analysis",
     "historyLabel": "Analysis History",
     "insufficientTokens": "Insufficient tokens",
-    "insufficientTokensDesc": "You need more tokens. Buy tokens"
+    "insufficientTokensDesc": "You need more tokens. Buy tokens",
+    "analyzeMyProfile": "Analyze My Profile",
+    "invalidUrl": "Invalid LinkedIn URL",
+    "analysisFailed": "Analysis failed. Please try again.",
+    "needMore": "You need {{count}} more tokens.",
+    "buyTokens": "Buy tokens",
+    "stepFetching": "Fetching profile data...",
+    "stepAnalyzing": "Analyzing with AI...",
+    "stepGenerating": "Generating suggestions...",
+    "strengthsLabel": "Strengths",
+    "weaknessesLabel": "Weaknesses",
+    "historyDesc": "Your previous analyses"
   },
   "cvTailor": {
     "title": "CV Tailor",

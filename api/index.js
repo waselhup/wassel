@@ -43780,7 +43780,7 @@ var linkedinRouter = router({
 });
 
 // server/_core/routes/cv.ts
-var callClaudeAPI = async (field) => {
+var callClaudeAPI = async (field, context) => {
   console.log(`[CLAUDE] Starting API call for field: ${field}`);
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
@@ -43790,24 +43790,38 @@ var callClaudeAPI = async (field) => {
       message: "Claude API key not configured"
     });
   }
-  const prompt = `You are a professional CV optimizer. Generate a tailored CV version for someone specializing in: ${field}
-
+  const contextBlock = context ? `
+Candidate Info:
+- Name: ${context.name || "Not provided"}
+- Target Job: ${context.jobTitle || field}
+- Target Company: ${context.company || "Not specified"}
+- Current Role: ${context.currentRole || "Not provided"}
+- Experience: ${context.experience || "Not provided"} years
+- Skills: ${context.skills || "Not provided"}
+- Education: ${context.education || "Not provided"}
+- Achievements: ${context.achievements || "Not provided"}
+- Languages: ${context.languages || "Not provided"}
+- Job Description: ${context.jobDescription || "Not provided"}
+` : "";
+  const prompt = `You are a professional CV/resume optimizer specializing in the Saudi/GCC job market. Generate a tailored CV version for: ${field}
+${contextBlock}
 Return a JSON object with EXACTLY this structure (no markdown, just JSON):
 {
   "headline": "A professional headline (max 10 words)",
   "summary": "A 2-3 sentence professional summary tailored to ${field}",
-  "skills": ["skill1", "skill2", "skill3", "skill4", "skill5"],
+  "skills": ["skill1", "skill2", "skill3", "skill4", "skill5", "skill6", "skill7", "skill8"],
   "experience": [
     {
       "title": "Job title",
       "company": "Company name",
       "duration": "Duration string",
-      "description": "1-2 sentence description of relevant achievements"
+      "description": "2-3 sentence description of relevant achievements with metrics"
     }
   ]
 }
 
-Make the content specific to ${field} and professional.`;
+${context?.jobDescription ? "IMPORTANT: Tailor the CV specifically to match the job description provided. Use relevant keywords from it." : ""}
+Make the content specific to ${field}, professional, and optimized for ATS systems.`;
   try {
     console.log("[CLAUDE] Sending request to api.anthropic.com");
     const response = await fetch("https://api.anthropic.com/v1/messages", {
@@ -43865,7 +43879,21 @@ Make the content specific to ${field} and professional.`;
   }
 };
 var cvRouter = router({
-  generate: protectedProcedure.input(external_exports.object({ fields: external_exports.array(external_exports.string()).min(1).max(3) })).mutation(async ({ input, ctx }) => {
+  generate: protectedProcedure.input(external_exports.object({
+    fields: external_exports.array(external_exports.string()).min(1).max(3),
+    context: external_exports.object({
+      name: external_exports.string().optional(),
+      jobTitle: external_exports.string().optional(),
+      company: external_exports.string().optional(),
+      jobDescription: external_exports.string().optional(),
+      currentRole: external_exports.string().optional(),
+      experience: external_exports.string().optional(),
+      skills: external_exports.string().optional(),
+      education: external_exports.string().optional(),
+      achievements: external_exports.string().optional(),
+      languages: external_exports.string().optional()
+    }).optional()
+  })).mutation(async ({ input, ctx }) => {
     console.log(`[CV] Starting CV generation for user: ${ctx.user.id}`);
     console.log(`[CV] Requested fields: ${input.fields.join(", ")}`);
     try {
@@ -43886,7 +43914,7 @@ var cvRouter = router({
       const versions = [];
       for (const field of input.fields) {
         console.log(`[CV] Processing field: ${field}`);
-        const versionData = await callClaudeAPI(field);
+        const versionData = await callClaudeAPI(field, input.context);
         versions.push(versionData);
         console.log(`[CV] Successfully generated CV for field: ${field}`);
       }
@@ -44046,6 +44074,39 @@ Response as JSON only:
   }
 }
 var campaignRouter = router({
+  previewMessages: protectedProcedure.input(
+    external_exports.object({
+      jobTitle: external_exports.string().min(1),
+      targetCompanies: external_exports.array(external_exports.string()).min(1).max(10),
+      language: external_exports.enum(["ar", "en"])
+    })
+  ).mutation(async ({ input }) => {
+    try {
+      console.log("[CAMPAIGN] Generating preview messages for", input.targetCompanies.length, "companies");
+      const emailMap = await generateEmailsWithClaude(
+        input.targetCompanies,
+        input.jobTitle,
+        input.language
+      );
+      const messages = [];
+      for (const company of input.targetCompanies) {
+        const msg = emailMap.get(company);
+        if (msg) {
+          messages.push({ company, subject: msg.subject, body: msg.body });
+        } else {
+          messages.push({ company, subject: "", body: "" });
+        }
+      }
+      console.log("[CAMPAIGN] Preview generated:", messages.length, "messages");
+      return { messages };
+    } catch (err) {
+      console.error("[CAMPAIGN] Preview error:", err?.message);
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: `Preview failed: ${err?.message || "Unknown"}`
+      });
+    }
+  }),
   list: protectedProcedure.query(async ({ ctx }) => {
     try {
       console.log("[CAMPAIGN] Fetching campaigns for user", ctx.user.id);
