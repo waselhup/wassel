@@ -1,0 +1,1 @@
+const fs=require('fs');const f=fs.readFileSync('C:\\Users\\WIN11-24H2GPT\\Desktop\\wassel-v2\\api\\index.js','utf8');console.log('Has auth/google:',f.includes('auth/google'));console.log('Has GOOGLE_CLIENT:',f.includes('GOOGLE_CLIENT'));console.log('Has gmail.send:',f.includes('gmail.send'));console.log('File size:',f.length);

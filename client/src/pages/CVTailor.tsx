@@ -1,4 +1,4 @@
-ï»¿import { useState, useRef } from "react";
+import { useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { FileText, Download, Sparkles, Loader2, CheckCircle2, Briefcase, Target, Palette, Upload } from "lucide-react";
