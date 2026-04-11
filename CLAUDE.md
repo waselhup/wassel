@@ -77,13 +77,34 @@ DashboardLayout.tsx fetches token_balance and plan directly from Supabase
 on every navigation (useEffect on [user?.id, location]).
 Never rely solely on AuthContext profile - it can be stale.
 
-## Current Status (Updated 2026-04-11)
-Working: Dashboard, Auth, DashboardLayout (fresh token/plan from Supabase)
-Working: LinkedIn Analyzer (analyze button, auto-fill, progress bar, history, results)
-Working: CV Tailor (form-based input, context sent to Claude, results display)
-Working: Campaigns (list, create 5-step flow, AI message preview, inline editing, launch)
-Working: Token balance and plan display on ALL pages (direct Supabase fetch)
+## Current Status (Updated 2026-04-11 14:00 AST)
+Working: Dashboard, Auth, DashboardLayout (fresh token/plan from Supabase, no flicker)
+Working: LinkedIn Analyzer (URL validator accepts all formats, auto-fill, progress bar, save to KB)
+Working: CV Tailor (form-based input, context to Claude, 60s timeout, error display)
+Working: Campaigns (list, create 5-step flow, AI preview with 45s timeout, retry on error)
+Working: Token balance and plan display on ALL pages (direct Supabase, no flicker)
+Working: Knowledge Base page (/app/knowledge) with NotebookLM export
+Working: Lazy loading for all dashboard pages (React.Suspense)
+Working: Smooth nav transitions (transition-all duration-150)
 Pending: Moyasar payment integration
 Pending: Early Access / Pricing page
 Pending: Privacy Policy / ToS pages
 Pending: Analytics Dashboard
+
+## NotebookLM Integration
+- Page: /app/knowledge (KnowledgeBase.tsx)
+- Server: knowledge router (list, save, delete, export)
+- DB: knowledge_items table with RLS
+- Export: JSON file with LinkedIn analyses, campaigns, CV versions, market tips
+- Save from LinkedIn Analyzer: "Save to Knowledge Base" button after analysis
+- Skill docs: skills/notebooklm/SKILL.md
+
+## Last Deploy
+Commit: 9c0be47 - feat: Knowledge Base page with NotebookLM export integration
+Pushed to master at 2026-04-11. Vercel auto-deploys.
+
+## Next Steps
+1. Moyasar payment integration (Saudi-compatible)
+2. Early Access / Pricing page
+3. Privacy Policy / ToS pages
+4. Analytics Dashboard
