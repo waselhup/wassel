@@ -8,7 +8,15 @@
     "signup": "Sign Up",
     "dashboard": "Dashboard",
     "logout": "Logout",
-    "language": "Language"
+    "language": "Language",
+    "balance": "Balance",
+    "guest": "Guest",
+    "plan": {
+      "free": "Free",
+      "starter": "Starter",
+      "pro": "Pro",
+      "elite": "Elite"
+    }
   },
   "hero": {
     "title": "Wassel - Your Smart Platform for Career Success",

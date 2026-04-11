@@ -7,6 +7,7 @@ import {
   Sparkles, Menu, X, LogOut, Globe2
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { trpcQuery } from "@/lib/trpc";
 
 interface Props { children: ReactNode; tokens?: number }
 
@@ -16,9 +17,10 @@ export default function DashboardLayout({ children, tokens: tokensProp }: Props)
   const [mobileOpen, setMobileOpen] = useState(false);
   const isRTL = i18n.language === "ar";
   const { user, profile, signOut, refreshProfile } = useAuth();
+  const [trpcBalance, setTrpcBalance] = useState<number | null>(null);
 
-  // Always read balance from profile (source of truth). Fallback to prop, then 0.
-  const tokens = profile?.token_balance ?? tokensProp ?? 0;
+  // Always read balance from profile (source of truth). Fallback to tRPC, then prop, then 0.
+  const tokens = profile?.token_balance ?? trpcBalance ?? tokensProp ?? 0;
 
   // Refresh profile every time user navigates (keeps sidebar balance in sync)
   useEffect(() => {
@@ -26,6 +28,17 @@ export default function DashboardLayout({ children, tokens: tokensProp }: Props)
       refreshProfile();
     }
   }, [location, user]);
+
+  // Fallback: fetch token balance via tRPC if profile doesn't have it
+  useEffect(() => {
+    if (user && (profile?.token_balance === undefined || profile?.token_balance === null)) {
+      trpcQuery<{ balance: number }>("token.balance")
+        .then((data) => {
+          if (data?.balance !== undefined) setTrpcBalance(data.balance);
+        })
+        .catch(() => {});
+    }
+  }, [user, profile?.token_balance]);
 
   const nav = [
     { href: "/app", icon: Home, label: t("nav.home", "الرئيسية") },
@@ -99,7 +112,10 @@ export default function DashboardLayout({ children, tokens: tokensProp }: Props)
               {user?.email || t("nav.guest", "زائر")}
             </div>
             <span className="text-[10px] font-semibold text-[#ff6b35] uppercase">
-              {t("nav.plan.free", "مجاني")}
+              {profile?.plan === 'elite' ? t("nav.plan.elite", "إليت")
+                : profile?.plan === 'pro' ? t("nav.plan.pro", "احترافي")
+                : profile?.plan === 'starter' ? t("nav.plan.starter", "مبتدئ")
+                : t("nav.plan.free", "مجاني")}
             </span>
           </div>
           <button
