@@ -219,10 +219,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, page
                   className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-[var(--bg-surface)] transition-colors"
                 >
                   <div className="w-8 h-8 rounded-full bg-[var(--accent-secondary)] flex items-center justify-center text-white font-semibold">
-                    {profile?.full_name?.charAt(0).toUpperCase() || 'U'}
+                    {profile?.full_name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || '?'}
                   </div>
                   <span className="hidden sm:inline text-sm font-medium text-[var(--text-primary)]">
-                    {profile?.full_name?.split(' ')[0] || 'User'}
+                    {profile?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || ''}
                   </span>
                   <ChevronDown className="w-4 h-4 text-[var(--text-secondary)]" />
                 </button>

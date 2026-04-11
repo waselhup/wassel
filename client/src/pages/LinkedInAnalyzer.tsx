@@ -258,7 +258,7 @@ const LinkedInAnalyzer: React.FC = () => {
   };
 
   return (
-    <DashboardLayout pageTitle={t('sidebar.linkedin')}>
+    <DashboardLayout pageTitle={t('linkedInAnalyzer.title')}>
       <motion.div
         variants={containerVariants}
         initial="hidden"
@@ -311,7 +311,7 @@ const LinkedInAnalyzer: React.FC = () => {
         <motion.div variants={itemVariants}>
           <Card>
             <CardHeader>
-              <CardTitle className="font-cairo">{t('sidebar.linkedin')}</CardTitle>
+              <CardTitle className="font-cairo">{t('linkedInAnalyzer.title')}</CardTitle>
               <p className="text-sm text-[var(--text-secondary)] mt-2">
                 {t('linkedInAnalyzer.description', 'حلل ملفك الشخصي على LinkedIn واحصل على اقتراحات لتحسينه')}
               </p>

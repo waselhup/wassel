@@ -85,7 +85,7 @@ export default function CVTailor() {
   }
 
   return (
-    <DashboardLayout>
+    <DashboardLayout pageTitle={t('cvTailor.title')}>
       <div className="p-6 md:p-8 space-y-8 max-w-6xl">
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
           <h1 className="text-2xl md:text-3xl font-bold text-[#1a1a2e] flex items-center gap-3">
@@ -161,11 +161,11 @@ export default function CVTailor() {
             {versions.map((v, i) => (
               <motion.div key={i} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
                 className="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
-                <div className="bg-gradient-to-r from-[#1e3a5f] to-[#2c5282] px-6 py-4">
+                <div className="bg-gradient-to-r from-[#1e3a5f] to-[#2c5282] px-5 py-3">
                   <h4 className="text-white font-bold text-lg">{v.headline || v.fieldName || form.jobTitle}</h4>
                   <p className="text-white/70 text-sm mt-1">{v.fieldName || `Version ${i + 1}`}</p>
                 </div>
-                <div className="p-6 space-y-5">
+                <div className="p-4 space-y-4">
                   {v.summary && (
                     <div>
                       <h5 className="text-xs font-bold text-gray-400 uppercase mb-2">{t("cv.section.summary", "الملخص المهني")}</h5>

@@ -1,4 +1,4 @@
-﻿{
+{
   "nav": {
     "home": "Home",
     "features": "Features",
@@ -16,7 +16,14 @@
       "starter": "Starter",
       "pro": "Pro",
       "elite": "Elite"
-    }
+    },
+    "linkedin": "LinkedIn Analysis",
+    "cv": "Resume",
+    "campaigns": "Campaigns",
+    "tokens": "Tokens",
+    "profile": "Profile",
+    "knowledge": "Knowledge Base",
+    "setup": "Account Setup"
   },
   "hero": {
     "title": "Wassel - Your Smart Platform for Career Success",
@@ -283,7 +290,8 @@
     "cv": "Resume",
     "campaigns": "Campaigns",
     "tokens": "Tokens",
-    "profile": "Profile"
+    "profile": "Profile",
+    "knowledge": "Knowledge Base"
   },
   "onboarding": {
     "title": "Job Title",
@@ -350,7 +358,7 @@
     "description": "Get AI-powered insights to optimize your LinkedIn profile",
     "urlLabel": "LinkedIn Profile URL",
     "urlPlaceholder": "your-profile",
-    "cost": "Cost: {{count}} tokens",
+    "cost": "Cost: 5 tokens",
     "analyze": "Analyze LinkedIn Profile",
     "analyzing": "Analyzing...",
     "scoreLabel": "Your LinkedIn Score",
@@ -617,9 +625,7 @@
     "opens": "Opens",
     "replies": "Replies",
     "openRate": "open rate"
-  }
-,
-  "sidebar": { "knowledge": "Knowledge Base" },
+  },
   "kb": {
     "title": "Knowledge Base",
     "subtitle": "Collect your analyses and campaign results to build a smart knowledge base",
@@ -629,9 +635,24 @@
     "openNotebook": "Open NotebookLM",
     "empty": "No items yet. Analyze your LinkedIn profile or launch a campaign to start building your knowledge base.",
     "marketTips": "Saudi Market Insights",
-    "tab": { "all": "All", "linkedin": "LinkedIn Analyses", "campaigns": "Campaign Results", "insights": "Market Insights" },
-    "type": { "linkedin": "LinkedIn Analysis", "campaign": "Campaign Result", "insight": "Market Insight" },
+    "tab": {
+      "all": "All",
+      "linkedin": "LinkedIn Analyses",
+      "campaigns": "Campaign Results",
+      "insights": "Market Insights"
+    },
+    "type": {
+      "linkedin": "LinkedIn Analysis",
+      "campaign": "Campaign Result",
+      "insight": "Market Insight"
+    },
     "saveToKb": "Save to Knowledge Base",
     "saved": "Saved"
+  },
+  "plan": {
+    "free": "Free",
+    "starter": "Starter",
+    "pro": "Pro",
+    "elite": "Elite"
   }
 }

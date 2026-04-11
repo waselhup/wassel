@@ -1,4 +1,4 @@
-﻿{
+{
   "nav": {
     "home": "الرئيسية",
     "features": "المميزات",
@@ -16,7 +16,14 @@
       "starter": "مبتدئ",
       "pro": "احترافي",
       "elite": "إليت"
-    }
+    },
+    "linkedin": "تحليل LinkedIn",
+    "cv": "السير الذاتية",
+    "campaigns": "الحملات",
+    "tokens": "الرموز",
+    "profile": "الملف الشخصي",
+    "knowledge": "قاعدة المعرفة",
+    "setup": "الإعدادات الأولية"
   },
   "hero": {
     "title": "وصّل - منصتك الذكية لتطوير حضورك المهني",
@@ -278,12 +285,13 @@
   },
   "sidebar": {
     "home": "الرئيسية",
-    "setup": "إعدادات الحساب",
+    "setup": "الإعدادات الأولية",
     "linkedin": "تحليل LinkedIn",
-    "cv": "السيرة الذاتية",
+    "cv": "السير الذاتية",
     "campaigns": "الحملات",
     "tokens": "الرموز",
-    "profile": "الملف الشخصي"
+    "profile": "الملف الشخصي",
+    "knowledge": "قاعدة المعرفة"
   },
   "onboarding": {
     "title": "المسمى الوظيفي",
@@ -350,7 +358,7 @@
     "description": "احصل على رؤى مدعومة بالذكاء الاصطناعي لتحسين ملفك على LinkedIn",
     "urlLabel": "رابط ملف LinkedIn",
     "urlPlaceholder": "ملفك الشخصي",
-    "cost": "التكلفة: {{count}} رموز",
+    "cost": "التكلفة: 5 رموز",
     "analyze": "تحليل ملف LinkedIn",
     "analyzing": "جاري التحليل...",
     "scoreLabel": "نقاط LinkedIn الخاصة بك",
@@ -617,9 +625,7 @@
     "opens": "فتح",
     "replies": "رد",
     "openRate": "فتح"
-  }
-,
-  "sidebar": { "knowledge": "قاعدة المعرفة" },
+  },
   "kb": {
     "title": "قاعدة المعرفة",
     "subtitle": "اجمع تحليلاتك ونتائج حملاتك لبناء قاعدة معرفة ذكية",
@@ -629,9 +635,24 @@
     "openNotebook": "افتح NotebookLM",
     "empty": "لا توجد عناصر بعد. حلل ملفك على LinkedIn أو أطلق حملة لبدء بناء قاعدة معرفتك.",
     "marketTips": "رؤى السوق السعودي",
-    "tab": { "all": "الكل", "linkedin": "تحليلات LinkedIn", "campaigns": "نتائج الحملات", "insights": "رؤى السوق" },
-    "type": { "linkedin": "تحليل LinkedIn", "campaign": "نتيجة حملة", "insight": "رؤية سوقية" },
+    "tab": {
+      "all": "الكل",
+      "linkedin": "تحليلات LinkedIn",
+      "campaigns": "نتائج الحملات",
+      "insights": "رؤى السوق"
+    },
+    "type": {
+      "linkedin": "تحليل LinkedIn",
+      "campaign": "نتيجة حملة",
+      "insight": "رؤية سوقية"
+    },
     "saveToKb": "حفظ في قاعدة المعرفة",
     "saved": "تم الحفظ"
+  },
+  "plan": {
+    "free": "مجاني",
+    "starter": "مبتدئ",
+    "pro": "احترافي",
+    "elite": "نخبة"
   }
 }
