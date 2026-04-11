@@ -1,4 +1,4 @@
-import { CreateExpressContextOptions } from '@trpc/server/adapters/express';
+﻿import { CreateExpressContextOptions } from '@trpc/server/adapters/express';
 import { createClient, SupabaseClient, User } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://hiqotmimlgsrsnovtopd.supabase.co';

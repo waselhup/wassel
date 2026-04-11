@@ -1,4 +1,4 @@
-{
+﻿{
   "nav": {
     "home": "Home",
     "features": "Features",
@@ -337,6 +337,7 @@
     "transactions": "transactions"
   },
   "linkedInAnalyzer": {
+    "tokensAvailable": "tokens available",
     "title": "LinkedIn Analyzer",
     "description": "Get AI-powered insights to optimize your LinkedIn profile",
     "urlLabel": "LinkedIn Profile URL",
@@ -599,3 +600,4 @@
     "openRate": "open rate"
   }
 }
+

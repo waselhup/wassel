@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__supabase__get_publishable_keys",
+      "mcp__supabase__get_project_url"
+    ]
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "supabase"
+  ]
+}

@@ -1,4 +1,4 @@
-{
+﻿{
   "nav": {
     "home": "الرئيسية",
     "features": "المميزات",
@@ -337,6 +337,7 @@
     "transactions": "معاملات"
   },
   "linkedInAnalyzer": {
+    "tokensAvailable": "رمز متاح",
     "title": "محلل LinkedIn",
     "description": "احصل على رؤى مدعومة بالذكاء الاصطناعي لتحسين ملفك على LinkedIn",
     "urlLabel": "رابط ملف LinkedIn",
