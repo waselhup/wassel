@@ -669,7 +669,7 @@ const LinkedInAnalyzer: React.FC = () => {
               <motion.div variants={itemVariants} className="flex gap-3 flex-wrap print:hidden">
                 <Button
                   onClick={handleCreateCampaign}
-                  className="flex-1 min-w-[140px] bg-[#0A8F84] hover:bg-[#e55a2b] text-white"
+                  className="flex-1 min-w-[140px] bg-[#0A8F84] hover:bg-[#064E49] text-white"
                 >
                   <Megaphone className="w-4 h-4 me-2" />
                   {t('linkedInAnalyzer.createCampaign', 'Create Campaign')}
@@ -685,7 +685,7 @@ const LinkedInAnalyzer: React.FC = () => {
                 <Button
                   onClick={saveToKnowledgeBase}
                   disabled={savedToKb}
-                  className="flex-1 min-w-[120px] bg-[#0B1220] hover:bg-[#2c5282] text-white"
+                  className="flex-1 min-w-[120px] bg-[var(--wsl-teal)] hover:bg-[var(--wsl-teal-dark)] text-white"
                 >
                   <BookOpen className="w-4 h-4 me-2" />
                   {savedToKb ? t('kb.saved') : t('kb.saveToKb')}

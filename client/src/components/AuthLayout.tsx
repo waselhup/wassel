@@ -24,14 +24,14 @@ export default function AuthLayout({ children, title, subtitle }: Props) {
       >
         <div className="w-full max-w-md">
           <div className="flex items-center gap-3 mb-10">
-            <div className="w-11 h-11 rounded-xl bg-[#1e3a5f] flex items-center justify-center">
-              <Sparkles className="w-6 h-6 text-[#ff6b35]" />
+            <div className="w-11 h-11 rounded-xl bg-[#064E49] flex items-center justify-center">
+              <Sparkles className="w-6 h-6 text-[#0A8F84]" />
             </div>
-            <span className="text-2xl font-extrabold text-[#1e3a5f]">
+            <span className="text-2xl font-extrabold text-[#064E49]">
               {t("brand.name", "وصّل")}
             </span>
           </div>
-          <h1 className="text-3xl md:text-4xl font-extrabold text-[#1e3a5f] mb-2">{title}</h1>
+          <h1 className="text-3xl md:text-4xl font-extrabold text-[#064E49] mb-2">{title}</h1>
           <p className="text-[#6b7280] mb-8">{subtitle}</p>
           {children}
         </div>
@@ -42,10 +42,10 @@ export default function AuthLayout({ children, title, subtitle }: Props) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.7, delay: 0.2 }}
-        className="hidden lg:flex w-1/2 relative overflow-hidden bg-gradient-to-br from-[#1e3a5f] via-[#152a47] to-[#1e3a5f] text-white items-center justify-center p-12"
+        className="hidden lg:flex w-1/2 relative overflow-hidden bg-gradient-to-br from-[#064E49] via-[#043530] to-[#064E49] text-white items-center justify-center p-12"
       >
-        <div className="absolute top-20 -end-20 w-96 h-96 rounded-full bg-[#ff6b35]/20 blur-3xl" />
-        <div className="absolute bottom-0 -start-20 w-96 h-96 rounded-full bg-[#ff6b35]/10 blur-3xl" />
+        <div className="absolute top-20 -end-20 w-96 h-96 rounded-full bg-[#0A8F84]/20 blur-3xl" />
+        <div className="absolute bottom-0 -start-20 w-96 h-96 rounded-full bg-[#0A8F84]/10 blur-3xl" />
 
         <div className="relative max-w-md space-y-10">
           <div>
@@ -70,8 +70,8 @@ export default function AuthLayout({ children, title, subtitle }: Props) {
                   transition={{ delay: 0.4 + i * 0.1 }}
                   className="flex gap-4"
                 >
-                  <div className="w-11 h-11 rounded-xl bg-[#ff6b35]/20 flex items-center justify-center flex-shrink-0">
-                    <Icon className="w-5 h-5 text-[#ff6b35]" />
+                  <div className="w-11 h-11 rounded-xl bg-[#0A8F84]/20 flex items-center justify-center flex-shrink-0">
+                    <Icon className="w-5 h-5 text-[#0A8F84]" />
                   </div>
                   <div>
                     <div className="font-bold mb-1">{f.title}</div>
@@ -86,7 +86,7 @@ export default function AuthLayout({ children, title, subtitle }: Props) {
             <div className="flex items-center gap-2 text-sm">
               <div className="flex -space-x-2 rtl:space-x-reverse">
                 {[1,2,3,4].map(i => (
-                  <div key={i} className="w-8 h-8 rounded-full border-2 border-[#1e3a5f] bg-gradient-to-br from-[#ff6b35] to-[#ff8a5c]" />
+                  <div key={i} className="w-8 h-8 rounded-full border-2 border-[#064E49] bg-gradient-to-br from-[#0A8F84] to-[#12B5A8]" />
                 ))}
               </div>
               <div className="text-white/80">
@@ -95,7 +95,7 @@ export default function AuthLayout({ children, title, subtitle }: Props) {
               </div>
             </div>
             <div className="mt-3 flex items-center gap-1 text-xs text-white/60">
-              {[1,2,3,4,5].map(i => <Star key={i} className="w-3 h-3 fill-[#ff6b35] text-[#ff6b35]" />)}
+              {[1,2,3,4,5].map(i => <Star key={i} className="w-3 h-3 fill-[#0A8F84] text-[#0A8F84]" />)}
               <span className="ms-2">4.9/5 · {t("auth.rating", "تقييم المستخدمين")}</span>
             </div>
           </div>

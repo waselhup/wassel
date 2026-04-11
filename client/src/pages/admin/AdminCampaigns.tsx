@@ -77,7 +77,7 @@ const AdminCampaigns: React.FC = () => {
     draft: 'bg-gray-500',
     running: 'bg-blue-500',
     completed: 'bg-green-500',
-    paused: 'bg-orange-500',
+    paused: 'bg-amber-500',
   };
 
   const filteredCampaigns = campaigns.filter((campaign) =>

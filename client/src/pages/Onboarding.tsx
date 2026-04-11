@@ -34,7 +34,7 @@ export default function Onboarding() {
 
   return (
     <div className="min-h-screen bg-[#fafafa] flex items-center justify-center p-4 relative overflow-hidden">
-      <div className="absolute top-10 -start-20 w-96 h-96 rounded-full bg-orange-100/40 blur-3xl" />
+      <div className="absolute top-10 -start-20 w-96 h-96 rounded-full bg-teal-100/40 blur-3xl" />
       <div className="absolute bottom-10 -end-20 w-96 h-96 rounded-full bg-blue-100/40 blur-3xl" />
 
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
@@ -58,11 +58,11 @@ export default function Onboarding() {
               transition={{ duration: 0.3 }}
             >
               <div className="flex justify-center mb-5">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#0A8F84] to-[#f7931e] flex items-center justify-center shadow-xl shadow-[#0A8F84]/30">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[var(--wsl-teal)] to-[var(--wsl-gold)] flex items-center justify-center shadow-xl shadow-[#0A8F84]/30">
                   {(() => { const Icon = steps[step].icon; return <Icon className="w-8 h-8 text-white" />; })()}
                 </div>
               </div>
-              <h2 className="text-2xl font-bold text-[#1a1a2e] text-center mb-2">{steps[step].title}</h2>
+              <h2 className="text-2xl font-bold text-[var(--wsl-ink)] text-center mb-2">{steps[step].title}</h2>
               <p className="text-gray-500 text-center mb-7">{steps[step].desc}</p>
 
               {step === 0 && (
@@ -75,7 +75,7 @@ export default function Onboarding() {
                 <div className="grid grid-cols-2 gap-3">
                   {roles.map((r) => (
                     <button key={r} onClick={() => set("role", r)}
-                      className={`p-4 rounded-xl border-2 text-sm font-semibold transition ${data.role === r ? "border-[#0A8F84] bg-orange-50 text-[#0A8F84]" : "border-gray-200 text-gray-700 hover:border-gray-300"}`}>
+                      className={`p-4 rounded-xl border-2 text-sm font-semibold transition ${data.role === r ? "border-[#0A8F84] bg-teal-50 text-[#0A8F84]" : "border-gray-200 text-gray-700 hover:border-gray-300"}`}>
                       {r}
                     </button>
                   ))}
@@ -85,7 +85,7 @@ export default function Onboarding() {
                 <div className="grid grid-cols-1 gap-3">
                   {goals.map((g) => (
                     <button key={g} onClick={() => set("goal", g)}
-                      className={`p-4 rounded-xl border-2 text-sm font-semibold transition text-start ${data.goal === g ? "border-[#0A8F84] bg-orange-50 text-[#0A8F84]" : "border-gray-200 text-gray-700 hover:border-gray-300"}`}>
+                      className={`p-4 rounded-xl border-2 text-sm font-semibold transition text-start ${data.goal === g ? "border-[#0A8F84] bg-teal-50 text-[#0A8F84]" : "border-gray-200 text-gray-700 hover:border-gray-300"}`}>
                       {g}
                     </button>
                   ))}
@@ -104,7 +104,7 @@ export default function Onboarding() {
               <ChevronRight className="w-4 h-4 rtl:rotate-180" /> {t("on.back", "رجوع")}
             </button>
             <button onClick={() => setStep(step + 1)}
-              className="px-6 py-3 rounded-xl bg-[#0A8F84] hover:bg-[#e55a2b] text-white font-semibold shadow-lg shadow-[#0A8F84]/30 flex items-center gap-2 transition">
+              className="px-6 py-3 rounded-xl bg-[#0A8F84] hover:bg-[#064E49] text-white font-semibold shadow-lg shadow-[#0A8F84]/30 flex items-center gap-2 transition">
               {step === steps.length - 1 ? t("on.finish", "إنهاء") : t("on.next", "التالي")}
               <ChevronLeft className="w-4 h-4 rtl:rotate-180" />
             </button>
@@ -125,10 +125,10 @@ function Done({ onFinish }: { onFinish: () => void }) {
       >
         <CheckCircle2 className="w-10 h-10 text-emerald-600" />
       </motion.div>
-      <h2 className="text-2xl font-bold text-[#1a1a2e] mb-2">{t("on.done.title", "مرحبًا بك في وصّل!")}</h2>
+      <h2 className="text-2xl font-bold text-[var(--wsl-ink)] mb-2">{t("on.done.title", "مرحبًا بك في وصّل!")}</h2>
       <p className="text-gray-500 mb-6">{t("on.done.desc", "حسابك جاهز. لنبدأ رحلتك نحو الفرصة التالية")}</p>
       <button onClick={onFinish}
-        className="px-8 py-3 rounded-xl bg-[#0A8F84] hover:bg-[#e55a2b] text-white font-semibold shadow-lg shadow-[#0A8F84]/30 inline-flex items-center gap-2 transition">
+        className="px-8 py-3 rounded-xl bg-[#0A8F84] hover:bg-[#064E49] text-white font-semibold shadow-lg shadow-[#0A8F84]/30 inline-flex items-center gap-2 transition">
         <Sparkles className="w-5 h-5" /> {t("on.start", "ابدأ الآن")}
       </button>
     </motion.div>
@@ -137,7 +137,7 @@ function Done({ onFinish }: { onFinish: () => void }) {
 
 function Confetti() {
   const pieces = Array.from({ length: 24 });
-  const colors = ["#0A8F84", "#f7931e", "#0B1220", "#10b981", "#a855f7"];
+  const colors = ["#0A8F84", "#C9922A", "#064E49", "#10b981", "#12B5A8"];
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden">
       {pieces.map((_, i) => (

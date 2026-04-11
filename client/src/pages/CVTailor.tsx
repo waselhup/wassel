@@ -83,8 +83,8 @@ export default function CVTailor() {
   ];
 
   const templates: { key: Template; name: string; desc: string; color: string; icon: any }[] = [
-    { key: "modern", name: t("cv.t.modern", "عصري"), desc: t("cv.t.modernD", "تصميم نظيف بألوان جريئة"), color: "from-[#0A8F84] to-[#f7931e]", icon: Sparkles },
-    { key: "classic", name: t("cv.t.classic", "كلاسيكي"), desc: t("cv.t.classicD", "احترافي وملائم للقطاعات الرسمية"), color: "from-[#0B1220] to-[#2c5282]", icon: Briefcase },
+    { key: "modern", name: t("cv.t.modern", "عصري"), desc: t("cv.t.modernD", "تصميم نظيف بألوان جريئة"), color: "from-[var(--wsl-teal)] to-[var(--wsl-gold)]", icon: Sparkles },
+    { key: "classic", name: t("cv.t.classic", "كلاسيكي"), desc: t("cv.t.classicD", "احترافي وملائم للقطاعات الرسمية"), color: "from-[var(--wsl-teal)] to-[var(--wsl-teal-dark)]", icon: Briefcase },
     { key: "creative", name: t("cv.t.creative", "إبداعي"), desc: t("cv.t.creativeD", "مميز للأدوار التصميمية والتسويقية"), color: "from-purple-600 to-fuchsia-600", icon: Palette },
   ];
 
@@ -133,7 +133,7 @@ export default function CVTailor() {
     <DashboardLayout pageTitle={t('cvTailor.title')}>
       <div className="p-6 md:p-8 space-y-8 max-w-6xl">
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-          <h1 className="text-2xl md:text-3xl font-bold text-[#1a1a2e] flex items-center gap-3">
+          <h1 className="text-2xl md:text-3xl font-bold text-[var(--wsl-ink)] flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-md">
               <FileText className="w-5 h-5 text-white" />
             </div>
@@ -150,7 +150,7 @@ export default function CVTailor() {
         >
           <div className="flex flex-col sm:flex-row items-center gap-4">
             <div className="flex-1">
-              <h3 className="font-bold text-[#1a1a2e] flex items-center gap-2">
+              <h3 className="font-bold text-[var(--wsl-ink)] flex items-center gap-2">
                 <Upload className="w-5 h-5 text-emerald-600" />
                 {t("cv.uploadCV", "Upload My CV")}
               </h3>
@@ -180,7 +180,7 @@ export default function CVTailor() {
         >
           <div className="flex items-center gap-2 mb-5">
             <Target className="w-5 h-5 text-[#0A8F84]" />
-            <h2 className="font-bold text-[#1a1a2e]">{t("cv.info", "معلوماتك")}</h2>
+            <h2 className="font-bold text-[var(--wsl-ink)]">{t("cv.info", "معلوماتك")}</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {fields.map((f) => (
@@ -203,7 +203,7 @@ export default function CVTailor() {
         </motion.div>
 
         <div>
-          <h2 className="font-bold text-[#1a1a2e] mb-4">{t("cv.chooseTemplate", "اختر القالب")}</h2>
+          <h2 className="font-bold text-[var(--wsl-ink)] mb-4">{t("cv.chooseTemplate", "اختر القالب")}</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {templates.map((tpl) => {
               const active = template === tpl.key;
@@ -220,7 +220,7 @@ export default function CVTailor() {
                       </motion.div>
                     )}
                   </div>
-                  <div className="font-bold text-[#1a1a2e]">{tpl.name}</div>
+                  <div className="font-bold text-[var(--wsl-ink)]">{tpl.name}</div>
                   <div className="text-sm text-gray-500 mt-1">{tpl.desc}</div>
                 </motion.button>
               );
@@ -234,11 +234,11 @@ export default function CVTailor() {
 
         {versions.length > 0 && (
           <div className="space-y-6">
-            <h3 className="font-bold text-[#1a1a2e] text-lg">{t("cv.versions", "النسخ المُنشأة")}</h3>
+            <h3 className="font-bold text-[var(--wsl-ink)] text-lg">{t("cv.versions", "النسخ المُنشأة")}</h3>
             {versions.map((v, i) => (
               <motion.div key={i} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
                 className="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
-                <div className="bg-gradient-to-r from-[#0B1220] to-[#2c5282] px-5 py-3">
+                <div className="bg-gradient-to-r from-[var(--wsl-teal)] to-[var(--wsl-teal-dark)] px-5 py-3">
                   <h4 className="text-white font-bold text-lg">{v.headline || v.fieldName || form.jobTitle}</h4>
                   <p className="text-white/70 text-sm mt-1">{v.fieldName || `Version ${i + 1}`}</p>
                 </div>
@@ -254,7 +254,7 @@ export default function CVTailor() {
                       <h5 className="text-xs font-bold text-gray-400 uppercase mb-2">{t("cv.section.skills", "المهارات")}</h5>
                       <div className="flex flex-wrap gap-2">
                         {v.skills.map((s: string, si: number) => (
-                          <span key={si} className="px-3 py-1 rounded-full bg-orange-50 text-[#0A8F84] text-xs font-semibold border border-orange-200">{s}</span>
+                          <span key={si} className="px-3 py-1 rounded-full bg-teal-50 text-[#0A8F84] text-xs font-semibold border border-teal-200">{s}</span>
                         ))}
                       </div>
                     </div>
@@ -266,7 +266,7 @@ export default function CVTailor() {
                         {v.experience.map((exp: any, ei: number) => (
                           <div key={ei} className="p-3 rounded-xl bg-gray-50 border border-gray-100">
                             <div className="flex items-center justify-between mb-1">
-                              <span className="font-semibold text-[#1a1a2e] text-sm">{exp.title}</span>
+                              <span className="font-semibold text-[var(--wsl-ink)] text-sm">{exp.title}</span>
                               <span className="text-xs text-gray-400">{exp.duration}</span>
                             </div>
                             <span className="text-xs text-[#0A8F84] font-medium">{exp.company}</span>
@@ -282,7 +282,7 @@ export default function CVTailor() {
           </div>
         )}
 
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 rounded-2xl bg-gradient-to-br from-[#0B1220] to-[#2c5282] p-6 md:p-8 shadow-lg">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 rounded-2xl bg-gradient-to-br from-[var(--wsl-teal)] to-[var(--wsl-teal-dark)] p-6 md:p-8 shadow-lg">
           <div className="text-white">
             <h3 className="font-bold text-lg">{t("cv.ready", "جاهز للإنشاء؟")}</h3>
             <p className="text-white/70 text-sm mt-1">{t("cv.cost", "يستخدم 10 رموز لكل سيرة ذاتية")}</p>
@@ -294,7 +294,7 @@ export default function CVTailor() {
               </button>
             )}
             <button onClick={generate} disabled={loading}
-              className="px-6 py-3 rounded-xl bg-[#0A8F84] hover:bg-[#e55a2b] disabled:opacity-50 text-white font-semibold shadow-lg shadow-[#0A8F84]/30 flex items-center gap-2 transition-all">
+              className="px-6 py-3 rounded-xl bg-[#0A8F84] hover:bg-[#064E49] disabled:opacity-50 text-white font-semibold shadow-lg shadow-[#0A8F84]/30 flex items-center gap-2 transition-all">
               {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
               {loading ? t("cv.generating", "جاري الإنشاء...") : done ? t("cv.regen", "إعادة الإنشاء") : t("cv.generate", "أنشئ السيرة")}
             </button>

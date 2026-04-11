@@ -37,7 +37,7 @@ export default function Profile() {
     <DashboardLayout>
       <div className="p-6 md:p-8 max-w-5xl space-y-8">
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-          <h1 className="text-2xl md:text-3xl font-bold text-[#1a1a2e]">{t("pr.title", "الملف الشخصي")}</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-[var(--wsl-ink)]">{t("pr.title", "الملف الشخصي")}</h1>
           <p className="text-gray-500 mt-2">{t("pr.subtitle", "أكمل بياناتك لتحصل على نتائج أفضل من وصّل")}</p>
         </motion.div>
 
@@ -47,14 +47,14 @@ export default function Profile() {
           >
             <div className="flex flex-col items-center">
               <CompletenessRing pct={pct}>
-                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#0A8F84] to-[#f7931e] flex items-center justify-center text-white text-2xl font-bold shadow-lg">
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[var(--wsl-teal)] to-[var(--wsl-gold)] flex items-center justify-center text-white text-2xl font-bold shadow-lg">
                   {initials}
                 </div>
               </CompletenessRing>
               <button className="mt-3 text-xs font-semibold text-[#0A8F84] inline-flex items-center gap-1 hover:underline">
                 <Camera className="w-3 h-3" /> {t("pr.changePhoto", "تغيير الصورة")}
               </button>
-              <div className="font-bold text-[#1a1a2e] mt-4">{form.name || t("pr.noName", "لم يُضف اسم")}</div>
+              <div className="font-bold text-[var(--wsl-ink)] mt-4">{form.name || t("pr.noName", "لم يُضف اسم")}</div>
               <div className="text-xs text-gray-400 mt-1" dir="ltr">{form.email}</div>
               <div className="mt-5 w-full pt-5 border-t border-gray-100">
                 <div className="flex items-center justify-between text-xs mb-1">
@@ -63,7 +63,7 @@ export default function Profile() {
                 </div>
                 <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
                   <motion.div initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.8, ease: "easeOut" }}
-                    className="h-full bg-gradient-to-r from-[#0A8F84] to-[#f7931e]" />
+                    className="h-full bg-gradient-to-r from-[var(--wsl-teal)] to-[var(--wsl-gold)]" />
                 </div>
               </div>
             </div>
@@ -104,7 +104,7 @@ export default function Profile() {
             </div>
             <div className="flex justify-end pt-2">
               <button onClick={save}
-                className="px-6 py-3 rounded-xl bg-[#0A8F84] hover:bg-[#e55a2b] text-white font-semibold shadow-lg shadow-[#0A8F84]/30 inline-flex items-center gap-2 transition">
+                className="px-6 py-3 rounded-xl bg-[#0A8F84] hover:bg-[#064E49] text-white font-semibold shadow-lg shadow-[#0A8F84]/30 inline-flex items-center gap-2 transition">
                 <Save className="w-5 h-5" /> {saved ? t("pr.saved", "تم الحفظ ✓") : t("pr.save", "حفظ")}
               </button>
             </div>
@@ -134,7 +134,7 @@ function CompletenessRing({ pct, children }: { pct: number; children: React.Reac
   return (
     <div className="relative w-32 h-32">
       <svg viewBox="0 0 120 120" className="w-full h-full -rotate-90">
-        <circle cx="60" cy="60" r={r} stroke="#f3f4f6" strokeWidth="7" fill="none" />
+        <circle cx="60" cy="60" r={r} stroke="var(--wsl-border)" strokeWidth="7" fill="none" />
         <motion.circle cx="60" cy="60" r={r} stroke="#0A8F84" strokeWidth="7" fill="none" strokeLinecap="round"
           strokeDasharray={c} initial={{ strokeDashoffset: c }} animate={{ strokeDashoffset: off }} transition={{ duration: 1.2, ease: "easeOut" }} />
       </svg>

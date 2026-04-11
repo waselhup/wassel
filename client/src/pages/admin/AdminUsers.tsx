@@ -27,10 +27,10 @@ export default function AdminUsers() {
       <div className="p-6 md:p-8 max-w-6xl space-y-6">
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-[#1a1a2e]">{t("au.title", "المستخدمون")}</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-[var(--wsl-ink)]">{t("au.title", "المستخدمون")}</h1>
             <p className="text-gray-500 mt-2">{t("au.subtitle", "إدارة حسابات المستخدمين والتوكنز")}</p>
           </div>
-          <button className="px-5 py-3 rounded-xl bg-[#ff6b35] hover:bg-[#e55a2b] text-white font-semibold shadow-lg shadow-[#ff6b35]/30 flex items-center gap-2 transition">
+          <button className="px-5 py-3 rounded-xl bg-[#0A8F84] hover:bg-[#064E49] text-white font-semibold shadow-lg shadow-[#0A8F84]/30 flex items-center gap-2 transition">
             <UserPlus className="w-5 h-5" /> {t("au.add", "إضافة مستخدم")}
           </button>
         </motion.div>
@@ -41,7 +41,7 @@ export default function AdminUsers() {
             <div className="relative flex-1">
               <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("au.search", "ابحث بالاسم أو البريد...")}
-                className="w-full ps-10 pe-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-[#ff6b35] focus:outline-none focus:ring-2 focus:ring-[#ff6b35]/20 transition" />
+                className="w-full ps-10 pe-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-[#0A8F84] focus:outline-none focus:ring-2 focus:ring-[#0A8F84]/20 transition" />
             </div>
             <button className="px-4 py-3 rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-700 font-semibold flex items-center gap-2 transition">
               <Filter className="w-4 h-4" /> {t("au.filter", "تصفية")}
@@ -64,15 +64,15 @@ export default function AdminUsers() {
                 {filtered.map((u) => (
                   <tr key={u.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50 transition">
                     <td className="py-3">
-                      <div className="font-semibold text-[#1a1a2e]">{u.name}</div>
+                      <div className="font-semibold text-[var(--wsl-ink)]">{u.name}</div>
                       <div className="text-xs text-gray-400 mt-0.5" dir="ltr">{u.email}</div>
                     </td>
                     <td className="py-3">
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${u.plan === "Free" ? "bg-gray-100 text-gray-600" : u.plan === "Pro" ? "bg-orange-50 text-[#ff6b35]" : "bg-purple-50 text-purple-700"}`}>
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${u.plan === "Free" ? "bg-gray-100 text-gray-600" : u.plan === "Pro" ? "bg-teal-50 text-[#0A8F84]" : "bg-purple-50 text-purple-700"}`}>
                         {u.plan}
                       </span>
                     </td>
-                    <td className="py-3 font-semibold text-[#1a1a2e] tabular-nums">{u.tokens.toLocaleString("en-US")}</td>
+                    <td className="py-3 font-semibold text-[var(--wsl-ink)] tabular-nums">{u.tokens.toLocaleString("en-US")}</td>
                     <td className="py-3">
                       <span className={`inline-flex items-center gap-1 text-xs font-semibold ${u.status === "active" ? "text-emerald-600" : "text-red-500"}`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${u.status === "active" ? "bg-emerald-500" : "bg-red-500"}`} />
@@ -81,7 +81,7 @@ export default function AdminUsers() {
                     </td>
                     <td className="py-3 text-xs text-gray-500 tabular-nums" dir="ltr">{u.joined}</td>
                     <td className="py-3 text-end">
-                      <button onClick={() => setModal(u.id)} className="w-8 h-8 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-[#ff6b35] inline-flex items-center justify-center transition">
+                      <button onClick={() => setModal(u.id)} className="w-8 h-8 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-[#0A8F84] inline-flex items-center justify-center transition">
                         <MoreVertical className="w-4 h-4" />
                       </button>
                     </td>
@@ -102,7 +102,7 @@ export default function AdminUsers() {
               className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md"
             >
               <div className="flex items-center justify-between mb-5">
-                <h3 className="font-bold text-[#1a1a2e] text-lg">{t("au.addTokens", "إضافة توكنز")}</h3>
+                <h3 className="font-bold text-[var(--wsl-ink)] text-lg">{t("au.addTokens", "إضافة توكنز")}</h3>
                 <button onClick={() => setModal(null)} className="w-8 h-8 rounded-lg hover:bg-gray-100 text-gray-500 inline-flex items-center justify-center">
                   <X className="w-4 h-4" />
                 </button>
@@ -111,13 +111,13 @@ export default function AdminUsers() {
               <div className="relative">
                 <Coins className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-500" />
                 <input type="number" value={addAmt} onChange={(e) => setAddAmt(+e.target.value)}
-                  className="w-full ps-10 pe-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-[#ff6b35] focus:outline-none focus:ring-2 focus:ring-[#ff6b35]/20 transition" />
+                  className="w-full ps-10 pe-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-[#0A8F84] focus:outline-none focus:ring-2 focus:ring-[#0A8F84]/20 transition" />
               </div>
               <div className="flex gap-3 mt-5">
                 <button onClick={() => setModal(null)} className="flex-1 py-3 rounded-xl border border-gray-200 text-gray-700 font-semibold hover:bg-gray-50 transition">
                   {t("au.cancel", "إلغاء")}
                 </button>
-                <button onClick={() => setModal(null)} className="flex-1 py-3 rounded-xl bg-[#ff6b35] hover:bg-[#e55a2b] text-white font-semibold shadow-lg shadow-[#ff6b35]/30 inline-flex items-center justify-center gap-2 transition">
+                <button onClick={() => setModal(null)} className="flex-1 py-3 rounded-xl bg-[#0A8F84] hover:bg-[#064E49] text-white font-semibold shadow-lg shadow-[#0A8F84]/30 inline-flex items-center justify-center gap-2 transition">
                   <CheckCircle2 className="w-4 h-4" /> {t("au.confirm", "تأكيد")}
                 </button>
               </div>

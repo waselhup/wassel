@@ -43,7 +43,7 @@ export default function ResetPassword() {
           <div className="w-16 h-16 rounded-full bg-green-100 mx-auto mb-4 flex items-center justify-center">
             <CheckCircle2 className="w-8 h-8 text-green-600" />
           </div>
-          <h3 className="text-xl font-bold text-[#1e3a5f] mb-2">
+          <h3 className="text-xl font-bold text-[#064E49] mb-2">
             {t("auth.reset.sent.title", "تم الإرسال!")}
           </h3>
           <p className="text-[#6b7280] mb-6">
@@ -51,7 +51,7 @@ export default function ResetPassword() {
           </p>
           <Link
             href="/login"
-            className="inline-flex items-center gap-2 text-[#ff6b35] font-semibold hover:underline"
+            className="inline-flex items-center gap-2 text-[#0A8F84] font-semibold hover:underline"
           >
             {t("auth.reset.backToLogin", "العودة لتسجيل الدخول")}
             <ArrowRight className={`w-4 h-4 ${isRTL ? "rotate-180" : ""}`} />
@@ -73,13 +73,13 @@ export default function ResetPassword() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder={t("auth.email", "البريد الإلكتروني")}
-              className={`w-full h-14 ${isRTL ? "pe-12 ps-4" : "ps-12 pe-4"} rounded-xl border border-gray-200 bg-white focus:border-[#ff6b35] focus:ring-2 focus:ring-[#ff6b35]/20 outline-none transition`}
+              className={`w-full h-14 ${isRTL ? "pe-12 ps-4" : "ps-12 pe-4"} rounded-xl border border-gray-200 bg-white focus:border-[#0A8F84] focus:ring-2 focus:ring-[#0A8F84]/20 outline-none transition`}
             />
           </div>
           <button
             type="submit"
             disabled={loading}
-            className="w-full h-14 rounded-xl bg-[#ff6b35] text-white font-bold shadow-lg shadow-[#ff6b35]/30 hover:bg-[#ff8a5c] transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+            className="w-full h-14 rounded-xl bg-[#0A8F84] text-white font-bold shadow-lg shadow-[#0A8F84]/30 hover:bg-[#12B5A8] transition-all disabled:opacity-60 flex items-center justify-center gap-2"
           >
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
               <>
@@ -89,7 +89,7 @@ export default function ResetPassword() {
             )}
           </button>
           <div className="text-center text-sm text-[#6b7280]">
-            <Link href="/login" className="text-[#ff6b35] font-semibold hover:underline">
+            <Link href="/login" className="text-[#0A8F84] font-semibold hover:underline">
               {t("auth.reset.backToLogin", "العودة لتسجيل الدخول")}
             </Link>
           </div>

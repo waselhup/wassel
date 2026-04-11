@@ -7,7 +7,7 @@ const stats = [
   { key: "sent", label: "مُرسل", value: 120, pct: "+5%", icon: Mail, color: "from-blue-50 to-cyan-50", iconBg: "bg-blue-500" },
   { key: "open", label: "فتح", value: 78, pct: "65%", icon: Eye, color: "from-emerald-50 to-teal-50", iconBg: "bg-emerald-500" },
   { key: "reply", label: "رد", value: 14, pct: "18%", icon: MessageSquare, color: "from-purple-50 to-fuchsia-50", iconBg: "bg-purple-500" },
-  { key: "meet", label: "اجتماع", value: 6, pct: "8%", icon: TrendingUp, color: "from-amber-50 to-orange-50", iconBg: "bg-amber-500" },
+  { key: "meet", label: "اجتماع", value: 6, pct: "8%", icon: TrendingUp, color: "from-teal-50 to-emerald-50", iconBg: "bg-amber-500" },
 ];
 
 const rows = [
@@ -35,7 +35,7 @@ export default function CampaignReport() {
       <div className="p-6 md:p-8 max-w-6xl space-y-8">
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-[#1a1a2e]">{t("rep.title", "تقرير الحملة")}</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-[var(--wsl-ink)]">{t("rep.title", "تقرير الحملة")}</h1>
             <p className="text-gray-500 mt-2">{t("rep.subtitle", "توسّع في السوق السعودي · تم الإطلاق منذ 3 أيام")}</p>
           </div>
           <button className="px-5 py-3 rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-700 font-semibold flex items-center gap-2 transition">
@@ -59,7 +59,7 @@ export default function CampaignReport() {
                 </div>
                 <span className="text-xs font-bold text-emerald-600 bg-white/60 px-2 py-1 rounded-full">{s.pct}</span>
               </div>
-              <div className="text-3xl font-bold text-[#1a1a2e] tabular-nums">{s.value}</div>
+              <div className="text-3xl font-bold text-[var(--wsl-ink)] tabular-nums">{s.value}</div>
               <div className="text-sm text-gray-600 mt-1">{s.label}</div>
             </motion.div>
           ))}
@@ -69,7 +69,7 @@ export default function CampaignReport() {
           className="rounded-2xl bg-white border border-gray-100 shadow-sm p-6"
         >
           <div className="flex items-center justify-between mb-5">
-            <h3 className="font-bold text-[#1a1a2e]">{t("rep.contacts", "قائمة جهات الاتصال")}</h3>
+            <h3 className="font-bold text-[var(--wsl-ink)]">{t("rep.contacts", "قائمة جهات الاتصال")}</h3>
             <button className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-[#0A8F84] transition">
               <Filter className="w-4 h-4" /> {t("rep.filter", "تصفية")}
             </button>
@@ -88,7 +88,7 @@ export default function CampaignReport() {
               <tbody>
                 {rows.map((r, i) => (
                   <tr key={i} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50 transition">
-                    <td className="py-3 font-semibold text-[#1a1a2e]">{r.name}</td>
+                    <td className="py-3 font-semibold text-[var(--wsl-ink)]">{r.name}</td>
                     <td className="py-3 text-gray-600">{r.company}</td>
                     <td className="py-3 text-gray-500 ltr-text" dir="ltr">{r.email}</td>
                     <td className="py-3">

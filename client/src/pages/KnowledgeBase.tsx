@@ -114,8 +114,8 @@ export default function KnowledgeBase() {
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-[#1a1a2e] flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0B1220] to-[#2c5282] flex items-center justify-center shadow-md">
+              <h1 className="text-2xl font-bold text-[var(--wsl-ink)] flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--wsl-teal)] to-[var(--wsl-teal-dark)] flex items-center justify-center shadow-md">
                   <BookOpen className="w-5 h-5 text-white" />
                 </div>
                 {t('kb.title', 'قاعدة المعرفة')}
@@ -125,7 +125,7 @@ export default function KnowledgeBase() {
             <Button
               onClick={handleExport}
               disabled={exporting}
-              className="bg-[#0B1220] hover:bg-[#2c5282] text-white flex items-center gap-2"
+              className="bg-[var(--wsl-teal)] hover:bg-[var(--wsl-teal-dark)] text-white flex items-center gap-2"
             >
               {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
               {t('kb.export', 'تصدير للـ NotebookLM')}
@@ -151,14 +151,14 @@ export default function KnowledgeBase() {
         </div>
 
         {/* Export Info Card */}
-        <Card className="border-[#0B1220]/20 bg-gradient-to-r from-[#0B1220]/5 to-[#2c5282]/5">
+        <Card className="border-[var(--wsl-teal)]/20 bg-gradient-to-r from-[var(--wsl-teal)]/5 to-[var(--wsl-teal-dark)]/5">
           <CardContent className="p-5">
             <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#0B1220] to-[#2c5282] flex items-center justify-center flex-shrink-0">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[var(--wsl-teal)] to-[var(--wsl-teal-dark)] flex items-center justify-center flex-shrink-0">
                 <ExternalLink className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h3 className="font-bold text-[#1a1a2e]">{t('kb.notebooklm', 'تكامل NotebookLM')}</h3>
+                <h3 className="font-bold text-[var(--wsl-ink)]">{t('kb.notebooklm', 'تكامل NotebookLM')}</h3>
                 <p className="text-sm text-gray-600 mt-1">
                   {t('kb.notebooklmDesc', 'صدّر بياناتك كملف JSON وارفعه إلى NotebookLM من Google لبناء قاعدة معرفة ذكية يمكنك سؤالها عن تحليلاتك وحملاتك.')}
                 </p>
@@ -206,7 +206,7 @@ export default function KnowledgeBase() {
                         >
                           <div className="mt-1">{typeIcon(item.type)}</div>
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium text-[#1a1a2e]">{item.title}</p>
+                            <p className="font-medium text-[var(--wsl-ink)]">{item.title}</p>
                             <div className="flex items-center gap-2 mt-1">
                               <Badge variant="secondary" className="text-xs">{typeLabel(item.type)}</Badge>
                               <span className="text-xs text-gray-400">{new Date(item.created_at).toLocaleDateString()}</span>
@@ -261,8 +261,8 @@ export default function KnowledgeBase() {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {marketTips.map((tip, i) => (
-                <div key={i} className="p-4 rounded-xl bg-gradient-to-br from-yellow-50 to-orange-50 border border-yellow-100">
-                  <h4 className="font-semibold text-[#1a1a2e] text-sm">{tip.title}</h4>
+                <div key={i} className="p-4 rounded-xl bg-gradient-to-br from-teal-50 to-emerald-50 border border-yellow-100">
+                  <h4 className="font-semibold text-[var(--wsl-ink)] text-sm">{tip.title}</h4>
                   <p className="text-xs text-gray-600 mt-1">{tip.desc}</p>
                 </div>
               ))}

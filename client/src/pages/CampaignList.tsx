@@ -43,8 +43,8 @@ export default function CampaignList() {
       <div className="p-6 md:p-8 max-w-6xl space-y-8">
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-[#1a1a2e] flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0A8F84] to-[#f7931e] flex items-center justify-center shadow-md">
+            <h1 className="text-2xl md:text-3xl font-bold text-[var(--wsl-ink)] flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--wsl-teal)] to-[var(--wsl-gold)] flex items-center justify-center shadow-md">
                 <Send className="w-5 h-5 text-white" />
               </div>
               {t("camp.title", "حملات البريد الإلكتروني")}
@@ -52,7 +52,7 @@ export default function CampaignList() {
             <p className="text-gray-500 mt-2">{t("camp.subtitle", "أدر حملاتك البريدية والتواصل مع العملاء من مكان واحد")}</p>
           </div>
           <Link href="/app/campaigns/new">
-            <a className="px-5 py-3 rounded-xl bg-[#0A8F84] hover:bg-[#e55a2b] text-white font-semibold shadow-lg shadow-[#0A8F84]/30 flex items-center gap-2 transition-all">
+            <a className="px-5 py-3 rounded-xl bg-[#0A8F84] hover:bg-[#064E49] text-white font-semibold shadow-lg shadow-[#0A8F84]/30 flex items-center gap-2 transition-all">
               <Plus className="w-5 h-5" /> {t("camp.new", "حملة جديدة")}
             </a>
           </Link>
@@ -84,7 +84,7 @@ export default function CampaignList() {
                   <Link href={`/app/campaigns/${c.id}`}>
                     <a className="block rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-xl p-6 transition-all">
                       <div className="flex items-start justify-between gap-3 mb-4">
-                        <h3 className="font-bold text-[#1a1a2e] text-lg">{c.campaign_name}</h3>                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-xs font-semibold ${s.color}`}>
+                        <h3 className="font-bold text-[var(--wsl-ink)] text-lg">{c.campaign_name}</h3>                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-xs font-semibold ${s.color}`}>
                           <s.icon className="w-3 h-3" /> {t(s.labelKey)}
                         </span>
                       </div>
@@ -113,7 +113,7 @@ function Metric({ icon: Icon, value, label }: { icon: any; value: number; label:
   return (
     <div className="text-center">
       <Icon className="w-4 h-4 text-gray-400 mx-auto mb-1" />
-      <div className="text-xl font-bold text-[#1a1a2e] tabular-nums">{value}</div>
+      <div className="text-xl font-bold text-[var(--wsl-ink)] tabular-nums">{value}</div>
       <div className="text-xs text-gray-500 mt-0.5">{label}</div>
     </div>
   );

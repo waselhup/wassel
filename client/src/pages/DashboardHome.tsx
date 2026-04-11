@@ -71,7 +71,7 @@ export default function DashboardHome() {
 
   const stats: Stat[] = [
     { key: "tokens", label: t("home.stats.tokens", "رصيد التوكنز"), value: counts.tokens, delta: "",
-      icon: Coins, gradient: "from-amber-50 to-orange-50", iconBg: "bg-amber-500" },
+      icon: Coins, gradient: "from-teal-50 to-emerald-50", iconBg: "bg-amber-500" },
     { key: "analyses", label: t("home.stats.analyses", "تحليلات LinkedIn"), value: counts.analyses, delta: "",
       icon: BarChart2, gradient: "from-blue-50 to-cyan-50", iconBg: "bg-blue-500" },
     { key: "cvs", label: t("home.stats.cvs", "سير مُنشأة"), value: counts.cvs, delta: "",
@@ -89,7 +89,7 @@ export default function DashboardHome() {
       href: "/app/cv", icon: FileText, color: "from-emerald-500 to-teal-600" },
     { key: "campaign", title: t("home.actions.campaign.title", "أطلق حملة جديدة"),
       desc: t("home.actions.campaign.desc", "ابحث عن متخذي القرار وأرسل إيميلات ذكية"),
-      href: "/app/campaigns/new", icon: Send, color: "from-[#0A8F84] to-[#f7931e]" },
+      href: "/app/campaigns/new", icon: Send, color: "from-[var(--wsl-teal)] to-[var(--wsl-gold)]" },
   ];
 
   const activity: ActivityItem[] = [
@@ -102,7 +102,7 @@ export default function DashboardHome() {
     { id: "4", icon: Coins, title: t("home.activity.tokens", "تم شراء 1000 توكن"),
       time: t("home.time.days", "منذ يومين"), color: "bg-amber-100 text-amber-600" },
     { id: "5", icon: Sparkles, title: t("home.activity.welcome", "مرحباً بك في وصّل — أكمل ملفك لتبدأ"),
-      time: t("home.time.week", "منذ أسبوع"), color: "bg-orange-100 text-teal-700" },
+      time: t("home.time.week", "منذ أسبوع"), color: "bg-teal-100 text-teal-700" },
   ];
 
   const chartData = [32, 45, 28, 67, 52, 78, 61];
@@ -115,7 +115,7 @@ export default function DashboardHome() {
     <DashboardLayout>
       <div className="space-y-8 p-6 md:p-8">
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}>
-          <h1 className="text-2xl md:text-3xl font-bold text-[#1a1a2e]">
+          <h1 className="text-2xl md:text-3xl font-bold text-[var(--wsl-ink)]">
             {greeting}{name ? `، ${name}` : ""} 👋
           </h1>
           <p className="text-gray-500 mt-1">{t("home.subtitle", "إليك نظرة سريعة على نشاطك اليوم")}</p>
@@ -130,7 +130,7 @@ export default function DashboardHome() {
         </motion.div>
 
         <div>
-          <h2 className="text-lg font-bold text-[#1a1a2e] mb-4">{t("home.quickActions", "إجراءات سريعة")}</h2>
+          <h2 className="text-lg font-bold text-[var(--wsl-ink)] mb-4">{t("home.quickActions", "إجراءات سريعة")}</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {actions.map((a, i) => (
               <motion.div key={a.key}
@@ -143,7 +143,7 @@ export default function DashboardHome() {
                     </div>
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-bold text-[#1a1a2e] mb-1">{a.title}</h3>
+                        <h3 className="font-bold text-[var(--wsl-ink)] mb-1">{a.title}</h3>
                         <p className="text-sm text-gray-500 leading-relaxed">{a.desc}</p>
                       </div>
                       <ArrowUpRight className="w-5 h-5 text-gray-400 group-hover:text-[#0A8F84] group-hover:rotate-45 transition-all shrink-0" />
@@ -163,7 +163,7 @@ export default function DashboardHome() {
           >
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h3 className="font-bold text-[#1a1a2e] flex items-center gap-2">
+                <h3 className="font-bold text-[var(--wsl-ink)] flex items-center gap-2">
                   <Activity className="w-5 h-5 text-[#0A8F84]" />
                   {t("home.chart.title", "نشاط آخر 7 أيام")}
                 </h3>
@@ -192,7 +192,7 @@ export default function DashboardHome() {
             viewport={{ once: true }} transition={{ duration: 0.45, delay: 0.1 }}
             className="rounded-2xl bg-white border border-gray-100 shadow-sm p-6"
           >
-            <h3 className="font-bold text-[#1a1a2e] flex items-center gap-2 mb-5">
+            <h3 className="font-bold text-[var(--wsl-ink)] flex items-center gap-2 mb-5">
               <Clock className="w-5 h-5 text-[#0A8F84]" />
               {t("home.activity.title", "آخر النشاطات")}
             </h3>
@@ -203,7 +203,7 @@ export default function DashboardHome() {
                     <a.icon className="w-4 h-4" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-[#1a1a2e] leading-snug line-clamp-2">{a.title}</p>
+                    <p className="text-sm text-[var(--wsl-ink)] leading-snug line-clamp-2">{a.title}</p>
                     <p className="text-xs text-gray-400 mt-1">{a.time}</p>
                   </div>
                 </li>
@@ -233,7 +233,7 @@ function StatCard({ stat }: { stat: Stat }) {
           {stat.delta}
         </span>
       </div>
-      <div className="text-3xl font-bold text-[#1a1a2e] tabular-nums">{n.toLocaleString("en-US")}</div>
+      <div className="text-3xl font-bold text-[var(--wsl-ink)] tabular-nums">{n.toLocaleString("en-US")}</div>
       <div className="text-sm text-gray-600 mt-1">{stat.label}</div>
     </motion.div>
   );

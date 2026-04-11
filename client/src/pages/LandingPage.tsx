@@ -34,43 +34,43 @@ export default function LandingPage() {
       <nav className="sticky top-0 z-50 backdrop-blur-md bg-white/80 border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-xl bg-[#1e3a5f] flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-[#ff6b35]" />
+            <div className="w-9 h-9 rounded-xl bg-[#064E49] flex items-center justify-center">
+              <Sparkles className="w-5 h-5 text-[#0A8F84]" />
             </div>
-            <span className="text-xl font-extrabold text-[#1e3a5f]">
+            <span className="text-xl font-extrabold text-[#064E49]">
               {t("brand.name", "وصّل")}
             </span>
           </Link>
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-[#6b7280]">
-            <a href="#features" className="hover:text-[#1e3a5f] transition">
+            <a href="#features" className="hover:text-[#064E49] transition">
               {t("nav.features", "المميزات")}
             </a>
-            <a href="#how" className="hover:text-[#1e3a5f] transition">
+            <a href="#how" className="hover:text-[#064E49] transition">
               {t("nav.how", "كيف يعمل")}
             </a>
-            <a href="#pricing" className="hover:text-[#1e3a5f] transition">
+            <a href="#pricing" className="hover:text-[#064E49] transition">
               {t("nav.pricing", "الأسعار")}
             </a>
-            <a href="#faq" className="hover:text-[#1e3a5f] transition">
+            <a href="#faq" className="hover:text-[#064E49] transition">
               {t("nav.faq", "أسئلة شائعة")}
             </a>
           </div>
           <div className="flex items-center gap-3">
             <button
               onClick={() => i18n.changeLanguage(isRTL ? "en" : "ar")}
-              className="text-sm font-medium text-[#6b7280] hover:text-[#1e3a5f]"
+              className="text-sm font-medium text-[#6b7280] hover:text-[#064E49]"
             >
               {isRTL ? "EN" : "AR"}
             </button>
             <Link
               href="/login"
-              className="text-sm font-semibold text-[#1e3a5f] hover:text-[#ff6b35] transition"
+              className="text-sm font-semibold text-[#064E49] hover:text-[#0A8F84] transition"
             >
               {t("nav.login", "دخول")}
             </Link>
             <Link
               href="/signup"
-              className="px-5 py-2.5 rounded-xl bg-[#ff6b35] text-white text-sm font-semibold shadow-md hover:shadow-xl hover:bg-[#ff8a5c] transition-all"
+              className="px-5 py-2.5 rounded-xl bg-[#0A8F84] text-white text-sm font-semibold shadow-md hover:shadow-xl hover:bg-[#12B5A8] transition-all"
             >
               {t("nav.signup", "ابدأ مجاناً")}
             </Link>
@@ -80,20 +80,20 @@ export default function LandingPage() {
 
       {/* HERO */}
       <section className="relative overflow-hidden pt-20 pb-32">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#fafafa] via-white to-[#fff5f0]" />
-        <div className="absolute top-40 -end-20 w-96 h-96 rounded-full bg-[#ff6b35]/10 blur-3xl" />
-        <div className="absolute bottom-0 -start-20 w-96 h-96 rounded-full bg-[#1e3a5f]/10 blur-3xl" />
+        <div className="absolute inset-0 bg-gradient-to-br from-[#fafafa] via-white to-[#f0fdf9]" />
+        <div className="absolute top-40 -end-20 w-96 h-96 rounded-full bg-[#0A8F84]/10 blur-3xl" />
+        <div className="absolute bottom-0 -start-20 w-96 h-96 rounded-full bg-[#064E49]/10 blur-3xl" />
 
         <div className="relative max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-16 items-center">
           <motion.div {...fadeUp}>
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#1e3a5f]/5 border border-[#1e3a5f]/10 text-sm text-[#1e3a5f] font-medium mb-6">
-              <Sparkles className="w-4 h-4 text-[#ff6b35]" />
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#064E49]/5 border border-[#064E49]/10 text-sm text-[#064E49] font-medium mb-6">
+              <Sparkles className="w-4 h-4 text-[#0A8F84]" />
               {t("hero.badge", "مدعوم بالذكاء الاصطناعي · صنع في السعودية")}
             </div>
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold text-[#1e3a5f] leading-[1.1] mb-6">
+            <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold text-[#064E49] leading-[1.1] mb-6">
               {t("hero.title", "وظيفتك القادمة")}
               <br />
-              <span className="text-[#ff6b35]">
+              <span className="text-[#0A8F84]">
                 {t("hero.title2", "تبدأ بنقرة واحدة")}
               </span>
             </h1>
@@ -106,7 +106,7 @@ export default function LandingPage() {
             <div className="flex flex-wrap gap-4 mb-10">
               <Link
                 href="/signup"
-                className="group inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-[#ff6b35] text-white font-semibold text-lg shadow-xl hover:shadow-2xl hover:bg-[#ff8a5c] transition-all"
+                className="group inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-[#0A8F84] text-white font-semibold text-lg shadow-xl hover:shadow-2xl hover:bg-[#12B5A8] transition-all"
               >
                 {t("hero.cta", "ابدأ مجاناً")}
                 <ArrowRight
@@ -115,7 +115,7 @@ export default function LandingPage() {
               </Link>
               <a
                 href="#how"
-                className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-white border border-gray-200 text-[#1e3a5f] font-semibold text-lg hover:border-[#1e3a5f] transition"
+                className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-white border border-gray-200 text-[#064E49] font-semibold text-lg hover:border-[#064E49] transition"
               >
                 {t("hero.cta2", "شاهد كيف يعمل")}
               </a>
@@ -126,7 +126,7 @@ export default function LandingPage() {
                   {[1, 2, 3, 4].map((i) => (
                     <div
                       key={i}
-                      className="w-8 h-8 rounded-full border-2 border-white bg-gradient-to-br from-[#1e3a5f] to-[#ff6b35]"
+                      className="w-8 h-8 rounded-full border-2 border-white bg-gradient-to-br from-[#064E49] to-[#0A8F84]"
                     />
                   ))}
                 </div>
@@ -134,7 +134,7 @@ export default function LandingPage() {
               </div>
               <div className="flex items-center gap-1">
                 {[1, 2, 3, 4, 5].map((i) => (
-                  <Star key={i} className="w-4 h-4 fill-[#ff6b35] text-[#ff6b35]" />
+                  <Star key={i} className="w-4 h-4 fill-[#0A8F84] text-[#0A8F84]" />
                 ))}
                 <span className="ms-2">4.9/5</span>
               </div>
@@ -164,7 +164,7 @@ export default function LandingPage() {
                     <div className="text-xs text-[#6b7280]">
                       {t("mockup.score", "تقييم لينكدإن")}
                     </div>
-                    <div className="text-3xl font-extrabold text-[#1e3a5f]">
+                    <div className="text-3xl font-extrabold text-[#064E49]">
                       87<span className="text-base text-[#6b7280]">/100</span>
                     </div>
                   </div>
@@ -189,7 +189,7 @@ export default function LandingPage() {
                           whileInView={{ width: `${row.pct}%` }}
                           viewport={{ once: true }}
                           transition={{ duration: 1, delay: 0.3 }}
-                          className="h-full bg-gradient-to-r from-[#1e3a5f] to-[#ff6b35]"
+                          className="h-full bg-gradient-to-r from-[#064E49] to-[#0A8F84]"
                         />
                       </div>
                     </div>
@@ -199,13 +199,13 @@ export default function LandingPage() {
                   <div className="text-xs text-[#6b7280]">
                     {t("mockup.campaign", "حملة نشطة")}
                   </div>
-                  <div className="text-sm font-semibold text-[#1e3a5f]">
+                  <div className="text-sm font-semibold text-[#064E49]">
                     342 / 500
                   </div>
                 </div>
               </div>
             </div>
-            <div className="absolute -top-4 -end-4 w-20 h-20 rounded-2xl bg-[#ff6b35] flex items-center justify-center shadow-xl rotate-6">
+            <div className="absolute -top-4 -end-4 w-20 h-20 rounded-2xl bg-[#0A8F84] flex items-center justify-center shadow-xl rotate-6">
               <Sparkles className="w-10 h-10 text-white" />
             </div>
           </motion.div>
@@ -220,7 +220,7 @@ export default function LandingPage() {
           </p>
           <div className="flex flex-wrap justify-center items-center gap-12 opacity-60">
             {["Aramco", "STC", "SABIC", "NEOM", "PIF", "Almarai"].map((brand) => (
-              <div key={brand} className="text-2xl font-bold text-[#1e3a5f]">
+              <div key={brand} className="text-2xl font-bold text-[#064E49]">
                 {brand}
               </div>
             ))}
@@ -232,10 +232,10 @@ export default function LandingPage() {
       <section id="features" className="py-24">
         <div className="max-w-7xl mx-auto px-6">
           <motion.div {...fadeUp} className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#ff6b35]/10 text-[#ff6b35] text-sm font-semibold mb-4">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#0A8F84]/10 text-[#0A8F84] text-sm font-semibold mb-4">
               {t("features.badge", "كل ما تحتاجه")}
             </div>
-            <h2 className="text-4xl md:text-5xl font-extrabold text-[#1e3a5f] mb-4">
+            <h2 className="text-4xl md:text-5xl font-extrabold text-[#064E49] mb-4">
               {t("features.title", "منصة واحدة. نتائج حقيقية.")}
             </h2>
             <p className="text-xl text-[#6b7280] max-w-2xl mx-auto">
@@ -305,12 +305,12 @@ export default function LandingPage() {
                 <motion.div
                   key={i}
                   variants={fadeUp}
-                  className="group p-8 rounded-2xl bg-white border border-gray-200 hover:border-[#ff6b35]/30 hover:shadow-xl transition-all duration-300"
+                  className="group p-8 rounded-2xl bg-white border border-gray-200 hover:border-[#0A8F84]/30 hover:shadow-xl transition-all duration-300"
                 >
-                  <div className="w-12 h-12 rounded-xl bg-[#1e3a5f]/5 group-hover:bg-[#ff6b35]/10 flex items-center justify-center mb-5 transition-colors">
-                    <Icon className="w-6 h-6 text-[#1e3a5f] group-hover:text-[#ff6b35] transition-colors" />
+                  <div className="w-12 h-12 rounded-xl bg-[#064E49]/5 group-hover:bg-[#0A8F84]/10 flex items-center justify-center mb-5 transition-colors">
+                    <Icon className="w-6 h-6 text-[#064E49] group-hover:text-[#0A8F84] transition-colors" />
                   </div>
-                  <h3 className="text-xl font-bold text-[#1e3a5f] mb-3">
+                  <h3 className="text-xl font-bold text-[#064E49] mb-3">
                     {f.title}
                   </h3>
                   <p className="text-[#6b7280] leading-relaxed">{f.desc}</p>
@@ -325,7 +325,7 @@ export default function LandingPage() {
       <section id="how" className="py-24 bg-white">
         <div className="max-w-7xl mx-auto px-6">
           <motion.div {...fadeUp} className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-extrabold text-[#1e3a5f] mb-4">
+            <h2 className="text-4xl md:text-5xl font-extrabold text-[#064E49] mb-4">
               {t("how.title", "ثلاث خطوات. عشر دقائق.")}
             </h2>
             <p className="text-xl text-[#6b7280]">
@@ -353,13 +353,13 @@ export default function LandingPage() {
               <motion.div
                 key={i}
                 variants={fadeUp}
-                className="relative p-8 rounded-2xl bg-gradient-to-br from-[#1e3a5f] to-[#152a47] text-white overflow-hidden"
+                className="relative p-8 rounded-2xl bg-gradient-to-br from-[#064E49] to-[#043530] text-white overflow-hidden"
               >
                 <div className="absolute top-4 end-4 text-7xl font-extrabold text-white/10">
                   {s.step}
                 </div>
                 <div className="relative">
-                  <div className="w-12 h-12 rounded-xl bg-[#ff6b35] flex items-center justify-center mb-5">
+                  <div className="w-12 h-12 rounded-xl bg-[#0A8F84] flex items-center justify-center mb-5">
                     <span className="text-xl font-extrabold">{s.step}</span>
                   </div>
                   <h3 className="text-2xl font-bold mb-3">{s.title}</h3>
@@ -375,7 +375,7 @@ export default function LandingPage() {
       <section className="py-24">
         <div className="max-w-7xl mx-auto px-6">
           <motion.div {...fadeUp} className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-extrabold text-[#1e3a5f] mb-4">
+            <h2 className="text-4xl md:text-5xl font-extrabold text-[#064E49] mb-4">
               {t("testimonials.title", "قصص نجاح حقيقية")}
             </h2>
             <p className="text-xl text-[#6b7280]">
@@ -416,18 +416,18 @@ export default function LandingPage() {
               >
                 <div className="flex items-center gap-1 mb-4">
                   {[1, 2, 3, 4, 5].map((s) => (
-                    <Star key={s} className="w-4 h-4 fill-[#ff6b35] text-[#ff6b35]" />
+                    <Star key={s} className="w-4 h-4 fill-[#0A8F84] text-[#0A8F84]" />
                   ))}
                 </div>
                 <p className="text-[#1f2937] leading-relaxed mb-6 text-lg">
                   "{tst.quote}"
                 </p>
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#1e3a5f] to-[#ff6b35] flex items-center justify-center text-white font-bold">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#064E49] to-[#0A8F84] flex items-center justify-center text-white font-bold">
                     {tst.name.charAt(0)}
                   </div>
                   <div>
-                    <div className="font-bold text-[#1e3a5f]">{tst.name}</div>
+                    <div className="font-bold text-[#064E49]">{tst.name}</div>
                     <div className="text-sm text-[#6b7280]">{tst.role}</div>
                   </div>
                 </div>
@@ -441,7 +441,7 @@ export default function LandingPage() {
       <section id="pricing" className="py-24 bg-white">
         <div className="max-w-7xl mx-auto px-6">
           <motion.div {...fadeUp} className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-extrabold text-[#1e3a5f] mb-4">
+            <h2 className="text-4xl md:text-5xl font-extrabold text-[#064E49] mb-4">
               {t("pricing.title", "أسعار بسيطة. شفافة. سعودية.")}
             </h2>
             <p className="text-xl text-[#6b7280]">
@@ -509,12 +509,12 @@ export default function LandingPage() {
                 variants={fadeUp}
                 className={`relative p-8 rounded-2xl border-2 transition-all ${
                   p.highlight
-                    ? "border-[#ff6b35] bg-gradient-to-b from-[#fff5f0] to-white shadow-2xl scale-105"
-                    : "border-gray-200 bg-white hover:border-[#1e3a5f]/30"
+                    ? "border-[#0A8F84] bg-gradient-to-b from-[#f0fdf9] to-white shadow-2xl scale-105"
+                    : "border-gray-200 bg-white hover:border-[#064E49]/30"
                 }`}
               >
                 {p.highlight && (
-                  <div className="absolute -top-4 start-1/2 -translate-x-1/2 rtl:translate-x-1/2 px-4 py-1 rounded-full bg-[#ff6b35] text-white text-xs font-bold">
+                  <div className="absolute -top-4 start-1/2 -translate-x-1/2 rtl:translate-x-1/2 px-4 py-1 rounded-full bg-[#0A8F84] text-white text-xs font-bold">
                     {t("pricing.popular", "الأكثر شعبية")}
                   </div>
                 )}
@@ -522,7 +522,7 @@ export default function LandingPage() {
                   {p.name}
                 </div>
                 <div className="flex items-baseline gap-2 mb-2">
-                  <span className="text-5xl font-extrabold text-[#1e3a5f]">
+                  <span className="text-5xl font-extrabold text-[#064E49]">
                     {p.price}
                   </span>
                   <span className="text-[#6b7280]">SAR / {t("pricing.month", "شهر")}</span>
@@ -531,7 +531,7 @@ export default function LandingPage() {
                 <ul className="space-y-3 mb-8">
                   {p.features.map((f, idx) => (
                     <li key={idx} className="flex items-start gap-3 text-sm">
-                      <Check className="w-5 h-5 text-[#ff6b35] flex-shrink-0 mt-0.5" />
+                      <Check className="w-5 h-5 text-[#0A8F84] flex-shrink-0 mt-0.5" />
                       <span className="text-[#1f2937]">{f}</span>
                     </li>
                   ))}
@@ -540,8 +540,8 @@ export default function LandingPage() {
                   href="/signup"
                   className={`block text-center px-6 py-3 rounded-xl font-semibold transition-all ${
                     p.highlight
-                      ? "bg-[#ff6b35] text-white shadow-lg hover:shadow-xl hover:bg-[#ff8a5c]"
-                      : "bg-[#1e3a5f]/5 text-[#1e3a5f] hover:bg-[#1e3a5f] hover:text-white"
+                      ? "bg-[#0A8F84] text-white shadow-lg hover:shadow-xl hover:bg-[#12B5A8]"
+                      : "bg-[#064E49]/5 text-[#064E49] hover:bg-[#064E49] hover:text-white"
                   }`}
                 >
                   {p.cta}
@@ -556,7 +556,7 @@ export default function LandingPage() {
       <section id="faq" className="py-24">
         <div className="max-w-4xl mx-auto px-6">
           <motion.div {...fadeUp} className="text-center mb-12">
-            <h2 className="text-4xl md:text-5xl font-extrabold text-[#1e3a5f] mb-4">
+            <h2 className="text-4xl md:text-5xl font-extrabold text-[#064E49] mb-4">
               {t("faq.title", "أسئلة شائعة")}
             </h2>
           </motion.div>
@@ -592,11 +592,11 @@ export default function LandingPage() {
               <motion.details
                 key={i}
                 variants={fadeUp}
-                className="group p-6 rounded-2xl bg-white border border-gray-200 hover:border-[#ff6b35]/30 transition-colors"
+                className="group p-6 rounded-2xl bg-white border border-gray-200 hover:border-[#0A8F84]/30 transition-colors"
               >
-                <summary className="flex items-center justify-between cursor-pointer text-lg font-semibold text-[#1e3a5f] list-none">
+                <summary className="flex items-center justify-between cursor-pointer text-lg font-semibold text-[#064E49] list-none">
                   {f.q}
-                  <span className="text-[#ff6b35] group-open:rotate-45 transition-transform text-2xl">
+                  <span className="text-[#0A8F84] group-open:rotate-45 transition-transform text-2xl">
                     +
                   </span>
                 </summary>
@@ -612,10 +612,10 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto px-6">
           <motion.div
             {...fadeUp}
-            className="relative rounded-3xl bg-gradient-to-br from-[#1e3a5f] to-[#152a47] p-12 md:p-16 text-center overflow-hidden"
+            className="relative rounded-3xl bg-gradient-to-br from-[#064E49] to-[#043530] p-12 md:p-16 text-center overflow-hidden"
           >
-            <div className="absolute top-0 end-0 w-64 h-64 rounded-full bg-[#ff6b35]/20 blur-3xl" />
-            <div className="absolute bottom-0 start-0 w-64 h-64 rounded-full bg-[#ff6b35]/10 blur-3xl" />
+            <div className="absolute top-0 end-0 w-64 h-64 rounded-full bg-[#0A8F84]/20 blur-3xl" />
+            <div className="absolute bottom-0 start-0 w-64 h-64 rounded-full bg-[#0A8F84]/10 blur-3xl" />
             <div className="relative">
               <h2 className="text-4xl md:text-5xl font-extrabold text-white mb-4">
                 {t("cta.title", "جاهز لتغيير مسارك المهني؟")}
@@ -625,7 +625,7 @@ export default function LandingPage() {
               </p>
               <Link
                 href="/signup"
-                className="inline-flex items-center gap-2 px-10 py-5 rounded-xl bg-[#ff6b35] text-white font-bold text-lg shadow-2xl hover:bg-[#ff8a5c] transition-all"
+                className="inline-flex items-center gap-2 px-10 py-5 rounded-xl bg-[#0A8F84] text-white font-bold text-lg shadow-2xl hover:bg-[#12B5A8] transition-all"
               >
                 {t("cta.button", "ابدأ مجاناً الآن")}
                 <ArrowRight className={`w-5 h-5 ${isRTL ? "rotate-180" : ""}`} />
@@ -639,13 +639,13 @@ export default function LandingPage() {
       </section>
 
       {/* FOOTER */}
-      <footer className="bg-[#1e3a5f] text-white py-16">
+      <footer className="bg-[#064E49] text-white py-16">
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid md:grid-cols-4 gap-8 mb-12">
             <div>
               <div className="flex items-center gap-2 mb-4">
                 <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center">
-                  <Sparkles className="w-5 h-5 text-[#ff6b35]" />
+                  <Sparkles className="w-5 h-5 text-[#0A8F84]" />
                 </div>
                 <span className="text-xl font-extrabold">{t("brand.name", "وصّل")}</span>
               </div>
@@ -684,7 +684,7 @@ export default function LandingPage() {
                 <ul className="space-y-2 text-sm text-white/60">
                   {col.links.map((l, j) => (
                     <li key={j}>
-                      <a href="#" className="hover:text-[#ff6b35] transition">
+                      <a href="#" className="hover:text-[#0A8F84] transition">
                         {l}
                       </a>
                     </li>
