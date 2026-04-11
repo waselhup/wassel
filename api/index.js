@@ -43605,6 +43605,9 @@ async function scrapeLinkedInProfile(profileUrl) {
   }
   return items[0];
 }
+function isArabicName(name) {
+  return /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]/.test(name);
+}
 async function analyzeWithClaude(profileData) {
   const name = profileData.fullName || profileData.firstName + " " + profileData.lastName || "Unknown";
   const headline = profileData.headline || "";
@@ -43631,34 +43634,55 @@ Skills: ${skills || "None listed"}
 `.trim();
   console.log("[CLAUDE] Sending analysis request, model:", CLAUDE_MODEL);
   console.log("[CLAUDE] Profile text length:", profileText.length);
+  const isArabic = isArabicName(name);
+  const lang = isArabic ? "ar" : "en";
   const claudeBody = {
     model: CLAUDE_MODEL,
-    max_tokens: 2e3,
+    max_tokens: 3e3,
+    system: isArabic ? "\u0623\u0646\u062A \u0645\u0633\u062A\u0634\u0627\u0631 LinkedIn \u0645\u062D\u062A\u0631\u0641 \u0648\u0645\u062A\u062E\u0635\u0635 \u0641\u064A \u0627\u0644\u0633\u0648\u0642 \u0627\u0644\u0633\u0639\u0648\u062F\u064A \u0648\u0627\u0644\u062E\u0644\u064A\u062C\u064A. \u062D\u0644\u0644 \u0627\u0644\u0645\u0644\u0641\u0627\u062A \u0627\u0644\u0634\u062E\u0635\u064A\u0629 \u0628\u0639\u0645\u0642 \u0648\u0642\u062F\u0645 \u0646\u0635\u0627\u0626\u062D \u0639\u0645\u0644\u064A\u0629 \u0645\u062D\u062F\u062F\u0629. \u0623\u062C\u0628 \u062F\u0627\u0626\u0645\u0627\u064B \u0628\u0627\u0644\u0639\u0631\u0628\u064A\u0629 \u0627\u0644\u0641\u0635\u062D\u0649." : "You are a senior LinkedIn profile coach specializing in the Saudi/GCC job market. Analyze profiles holistically and provide specific, actionable advice. Always respond in English.",
     messages: [
       {
         role: "user",
-        content: `You are an expert LinkedIn profile optimizer specializing in the Saudi/GCC job market. Analyze this LinkedIn profile and return a JSON object with EXACTLY this structure (no markdown, no code blocks, just raw JSON):
+        content: `Analyze this LinkedIn profile thoroughly like a senior LinkedIn coach. Return a JSON object with EXACTLY this structure (no markdown, no code blocks, just raw JSON):
 {
   "score": <number 0-100>,
+  "scoreBreakdown": {
+    "photo": <0-10>,
+    "headline": <0-15>,
+    "summary": <0-15>,
+    "experience": <0-20>,
+    "skills": <0-10>,
+    "education": <0-10>,
+    "connections": <0-10>,
+    "keywords": <0-10>
+  },
   "headlineCurrent": "<current headline>",
-  "headlineSuggestion": "<improved headline>",
+  "headlineSuggestion": "<improved headline - ${isArabic ? "in Arabic" : "in English"}>",
   "summaryCurrent": "<current summary or 'No summary provided'>",
-  "summarySuggestion": "<improved professional summary in 2-3 sentences>",
-  "keywords": ["keyword1", "keyword2", ...up to 8 relevant keywords],
-  "experienceSuggestions": [{"role": "<role>", "suggestion": "<specific improvement tip>"}],
+  "summarySuggestion": "<improved professional summary in 3-4 sentences - ${isArabic ? "in Arabic" : "in English"}>",
+  "keywords": ["keyword1", "keyword2", ...up to 10 relevant keywords for this industry],
+  "experienceSuggestions": [{"role": "<role>", "suggestion": "<specific improvement tip - ${isArabic ? "in Arabic" : "in English"}>"}],
   "strengths": ["<strength1>", "<strength2>", "<strength3>"],
-  "weaknesses": ["<weakness1>", "<weakness2>", "<weakness3>"]
+  "weaknesses": ["<weakness1>", "<weakness2>", "<weakness3>"],
+  "actionPlan": [
+    "<immediate action 1 - ${isArabic ? "in Arabic" : "in English"}>",
+    "<immediate action 2>",
+    "<immediate action 3>"
+  ],
+  "industryTips": "<2-3 sentences of industry-specific advice for Saudi/GCC market - ${isArabic ? "in Arabic" : "in English"}>"
 }
 
-Score criteria:
-- Photo/banner: +10 if likely present (connections > 100 suggests active profile)
-- Headline quality: up to 15 points
-- Summary quality: up to 15 points
-- Experience detail: up to 20 points
-- Skills: up to 10 points
-- Education: up to 10 points
-- Connections: up to 10 points
-- Keywords/SEO: up to 10 points
+Score criteria (be strict and realistic):
+- Photo/banner: +10 if likely present (connections > 100 suggests active profile with photo)
+- Headline quality: up to 15 points (is it specific? includes value prop? has keywords?)
+- Summary quality: up to 15 points (tells a story? has CTA? mentions achievements?)
+- Experience detail: up to 20 points (has metrics? action verbs? relevant descriptions?)
+- Skills: up to 10 points (relevant? endorsed? minimum 5 skills listed?)
+- Education: up to 10 points (degrees listed? certifications? courses?)
+- Connections: up to 10 points (500+ = 10, 200+ = 7, 100+ = 5, <100 = 2)
+- Keywords/SEO: up to 10 points (industry terms? job title keywords? searchable?)
+
+${isArabic ? "IMPORTANT: All suggestions, strengths, weaknesses, action plan, and tips MUST be in Arabic (Modern Standard Arabic). Reference Vision 2030 if relevant to Saudi market." : "IMPORTANT: All text must be in English. Reference Vision 2030 if relevant to Saudi market."}
 
 Profile data:
 ${profileText}`
@@ -43803,7 +43827,18 @@ Candidate Info:
 - Languages: ${context.languages || "Not provided"}
 - Job Description: ${context.jobDescription || "Not provided"}
 ` : "";
-  const prompt = `You are a professional CV/resume optimizer specializing in the Saudi/GCC job market. Generate a tailored CV version for: ${field}
+  const prompt = `You are a professional CV writer following Oxford University Career Service guidelines, specializing in the Saudi/GCC job market.
+
+Generate a professional CV version for: ${field}
+
+Oxford CV Standards:
+- Professional Summary: 3-4 sentences highlighting unique value proposition
+- Core Skills: 8 relevant, ATS-optimized keywords
+- Professional Experience: Action verbs + metrics + impact (STAR method)
+- Education: Degree, institution, year, relevant coursework
+- Language: Detect if Arabic name -> write in Arabic (Modern Standard Arabic), else English
+- Style: Clean, no tables, ATS-friendly formatting
+- Include Vision 2030 reference if relevant to Saudi market
 ${contextBlock}
 Return a JSON object with EXACTLY this structure (no markdown, just JSON):
 {
@@ -43948,6 +43983,81 @@ var cvRouter = router({
       });
     }
   }),
+  parseUpload: protectedProcedure.input(external_exports.object({
+    fileBase64: external_exports.string(),
+    fileName: external_exports.string()
+  })).mutation(async ({ input, ctx }) => {
+    console.log("[CV] parseUpload called for file:", input.fileName);
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Claude API key not configured" });
+    }
+    let textContent = "";
+    try {
+      const buffer = Buffer.from(input.fileBase64, "base64");
+      textContent = buffer.toString("utf8");
+      textContent = textContent.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, " ");
+      textContent = textContent.substring(0, 8e3);
+    } catch (e) {
+      console.error("[CV] Failed to decode file:", e);
+      throw new TRPCError({ code: "BAD_REQUEST", message: "Could not read file content" });
+    }
+    console.log("[CV] Extracted text length:", textContent.length);
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01"
+      },
+      body: JSON.stringify({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 1500,
+        messages: [{
+          role: "user",
+          content: `Extract structured CV/resume data from this text. Return ONLY a JSON object with these fields (use empty string if not found):
+{
+  "name": "full name",
+  "email": "email address",
+  "phone": "phone number",
+  "currentRole": "current job title",
+  "experience": "years of experience (number only)",
+  "skills": "comma separated skills",
+  "education": "highest degree and institution",
+  "achievements": "key achievements",
+  "languages": "languages spoken"
+}
+
+CV text:
+${textContent}`
+        }]
+      })
+    });
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error("[CV] Claude API error:", response.status, errText);
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to parse CV" });
+    }
+    const data = await response.json();
+    const text = data.content?.[0]?.text || "";
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to extract CV data" });
+    }
+    const parsed = JSON.parse(jsonMatch[0]);
+    console.log("[CV] Parsed CV data:", Object.keys(parsed).join(", "));
+    return {
+      name: parsed.name || "",
+      email: parsed.email || "",
+      phone: parsed.phone || "",
+      currentRole: parsed.currentRole || "",
+      experience: parsed.experience || "",
+      skills: parsed.skills || "",
+      education: parsed.education || "",
+      achievements: parsed.achievements || "",
+      languages: parsed.languages || ""
+    };
+  }),
   history: protectedProcedure.query(async ({ ctx }) => {
     console.log(`[CV] Fetching history for user: ${ctx.user.id}`);
     try {
@@ -43969,6 +44079,7 @@ var cvRouter = router({
 });
 
 // server/_core/routes/campaign.ts
+var APIFY_TOKEN2 = process.env.APIFY_TOKEN || process.env.APIFY_API_TOKEN || "";
 async function generateEmailsWithClaude(companies, jobTitle, language) {
   console.log("[CAMPAIGN] Starting Claude API email generation for", companies.length, "companies");
   if (!process.env.ANTHROPIC_API_KEY) {
@@ -44142,6 +44253,200 @@ var campaignRouter = router({
         message: "Failed to fetch campaign"
       });
     }
+  }),
+  discoverProspects: protectedProcedure.input(external_exports.object({
+    jobTitle: external_exports.string().min(1),
+    industry: external_exports.string().optional(),
+    location: external_exports.string().default("Saudi Arabia")
+  })).mutation(async ({ input }) => {
+    console.log("[CAMPAIGN] Discovering prospects for:", input.jobTitle, "in", input.location);
+    if (!APIFY_TOKEN2) {
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Apify token not configured" });
+    }
+    try {
+      const runRes = await fetch(
+        `https://api.apify.com/v2/acts/harvestapi~linkedin-profile-search/runs?token=${APIFY_TOKEN2}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            keyword: input.jobTitle,
+            location: input.location,
+            count: 20
+          })
+        }
+      );
+      if (!runRes.ok) {
+        const errText = await runRes.text();
+        console.error("[APIFY] Run failed:", runRes.status, errText);
+        throw new Error("Prospect search failed: " + runRes.status);
+      }
+      const runData = await runRes.json();
+      const runId = runData?.data?.id;
+      const datasetId = runData?.data?.defaultDatasetId;
+      console.log("[APIFY] Search started, run ID:", runId);
+      let status = runData?.data?.status;
+      let attempts = 0;
+      while (status !== "SUCCEEDED" && status !== "FAILED" && status !== "ABORTED" && attempts < 20) {
+        await new Promise((r) => setTimeout(r, 3e3));
+        const pollRes = await fetch(`https://api.apify.com/v2/actor-runs/${runId}?token=${APIFY_TOKEN2}`);
+        const pollData = await pollRes.json();
+        status = pollData?.data?.status;
+        attempts++;
+        console.log("[APIFY] Poll", attempts, "- status:", status);
+      }
+      if (status !== "SUCCEEDED") {
+        throw new Error("Prospect search did not complete: " + status);
+      }
+      const itemsRes = await fetch(`https://api.apify.com/v2/datasets/${datasetId}/items?token=${APIFY_TOKEN2}`);
+      const items = await itemsRes.json();
+      console.log("[APIFY] Got", Array.isArray(items) ? items.length : 0, "prospects");
+      const prospects = (Array.isArray(items) ? items : []).slice(0, 20).map((item) => ({
+        name: item.fullName || item.firstName + " " + (item.lastName || ""),
+        title: item.headline || item.title || "",
+        company: item.companyName || item.company || "",
+        linkedinUrl: item.profileUrl || item.url || "",
+        email: item.email || "",
+        location: item.location || "",
+        connections: item.connectionsCount || item.connections || 0
+      }));
+      return { prospects };
+    } catch (err) {
+      console.error("[CAMPAIGN] Discover error:", err?.message);
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: err?.message || "Failed to discover prospects"
+      });
+    }
+  }),
+  generateMessages: protectedProcedure.input(external_exports.object({
+    prospects: external_exports.array(external_exports.object({
+      name: external_exports.string(),
+      title: external_exports.string(),
+      company: external_exports.string(),
+      linkedinUrl: external_exports.string().optional()
+    })).min(1).max(20),
+    jobTitle: external_exports.string(),
+    language: external_exports.enum(["ar", "en"])
+  })).mutation(async ({ input }) => {
+    console.log("[CAMPAIGN] Generating messages for", input.prospects.length, "prospects");
+    if (!process.env.ANTHROPIC_API_KEY) {
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Claude API key not configured" });
+    }
+    const prospectsJson = JSON.stringify(input.prospects.map((p) => ({
+      name: p.name,
+      title: p.title,
+      company: p.company
+    })));
+    const systemPrompt = input.language === "ar" ? "You are an expert at writing personalized B2B outreach messages for the Saudi market. Write in Modern Standard Arabic. Never start with generic openers. Each message must mention the person's name and company. Keep messages 200-300 characters. End with a call to connect." : "You are an expert at writing personalized B2B outreach messages. Write professional, concise messages. Each must mention the prospect's name and company. Keep messages 200-300 characters.";
+    const userPrompt = input.language === "ar" ? `Generate personalized outreach messages for each prospect. My role: ${input.jobTitle}.
+
+Prospects:
+${prospectsJson}
+
+Return JSON array:
+[{"prospectName":"...","company":"...","subject":"...","body":"..."}]
+
+Rules:
+- Each message unique and personalized
+- Mention prospect name and company
+- Reference Vision 2030 if company is Saudi government/semi-gov
+- 200-300 chars per body
+- Professional Arabic` : `Generate personalized outreach messages for each prospect. My role: ${input.jobTitle}.
+
+Prospects:
+${prospectsJson}
+
+Return JSON array:
+[{"prospectName":"...","company":"...","subject":"...","body":"..."}]`;
+    try {
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": process.env.ANTHROPIC_API_KEY,
+          "anthropic-version": "2023-06-01"
+        },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-6",
+          max_tokens: 4096,
+          system: systemPrompt,
+          messages: [{ role: "user", content: userPrompt }]
+        })
+      });
+      if (!response.ok) {
+        throw new Error("Claude API error: " + response.status);
+      }
+      const result = await response.json();
+      const text = result.content?.[0]?.text || "";
+      const jsonMatch = text.match(/\[[\s\S]*\]/);
+      if (!jsonMatch) {
+        throw new Error("Failed to parse messages response");
+      }
+      const messages = JSON.parse(jsonMatch[0]);
+      console.log("[CAMPAIGN] Generated", messages.length, "messages");
+      return { messages };
+    } catch (err) {
+      console.error("[CAMPAIGN] Generate messages error:", err?.message);
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: err?.message || "Failed to generate messages"
+      });
+    }
+  }),
+  send: protectedProcedure.input(external_exports.object({
+    campaignId: external_exports.string().uuid(),
+    messages: external_exports.array(external_exports.object({
+      email: external_exports.string().email(),
+      subject: external_exports.string(),
+      body: external_exports.string()
+    })).min(1)
+  })).mutation(async ({ input, ctx }) => {
+    console.log("[CAMPAIGN] Sending", input.messages.length, "emails for campaign:", input.campaignId);
+    const { data: profile } = await ctx.supabase.from("profiles").select("google_oauth_token, google_refresh_token").eq("id", ctx.user.id).single();
+    if (!profile?.google_oauth_token) {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: "Gmail not connected. Please connect your Gmail account first."
+      });
+    }
+    let sent = 0;
+    let failed = 0;
+    for (const msg of input.messages) {
+      try {
+        const emailContent = [
+          "Content-Type: text/plain; charset=utf-8",
+          "MIME-Version: 1.0",
+          `To: ${msg.email}`,
+          `Subject: =?UTF-8?B?${Buffer.from(msg.subject).toString("base64")}?=`,
+          "",
+          msg.body
+        ].join("\r\n");
+        const encodedMessage = Buffer.from(emailContent).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+        const gmailRes = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", {
+          method: "POST",
+          headers: {
+            "Authorization": "Bearer " + profile.google_oauth_token,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ raw: encodedMessage })
+        });
+        if (gmailRes.ok) {
+          sent++;
+          await ctx.supabase.from("campaign_recipients").update({ status: "sent", sent_at: (/* @__PURE__ */ new Date()).toISOString() }).eq("campaign_id", input.campaignId).eq("prospect_email", msg.email);
+        } else {
+          failed++;
+          const errText = await gmailRes.text();
+          console.error("[GMAIL] Send failed for", msg.email, ":", errText);
+          await ctx.supabase.from("campaign_recipients").update({ status: "failed" }).eq("campaign_id", input.campaignId).eq("prospect_email", msg.email);
+        }
+      } catch (err) {
+        failed++;
+        console.error("[GMAIL] Error sending to", msg.email, ":", err);
+      }
+    }
+    console.log("[CAMPAIGN] Send complete. Sent:", sent, "Failed:", failed);
+    return { sent, failed };
   }),
   create: protectedProcedure.input(
     external_exports.object({

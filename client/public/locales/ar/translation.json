@@ -1,4 +1,4 @@
-{
+ï»¿{
   "nav": {
     "home": "الرئيسية",
     "features": "المميزات",
@@ -386,7 +386,21 @@
     "stepGenerating": "إنشاء الاقتراحات...",
     "strengthsLabel": "نقاط القوة",
     "weaknessesLabel": "نقاط الضعف",
-    "historyDesc": "تحليلاتك السابقة"
+    "historyDesc": "تحليلاتك السابقة",
+    "createCampaign": "إنشاء حملة من هذا الملف",
+    "downloadPDF": "تحميل التقرير PDF",
+    "scoreBreakdownLabel": "تفصيل التقييم",
+    "actionPlanLabel": "خطة العمل",
+    "breakdown": {
+      "photo": "الصورة",
+      "headline": "العنوان",
+      "summary": "الملخص",
+      "experience": "الخبرة",
+      "skills": "المهارات",
+      "education": "التعليم",
+      "connections": "الاتصالات",
+      "keywords": "الكلمات المفتاحية"
+    }
   },
   "cvTailor": {
     "title": "تخصيص السيرة الذاتية",
@@ -654,5 +668,24 @@
     "starter": "مبتدئ",
     "pro": "احترافي",
     "elite": "نخبة"
+  },
+  "cv": {
+    "uploadCV": "رفع سيرتي الذاتية",
+    "uploading": "جاري الرفع...",
+    "uploadSuccess": "تم استخراج البيانات بنجاح",
+    "uploadError": "فشل رفع الملف",
+    "acceptedFormats": "صيغ مقبولة: PDF, DOCX, TXT",
+    "downloadPDF": "تحميل PDF"
+  },
+  "campaign": {
+    "discoverProspects": "اكتشاف العملاء المحتملين",
+    "discovering": "جاري البحث...",
+    "connectGmail": "ربط Gmail",
+    "sendEmails": "إرسال الرسائل",
+    "sending": "جاري الإرسال...",
+    "selectAll": "تحديد الكل",
+    "deselectAll": "إلغاء التحديد",
+    "prospectsFound": "عميل محتمل",
+    "noEmailWarning": "لا يوجد بريد إلكتروني"
   }
 }

@@ -1,27 +1,37 @@
-import { supabase } from './supabase';
+ï»¿import { supabase } from './supabase';
 
 const BASE = '/api/trpc';
 
 async function authHeaders(): Promise<Record<string, string>> {
-  const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token;
   const h: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (token) h['Authorization'] = `Bearer ${token}`;
+  try {
+    const { data } = await supabase.auth.getSession();
+    let token = data.session?.access_token;
+    if (!token) {
+      const { data: r } = await supabase.auth.refreshSession();
+      token = r.session?.access_token;
+    }
+    if (token) h['Authorization'] = `Bearer ${token}`;
+  } catch {}
   return h;
 }
 
 function handle(j: any) {
   if (j?.error) {
+    const code = j.error.data?.code;
+    if (code === 'UNAUTHORIZED') {
+      window.location.href = '/login';
+      return;
+    }
     throw new Error(j.error.message || 'Request failed');
   }
-  return j?.result?.data;
+  return j?.result?.data ?? j?.result ?? j;
 }
 
 export async function trpcQuery<T = any>(name: string, input?: any): Promise<T> {
-  const url =
-    input !== undefined
-      ? `${BASE}/${name}?input=${encodeURIComponent(JSON.stringify(input))}`
-      : `${BASE}/${name}`;
+  const url = input !== undefined
+    ? `${BASE}/${name}?input=${encodeURIComponent(JSON.stringify(input))}`
+    : `${BASE}/${name}`;
   const res = await fetch(url, { headers: await authHeaders() });
   const j = await res.json();
   return handle(j);
@@ -50,6 +60,8 @@ export const trpc = {
   cv: {
     generate: (fields: string[], context?: Record<string, string>) =>
       trpcMutation<{ versions: any[]; tokensRemaining: number }>('cv.generate', { fields, context }),
+    parseUpload: (fileBase64: string, fileName: string) =>
+      trpcMutation<{ name: string; email: string; phone: string; currentRole: string; experience: string; skills: string; education: string; achievements: string; languages: string }>('cv.parseUpload', { fileBase64, fileName }),
     history: () => trpcQuery<any[]>('cv.history'),
   },
   campaign: {
@@ -66,6 +78,20 @@ export const trpc = {
       recipientCount: number;
       language: 'ar' | 'en';
     }) => trpcMutation<any>('campaign.create', input),
+    discoverProspects: (input: {
+      jobTitle: string;
+      industry: string;
+      location: string;
+    }) => trpcMutation<{ prospects: any[] }>('campaign.discoverProspects', input),
+    generateMessages: (input: {
+      prospects: Array<{ name: string; title: string; company: string; linkedinUrl: string }>;
+      jobTitle: string;
+      language: 'ar' | 'en';
+    }) => trpcMutation<{ messages: Array<{ prospectName: string; company: string; subject: string; body: string }> }>('campaign.generateMessages', input),
+    send: (input: {
+      campaignId: string;
+      messages: Array<{ email: string; subject: string; body: string }>;
+    }) => trpcMutation<{ sent: number; failed: number }>('campaign.send', input),
   },
   admin: {
     stats: () => trpcQuery<any>('admin.stats'),

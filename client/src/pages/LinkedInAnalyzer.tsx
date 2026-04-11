@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+ï»¿import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
@@ -11,8 +11,10 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import {
   AlertCircle, Zap, Copy, RotateCcw, ChevronDown, ChevronUp,
-  CheckCircle, Loader, History as HistoryIcon, UserCheck, BookOpen
+  CheckCircle, Loader, History as HistoryIcon, UserCheck, BookOpen,
+  FileDown, Megaphone
 } from 'lucide-react';
+import { useLocation } from 'wouter';
 
 interface AnalysisResult {
   score: number;
@@ -27,6 +29,18 @@ interface AnalysisResult {
     role: string;
     suggestion: string;
   }>;
+  scoreBreakdown?: {
+    photo: number;
+    headline: number;
+    summary: number;
+    experience: number;
+    skills: number;
+    education: number;
+    connections: number;
+    keywords: number;
+  };
+  actionPlan?: string[];
+  industryTips?: string;
 }
 
 interface AnalysisHistoryItem {
@@ -46,6 +60,7 @@ type LoadingStep = 'fetching' | 'analyzing' | 'generating' | null;
 
 const LinkedInAnalyzer: React.FC = () => {
   const { t } = useTranslation();
+  const [, navigate] = useLocation();
   const { user, profile, refreshProfile } = useAuth();
   const [linkedInInput, setLinkedInInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -136,17 +151,17 @@ const LinkedInAnalyzer: React.FC = () => {
 
   const handleAnalyze = async () => {
     if (!linkedInInput.trim()) {
-      setError(t('linkedInAnalyzer.invalidUrl', 'يرجى إدخال رابط LinkedIn صحيح'));
+      setError(t('linkedInAnalyzer.invalidUrl'));
       return;
     }
 
     if (!validateLinkedInUrl(linkedInInput)) {
-      setError(t('linkedInAnalyzer.invalidUrl', 'يرجى إدخال رابط LinkedIn صحيح'));
+      setError(t('linkedInAnalyzer.invalidUrl'));
       return;
     }
 
     if (!hasEnoughTokens) {
-      setError(t('linkedInAnalyzer.insufficientTokensDesc', 'رصيد الرموز غير كافٍ'));
+      setError(t('linkedInAnalyzer.insufficientTokensDesc'));
       return;
     }
 
@@ -172,7 +187,10 @@ const LinkedInAnalyzer: React.FC = () => {
         keywords: response.keywords,
         strengths: response.strengths || [],
         weaknesses: response.weaknesses || [],
-        experienceSuggestions: response.experienceSuggestions || []
+        experienceSuggestions: response.experienceSuggestions || [],
+        scoreBreakdown: response.scoreBreakdown,
+        actionPlan: response.actionPlan || [],
+        industryTips: response.industryTips || '',
       };
 
       setAnalysis(analysisData);
@@ -191,7 +209,7 @@ const LinkedInAnalyzer: React.FC = () => {
       setHistory(updatedHistory as AnalysisHistoryItem[]);
     } catch (err: any) {
       console.error('Analysis error:', err);
-      const message = err?.message || err?.data?.message || t('linkedInAnalyzer.analysisFailed', 'فشل التحليل');
+      const message = err?.message || err?.data?.message || t('linkedInAnalyzer.analysisFailed');
       setError(message);
     } finally {
       setLoading(false);
@@ -248,6 +266,16 @@ const LinkedInAnalyzer: React.FC = () => {
     }
   };
 
+
+  const handleDownloadPDF = () => {
+    window.print();
+  };
+
+  const handleCreateCampaign = () => {
+    // Navigate to campaign page - the profile data can be used there
+    navigate('/campaigns/new');
+  };
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
@@ -273,7 +301,7 @@ const LinkedInAnalyzer: React.FC = () => {
               <CardHeader>
                 <CardTitle className="font-cairo flex items-center gap-2">
                   <HistoryIcon className="w-5 h-5" />
-                  {t('linkedInAnalyzer.historyLabel', 'التحليلات السابقة')}
+                  {t('linkedInAnalyzer.historyLabel')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -313,13 +341,13 @@ const LinkedInAnalyzer: React.FC = () => {
             <CardHeader>
               <CardTitle className="font-cairo">{t('linkedInAnalyzer.title')}</CardTitle>
               <p className="text-sm text-[var(--text-secondary)] mt-2">
-                {t('linkedInAnalyzer.description', 'حلل ملفك الشخصي على LinkedIn واحصل على اقتراحات لتحسينه')}
+                {t('linkedInAnalyzer.description')}
               </p>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
-                  {t('linkedInAnalyzer.urlLabel', 'رابط LinkedIn')}
+                  {t('linkedInAnalyzer.urlLabel')}
                 </label>
                 <div className="flex gap-2">
                   <div className="relative flex-1">
@@ -343,7 +371,7 @@ const LinkedInAnalyzer: React.FC = () => {
                       className="flex items-center gap-2 whitespace-nowrap"
                     >
                       <UserCheck className="w-4 h-4" />
-                      {t('linkedInAnalyzer.analyzeMyProfile', 'تحليل ملفي')}
+                      {t('linkedInAnalyzer.analyzeMyProfile')}
                     </Button>
                   )}
                 </div>
@@ -354,10 +382,10 @@ const LinkedInAnalyzer: React.FC = () => {
                 <Zap className="w-5 h-5 text-[var(--accent-secondary)] flex-shrink-0 mt-0.5" />
                 <div className="flex-1">
                   <p className="text-sm font-medium text-[var(--text-primary)]">
-                    {t('linkedInAnalyzer.cost', 'التكلفة: 5 رموز')}
+                    {t('linkedInAnalyzer.cost')}
                   </p>
                   <p className={`text-sm ${hasEnoughTokens ? 'text-green-600' : 'text-red-600'}`}>
-                    {displayTokens} {t('linkedInAnalyzer.tokensAvailable', 'رمز متاح')}
+                    {displayTokens} {t('linkedInAnalyzer.tokensAvailable')}
                   </p>
                 </div>
               </div>
@@ -377,9 +405,9 @@ const LinkedInAnalyzer: React.FC = () => {
                 size="lg"
               >
                 {loading ? (
-                  <><Loader className="w-5 h-5 animate-spin me-2" /> {t('linkedInAnalyzer.analyzing', 'جاري التحليل...')}</>
+                  <><Loader className="w-5 h-5 animate-spin me-2" /> {t('linkedInAnalyzer.analyzing')}</>
                 ) : (
-                  <><Zap className="w-5 h-5 me-2" /> {t('linkedInAnalyzer.analyze', 'تحليل الملف')}</>
+                  <><Zap className="w-5 h-5 me-2" /> {t('linkedInAnalyzer.analyze')}</>
                 )}
               </Button>
             </CardContent>
@@ -396,10 +424,10 @@ const LinkedInAnalyzer: React.FC = () => {
                     <Loader className="w-6 h-6 text-[var(--accent-secondary)] animate-spin flex-shrink-0" />
                     <div className="flex-1">
                       <p className="font-medium text-[var(--text-primary)]">
-                        {t('linkedInAnalyzer.analyzing', 'جاري التحليل...')}
+                        {t('linkedInAnalyzer.analyzing')}
                       </p>
                       <p className="text-sm text-[var(--text-secondary)] mt-1">
-                        {t('linkedInAnalyzer.stepFetching', 'قد يستغرق 30-60 ثانية')}
+                        {t('linkedInAnalyzer.stepFetching')}
                       </p>
                       <div className="w-full bg-[var(--border-subtle)] rounded-full h-1 mt-2">
                         <motion.div
@@ -426,7 +454,7 @@ const LinkedInAnalyzer: React.FC = () => {
                 <Card className={`border-2 ${getScoreBgColor(analysis.score)}`}>
                   <CardContent className="p-8 text-center">
                     <p className="text-sm font-medium text-[var(--text-secondary)] mb-2">
-                      {t('linkedInAnalyzer.scoreLabel', 'نقاط الملف')}
+                      {t('linkedInAnalyzer.scoreLabel')}
                     </p>
                     <div className={`text-6xl font-bold ${getScoreColor(analysis.score)} mb-2`}>
                       {analysis.score}
@@ -440,9 +468,9 @@ const LinkedInAnalyzer: React.FC = () => {
                       />
                     </div>
                     <p className="text-sm text-[var(--text-secondary)]">
-                      {analysis.score >= 70 && t('linkedInAnalyzer.scoreExcellent', 'ممتاز!')}
-                      {analysis.score >= 40 && analysis.score < 70 && t('linkedInAnalyzer.scoreGood', 'جيد، يمكن تحسينه')}
-                      {analysis.score < 40 && t('linkedInAnalyzer.scoreNeeds', 'يحتاج تحسين كبير')}
+                      {analysis.score >= 70 && t('linkedInAnalyzer.scoreExcellent')}
+                      {analysis.score >= 40 && analysis.score < 70 && t('linkedInAnalyzer.scoreGood')}
+                      {analysis.score < 40 && t('linkedInAnalyzer.scoreNeeds')}
                     </p>
                   </CardContent>
                 </Card>
@@ -452,13 +480,13 @@ const LinkedInAnalyzer: React.FC = () => {
               <motion.div variants={itemVariants}>
                 <Card>
                   <CardHeader>
-                    <CardTitle className="font-cairo">{t('linkedInAnalyzer.headlineLabel', 'العنوان')}</CardTitle>
+                    <CardTitle className="font-cairo">{t('linkedInAnalyzer.headlineLabel')}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <p className="text-xs font-semibold text-[var(--text-secondary)] uppercase mb-2">
-                          {t('linkedInAnalyzer.currentLabel', 'الحالي')}
+                          {t('linkedInAnalyzer.currentLabel')}
                         </p>
                         <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
                           <p className="text-sm text-[var(--text-primary)]">{analysis.headlineCurrent}</p>
@@ -466,7 +494,7 @@ const LinkedInAnalyzer: React.FC = () => {
                       </div>
                       <div>
                         <p className="text-xs font-semibold text-[var(--text-secondary)] uppercase mb-2">
-                          {t('linkedInAnalyzer.suggestedLabel', 'المقترح')}
+                          {t('linkedInAnalyzer.suggestedLabel')}
                         </p>
                         <div className="p-4 bg-green-50 border border-green-200 rounded-lg relative">
                           <p className="text-sm text-[var(--text-primary)]">{analysis.headlineSuggestion}</p>
@@ -487,17 +515,17 @@ const LinkedInAnalyzer: React.FC = () => {
               <motion.div variants={itemVariants}>
                 <Card>
                   <CardHeader>
-                    <CardTitle className="font-cairo">{t('linkedInAnalyzer.summaryLabel', 'الملخص')}</CardTitle>
+                    <CardTitle className="font-cairo">{t('linkedInAnalyzer.summaryLabel')}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div>
-                      <p className="text-xs font-semibold text-[var(--text-secondary)] uppercase mb-2">{t('linkedInAnalyzer.currentLabel', 'الحالي')}</p>
+                      <p className="text-xs font-semibold text-[var(--text-secondary)] uppercase mb-2">{t('linkedInAnalyzer.currentLabel')}</p>
                       <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
                         <p className="text-sm text-[var(--text-primary)] line-clamp-3">{analysis.summaryCurrent}</p>
                       </div>
                     </div>
                     <div>
-                      <p className="text-xs font-semibold text-[var(--text-secondary)] uppercase mb-2">{t('linkedInAnalyzer.suggestedLabel', 'المقترح')}</p>
+                      <p className="text-xs font-semibold text-[var(--text-secondary)] uppercase mb-2">{t('linkedInAnalyzer.suggestedLabel')}</p>
                       <div className="p-4 bg-green-50 border border-green-200 rounded-lg relative">
                         <p className="text-sm text-[var(--text-primary)]">{analysis.summarySuggestion}</p>
                         <button onClick={() => copyToClipboard(analysis.summarySuggestion, 'summary')} className="absolute top-2 right-2 p-2 hover:bg-green-100 rounded-lg transition-colors">
@@ -512,7 +540,7 @@ const LinkedInAnalyzer: React.FC = () => {
               {/* Keywords */}
               <motion.div variants={itemVariants}>
                 <Card>
-                  <CardHeader><CardTitle className="font-cairo">{t('linkedInAnalyzer.keywordsLabel', 'الكلمات المفتاحية')}</CardTitle></CardHeader>
+                  <CardHeader><CardTitle className="font-cairo">{t('linkedInAnalyzer.keywordsLabel')}</CardTitle></CardHeader>
                   <CardContent>
                     <div className="flex flex-wrap gap-2">
                       {analysis.keywords.map((keyword, idx) => (<Badge key={idx} variant="secondary">{keyword}</Badge>))}
@@ -525,7 +553,7 @@ const LinkedInAnalyzer: React.FC = () => {
               {analysis.strengths.length > 0 && (
                 <motion.div variants={itemVariants}>
                   <Card>
-                    <CardHeader><CardTitle className="font-cairo">{t('linkedInAnalyzer.strengthsLabel', 'نقاط القوة')}</CardTitle></CardHeader>
+                    <CardHeader><CardTitle className="font-cairo">{t('linkedInAnalyzer.strengthsLabel')}</CardTitle></CardHeader>
                     <CardContent>
                       <ul className="space-y-2">
                         {analysis.strengths.map((s, i) => (
@@ -544,7 +572,7 @@ const LinkedInAnalyzer: React.FC = () => {
               {analysis.weaknesses.length > 0 && (
                 <motion.div variants={itemVariants}>
                   <Card>
-                    <CardHeader><CardTitle className="font-cairo">{t('linkedInAnalyzer.weaknessesLabel', 'نقاط الضعف')}</CardTitle></CardHeader>
+                    <CardHeader><CardTitle className="font-cairo">{t('linkedInAnalyzer.weaknessesLabel')}</CardTitle></CardHeader>
                     <CardContent>
                       <ul className="space-y-2">
                         {analysis.weaknesses.map((w, i) => (
@@ -563,7 +591,7 @@ const LinkedInAnalyzer: React.FC = () => {
               {analysis.experienceSuggestions.length > 0 && (
                 <motion.div variants={itemVariants}>
                   <Card>
-                    <CardHeader><CardTitle className="font-cairo">{t('linkedInAnalyzer.experienceLabel', 'اقتراحات الخبرة')}</CardTitle></CardHeader>
+                    <CardHeader><CardTitle className="font-cairo">{t('linkedInAnalyzer.experienceLabel')}</CardTitle></CardHeader>
                     <CardContent className="space-y-2">
                       {analysis.experienceSuggestions.map((exp, idx) => (
                         <div key={idx} className="border rounded-lg overflow-hidden">
@@ -588,19 +616,83 @@ const LinkedInAnalyzer: React.FC = () => {
                 </motion.div>
               )}
 
+              {/* Score Breakdown */}
+              {analysis.scoreBreakdown && (
+                <motion.div variants={itemVariants}>
+                  <Card>
+                    <CardHeader><CardTitle className="font-cairo">{t('linkedInAnalyzer.scoreBreakdownLabel', 'Score Breakdown')}</CardTitle></CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        {Object.entries(analysis.scoreBreakdown).map(([key, val]) => (
+                          <div key={key} className="text-center p-3 rounded-lg bg-[var(--bg-surface)]">
+                            <div className="text-lg font-bold text-[var(--accent-secondary)]">{val as number}</div>
+                            <div className="text-xs text-[var(--text-secondary)] capitalize">{t('linkedInAnalyzer.breakdown.' + key, key)}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              )}
+
+              {/* Action Plan */}
+              {analysis.actionPlan && analysis.actionPlan.length > 0 && (
+                <motion.div variants={itemVariants}>
+                  <Card>
+                    <CardHeader><CardTitle className="font-cairo">{t('linkedInAnalyzer.actionPlanLabel', 'Action Plan')}</CardTitle></CardHeader>
+                    <CardContent>
+                      <ol className="space-y-2">
+                        {analysis.actionPlan.map((action, i) => (
+                          <li key={i} className="flex items-start gap-3 p-3 rounded-lg bg-blue-50 border border-blue-200">
+                            <span className="w-6 h-6 rounded-full bg-blue-600 text-white text-xs flex items-center justify-center flex-shrink-0 mt-0.5">{i + 1}</span>
+                            <span className="text-sm text-blue-900">{action}</span>
+                          </li>
+                        ))}
+                      </ol>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              )}
+
+              {/* Industry Tips */}
+              {analysis.industryTips && (
+                <motion.div variants={itemVariants}>
+                  <Card className="border-[var(--accent-secondary)] border-2">
+                    <CardContent className="p-6">
+                      <p className="text-sm text-[var(--text-primary)] leading-relaxed">{analysis.industryTips}</p>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              )}
+
               {/* Action Buttons */}
-              <motion.div variants={itemVariants} className="flex gap-4 flex-wrap">
+              <motion.div variants={itemVariants} className="flex gap-3 flex-wrap print:hidden">
+                <Button
+                  onClick={handleCreateCampaign}
+                  className="flex-1 min-w-[140px] bg-[#ff6b35] hover:bg-[#e55a2b] text-white"
+                >
+                  <Megaphone className="w-4 h-4 me-2" />
+                  {t('linkedInAnalyzer.createCampaign', 'Create Campaign')}
+                </Button>
+                <Button
+                  onClick={handleDownloadPDF}
+                  variant="outline"
+                  className="flex-1 min-w-[140px]"
+                >
+                  <FileDown className="w-4 h-4 me-2" />
+                  {t('linkedInAnalyzer.downloadPDF', 'Download PDF')}
+                </Button>
                 <Button
                   onClick={saveToKnowledgeBase}
                   disabled={savedToKb}
                   className="flex-1 min-w-[120px] bg-[#1e3a5f] hover:bg-[#2c5282] text-white"
                 >
                   <BookOpen className="w-4 h-4 me-2" />
-                  {savedToKb ? t('kb.saved', 'تم الحفظ') : t('kb.saveToKb', 'حفظ في قاعدة المعرفة')}
+                  {savedToKb ? t('kb.saved') : t('kb.saveToKb')}
                 </Button>
                 <Button onClick={() => { setAnalysis(null); setLinkedInInput(''); setSavedToKb(false); }} variant="outline" className="flex-1 min-w-[120px]">
                   <RotateCcw className="w-4 h-4 me-2" />
-                  {t('linkedInAnalyzer.analyzeAgain', 'تحليل جديد')}
+                  {t('linkedInAnalyzer.analyzeAgain')}
                 </Button>
               </motion.div>
             </motion.div>
@@ -612,3 +704,4 @@ const LinkedInAnalyzer: React.FC = () => {
 };
 
 export default LinkedInAnalyzer;
+
