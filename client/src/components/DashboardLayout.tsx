@@ -1,204 +1,271 @@
-import { useState, useEffect, type ReactNode } from "react";
-import { Link, useLocation } from "wouter";
-import { useTranslation } from "react-i18next";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useAuth } from '@/contexts/AuthContext';
+import { useLocation, Link } from 'wouter';
+import { motion, AnimatePresence } from 'framer-motion';
+import { supabase } from '@/lib/supabase';
 import {
-  Home, BarChart2, FileText, Send, Coins, User,
-  Sparkles, Menu, X, LogOut, Globe2
-} from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
-import { trpcQuery } from "@/lib/trpc";
+  Home, UserCog, Linkedin, FileText, Mail, Coins, User, Shield,
+  LogOut, Globe, Menu, X, ChevronDown
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
-interface Props { children: ReactNode; tokens?: number }
+interface NavItem {
+  label: string;
+  icon: React.ReactNode;
+  href: string;
+}
 
-export default function DashboardLayout({ children, tokens: tokensProp }: Props) {
+interface DashboardLayoutProps {
+  children: React.ReactNode;
+  pageTitle?: string;
+}
+
+export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, pageTitle }) => {
   const { t, i18n } = useTranslation();
+  const { user, profile, signOut } = useAuth();
   const [location] = useLocation();
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const isRTL = i18n.language === "ar";
-  const { user, profile, signOut, refreshProfile } = useAuth();
-  const [trpcBalance, setTrpcBalance] = useState<number | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [tokenBalance, setTokenBalance] = useState<number | null>(null);
+  const [plan, setPlan] = useState<string | null>(null);
 
-  // Always read balance from profile (source of truth). Fallback to tRPC, then prop, then 0.
-  const tokens = profile?.token_balance ?? trpcBalance ?? tokensProp ?? 0;
-
-  // Refresh profile every time user navigates (keeps sidebar balance in sync)
+  // Direct Supabase fetch for token_balance and plan on every navigation
   useEffect(() => {
-    if (user && refreshProfile) {
-      refreshProfile();
-    }
-  }, [location, user]);
+    const fetchFreshData = async () => {
+      if (!user?.id) return;
+      try {
+        const { data } = await supabase
+          .from('profiles')
+          .select('token_balance, plan')
+          .eq('id', user.id)
+          .single();
+        if (data) {
+          setTokenBalance(data.token_balance ?? 0);
+          setPlan(data.plan ?? 'free');
+        }
+      } catch (err) {
+        console.error('[DashboardLayout] Failed to fetch profile:', err);
+      }
+    };
+    fetchFreshData();
+  }, [user?.id, location]);
 
-  // Fallback: fetch token balance via tRPC if profile doesn't have it
+  // Also sync from AuthContext profile when it loads
   useEffect(() => {
-    if (user && (profile?.token_balance === undefined || profile?.token_balance === null)) {
-      trpcQuery<{ balance: number }>("token.balance")
-        .then((data) => {
-          if (data?.balance !== undefined) setTrpcBalance(data.balance);
-        })
-        .catch(() => {});
+    if (profile) {
+      if (tokenBalance === null) setTokenBalance(profile.token_balance ?? 0);
+      if (plan === null) setPlan(profile.plan ?? 'free');
     }
-  }, [user, profile?.token_balance]);
+  }, [profile]);
 
-  const nav = [
-    { href: "/app", icon: Home, label: t("nav.home", "الرئيسية") },
-    { href: "/app/linkedin", icon: BarChart2, label: t("nav.linkedin", "تحليل LinkedIn") },
-    { href: "/app/cv", icon: FileText, label: t("nav.cv", "تخصيص السيرة") },
-    { href: "/app/campaigns", icon: Send, label: t("nav.campaigns", "الحملات") },
-    { href: "/app/tokens", icon: Coins, label: t("nav.tokens", "الرصيد") },
-    { href: "/app/profile", icon: User, label: t("nav.profile", "الملف الشخصي") },
+  const displayTokens = tokenBalance !== null ? tokenBalance : '...';
+  const displayPlan = (() => {
+    if (!plan) return '...';
+    switch (plan) {
+      case 'free': return t('nav.plan.free', 'مجاني');
+      case 'starter': return t('nav.plan.starter', 'مبتدئ');
+      case 'pro': return t('nav.plan.pro', 'احترافي');
+      case 'elite': return t('nav.plan.elite', 'إليت');
+      default: return plan;
+    }
+  })();
+
+  const handleLogout = async () => {
+    const { error } = await signOut();
+    if (!error) {
+      window.location.href = '/';
+    }
+  };
+
+  const toggleLanguage = () => {
+    const newLang = i18n.language === 'ar' ? 'en' : 'ar';
+    i18n.changeLanguage(newLang);
+    document.documentElement.lang = newLang;
+    document.documentElement.dir = newLang === 'ar' ? 'rtl' : 'ltr';
+  };
+
+  const isArabic = i18n.language === 'ar';
+
+  const navItems: NavItem[] = [
+    { label: t('sidebar.home'), icon: <Home className="w-5 h-5" />, href: '/app' },
+    { label: t('sidebar.setup'), icon: <UserCog className="w-5 h-5" />, href: '/app/setup' },
+    { label: t('sidebar.linkedin'), icon: <Linkedin className="w-5 h-5" />, href: '/app/linkedin' },
+    { label: t('sidebar.cv'), icon: <FileText className="w-5 h-5" />, href: '/app/cv' },
+    { label: t('sidebar.campaigns'), icon: <Mail className="w-5 h-5" />, href: '/app/campaigns' },
+    { label: t('sidebar.tokens'), icon: <Coins className="w-5 h-5" />, href: '/app/tokens' },
+    { label: t('sidebar.profile'), icon: <User className="w-5 h-5" />, href: '/app/profile' },
   ];
 
-  const initial = (user?.email || "U").charAt(0).toUpperCase();
-
-  const Sidebar = (
-    <aside className="w-64 bg-white border-e border-gray-200 flex flex-col h-full">
-      <div className="p-6 border-b border-gray-100">
-        <Link href="/app" className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#1e3a5f] flex items-center justify-center">
-            <Sparkles className="w-5 h-5 text-[#ff6b35]" />
-          </div>
-          <span className="text-xl font-extrabold text-[#1e3a5f]">
-            {t("brand.name", "وصّل")}
-          </span>
-        </Link>
-      </div>
-
-      <nav className="flex-1 p-4 space-y-1">
-        {nav.map((item) => {
-          const Icon = item.icon;
-          const active = location === item.href;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={() => setMobileOpen(false)}
-              className={`relative flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
-                active
-                  ? "bg-[#ff6b35]/10 text-[#ff6b35]"
-                  : "text-[#1e3a5f]/70 hover:bg-gray-50 hover:text-[#1e3a5f]"
-              }`}
-            >
-              {active && (
-                <motion.div
-                  layoutId="active-indicator"
-                  className="absolute start-0 top-2 bottom-2 w-1 rounded-full bg-[#ff6b35]"
-                />
-              )}
-              <Icon className="w-5 h-5" />
-              {item.label}
-            </Link>
-          );
-        })}
-      </nav>
-
-      <div className="p-4 border-t border-gray-100 space-y-3">
-        <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-gradient-to-r from-[#fff5f0] to-white border border-[#ff6b35]/20">
-          <div className="flex items-center gap-2">
-            <Coins className="w-4 h-4 text-[#ff6b35]" />
-            <span className="text-xs font-semibold text-[#6b7280]">
-              {t("nav.balance", "الرصيد")}
-            </span>
-          </div>
-          <span className="text-sm font-extrabold text-[#1e3a5f]">{tokens}</span>
-        </div>
-
-        <div className="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-50 transition">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#1e3a5f] to-[#ff6b35] flex items-center justify-center text-white font-bold shadow">
-            {initial}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-xs font-bold text-[#1e3a5f] truncate">
-              {user?.email || t("nav.guest", "زائر")}
-            </div>
-            <span className="text-[10px] font-semibold text-[#ff6b35] uppercase">
-              {profile?.plan === 'elite' ? t("nav.plan.elite", "إليت")
-                : profile?.plan === 'pro' ? t("nav.plan.pro", "احترافي")
-                : profile?.plan === 'starter' ? t("nav.plan.starter", "مبتدئ")
-                : t("nav.plan.free", "مجاني")}
-            </span>
-          </div>
-          <button
-            onClick={() => signOut?.()}
-            className="p-2 rounded-lg hover:bg-red-50 text-[#6b7280] hover:text-red-500 transition"
-            aria-label={t("nav.logout", "تسجيل الخروج")}
-          >
-            <LogOut className="w-4 h-4" />
-          </button>
-        </div>
-
-        <button
-          onClick={() => i18n.changeLanguage(isRTL ? "en" : "ar")}
-          className="w-full flex items-center justify-center gap-2 text-xs text-[#6b7280] hover:text-[#1e3a5f] py-2 rounded-lg"
-        >
-          <Globe2 className="w-3 h-3" />
-          {isRTL ? "English" : "العربية"}
-        </button>
-      </div>
-    </aside>
-  );
+  const isActive = (href: string) => {
+    if (href === '/app') return location === '/app';
+    return location.startsWith(href);
+  };
 
   return (
-    <div
-      dir={isRTL ? "rtl" : "ltr"}
-      className="min-h-screen bg-[#fafafa] text-[#1f2937] flex"
-      style={{ fontFamily: isRTL ? "Cairo, sans-serif" : "Inter, sans-serif" }}
-    >
-      {/* Desktop sidebar */}
-      <div className="hidden lg:block sticky top-0 h-screen">{Sidebar}</div>
-
-      {/* Mobile topbar */}
-      <div className="lg:hidden fixed top-0 inset-x-0 z-40 bg-white border-b border-gray-200 p-4 flex items-center justify-between">
-        <Link href="/app" className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-[#1e3a5f] flex items-center justify-center">
-            <Sparkles className="w-4 h-4 text-[#ff6b35]" />
-          </div>
-          <span className="font-extrabold text-[#1e3a5f]">{t("brand.name", "وصّل")}</span>
-        </Link>
-        <button
-          onClick={() => setMobileOpen(true)}
-          className="p-2 rounded-lg hover:bg-gray-100"
-        >
-          <Menu className="w-5 h-5 text-[#1e3a5f]" />
-        </button>
-      </div>
-
-      {/* Mobile drawer */}
+    <div className="flex h-screen bg-[var(--bg-surface)]">
       <AnimatePresence>
-        {mobileOpen && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setMobileOpen(false)}
-              className="lg:hidden fixed inset-0 bg-black/40 z-50"
-            />
-            <motion.div
-              initial={{ x: isRTL ? 300 : -300 }}
-              animate={{ x: 0 }}
-              exit={{ x: isRTL ? 300 : -300 }}
-              transition={{ type: "spring", damping: 25 }}
-              className="lg:hidden fixed top-0 bottom-0 start-0 z-50"
-            >
-              <div className="relative h-full">
-                <button
-                  onClick={() => setMobileOpen(false)}
-                  className="absolute top-4 end-4 p-2 rounded-lg hover:bg-gray-100 z-10"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-                {Sidebar}
-              </div>
-            </motion.div>
-          </>
+        {sidebarOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setSidebarOpen(false)}
+            className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          />
         )}
       </AnimatePresence>
 
-      {/* Content */}
-      <main className="flex-1 lg:ms-0 pt-20 lg:pt-0 min-w-0">
-        <div className="p-6 lg:p-10">{children}</div>
-      </main>
+      <motion.aside
+        initial={false}
+        animate={{
+          x: isArabic ? (sidebarOpen ? 0 : 280) : (sidebarOpen ? 0 : -280),
+        }}
+        transition={{ duration: 0.3 }}
+        className={`fixed ${isArabic ? 'right-0' : 'left-0'} top-0 h-screen w-80 bg-[var(--bg-base)] border-${isArabic ? 'l' : 'r'} border-[var(--border-subtle)] z-50 lg:relative lg:translate-x-0 overflow-y-auto flex flex-col`}
+      >
+        <button
+          onClick={() => setSidebarOpen(false)}
+          className="lg:hidden absolute top-4 right-4 p-2 hover:bg-[var(--bg-surface)] rounded-lg"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
+        <div className="p-6 pt-8 border-b border-[var(--border-subtle)]">
+          <h1 className="text-2xl font-cairo font-bold text-[var(--accent-primary)]">
+            وصّل
+          </h1>
+        </div>
+
+        <nav className="flex-1 p-4 space-y-2">
+          {navItems.map((item) => (
+            <Link key={item.href} href={item.href}>
+              <a
+                onClick={() => setSidebarOpen(false)}
+                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                  isActive(item.href)
+                    ? 'bg-[var(--accent-primary)] text-white'
+                    : 'text-[var(--text-secondary)] hover:bg-[var(--bg-surface)]'
+                }`}
+              >
+                {item.icon}
+                <span className="font-medium">{item.label}</span>
+              </a>
+            </Link>
+          ))}
+        </nav>
+
+        <div className="border-t border-[var(--border-subtle)] p-4">
+          <div className="bg-[var(--bg-surface)] rounded-lg p-4">
+            <p className="text-xs text-[var(--text-secondary)] mb-1">{t('sidebar.tokens')}</p>
+            <p className="text-2xl font-bold text-[var(--accent-primary)]">
+              {displayTokens}
+            </p>
+            <p className="text-xs text-[var(--text-secondary)] mt-2">
+              {t('nav.balance', 'الخطة')}: <span className="font-semibold text-[var(--text-primary)]">{displayPlan}</span>
+            </p>
+          </div>
+        </div>
+
+        <div className="border-t border-[var(--border-subtle)] p-4 space-y-3">
+          <button
+            onClick={toggleLanguage}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-[var(--bg-surface)] hover:bg-[var(--bg-surface-hover)] text-[var(--text-secondary)] transition-colors"
+          >
+            <Globe className="w-4 h-4" />
+            {i18n.language === 'ar' ? 'EN' : 'AR'}
+          </button>
+          <Button
+            onClick={handleLogout}
+            variant="destructive"
+            className="w-full flex items-center justify-center gap-2"
+          >
+            <LogOut className="w-4 h-4" />
+            {t('nav.logout')}
+          </Button>
+        </div>
+      </motion.aside>
+
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <header className="bg-[var(--bg-base)] border-b border-[var(--border-subtle)] sticky top-0 z-40">
+          <div className="px-4 md:px-6 py-4 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="lg:hidden p-2 hover:bg-[var(--bg-surface)] rounded-lg transition-colors"
+              >
+                <Menu className="w-6 h-6" />
+              </button>
+              {pageTitle && (
+                <h2 className="text-xl font-cairo font-semibold text-[var(--text-primary)]">
+                  {pageTitle}
+                </h2>
+              )}
+            </div>
+
+            <div className="flex items-center gap-4">
+              <div className="hidden md:flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--accent-primary)] bg-opacity-10">
+                <Coins className="w-4 h-4 text-[var(--accent-primary)]" />
+                <span className="text-sm font-semibold text-[var(--accent-primary)]">
+                  {displayTokens}
+                </span>
+              </div>
+
+              <div className="relative">
+                <button
+                  onClick={() => setUserMenuOpen(!userMenuOpen)}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-[var(--bg-surface)] transition-colors"
+                >
+                  <div className="w-8 h-8 rounded-full bg-[var(--accent-secondary)] flex items-center justify-center text-white font-semibold">
+                    {profile?.full_name?.charAt(0).toUpperCase() || 'U'}
+                  </div>
+                  <span className="hidden sm:inline text-sm font-medium text-[var(--text-primary)]">
+                    {profile?.full_name?.split(' ')[0] || 'User'}
+                  </span>
+                  <ChevronDown className="w-4 h-4 text-[var(--text-secondary)]" />
+                </button>
+
+                <AnimatePresence>
+                  {userMenuOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className={`absolute top-full ${isArabic ? 'left-0' : 'right-0'} mt-2 w-48 bg-[var(--bg-base)] rounded-lg border border-[var(--border-subtle)] shadow-lg overflow-hidden z-50`}
+                    >
+                      <Link href="/app/profile">
+                        <a
+                          onClick={() => setUserMenuOpen(false)}
+                          className="flex items-center gap-3 px-4 py-3 hover:bg-[var(--bg-surface)] transition-colors border-b border-[var(--border-subtle)]"
+                        >
+                          <User className="w-4 h-4" />
+                          <span className="text-sm">{t('sidebar.profile')}</span>
+                        </a>
+                      </Link>
+                      <button
+                        onClick={() => {
+                          setUserMenuOpen(false);
+                          handleLogout();
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[var(--bg-surface)] transition-colors text-red-600"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        <span className="text-sm">{t('nav.logout')}</span>
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <main className="flex-1 overflow-y-auto">
+          <div className="p-4 md:p-6">{children}</div>
+        </main>
+      </div>
     </div>
   );
-}
+};
+
+export default DashboardLayout;
