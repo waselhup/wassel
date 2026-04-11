@@ -31,6 +31,8 @@ app.get('/api/health', (_req, res) => {
 });
 
 
+app.get('/api/test-route', (_req, res) => { res.json({ok:true,routes:'working'}); });
+
 // ===== Gmail OAuth Routes =====
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '';

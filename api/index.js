@@ -53493,6 +53493,9 @@ app.get("/api/health", (_req, res) => {
     version: "2.0.0"
   });
 });
+app.get("/api/test-route", (_req, res) => {
+  res.json({ ok: true, routes: "working" });
+});
 var GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
 var GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || "";
 var GOOGLE_REDIRECT_URI = "https://wassel-alpha.vercel.app/api/auth/google/callback";
