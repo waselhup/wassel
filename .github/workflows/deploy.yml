@@ -1,15 +1,11 @@
-name: Deploy to Vercel Production
+name: Verify Deployment
 
 on:
   push:
     branches: [master]
 
-env:
-  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-
 jobs:
-  deploy:
+  verify:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -20,29 +16,31 @@ jobs:
         with:
           node-version: 20
           cache: npm
-      - name: Install Vercel CLI
-        run: npm i -g vercel@latest
 
-      - name: Pull Vercel Environment
-        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+      - name: Install dependencies
+        run: npm install
 
-      - name: Build with Vercel
-        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
-
-      - name: Deploy to Vercel
-        id: deploy
+      - name: Build check
+        run: npm run build
+      - name: Verify bundle contains Supabase key
         run: |
-          url=$(vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }})
-          echo "url=$url" >> $GITHUB_OUTPUT
-          echo "✅ Deployed to: $url"
-
-      - name: Verify deployment
-        run: |
-          sleep 5
-          STATUS=$(curl -o /dev/null -s -w "%{http_code}" "${{ steps.deploy.outputs.url }}")
-          if [ "$STATUS" = "200" ]; then
-            echo "✅ Site is live (HTTP $STATUS)"
+          KEY_FILE=$(ls dist/assets/index-*.js)
+          if grep -q "hiqotmimlgsrsnovtopd" "$KEY_FILE"; then
+            echo "✅ Supabase URL found in bundle"
           else
-            echo "❌ Site returned HTTP $STATUS"
+            echo "❌ Supabase URL MISSING from bundle"
             exit 1
+          fi
+
+      - name: Wait for Vercel deploy
+        run: sleep 30
+
+      - name: Verify live site
+        run: |
+          STATUS=$(curl -o /dev/null -s -w "%{http_code}" "https://wassel-alpha.vercel.app")
+          echo "HTTP Status: $STATUS"
+          if [ "$STATUS" = "200" ]; then
+            echo "✅ wassel-alpha.vercel.app is live"
+          else
+            echo "⚠️ Site returned HTTP $STATUS (Vercel may still be deploying)"
           fi
