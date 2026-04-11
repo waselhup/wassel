@@ -1,3 +1,4 @@
+﻿import { telegramHandler } from './telegram';
 import express from 'express';
 import cors from 'cors';
 import { createExpressMiddleware } from '@trpc/server/adapters/express';
@@ -21,6 +22,8 @@ app.use(cors({
 }));
 
 app.use(express.json());
+
+app.post('/api/telegram', telegramHandler);
 
 app.get('/api/health', (_req, res) => {
   res.json({

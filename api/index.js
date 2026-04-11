@@ -46825,6 +46825,74 @@ var init_dist4 = __esm({
   }
 });
 
+// server/_core/telegram.ts
+var TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
+var ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || "";
+async function sendTelegram(chatId, text) {
+  await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ chat_id: chatId, text, parse_mode: "Markdown" })
+  });
+}
+async function askOZAIL(message) {
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": ANTHROPIC_API_KEY,
+      "anthropic-version": "2023-06-01"
+    },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-6",
+      max_tokens: 800,
+      system: `You are OZAIL, the AI CEO of Wassel (\u0648\u0635\u0644) \u2014 Arabic-first LinkedIn outreach SaaS for Saudi Arabia.
+Platform: https://wassel-alpha.vercel.app
+Pricing: Free 100 tokens | Starter 99 SAR | Pro 249 SAR | Agency 599 SAR
+Respond in Arabic. Be concise for Telegram (max 400 chars). Be decisive and strategic.`,
+      messages: [{ role: "user", content: message }]
+    })
+  });
+  const data = await res.json();
+  return data.content?.[0]?.text || "\u062E\u0637\u0623 \u0641\u064A \u0627\u0644\u0627\u062A\u0635\u0627\u0644";
+}
+async function telegramHandler(req, res) {
+  res.status(200).json({ ok: true });
+  try {
+    const update = req.body;
+    const message = update.message;
+    if (!message) return;
+    const chatId = message.chat.id;
+    const text = message.text || "";
+    if (text === "/start") {
+      await sendTelegram(chatId, `\u{1F916} *\u0645\u0631\u062D\u0628\u0627\u064B \u0641\u064A OZAIL*
+\u0648\u0643\u064A\u0644 \u0627\u0644\u0630\u0643\u0627\u0621 \u0627\u0644\u0627\u0635\u0637\u0646\u0627\u0639\u064A \u0644\u0640 \u0648\u0635\u0651\u0644
+
+/report - \u062A\u0642\u0631\u064A\u0631 \u064A\u0648\u0645\u064A
+/help - \u0627\u0644\u0645\u0633\u0627\u0639\u062F\u0629
+
+\u0623\u0648 \u0623\u0631\u0633\u0644 \u0623\u064A \u0633\u0624\u0627\u0644 \u0645\u0628\u0627\u0634\u0631\u0629 \u{1F680}`);
+    } else if (text === "/report") {
+      await sendTelegram(chatId, "\u23F3 \u062C\u0627\u0631\u064A \u0625\u0639\u062F\u0627\u062F \u0627\u0644\u062A\u0642\u0631\u064A\u0631...");
+      const report = await askOZAIL("\u0623\u0639\u0637\u0646\u064A \u062A\u0642\u0631\u064A\u0631 \u064A\u0648\u0645\u064A \u0645\u062E\u062A\u0635\u0631 \u0644\u0648\u0635\u0644: \u0627\u0644\u0645\u0633\u062A\u062E\u062F\u0645\u0648\u0646\u060C \u0627\u0644\u062D\u0645\u0644\u0627\u062A\u060C \u0627\u0644\u0623\u0648\u0644\u0648\u064A\u0627\u062A. \u0627\u062C\u0639\u0644\u0647 \u0645\u0646\u0627\u0633\u0628\u0627\u064B \u0644\u0644\u062A\u064A\u0644\u064A\u062C\u0631\u0627\u0645.");
+      await sendTelegram(chatId, report);
+    } else if (text === "/help") {
+      await sendTelegram(chatId, `\u{1F4CB} *\u0627\u0644\u0623\u0648\u0627\u0645\u0631:*
+/report - \u062A\u0642\u0631\u064A\u0631 \u064A\u0648\u0645\u064A
+/start - \u0627\u0644\u0628\u062F\u0627\u064A\u0629
+/help - \u0645\u0633\u0627\u0639\u062F\u0629
+
+\u0623\u0648 \u0627\u0643\u062A\u0628 \u0623\u064A \u0633\u0624\u0627\u0644 \u0644\u0640 OZAIL \u0645\u0628\u0627\u0634\u0631\u0629`);
+    } else {
+      await sendTelegram(chatId, "\u23F3 OZAIL \u064A\u0641\u0643\u0631...");
+      const reply = await askOZAIL(text);
+      await sendTelegram(chatId, reply);
+    }
+  } catch (err) {
+    console.error("Telegram error:", err);
+  }
+}
+
 // server/_core/vercel.ts
 var import_express = __toESM(require_express2(), 1);
 var import_cors = __toESM(require_lib3(), 1);
@@ -52123,7 +52191,7 @@ var NEVER = INVALID;
 
 // server/_core/routes/linkedin.ts
 var APIFY_TOKEN = process.env.APIFY_TOKEN || process.env.APIFY_API_TOKEN || "";
-var ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || "";
+var ANTHROPIC_API_KEY2 = process.env.ANTHROPIC_API_KEY || "";
 var CLAUDE_MODEL = "claude-haiku-4-5-20251001";
 async function scrapeLinkedInProfile(profileUrl) {
   console.log("[APIFY] Starting scrape for:", profileUrl);
@@ -52258,7 +52326,7 @@ ${profileText}`
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "x-api-key": ANTHROPIC_API_KEY,
+      "x-api-key": ANTHROPIC_API_KEY2,
       "anthropic-version": "2023-06-01"
     },
     body: JSON.stringify(claudeBody)
@@ -53486,6 +53554,7 @@ app.use((0, import_cors.default)({
   credentials: true
 }));
 app.use(import_express.default.json());
+app.post("/api/telegram", telegramHandler);
 app.get("/api/health", (_req, res) => {
   res.json({
     status: "ok",
