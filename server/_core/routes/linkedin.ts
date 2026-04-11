@@ -4,7 +4,7 @@ import { TRPCError } from '@trpc/server';
 
 const APIFY_TOKEN = process.env.APIFY_TOKEN || process.env.APIFY_API_TOKEN || '';
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || '';
-const CLAUDE_MODEL = 'claude-sonnet-4-6';
+const CLAUDE_MODEL = 'claude-haiku-4-5-20251001';
 
 async function scrapeLinkedInProfile(profileUrl: string): Promise<any> {
   console.log('[APIFY] Starting scrape for:', profileUrl);
@@ -171,6 +171,12 @@ ${profileText}`
   }
 }
 
+// Normalize LinkedIn URL for cache key
+function normalizeLiUrl(url: string): string {
+  const match = url.match(/linkedin\.com\/in\/([^/?#]+)/i);
+  return match ? match[1].toLowerCase().replace(/\/$/, '') : url.toLowerCase().trim();
+}
+
 export const linkedinRouter = router({
   analyze: protectedProcedure
     .input(z.object({ profileUrl: z.string() }))
@@ -192,10 +198,38 @@ export const linkedinRouter = router({
             message: 'Insufficient tokens. Need 5 tokens for analysis.',
           });
         }
-        const profileData = await scrapeLinkedInProfile(input.profileUrl);
-        console.log('[LINKEDIN] Profile scraped:', profileData?.fullName || profileData?.firstName);
 
-        const analysis = await analyzeWithClaude(profileData);
+        // Check 24h cache first
+        const cacheKey = `linkedin:${normalizeLiUrl(input.profileUrl)}`;
+        const { data: cached } = await ctx.supabase
+          .from('ai_cache')
+          .select('result')
+          .eq('cache_key', cacheKey)
+          .gt('expires_at', new Date().toISOString())
+          .maybeSingle();
+
+        let analysis: any;
+        if (cached?.result) {
+          console.log('[LINKEDIN] Cache HIT for:', cacheKey);
+          analysis = cached.result;
+        } else {
+          console.log('[LINKEDIN] Cache MISS, calling Apify + Claude');
+          const profileData = await scrapeLinkedInProfile(input.profileUrl);
+          console.log('[LINKEDIN] Profile scraped:', profileData?.fullName || profileData?.firstName);
+
+          analysis = await analyzeWithClaude(profileData);
+
+          // Save to cache (24h TTL)
+          const expires = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+          await ctx.supabase.from('ai_cache').upsert({
+            cache_key: cacheKey,
+            result: analysis,
+            model: CLAUDE_MODEL,
+            expires_at: expires,
+          }, { onConflict: 'cache_key' });
+          console.log('[LINKEDIN] Cached result, expires:', expires);
+        }
+
         console.log('[LINKEDIN] Analysis score:', analysis?.score);
 
         const { error: updateError } = await ctx.supabase

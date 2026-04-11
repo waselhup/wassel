@@ -41878,7 +41878,7 @@ var NEVER = INVALID;
 // server/_core/routes/linkedin.ts
 var APIFY_TOKEN = process.env.APIFY_TOKEN || process.env.APIFY_API_TOKEN || "";
 var ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || "";
-var CLAUDE_MODEL = "claude-sonnet-4-6";
+var CLAUDE_MODEL = "claude-haiku-4-5-20251001";
 async function scrapeLinkedInProfile(profileUrl) {
   console.log("[APIFY] Starting scrape for:", profileUrl);
   const runRes = await fetch(
@@ -42014,6 +42014,10 @@ ${profileText}`
     throw new Error("Failed to parse Claude analysis response");
   }
 }
+function normalizeLiUrl(url) {
+  const match = url.match(/linkedin\.com\/in\/([^/?#]+)/i);
+  return match ? match[1].toLowerCase().replace(/\/$/, "") : url.toLowerCase().trim();
+}
 var linkedinRouter = router({
   analyze: protectedProcedure.input(external_exports.object({ profileUrl: external_exports.string() })).mutation(async ({ input, ctx }) => {
     try {
@@ -42026,9 +42030,26 @@ var linkedinRouter = router({
           message: "Insufficient tokens. Need 5 tokens for analysis."
         });
       }
-      const profileData = await scrapeLinkedInProfile(input.profileUrl);
-      console.log("[LINKEDIN] Profile scraped:", profileData?.fullName || profileData?.firstName);
-      const analysis = await analyzeWithClaude(profileData);
+      const cacheKey = `linkedin:${normalizeLiUrl(input.profileUrl)}`;
+      const { data: cached } = await ctx.supabase.from("ai_cache").select("result").eq("cache_key", cacheKey).gt("expires_at", (/* @__PURE__ */ new Date()).toISOString()).maybeSingle();
+      let analysis;
+      if (cached?.result) {
+        console.log("[LINKEDIN] Cache HIT for:", cacheKey);
+        analysis = cached.result;
+      } else {
+        console.log("[LINKEDIN] Cache MISS, calling Apify + Claude");
+        const profileData = await scrapeLinkedInProfile(input.profileUrl);
+        console.log("[LINKEDIN] Profile scraped:", profileData?.fullName || profileData?.firstName);
+        analysis = await analyzeWithClaude(profileData);
+        const expires = new Date(Date.now() + 24 * 60 * 60 * 1e3).toISOString();
+        await ctx.supabase.from("ai_cache").upsert({
+          cache_key: cacheKey,
+          result: analysis,
+          model: CLAUDE_MODEL,
+          expires_at: expires
+        }, { onConflict: "cache_key" });
+        console.log("[LINKEDIN] Cached result, expires:", expires);
+      }
       console.log("[LINKEDIN] Analysis score:", analysis?.score);
       const { error: updateError } = await ctx.supabase.from("profiles").update({ token_balance: (profile.token_balance || 0) - 5 }).eq("id", ctx.user.id);
       if (updateError) {
