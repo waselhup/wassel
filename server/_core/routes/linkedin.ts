@@ -221,6 +221,8 @@ export const linkedinRouter = router({
               summary_current: analysis.summaryCurrent || '',
               summary_suggestion: analysis.summarySuggestion || '',              keywords_suggestions: analysis.keywords || [],
               experience_suggestions: analysis.experienceSuggestions || [],
+              strengths: analysis.strengths || [],
+              weaknesses: analysis.weaknesses || [],
             },
           ]);
 
