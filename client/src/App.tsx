@@ -30,6 +30,7 @@ const CVTailor = lazy(() => import('./pages/CVTailor'));
 const CampaignList = lazy(() => import('./pages/CampaignList'));
 const CampaignNew = lazy(() => import('./pages/CampaignNew'));
 const CampaignReport = lazy(() => import('./pages/CampaignReport'));
+const KnowledgeBase = lazy(() => import('./pages/KnowledgeBase'));
 
 // Admin Pages
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
@@ -76,6 +77,7 @@ const AppRoutes: React.FC = () => {
   const [matchAppCampaignsReport] = useRoute('/app/campaigns/:id');
   const [matchAppTokens] = useRoute('/app/tokens');
   const [matchAppPayment] = useRoute('/app/payment');
+  const [matchAppKnowledge] = useRoute('/app/knowledge');
   const [matchAppProfile] = useRoute('/app/profile');
   const [matchLogin] = useRoute('/login');
   const [matchSignup] = useRoute('/signup');
@@ -133,6 +135,12 @@ const AppRoutes: React.FC = () => {
     return (
       <ProtectedRoute>
         <CVTailor />
+      </ProtectedRoute>
+    );
+  if (matchAppKnowledge)
+    return (
+      <ProtectedRoute>
+        <KnowledgeBase />
       </ProtectedRoute>
     );
   if (matchAppCampaignsNew)

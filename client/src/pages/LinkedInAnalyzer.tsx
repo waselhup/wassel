@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import {
   AlertCircle, Zap, Copy, Save, RotateCcw, ChevronDown, ChevronUp,
-  CheckCircle, Loader, History as HistoryIcon, UserCheck
+  CheckCircle, Loader, History as HistoryIcon, UserCheck, BookOpen
 } from 'lucide-react';
 
 interface AnalysisResult {
@@ -57,6 +57,7 @@ const LinkedInAnalyzer: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   const [tokenBalance, setTokenBalance] = useState<number | null>(null);
+  const [savedToKb, setSavedToKb] = useState(false);
 
   const TOKENS_REQUIRED = 5;
 
@@ -230,6 +231,21 @@ const LinkedInAnalyzer: React.FC = () => {
     navigator.clipboard.writeText(text);
     setCopied(key);
     setTimeout(() => setCopied(null), 2000);
+  };
+
+  const saveToKnowledgeBase = async () => {
+    if (!analysis) return;
+    try {
+      await trpc.knowledge.save({
+        type: 'linkedin_analysis',
+        title: `LinkedIn Analysis: ${linkedInInput} (Score: ${analysis.score})`,
+        content: analysis,
+        tags: analysis.keywords.slice(0, 5),
+      });
+      setSavedToKb(true);
+    } catch (err) {
+      console.error('Failed to save to KB:', err);
+    }
   };
 
   const containerVariants = {
@@ -574,7 +590,15 @@ const LinkedInAnalyzer: React.FC = () => {
 
               {/* Action Buttons */}
               <motion.div variants={itemVariants} className="flex gap-4 flex-wrap">
-                <Button onClick={() => { setAnalysis(null); setLinkedInInput(''); }} variant="outline" className="flex-1 min-w-[120px]">
+                <Button
+                  onClick={saveToKnowledgeBase}
+                  disabled={savedToKb}
+                  className="flex-1 min-w-[120px] bg-[#1e3a5f] hover:bg-[#2c5282] text-white"
+                >
+                  <BookOpen className="w-4 h-4 me-2" />
+                  {savedToKb ? t('kb.saved', 'تم الحفظ') : t('kb.saveToKb', 'حفظ في قاعدة المعرفة')}
+                </Button>
+                <Button onClick={() => { setAnalysis(null); setLinkedInInput(''); setSavedToKb(false); }} variant="outline" className="flex-1 min-w-[120px]">
                   <RotateCcw className="w-4 h-4 me-2" />
                   {t('linkedInAnalyzer.analyzeAgain', 'تحليل جديد')}
                 </Button>

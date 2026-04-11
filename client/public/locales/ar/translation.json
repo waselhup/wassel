@@ -618,4 +618,20 @@
     "replies": "رد",
     "openRate": "فتح"
   }
+,
+  "sidebar": { "knowledge": "قاعدة المعرفة" },
+  "kb": {
+    "title": "قاعدة المعرفة",
+    "subtitle": "اجمع تحليلاتك ونتائج حملاتك لبناء قاعدة معرفة ذكية",
+    "export": "تصدير للـ NotebookLM",
+    "notebooklm": "تكامل NotebookLM",
+    "notebooklmDesc": "صدّر بياناتك كملف JSON وارفعه إلى NotebookLM من Google لبناء قاعدة معرفة ذكية",
+    "openNotebook": "افتح NotebookLM",
+    "empty": "لا توجد عناصر بعد. حلل ملفك على LinkedIn أو أطلق حملة لبدء بناء قاعدة معرفتك.",
+    "marketTips": "رؤى السوق السعودي",
+    "tab": { "all": "الكل", "linkedin": "تحليلات LinkedIn", "campaigns": "نتائج الحملات", "insights": "رؤى السوق" },
+    "type": { "linkedin": "تحليل LinkedIn", "campaign": "نتيجة حملة", "insight": "رؤية سوقية" },
+    "saveToKb": "حفظ في قاعدة المعرفة",
+    "saved": "تم الحفظ"
+  }
 }

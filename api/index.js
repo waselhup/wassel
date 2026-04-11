@@ -44500,6 +44500,62 @@ var adminRouter = router({
   })
 });
 
+// server/_core/routes/knowledge.ts
+var knowledgeRouter = router({
+  list: protectedProcedure.query(async ({ ctx }) => {
+    const { data, error } = await ctx.supabase.from("knowledge_items").select("*").eq("user_id", ctx.user.id).order("created_at", { ascending: false });
+    if (error) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
+    return data || [];
+  }),
+  save: protectedProcedure.input(external_exports.object({
+    type: external_exports.enum(["linkedin_analysis", "campaign_result", "market_insight"]),
+    title: external_exports.string().min(1),
+    content: external_exports.any(),
+    tags: external_exports.array(external_exports.string()).optional()
+  })).mutation(async ({ input, ctx }) => {
+    const { data, error } = await ctx.supabase.from("knowledge_items").insert([{
+      user_id: ctx.user.id,
+      type: input.type,
+      title: input.title,
+      content: input.content,
+      tags: input.tags || []
+    }]).select().single();
+    if (error) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
+    return data;
+  }),
+  delete: protectedProcedure.input(external_exports.object({ id: external_exports.string().uuid() })).mutation(async ({ input, ctx }) => {
+    const { error } = await ctx.supabase.from("knowledge_items").delete().eq("id", input.id).eq("user_id", ctx.user.id);
+    if (error) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
+    return { success: true };
+  }),
+  export: protectedProcedure.query(async ({ ctx }) => {
+    const { data: analyses } = await ctx.supabase.from("linkedin_analyses").select("*").eq("user_id", ctx.user.id).order("created_at", { ascending: false });
+    const { data: campaigns } = await ctx.supabase.from("campaigns").select("*").eq("user_id", ctx.user.id).order("created_at", { ascending: false });
+    const { data: knowledgeItems } = await ctx.supabase.from("knowledge_items").select("*").eq("user_id", ctx.user.id).order("created_at", { ascending: false });
+    const { data: cvVersions } = await ctx.supabase.from("cv_versions").select("*").eq("user_id", ctx.user.id).order("created_at", { ascending: false });
+    return {
+      exportedAt: (/* @__PURE__ */ new Date()).toISOString(),
+      linkedinAnalyses: analyses || [],
+      campaigns: campaigns || [],
+      knowledgeItems: knowledgeItems || [],
+      cvVersions: cvVersions || [],
+      marketInsights: {
+        region: "Saudi Arabia / GCC",
+        tips: [
+          "LinkedIn is the #1 professional network in Saudi Arabia with 10M+ users",
+          "Arabic content gets 3x more engagement than English in Saudi LinkedIn",
+          "Vision 2030 keywords boost visibility in government sector outreach",
+          "Include certifications and endorsements \u2014 highly valued in GCC hiring",
+          "Post between 8-10 AM AST for maximum Saudi audience engagement",
+          "Use formal Modern Standard Arabic (\u0641\u0635\u062D\u0649) for professional profiles",
+          "Highlight cross-cultural experience \u2014 valued in multinational GCC companies",
+          "Saudi employers value LinkedIn recommendations from industry leaders"
+        ]
+      }
+    };
+  })
+});
+
 // server/_core/trpc.ts
 var appRouter = router({
   health: publicProcedure.query(async () => {
@@ -44519,7 +44575,8 @@ var appRouter = router({
   cv: cvRouter,
   campaign: campaignRouter,
   token: tokenRouter,
-  admin: adminRouter
+  admin: adminRouter,
+  knowledge: knowledgeRouter
 });
 
 // node_modules/@supabase/supabase-js/dist/index.mjs

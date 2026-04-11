@@ -70,4 +70,11 @@ export const trpc = {
   admin: {
     stats: () => trpcQuery<any>('admin.stats'),
   },
+  knowledge: {
+    list: () => trpcQuery<any[]>('knowledge.list'),
+    save: (input: { type: string; title: string; content: any; tags?: string[] }) =>
+      trpcMutation<any>('knowledge.save', input),
+    delete: (id: string) => trpcMutation<any>('knowledge.delete', { id }),
+    export: () => trpcQuery<any>('knowledge.export'),
+  },
 };

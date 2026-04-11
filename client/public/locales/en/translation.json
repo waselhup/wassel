@@ -618,5 +618,20 @@
     "replies": "Replies",
     "openRate": "open rate"
   }
+,
+  "sidebar": { "knowledge": "Knowledge Base" },
+  "kb": {
+    "title": "Knowledge Base",
+    "subtitle": "Collect your analyses and campaign results to build a smart knowledge base",
+    "export": "Export for NotebookLM",
+    "notebooklm": "NotebookLM Integration",
+    "notebooklmDesc": "Export your data as a JSON file and upload it to Google NotebookLM to build a smart knowledge base you can query.",
+    "openNotebook": "Open NotebookLM",
+    "empty": "No items yet. Analyze your LinkedIn profile or launch a campaign to start building your knowledge base.",
+    "marketTips": "Saudi Market Insights",
+    "tab": { "all": "All", "linkedin": "LinkedIn Analyses", "campaigns": "Campaign Results", "insights": "Market Insights" },
+    "type": { "linkedin": "LinkedIn Analysis", "campaign": "Campaign Result", "insight": "Market Insight" },
+    "saveToKb": "Save to Knowledge Base",
+    "saved": "Saved"
+  }
 }
-

@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
 import {
   Home, UserCog, Linkedin, FileText, Mail, Coins, User, Shield,
-  LogOut, Globe, Menu, X, ChevronDown
+  LogOut, Globe, Menu, X, ChevronDown, BookOpen
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -94,6 +94,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, page
     { label: t('sidebar.linkedin'), icon: <Linkedin className="w-5 h-5" />, href: '/app/linkedin' },
     { label: t('sidebar.cv'), icon: <FileText className="w-5 h-5" />, href: '/app/cv' },
     { label: t('sidebar.campaigns'), icon: <Mail className="w-5 h-5" />, href: '/app/campaigns' },
+    { label: t('sidebar.knowledge', 'قاعدة المعرفة'), icon: <BookOpen className="w-5 h-5" />, href: '/app/knowledge' },
     { label: t('sidebar.tokens'), icon: <Coins className="w-5 h-5" />, href: '/app/tokens' },
     { label: t('sidebar.profile'), icon: <User className="w-5 h-5" />, href: '/app/profile' },
   ];
