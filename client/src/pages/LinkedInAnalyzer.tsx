@@ -257,7 +257,7 @@ const LinkedInAnalyzer: React.FC = () => {
                 </div>
               )}
 
-              <Button onClick={handleAnalyze} disabled={loading || !hasEnoughTokens} className="w-full" size="lg">
+              <Button onClick={handleAnalyze} disabled={loading} className="w-full" size="lg">
                 {loading ? (
                   <><Loader className="w-4 h-4 animate-spin mr-2" /> Analyzing...</>
                 ) : (

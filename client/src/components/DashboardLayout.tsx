@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
@@ -10,12 +10,22 @@ import { useAuth } from "@/contexts/AuthContext";
 
 interface Props { children: ReactNode; tokens?: number }
 
-export default function DashboardLayout({ children, tokens = 0 }: Props) {
+export default function DashboardLayout({ children, tokens: tokensProp }: Props) {
   const { t, i18n } = useTranslation();
   const [location] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const isRTL = i18n.language === "ar";
-  const { user, signOut } = useAuth();
+  const { user, profile, signOut, refreshProfile } = useAuth();
+
+  // Always read balance from profile (source of truth). Fallback to prop, then 0.
+  const tokens = profile?.token_balance ?? tokensProp ?? 0;
+
+  // Refresh profile every time user navigates (keeps sidebar balance in sync)
+  useEffect(() => {
+    if (user && refreshProfile) {
+      refreshProfile();
+    }
+  }, [location, user]);
 
   const nav = [
     { href: "/app", icon: Home, label: t("nav.home", "الرئيسية") },
