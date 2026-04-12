@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { ChevronLeft, ChevronRight, Target, Users, Mail, Eye, Rocket, CheckCircle2, Sparkles, Loader2, Edit3, Check } from "lucide-react";
+import { ChevronLeft, ChevronRight, Target, Users, Mail, Eye, Rocket, CheckCircle2, Loader2, Edit3, Check } from 'lucide-react';
+import { WasselLogo } from '../components/WasselLogo';
 import DashboardLayout from "@/components/DashboardLayout";
 import { trpc } from "@/lib/trpc";
 
@@ -210,7 +211,7 @@ export default function CampaignNew() {
                     <textarea value={data.body} onChange={(e) => set("body", e.target.value)} rows={4} placeholder={t("new.ph.body", "سيتم توليد الرسالة تلقائيًا بالذكاء الاصطناعي وتخصيصها لكل مستلم...")} className={inputCls + " resize-none"} />
                   </Field>
                   <div className="flex items-center gap-2 p-3 rounded-xl bg-teal-50 border border-teal-200">
-                    <Sparkles className="w-5 h-5 text-[#0A8F84] flex-shrink-0" />
+                    <WasselLogo size={44} />
                     <p className="text-sm text-[var(--wsl-ink)]">{t("new.aiNote", "سينشئ الذكاء الاصطناعي رسائل مخصصة لكل شركة في الخطوة التالية")}</p>
                   </div>
                 </>
@@ -242,11 +243,11 @@ export default function CampaignNew() {
 
                   {!generating && messages.length === 0 && (
                     <div className="text-center py-12">
-                      <Sparkles className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                      <WasselLogo size={44} />
                       <p className="text-gray-500">{t("new.noMessages", "اضغط لإنشاء رسائل مخصصة بالذكاء الاصطناعي")}</p>
                       <button onClick={generatePreview}
                         className="mt-4 px-6 py-3 rounded-xl bg-[#0A8F84] hover:bg-[#064E49] text-white font-semibold inline-flex items-center gap-2 transition">
-                        <Sparkles className="w-5 h-5" /> {t("new.generateBtn", "إنشاء الرسائل")}
+                        <WasselLogo size={44} /> {t("new.generateBtn", "إنشاء الرسائل")}
                       </button>
                     </div>
                   )}
@@ -293,7 +294,7 @@ export default function CampaignNew() {
                   {!generating && messages.length > 0 && (
                     <button onClick={generatePreview}
                       className="w-full py-2.5 rounded-xl border border-dashed border-gray-300 text-gray-500 text-sm font-medium hover:bg-gray-50 transition flex items-center justify-center gap-2">
-                      <Sparkles className="w-4 h-4" /> {t("new.regenerate", "إعادة إنشاء الرسائل")}
+                      <WasselLogo size={44} /> {t("new.regenerate", "إعادة إنشاء الرسائل")}
                     </button>
                   )}
                 </div>

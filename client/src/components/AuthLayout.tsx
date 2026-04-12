@@ -1,7 +1,8 @@
 import { type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
-import { Sparkles, Zap, Shield, TrendingUp, Star } from "lucide-react";
+import { Zap, Shield, TrendingUp, Star } from 'lucide-react';
+import { WasselLogo } from './WasselLogo';
 
 interface Props { children: ReactNode; title: string; subtitle: string }
 
@@ -25,7 +26,7 @@ export default function AuthLayout({ children, title, subtitle }: Props) {
         <div className="w-full max-w-md">
           <div className="flex items-center gap-3 mb-10">
             <div className="w-11 h-11 rounded-xl bg-[#064E49] flex items-center justify-center">
-              <Sparkles className="w-6 h-6 text-[#0A8F84]" />
+              <WasselLogo size={44} />
             </div>
             <span className="text-2xl font-extrabold text-[#064E49]">
               {t("brand.name", "وصّل")}

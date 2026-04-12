@@ -1,14 +1,15 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { Coins, Zap, Crown, Sparkles, Check, TrendingUp, ArrowDownRight, ArrowUpRight } from "lucide-react";
+import { Coins, Zap, Crown, Check, TrendingUp, ArrowDownRight, ArrowUpRight } from 'lucide-react';
+import { WasselLogo } from '../components/WasselLogo';
 import DashboardLayout from "@/components/DashboardLayout";
 import { trpc } from "@/lib/trpc";
 
 const packages = [
   { key: "starter", name: "البداية", tokens: 500, price: 49, pop: false, color: "from-blue-500 to-cyan-500", icon: Zap,
     features: ["500 توكن", "صالحة لمدة سنة", "دعم بالبريد"] },
-  { key: "pro", name: "المحترف", tokens: 2000, price: 149, pop: true, color: "from-[var(--wsl-teal)] to-[var(--wsl-gold)]", icon: Sparkles,
+  { key: "pro", name: "المحترف", tokens: 2000, price: 149, pop: true, color: "from-[var(--wsl-teal)] to-[var(--wsl-gold)]", icon: Star,
     features: ["2000 توكن", "خصم 25%", "صالحة لمدة سنة", "دعم أولوية"] },
   { key: "elite", name: "النخبة", tokens: 5000, price: 299, pop: false, color: "from-purple-600 to-fuchsia-600", icon: Crown,
     features: ["5000 توكن", "خصم 40%", "صلاحية دائمة", "مدير حساب مخصص"] },

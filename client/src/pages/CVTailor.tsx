@@ -1,7 +1,8 @@
 import { useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { FileText, Download, Sparkles, Loader2, CheckCircle2, Briefcase, Target, Palette, Upload } from "lucide-react";
+import { FileText, Download, Loader2, CheckCircle2, Briefcase, Target, Palette, Upload } from 'lucide-react';
+import { WasselLogo } from '../components/WasselLogo';
 import DashboardLayout from "@/components/DashboardLayout";
 import { trpc } from "@/lib/trpc";
 
@@ -83,7 +84,7 @@ export default function CVTailor() {
   ];
 
   const templates: { key: Template; name: string; desc: string; color: string; icon: any }[] = [
-    { key: "modern", name: t("cv.t.modern", "عصري"), desc: t("cv.t.modernD", "تصميم نظيف بألوان جريئة"), color: "from-[var(--wsl-teal)] to-[var(--wsl-gold)]", icon: Sparkles },
+    { key: "modern", name: t("cv.t.modern", "عصري"), desc: t("cv.t.modernD", "تصميم نظيف بألوان جريئة"), color: "from-[var(--wsl-teal)] to-[var(--wsl-gold)]", icon: Star },
     { key: "classic", name: t("cv.t.classic", "كلاسيكي"), desc: t("cv.t.classicD", "احترافي وملائم للقطاعات الرسمية"), color: "from-[var(--wsl-teal)] to-[var(--wsl-teal-dark)]", icon: Briefcase },
     { key: "creative", name: t("cv.t.creative", "إبداعي"), desc: t("cv.t.creativeD", "مميز للأدوار التصميمية والتسويقية"), color: "from-purple-600 to-fuchsia-600", icon: Palette },
   ];
@@ -295,7 +296,7 @@ export default function CVTailor() {
             )}
             <button onClick={generate} disabled={loading}
               className="px-6 py-3 rounded-xl bg-[#0A8F84] hover:bg-[#064E49] disabled:opacity-50 text-white font-semibold shadow-lg shadow-[#0A8F84]/30 flex items-center gap-2 transition-all">
-              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
+              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <WasselLogo size={44} />}
               {loading ? t("cv.generating", "جاري الإنشاء...") : done ? t("cv.regen", "إعادة الإنشاء") : t("cv.generate", "أنشئ السيرة")}
             </button>
           </div>

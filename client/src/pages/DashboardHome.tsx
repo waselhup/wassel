@@ -2,10 +2,8 @@ import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import {
-  Coins, BarChart2, FileText, Send, TrendingUp, Clock,
-  Linkedin, Sparkles, ArrowUpRight, Activity,
-} from "lucide-react";
+import { Coins, BarChart2, FileText, Send, TrendingUp, Clock, Linkedin, ArrowUpRight, Activity } from 'lucide-react';
+import { WasselLogo } from '../components/WasselLogo';
 import DashboardLayout from "@/components/DashboardLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { trpc } from "@/lib/trpc";
@@ -101,7 +99,7 @@ export default function DashboardHome() {
       time: t("home.time.yesterday", "أمس"), color: "bg-purple-100 text-purple-600" },
     { id: "4", icon: Coins, title: t("home.activity.tokens", "تم شراء 1000 توكن"),
       time: t("home.time.days", "منذ يومين"), color: "bg-amber-100 text-amber-600" },
-    { id: "5", icon: Sparkles, title: t("home.activity.welcome", "مرحباً بك في وصّل — أكمل ملفك لتبدأ"),
+    { id: "5", icon: Star, title: t("home.activity.welcome", "مرحباً بك في وصّل — أكمل ملفك لتبدأ"),
       time: t("home.time.week", "منذ أسبوع"), color: "bg-teal-100 text-teal-700" },
   ];
 

@@ -1,7 +1,8 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { Sparkles, Send, Rocket, CheckCircle2 } from 'lucide-react';
+import { Send, Rocket, CheckCircle2 } from 'lucide-react';
+import { WasselLogo } from '../WasselLogo';
 
 const Features: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -13,7 +14,7 @@ const Features: React.FC = () => {
 
   const features = [
     {
-      icon: Sparkles,
+      icon: Star,
       title: phase1.title,
       description: phase1.description,
       items: phase1.features || [],

@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { ChevronLeft, ChevronRight, Linkedin, User, Target, Sparkles, CheckCircle2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Linkedin, User, Target, CheckCircle2 } from 'lucide-react';
+import { WasselLogo } from '../components/WasselLogo';
 
 export default function Onboarding() {
   const { t } = useTranslation();
@@ -129,7 +130,7 @@ function Done({ onFinish }: { onFinish: () => void }) {
       <p className="text-gray-500 mb-6">{t("on.done.desc", "حسابك جاهز. لنبدأ رحلتك نحو الفرصة التالية")}</p>
       <button onClick={onFinish}
         className="px-8 py-3 rounded-xl bg-[#0A8F84] hover:bg-[#064E49] text-white font-semibold shadow-lg shadow-[#0A8F84]/30 inline-flex items-center gap-2 transition">
-        <Sparkles className="w-5 h-5" /> {t("on.start", "ابدأ الآن")}
+        <WasselLogo size={44} /> {t("on.start", "ابدأ الآن")}
       </button>
     </motion.div>
   );

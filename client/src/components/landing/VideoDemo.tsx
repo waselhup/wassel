@@ -1,208 +1,134 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Play, User, BarChart2, MessageSquare } from 'lucide-react';
+
+const steps = [
+  { id: 0, labelAr: 'أضف ملفك الشخصي', labelEn: 'Add Your Profile', icon: '👤', color: '#0A8F84' },
+  { id: 1, labelAr: 'الذكاء يحلل ملفك', labelEn: 'AI Analyzes', icon: '🔍', color: '#0A8F84' },
+  { id: 2, labelAr: 'أرسل رسائل مخصصة', labelEn: 'Send Custom Messages', icon: '✉️', color: '#C9922A' },
+];
+
+const msgAr = 'مرحباً أحمد، لاحظت اهتمامك بتطوير مسيرتك المهنية في قطاع التقنية...';
+const msgEn = 'Hello Ahmed, I noticed your interest in developing your career in the tech sector...';
 
 const VideoDemo: React.FC = () => {
-  const { t, i18n } = useTranslation();
-  const isArabic = i18n.language === 'ar';
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === 'ar';
   const [step, setStep] = useState(0);
-  const [typedText, setTypedText] = useState('');
-
-  const steps = [
-    { icon: User, label: isArabic ? 'أضف ملفك الشخصي' : 'Add Your Profile', color: '#0A8F84' },
-    { icon: BarChart2, label: isArabic ? 'الذكاء الاصطناعي يحلل' : 'AI Analyzes', color: '#0A8F84' },
-    { icon: MessageSquare, label: isArabic ? 'أرسل رسائل مخصصة' : 'Send Custom Messages', color: '#C9922A' },
-  ];
-
-  const messageText = isArabic
-    ? 'مرحباً أحمد، أعجبني ملفك المهني في مجال الهندسة...'
-    : 'Hello Ahmed, I was impressed by your engineering profile...';
+  const [typed, setTyped] = useState('');
+  const [bars, setBars] = useState([0, 0, 0]);
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setStep((prev) => (prev + 1) % 3);
-      setTypedText('');
-    }, 3500);
+      setStep(s => (s + 1) % 3);
+      setTyped('');
+      setBars([0, 0, 0]);
+    }, 4000);
     return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
-    if (step === 2) {
-      let i = 0;
-      const typing = setInterval(() => {
-        if (i < messageText.length) {
-          setTypedText(messageText.substring(0, i + 1));
-          i++;
-        } else {
-          clearInterval(typing);
-        }
-      }, 40);
-      return () => clearInterval(typing);
+    if (step === 1) {
+      setTimeout(() => setBars([92, 85, 78]), 300);
     }
-  }, [step, messageText]);
+    if (step === 2) {
+      const msg = isAr ? msgAr : msgEn;
+      let i = 0;
+      const t = setInterval(() => {
+        setTyped(msg.substring(0, i));
+        i++;
+        if (i > msg.length) clearInterval(t);
+      }, 40);
+      return () => clearInterval(t);
+    }
+  }, [step, isAr]);
+
+  const barLabels = isAr
+    ? ['العنوان الوظيفي', 'الخبرات', 'المهارات']
+    : ['Job Title', 'Experience', 'Skills'];
 
   return (
-    <section className="relative w-full py-20 md:py-28 overflow-hidden">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.h2
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="text-3xl md:text-4xl font-bold text-center text-text-primary mb-16"
-          style={{ fontFamily: isArabic ? 'Cairo' : 'Inter' }}
-        >
-          {isArabic ? 'شاهد كيف تعمل وصّل' : 'See How Wassel Works'}
-        </motion.h2>
+    <section style={{ padding: '80px 24px', background: '#F4F7FB', textAlign: 'center' }}>
+      <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+        <p style={{ color: '#0A8F84', fontWeight: 900, fontSize: '12px', letterSpacing: '3px', marginBottom: '12px', fontFamily: 'Cairo, sans-serif' }}>
+          {isAr ? 'كيف تعمل المنصة' : 'HOW IT WORKS'}
+        </p>
+        <h2 style={{ fontSize: '32px', fontWeight: 900, color: '#0B1220', marginBottom: '48px', fontFamily: isAr ? 'Cairo, sans-serif' : 'Inter, sans-serif' }}>
+          {isAr ? 'شاهد كيف تعمل وصّل' : 'See How Wassel Works'}
+        </h2>
 
-        <div className="flex flex-col lg:flex-row items-center gap-12">
-          {/* Animated Player */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="relative w-full lg:w-3/5 rounded-2xl overflow-hidden"
-            style={{ background: '#0B1220', border: '1px solid rgba(10,143,132,0.2)' }}
-          >
-            <div className="aspect-video flex items-center justify-center p-8 relative">
-              {/* Decorative circles */}
-              <div className="absolute top-4 right-4 w-20 h-20 rounded-full opacity-10" style={{ background: '#0A8F84' }} />
-              <div className="absolute bottom-4 left-4 w-16 h-16 rounded-full opacity-10" style={{ background: '#C9922A' }} />
+        <div style={{ background: '#0B1220', borderRadius: '16px', padding: '32px', marginBottom: '32px', minHeight: '260px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
 
-              <AnimatePresence mode="wait">
-                {step === 0 && (
-                  <motion.div
-                    key="step0"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    transition={{ duration: 0.4 }}
-                    className="text-center"
-                  >
-                    <div className="w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center" style={{ background: 'rgba(10,143,132,0.2)' }}>
-                      <User size={36} style={{ color: '#0A8F84' }} />
-                    </div>
-                    <p className="text-white text-lg font-semibold mb-2" style={{ fontFamily: isArabic ? 'Cairo' : 'Inter' }}>
-                      {isArabic ? 'أحمد محمد' : 'Ahmed Mohammed'}
-                    </p>
-                    <div className="flex items-center justify-center gap-2">
-                      <div className="w-3 h-3 rounded-full" style={{ background: '#C9922A' }} />
-                      <span className="text-sm" style={{ color: '#C9922A' }}>
-                        {isArabic ? 'نقاط لينكدإن: 87/100' : 'LinkedIn Score: 87/100'}
-                      </span>
-                    </div>
-                  </motion.div>
-                )}
-
-                {step === 1 && (
-                  <motion.div
-                    key="step1"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    transition={{ duration: 0.4 }}
-                    className="w-full max-w-xs space-y-3"
-                  >
-                    {[85, 72, 91, 68].map((val, i) => (
-                      <div key={i}>
-                        <div className="flex justify-between text-xs mb-1">
-                          <span style={{ color: 'rgba(255,255,255,0.6)' }}>
-                            {[
-                              isArabic ? 'العنوان' : 'Headline',
-                              isArabic ? 'الملخص' : 'Summary',
-                              isArabic ? 'الخبرة' : 'Experience',
-                              isArabic ? 'المهارات' : 'Skills'
-                            ][i]}
-                          </span>
-                          <span style={{ color: '#0A8F84' }}>{val}%</span>
-                        </div>
-                        <div className="w-full h-2 rounded-full" style={{ background: 'rgba(255,255,255,0.1)' }}>
-                          <motion.div
-                            initial={{ width: 0 }}
-                            animate={{ width: val + '%' }}
-                            transition={{ duration: 1, delay: i * 0.2 }}
-                            className="h-full rounded-full"
-                            style={{ background: i === 2 ? '#C9922A' : '#0A8F84' }}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </motion.div>
-                )}
-
-                {step === 2 && (
-                  <motion.div
-                    key="step2"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    transition={{ duration: 0.4 }}
-                    className="w-full max-w-sm"
-                  >
-                    <div className="rounded-xl p-4" style={{ background: 'rgba(10,143,132,0.1)', border: '1px solid rgba(10,143,132,0.2)' }}>
-                      <div className="flex items-center gap-2 mb-3">
-                        <MessageSquare size={16} style={{ color: '#C9922A' }} />
-                        <span className="text-xs" style={{ color: '#C9922A' }}>
-                          {isArabic ? 'رسالة مخصصة بالذكاء الاصطناعي' : 'AI-Personalized Message'}
-                        </span>
-                      </div>
-                      <p className="text-white text-sm leading-relaxed" style={{ fontFamily: isArabic ? 'Cairo' : 'Inter', direction: isArabic ? 'rtl' : 'ltr', minHeight: '3rem' }}>
-                        {typedText}
-                        <span className="animate-pulse" style={{ color: '#C9922A' }}>|</span>
-                      </p>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+          {step === 0 && (
+            <div key="s0" style={{ animation: 'vd-fade 0.5s ease', background: '#1E2A3B', borderRadius: '12px', padding: '24px', width: '280px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px', direction: isAr ? 'rtl' : 'ltr' }}>
+                <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#0A8F84', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0 }}>👤</div>
+                <div style={{ textAlign: isAr ? 'right' : 'left' }}>
+                  <div style={{ color: '#fff', fontWeight: 900, fontFamily: 'Cairo, sans-serif' }}>{isAr ? 'أحمد الزهراني' : 'Ahmed Al-Zahrani'}</div>
+                  <div style={{ color: '#6E809A', fontSize: '12px', fontFamily: 'Cairo, sans-serif' }}>{isAr ? 'مدير مبيعات | أرامكو' : 'Sales Manager | Aramco'}</div>
+                </div>
+              </div>
+              <div style={{ background: '#0A8F84', borderRadius: '8px', padding: '8px 16px', textAlign: 'center' }}>
+                <span style={{ color: '#fff', fontWeight: 900, fontFamily: 'Cairo, sans-serif', fontSize: '14px' }}>{isAr ? 'تحليل الملف الشخصي ✓' : 'Profile Analyzed ✓'}</span>
+              </div>
             </div>
-          </motion.div>
+          )}
 
-          {/* Step Indicators */}
-          <div className="w-full lg:w-2/5 space-y-6">
-            {steps.map((s, i) => {
-              const Icon = s.icon;
-              const isActive = step === i;
-              return (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, x: isArabic ? -20 : 20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.4, delay: i * 0.15 }}
-                  className={`flex items-center gap-4 p-4 rounded-xl transition-all duration-300 ${isArabic ? 'flex-row-reverse text-right' : ''}`}
-                  style={{
-                    background: isActive ? 'rgba(10,143,132,0.1)' : 'transparent',
-                    border: isActive ? '1px solid rgba(10,143,132,0.3)' : '1px solid transparent',
-                  }}
-                >
-                  <div
-                    className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
-                    style={{ background: `${s.color}20` }}
-                  >
-                    <Icon size={22} style={{ color: s.color }} />
+          {step === 1 && (
+            <div key="s1" style={{ width: '280px', animation: 'vd-fade 0.5s ease' }}>
+              <div style={{ color: '#C9922A', fontWeight: 900, marginBottom: '16px', fontFamily: 'Cairo, sans-serif' }}>{isAr ? 'جاري التحليل...' : 'Analyzing...'}</div>
+              {barLabels.map((label, i) => (
+                <div key={i} style={{ marginBottom: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#9AAAB8', fontSize: '12px', marginBottom: '4px', fontFamily: 'Cairo, sans-serif', direction: isAr ? 'rtl' : 'ltr' }}>
+                    <span>{label}</span>
+                    <span>{[92, 85, 78][i]}%</span>
                   </div>
-                  <div>
-                    <p className="text-text-primary font-semibold" style={{ fontFamily: isArabic ? 'Cairo' : 'Inter' }}>
-                      {s.label}
-                    </p>
-                    <div className="mt-2 h-1 rounded-full w-24" style={{ background: 'rgba(255,255,255,0.1)' }}>
-                      {isActive && (
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{ width: '100%' }}
-                          transition={{ duration: 3.5, ease: 'linear' }}
-                          className="h-full rounded-full"
-                          style={{ background: s.color }}
-                        />
-                      )}
-                    </div>
+                  <div style={{ background: '#1E2A3B', borderRadius: '4px', height: '6px', overflow: 'hidden' }}>
+                    <div style={{ width: bars[i] + '%', height: '100%', background: '#0A8F84', borderRadius: '4px', transition: 'width 1s ease' }} />
                   </div>
-                </motion.div>
-              );
-            })}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {step === 2 && (
+            <div key="s2" style={{ width: '300px', animation: 'vd-fade 0.5s ease' }}>
+              <div style={{ background: '#1E2A3B', borderRadius: '12px', padding: '16px' }}>
+                <div style={{ color: '#C9922A', fontSize: '11px', marginBottom: '8px', fontFamily: 'Cairo, sans-serif', fontWeight: 700 }}>
+                  {isAr ? 'رسالة مخصصة بالذكاء الاصطناعي' : 'AI-Personalized Message'}
+                </div>
+                <div style={{ color: '#E2E8F0', fontSize: '13px', lineHeight: '1.7', fontFamily: 'Cairo, sans-serif', textAlign: isAr ? 'right' : 'left', direction: isAr ? 'rtl' : 'ltr', minHeight: '3rem' }}>
+                  {typed}<span style={{ animation: 'vd-blink 1s infinite', color: '#C9922A' }}>|</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div style={{ position: 'absolute', bottom: '16px', display: 'flex', gap: '8px' }}>
+            {[0,1,2].map(i => (
+              <div key={i} style={{ width: i === step ? '24px' : '8px', height: '8px', borderRadius: '4px', background: i === step ? '#C9922A' : '#374357', transition: 'all 0.3s ease' }} />
+            ))}
           </div>
+
+          <style>{`
+            @keyframes vd-fade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+            @keyframes vd-blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+          `}</style>
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', flexWrap: 'wrap', direction: isAr ? 'rtl' : 'ltr' }}>
+          {steps.map((s) => (
+            <div key={s.id} style={{
+              display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px', borderRadius: '10px',
+              background: step === s.id ? 'rgba(10,143,132,0.1)' : '#fff',
+              border: step === s.id ? '1px solid #0A8F84' : '1px solid rgba(11,18,32,0.07)',
+              transition: 'all 0.3s ease'
+            }}>
+              <span style={{ fontSize: '18px' }}>{s.icon}</span>
+              <span style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: '13px', color: step === s.id ? '#0A8F84' : '#6E809A' }}>
+                {isAr ? s.labelAr : s.labelEn}
+              </span>
+            </div>
+          ))}
         </div>
       </div>
     </section>

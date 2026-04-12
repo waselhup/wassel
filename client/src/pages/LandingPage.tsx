@@ -1,11 +1,9 @@
 import { useTranslation } from "react-i18next";
 import { WasselLogo } from '../components/WasselLogo';
+import VideoDemo from '../components/landing/VideoDemo';
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import {
-  Sparkles, Linkedin, FileText, Mail, BarChart3, Shield,
-  Check, ArrowRight, Star, Globe2, Users
-} from "lucide-react";
+import { Linkedin, FileText, Mail, BarChart3, Shield, Check, ArrowRight, Star, Globe2, Users } from 'lucide-react';
 
 const fadeUp = {
   initial: { opacity: 0, y: 24 },
@@ -86,7 +84,7 @@ export default function LandingPage() {
         <div className="relative max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-16 items-center">
           <motion.div {...fadeUp}>
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#064E49]/5 border border-[#064E49]/10 text-sm text-[#064E49] font-medium mb-6">
-              <Sparkles className="w-4 h-4 text-[#0A8F84]" />
+              <WasselLogo size={44} />
               {t("hero.badge", "مدعوم بالذكاء الاصطناعي · صنع في السعودية")}
             </div>
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold text-[#064E49] leading-[1.1] mb-6">
@@ -205,7 +203,7 @@ export default function LandingPage() {
               </div>
             </div>
             <div className="absolute -top-4 -end-4 w-20 h-20 rounded-2xl bg-[#0A8F84] flex items-center justify-center shadow-xl rotate-6">
-              <Sparkles className="w-10 h-10 text-white" />
+              <WasselLogo size={44} />
             </div>
           </motion.div>
         </div>
@@ -228,6 +226,9 @@ export default function LandingPage() {
       </section>
 
       {/* FEATURES — 6 cards */}
+      {/* VIDEO DEMO */}
+      <VideoDemo />
+
       <section id="features" className="py-24">
         <div className="max-w-7xl mx-auto px-6">
           <motion.div {...fadeUp} className="text-center mb-16">
