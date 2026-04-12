@@ -48,7 +48,7 @@ const Footer: React.FC = () => {
           >
             <motion.div variants={itemVariants}>
               <div className="flex items-center gap-2 mb-4">
-              <WasselLogo size={36} />
+              <WasselLogo size={36} variant="inverted" />
               <span className="text-2xl font-bold text-white" style={{ fontFamily: isArabic ? 'Cairo' : 'Inter' }}>
                 {isArabic ? 'وصّل' : 'Wassel'}
               </span>

@@ -203,7 +203,7 @@ export default function LandingPage() {
               </div>
             </div>
             <div className="absolute -top-4 -end-4 w-20 h-20 rounded-2xl bg-[#0A8F84] flex items-center justify-center shadow-xl rotate-6">
-              <WasselLogo size={44} />
+              <WasselLogo size={44} variant="inverted" />
             </div>
           </motion.div>
         </div>
