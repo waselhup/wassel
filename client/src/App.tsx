@@ -38,6 +38,14 @@ const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'));
 const AdminCampaigns = lazy(() => import('./pages/admin/AdminCampaigns'));
 const AdminSettings = lazy(() => import('./pages/admin/AdminSettings'));
 
+// New Pages
+const Pricing = lazy(() => import('./pages/Pricing'));
+const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
+const TermsOfService = lazy(() => import('./pages/TermsOfService'));
+const Analytics = lazy(() => import('./pages/Analytics'));
+const About = lazy(() => import('./pages/About'));
+const Blog = lazy(() => import('./pages/Blog'));
+
 interface ProtectedRouteProps {
   children: React.ReactNode;
 }
@@ -89,10 +97,24 @@ const AppRoutes: React.FC = () => {
   const [matchAdminCampaigns] = useRoute('/admin/campaigns');
   const [matchAdminSettings] = useRoute('/admin/settings');
 
+  // New routes
+  const [matchPricing] = useRoute('/pricing');
+  const [matchPrivacy] = useRoute('/privacy');
+  const [matchTerms] = useRoute('/terms');
+  const [matchAbout] = useRoute('/about');
+  const [matchBlog] = useRoute('/blog');
+  const [matchAppAnalytics] = useRoute('/app/analytics');
+
   if (match) return <LandingPage />;
   if (matchLogin) return <Login />;
   if (matchSignup) return <Signup />;
   if (matchReset) return <ResetPassword />;
+
+  if (matchPricing) return <Pricing />;
+  if (matchPrivacy) return <PrivacyPolicy />;
+  if (matchTerms) return <TermsOfService />;
+  if (matchAbout) return <About />;
+  if (matchBlog) return <Blog />;
 
   // Protected app routes
   if (matchAppHome)
@@ -159,6 +181,13 @@ const AppRoutes: React.FC = () => {
     return (
       <ProtectedRoute>
         <CampaignList />
+      </ProtectedRoute>
+    );
+
+  if (matchAppAnalytics)
+    return (
+      <ProtectedRoute>
+        <Analytics />
       </ProtectedRoute>
     );
 

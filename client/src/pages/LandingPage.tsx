@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { WasselLogo } from '../components/WasselLogo';
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import {
@@ -34,9 +35,7 @@ export default function LandingPage() {
       <nav className="sticky top-0 z-50 backdrop-blur-md bg-white/80 border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-xl bg-[#064E49] flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-[#0A8F84]" />
-            </div>
+            <WasselLogo size={32} />
             <span className="text-xl font-extrabold text-[#064E49]">
               {t("brand.name", "وصّل")}
             </span>
@@ -644,54 +643,40 @@ export default function LandingPage() {
           <div className="grid md:grid-cols-4 gap-8 mb-12">
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center">
-                  <Sparkles className="w-5 h-5 text-[#0A8F84]" />
-                </div>
+                <WasselLogo size={32} variant="inverted" />
                 <span className="text-xl font-extrabold">{t("brand.name", "وصّل")}</span>
               </div>
               <p className="text-sm text-white/60 leading-relaxed">
                 {t("footer.tagline", "منصة سعودية مدعومة بالذكاء الاصطناعي لتسريع مسيرتك المهنية.")}
               </p>
             </div>
-            {[
-              {
-                title: t("footer.product", "المنتج"),
-                links: [
-                  t("footer.features", "المميزات"),
-                  t("footer.pricing", "الأسعار"),
-                  t("footer.changelog", "التحديثات"),
-                ],
-              },
-              {
-                title: t("footer.company", "الشركة"),
-                links: [
-                  t("footer.about", "من نحن"),
-                  t("footer.blog", "المدونة"),
-                  t("footer.contact", "اتصل بنا"),
-                ],
-              },
-              {
-                title: t("footer.legal", "قانوني"),
-                links: [
-                  t("footer.privacy", "سياسة الخصوصية"),
-                  t("footer.terms", "شروط الاستخدام"),
-                  t("footer.pdpl", "الامتثال لـ PDPL"),
-                ],
-              },
-            ].map((col, i) => (
-              <div key={i}>
-                <h4 className="font-bold mb-4">{col.title}</h4>
-                <ul className="space-y-2 text-sm text-white/60">
-                  {col.links.map((l, j) => (
-                    <li key={j}>
-                      <a href="#" className="hover:text-[#0A8F84] transition">
-                        {l}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+            {/* Product */}
+            <div>
+              <h4 className="font-bold mb-4">{t("footer.product", "المنتج")}</h4>
+              <ul className="space-y-2 text-sm text-white/60">
+                <li><a href="/#features" className="hover:text-[#0A8F84] transition">{t("footer.features", "المميزات")}</a></li>
+                <li><Link href="/pricing" className="hover:text-[#0A8F84] transition">{t("footer.pricing", "الأسعار")}</Link></li>
+                <li><a href="/#updates" className="hover:text-[#0A8F84] transition">{t("footer.changelog", "التحديثات")}</a></li>
+              </ul>
+            </div>
+            {/* Company */}
+            <div>
+              <h4 className="font-bold mb-4">{t("footer.company", "الشركة")}</h4>
+              <ul className="space-y-2 text-sm text-white/60">
+                <li><Link href="/about" className="hover:text-[#0A8F84] transition">{t("footer.about", "من نحن")}</Link></li>
+                <li><Link href="/blog" className="hover:text-[#0A8F84] transition">{t("footer.blog", "المدونة")}</Link></li>
+                <li><a href="mailto:support@wassel.sa" className="hover:text-[#0A8F84] transition">{t("footer.contact", "اتصل بنا")}</a></li>
+              </ul>
+            </div>
+            {/* Legal */}
+            <div>
+              <h4 className="font-bold mb-4">{t("footer.legal", "قانوني")}</h4>
+              <ul className="space-y-2 text-sm text-white/60">
+                <li><Link href="/privacy" className="hover:text-[#0A8F84] transition">{t("footer.privacy", "سياسة الخصوصية")}</Link></li>
+                <li><Link href="/terms" className="hover:text-[#0A8F84] transition">{t("footer.terms", "شروط الاستخدام")}</Link></li>
+                <li><Link href="/privacy#pdpl" className="hover:text-[#0A8F84] transition">{t("footer.pdpl", "الامتثال لـ PDPL")}</Link></li>
+              </ul>
+            </div>
           </div>
           <div className="pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-white/50">
             <div>© 2026 Wassel. {t("footer.rights", "كل الحقوق محفوظة.")}</div>
