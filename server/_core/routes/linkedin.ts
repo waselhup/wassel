@@ -320,4 +320,221 @@ export const linkedinRouter = router({
       });
     }
   }),
+
+  analyzeDeep: protectedProcedure
+    .input(z.object({
+      linkedinUrl: z.string().optional(),
+      imageBase64: z.string().optional(),
+      mediaType: z.string().default('image/png'),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      try {
+        console.log('[DEEP] analyzeDeep request, hasUrl:', !!input.linkedinUrl, 'hasImage:', !!input.imageBase64);
+
+        // Check tokens (25 required)
+        const { data: profile } = await ctx.supabase
+          .from('profiles')
+          .select('token_balance')
+          .eq('id', ctx.user.id)
+          .single();
+
+        if (!profile || profile.token_balance < 25) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'رصيدك غير كافٍ. تحتاج 25 توكن للتحليل العميق.',
+          });
+        }
+
+        const cacheKey = 'analyzeDeep:' + (input.linkedinUrl ? normalizeLiUrl(input.linkedinUrl) : ctx.user.id);
+
+        // Check cache
+        const { data: cached } = await ctx.supabase
+          .from('ai_cache')
+          .select('result')
+          .eq('cache_key', cacheKey)
+          .gt('expires_at', new Date().toISOString())
+          .maybeSingle();
+
+        if (cached?.result) {
+          console.log('[DEEP] Cache HIT');
+          return cached.result;
+        }
+
+        // Build profile text
+        let profileText = '';
+
+        if (input.linkedinUrl) {
+          const profileData = await scrapeLinkedInProfile(input.linkedinUrl);
+          const name = profileData.fullName || (profileData.firstName + ' ' + profileData.lastName) || '';
+          const headline = profileData.headline || '';
+          const summary = profileData.summary || profileData.about || '';
+          const location = profileData.location || profileData.addressCountryFull || '';
+          const connections = profileData.connectionsCount || profileData.connections || 0;
+          const experiences = (profileData.experience || profileData.positions || [])
+            .slice(0, 5)
+            .map((e: any) => '- ' + (e.title || e.role || '') + ' at ' + (e.companyName || e.company || '') + ' (' + (e.duration || e.timePeriod || '') + ')')
+            .join('\n');
+          const education = (profileData.education || [])
+            .slice(0, 3)
+            .map((e: any) => '- ' + (e.degree || e.degreeName || '') + ' from ' + (e.schoolName || e.school || ''))
+            .join('\n');
+          const skills = (profileData.skills || [])
+            .slice(0, 15)
+            .map((s: any) => typeof s === 'string' ? s : s.name || s.skill || '')
+            .filter(Boolean)
+            .join(', ');
+          const certs = (profileData.certifications || [])
+            .slice(0, 5)
+            .map((c: any) => '- ' + (c.name || c.title || ''))
+            .join('\n');
+
+          profileText = 'Name: ' + name + '\nHeadline: ' + headline + '\nLocation: ' + location +
+            '\nConnections: ' + connections + '\nSummary: ' + summary +
+            '\n\nExperience:\n' + (experiences || 'None') +
+            '\n\nEducation:\n' + (education || 'None') +
+            '\nSkills: ' + (skills || 'None') +
+            '\n\nCertifications:\n' + (certs || 'None');
+        }
+
+        const DEEP_PROMPT = `You are a world-class LinkedIn coach for Saudi Arabia and GCC market.
+Analyze this LinkedIn profile and return ONLY valid JSON — no markdown, no backticks, no explanation.
+{
+  "score": <number 0-100>,
+  "scoreBreakdown": {
+    "headline": <0-15>,
+    "about": <0-15>,
+    "experience": <0-20>,
+    "skills": <0-10>,
+    "education": <0-10>,
+    "photo": <0-10>,
+    "connections": <0-10>,
+    "certifications": <0-10>
+  },
+  "strengths": ["<Arabic>", "<Arabic>"],
+  "weaknesses": ["<Arabic>", "<Arabic>"],
+  "upgradePlan": {
+    "headline": {
+      "before": "<current headline text>",
+      "after": "<optimized headline max 220 chars>",
+      "tips": "<Arabic explanation>"
+    },
+    "about": {
+      "before": "<summary of current about>",
+      "after": "<full rewrite 500+ chars in Arabic, professional>",
+      "tips": "<Arabic explanation>"
+    },
+    "experience": {
+      "before": "<current experience bullets>",
+      "after": "<rewritten with numbers, metrics, impact>",
+      "tips": "<Arabic explanation>"
+    }
+  },
+  "missingSections": ["<Arabic section name>"],
+  "actionChecklist": [
+    {"action": "<Arabic>", "time": "<X min>", "priority": "high"},
+    {"action": "<Arabic>", "time": "<X min>", "priority": "medium"},
+    {"action": "<Arabic>", "time": "<X min>", "priority": "low"}
+  ],
+  "recommendationTemplate": "<Arabic WhatsApp message to request LinkedIn recommendation from colleague>",
+  "bannerDesign": {
+    "background": "linear-gradient(135deg, #064E49, #0A8F84)",
+    "mainText": "<person name + title>",
+    "tagline": "<professional tagline in English>",
+    "layout": "right-photo-left-text",
+    "accent": "#C9922A"
+  }
+}
+Profile data:`;
+
+        // Build Claude messages
+        const messages: any[] = [];
+        if (input.imageBase64) {
+          messages.push({
+            role: 'user',
+            content: [
+              {
+                type: 'image',
+                source: {
+                  type: 'base64',
+                  media_type: input.mediaType || 'image/png',
+                  data: input.imageBase64,
+                },
+              },
+              { type: 'text', text: DEEP_PROMPT + '\n(See screenshot above)' },
+            ],
+          });
+        } else {
+          messages.push({ role: 'user', content: DEEP_PROMPT + '\n' + profileText });
+        }
+
+        console.log('[DEEP] Calling Claude claude-sonnet-4-6');
+        const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': ANTHROPIC_API_KEY,
+            'anthropic-version': '2023-06-01',
+          },
+          body: JSON.stringify({
+            model: 'claude-sonnet-4-6',
+            max_tokens: 3000,
+            messages,
+          }),
+        });
+
+        if (!claudeRes.ok) {
+          const errText = await claudeRes.text();
+          console.error('[DEEP] Claude error:', claudeRes.status, errText);
+          throw new Error('Claude API error: ' + claudeRes.status);
+        }
+
+        const claudeData = await claudeRes.json();
+        const text = claudeData.content?.[0]?.text || '';
+        const tokensUsed = (claudeData.usage?.input_tokens || 0) + (claudeData.usage?.output_tokens || 0);
+
+        // Parse JSON
+        let result: any;
+        try {
+          const jsonMatch = text.match(/\{[\s\S]*\}/);
+          result = JSON.parse(jsonMatch ? jsonMatch[0] : text);
+        } catch {
+          // Retry: strip markdown fences
+          try {
+            const cleaned = text.replace(/```json?/g, '').replace(/```/g, '').trim();
+            const jsonMatch2 = cleaned.match(/\{[\s\S]*\}/);
+            result = JSON.parse(jsonMatch2 ? jsonMatch2[0] : cleaned);
+          } catch {
+            console.error('[DEEP] JSON parse failed:', text.substring(0, 300));
+            return { error: 'فشل تحليل الرد من الذكاء الاصطناعي' };
+          }
+        }
+
+        // Cache result (24h)
+        const expires = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+        await ctx.supabase.from('ai_cache').upsert({
+          cache_key: cacheKey,
+          result,
+          model: 'claude-sonnet-4-6',
+          tokens_used: tokensUsed,
+          expires_at: expires,
+        }, { onConflict: 'cache_key' });
+
+        // Deduct 25 tokens
+        await ctx.supabase
+          .from('profiles')
+          .update({ token_balance: (profile.token_balance || 0) - 25 })
+          .eq('id', ctx.user.id);
+
+        console.log('[DEEP] Success, score:', result.score, 'tokens:', tokensUsed);
+        return result;
+      } catch (err: any) {
+        console.error('[DEEP] Error:', err?.message || err);
+        if (err instanceof TRPCError) throw err;
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: err?.message || 'فشل في التحليل العميق',
+        });
+      }
+    }),
+
 });
