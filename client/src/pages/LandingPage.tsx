@@ -88,10 +88,10 @@ export default function LandingPage() {
               {t("hero.badge", "مدعوم بالذكاء الاصطناعي · صنع في السعودية")}
             </div>
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold text-[#064E49] leading-[1.1] mb-6">
-              {t("hero.title", "وظيفتك القادمة")}
+              {t("hero.title")}
               <br />
               <span className="text-[#0A8F84]">
-                {t("hero.title2", "تبدأ بنقرة واحدة")}
+                {t("hero.title2")}
               </span>
             </h1>
             <p className="text-xl text-[#6b7280] leading-relaxed mb-10 max-w-xl">

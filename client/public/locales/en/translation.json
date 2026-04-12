@@ -26,7 +26,7 @@
     "setup": "Account Setup"
   },
   "hero": {
-    "title": "Multiply Your Job Opportunities Effortlessly. Wassel: Professional Networking Automation at Your Fingertips.",
+    "title": "Multiply Your Job Opportunities Effortlessly",
     "subtitle": "Wassel isn’t just a platform — it’s your strategic partner. We help you showcase your skills professionally and automate your outreach, ensuring the world sees your true value.",
     "cta_primary": "Get Started - Free",
     "cta_secondary": "Watch Demo",
@@ -46,7 +46,8 @@
         "label": "Response Rate",
         "description": "Above average"
       }
-    ]
+    ],
+    "title2": "Wassel: Professional Networking Automation at Your Fingertips"
   },
   "features": {
     "title": "Three Phases to Career Success",
