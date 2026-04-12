@@ -23,7 +23,7 @@ const plans = [
   {
     id: 'agency', name: '\u0648\u0643\u0627\u0644\u0629', price: '599', period: '/\u0634\u0647\u0631',
     features: ['\u062a\u0648\u0643\u0646 \u063a\u064a\u0631 \u0645\u062d\u062f\u0648\u062f', '\u062d\u0633\u0627\u0628\u0627\u062a \u0645\u062a\u0639\u062f\u062f\u0629', 'API access', '\u0645\u062f\u064a\u0631 \u062d\u0633\u0627\u0628'],
-    cta: '\u062a\u0648\u0627\u0635\u0644 \u0645\u0639\u0646\u0627', href: 'mailto:support@wassel.sa', popular: false, gold: true,
+    cta: '\u062a\u0648\u0627\u0635\u0644 \u0645\u0639\u0646\u0627', href: 'mailto:waselhup@gmail.com', popular: false, gold: true,
   },
 ];
 

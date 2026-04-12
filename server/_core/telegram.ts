@@ -1,4 +1,4 @@
-﻿import { Request, Response } from 'express';
+import { Request, Response } from 'express';
 
 const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || '';

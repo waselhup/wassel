@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { Menu, X, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { WasselLogo } from '@/components/WasselLogo';
 
 const Navbar: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -43,9 +44,12 @@ const Navbar: React.FC = () => {
             onClick={() => navigate('/')}
             className="cursor-pointer"
           >
-            <h1 className="text-2xl font-bold text-primary-600" style={{ fontFamily: isArabic ? 'Cairo' : 'Inter' }}>
-              {isArabic ? 'وصّل' : 'Wassel'}
-            </h1>
+            <div className="flex items-center gap-2">
+              <WasselLogo size={40} />
+              <span className="text-2xl font-bold text-primary-600" style={{ fontFamily: isArabic ? 'Cairo' : 'Inter' }}>
+                {isArabic ? 'وصّل' : 'Wassel'}
+              </span>
+            </div>
           </motion.div>
 
           <div className={`hidden md:flex items-center gap-8 ${isArabic ? 'flex-row-reverse' : ''}`}>

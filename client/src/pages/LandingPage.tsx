@@ -665,7 +665,7 @@ export default function LandingPage() {
               <ul className="space-y-2 text-sm text-white/60">
                 <li><Link href="/about" className="hover:text-[#0A8F84] transition">{t("footer.about", "من نحن")}</Link></li>
                 <li><Link href="/blog" className="hover:text-[#0A8F84] transition">{t("footer.blog", "المدونة")}</Link></li>
-                <li><a href="mailto:support@wassel.sa" className="hover:text-[#0A8F84] transition">{t("footer.contact", "اتصل بنا")}</a></li>
+                <li><a href="mailto:waselhup@gmail.com" className="hover:text-[#0A8F84] transition">{t("footer.contact", "اتصل بنا")}</a></li>
               </ul>
             </div>
             {/* Legal */}

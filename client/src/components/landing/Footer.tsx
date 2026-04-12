@@ -2,6 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { Linkedin, Twitter, Instagram } from 'lucide-react';
+import { WasselLogo } from '@/components/WasselLogo';
 
 const Footer: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -46,9 +47,12 @@ const Footer: React.FC = () => {
             className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 ${isArabic ? 'rtl' : ''}`}
           >
             <motion.div variants={itemVariants}>
-              <h2 className="text-2xl font-bold text-white mb-4" style={{ fontFamily: isArabic ? 'Cairo' : 'Inter' }}>
+              <div className="flex items-center gap-2 mb-4">
+              <WasselLogo size={36} />
+              <span className="text-2xl font-bold text-white" style={{ fontFamily: isArabic ? 'Cairo' : 'Inter' }}>
                 {isArabic ? 'وصّل' : 'Wassel'}
-              </h2>
+              </span>
+            </div>
               <p className="text-gray-400 text-sm leading-relaxed mb-4">
                 {t('footer.description')}
               </p>

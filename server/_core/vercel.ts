@@ -1,4 +1,4 @@
-﻿import { telegramHandler } from './telegram';
+import { telegramHandler } from './telegram';
 import express from 'express';
 import cors from 'cors';
 import { createExpressMiddleware } from '@trpc/server/adapters/express';

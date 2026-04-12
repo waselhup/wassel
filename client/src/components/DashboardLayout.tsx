@@ -75,7 +75,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, page
     }}>
       {/* Logo */}
       <div style={{ padding: '20px 16px 16px', borderBottom: '1px solid var(--wsl-border)', display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <WasselLogo size={32} />
+        <WasselLogo size={38} />
         <span style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: '16px', color: 'var(--wsl-teal)' }}>
           {'\u0648\u0635\u0651\u0644'}
         </span>
