@@ -66,7 +66,7 @@ Response as JSON only:
 }`;
 
   try {
-    console.log('[CLAUDE] Calling claude-sonnet-4-6 model');
+    console.log('[CLAUDE] Calling claude-sonnet-4-5 model');
     
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -76,7 +76,7 @@ Response as JSON only:
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
+        model: 'claude-sonnet-4-5',
         max_tokens: 4096,
         system: systemPrompt,
         messages: [
@@ -375,7 +375,7 @@ Return JSON array:
             'anthropic-version': '2023-06-01',
           },
           body: JSON.stringify({
-            model: 'claude-sonnet-4-6',
+            model: 'claude-sonnet-4-5',
             max_tokens: 4096,
             system: systemPrompt,
             messages: [{ role: 'user', content: userPrompt }],

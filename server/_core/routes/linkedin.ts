@@ -4,7 +4,7 @@ import { TRPCError } from '@trpc/server';
 
 const APIFY_TOKEN = process.env.APIFY_TOKEN || process.env.APIFY_API_TOKEN || '';
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || '';
-const CLAUDE_MODEL = 'claude-haiku-4-5-20251001';
+const CLAUDE_MODEL = 'claude-haiku-4-5';
 
 async function scrapeLinkedInProfile(profileUrl: string): Promise<any> {
   console.log('[APIFY] Starting scrape for:', profileUrl);
@@ -467,7 +467,7 @@ Profile data:`;
           messages.push({ role: 'user', content: DEEP_PROMPT + '\n' + profileText });
         }
 
-        console.log('[DEEP] Calling Claude claude-sonnet-4-6');
+        console.log('[DEEP] Calling Claude claude-sonnet-4-5');
         const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST',
           headers: {
@@ -476,7 +476,7 @@ Profile data:`;
             'anthropic-version': '2023-06-01',
           },
           body: JSON.stringify({
-            model: 'claude-sonnet-4-6',
+            model: 'claude-sonnet-4-5',
             max_tokens: 3000,
             messages,
           }),
@@ -514,7 +514,7 @@ Profile data:`;
         await ctx.supabase.from('ai_cache').upsert({
           cache_key: cacheKey,
           result,
-          model: 'claude-sonnet-4-6',
+          model: 'claude-sonnet-4-5',
           tokens_used: tokensUsed,
           expires_at: expires,
         }, { onConflict: 'cache_key' });

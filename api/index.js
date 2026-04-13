@@ -46844,7 +46844,7 @@ async function askOZAIL(message) {
       "anthropic-version": "2023-06-01"
     },
     body: JSON.stringify({
-      model: "claude-sonnet-4-6",
+      model: "claude-sonnet-4-5",
       max_tokens: 800,
       system: `You are OZAIL, the AI CEO of Wassel (\u0648\u0635\u0644) \u2014 Arabic-first LinkedIn outreach SaaS for Saudi Arabia.
 Platform: https://wassel-alpha.vercel.app
@@ -52192,7 +52192,7 @@ var NEVER = INVALID;
 // server/_core/routes/linkedin.ts
 var APIFY_TOKEN = process.env.APIFY_TOKEN || process.env.APIFY_API_TOKEN || "";
 var ANTHROPIC_API_KEY2 = process.env.ANTHROPIC_API_KEY || "";
-var CLAUDE_MODEL = "claude-haiku-4-5-20251001";
+var CLAUDE_MODEL = "claude-haiku-4-5";
 async function scrapeLinkedInProfile(profileUrl) {
   console.log("[APIFY] Starting scrape for:", profileUrl);
   const runRes = await fetch(
@@ -52535,7 +52535,7 @@ Profile data:`;
       } else {
         messages.push({ role: "user", content: DEEP_PROMPT + "\n" + profileText });
       }
-      console.log("[DEEP] Calling Claude claude-sonnet-4-6");
+      console.log("[DEEP] Calling Claude claude-sonnet-4-5");
       const claudeRes = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: {
@@ -52544,7 +52544,7 @@ Profile data:`;
           "anthropic-version": "2023-06-01"
         },
         body: JSON.stringify({
-          model: "claude-sonnet-4-6",
+          model: "claude-sonnet-4-5",
           max_tokens: 3e3,
           messages
         })
@@ -52575,7 +52575,7 @@ Profile data:`;
       await ctx.supabase.from("ai_cache").upsert({
         cache_key: cacheKey,
         result,
-        model: "claude-sonnet-4-6",
+        model: "claude-sonnet-4-5",
         tokens_used: tokensUsed,
         expires_at: expires
       }, { onConflict: "cache_key" });
@@ -52657,7 +52657,7 @@ Make the content specific to ${field}, professional, and optimized for ATS syste
         "anthropic-version": "2023-06-01"
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-6",
+        model: "claude-sonnet-4-5",
         max_tokens: 1024,
         messages: [{ role: "user", content: prompt }]
       })
@@ -52801,7 +52801,7 @@ var cvRouter = router({
         "anthropic-version": "2023-06-01"
       },
       body: JSON.stringify({
-        model: "claude-haiku-4-5-20251001",
+        model: "claude-haiku-4-5",
         max_tokens: 1500,
         messages: [{
           role: "user",
@@ -52911,7 +52911,7 @@ Response as JSON only:
   }
 }`;
   try {
-    console.log("[CLAUDE] Calling claude-sonnet-4-6 model");
+    console.log("[CLAUDE] Calling claude-sonnet-4-5 model");
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -52920,7 +52920,7 @@ Response as JSON only:
         "anthropic-version": "2023-06-01"
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-6",
+        model: "claude-sonnet-4-5",
         max_tokens: 4096,
         system: systemPrompt,
         messages: [
@@ -53158,7 +53158,7 @@ Return JSON array:
           "anthropic-version": "2023-06-01"
         },
         body: JSON.stringify({
-          model: "claude-sonnet-4-6",
+          model: "claude-sonnet-4-5",
           max_tokens: 4096,
           system: systemPrompt,
           messages: [{ role: "user", content: userPrompt }]
