@@ -205,13 +205,58 @@ export default function ProfileAnalysis() {
   }
 
   const handleFile = (file: File) => {
-    if (!file.type.startsWith('image/')) return;
-    setMediaType(file.type);
+    if (!file.type.startsWith('image/')) {
+      toast.push('error', 'الملف يجب أن يكون صورة');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.push('error', 'الصورة كبيرة جداً (الحد الأقصى 10 ميجا)');
+      return;
+    }
+    
     const reader = new FileReader();
     reader.onload = () => {
       const dataUrl = reader.result as string;
-      setImagePreview(dataUrl);
-      setImageBase64(dataUrl.split(',')[1]);
+      const img = new Image();
+      img.onload = () => {
+        // Compress: max 1920px wide, JPEG quality 0.8
+        const maxW = 1920;
+        const ratio = Math.min(1, maxW / img.width);
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width * ratio;
+        canvas.height = img.height * ratio;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          setImagePreview(dataUrl);
+          setImageBase64(dataUrl.split(',')[1]);
+          setMediaType(file.type);
+          return;
+        }
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        
+        let quality = 0.8;
+        let compressed = canvas.toDataURL('image/jpeg', quality);
+        const targetSize = 3 * 1024 * 1024 * 1.37; // 3MB after base64 inflation
+        while (compressed.length > targetSize && quality > 0.3) {
+          quality -= 0.1;
+          compressed = canvas.toDataURL('image/jpeg', quality);
+        }
+        const sizeMB = (compressed.length * 0.75 / 1024 / 1024).toFixed(2);
+        console.log('[Compress] ' + sizeMB + 'MB at quality ' + quality.toFixed(1));
+        
+        setImagePreview(compressed);
+        setImageBase64(compressed.split(',')[1]);
+        setMediaType('image/jpeg');
+      };
+      img.onerror = () => {
+        toast.push('error', 'فشل قراءة الصورة');
+      };
+      img.src = dataUrl;
+    };
+    reader.onerror = () => {
+      toast.push('error', 'فشل قراءة الملف');
     };
     reader.readAsDataURL(file);
   };
