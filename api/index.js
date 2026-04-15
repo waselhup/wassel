@@ -20518,17 +20518,17 @@ var require_router = __commonJS({
     var toString = Object.prototype.toString;
     var proto = module2.exports = function(options) {
       var opts = options || {};
-      function router2(req, res, next) {
-        router2.handle(req, res, next);
+      function router3(req, res, next) {
+        router3.handle(req, res, next);
       }
-      setPrototypeOf(router2, proto);
-      router2.params = {};
-      router2._params = [];
-      router2.caseSensitive = opts.caseSensitive;
-      router2.mergeParams = opts.mergeParams;
-      router2.strict = opts.strict;
-      router2.stack = [];
-      return router2;
+      setPrototypeOf(router3, proto);
+      router3.params = {};
+      router3._params = [];
+      router3.caseSensitive = opts.caseSensitive;
+      router3.mergeParams = opts.mergeParams;
+      router3.strict = opts.strict;
+      router3.stack = [];
+      return router3;
     };
     proto.param = function param(name, fn) {
       if (typeof name === "function") {
@@ -23544,7 +23544,7 @@ var require_application = __commonJS({
   "node_modules/express/lib/application.js"(exports2, module2) {
     "use strict";
     var finalhandler = require_finalhandler();
-    var Router = require_router();
+    var Router2 = require_router();
     var methods = require_methods();
     var middleware = require_init();
     var query = require_query();
@@ -23609,7 +23609,7 @@ var require_application = __commonJS({
     };
     app2.lazyrouter = function lazyrouter() {
       if (!this._router) {
-        this._router = new Router({
+        this._router = new Router2({
           caseSensitive: this.enabled("case sensitive routing"),
           strict: this.enabled("strict routing")
         });
@@ -23618,17 +23618,17 @@ var require_application = __commonJS({
       }
     };
     app2.handle = function handle(req, res, callback) {
-      var router2 = this._router;
+      var router3 = this._router;
       var done = callback || finalhandler(req, res, {
         env: this.get("env"),
         onerror: logerror.bind(this)
       });
-      if (!router2) {
+      if (!router3) {
         debug("no routes defined on app");
         done();
         return;
       }
-      router2.handle(req, res, done);
+      router3.handle(req, res, done);
     };
     app2.use = function use(fn) {
       var offset = 0;
@@ -23648,15 +23648,15 @@ var require_application = __commonJS({
         throw new TypeError("app.use() requires a middleware function");
       }
       this.lazyrouter();
-      var router2 = this._router;
+      var router3 = this._router;
       fns.forEach(function(fn2) {
         if (!fn2 || !fn2.handle || !fn2.set) {
-          return router2.use(path, fn2);
+          return router3.use(path, fn2);
         }
         debug(".use app under %s", path);
         fn2.mountpath = path;
         fn2.parent = this;
-        router2.use(path, function mounted_app(req, res, next) {
+        router3.use(path, function mounted_app(req, res, next) {
           var orig = req.app;
           fn2.handle(req, res, function(err) {
             setPrototypeOf(req, orig.request);
@@ -25473,7 +25473,7 @@ var require_express = __commonJS({
     var mixin = require_merge_descriptors();
     var proto = require_application();
     var Route = require_route();
-    var Router = require_router();
+    var Router2 = require_router();
     var req = require_request();
     var res = require_response();
     exports2 = module2.exports = createApplication;
@@ -25496,7 +25496,7 @@ var require_express = __commonJS({
     exports2.request = req;
     exports2.response = res;
     exports2.Route = Route;
-    exports2.Router = Router;
+    exports2.Router = Router2;
     exports2.json = bodyParser.json;
     exports2.query = require_query();
     exports2.raw = bodyParser.raw;
@@ -25538,284 +25538,6 @@ var require_express2 = __commonJS({
   "node_modules/express/index.js"(exports2, module2) {
     "use strict";
     module2.exports = require_express();
-  }
-});
-
-// node_modules/object-assign/index.js
-var require_object_assign = __commonJS({
-  "node_modules/object-assign/index.js"(exports2, module2) {
-    "use strict";
-    var getOwnPropertySymbols = Object.getOwnPropertySymbols;
-    var hasOwnProperty = Object.prototype.hasOwnProperty;
-    var propIsEnumerable = Object.prototype.propertyIsEnumerable;
-    function toObject(val) {
-      if (val === null || val === void 0) {
-        throw new TypeError("Object.assign cannot be called with null or undefined");
-      }
-      return Object(val);
-    }
-    function shouldUseNative() {
-      try {
-        if (!Object.assign) {
-          return false;
-        }
-        var test1 = new String("abc");
-        test1[5] = "de";
-        if (Object.getOwnPropertyNames(test1)[0] === "5") {
-          return false;
-        }
-        var test2 = {};
-        for (var i = 0; i < 10; i++) {
-          test2["_" + String.fromCharCode(i)] = i;
-        }
-        var order2 = Object.getOwnPropertyNames(test2).map(function(n) {
-          return test2[n];
-        });
-        if (order2.join("") !== "0123456789") {
-          return false;
-        }
-        var test3 = {};
-        "abcdefghijklmnopqrst".split("").forEach(function(letter) {
-          test3[letter] = letter;
-        });
-        if (Object.keys(Object.assign({}, test3)).join("") !== "abcdefghijklmnopqrst") {
-          return false;
-        }
-        return true;
-      } catch (err) {
-        return false;
-      }
-    }
-    module2.exports = shouldUseNative() ? Object.assign : function(target, source) {
-      var from;
-      var to = toObject(target);
-      var symbols;
-      for (var s = 1; s < arguments.length; s++) {
-        from = Object(arguments[s]);
-        for (var key in from) {
-          if (hasOwnProperty.call(from, key)) {
-            to[key] = from[key];
-          }
-        }
-        if (getOwnPropertySymbols) {
-          symbols = getOwnPropertySymbols(from);
-          for (var i = 0; i < symbols.length; i++) {
-            if (propIsEnumerable.call(from, symbols[i])) {
-              to[symbols[i]] = from[symbols[i]];
-            }
-          }
-        }
-      }
-      return to;
-    };
-  }
-});
-
-// node_modules/cors/lib/index.js
-var require_lib3 = __commonJS({
-  "node_modules/cors/lib/index.js"(exports2, module2) {
-    (function() {
-      "use strict";
-      var assign = require_object_assign();
-      var vary = require_vary();
-      var defaults = {
-        origin: "*",
-        methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
-        preflightContinue: false,
-        optionsSuccessStatus: 204
-      };
-      function isString(s) {
-        return typeof s === "string" || s instanceof String;
-      }
-      function isOriginAllowed(origin, allowedOrigin) {
-        if (Array.isArray(allowedOrigin)) {
-          for (var i = 0; i < allowedOrigin.length; ++i) {
-            if (isOriginAllowed(origin, allowedOrigin[i])) {
-              return true;
-            }
-          }
-          return false;
-        } else if (isString(allowedOrigin)) {
-          return origin === allowedOrigin;
-        } else if (allowedOrigin instanceof RegExp) {
-          return allowedOrigin.test(origin);
-        } else {
-          return !!allowedOrigin;
-        }
-      }
-      function configureOrigin(options, req) {
-        var requestOrigin = req.headers.origin, headers = [], isAllowed;
-        if (!options.origin || options.origin === "*") {
-          headers.push([{
-            key: "Access-Control-Allow-Origin",
-            value: "*"
-          }]);
-        } else if (isString(options.origin)) {
-          headers.push([{
-            key: "Access-Control-Allow-Origin",
-            value: options.origin
-          }]);
-          headers.push([{
-            key: "Vary",
-            value: "Origin"
-          }]);
-        } else {
-          isAllowed = isOriginAllowed(requestOrigin, options.origin);
-          headers.push([{
-            key: "Access-Control-Allow-Origin",
-            value: isAllowed ? requestOrigin : false
-          }]);
-          headers.push([{
-            key: "Vary",
-            value: "Origin"
-          }]);
-        }
-        return headers;
-      }
-      function configureMethods(options) {
-        var methods = options.methods;
-        if (methods.join) {
-          methods = options.methods.join(",");
-        }
-        return {
-          key: "Access-Control-Allow-Methods",
-          value: methods
-        };
-      }
-      function configureCredentials(options) {
-        if (options.credentials === true) {
-          return {
-            key: "Access-Control-Allow-Credentials",
-            value: "true"
-          };
-        }
-        return null;
-      }
-      function configureAllowedHeaders(options, req) {
-        var allowedHeaders = options.allowedHeaders || options.headers;
-        var headers = [];
-        if (!allowedHeaders) {
-          allowedHeaders = req.headers["access-control-request-headers"];
-          headers.push([{
-            key: "Vary",
-            value: "Access-Control-Request-Headers"
-          }]);
-        } else if (allowedHeaders.join) {
-          allowedHeaders = allowedHeaders.join(",");
-        }
-        if (allowedHeaders && allowedHeaders.length) {
-          headers.push([{
-            key: "Access-Control-Allow-Headers",
-            value: allowedHeaders
-          }]);
-        }
-        return headers;
-      }
-      function configureExposedHeaders(options) {
-        var headers = options.exposedHeaders;
-        if (!headers) {
-          return null;
-        } else if (headers.join) {
-          headers = headers.join(",");
-        }
-        if (headers && headers.length) {
-          return {
-            key: "Access-Control-Expose-Headers",
-            value: headers
-          };
-        }
-        return null;
-      }
-      function configureMaxAge(options) {
-        var maxAge = (typeof options.maxAge === "number" || options.maxAge) && options.maxAge.toString();
-        if (maxAge && maxAge.length) {
-          return {
-            key: "Access-Control-Max-Age",
-            value: maxAge
-          };
-        }
-        return null;
-      }
-      function applyHeaders(headers, res) {
-        for (var i = 0, n = headers.length; i < n; i++) {
-          var header = headers[i];
-          if (header) {
-            if (Array.isArray(header)) {
-              applyHeaders(header, res);
-            } else if (header.key === "Vary" && header.value) {
-              vary(res, header.value);
-            } else if (header.value) {
-              res.setHeader(header.key, header.value);
-            }
-          }
-        }
-      }
-      function cors2(options, req, res, next) {
-        var headers = [], method = req.method && req.method.toUpperCase && req.method.toUpperCase();
-        if (method === "OPTIONS") {
-          headers.push(configureOrigin(options, req));
-          headers.push(configureCredentials(options));
-          headers.push(configureMethods(options));
-          headers.push(configureAllowedHeaders(options, req));
-          headers.push(configureMaxAge(options));
-          headers.push(configureExposedHeaders(options));
-          applyHeaders(headers, res);
-          if (options.preflightContinue) {
-            next();
-          } else {
-            res.statusCode = options.optionsSuccessStatus;
-            res.setHeader("Content-Length", "0");
-            res.end();
-          }
-        } else {
-          headers.push(configureOrigin(options, req));
-          headers.push(configureCredentials(options));
-          headers.push(configureExposedHeaders(options));
-          applyHeaders(headers, res);
-          next();
-        }
-      }
-      function middlewareWrapper(o) {
-        var optionsCallback = null;
-        if (typeof o === "function") {
-          optionsCallback = o;
-        } else {
-          optionsCallback = function(req, cb) {
-            cb(null, o);
-          };
-        }
-        return function corsMiddleware(req, res, next) {
-          optionsCallback(req, function(err, options) {
-            if (err) {
-              next(err);
-            } else {
-              var corsOptions = assign({}, defaults, options);
-              var originCallback = null;
-              if (corsOptions.origin && typeof corsOptions.origin === "function") {
-                originCallback = corsOptions.origin;
-              } else if (corsOptions.origin) {
-                originCallback = function(origin, cb) {
-                  cb(null, corsOptions.origin);
-                };
-              }
-              if (originCallback) {
-                originCallback(req.headers.origin, function(err2, origin) {
-                  if (err2 || !origin) {
-                    next(err2);
-                  } else {
-                    corsOptions.origin = origin;
-                    cors2(corsOptions, req, res, next);
-                  }
-                });
-              } else {
-                next();
-              }
-            }
-          });
-        };
-      }
-      module2.exports = middlewareWrapper;
-    })();
   }
 });
 
@@ -36246,7 +35968,7 @@ function createFetchApi(namespace = "storage") {
     }
   };
 }
-var StorageError, StorageApiError, StorageUnknownError, resolveFetch, isPlainObject2, recursiveToCamel, isValidBucketName, _getErrorMessage, handleError, _getRequestParams, defaultApi, get, post, put, head, remove, vectorsApi, BaseApiClient, StreamDownloadBuilder, _Symbol$toStringTag, BlobDownloadBuilder, DEFAULT_SEARCH_OPTIONS, DEFAULT_FILE_OPTIONS, StorageFileApi, version, DEFAULT_HEADERS, StorageBucketApi, StorageAnalyticsClient, VectorIndexApi, VectorDataApi, VectorBucketApi, StorageVectorsClient, VectorBucketScope, VectorIndexScope, StorageClient;
+var StorageError, StorageApiError, StorageUnknownError, resolveFetch, isPlainObject, recursiveToCamel, isValidBucketName, _getErrorMessage, handleError, _getRequestParams, defaultApi, get, post, put, head, remove, vectorsApi, BaseApiClient, StreamDownloadBuilder, _Symbol$toStringTag, BlobDownloadBuilder, DEFAULT_SEARCH_OPTIONS, DEFAULT_FILE_OPTIONS, StorageFileApi, version, DEFAULT_HEADERS, StorageBucketApi, StorageAnalyticsClient, VectorIndexApi, VectorDataApi, VectorBucketApi, StorageVectorsClient, VectorBucketScope, VectorIndexScope, StorageClient;
 var init_dist3 = __esm({
   "node_modules/@supabase/storage-js/dist/index.mjs"() {
     init_dist2();
@@ -36287,7 +36009,7 @@ var init_dist3 = __esm({
       if (customFetch) return (...args) => customFetch(...args);
       return (...args) => fetch(...args);
     };
-    isPlainObject2 = (value) => {
+    isPlainObject = (value) => {
       if (typeof value !== "object" || value === null) return false;
       const prototype = Object.getPrototypeOf(value);
       return (prototype === null || prototype === Object.prototype || Object.getPrototypeOf(prototype) === null) && !(Symbol.toStringTag in value) && !(Symbol.iterator in value);
@@ -36333,7 +36055,7 @@ var init_dist3 = __esm({
         headers: (options === null || options === void 0 ? void 0 : options.headers) || {}
       };
       if (method === "GET" || method === "HEAD" || !body) return _objectSpread22(_objectSpread22({}, params), parameters);
-      if (isPlainObject2(body)) {
+      if (isPlainObject(body)) {
         var _contentType;
         const headers = (options === null || options === void 0 ? void 0 : options.headers) || {};
         let contentType;
@@ -46825,6 +46547,284 @@ var init_dist4 = __esm({
   }
 });
 
+// node_modules/object-assign/index.js
+var require_object_assign = __commonJS({
+  "node_modules/object-assign/index.js"(exports2, module2) {
+    "use strict";
+    var getOwnPropertySymbols = Object.getOwnPropertySymbols;
+    var hasOwnProperty = Object.prototype.hasOwnProperty;
+    var propIsEnumerable = Object.prototype.propertyIsEnumerable;
+    function toObject(val) {
+      if (val === null || val === void 0) {
+        throw new TypeError("Object.assign cannot be called with null or undefined");
+      }
+      return Object(val);
+    }
+    function shouldUseNative() {
+      try {
+        if (!Object.assign) {
+          return false;
+        }
+        var test1 = new String("abc");
+        test1[5] = "de";
+        if (Object.getOwnPropertyNames(test1)[0] === "5") {
+          return false;
+        }
+        var test2 = {};
+        for (var i = 0; i < 10; i++) {
+          test2["_" + String.fromCharCode(i)] = i;
+        }
+        var order2 = Object.getOwnPropertyNames(test2).map(function(n) {
+          return test2[n];
+        });
+        if (order2.join("") !== "0123456789") {
+          return false;
+        }
+        var test3 = {};
+        "abcdefghijklmnopqrst".split("").forEach(function(letter) {
+          test3[letter] = letter;
+        });
+        if (Object.keys(Object.assign({}, test3)).join("") !== "abcdefghijklmnopqrst") {
+          return false;
+        }
+        return true;
+      } catch (err) {
+        return false;
+      }
+    }
+    module2.exports = shouldUseNative() ? Object.assign : function(target, source) {
+      var from;
+      var to = toObject(target);
+      var symbols;
+      for (var s = 1; s < arguments.length; s++) {
+        from = Object(arguments[s]);
+        for (var key in from) {
+          if (hasOwnProperty.call(from, key)) {
+            to[key] = from[key];
+          }
+        }
+        if (getOwnPropertySymbols) {
+          symbols = getOwnPropertySymbols(from);
+          for (var i = 0; i < symbols.length; i++) {
+            if (propIsEnumerable.call(from, symbols[i])) {
+              to[symbols[i]] = from[symbols[i]];
+            }
+          }
+        }
+      }
+      return to;
+    };
+  }
+});
+
+// node_modules/cors/lib/index.js
+var require_lib3 = __commonJS({
+  "node_modules/cors/lib/index.js"(exports2, module2) {
+    (function() {
+      "use strict";
+      var assign = require_object_assign();
+      var vary = require_vary();
+      var defaults = {
+        origin: "*",
+        methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+        preflightContinue: false,
+        optionsSuccessStatus: 204
+      };
+      function isString(s) {
+        return typeof s === "string" || s instanceof String;
+      }
+      function isOriginAllowed(origin, allowedOrigin) {
+        if (Array.isArray(allowedOrigin)) {
+          for (var i = 0; i < allowedOrigin.length; ++i) {
+            if (isOriginAllowed(origin, allowedOrigin[i])) {
+              return true;
+            }
+          }
+          return false;
+        } else if (isString(allowedOrigin)) {
+          return origin === allowedOrigin;
+        } else if (allowedOrigin instanceof RegExp) {
+          return allowedOrigin.test(origin);
+        } else {
+          return !!allowedOrigin;
+        }
+      }
+      function configureOrigin(options, req) {
+        var requestOrigin = req.headers.origin, headers = [], isAllowed;
+        if (!options.origin || options.origin === "*") {
+          headers.push([{
+            key: "Access-Control-Allow-Origin",
+            value: "*"
+          }]);
+        } else if (isString(options.origin)) {
+          headers.push([{
+            key: "Access-Control-Allow-Origin",
+            value: options.origin
+          }]);
+          headers.push([{
+            key: "Vary",
+            value: "Origin"
+          }]);
+        } else {
+          isAllowed = isOriginAllowed(requestOrigin, options.origin);
+          headers.push([{
+            key: "Access-Control-Allow-Origin",
+            value: isAllowed ? requestOrigin : false
+          }]);
+          headers.push([{
+            key: "Vary",
+            value: "Origin"
+          }]);
+        }
+        return headers;
+      }
+      function configureMethods(options) {
+        var methods = options.methods;
+        if (methods.join) {
+          methods = options.methods.join(",");
+        }
+        return {
+          key: "Access-Control-Allow-Methods",
+          value: methods
+        };
+      }
+      function configureCredentials(options) {
+        if (options.credentials === true) {
+          return {
+            key: "Access-Control-Allow-Credentials",
+            value: "true"
+          };
+        }
+        return null;
+      }
+      function configureAllowedHeaders(options, req) {
+        var allowedHeaders = options.allowedHeaders || options.headers;
+        var headers = [];
+        if (!allowedHeaders) {
+          allowedHeaders = req.headers["access-control-request-headers"];
+          headers.push([{
+            key: "Vary",
+            value: "Access-Control-Request-Headers"
+          }]);
+        } else if (allowedHeaders.join) {
+          allowedHeaders = allowedHeaders.join(",");
+        }
+        if (allowedHeaders && allowedHeaders.length) {
+          headers.push([{
+            key: "Access-Control-Allow-Headers",
+            value: allowedHeaders
+          }]);
+        }
+        return headers;
+      }
+      function configureExposedHeaders(options) {
+        var headers = options.exposedHeaders;
+        if (!headers) {
+          return null;
+        } else if (headers.join) {
+          headers = headers.join(",");
+        }
+        if (headers && headers.length) {
+          return {
+            key: "Access-Control-Expose-Headers",
+            value: headers
+          };
+        }
+        return null;
+      }
+      function configureMaxAge(options) {
+        var maxAge = (typeof options.maxAge === "number" || options.maxAge) && options.maxAge.toString();
+        if (maxAge && maxAge.length) {
+          return {
+            key: "Access-Control-Max-Age",
+            value: maxAge
+          };
+        }
+        return null;
+      }
+      function applyHeaders(headers, res) {
+        for (var i = 0, n = headers.length; i < n; i++) {
+          var header = headers[i];
+          if (header) {
+            if (Array.isArray(header)) {
+              applyHeaders(header, res);
+            } else if (header.key === "Vary" && header.value) {
+              vary(res, header.value);
+            } else if (header.value) {
+              res.setHeader(header.key, header.value);
+            }
+          }
+        }
+      }
+      function cors2(options, req, res, next) {
+        var headers = [], method = req.method && req.method.toUpperCase && req.method.toUpperCase();
+        if (method === "OPTIONS") {
+          headers.push(configureOrigin(options, req));
+          headers.push(configureCredentials(options));
+          headers.push(configureMethods(options));
+          headers.push(configureAllowedHeaders(options, req));
+          headers.push(configureMaxAge(options));
+          headers.push(configureExposedHeaders(options));
+          applyHeaders(headers, res);
+          if (options.preflightContinue) {
+            next();
+          } else {
+            res.statusCode = options.optionsSuccessStatus;
+            res.setHeader("Content-Length", "0");
+            res.end();
+          }
+        } else {
+          headers.push(configureOrigin(options, req));
+          headers.push(configureCredentials(options));
+          headers.push(configureExposedHeaders(options));
+          applyHeaders(headers, res);
+          next();
+        }
+      }
+      function middlewareWrapper(o) {
+        var optionsCallback = null;
+        if (typeof o === "function") {
+          optionsCallback = o;
+        } else {
+          optionsCallback = function(req, cb) {
+            cb(null, o);
+          };
+        }
+        return function corsMiddleware(req, res, next) {
+          optionsCallback(req, function(err, options) {
+            if (err) {
+              next(err);
+            } else {
+              var corsOptions = assign({}, defaults, options);
+              var originCallback = null;
+              if (corsOptions.origin && typeof corsOptions.origin === "function") {
+                originCallback = corsOptions.origin;
+              } else if (corsOptions.origin) {
+                originCallback = function(origin, cb) {
+                  cb(null, corsOptions.origin);
+                };
+              }
+              if (originCallback) {
+                originCallback(req.headers.origin, function(err2, origin) {
+                  if (err2 || !origin) {
+                    next(err2);
+                  } else {
+                    corsOptions.origin = origin;
+                    cors2(corsOptions, req, res, next);
+                  }
+                });
+              } else {
+                next();
+              }
+            }
+          });
+        };
+      }
+      module2.exports = middlewareWrapper;
+    })();
+  }
+});
+
 // server/_core/telegram.ts
 var TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
 var ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || "";
@@ -46893,8 +46893,206 @@ async function telegramHandler(req, res) {
   }
 }
 
-// server/_core/vercel.ts
+// server/_core/routes/posts.ts
 var import_express = __toESM(require_express2(), 1);
+init_dist4();
+var router = (0, import_express.Router)();
+var SUPABASE_URL = process.env.VITE_SUPABASE_URL || "https://hiqotmimlgsrsnovtopd.supabase.co";
+var SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+var ANTHROPIC_API_KEY2 = process.env.ANTHROPIC_API_KEY || "";
+async function getUserFromToken(authHeader) {
+  if (!authHeader?.startsWith("Bearer ")) return null;
+  const token = authHeader.replace("Bearer ", "");
+  const supabase2 = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+  const { data: { user }, error } = await supabase2.auth.getUser(token);
+  if (error || !user) return null;
+  return user;
+}
+function getUserSupabase(token) {
+  return createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
+    global: { headers: { Authorization: `Bearer ${token}` } }
+  });
+}
+router.post("/generate", async (req, res) => {
+  try {
+    const user = await getUserFromToken(req.headers.authorization);
+    if (!user) return res.status(401).json({ error: "Unauthorized" });
+    const { topic, tone = "professional", language = "ar", includeHashtags = true } = req.body;
+    if (!topic || typeof topic !== "string") {
+      return res.status(400).json({ error: "topic is required" });
+    }
+    if (!ANTHROPIC_API_KEY2) {
+      return res.status(500).json({ error: "ANTHROPIC_API_KEY not configured" });
+    }
+    const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+    const { data: profile, error: profileErr } = await supabaseAdmin.from("profiles").select("token_balance").eq("id", user.id).single();
+    if (profileErr || !profile) {
+      return res.status(400).json({ error: "Profile not found" });
+    }
+    if ((profile.token_balance || 0) < 3) {
+      return res.status(402).json({ error: "Insufficient tokens. Need 3 tokens to generate a post." });
+    }
+    const systemPrompt = language === "ar" ? `You write LinkedIn posts for the Saudi Arabia and GCC market.
+Use professional Modern Standard Arabic (\u0641\u0635\u062D\u0649). Never use Gulf dialect.
+Start with a strong hook \u2014 a surprising stat, bold statement, or provocative question.
+Short paragraphs (max 2 lines each). Use line breaks generously.
+End with a question or CTA that invites engagement.
+Max 1300 characters total (including hashtags).
+${includeHashtags ? "Add max 5 relevant Arabic hashtags at the end." : "No hashtags."}
+Avoid generic openers like "\u0623\u062A\u0645\u0646\u0649 \u0623\u0646 \u062A\u0643\u0648\u0646 \u0628\u062E\u064A\u0631".
+Return JSON: { "content": "...", "hashtags": [...] }` : `You write LinkedIn posts for the Saudi Arabia and GCC market.
+Use professional English.
+Start with a strong hook \u2014 a surprising stat, bold statement, or provocative question.
+Short paragraphs (max 2 lines each).
+End with a question or CTA.
+Max 1300 characters total.
+${includeHashtags ? "Add max 5 relevant hashtags at the end." : "No hashtags."}
+Return JSON: { "content": "...", "hashtags": [...] }`;
+    const toneInstructions = {
+      professional: language === "ar" ? "Tone: \u0631\u0633\u0645\u064A \u0648\u0627\u062D\u062A\u0631\u0627\u0641\u064A" : "Tone: professional and polished",
+      inspirational: language === "ar" ? "Tone: \u0645\u0644\u0647\u0645 \u0648\u062A\u062D\u0641\u064A\u0632\u064A" : "Tone: inspirational and motivating",
+      educational: language === "ar" ? "Tone: \u062A\u0639\u0644\u064A\u0645\u064A \u0648\u062A\u062B\u0642\u064A\u0641\u064A" : "Tone: educational and informative",
+      storytelling: language === "ar" ? "Tone: \u0633\u0631\u062F\u064A \u0648\u0642\u0635\u0635\u064A" : "Tone: storytelling and narrative",
+      analytical: language === "ar" ? "Tone: \u062A\u062D\u0644\u064A\u0644\u064A \u0648\u0628\u064A\u0627\u0646\u0627\u062A" : "Tone: analytical and data-driven"
+    };
+    const userPrompt = `${toneInstructions[tone] || toneInstructions.professional}
+
+Topic: ${topic}
+
+Generate the LinkedIn post now. Return valid JSON only.`;
+    console.log("[POSTS] Generating post for user:", user.id, "| topic:", topic, "| lang:", language);
+    const claudeRes = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": ANTHROPIC_API_KEY2,
+        "anthropic-version": "2023-06-01"
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-5",
+        max_tokens: 1024,
+        system: systemPrompt,
+        messages: [{ role: "user", content: userPrompt }]
+      })
+    });
+    if (!claudeRes.ok) {
+      const errText = await claudeRes.text();
+      console.error("[POSTS] Claude error:", claudeRes.status, errText);
+      return res.status(500).json({ error: "AI generation failed" });
+    }
+    const claudeData = await claudeRes.json();
+    const rawText = claudeData?.content?.[0]?.text || "";
+    let content = "";
+    let hashtags = [];
+    try {
+      const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        content = parsed.content || "";
+        hashtags = Array.isArray(parsed.hashtags) ? parsed.hashtags : [];
+      } else {
+        content = rawText;
+      }
+    } catch {
+      content = rawText;
+    }
+    await supabaseAdmin.from("profiles").update({ token_balance: (profile.token_balance || 0) - 3 }).eq("id", user.id);
+    console.log("[POSTS] Generated successfully. Tokens deducted. Remaining:", (profile.token_balance || 0) - 3);
+    return res.json({ content, hashtags });
+  } catch (err) {
+    console.error("[POSTS] Generate error:", err?.message);
+    return res.status(500).json({ error: err?.message || "Internal server error" });
+  }
+});
+router.get("/", async (req, res) => {
+  try {
+    const user = await getUserFromToken(req.headers.authorization);
+    if (!user) return res.status(401).json({ error: "Unauthorized" });
+    const token = req.headers.authorization.replace("Bearer ", "");
+    const supabase2 = getUserSupabase(token);
+    const { data, error } = await supabase2.from("posts").select("*").eq("user_id", user.id).order("created_at", { ascending: false });
+    if (error) {
+      console.error("[POSTS] List error:", error);
+      return res.status(500).json({ error: error.message });
+    }
+    return res.json(data || []);
+  } catch (err) {
+    return res.status(500).json({ error: err?.message || "Internal server error" });
+  }
+});
+router.post("/", async (req, res) => {
+  try {
+    const user = await getUserFromToken(req.headers.authorization);
+    if (!user) return res.status(401).json({ error: "Unauthorized" });
+    const { content, ai_generated, ai_prompt, tone, language, hashtags, scheduled_for, status } = req.body;
+    if (!content || typeof content !== "string") {
+      return res.status(400).json({ error: "content is required" });
+    }
+    const token = req.headers.authorization.replace("Bearer ", "");
+    const supabase2 = getUserSupabase(token);
+    const { data, error } = await supabase2.from("posts").insert([{
+      user_id: user.id,
+      content,
+      ai_generated: ai_generated ?? false,
+      ai_prompt: ai_prompt ?? null,
+      tone: tone ?? "professional",
+      language: language ?? "ar",
+      hashtags: hashtags ?? [],
+      scheduled_for: scheduled_for ?? null,
+      status: status ?? "draft"
+    }]).select().single();
+    if (error) {
+      console.error("[POSTS] Create error:", error);
+      return res.status(500).json({ error: error.message });
+    }
+    return res.status(201).json(data);
+  } catch (err) {
+    return res.status(500).json({ error: err?.message || "Internal server error" });
+  }
+});
+router.patch("/:id", async (req, res) => {
+  try {
+    const user = await getUserFromToken(req.headers.authorization);
+    if (!user) return res.status(401).json({ error: "Unauthorized" });
+    const { id } = req.params;
+    const updates = req.body;
+    delete updates.id;
+    delete updates.user_id;
+    delete updates.created_at;
+    updates.updated_at = (/* @__PURE__ */ new Date()).toISOString();
+    const token = req.headers.authorization.replace("Bearer ", "");
+    const supabase2 = getUserSupabase(token);
+    const { data, error } = await supabase2.from("posts").update(updates).eq("id", id).eq("user_id", user.id).select().single();
+    if (error) {
+      console.error("[POSTS] Update error:", error);
+      return res.status(500).json({ error: error.message });
+    }
+    if (!data) return res.status(404).json({ error: "Post not found" });
+    return res.json(data);
+  } catch (err) {
+    return res.status(500).json({ error: err?.message || "Internal server error" });
+  }
+});
+router.delete("/:id", async (req, res) => {
+  try {
+    const user = await getUserFromToken(req.headers.authorization);
+    if (!user) return res.status(401).json({ error: "Unauthorized" });
+    const { id } = req.params;
+    const token = req.headers.authorization.replace("Bearer ", "");
+    const supabase2 = getUserSupabase(token);
+    const { error } = await supabase2.from("posts").delete().eq("id", id).eq("user_id", user.id);
+    if (error) {
+      console.error("[POSTS] Delete error:", error);
+      return res.status(500).json({ error: error.message });
+    }
+    return res.json({ success: true });
+  } catch (err) {
+    return res.status(500).json({ error: err?.message || "Internal server error" });
+  }
+});
+
+// server/_core/vercel.ts
+var import_express2 = __toESM(require_express2(), 1);
 var import_cors = __toESM(require_lib3(), 1);
 
 // node_modules/@trpc/server/dist/codes-c924c3db.mjs
@@ -47166,11 +47364,11 @@ function createRouterFactory(config) {
         [key]: val
       }), {})
     };
-    const router2 = {
+    const router3 = {
       ...procedures,
       _def,
       createCaller(ctx) {
-        return createCallerFactory()(router2)(ctx);
+        return createCallerFactory()(router3)(ctx);
       },
       getErrorShape(opts) {
         const { path, error } = opts;
@@ -47195,7 +47393,7 @@ function createRouterFactory(config) {
         });
       }
     };
-    return router2;
+    return router3;
   };
 }
 function callProcedure(opts) {
@@ -47210,8 +47408,8 @@ function callProcedure(opts) {
   return procedure(opts);
 }
 function createCallerFactory() {
-  return function createCallerInner(router2) {
-    const def = router2._def;
+  return function createCallerInner(router3) {
+    const def = router3._def;
     return function createCaller(ctx) {
       const proxy = createRecursiveProxy(({ path, args }) => {
         if (path.length === 1 && procedureTypes.includes(path[0])) {
@@ -47413,7 +47611,7 @@ async function inputToProcedureCall(procedureOpts) {
   }
 }
 function caughtErrorToData(cause, errorOpts) {
-  const { router: router2, req, onError } = errorOpts.opts;
+  const { router: router3, req, onError } = errorOpts.opts;
   const error = getTRPCErrorFromUnknown(cause);
   onError?.({
     error,
@@ -47425,7 +47623,7 @@ function caughtErrorToData(cause, errorOpts) {
   });
   const untransformedJSON = {
     error: getErrorShape({
-      config: router2._def._config,
+      config: router3._def._config,
       error,
       type: errorOpts.type,
       path: errorOpts.path,
@@ -47433,7 +47631,7 @@ function caughtErrorToData(cause, errorOpts) {
       ctx: errorOpts.ctx
     })
   };
-  const transformedJSON = transformTRPCResponse(router2._def._config, untransformedJSON);
+  const transformedJSON = transformTRPCResponse(router3._def._config, untransformedJSON);
   const body = JSON.stringify(transformedJSON);
   return {
     error,
@@ -47442,7 +47640,7 @@ function caughtErrorToData(cause, errorOpts) {
   };
 }
 async function resolveHTTPResponse(opts) {
-  const { router: router2, req, unstable_onHead, unstable_onChunk } = opts;
+  const { router: router3, req, unstable_onHead, unstable_onChunk } = opts;
   if (req.method === "HEAD") {
     const headResponse = {
       status: 204
@@ -47484,7 +47682,7 @@ async function resolveHTTPResponse(opts) {
     const inputs = await contentTypeHandler.getInputs({
       isBatchCall,
       req,
-      router: router2,
+      router: router3,
       preprocessedBody: opts.preprocessedBody ?? false
     });
     paths = isBatchCall ? decodeURIComponent(opts.path).split(",") : [
@@ -47512,7 +47710,7 @@ async function resolveHTTPResponse(opts) {
       });
       unstable_onHead?.(headResponse1, false);
       const result = isBatchCall ? untransformedJSON : untransformedJSON[0];
-      const transformedJSON = transformTRPCResponse(router2._def._config, result);
+      const transformedJSON = transformTRPCResponse(router3._def._config, result);
       const body = JSON.stringify(transformedJSON);
       unstable_onChunk?.([
         -1,
@@ -47542,7 +47740,7 @@ async function resolveHTTPResponse(opts) {
       const [index, untransformedJSON1] = await Promise.race(indexedPromises.values());
       indexedPromises.delete(index);
       try {
-        const transformedJSON1 = transformTRPCResponse(router2._def._config, untransformedJSON1);
+        const transformedJSON1 = transformTRPCResponse(router3._def._config, untransformedJSON1);
         const body1 = JSON.stringify(transformedJSON1);
         unstable_onChunk([
           index,
@@ -47815,7 +48013,7 @@ function createMiddlewareFactory() {
   }
   return createMiddleware;
 }
-function isPlainObject(obj) {
+function isPlainObject2(obj) {
   return obj && typeof obj === "object" && !Array.isArray(obj);
 }
 function createInputMiddleware(parse) {
@@ -47829,7 +48027,7 @@ function createInputMiddleware(parse) {
         cause
       });
     }
-    const combinedInput = isPlainObject(input) && isPlainObject(parsedInput) ? {
+    const combinedInput = isPlainObject2(input) && isPlainObject2(parsedInput) ? {
       ...input,
       ...parsedInput
     } : parsedInput;
@@ -48047,7 +48245,7 @@ function mergeRouters(...routerList) {
     }
     return prev;
   }, defaultTransformer);
-  const router2 = createRouterFactory({
+  const router3 = createRouterFactory({
     errorFormatter,
     transformer,
     isDev: routerList.some((r) => r._def._config.isDev),
@@ -48055,7 +48253,7 @@ function mergeRouters(...routerList) {
     isServer: routerList.some((r) => r._def._config.isServer),
     $types: routerList[0]?._def._config.$types
   })(record);
-  return router2;
+  return router3;
 }
 var TRPCBuilder = class _TRPCBuilder {
   context() {
@@ -48131,7 +48329,7 @@ function createTRPCInner() {
 
 // server/_core/trpc-init.ts
 var t = initTRPC.context().create();
-var router = t.router;
+var router2 = t.router;
 var publicProcedure = t.procedure;
 var protectedProcedure = t.procedure.use(async ({ ctx, next }) => {
   if (!ctx.user) {
@@ -52191,7 +52389,7 @@ var NEVER = INVALID;
 
 // server/_core/routes/linkedin.ts
 var APIFY_TOKEN = process.env.APIFY_TOKEN || process.env.APIFY_API_TOKEN || "";
-var ANTHROPIC_API_KEY2 = process.env.ANTHROPIC_API_KEY || "";
+var ANTHROPIC_API_KEY3 = process.env.ANTHROPIC_API_KEY || "";
 var CLAUDE_MODEL = "claude-haiku-4-5";
 async function scrapeLinkedInProfile(profileUrl) {
   console.log("[APIFY] Starting scrape for:", profileUrl);
@@ -52326,7 +52524,7 @@ ${profileText}`
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "x-api-key": ANTHROPIC_API_KEY2,
+      "x-api-key": ANTHROPIC_API_KEY3,
       "anthropic-version": "2023-06-01"
     },
     body: JSON.stringify(claudeBody)
@@ -52356,7 +52554,7 @@ function normalizeLiUrl(url) {
   const match = url.match(/linkedin\.com\/in\/([^/?#]+)/i);
   return match ? match[1].toLowerCase().replace(/\/$/, "") : url.toLowerCase().trim();
 }
-var linkedinRouter = router({
+var linkedinRouter = router2({
   analyze: protectedProcedure.input(external_exports.object({ profileUrl: external_exports.string() })).mutation(async ({ input, ctx }) => {
     try {
       console.log("[LINKEDIN] Analyze request for:", input.profileUrl);
@@ -52540,7 +52738,7 @@ Profile data:`;
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-api-key": ANTHROPIC_API_KEY2,
+          "x-api-key": ANTHROPIC_API_KEY3,
           "anthropic-version": "2023-06-01"
         },
         body: JSON.stringify({
@@ -52703,7 +52901,7 @@ Make the content specific to ${field}, professional, and optimized for ATS syste
     });
   }
 };
-var cvRouter = router({
+var cvRouter = router2({
   generate: protectedProcedure.input(external_exports.object({
     fields: external_exports.array(external_exports.string()).min(1).max(3),
     context: external_exports.object({
@@ -52974,7 +53172,7 @@ Response as JSON only:
     throw err;
   }
 }
-var campaignRouter = router({
+var campaignRouter = router2({
   previewMessages: protectedProcedure.input(
     external_exports.object({
       jobTitle: external_exports.string().min(1),
@@ -53373,7 +53571,7 @@ ${email.body}`
 });
 
 // server/_core/routes/tokens.ts
-var tokenRouter = router({
+var tokenRouter = router2({
   balance: protectedProcedure.query(async ({ ctx }) => {
     try {
       const { data: profile } = await ctx.supabase.from("profiles").select("token_balance").eq("id", ctx.user.id).single();
@@ -53451,7 +53649,7 @@ var adminProcedure = protectedProcedure.use(async ({ ctx, next }) => {
     });
   }
 });
-var adminRouter = router({
+var adminRouter = router2({
   stats: adminProcedure.query(async ({ ctx }) => {
     try {
       const { data: users } = await ctx.supabase.from("profiles").select("id, created_at, plan");
@@ -53596,7 +53794,7 @@ var adminRouter = router({
 });
 
 // server/_core/routes/knowledge.ts
-var knowledgeRouter = router({
+var knowledgeRouter = router2({
   list: protectedProcedure.query(async ({ ctx }) => {
     const { data, error } = await ctx.supabase.from("knowledge_items").select("*").eq("user_id", ctx.user.id).order("created_at", { ascending: false });
     if (error) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
@@ -53652,14 +53850,14 @@ var knowledgeRouter = router({
 });
 
 // server/_core/trpc.ts
-var appRouter = router({
+var appRouter = router2({
   health: publicProcedure.query(async () => {
     return {
       status: "ok",
       timestamp: (/* @__PURE__ */ new Date()).toISOString()
     };
   }),
-  auth: router({
+  auth: router2({
     profile: protectedProcedure.query(async ({ ctx }) => {
       const { data, error } = await ctx.supabase.from("profiles").select("*").eq("id", ctx.user.id).single();
       if (error) throw new TRPCError({ code: "NOT_FOUND" });
@@ -53700,7 +53898,7 @@ async function createContext({ req }) {
 }
 
 // server/_core/vercel.ts
-var app = (0, import_express.default)();
+var app = (0, import_express2.default)();
 app.use((0, import_cors.default)({
   origin: process.env.NODE_ENV === "production" ? [
     "https://wassel.vercel.app",
@@ -53711,8 +53909,9 @@ app.use((0, import_cors.default)({
   ] : "http://localhost:5173",
   credentials: true
 }));
-app.use(import_express.default.json());
+app.use(import_express2.default.json());
 app.post("/api/telegram", telegramHandler);
+app.use("/api/posts", router);
 app.get("/api/health", (_req, res) => {
   res.json({
     status: "ok",
