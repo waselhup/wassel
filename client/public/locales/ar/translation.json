@@ -713,7 +713,17 @@
     "uploadSuccess": "تم استخراج البيانات بنجاح",
     "uploadError": "فشل رفع الملف",
     "acceptedFormats": "صيغ مقبولة: PDF, DOCX, TXT",
-    "downloadPDF": "تحميل PDF"
+    "downloadPDF": "تحميل PDF",
+    "title": "تخصيص السيرة الذاتية",
+    "subtitle": "أنشئ سيرة ذاتية احترافية مخصصة لكل وظيفة",
+    "yourInfo": "معلوماتك",
+    "template": {
+      "choose": "اختر القالب"
+    },
+    "ready": "جاهز للإنشاء؟",
+    "tokenCost": "يستخدم 10 توكنز لكل سيرة",
+    "generate": "أنشئ السيرة",
+    "generating": "جاري الإنشاء..."
   },
   "campaign": {
     "discoverProspects": "اكتشاف العملاء المحتملين",
@@ -834,5 +844,17 @@
       "tokens": "توكن مُستخدم"
     },
     "empty": "ابدأ باستخدام وصّل لتظهر تحليلاتك هنا"
+  },
+  "home": {
+    "activity": {
+      "empty": "لا يوجد نشاط بعد — ابدأ بتحليل ملفك الشخصي",
+      "analysisCount": "تحليلات ملف شخصي",
+      "cvCount": "سير ذاتية",
+      "campaignCount": "حملات",
+      "tokensCount": "رصيد التوكنز"
+    },
+    "chart": {
+      "total": "إجمالي"
+    }
   }
 }

@@ -715,7 +715,7 @@
   },
   "cv": {
     "chooseTemplate": "Choose Template",
-    "subtitle": "Enter your details and choose a template to generate an AI-optimized CV",
+    "subtitle": "Create a professional CV tailored to each job",
     "info": "Your Information",
     "cost": "Uses 10 tokens per CV",
     "title": "CV Tailor",
@@ -771,7 +771,12 @@
     "uploadSuccess": "Data extracted successfully",
     "uploadError": "Failed to upload file",
     "acceptedFormats": "Accepted formats: PDF, DOCX, TXT",
-    "downloadPDF": "Download PDF"
+    "downloadPDF": "Download PDF",
+    "yourInfo": "Your Information",
+    "template": {
+      "choose": "Choose Template"
+    },
+    "tokenCost": "Uses 10 tokens per CV"
   },
   "campaign": {
     "discoverProspects": "Discover Prospects",
@@ -892,5 +897,17 @@
       "tokens": "Tokens Used"
     },
     "empty": "Start using Wassel for your analytics to appear here"
+  },
+  "home": {
+    "activity": {
+      "empty": "No activity yet - start by analyzing your profile",
+      "analysisCount": "Profile analyses",
+      "cvCount": "CVs",
+      "campaignCount": "Campaigns",
+      "tokensCount": "Token balance"
+    },
+    "chart": {
+      "total": "Total"
+    }
   }
 }

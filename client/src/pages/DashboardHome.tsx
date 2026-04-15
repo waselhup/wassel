@@ -103,19 +103,15 @@ export default function DashboardHome() {
   ];
 
   const activity: ActivityItem[] = [
-    { id: "1", icon: BarChart2, title: t("home.activity.analysis", "تم تحليل ملفك على LinkedIn — النتيجة 87/100"),
-      time: t("home.time.hours", "منذ ساعتين"), color: "bg-blue-100 text-blue-600" },
-    { id: "2", icon: FileText, title: t("home.activity.cv", "تم إنشاء سيرة ذاتية لوظيفة مدير تسويق"),
-      time: t("home.time.today", "اليوم"), color: "bg-emerald-100 text-emerald-600" },
-    { id: "3", icon: Send, title: t("home.activity.campaign", "حملة «توسع GCC» أرسلت 120 إيميل"),
-      time: t("home.time.yesterday", "أمس"), color: "bg-purple-100 text-purple-600" },
-    { id: "4", icon: Coins, title: t("home.activity.tokens", "تم شراء 1000 توكن"),
-      time: t("home.time.days", "منذ يومين"), color: "bg-amber-100 text-amber-600" },
-    { id: "5", icon: Star, title: t("home.activity.welcome", "مرحباً بك في وصّل — أكمل ملفك لتبدأ"),
-      time: t("home.time.week", "منذ أسبوع"), color: "bg-teal-100 text-teal-700" },
+    ...(counts.analyses > 0 ? [{ id: "a", icon: BarChart2, title: `${t("home.activity.analysisCount", "تحليلات ملف شخصي")}: ${counts.analyses}`, time: "", color: "bg-blue-100 text-blue-600" }] : []),
+    ...(counts.cvs > 0 ? [{ id: "c", icon: FileText, title: `${t("home.activity.cvCount", "سير ذاتية")}: ${counts.cvs}`, time: "", color: "bg-emerald-100 text-emerald-600" }] : []),
+    ...(counts.campaigns > 0 ? [{ id: "m", icon: Send, title: `${t("home.activity.campaignCount", "حملات")}: ${counts.campaigns}`, time: "", color: "bg-purple-100 text-purple-600" }] : []),
+    ...(counts.tokens > 0 ? [{ id: "t", icon: Coins, title: `${t("home.activity.tokensCount", "رصيد التوكنز")}: ${counts.tokens}`, time: "", color: "bg-amber-100 text-amber-600" }] : []),
   ];
 
-  const chartData = [32, 45, 28, 67, 52, 78, 61];
+  const chartData = counts.analyses + counts.cvs + counts.campaigns > 0
+    ? [0, 0, 0, 0, 0, 0, counts.analyses + counts.cvs + counts.campaigns]
+    : [0, 0, 0, 0, 0, 0, 0];
   const days = isAr
     ? ["السبت","الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة"]
     : ["Sat","Sun","Mon","Tue","Wed","Thu","Fri"];
@@ -193,9 +189,11 @@ export default function DashboardHome() {
                 </h3>
                 <p className="text-sm text-gray-500 mt-1">{t("home.chart.subtitle", "إجمالي الأنشطة المنفذة")}</p>
               </div>
-              <div className="flex items-center gap-1 text-sm text-emerald-600 font-semibold">
-                <TrendingUp className="w-4 h-4" /> +24%
-              </div>
+              {counts.analyses > 0 && (
+                <div className="flex items-center gap-1 text-sm text-emerald-600 font-semibold">
+                  <TrendingUp className="w-4 h-4" /> {counts.analyses} {t("home.chart.total", "")}
+                </div>
+              )}
             </div>
             <div className="flex items-end justify-between gap-2 md:gap-4 h-40">
               {chartData.map((v, i) => (
@@ -220,19 +218,25 @@ export default function DashboardHome() {
               <Clock className="w-5 h-5 text-[#0A8F84]" />
               {t("home.activity.title", "آخر النشاطات")}
             </h3>
-            <ul className="space-y-4">
-              {activity.map((a) => (
-                <li key={a.id} className="flex items-start gap-3">
-                  <div className={`w-9 h-9 rounded-lg ${a.color} flex items-center justify-center shrink-0`}>
-                    <a.icon className="w-4 h-4" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-[var(--wsl-ink)] leading-snug line-clamp-2">{a.title}</p>
-                    <p className="text-xs text-gray-400 mt-1">{a.time}</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
+            {activity.length === 0 ? (
+              <div className="text-center py-8 text-sm text-gray-400">
+                {t("home.activity.empty", "لا يوجد نشاط بعد — ابدأ بتحليل ملفك الشخصي")}
+              </div>
+            ) : (
+              <ul className="space-y-4">
+                {activity.map((a) => (
+                  <li key={a.id} className="flex items-start gap-3">
+                    <div className={`w-9 h-9 rounded-lg ${a.color} flex items-center justify-center shrink-0`}>
+                      <a.icon className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-[var(--wsl-ink)] leading-snug line-clamp-2">{a.title}</p>
+                      <p className="text-xs text-gray-400 mt-1">{a.time}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
           </motion.div>
         </div>
       </div>
