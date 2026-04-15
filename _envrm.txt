@@ -1,0 +1,6 @@
+Retrieving project…
+Removing
+Removed Environment Variable [405ms]
+Retrieving project…
+Error: Environment Variable was not found.
+
