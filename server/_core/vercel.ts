@@ -1,4 +1,5 @@
 import { telegramHandler } from './telegram';
+import { postsRouter } from './routes/posts';
 import express from 'express';
 import cors from 'cors';
 import { createExpressMiddleware } from '@trpc/server/adapters/express';
@@ -24,6 +25,9 @@ app.use(cors({
 app.use(express.json());
 
 app.post('/api/telegram', telegramHandler);
+
+// ===== Posts Routes =====
+app.use('/api/posts', postsRouter);
 
 app.get('/api/health', (_req, res) => {
   res.json({
@@ -105,7 +109,7 @@ app.use((_req, res) => {
   res.status(404).json({ error: 'Not found' });
 });
 
-// Vercel serverless handler — export as a function that calls Express
+// Vercel serverless handler â€” export as a function that calls Express
 module.exports = (req: IncomingMessage, res: ServerResponse) => {
   return app(req, res);
 };
