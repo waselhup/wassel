@@ -242,7 +242,17 @@
       "medium": "Medium password",
       "strong": "Strong password"
     },
-    "password": "Password"
+    "password": "Password",
+    "loginWithGoogle": "Sign in with Google",
+    "loginWithLinkedIn": "Sign in with LinkedIn",
+    "orDivider": "or",
+    "secureOAuth": "Secure sign-in via OAuth 2.0",
+    "connectLinkedIn": "Connect LinkedIn",
+    "linkedinConnected": "LinkedIn Connected ✓",
+    "profileSynced": "Profile synced successfully",
+    "error": {
+      "oauth": "OAuth sign-in failed"
+    }
   },
   "dashboard": {
     "home": "Dashboard",

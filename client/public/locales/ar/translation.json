@@ -242,6 +242,16 @@
       "passwordMismatch": "كلمات المرور غير متطابقة",
       "emailExists": "هذا البريد الإلكتروني موجود بالفعل",
       "invalidCredentials": "بيانات الدخول غير صحيحة"
+    },
+    "loginWithGoogle": "الدخول بحساب Google",
+    "loginWithLinkedIn": "الدخول بحساب LinkedIn",
+    "orDivider": "أو",
+    "secureOAuth": "تسجيل دخول آمن عبر OAuth 2.0",
+    "connectLinkedIn": "ربط حساب LinkedIn",
+    "linkedinConnected": "تم ربط حساب LinkedIn ✓",
+    "profileSynced": "تم مزامنة ملفك الشخصي",
+    "error": {
+      "oauth": "فشل تسجيل الدخول عبر OAuth"
     }
   },
   "dashboard": {

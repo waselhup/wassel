@@ -40,14 +40,23 @@ type ActivityItem = {
 
 export default function DashboardHome() {
   const { t, i18n } = useTranslation();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const isAr = i18n.language === "ar";
   const hour = new Date().getHours();
   const greeting =
     hour < 12 ? t("home.greet.morning", "صباح الخير")
     : hour < 18 ? t("home.greet.afternoon", "مساء الخير")
     : t("home.greet.evening", "مساء الخير");
-  const name = (user?.user_metadata?.name as string) || (user?.email?.split("@")[0] ?? "");
+  const name =
+    profile?.full_name ||
+    (user?.user_metadata?.full_name as string) ||
+    (user?.user_metadata?.name as string) ||
+    (user?.email?.split("@")[0] ?? "");
+  const avatarUrl =
+    profile?.avatar_url ||
+    (user?.user_metadata?.avatar_url as string) ||
+    (user?.user_metadata?.picture as string) ||
+    "";
 
   const [counts, setCounts] = useState({ tokens: 0, analyses: 0, cvs: 0, campaigns: 0 });
   useEffect(() => {
@@ -112,11 +121,25 @@ export default function DashboardHome() {
   return (
     <DashboardLayout>
       <div className="space-y-8 p-6 md:p-8">
-        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}>
-          <h1 className="text-2xl md:text-3xl font-bold text-[var(--wsl-ink)]">
-            {greeting}{name ? `، ${name}` : ""} 👋
-          </h1>
-          <p className="text-gray-500 mt-1">{t("home.subtitle", "إليك نظرة سريعة على نشاطك اليوم")}</p>
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }} className="flex items-center gap-4">
+          {avatarUrl ? (
+            <img
+              src={avatarUrl}
+              alt={name || ""}
+              referrerPolicy="no-referrer"
+              className="w-14 h-14 rounded-full border-2 border-[#0A8F84] shadow-sm object-cover shrink-0"
+            />
+          ) : (
+            <div className="w-14 h-14 rounded-full bg-[#0A8F84]/10 flex items-center justify-center text-[#0A8F84] text-xl font-bold shrink-0" style={{ fontFamily: "Cairo, sans-serif" }}>
+              {(name || "?").charAt(0).toUpperCase()}
+            </div>
+          )}
+          <div className="min-w-0">
+            <h1 className="text-2xl md:text-3xl font-bold text-[var(--wsl-ink)] truncate">
+              {greeting}{name ? `، ${name}` : ""} 👋
+            </h1>
+            <p className="text-gray-500 mt-1">{t("home.subtitle", "إليك نظرة سريعة على نشاطك اليوم")}</p>
+          </div>
         </motion.div>
 
         <motion.div
