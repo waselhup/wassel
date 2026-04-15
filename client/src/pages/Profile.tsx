@@ -187,7 +187,7 @@ export default function Profile() {
             </FieldIcon>
             <div style={{ marginTop: 16 }}>
               <label style={{ display: 'block', fontSize: 12, fontWeight: 800, color: 'var(--wsl-ink-2)', marginBottom: 6, fontFamily: 'Cairo, sans-serif' }}>{t('pr.bio', 'نبذة عنك')}</label>
-              <textarea value={form.bio} onChange={(e) => set("bio", e.target.value)} rows={4} placeholder={t('pr.bioPh', 'اكتت نبذة قصيرة.ث�.')} className="wsl-input" style={{ resize: 'none', width: '100%' }} />
+              <textarea value={form.bio} onChange={(e) => set("bio", e.target.value)} rows={4} placeholder={t('pr.bioPh', 'اكتت نبذة قصيرة.ث�.')} className="wsl-input" style={{ resize: 'none', width: '100%' }} />
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20 }}>
               <button onClick={save}
@@ -219,7 +219,7 @@ export default function Profile() {
 function FieldIcon({ icon: Icon, label, children }: { icon: any; label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label style={{ display: 'block', fontSize: 12, fontWeight: 800, color: 'var(--wsl-ink-2)', marginBottom: 6, fontFamily: 'Cairo, sans-serif', display: 'flex', alignItems: 'center', gap: 4 }}>
+      <label style={{ display: 'flex', fontSize: 12, fontWeight: 800, color: 'var(--wsl-ink-2)', marginBottom: 6, fontFamily: 'Cairo, sans-serif', alignItems: 'center', gap: 4 }}>
         <Icon size={12} style={{ color: '#9CA3AF' }} /> {label}
       </label>
       {children}

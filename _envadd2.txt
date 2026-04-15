@@ -1,3 +1,0 @@
-Retrieving project…
-Saving
-Added Environment Variable TELEGRAM_BOT_TOKEN to Project wassel [482ms]

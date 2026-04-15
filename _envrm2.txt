@@ -1,3 +1,0 @@
-Retrieving project…
-Removing
-Removed Environment Variable [385ms]

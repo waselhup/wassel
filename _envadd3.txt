@@ -1,6 +1,0 @@
-Retrieving project…
-? Add TELEGRAM_BOT_TOKEN to which Git branch? (leave empty for all Preview
-branches)?[1A[87G[1B
-[?25hRetrieving project…
-Saving
-Added Environment Variable TELEGRAM_BOT_TOKEN to Project wassel [393ms]
