@@ -46896,6 +46896,91 @@ async function telegramHandler(req, res) {
 // server/_core/routes/posts.ts
 var import_express = __toESM(require_express2(), 1);
 init_dist4();
+
+// server/_core/lib/apiLogger.ts
+init_dist4();
+var supabaseClient = null;
+function getClient() {
+  if (!supabaseClient) {
+    const url = process.env.VITE_SUPABASE_URL || "https://hiqotmimlgsrsnovtopd.supabase.co";
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+    supabaseClient = createClient(url, key);
+  }
+  return supabaseClient;
+}
+async function logApiCall(params) {
+  try {
+    await getClient().from("api_logs").insert({
+      service: params.service,
+      endpoint: params.endpoint || null,
+      status_code: params.statusCode,
+      response_time_ms: params.responseTimeMs || null,
+      error_msg: params.errorMsg ? params.errorMsg.substring(0, 500) : null,
+      user_id: params.userId || null
+    });
+    if (params.statusCode >= 500 || params.statusCode === 402 || params.statusCode === 401 || params.statusCode === 429) {
+      await checkAndAlertIfRepeated(params.service, params.errorMsg);
+    }
+  } catch (e) {
+    console.error("[ApiLogger] Failed to log:", e?.message || e);
+  }
+}
+async function checkAndAlertIfRepeated(service, lastError) {
+  try {
+    const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1e3).toISOString();
+    const { count } = await getClient().from("api_logs").select("id", { count: "exact", head: true }).eq("service", service).or("status_code.gte.500,status_code.eq.402,status_code.eq.401,status_code.eq.429").gte("created_at", fiveMinAgo);
+    if ((count || 0) >= 3) {
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1e3).toISOString();
+      const { count: recentAlerts } = await getClient().from("api_logs").select("id", { count: "exact", head: true }).eq("service", service).eq("endpoint", "TELEGRAM_ALERT_SENT").gte("created_at", oneHourAgo);
+      if ((recentAlerts || 0) === 0) {
+        await sendTelegramAlert(service, count || 0, lastError);
+        await getClient().from("api_logs").insert({
+          service,
+          endpoint: "TELEGRAM_ALERT_SENT",
+          status_code: 0
+        });
+      }
+    }
+  } catch (e) {
+    console.error("[ApiLogger] Alert check failed:", e?.message || e);
+  }
+}
+async function sendTelegramAlert(service, errorCount, lastError) {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  if (!token) return;
+  const ALI_CHAT = "1205315908";
+  const message = "\u{1F6A8} *\u062A\u0646\u0628\u064A\u0647 \u0648\u0635\u0651\u0644* \u{1F6A8}\n\n\u0627\u0644\u062E\u062F\u0645\u0629: `" + service + "`\n\u0639\u062F\u062F \u0627\u0644\u0623\u062E\u0637\u0627\u0621 (5 \u062F\u0642\u0627\u0626\u0642): " + errorCount + "\n\u0622\u062E\u0631 \u062E\u0637\u0623: " + (lastError ? lastError.substring(0, 200) : "N/A") + "\n\n\u{1F50D} \u0631\u0628\u0645\u0627 \u0627\u0644\u0631\u0635\u064A\u062F \u062E\u0644\u0635 \u0623\u0648 \u0627\u0644\u062E\u062F\u0645\u0629 \u0645\u0639\u0637\u0651\u0644\u0629\n\u23F0 " + (/* @__PURE__ */ new Date()).toLocaleString("ar-SA");
+  try {
+    await fetch("https://api.telegram.org/bot" + token + "/sendMessage", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: ALI_CHAT,
+        text: message,
+        parse_mode: "Markdown"
+      })
+    });
+    console.log("[Alert] Telegram alert sent for", service);
+  } catch (e) {
+    console.error("[Alert] Telegram send failed:", e?.message || e);
+  }
+}
+function mapAnthropicStatusToArabic(status) {
+  if (status === 401) return "\u0645\u0641\u062A\u0627\u062D Claude API \u063A\u064A\u0631 \u0635\u062D\u064A\u062D. \u062A\u0648\u0627\u0635\u0644 \u0645\u0639 \u0627\u0644\u062F\u0639\u0645.";
+  if (status === 402) return "\u0627\u0644\u062E\u062F\u0645\u0629 \u0645\u0639\u0637\u0651\u0644\u0629 \u0645\u0624\u0642\u062A\u0627\u064B (\u0627\u0646\u062A\u0647\u062A \u0627\u0644\u0643\u0631\u064A\u062F\u064A\u062A\u0633). \u0646\u0639\u0645\u0644 \u0639\u0644\u0649 \u062D\u0644\u0647\u0627.";
+  if (status === 429) return "\u062A\u062C\u0627\u0648\u0632\u0646\u0627 \u0627\u0644\u062D\u062F \u0627\u0644\u0645\u0633\u0645\u0648\u062D. \u062D\u0627\u0648\u0644 \u0628\u0639\u062F \u062F\u0642\u064A\u0642\u0629.";
+  if (status >= 500) return "\u062E\u0637\u0623 \u0641\u064A \u062E\u062F\u0645\u0629 Claude. \u062D\u0627\u0648\u0644 \u0645\u0631\u0629 \u0623\u062E\u0631\u0649.";
+  return "\u0641\u0634\u0644 \u0627\u0644\u0637\u0644\u0628. \u062D\u0627\u0648\u0644 \u0645\u0631\u0629 \u0623\u062E\u0631\u0649.";
+}
+function mapApifyStatusToArabic(status) {
+  if (status === 401 || status === 403) return "\u0645\u0641\u062A\u0627\u062D Apify \u063A\u064A\u0631 \u0635\u062D\u064A\u062D. \u062A\u0648\u0627\u0635\u0644 \u0645\u0639 \u0627\u0644\u062F\u0639\u0645.";
+  if (status === 402) return "\u0631\u0635\u064A\u062F Apify \u0645\u0646\u062A\u0647\u064A. \u0646\u0639\u0645\u0644 \u0639\u0644\u0649 \u062D\u0644\u0647\u0627.";
+  if (status === 429) return "\u062A\u062C\u0627\u0648\u0632\u0646\u0627 \u0627\u0644\u062D\u062F \u0627\u0644\u0645\u0633\u0645\u0648\u062D \u0641\u064A Apify. \u062D\u0627\u0648\u0644 \u0628\u0639\u062F \u062F\u0642\u064A\u0642\u0629.";
+  if (status >= 500) return "\u062E\u0637\u0623 \u0641\u064A \u062E\u062F\u0645\u0629 LinkedIn. \u062D\u0627\u0648\u0644 \u0645\u0631\u0629 \u0623\u062E\u0631\u0649.";
+  return "\u0641\u0634\u0644 \u062C\u0644\u0628 \u0628\u064A\u0627\u0646\u0627\u062A LinkedIn. \u062D\u0627\u0648\u0644 \u0645\u0631\u0629 \u0623\u062E\u0631\u0649.";
+}
+
+// server/_core/routes/posts.ts
 var router = (0, import_express.Router)();
 var SUPABASE_URL = process.env.VITE_SUPABASE_URL || "https://hiqotmimlgsrsnovtopd.supabase.co";
 var SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
@@ -46961,6 +47046,7 @@ Topic: ${topic}
 
 Generate the LinkedIn post now. Return valid JSON only.`;
     console.log("[POSTS] Generating post for user:", user.id, "| topic:", topic, "| lang:", language);
+    const _postsT0 = Date.now();
     const claudeRes = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -46978,8 +47064,11 @@ Generate the LinkedIn post now. Return valid JSON only.`;
     if (!claudeRes.ok) {
       const errText = await claudeRes.text();
       console.error("[POSTS] Claude error:", claudeRes.status, errText);
-      return res.status(500).json({ error: "AI generation failed" });
+      await logApiCall({ service: "anthropic", endpoint: "/v1/messages:posts", statusCode: claudeRes.status, responseTimeMs: Date.now() - _postsT0, errorMsg: errText, userId: user.id });
+      const statusOut = claudeRes.status === 429 ? 429 : 500;
+      return res.status(statusOut).json({ error: mapAnthropicStatusToArabic(claudeRes.status) });
     }
+    await logApiCall({ service: "anthropic", endpoint: "/v1/messages:posts", statusCode: 200, responseTimeMs: Date.now() - _postsT0, userId: user.id });
     const claudeData = await claudeRes.json();
     const rawText = claudeData?.content?.[0]?.text || "";
     let content = "";
@@ -52393,6 +52482,7 @@ var ANTHROPIC_API_KEY3 = process.env.ANTHROPIC_API_KEY || "";
 var CLAUDE_MODEL = "claude-haiku-4-5";
 async function scrapeLinkedInProfile(profileUrl) {
   console.log("[APIFY] Starting scrape for:", profileUrl);
+  const _apifyT0 = Date.now();
   const runRes = await fetch(
     `https://api.apify.com/v2/acts/dev_fusion~Linkedin-Profile-Scraper/runs?token=${APIFY_TOKEN}`,
     {
@@ -52404,8 +52494,10 @@ async function scrapeLinkedInProfile(profileUrl) {
   if (!runRes.ok) {
     const errText = await runRes.text();
     console.error("[APIFY] Run failed:", runRes.status, errText);
-    throw new Error(`Apify run failed: ${runRes.status}`);
+    await logApiCall({ service: "apify", endpoint: "/acts/Linkedin-Profile-Scraper/runs", statusCode: runRes.status, responseTimeMs: Date.now() - _apifyT0, errorMsg: errText });
+    throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: mapApifyStatusToArabic(runRes.status) });
   }
+  await logApiCall({ service: "apify", endpoint: "/acts/Linkedin-Profile-Scraper/runs", statusCode: 200, responseTimeMs: Date.now() - _apifyT0 });
   const runData = await runRes.json();
   const runId = runData?.data?.id;
   console.log("[APIFY] Run started, ID:", runId);
@@ -52520,6 +52612,7 @@ ${profileText}`
     ]
   };
   console.log("[CLAUDE] Request body model:", claudeBody.model);
+  const _claudeT0 = Date.now();
   const claudeRes = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
@@ -52532,8 +52625,11 @@ ${profileText}`
   if (!claudeRes.ok) {
     const errText = await claudeRes.text();
     console.error("[CLAUDE] API error:", claudeRes.status, errText);
-    throw new Error(`Claude API error: ${claudeRes.status} - ${errText}`);
+    await logApiCall({ service: "anthropic", endpoint: "/v1/messages:analyze", statusCode: claudeRes.status, responseTimeMs: Date.now() - _claudeT0, errorMsg: errText });
+    const code = claudeRes.status === 429 ? "TOO_MANY_REQUESTS" : claudeRes.status === 401 ? "UNAUTHORIZED" : "INTERNAL_SERVER_ERROR";
+    throw new TRPCError({ code, message: mapAnthropicStatusToArabic(claudeRes.status) });
   }
+  await logApiCall({ service: "anthropic", endpoint: "/v1/messages:analyze", statusCode: 200, responseTimeMs: Date.now() - _claudeT0 });
   const claudeData = await claudeRes.json();
   console.log("[CLAUDE] Response received, stop_reason:", claudeData.stop_reason);
   const text = claudeData.content?.[0]?.text || "";
@@ -52734,6 +52830,7 @@ Profile data:`;
         messages.push({ role: "user", content: DEEP_PROMPT + "\n" + profileText });
       }
       console.log("[DEEP] Calling Claude claude-sonnet-4-5");
+      const _deepT0 = Date.now();
       const claudeRes = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: {
@@ -52750,8 +52847,11 @@ Profile data:`;
       if (!claudeRes.ok) {
         const errText = await claudeRes.text();
         console.error("[DEEP] Claude error:", claudeRes.status, errText);
-        throw new Error("Claude API error: " + claudeRes.status);
+        await logApiCall({ service: "anthropic", endpoint: "/v1/messages:analyzeDeep", statusCode: claudeRes.status, responseTimeMs: Date.now() - _deepT0, errorMsg: errText, userId: ctx.user?.id });
+        const code = claudeRes.status === 429 ? "TOO_MANY_REQUESTS" : claudeRes.status === 401 ? "UNAUTHORIZED" : "INTERNAL_SERVER_ERROR";
+        throw new TRPCError({ code, message: mapAnthropicStatusToArabic(claudeRes.status) });
       }
+      await logApiCall({ service: "anthropic", endpoint: "/v1/messages:analyzeDeep", statusCode: 200, responseTimeMs: Date.now() - _deepT0, userId: ctx.user?.id });
       const claudeData = await claudeRes.json();
       const text = claudeData.content?.[0]?.text || "";
       const tokensUsed = (claudeData.usage?.input_tokens || 0) + (claudeData.usage?.output_tokens || 0);
@@ -53767,6 +53867,27 @@ var adminRouter = router2({
         message: "Failed to fetch campaigns"
       });
     }
+  }),
+  systemStatus: protectedProcedure.query(async ({ ctx }) => {
+    const adminEmails = ["almodhih.1995@gmail.com", "waselhup@gmail.com", "alhashimali649@gmail.com"];
+    if (!adminEmails.includes(ctx.user.email || "")) {
+      throw new TRPCError({ code: "FORBIDDEN" });
+    }
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1e3).toISOString();
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1e3).toISOString();
+    const { data: recentErrors } = await ctx.supabase.from("api_logs").select("service, status_code, error_msg, created_at, endpoint").gte("created_at", oneHourAgo).gte("status_code", 400).order("created_at", { ascending: false }).limit(20);
+    const { data: todayCalls } = await ctx.supabase.from("api_logs").select("service, status_code").gte("created_at", oneDayAgo);
+    const stats = {};
+    (todayCalls || []).forEach((call) => {
+      if (!stats[call.service]) stats[call.service] = { total: 0, errors: 0 };
+      stats[call.service].total++;
+      if (call.status_code >= 400) stats[call.service].errors++;
+    });
+    return {
+      stats,
+      recentErrors: recentErrors || [],
+      lastChecked: (/* @__PURE__ */ new Date()).toISOString()
+    };
   }),
   updateSettings: adminProcedure.input(
     external_exports.object({

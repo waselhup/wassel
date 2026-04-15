@@ -1,0 +1,10 @@
+feat: API monitoring + Telegram alerts + better error messages
+
+- Add api_logs table with indexes + RLS
+- Add server/_core/lib/apiLogger.ts (logApiCall, Telegram alert on 3+ errors/5min)
+- Wrap Anthropic calls in linkedin.ts (analyze + analyzeDeep) with logging + Arabic error messages
+- Wrap Apify scrapeLinkedInProfile with logging
+- Wrap Anthropic call in posts.ts with logging
+- Add admin.systemStatus tRPC endpoint (stats + recent errors, admin-only)
+- Set is_admin=true for waselhup, almodhih.1995, alhashimali649
+- Rebuild api/index.js

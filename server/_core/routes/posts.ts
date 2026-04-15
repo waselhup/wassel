@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { createClient } from '@supabase/supabase-js';
+import { logApiCall, mapAnthropicStatusToArabic } from '../lib/apiLogger';
 
 const router = Router();
 
@@ -91,6 +92,7 @@ Generate the LinkedIn post now. Return valid JSON only.`;
 
     console.log('[POSTS] Generating post for user:', user.id, '| topic:', topic, '| lang:', language);
 
+    const _postsT0 = Date.now();
     const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -109,8 +111,11 @@ Generate the LinkedIn post now. Return valid JSON only.`;
     if (!claudeRes.ok) {
       const errText = await claudeRes.text();
       console.error('[POSTS] Claude error:', claudeRes.status, errText);
-      return res.status(500).json({ error: 'AI generation failed' });
+      await logApiCall({ service: 'anthropic', endpoint: '/v1/messages:posts', statusCode: claudeRes.status, responseTimeMs: Date.now() - _postsT0, errorMsg: errText, userId: user.id });
+      const statusOut = claudeRes.status === 429 ? 429 : 500;
+      return res.status(statusOut).json({ error: mapAnthropicStatusToArabic(claudeRes.status) });
     }
+    await logApiCall({ service: 'anthropic', endpoint: '/v1/messages:posts', statusCode: 200, responseTimeMs: Date.now() - _postsT0, userId: user.id });
 
     const claudeData = await claudeRes.json() as any;
     const rawText: string = claudeData?.content?.[0]?.text || '';

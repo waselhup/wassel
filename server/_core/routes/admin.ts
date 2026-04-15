@@ -224,6 +224,42 @@ export const adminRouter = router({
     }
   }),
 
+  systemStatus: protectedProcedure.query(async ({ ctx }) => {
+    const adminEmails = ['almodhih.1995@gmail.com', 'waselhup@gmail.com', 'alhashimali649@gmail.com'];
+    if (!adminEmails.includes(ctx.user.email || '')) {
+      throw new TRPCError({ code: 'FORBIDDEN' });
+    }
+
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+    const { data: recentErrors } = await ctx.supabase
+      .from('api_logs')
+      .select('service, status_code, error_msg, created_at, endpoint')
+      .gte('created_at', oneHourAgo)
+      .gte('status_code', 400)
+      .order('created_at', { ascending: false })
+      .limit(20);
+
+    const { data: todayCalls } = await ctx.supabase
+      .from('api_logs')
+      .select('service, status_code')
+      .gte('created_at', oneDayAgo);
+
+    const stats: Record<string, { total: number; errors: number }> = {};
+    (todayCalls || []).forEach((call: any) => {
+      if (!stats[call.service]) stats[call.service] = { total: 0, errors: 0 };
+      stats[call.service].total++;
+      if (call.status_code >= 400) stats[call.service].errors++;
+    });
+
+    return {
+      stats,
+      recentErrors: recentErrors || [],
+      lastChecked: new Date().toISOString(),
+    };
+  }),
+
   updateSettings: adminProcedure
     .input(
       z.object({

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { router, protectedProcedure } from '../trpc-init';
 import { TRPCError } from '@trpc/server';
+import { logApiCall, mapAnthropicStatusToArabic, mapApifyStatusToArabic } from '../lib/apiLogger';
 
 const APIFY_TOKEN = process.env.APIFY_TOKEN || process.env.APIFY_API_TOKEN || '';
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || '';
@@ -9,6 +10,7 @@ const CLAUDE_MODEL = 'claude-haiku-4-5';
 async function scrapeLinkedInProfile(profileUrl: string): Promise<any> {
   console.log('[APIFY] Starting scrape for:', profileUrl);
 
+  const _apifyT0 = Date.now();
   const runRes = await fetch(
     `https://api.apify.com/v2/acts/dev_fusion~Linkedin-Profile-Scraper/runs?token=${APIFY_TOKEN}`,
     {
@@ -21,8 +23,10 @@ async function scrapeLinkedInProfile(profileUrl: string): Promise<any> {
   if (!runRes.ok) {
     const errText = await runRes.text();
     console.error('[APIFY] Run failed:', runRes.status, errText);
-    throw new Error(`Apify run failed: ${runRes.status}`);
+    await logApiCall({ service: 'apify', endpoint: '/acts/Linkedin-Profile-Scraper/runs', statusCode: runRes.status, responseTimeMs: Date.now() - _apifyT0, errorMsg: errText });
+    throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: mapApifyStatusToArabic(runRes.status) });
   }
+  await logApiCall({ service: 'apify', endpoint: '/acts/Linkedin-Profile-Scraper/runs', statusCode: 200, responseTimeMs: Date.now() - _apifyT0 });
 
   const runData = await runRes.json();  const runId = runData?.data?.id;
   console.log('[APIFY] Run started, ID:', runId);
@@ -166,6 +170,7 @@ ${profileText}`
   };
     console.log('[CLAUDE] Request body model:', claudeBody.model);
 
+  const _claudeT0 = Date.now();
   const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -179,8 +184,11 @@ ${profileText}`
   if (!claudeRes.ok) {
     const errText = await claudeRes.text();
     console.error('[CLAUDE] API error:', claudeRes.status, errText);
-    throw new Error(`Claude API error: ${claudeRes.status} - ${errText}`);
+    await logApiCall({ service: 'anthropic', endpoint: '/v1/messages:analyze', statusCode: claudeRes.status, responseTimeMs: Date.now() - _claudeT0, errorMsg: errText });
+    const code = claudeRes.status === 429 ? 'TOO_MANY_REQUESTS' : claudeRes.status === 401 ? 'UNAUTHORIZED' : 'INTERNAL_SERVER_ERROR';
+    throw new TRPCError({ code, message: mapAnthropicStatusToArabic(claudeRes.status) });
   }
+  await logApiCall({ service: 'anthropic', endpoint: '/v1/messages:analyze', statusCode: 200, responseTimeMs: Date.now() - _claudeT0 });
 
   const claudeData = await claudeRes.json();
   console.log('[CLAUDE] Response received, stop_reason:', claudeData.stop_reason);
@@ -468,6 +476,7 @@ Profile data:`;
         }
 
         console.log('[DEEP] Calling Claude claude-sonnet-4-5');
+        const _deepT0 = Date.now();
         const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST',
           headers: {
@@ -485,8 +494,11 @@ Profile data:`;
         if (!claudeRes.ok) {
           const errText = await claudeRes.text();
           console.error('[DEEP] Claude error:', claudeRes.status, errText);
-          throw new Error('Claude API error: ' + claudeRes.status);
+          await logApiCall({ service: 'anthropic', endpoint: '/v1/messages:analyzeDeep', statusCode: claudeRes.status, responseTimeMs: Date.now() - _deepT0, errorMsg: errText, userId: ctx.user?.id });
+          const code = claudeRes.status === 429 ? 'TOO_MANY_REQUESTS' : claudeRes.status === 401 ? 'UNAUTHORIZED' : 'INTERNAL_SERVER_ERROR';
+          throw new TRPCError({ code, message: mapAnthropicStatusToArabic(claudeRes.status) });
         }
+        await logApiCall({ service: 'anthropic', endpoint: '/v1/messages:analyzeDeep', statusCode: 200, responseTimeMs: Date.now() - _deepT0, userId: ctx.user?.id });
 
         const claudeData = await claudeRes.json();
         const text = claudeData.content?.[0]?.text || '';
