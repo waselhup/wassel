@@ -22,7 +22,7 @@ app.use(cors({
   credentials: true,
 }));
 
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 
 app.post('/api/telegram', telegramHandler);
 

@@ -53909,7 +53909,7 @@ app.use((0, import_cors.default)({
   ] : "http://localhost:5173",
   credentials: true
 }));
-app.use(import_express2.default.json());
+app.use(import_express2.default.json({ limit: "10mb" }));
 app.post("/api/telegram", telegramHandler);
 app.use("/api/posts", router);
 app.get("/api/health", (_req, res) => {
