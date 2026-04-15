@@ -24,7 +24,8 @@
     "profile": "الملف الشخصي",
     "knowledge": "قاعدة المعرفة",
     "setup": "الإعدادات الأولية",
-    "posts": "المنشورات"
+    "posts": "المنشورات",
+    "profileAnalysis": "تحليل البروفايل"
   },
   "hero": {
     "title": "ضاعف فرص توظيفك بدون عناء",
@@ -293,7 +294,8 @@
     "skip": "تخطي",
     "email": "البريد الإلكتروني",
     "name": "الاسم",
-    "plan": "باقة"
+    "plan": "باقة",
+    "or": "أو"
   },
   "sidebar": {
     "home": "الرئيسية",
@@ -329,7 +331,7 @@
     "setupCompleteDesc": "يمكنك الآن البدء باستخدام وصّل"
   },
   "profile": {
-    "title": "المسمى الوظيفي",
+    "title": "الملف الشخصي",
     "editProfile": "تعديل الملف الشخصي",
     "fullName": "الاسم الكامل",
     "email": "البريد الإلكتروني",
@@ -348,7 +350,26 @@
     "connectGmail": "ربط Gmail لإرسال الحملات",
     "gmailConnected": "تم ربط Gmail بنجاح",
     "gmailConnectedDesc": "يمكنك الآن إرسال حملات البريد من حسابك",
-    "gmailDesc": "اربط حساب Gmail لتتمكن من إرسال حملات البريد مباشرة"
+    "gmailDesc": "اربط حساب Gmail لتتمكن من إرسال حملات البريد مباشرة",
+    "subtitle": "أدر معلوماتك الشخصية ورصيدك",
+    "tabs": {
+      "personal": "المعلومات الشخصية",
+      "subscription": "الاشتراك والفواتير",
+      "settings": "الإعدادات",
+      "security": "الأمان"
+    },
+    "tokensCard": {
+      "title": "رصيد التوكنز الحالي",
+      "balance": "توكن",
+      "used": "مستخدم",
+      "buyMore": "شراء توكنز",
+      "upgrade": "ترقية الباقة"
+    },
+    "identity": {
+      "editName": "تعديل الاسم",
+      "syncedFromLinkedin": "مزامنة من LinkedIn ✓",
+      "refreshFromLinkedin": "تحديث البيانات"
+    }
   },
   "tokens": {
     "title": "الرموز",
@@ -756,5 +777,62 @@
     "openingLinkedIn": "جارٍ فتح LinkedIn...",
     "linkedInWillOpen": "سيفتح LinkedIn في نافذة جديدة مع منشورك جاهزاً للنشر",
     "linkedInTip": "ملاحظة: ستفتح صفحة LinkedIn مع نص المنشور جاهز — فقط اضغط Post"
+  },
+  "profileAnalysis": {
+    "title": "تحليل البروفايل المهني",
+    "subtitle": "احصل على تحليل عميق لملفك الشخصي على LinkedIn بالذكاء الاصطناعي",
+    "tokens": "توكن للتحليل",
+    "urlLabel": "رابط LinkedIn",
+    "inputTitle": "رابط LinkedIn أو صورة الملف الشخصي",
+    "inputSub": "أدخل الرابط أو ارفع صورة لبدء التحليل",
+    "myProfile": "ملفي",
+    "dropZone": "اسحب صورة ملفك هنا أو انقر للاختيار",
+    "analyze": "تحليل ملفي الآن",
+    "analysisDone": "تم التحليل بنجاح!",
+    "error": "حدث خطأ غير متوقع",
+    "score": "تقييم LinkedIn",
+    "strengths": "نقاط القوة",
+    "weaknesses": "نقاط الضعف",
+    "missing": "أقسام مفقودة من ملفك",
+    "checklist": "قائمة المهام",
+    "recTemplate": "قالب طلب توصية",
+    "bannerTip": "احفظ هذا كـ screenshot للاستخدام كبانر",
+    "newAnalysis": "تحليل جديد",
+    "print": "طباعة",
+    "imageAnalysis": "تحليل عبر صورة",
+    "historyEmpty": "لا يوجد سجل تحليلات بعد",
+    "historyEmptySub": "ابدأ بتحليل ملفك لتظهر نتائجك هنا",
+    "empty": "ابدأ بتحليل ملفك المهني",
+    "emptySub": "أدخل رابط LinkedIn أو ارفع صورة للحصول على تقييم شامل",
+    "headline": "العنوان الوظيفي (Headline)",
+    "about": "النبذة التعريفية (About)",
+    "experience": "الخبرات المهنية (Experience)",
+    "tabs": {
+      "overview": "نظرة عامة",
+      "plan": "خطة التحسين",
+      "history": "السجل"
+    },
+    "stages": {
+      "fetching": "جاري جلب بيانات الملف...",
+      "analyzing": "جاري تحليل ملفك بالذكاء الاصطناعي...",
+      "preparing": "جاري إعداد التقرير..."
+    }
+  },
+  "analytics": {
+    "title": "تحليلاتك",
+    "subtitle": "نظرة شاملة على نشاطك في وصّل",
+    "tabs": {
+      "week": "هذا الأسبوع",
+      "month": "هذا الشهر",
+      "quarter": "آخر 90 يوم"
+    },
+    "stats": {
+      "analyses": "تحليلات LinkedIn",
+      "cvs": "سير مُنشأة",
+      "campaigns": "حملات",
+      "posts": "منشورات",
+      "tokens": "توكن مُستخدم"
+    },
+    "empty": "ابدأ باستخدام وصّل لتظهر تحليلاتك هنا"
   }
 }

@@ -1,148 +1,208 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { DashboardLayout } from '../components/DashboardLayout';
+import { motion } from 'framer-motion';
+import DashboardLayout from '../components/DashboardLayout';
 import { supabase } from '../lib/supabase';
-import { Users, UserPlus, Send, BarChart2 } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { BarChart2, FileText, Send, PenSquare, Coins, TrendingUp, Link } from 'lucide-react';
 
-interface Stats { totalUsers: number; newUsersWeek: number; activeCampaigns: number; totalAnalyses: number; tokenTotal: number; tokenCount: number; }
-interface ActivityLog { id: string; type: string; description: string; created_at: string; }
-interface DailyCount { day: string; count: number; }
+type PeriodTab = 'week' | 'month' | 'quarter';
+
+interface Stats {
+  analyses: number; cvs: number; campaigns: number;
+  posts: number; tokensUsed: number; tokenBalance: number;
+}
 
 export default function Analytics() {
-  const { t } = useTranslation();
-  const [stats, setStats] = useState<Stats>({ totalUsers: 0, newUsersWeek: 0, activeCampaigns: 0, totalAnalyses: 0, tokenTotal: 0, tokenCount: 0 });
-  const [activity, setActivity] = useState<ActivityLog[]>([]);
-  const [daily, setDaily] = useState<DailyCount[]>([]);
+  const { t, i18n } = useTranslation();
+  const { user } = useAuth();
+  const isAr = i18n.language === 'ar';
+  const [stats, setStats] = useState<Stats>({ analyses: 0, cvs: 0, campaigns: 0, posts: 0, tokensUsed: 0, tokenBalance: 0 });
+  const [daily, setDaily] = useState<{ day: string; count: number }[]>([]);
   const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState<PeriodTab>('month');
 
   useEffect(() => {
-    async function load() {
-      try {
-        const [usersR, newR, activeR, analysesR, tokensR, actR] = await Promise.all([
-          supabase.from('profiles').select('id', { count: 'exact', head: true }),
-          supabase.from('profiles').select('id', { count: 'exact', head: true }).gte('created_at', new Date(Date.now() - 7 * 86400000).toISOString()),
-          supabase.from('campaigns').select('id', { count: 'exact', head: true }).in('status', ['active', 'running']),
-          supabase.from('linkedin_analyses').select('id', { count: 'exact', head: true }),
-          supabase.from('token_transactions').select('amount'),
-          supabase.from('activity_logs').select('*').order('created_at', { ascending: false }).limit(10),
-        ]);
-        setStats({
-          totalUsers: usersR.count || 0, newUsersWeek: newR.count || 0,
-          activeCampaigns: activeR.count || 0, totalAnalyses: analysesR.count || 0,
-          tokenTotal: (tokensR.data || []).reduce((s: number, r: any) => s + (r.amount || 0), 0),
-          tokenCount: (tokensR.data || []).length,
-        });
-        setActivity((actR.data || []) as ActivityLog[]);
-        const days: DailyCount[] = [];
-        for (let d = 6; d >= 0; d--) {
-          const date = new Date(Date.now() - d * 86400000);
-          const dayStr = date.toISOString().slice(0, 10);
-          const nextDay = new Date(date.getTime() + 86400000).toISOString().slice(0, 10);
-          const { count } = await supabase.from('profiles').select('id', { count: 'exact', head: true }).gte('created_at', dayStr).lt('created_at', nextDay);
-          days.push({ day: date.toLocaleDateString('ar-SA', { weekday: 'short' }), count: count || 0 });
-        }
-        setDaily(days);
-      } catch (e) { console.error(e); }
-      setLoading(false);
-    }
-    load();
-  }, []);
+    if (!user?.id) return;
+    void load(user.id);
+  }, [user?.id, tab]);
 
+  async function load(uid: string) {
+    setLoading(true);
+    try {
+      const now = new Date();
+      let since: Date;
+      if (tab === 'week') { since = new Date(now.getTime() - 7 * 86400000); }
+      else if (tab === 'month') { since = new Date(now.getFullYear(), now.getMonth(), 1); }
+      else { since = new Date(now.getTime() - 90 * 86400000); }
+      const sinceIso = since.toISOString();
+
+      const safeCount = async (table: string, extra?: Record<string, string>) => {
+        try {
+          let q = supabase.from(table).select('id', { count: 'exact', head: true }).eq('user_id', uid).gte('created_at', sinceIso);
+          if (extra) { for (const [k, v] of Object.entries(extra)) q = q.eq(k, v); }
+          const { count } = await q;
+          return count || 0;
+        } catch { return 0; }
+      };
+
+      const [an, cv, ca, po] = await Promise.all([
+        safeCount('linkedin_analyses'),
+        safeCount('cv_documents'),
+        safeCount('campaigns'),
+        safeCount('posts'),
+      ]);
+
+      let tokensUsed = 0;
+      let tokenBalance = 0;
+      try {
+        const { data: txs } = await supabase.from('token_transactions').select('amount').eq('user_id', uid);
+        tokensUsed = (txs || []).filter((r: any) => r.amount < 0).reduce((s: number, r: any) => s + Math.abs(r.amount), 0);
+      } catch { /* noop */ }
+      try {
+        const { data: prof } = await supabase.from('profiles').select('token_balance').eq('id', uid).single();
+        tokenBalance = prof?.token_balance ?? 0;
+      } catch { /* noop */ }
+
+      setStats({ analyses: an, cvs: cv, campaigns: ca, posts: po, tokensUsed, tokenBalance });
+
+      // Daily activity (last 7 days from linkedin_analyses)
+      const days: { day: string; count: number }[] = [];
+      for (let d = 6; d >= 0; d--) {
+        const dt = new Date(now.getTime() - d * 86400000);
+        const nextDt = new Date(dt.getTime() + 86400000);
+        try {
+          const { count } = await supabase.from('linkedin_analyses').select('id', { count: 'exact', head: true }).eq('user_id', uid).gte('created_at', dt.toISOString()).lt('created_at', nextDt.toISOString());
+          days.push({ day: dt.toLocaleDateString(isAr ? 'ar-SA' : 'en-US', { weekday: 'short' }), count: count || 0 });
+        } catch { days.push({ day: '?', count: 0 }); }
+      }
+      setDaily(days);
+    } catch { /* noop */ }
+    setLoading(false);
+  }
+
+  const hasData = stats.analyses + stats.cvs + stats.campaigns + stats.posts > 0;
   const maxDaily = Math.max(...daily.map(d => d.count), 1);
-  const cards = [
-    { label: '\u0645\u0633\u062a\u062e\u062f\u0645\u0648\u0646 \u0643\u0644\u064a', value: stats.totalUsers, icon: Users, color: 'var(--wsl-teal)' },
-    { label: '\u062c\u062f\u062f \u0647\u0630\u0627 \u0627\u0644\u0623\u0633\u0628\u0648\u0639', value: stats.newUsersWeek, icon: UserPlus, color: '#10b981' },
-    { label: '\u062d\u0645\u0644\u0627\u062a \u0646\u0634\u0637\u0629', value: stats.activeCampaigns, icon: Send, color: 'var(--wsl-gold)' },
-    { label: '\u062a\u062d\u0644\u064a\u0644\u0627\u062a LinkedIn', value: stats.totalAnalyses, icon: BarChart2, color: '#8b5cf6' },
+
+  const statCards = [
+    { label: t('analytics.stats.analyses', 'تحليلات LinkedIn'), value: stats.analyses, icon: BarChart2, color: '#8B5CF6', bg: '#F5F3FF' },
+    { label: t('analytics.stats.cvs', 'سير مُنشأة'), value: stats.cvs, icon: FileText, color: '#059669', bg: '#ECFDF5' },
+    { label: t('analytics.stats.campaigns', 'حملات'), value: stats.campaigns, icon: Send, color: '#0077B5', bg: '#EFF6FF' },
+    { label: t('analytics.stats.posts', 'منشورات'), value: stats.posts, icon: PenSquare, color: '#0A8F84', bg: '#F0FDF9' },
+  ];
+
+  const tabs: { id: PeriodTab; ar: string; en: string }[] = [
+    { id: 'week', ar: 'هذا الأسبوع', en: 'This Week' },
+    { id: 'month', ar: 'هذا الشهر', en: 'This Month' },
+    { id: 'quarter', ar: 'آخر 90 يوم', en: 'Last 90 Days' },
   ];
 
   return (
-    <DashboardLayout pageTitle={t('nav.analytics', '\u0627\u0644\u062a\u062d\u0644\u064a\u0644\u0627\u062a')}>
-      {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <div className="w-8 h-8 border-4 rounded-full animate-spin" style={{ borderColor: 'var(--wsl-border)', borderTopColor: 'var(--wsl-teal)' }} />
-        </div>
-      ) : (
-        <div className="space-y-6">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {cards.map((c, i) => (
-              <div key={i} className="rounded-2xl bg-white p-5 shadow-sm border" style={{ borderColor: 'var(--wsl-border)' }}>
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: c.color + '18' }}>
-                    <c.icon size={20} style={{ color: c.color }} />
-                  </div>
-                </div>
-                <div className="text-3xl font-extrabold" style={{ color: 'var(--wsl-ink)', fontFamily: 'Inter, sans-serif' }}>{c.value}</div>
-                <div className="text-xs mt-1" style={{ color: 'var(--wsl-ink-3)', fontFamily: 'Cairo, sans-serif', fontWeight: 700 }}>{c.label}</div>
-              </div>
-            ))}
-          </div>
+    <DashboardLayout pageTitle={t('analytics.title', 'تحليلاتك')}>
+      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 4px' }}>
 
-          {/* Daily Chart */}
-          <div className="rounded-2xl bg-white p-6 shadow-sm border" style={{ borderColor: 'var(--wsl-border)' }}>
-            <h3 className="text-base font-extrabold mb-4" style={{ color: 'var(--wsl-ink)', fontFamily: 'Cairo, sans-serif' }}>
-              {t('analytics.newUsersChart', '\u0645\u0633\u062a\u062e\u062f\u0645\u0648\u0646 \u062c\u062f\u062f \u0622\u062e\u0631 7 \u0623\u064a\u0627\u0645')}
-            </h3>
-            <div className="flex items-end gap-3" style={{ height: '160px' }}>
-              {daily.map((d, i) => (
-                <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                  <span className="text-xs font-bold" style={{ color: 'var(--wsl-ink-2)', fontFamily: 'Inter' }}>{d.count}</span>
-                  <div className="w-full rounded-t-lg transition-all" style={{ height: Math.max(4, d.count / maxDaily * 120) + 'px', background: 'var(--wsl-teal)', opacity: 0.8 + (d.count / maxDaily) * 0.2 }} />
-                  <span className="text-[10px] font-bold" style={{ color: 'var(--wsl-ink-4)', fontFamily: 'Cairo' }}>{d.day}</span>
-                </div>
+        {/* Header */}
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+          style={{ marginBottom: 24 }}>
+          <h1 style={{ fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 900, fontSize: 30, color: 'var(--wsl-ink)', letterSpacing: '-0.5px', margin: 0 }}>
+            {t('analytics.title', 'تحليلاتك')}
+          </h1>
+          <p style={{ marginTop: 6, color: 'var(--wsl-ink-3)', fontFamily: 'Cairo, Inter, sans-serif', fontSize: 14 }}>
+            {t('analytics.subtitle', 'نظرة شاملة على نشاطك في وصّل')}
+          </p>
+        </motion.div>
+
+        {/* Period Tabs */}
+        <div style={{ display: 'flex', gap: 4, padding: 4, borderRadius: 12, background: 'var(--wsl-surf-2, #F3F4F6)', marginBottom: 24, width: 'fit-content' }}>
+          {tabs.map(tb => {
+            const active = tab === tb.id;
+            return (
+              <button key={tb.id} onClick={() => setTab(tb.id)}
+                style={{ padding: '8px 16px', borderRadius: 9, border: 'none', cursor: 'pointer', background: active ? '#fff' : 'transparent', color: active ? 'var(--wsl-ink)' : 'var(--wsl-ink-3)', fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 900, fontSize: 13, boxShadow: active ? '0 2px 6px rgba(0,0,0,0.06)' : 'none', transition: 'all 150ms ease' }}>
+                {isAr ? tb.ar : tb.en}
+              </button>
+            );
+          })}
+        </div>
+
+        {loading ? (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 0' }}>
+            <div style={{ width: 32, height: 32, borderRadius: '50%', border: '4px solid var(--wsl-border, #E5E7EB)', borderTopColor: 'var(--wsl-teal, #0A8F84)', animation: 'spin 1s linear infinite' }} />
+          </div>
+        ) : !hasData ? (
+          /* Empty State */
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+            style={{ background: '#fff', border: '2px dashed var(--wsl-border, #E5E7EB)', borderRadius: 16, padding: '60px 24px', textAlign: 'center', marginBottom: 24 }}>
+            <div style={{ width: 72, height: 72, borderRadius: 20, margin: '0 auto 18px', background: 'linear-gradient(135deg, rgba(10,143,132,0.1), rgba(14,165,233,0.1))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <TrendingUp size={32} color="#0A8F84" />
+            </div>
+            <div style={{ fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 900, fontSize: 18, color: 'var(--wsl-ink)', marginBottom: 8 }}>
+              {t('analytics.empty', 'ابدأ باستخدام وصّل لتظهر تحليلاتك هنا')}
+            </div>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap', marginTop: 16 }}>
+              <a href="/app/profile-analysis" style={{ padding: '9px 16px', borderRadius: 9, background: 'linear-gradient(135deg, #0A8F84, #0ea5e9)', color: '#fff', textDecoration: 'none', fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 13 }}>
+                {isAr ? 'تحليل ملفك' : 'Analyze Profile'}
+              </a>
+              <a href="/app/campaigns/new" style={{ padding: '9px 16px', borderRadius: 9, background: '#F3F4F6', color: 'var(--wsl-ink)', textDecoration: 'none', fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 13 }}>
+                {isAr ? 'حملة جديدة' : 'New Campaign'}
+              </a>
+            </div>
+          </motion.div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            {/* Stat Cards */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14 }}>
+              {statCards.map((c, i) => (
+                <motion.div key={c.label} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
+                  style={{ background: '#fff', borderRadius: 16, padding: 20, border: '1px solid var(--wsl-border, #E5E7EB)', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                    <div style={{ width: 40, height: 40, borderRadius: 10, background: c.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <c.icon size={20} style={{ color: c.color }} />
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 36, fontWeight: 900, color: 'var(--wsl-ink)', fontFamily: 'Inter' }}>{c.value}</div>
+                  <div style={{ fontSize: 12, color: 'var(--wsl-ink-3)', marginTop: 4, fontFamily: 'Cairo, sans-serif', fontWeight: 700 }}>{c.label}</div>
+                </motion.div>
               ))}
             </div>
-          </div>
 
-          {/* Token Summary */}
-          <div className="rounded-2xl bg-white p-6 shadow-sm border" style={{ borderColor: 'var(--wsl-border)' }}>
-            <h3 className="text-base font-extrabold mb-3" style={{ color: 'var(--wsl-ink)', fontFamily: 'Cairo, sans-serif' }}>
-              {t('analytics.tokenSummary', '\u0645\u0644\u062e\u0635 \u0627\u0644\u062a\u0648\u0643\u0646\u0627\u062a')}
-            </h3>
-            <div className="flex gap-8">
+            {/* Token Usage Card */}
+            <div style={{ background: '#fff', borderRadius: 16, padding: 24, border: '1px solid var(--wsl-border, #E5E7EB)', boxShadow: '0 1px 4px rgba(0,0,0,0.04)', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 20 }}>
               <div>
-                <div className="text-2xl font-extrabold" style={{ color: 'var(--wsl-teal)', fontFamily: 'Inter' }}>{stats.tokenCount}</div>
-                <div className="text-xs" style={{ color: 'var(--wsl-ink-3)', fontFamily: 'Cairo', fontWeight: 700 }}>{t('analytics.transactions', '\u0639\u0645\u0644\u064a\u0629')}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                  <Coins size={16} style={{ color: '#D97706' }} />
+                  <span style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 800, fontSize: 13, color: 'var(--wsl-ink-2)' }}>{t('analytics.stats.tokens', 'توكن مُستخدم')}</span>
+                </div>
+                <div style={{ fontSize: 32, fontWeight: 900, color: '#D97706', fontFamily: 'Inter' }}>{stats.tokensUsed.toLocaleString('en-US')}</div>
               </div>
               <div>
-                <div className="text-2xl font-extrabold" style={{ color: 'var(--wsl-gold)', fontFamily: 'Inter' }}>{stats.tokenTotal}</div>
-                <div className="text-xs" style={{ color: 'var(--wsl-ink-3)', fontFamily: 'Cairo', fontWeight: 700 }}>{t('analytics.totalTokens', '\u0625\u062c\u0645\u0627\u0644\u064a \u0627\u0644\u062a\u0648\u0643\u0646\u0627\u062a')}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                  <Coins size={16} style={{ color: '#0A8F84' }} />
+                  <span style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 800, fontSize: 13, color: 'var(--wsl-ink-2)' }}>{isAr ? 'الرصيد المتبقي' : 'Remaining Balance'}</span>
+                </div>
+                <div style={{ fontSize: 32, fontWeight: 900, color: '#0A8F84', fontFamily: 'Inter' }}>{stats.tokenBalance.toLocaleString('en-US')}</div>
+              </div>
+            </div>
+
+            {/* Daily Activity Chart */}
+            <div style={{ background: '#fff', borderRadius: 16, padding: 24, border: '1px solid var(--wsl-border, #E5E7EB)', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
+              <div style={{ fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 900, fontSize: 15, color: 'var(--wsl-ink)', marginBottom: 20 }}>
+                {isAr ? 'نشاط آخر 7 أيام (تحليلا֪)' : 'Last 7 Days Activity (Analyses)'}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12, height: 120 }}>
+                {daily.map((d, i) => (
+                  <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                    <span style={{ fontSize: 11, fontWeight: 900, color: 'var(--wsl-ink-2)', fontFamily: 'Inter' }}>{d.count}</span>
+                    <div style={{ width: '100%', borderRadius: '4px 4px 0 0', background: d.count > 0 ? 'linear-gradient(180deg, #0A8F84, #12B5A8)' : '#F3F4F6', minHeight: 4, height: Math.max(4, (d.count / maxDaily) * 80), transition: 'height 0.6s ease' }} />
+                    <span style={{ fontSize: 10, color: 'var(--wsl-ink-4)', fontFamily: 'Cairo, sans-serif' }}>{d.day}</span>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
-
-          {/* Recent Activity */}
-          <div className="rounded-2xl bg-white p-6 shadow-sm border" style={{ borderColor: 'var(--wsl-border)' }}>
-            <h3 className="text-base font-extrabold mb-4" style={{ color: 'var(--wsl-ink)', fontFamily: 'Cairo, sans-serif' }}>
-              {t('analytics.recentActivity', '\u0627\u0644\u0646\u0634\u0627\u0637 \u0627\u0644\u0623\u062e\u064a\u0631')}
-            </h3>
-            {activity.length === 0 ? (
-              <p className="text-sm" style={{ color: 'var(--wsl-ink-4)' }}>{t('analytics.noActivity', '\u0644\u0627 \u064a\u0648\u062c\u062f \u0646\u0634\u0627\u0637 \u062d\u062a\u0649 \u0627\u0644\u0622\u0646')}</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr style={{ borderBottom: '1px solid var(--wsl-border)' }}>
-                      <th className="py-2 text-start font-bold" style={{ color: 'var(--wsl-ink-2)' }}>{t('analytics.type', '\u0627\u0644\u0646\u0648\u0639')}</th>
-                      <th className="py-2 text-start font-bold" style={{ color: 'var(--wsl-ink-2)' }}>{t('analytics.description', '\u0627\u0644\u0648\u0635\u0641')}</th>
-                      <th className="py-2 text-start font-bold" style={{ color: 'var(--wsl-ink-2)' }}>{t('analytics.time', '\u0627\u0644\u0648\u0642\u062a')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {activity.map((a) => (
-                      <tr key={a.id} style={{ borderBottom: '1px solid var(--wsl-border)' }}>
-                        <td className="py-2 font-semibold" style={{ color: 'var(--wsl-teal)' }}>{a.type}</td>
-                        <td className="py-2" style={{ color: 'var(--wsl-ink-2)' }}>{a.description}</td>
-                        <td className="py-2 text-xs" style={{ color: 'var(--wsl-ink-4)', fontFamily: 'Inter' }}>{new Date(a.created_at).toLocaleString('ar-SA')}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+        )}
+      </div>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </DashboardLayout>
   );
 }

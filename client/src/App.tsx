@@ -25,7 +25,6 @@ const Onboarding = lazy(() => import('./pages/Onboarding'));
 const Profile = lazy(() => import('./pages/Profile'));
 const Tokens = lazy(() => import('./pages/Tokens'));
 const Payment = lazy(() => import('./pages/Payment'));
-const LinkedInAnalyzer = lazy(() => import('./pages/LinkedInAnalyzer'));
 const CVTailor = lazy(() => import('./pages/CVTailor'));
 const CampaignList = lazy(() => import('./pages/CampaignList'));
 const CampaignNew = lazy(() => import('./pages/CampaignNew'));
@@ -80,7 +79,7 @@ const AppRoutes: React.FC = () => {
   const [match] = useRoute('/');
   const [matchAppHome] = useRoute('/app');
   const [matchAppSetup] = useRoute('/app/setup');
-  const [matchAppLinkedin] = useRoute('/app/linkedin');
+  const [matchAppLinkedin] = useRoute('/app/linkedin');  // redirect → profile-analysis
   const [matchAppCv] = useRoute('/app/cv');
   const [matchAppCampaignsList] = useRoute('/app/campaigns');
   const [matchAppCampaignsNew] = useRoute('/app/campaigns/new');
@@ -151,12 +150,11 @@ const AppRoutes: React.FC = () => {
         <Payment />
       </ProtectedRoute>
     );
-  if (matchAppLinkedin)
-    return (
-      <ProtectedRoute>
-        <LinkedInAnalyzer />
-      </ProtectedRoute>
-    );
+  if (matchAppLinkedin) {
+    // Redirect old /app/linkedin to /app/profile-analysis
+    window.location.replace('/app/profile-analysis');
+    return null;
+  }
   if (matchAppCv)
     return (
       <ProtectedRoute>

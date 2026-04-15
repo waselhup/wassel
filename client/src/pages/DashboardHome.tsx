@@ -90,7 +90,7 @@ export default function DashboardHome() {
   const actions: Action[] = [
     { key: "linkedin", title: t("home.actions.linkedin.title", "حلّل ملفك على LinkedIn"),
       desc: t("home.actions.linkedin.desc", "احصل على تقييم فوري واقتراحات لتحسين ملفك"),
-      href: "/app/linkedin", icon: Linkedin, color: "from-[#0077b5] to-[#00a0dc]" },
+      href: "/app/profile-analysis", icon: Linkedin, color: "from-[#0077b5] to-[#00a0dc]" },
     { key: "cv", title: t("home.actions.cv.title", "خصّص سيرتك الذاتية"),
       desc: t("home.actions.cv.desc", "أنشئ سيرة ذاتية مُحسّنة لكل وظيفة تتقدم لها"),
       href: "/app/cv", icon: FileText, color: "from-emerald-500 to-teal-600" },

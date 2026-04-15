@@ -24,7 +24,8 @@
     "profile": "Profile",
     "knowledge": "Knowledge Base",
     "setup": "Account Setup",
-    "posts": "Posts"
+    "posts": "Posts",
+    "profileAnalysis": "Profile Analysis"
   },
   "hero": {
     "title": "Multiply Your Job Opportunities Effortlessly",
@@ -293,7 +294,8 @@
     "skip": "Skip",
     "email": "Email",
     "name": "Name",
-    "plan": "plan"
+    "plan": "plan",
+    "or": "or"
   },
   "sidebar": {
     "home": "Home",
@@ -330,7 +332,7 @@
     "setupCompleteDesc": "You can now start using Wassel"
   },
   "profile": {
-    "title": "Job Title",
+    "title": "Profile",
     "editProfile": "Edit Profile",
     "fullName": "Full Name",
     "email": "Email Address",
@@ -349,7 +351,26 @@
     "connectGmail": "Connect Gmail for Campaign Sending",
     "gmailConnected": "Gmail Connected Successfully",
     "gmailConnectedDesc": "You can now send email campaigns from your account",
-    "gmailDesc": "Connect your Gmail account to send email campaigns directly"
+    "gmailDesc": "Connect your Gmail account to send email campaigns directly",
+    "subtitle": "Manage your personal information and credits",
+    "tabs": {
+      "personal": "Personal Info",
+      "subscription": "Subscription & Billing",
+      "settings": "Settings",
+      "security": "Security"
+    },
+    "tokensCard": {
+      "title": "Current Token Balance",
+      "balance": "tokens",
+      "used": "used",
+      "buyMore": "Buy Tokens",
+      "upgrade": "Upgrade Plan"
+    },
+    "identity": {
+      "editName": "Edit Name",
+      "syncedFromLinkedin": "Synced from LinkedIn ✓",
+      "refreshFromLinkedin": "Refresh Data"
+    }
   },
   "tokens": {
     "title": "Tokens",
@@ -814,5 +835,62 @@
     "openingLinkedIn": "Opening LinkedIn...",
     "linkedInWillOpen": "LinkedIn will open in a new tab with your post ready to publish",
     "linkedInTip": "Note: LinkedIn will open with your post text ready — just click Post"
+  },
+  "profileAnalysis": {
+    "title": "Professional Profile Analysis",
+    "subtitle": "Get a deep AI-powered analysis of your LinkedIn profile",
+    "tokens": "tokens for analysis",
+    "urlLabel": "LinkedIn URL",
+    "inputTitle": "LinkedIn URL or Profile Screenshot",
+    "inputSub": "Enter URL or upload a screenshot to start analysis",
+    "myProfile": "My Profile",
+    "dropZone": "Drag your profile screenshot here or click to choose",
+    "analyze": "Analyze My Profile Now",
+    "analysisDone": "Analysis complete!",
+    "error": "An unexpected error occurred",
+    "score": "LinkedIn Score",
+    "strengths": "Strengths",
+    "weaknesses": "Weaknesses",
+    "missing": "Missing sections from your profile",
+    "checklist": "Action Checklist",
+    "recTemplate": "Recommendation Request Template",
+    "bannerTip": "Save this as a screenshot to use as your LinkedIn banner",
+    "newAnalysis": "New Analysis",
+    "print": "Print",
+    "imageAnalysis": "Screenshot Analysis",
+    "historyEmpty": "No analysis history yet",
+    "historyEmptySub": "Start analyzing your profile to see results here",
+    "empty": "Start analyzing your professional profile",
+    "emptySub": "Enter a LinkedIn URL or upload a profile screenshot for a comprehensive assessment",
+    "headline": "Headline",
+    "about": "About Section",
+    "experience": "Work Experience",
+    "tabs": {
+      "overview": "Overview",
+      "plan": "Improvement Plan",
+      "history": "History"
+    },
+    "stages": {
+      "fetching": "Fetching profile data...",
+      "analyzing": "Analyzing with AI...",
+      "preparing": "Preparing report..."
+    }
+  },
+  "analytics": {
+    "title": "Your Analytics",
+    "subtitle": "Comprehensive overview of your activity on Wassel",
+    "tabs": {
+      "week": "This Week",
+      "month": "This Month",
+      "quarter": "Last 90 Days"
+    },
+    "stats": {
+      "analyses": "LinkedIn Analyses",
+      "cvs": "CVs Created",
+      "campaigns": "Campaigns",
+      "posts": "Posts",
+      "tokens": "Tokens Used"
+    },
+    "empty": "Start using Wassel for your analytics to appear here"
   }
 }

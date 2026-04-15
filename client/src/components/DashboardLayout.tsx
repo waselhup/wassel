@@ -44,12 +44,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, page
 
   const nav = [
     { href: '/app', icon: Home, label: t('nav.home', '\u0627\u0644\u0631\u0626\u064a\u0633\u064a\u0629') },
-    { href: '/app/linkedin', icon: BarChart2, label: t('nav.linkedin', 'LinkedIn') },
     { href: '/app/profile-analysis', icon: UserCheck, label: t('nav.profileAnalysis', 'تحليل البروفايل') },
     { href: '/app/cv', icon: FileText, label: t('nav.cv', '\u0627\u0644\u0633\u064a\u0631\u0629') },
     { href: '/app/campaigns', icon: Send, label: t('nav.campaigns', '\u0627\u0644\u062d\u0645\u0644\u0627\u062a') },
     { href: '/app/posts', icon: PenSquare, label: t('nav.posts', '\u0627\u0644\u0645\u0646\u0634\u0648\u0631\u0627\u062a') },
-    { href: '/app/tokens', icon: Coins, label: t('nav.tokens', '\u0627\u0644\u0631\u0635\u064a\u062f') },
     { href: '/app/knowledge', icon: BookOpen, label: t('nav.knowledge', '\u0627\u0644\u0645\u0639\u0631\u0641\u0629') },
     { href: '/app/analytics', icon: TrendingUp, label: t('nav.analytics', 'التحليلات') },
     { href: '/app/profile', icon: User, label: t('nav.profile', '\u0627\u0644\u0645\u0644\u0641') },

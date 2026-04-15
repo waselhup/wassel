@@ -1,17 +1,22 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
+import {
+  Sparkles, CheckCircle, XCircle, Copy, ChevronDown, Upload,
+  Link as LinkIcon, Loader2, AlertCircle, UserCheck, Check, X,
+  Clock, TrendingUp, Printer, MoreVertical,
+} from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
-import { trpc } from '../lib/trpc';
-import { CheckCircle, XCircle, Copy, ChevronDown, ChevronUp, Upload, Link as LinkIcon, Loader2, Printer, AlertCircle } from 'lucide-react';
-import { WasselLogo } from '../components/WasselLogo';
+import { useAuth } from '../contexts/AuthContext';
 
+// ─── Interfaces ──────────────────────────────────────────────────────────────
 interface ScoreBreakdown {
   headline: number; about: number; experience: number; skills: number;
   education: number; photo: number; connections: number; certifications: number;
 }
 interface UpgradeItem { before: string; after: string; tips: string; }
 interface ActionItem { action: string; time: string; priority: string; }
-interface BannerDesign { background: string; mainText: string; tagline: string; layout: string; accent: string; }
+interface BannerDesign { background: string; mainText: string; tagline: string; accent: string; }
 interface AnalysisResult {
   score: number; scoreBreakdown: ScoreBreakdown;
   strengths: string[]; weaknesses: string[];
@@ -19,26 +24,68 @@ interface AnalysisResult {
   missingSections: string[]; actionChecklist: ActionItem[];
   recommendationTemplate: string; bannerDesign: BannerDesign; error?: string;
 }
+interface HistoryItem {
+  id: string; score: number; url: string; created_at: string; result: AnalysisResult;
+}
 
+// ─── Constants ───────────────────────────────────────────────────────────────
 const BREAKDOWN_MAX: Record<string, number> = {
   headline: 15, about: 15, experience: 20, skills: 10,
   education: 10, photo: 10, connections: 10, certifications: 10,
 };
-const BREAKDOWN_LABELS: Record<string, string> = {
+const BREAKDOWN_LABELS_AR: Record<string, string> = {
   headline: 'العنوان', about: 'النبذة', experience: 'الخبرات', skills: 'المهارات',
   education: 'التعليم', photo: 'الصورة', connections: 'الشبكة', certifications: 'الشهادات',
 };
 
+// ─── Toast ───────────────────────────────────────────────────────────────────
+interface ToastItem { id: number; type: 'success' | 'error'; message: string; }
+function useToast() {
+  const [toasts, setToasts] = useState<ToastItem[]>([]);
+  const push = (type: ToastItem['type'], message: string) => {
+    const id = Date.now() + Math.random();
+    setToasts(t => [...t, { id, type, message }]);
+    setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 3200);
+  };
+  const View = () => (
+    <div style={{ position: 'fixed', top: 20, insetInlineEnd: 20, zIndex: 9999, display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <AnimatePresence>
+        {toasts.map(t => (
+          <motion.div key={t.id}
+            initial={{ opacity: 0, y: -16, scale: 0.92 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, x: 40 }}
+            style={{
+              padding: '12px 18px', borderRadius: 12, minWidth: 260,
+              background: t.type === 'success' ? '#ECFDF5' : '#FEF2F2',
+              color: t.type === 'success' ? '#065F46' : '#991B1B',
+              border: `1px solid ${t.type === 'success' ? '#A7F3D0' : '#FECACA'}`,
+              boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
+              fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 700, fontSize: 13,
+              display: 'flex', alignItems: 'center', gap: 10,
+            }}
+          >
+            {t.type === 'success' ? <Check size={16} /> : <X size={16} />}
+            {t.message}
+          </motion.div>
+        ))}
+      </AnimatePresence>
+    </div>
+  );
+  return { push, View };
+}
+
+// ─── Score Circle ─────────────────────────────────────────────────────────────
 function ScoreCircle({ score }: { score: number }) {
   const [anim, setAnim] = useState(0);
   useEffect(() => {
     let frame: number; let start: number;
-    const duration = 1200;
+    const dur = 1200;
     function step(ts: number) {
       if (!start) start = ts;
-      const progress = Math.min((ts - start) / duration, 1);
-      setAnim(Math.round(progress * score));
-      if (progress < 1) frame = requestAnimationFrame(step);
+      const p = Math.min((ts - start) / dur, 1);
+      setAnim(Math.round(p * score));
+      if (p < 1) frame = requestAnimationFrame(step);
     }
     frame = requestAnimationFrame(step);
     return () => cancelAnimationFrame(frame);
@@ -47,89 +94,115 @@ function ScoreCircle({ score }: { score: number }) {
   const offset = c - (anim / 100) * c;
   const color = anim >= 80 ? '#0A8F84' : anim >= 60 ? '#C9922A' : '#DC2626';
   return (
-    <div style={{ position: 'relative', width: 160, height: 160, margin: '0 auto' }}>
-      <svg width={160} height={160} style={{ transform: 'rotate(-90deg)' }}>
-        <circle cx={80} cy={80} r={r} fill="none" stroke="#E5E7EB" strokeWidth={10} />
-        <circle cx={80} cy={80} r={r} fill="none" stroke={color} strokeWidth={10}
+    <div style={{ position: 'relative', width: 140, height: 140 }}>
+      <svg width={140} height={140} style={{ transform: 'rotate(-90deg)' }}>
+        <circle cx={70} cy={70} r={r} fill="none" stroke="#E5E7EB" strokeWidth={9} />
+        <circle cx={70} cy={70} r={r} fill="none" stroke={color} strokeWidth={9}
           strokeDasharray={c} strokeDashoffset={offset} strokeLinecap="round"
           style={{ transition: 'stroke-dashoffset 0.3s ease' }} />
       </svg>
       <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-        <span style={{ fontSize: 42, fontWeight: 900, color, fontFamily: 'Inter' }}>{anim}</span>
-        <span style={{ fontSize: 13, color: '#6B7280', fontFamily: 'Cairo' }}>من 100</span>
+        <span style={{ fontSize: 36, fontWeight: 900, color, fontFamily: 'Inter' }}>{anim}</span>
+        <span style={{ fontSize: 11, color: '#6B7280', fontFamily: 'Cairo' }}>من 100</span>
       </div>
     </div>
   );
 }
 
-function BreakdownBadges({ breakdown }: { breakdown: ScoreBreakdown }) {
-  return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center', marginTop: 16 }}>
-      {Object.entries(breakdown).map(([key, val]) => {
-        const max = BREAKDOWN_MAX[key] || 10;
-        const pct = (val / max) * 100;
-        const bg = pct >= 80 ? '#ECFDF5' : pct >= 60 ? '#FFFBEB' : '#FEF2F2';
-        const fg = pct >= 80 ? '#059669' : pct >= 60 ? '#D97706' : '#DC2626';
-        return (
-          <div key={key} style={{ background: bg, color: fg, padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: 700, fontFamily: 'Cairo', display: 'flex', alignItems: 'center', gap: 4 }}>
-            <span>{BREAKDOWN_LABELS[key] || key}</span>
-            <span style={{ fontFamily: 'Inter' }}>{val}/{max}</span>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
+// ─── Upgrade Section ──────────────────────────────────────────────────────────
 function UpgradeSection({ title, data }: { title: string; data: UpgradeItem }) {
   const [open, setOpen] = useState(false);
   const [showAfter, setShowAfter] = useState(true);
   const [copied, setCopied] = useState(false);
   const copy = () => { navigator.clipboard.writeText(data.after); setCopied(true); setTimeout(() => setCopied(false), 2000); };
   return (
-    <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #E5E7EB', overflow: 'hidden', marginBottom: 12 }}>
-      <button onClick={() => setOpen(!open)} style={{ width: '100%', padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'Cairo', fontWeight: 700, fontSize: 15, color: '#0B1220' }}>
+    <div style={{ background: '#fff', borderRadius: 12, border: '1px solid var(--wsl-border, #E5E7EB)', overflow: 'hidden', marginBottom: 10 }}>
+      <button onClick={() => setOpen(!open)}
+        style={{ width: '100%', padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'Cairo', fontWeight: 800, fontSize: 14, color: 'var(--wsl-ink)' }}>
         <span>{title}</span>
-        {open ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+        <ChevronDown size={16} style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 200ms' }} />
       </button>
-      {open && (
-        <div style={{ padding: '0 16px 16px' }}>
-          <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-            <button onClick={() => setShowAfter(false)} style={{ padding: '6px 16px', borderRadius: 8, border: '1px solid ' + (!showAfter ? '#DC2626' : '#E5E7EB'), background: !showAfter ? '#FEF2F2' : '#fff', color: !showAfter ? '#DC2626' : '#6B7280', fontFamily: 'Cairo', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>قبل</button>
-            <button onClick={() => setShowAfter(true)} style={{ padding: '6px 16px', borderRadius: 8, border: '1px solid ' + (showAfter ? '#0A8F84' : '#E5E7EB'), background: showAfter ? '#ECFDF5' : '#fff', color: showAfter ? '#0A8F84' : '#6B7280', fontFamily: 'Cairo', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>بعد</button>
-          </div>
-          <div style={{ background: showAfter ? '#F0FDF9' : '#FEF2F2', borderRadius: 8, padding: 14, fontSize: 14, lineHeight: 1.8, color: '#1F2937', fontFamily: 'Cairo', whiteSpace: 'pre-wrap', position: 'relative' }}>
-            {showAfter ? data.after : data.before}
-            {showAfter && (
-              <button onClick={copy} style={{ position: 'absolute', top: 8, left: 8, background: 'none', border: 'none', cursor: 'pointer', color: copied ? '#059669' : '#9CA3AF' }}>
-                <Copy size={16} />
-              </button>
-            )}
-          </div>
-          <p style={{ fontSize: 12, color: '#9CA3AF', marginTop: 8, fontFamily: 'Cairo' }}>{data.tips}</p>
-        </div>
-      )}
+      <AnimatePresence>
+        {open && (
+          <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }} style={{ overflow: 'hidden' }}>
+            <div style={{ padding: '0 16px 16px' }}>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+                <button onClick={() => setShowAfter(false)}
+                  style={{ padding: '5px 14px', borderRadius: 8, border: '1px solid ' + (!showAfter ? '#DC2626' : '#E5E7EB'), background: !showAfter ? '#FEF2F2' : '#fff', color: !showAfter ? '#DC2626' : '#6B7280', fontFamily: 'Cairo', fontWeight: 800, fontSize: 12, cursor: 'pointer' }}>قبل</button>
+                <button onClick={() => setShowAfter(true)}
+                  style={{ padding: '5px 14px', borderRadius: 8, border: '1px solid ' + (showAfter ? '#0A8F84' : '#E5E7EB'), background: showAfter ? '#ECFDF5' : '#fff', color: showAfter ? '#0A8F84' : '#6B7280', fontFamily: 'Cairo', fontWeight: 800, fontSize: 12, cursor: 'pointer' }}>بعد</button>
+              </div>
+              <div style={{ background: showAfter ? '#F0FDF9' : '#FEF2F2', borderRadius: 8, padding: 14, fontSize: 13, lineHeight: 1.8, color: '#1F2937', fontFamily: 'Cairo', whiteSpace: 'pre-wrap', position: 'relative' }}>
+                {showAfter ? data.after : data.before}
+                {showAfter && (
+                  <button onClick={copy} style={{ position: 'absolute', top: 8, insetInlineStart: 8, background: 'none', border: 'none', cursor: 'pointer', color: copied ? '#059669' : '#9CA3AF' }}>
+                    <Copy size={14} />
+                  </button>
+                )}
+              </div>
+              <p style={{ fontSize: 11, color: '#9CA3AF', marginTop: 8, fontFamily: 'Cairo' }}>{data.tips}</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
+// ─── Main Component ───────────────────────────────────────────────────────────
 export default function ProfileAnalysis() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const { user, profile } = useAuth();
+  const isAr = i18n.language === 'ar';
+  const toast = useToast();
+
+  // Input state
   const [url, setUrl] = useState('');
   const [imageBase64, setImageBase64] = useState('');
   const [imagePreview, setImagePreview] = useState('');
   const [mediaType, setMediaType] = useState('image/png');
-  const [result, setResult] = useState<AnalysisResult | null>(null);
+
+  // UI state
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [loadingStage, setLoadingStage] = useState(0);
+  const [result, setResult] = useState<AnalysisResult | null>(null);
+  const [tab, setTab] = useState<'overview' | 'plan' | 'history'>('overview');
   const [checkedItems, setCheckedItems] = useState<Record<number, boolean>>({});
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // analyzeDeep client method (uses fetch wrapper)
-  const callAnalyzeDeep = async (input: any) => {
-    const { trpcMutation } = await import('../lib/trpc');
-    return trpcMutation('linkedin.analyzeDeep', input);
-  };
+  const STAGES = [
+    t('profileAnalysis.stages.fetching', 'جاري جلب بيانات الملف...'),
+    t('profileAnalysis.stages.analyzing', 'جاري تحليل ملفك بالذكاء امناعي...'),
+    t('profileAnalysis.stages.preparing', 'جاري إعداد التقرير...'),
+  ];
+
+  // Pre-fill LinkedIn URL from profile
+  useEffect(() => {
+    if ((profile as any)?.linkedin_url && !url) {
+      setUrl((profile as any).linkedin_url);
+    }
+  }, [profile]);
+
+  // Load history
+  useEffect(() => {
+    void loadHistory();
+  }, []);
+
+  async function loadHistory() {
+    setHistoryLoading(true);
+    try {
+      const { supabase } = await import('../lib/supabase');
+      const { data } = await supabase
+        .from('linkedin_analyses')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(10);
+      if (data) setHistory(data as HistoryItem[]);
+    } catch { /* noop */ }
+    setHistoryLoading(false);
+  }
 
   const handleFile = (file: File) => {
     if (!file.type.startsWith('image/')) return;
@@ -143,230 +216,436 @@ export default function ProfileAnalysis() {
     reader.readAsDataURL(file);
   };
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    const file = e.dataTransfer.files[0];
-    if (file) handleFile(file);
-  };
-
-  const handleAnalyze = async () => {
-    if (!url && !imageBase64) return;
-    setLoading(true); setError(''); setResult(null); setCheckedItems({});
+  async function handleAnalyze() {
+    if (!url.trim() && !imageBase64) return;
+    setLoading(true); setLoadingStage(0); setResult(null); setCheckedItems({});
     try {
-      const res = await callAnalyzeDeep({
+      const { trpcMutation } = await import('../lib/trpc');
+      // Cycle through loading stages
+      const stageTimer1 = setTimeout(() => setLoadingStage(1), 2000);
+      const stageTimer2 = setTimeout(() => setLoadingStage(2), 5000);
+      const res = await trpcMutation('linkedin.analyzeDeep', {
         linkedinUrl: url || undefined,
         imageBase64: imageBase64 || undefined,
         mediaType,
       });
-      if (res.error) { setError(res.error); }
-      else { setResult(res as AnalysisResult); }
+      clearTimeout(stageTimer1); clearTimeout(stageTimer2);
+      if (res.error) {
+        toast.push('error', res.error);
+      } else {
+        setResult(res as AnalysisResult);
+        setTab('overview');
+        toast.push('success', t('profileAnalysis.analysisDone', 'تم التحليل بنجاح!'));
+        void loadHistory();
+      }
     } catch (err: any) {
-      setError(err?.message || 'حدث خطأ غير متوقع');
-    } finally { setLoading(false); }
-  };
+      toast.push('error', err?.message || t('profileAnalysis.error', 'حدث خطأ غير متوقع'));
+    }
+    setLoading(false);
+  }
 
   const checkedCount = Object.values(checkedItems).filter(Boolean).length;
   const totalActions = result?.actionChecklist?.length || 0;
+  const canAnalyze = (url.trim().length > 10 || !!imageBase64) && !loading;
+
+  const tabList = [
+    { id: 'overview' as const, label: t('profileAnalysis.tabs.overview', 'نظرة عامة') },
+    { id: 'plan' as const, label: t('profileAnalysis.tabs.plan', 'خطة التحسين') },
+    { id: 'history' as const, label: t('profileAnalysis.tabs.history', 'السجل'), count: history.length },
+  ];
 
   return (
-    <DashboardLayout>
-      <div style={{ maxWidth: 800, margin: '0 auto', padding: '24px 16px', fontFamily: 'Cairo, sans-serif', direction: 'rtl' }} className="print-container">
-        <style>{`@media print { .no-print { display: none !important; } .print-container { padding: 0 !important; } }`}</style>
+    <DashboardLayout pageTitle={t('profileAnalysis.title', 'تحليل البروفايل')}>
+      <toast.View />
+      <div style={{ maxWidth: 900, margin: '0 auto', padding: '0 4px' }}>
 
-        {/* HEADER */}
-        <div style={{ marginBottom: 32, textAlign: 'center' }} className="no-print">
-          <h1 style={{ fontSize: 28, fontWeight: 900, color: '#0B1220', marginBottom: 8 }}>تحليل البروفايل العميق</h1>
-          <p style={{ color: '#6B7280', fontSize: 14 }}>احصل على تحليل شامل لملفك الشخصي على LinkedIn مع خطة تحسين مفصّلة</p>
-        </div>
+        {/* ── Header ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
+          style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 20, marginBottom: 24, flexWrap: 'wrap' }}
+        >
+          <div style={{ flex: 1, minWidth: 260 }}>
+            <h1 style={{ fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 900, fontSize: 30, color: 'var(--wsl-ink)', letterSpacing: '-0.5px', margin: 0 }}>
+              {t('profileAnalysis.title', 'تحليل البروفايل المهني')}
+            </h1>
+            <p style={{ marginTop: 6, color: 'var(--wsl-ink-3)', fontFamily: 'Cairo, Inter, sans-serif', fontSize: 14, lineHeight: 1.6 }}>
+              {t('profileAnalysis.subtitle', 'احصل عميق تحليل عميق لملفك الشخصي LinkedIn بالذكاء الاصورة')}
+            </p>
+          </div>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 10, background: '#FFFBEB', border: '1px solid #FDE68A' }}>
+            <AlertCircle size={14} style={{ color: '#D97706' }} />
+            <span style={{ fontSize: 12, color: '#92400E', fontFamily: 'Cairo, sans-serif', fontWeight: 800 }}>
+              25 {t('profileAnalysis.tokens', 'توكن للتحليل')}
+            </span>
+          </div>
+        </motion.div>
 
-        {/* INPUT CARD */}
-        {!result && (
-          <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #E5E7EB', padding: 24, marginBottom: 24 }} className="no-print">
-            {/* URL Input */}
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ fontSize: 13, fontWeight: 700, color: '#374151', marginBottom: 6, display: 'block' }}>رابط LinkedIn</label>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#F9FAFB', borderRadius: 10, border: '1px solid #E5E7EB', padding: '10px 14px' }}>
-                <LinkIcon size={18} color="#9CA3AF" />
-                <input value={url} onChange={e => setUrl(e.target.value)} placeholder="linkedin.com/in/username"
-                  style={{ flex: 1, background: 'none', border: 'none', outline: 'none', fontSize: 14, fontFamily: 'Inter', direction: 'ltr', textAlign: 'left' }} />
+        {/* ── Input Card ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.05 }}
+          style={{ background: '#fff', border: '1px solid var(--wsl-border, #E5E7EB)', borderRadius: 16, marginBottom: 24, overflow: 'hidden', boxShadow: '0 2px 10px rgba(0,0,0,0.04)' }}
+        >
+          {/* Card Header */}
+          <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--wsl-border, #E5E7EB)', background: 'linear-gradient(135deg, rgba(10,143,132,0.06) 0%, rgba(14,165,233,0.06) 100%)', display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 40, height: 40, borderRadius: 10, background: 'linear-gradient(135deg, #0A8F84 0%, #0ea5e9 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <UserCheck size={20} color="#fff" />
+            </div>
+            <div>
+              <div style={{ fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 900, fontSize: 15, color: 'var(--wsl-ink)' }}>
+                {t('profileAnalysis.inputTitle', 'رابط LinkedIn أو صورة الملف الشخصي')}
               </div>
+              <div style={{ fontSize: 12, color: 'var(--wsl-ink-3)', fontFamily: 'Cairo, sans-serif' }}>
+                {t('profileAnalysis.inputSub', 'أدخل الرابط أو ارفع صورة لبدء التحليل')}
+              </div>
+            </div>
+          </div>
+
+          <div style={{ padding: 20 }}>
+            {/* URL Input */}
+            <label style={labelStyle}>{t('profileAnalysis.urlLabel', 'رابط LinkedIn')}</label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#F9FAFB', borderRadius: 10, border: '1.5px solid var(--wsl-border, #E5E7EB)', padding: '10px 14px', marginBottom: 16 }}>
+              <LinkIcon size={16} style={{ color: '#9CA3AF', flexShrink: 0 }} />
+              <input
+                value={url}
+                onChange={e => setUrl(e.target.value)}
+                placeholder="https://www.linkedin.com/in/your-profile"
+                style={{ flex: 1, background: 'none', border: 'none', outline: 'none', fontSize: 14, fontFamily: 'Inter', direction: 'ltr', textAlign: 'left' }}
+              />
+              {(profile as any)?.linkedin_url && url !== (profile as any).linkedin_url && (
+                <button onClick={() => setUrl((profile as any).linkedin_url)}
+                  style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid #0A8F84', background: '#F0FDF9', color: '#0A8F84', fontSize: 11, fontWeight: 800, fontFamily: 'Cairo', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                  {t('profileAnalysis.myProfile', 'ملفي')}
+                </button>
+              )}
             </div>
 
             {/* OR Divider */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '16px 0' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '14px 0' }}>
               <div style={{ flex: 1, height: 1, background: '#E5E7EB' }} />
-              <span style={{ color: '#9CA3AF', fontSize: 13, fontWeight: 700 }}>أو</span>
+              <span style={{ color: '#9CA3AF', fontSize: 12, fontWeight: 800, fontFamily: 'Cairo' }}>{t('common.or', 'أو')}</span>
               <div style={{ flex: 1, height: 1, background: '#E5E7EB' }} />
             </div>
 
-            {/* Drop Zone */}
-            <div onDrop={handleDrop} onDragOver={e => e.preventDefault()}
+            {/* Image Drop Zone */}
+            <div
+              onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handleFile(f); }}
+              onDragOver={e => e.preventDefault()}
               onClick={() => fileRef.current?.click()}
-              style={{ border: '2px dashed ' + (imagePreview ? '#0A8F84' : '#D1D5DB'), borderRadius: 12, padding: 24, textAlign: 'center', cursor: 'pointer', background: imagePreview ? '#F0FDF9' : '#F9FAFB', transition: 'all 0.2s' }}>
+              style={{ border: '2px dashed ' + (imagePreview ? '#0A8F84' : '#D1D5DB'), borderRadius: 12, padding: '20px 24px', textAlign: 'center', cursor: 'pointer', background: imagePreview ? '#F0FDF9' : '#F9FAFB', transition: 'all 0.2s', marginBottom: 18 }}
+            >
               <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => { if (e.target.files?.[0]) handleFile(e.target.files[0]); }} />
               {imagePreview ? (
-                <img src={imagePreview} alt="preview" style={{ maxHeight: 160, borderRadius: 8, margin: '0 auto' }} />
+                <img src={imagePreview} alt="preview" style={{ maxHeight: 120, borderRadius: 8, margin: '0 auto' }} />
               ) : (
                 <>
-                  <Upload size={32} color="#9CA3AF" style={{ margin: '0 auto 8px' }} />
-                  <p style={{ color: '#6B7280', fontSize: 14 }}>اسحب صورة الملف الشخصي هنا أو انقر للاختيار</p>
+                  <Upload size={28} style={{ margin: '0 auto 8px', color: '#9CA3AF' }} />
+                  <p style={{ color: '#6B7280', fontSize: 13, fontFamily: 'Cairo' }}>{t('profileAnalysis.dropZone', 'اسحب صورة ملفك الشخصي هنا أو انقر للاختيار')}</p>
                 </>
               )}
             </div>
 
-            {/* Cost Notice */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 16, padding: '10px 14px', background: '#FFFBEB', borderRadius: 8, border: '1px solid #FDE68A' }}>
-              <AlertCircle size={16} color="#D97706" />
-              <span style={{ fontSize: 13, color: '#92400E' }}>سيستخدم هذا التحليل <strong>25 توكن</strong></span>
-            </div>
-
             {/* Analyze Button */}
-            <button onClick={handleAnalyze} disabled={loading || (!url && !imageBase64)}
-              style={{ width: '100%', marginTop: 16, padding: '14px 24px', borderRadius: 12, border: 'none',
-                background: (url || imageBase64) ? 'linear-gradient(135deg, #064E49, #0A8F84)' : '#D1D5DB',
-                color: '#fff', fontSize: 16, fontWeight: 900, fontFamily: 'Cairo', cursor: (url || imageBase64) ? 'pointer' : 'not-allowed',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-              {loading ? <><Loader2 size={20} className="animate-spin" /> جاري التحليل العميق...</> : 'ابدأ التحليل العميق'}
+            <button
+              onClick={handleAnalyze}
+              disabled={!canAnalyze}
+              style={{
+                width: '100%', padding: '13px 24px', borderRadius: 12, border: 'none',
+                background: canAnalyze ? 'linear-gradient(135deg, #0A8F84 0%, #0ea5e9 100%)' : '#E5E7EB',
+                color: canAnalyze ? '#fff' : '#9CA3AF',
+                fontSize: 15, fontWeight: 900, fontFamily: 'Cairo, sans-serif',
+                cursor: canAnalyze ? 'pointer' : 'not-allowed',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+                boxShadow: canAnalyze ? '0 6px 16px rgba(10,143,132,0.25)' : 'none',
+                transition: 'all 200ms',
+              }}
+            >
+              {loading ? (
+                <>
+                  <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}>
+                    <Loader2 size={18} />
+                  </motion.div>
+                  <span>{STAGES[loadingStage]}</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles size={18} />
+                  {t('profileAnalysis.analyze', 'تحليل ملفي الآن')}
+                </>
+              )}
             </button>
           </div>
-        )}
+        </motion.div>
 
-        {/* ERROR */}
-        {error && (
-          <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 12, padding: 16, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <XCircle size={20} color="#DC2626" />
-            <span style={{ color: '#991B1B', fontSize: 14 }}>{error}</span>
-          </div>
-        )}
-
-        {/* RESULTS */}
-        {result && (
-          <>
-            {/* New Analysis Button */}
-            <div style={{ textAlign: 'center', marginBottom: 24 }} className="no-print">
-              <button onClick={() => { setResult(null); setUrl(''); setImageBase64(''); setImagePreview(''); }}
-                style={{ padding: '8px 24px', borderRadius: 8, border: '1px solid #E5E7EB', background: '#fff', color: '#374151', fontSize: 13, fontWeight: 700, fontFamily: 'Cairo', cursor: 'pointer' }}>
-                تحليل جديد
-              </button>
-            </div>
-
-            {/* SCORE */}
-            <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #E5E7EB', padding: 24, marginBottom: 24, textAlign: 'center' }}>
-              <h2 style={{ fontSize: 18, fontWeight: 900, color: '#0B1220', marginBottom: 16 }}>تقييم LinkedIn</h2>
-              <ScoreCircle score={result.score} />
-              {result.scoreBreakdown && <BreakdownBadges breakdown={result.scoreBreakdown} />}
-            </div>
-
-            {/* STRENGTHS / WEAKNESSES */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
-              <div style={{ background: '#ECFDF5', borderRadius: 12, padding: 16 }}>
-                <h3 style={{ fontSize: 15, fontWeight: 900, color: '#059669', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <CheckCircle size={18} /> نقاط القوة
-                </h3>
-                {result.strengths?.map((s, i) => (
-                  <div key={i} style={{ fontSize: 13, color: '#065F46', marginBottom: 8, paddingRight: 8, borderRight: '3px solid #059669' }}>{s}</div>
-                ))}
-              </div>
-              <div style={{ background: '#FEF2F2', borderRadius: 12, padding: 16 }}>
-                <h3 style={{ fontSize: 15, fontWeight: 900, color: '#DC2626', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <XCircle size={18} /> نقاط الضعف
-                </h3>
-                {result.weaknesses?.map((w, i) => (
-                  <div key={i} style={{ fontSize: 13, color: '#991B1B', marginBottom: 8, paddingRight: 8, borderRight: '3px solid #DC2626' }}>{w}</div>
-                ))}
-              </div>
-            </div>
-
-            {/* UPGRADE PLAN */}
-            <div style={{ marginBottom: 24 }}>
-              <h2 style={{ fontSize: 18, fontWeight: 900, color: '#0B1220', marginBottom: 12 }}>خطة التحسين</h2>
-              {result.upgradePlan?.headline && <UpgradeSection title="العنوان الوظيفي (Headline)" data={result.upgradePlan.headline} />}
-              {result.upgradePlan?.about && <UpgradeSection title="النبذة التعريفية (About)" data={result.upgradePlan.about} />}
-              {result.upgradePlan?.experience && <UpgradeSection title="الخبرات المهنية (Experience)" data={result.upgradePlan.experience} />}
-            </div>
-
-            {/* MISSING SECTIONS */}
-            {result.missingSections && result.missingSections.length > 0 && (
-              <div style={{ background: '#FFFBEB', borderRadius: 12, border: '1px solid #FDE68A', padding: 16, marginBottom: 24 }}>
-                <h3 style={{ fontSize: 15, fontWeight: 900, color: '#92400E', marginBottom: 12 }}>أقسام مفقودة من ملفك</h3>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {result.missingSections.map((s, i) => (
-                    <span key={i} style={{ background: '#FEF3C7', color: '#92400E', padding: '4px 12px', borderRadius: 6, fontSize: 13, fontWeight: 700 }}>{s}</span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* ACTION CHECKLIST */}
-            {result.actionChecklist && result.actionChecklist.length > 0 && (
-              <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #E5E7EB', padding: 24, marginBottom: 24 }}>
-                <h2 style={{ fontSize: 18, fontWeight: 900, color: '#0B1220', marginBottom: 8 }}>قائمة المهام</h2>
-                <div style={{ background: '#F3F4F6', borderRadius: 8, height: 8, marginBottom: 16, overflow: 'hidden' }}>
-                  <div style={{ height: '100%', background: 'linear-gradient(90deg, #0A8F84, #12B5A8)', borderRadius: 8, width: totalActions > 0 ? (checkedCount / totalActions * 100) + '%' : '0%', transition: 'width 0.3s' }} />
-                </div>
-                <p style={{ fontSize: 12, color: '#6B7280', marginBottom: 12 }}>أنجزت {checkedCount} من {totalActions}</p>
-                {result.actionChecklist.map((item, i) => {
-                  const checked = checkedItems[i] || false;
-                  const prColor = item.priority === 'high' ? '#DC2626' : item.priority === 'medium' ? '#D97706' : '#059669';
-                  const prBg = item.priority === 'high' ? '#FEF2F2' : item.priority === 'medium' ? '#FFFBEB' : '#ECFDF5';
-                  const prLabel = item.priority === 'high' ? 'عاجل' : item.priority === 'medium' ? 'متوسط' : 'منخفض';
+        {/* ── Results ── */}
+        <AnimatePresence>
+          {result && (
+            <motion.div
+              initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+              transition={{ duration: 0.4 }}
+            >
+              {/* Tabs */}
+              <div style={{ display: 'flex', gap: 4, padding: 4, borderRadius: 12, background: 'var(--wsl-surf-2, #F3F4F6)', marginBottom: 20, overflowX: 'auto' }}>
+                {tabList.map(tb => {
+                  const active = tab === tb.id;
                   return (
-                    <div key={i} onClick={() => setCheckedItems(prev => ({ ...prev, [i]: !prev[i] }))}
-                      style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 10, border: '1px solid #E5E7EB', marginBottom: 8, cursor: 'pointer', opacity: checked ? 0.5 : 1, transition: 'opacity 0.2s' }}>
-                      <div style={{ width: 20, height: 20, borderRadius: 6, border: '2px solid ' + (checked ? '#0A8F84' : '#D1D5DB'), background: checked ? '#0A8F84' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        {checked && <CheckCircle size={14} color="#fff" />}
-                      </div>
-                      <span style={{ flex: 1, fontSize: 14, color: '#1F2937', textDecoration: checked ? 'line-through' : 'none' }}>{item.action}</span>
-                      <span style={{ fontSize: 11, color: '#6B7280', fontFamily: 'Inter', flexShrink: 0 }}>{item.time}</span>
-                      <span style={{ fontSize: 11, fontWeight: 700, color: prColor, background: prBg, padding: '2px 8px', borderRadius: 4, flexShrink: 0 }}>{prLabel}</span>
-                    </div>
+                    <button key={tb.id} onClick={() => setTab(tb.id)}
+                      style={{
+                        flex: 1, minWidth: 110, padding: '9px 14px', borderRadius: 9,
+                        border: 'none', cursor: 'pointer',
+                        background: active ? '#fff' : 'transparent',
+                        color: active ? 'var(--wsl-ink)' : 'var(--wsl-ink-3)',
+                        fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 900, fontSize: 13,
+                        boxShadow: active ? '0 2px 6px rgba(0,0,0,0.06)' : 'none',
+                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                        transition: 'all 150ms ease',
+                      }}
+                    >
+                      {tb.label}
+                      {tb.count !== undefined && (
+                        <span style={{ padding: '1px 8px', borderRadius: 999, fontSize: 11, fontWeight: 900, background: active ? 'var(--wsl-teal-bg, #E0F7F5)' : 'rgba(0,0,0,0.06)', color: active ? 'var(--wsl-teal, #0A8F84)' : 'var(--wsl-ink-3)', fontFamily: 'Inter, sans-serif' }}>
+                          {tb.count}
+                        </span>
+                      )}
+                    </button>
                   );
                 })}
               </div>
-            )}
 
-            {/* RECOMMENDATION TEMPLATE */}
-            {result.recommendationTemplate && (
-              <div style={{ background: 'linear-gradient(135deg, #064E49, #0A8F84)', borderRadius: 16, padding: 24, marginBottom: 24, color: '#fff' }}>
-                <h3 style={{ fontSize: 16, fontWeight: 900, marginBottom: 12 }}>قالب طلب توصية (WhatsApp)</h3>
-                <div style={{ background: 'rgba(255,255,255,0.1)', borderRadius: 10, padding: 16, fontSize: 14, lineHeight: 1.8, position: 'relative' }}>
-                  {result.recommendationTemplate}
-                  <button onClick={() => navigator.clipboard.writeText(result.recommendationTemplate)}
-                    style={{ position: 'absolute', top: 8, left: 8, background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: 6, padding: 4, cursor: 'pointer' }}>
-                    <Copy size={14} color="#fff" />
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* BANNER DESIGN */}
-            {result.bannerDesign && (
-              <div style={{ marginBottom: 24 }}>
-                <h2 style={{ fontSize: 18, fontWeight: 900, color: '#0B1220', marginBottom: 12 }}>تصميم البانر المقترح</h2>
-                <div style={{ background: result.bannerDesign.background || 'linear-gradient(135deg, #064E49, #0A8F84)', borderRadius: 16, padding: '32px 24px', color: '#fff', position: 'relative', overflow: 'hidden', minHeight: 120 }}>
-                  <div style={{ position: 'absolute', top: 12, left: 12, opacity: 0.15 }}><WasselLogo size={48} variant="inverted" /></div>
-                  <div style={{ position: 'relative', zIndex: 1 }}>
-                    <h3 style={{ fontSize: 22, fontWeight: 900, marginBottom: 4 }}>{result.bannerDesign.mainText}</h3>
-                    <p style={{ fontSize: 14, opacity: 0.85, fontFamily: 'Inter' }}>{result.bannerDesign.tagline}</p>
+              {/* ── Overview Tab ── */}
+              {tab === 'overview' && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  {/* Score + Breakdown */}
+                  <div style={{ background: '#fff', border: '1px solid var(--wsl-border, #E5E7EB)', borderRadius: 16, padding: 24, boxShadow: '0 1px 4px rgba(0,0,0,0.04)', display: 'flex', flexWrap: 'wrap', gap: 24, alignItems: 'center' }}>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontFamily: 'Cairo', fontWeight: 900, fontSize: 14, color: 'var(--wsl-ink-2)', marginBottom: 12 }}>
+                        {t('profileAnalysis.score', 'تقييم LinkedIn')}
+                      </div>
+                      <ScoreCircle score={result.score} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 240 }}>
+                      {Object.entries(result.scoreBreakdown || {}).map(([key, val]) => {
+                        const max = BREAKDOWN_MAX[key] || 10;
+                        const pct = Math.round((val / max) * 100);
+                        const color = pct >= 80 ? '#059669' : pct >= 60 ? '#D97706' : '#DC2626';
+                        return (
+                          <div key={key} style={{ marginBottom: 10 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                              <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--wsl-ink-2)', fontFamily: 'Cairo' }}>{BREAKDOWN_LABELS_AR[key] || key}</span>
+                              <span style={{ fontSize: 12, fontWeight: 900, color, fontFamily: 'Inter' }}>{val}/{max}</span>
+                            </div>
+                            <div style={{ height: 5, borderRadius: 999, background: '#E5E7EB', overflow: 'hidden' }}>
+                              <motion.div
+                                initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.8, delay: 0.1 }}
+                                style={{ height: '100%', borderRadius: 999, background: color }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                  <div style={{ position: 'absolute', bottom: 8, left: 12, width: 40, height: 4, borderRadius: 2, background: result.bannerDesign.accent || '#C9922A' }} />
-                </div>
-                <p style={{ fontSize: 12, color: '#9CA3AF', marginTop: 8 }}>احفظ هذا التصميم كـ screenshot لاستخدامه كبانر LinkedIn</p>
-              </div>
-            )}
 
-            {/* PRINT BUTTON */}
-            <div style={{ textAlign: 'center', marginTop: 24 }} className="no-print">
-              <button onClick={() => window.print()}
-                style={{ padding: '12px 32px', borderRadius: 10, border: '1px solid #E5E7EB', background: '#fff', color: '#374151', fontSize: 14, fontWeight: 700, fontFamily: 'Cairo', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                <Printer size={18} /> طباعة التقرير
-              </button>
+                  {/* Strengths + Weaknesses */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 14 }}>
+                    <div style={{ background: '#ECFDF5', border: '1px solid #A7F3D0', borderRadius: 14, padding: 18 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                        <CheckCircle size={18} style={{ color: '#059669' }} />
+                        <span style={{ fontFamily: 'Cairo', fontWeight: 900, fontSize: 14, color: '#065F46' }}>
+                          {t('profileAnalysis.strengths', 'نقاط القوة')}
+                        </span>
+                      </div>
+                      {(result.strengths || []).map((s, i) => (
+                        <div key={i} style={{ fontSize: 13, color: '#065F46', marginBottom: 8, paddingInlineStart: 10, borderInlineStart: '3px solid #059669', lineHeight: 1.6, fontFamily: 'Cairo' }}>{s}</div>
+                      ))}
+                    </div>
+                    <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 14, padding: 18 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                        <XCircle size={18} style={{ color: '#DC2626' }} />
+                        <span style={{ fontFamily: 'Cairo', fontWeight: 900, fontSize: 14, color: '#991B1B' }}>
+                          {t('profileAnalysis.weaknesses', 'نقاط الضعف')}
+                        </span>
+                      </div>
+                      {(result.weaknesses || []).map((w, i) => (
+                        <div key={i} style={{ fontSize: 13, color: '#991B1B', marginBottom: 8, paddingInlineStart: 10, borderInlineStart: '3px solid #DC2626', lineHeight: 1.6, fontFamily: 'Cairo' }}>{w}</div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Missing Sections */}
+                  {result.missingSections && result.missingSections.length > 0 && (
+                    <div style={{ background: '#FFFBEB', borderRadius: 14, border: '1px solid #FDE68A', padding: 16 }}>
+                      <div style={{ fontFamily: 'Cairo', fontWeight: 900, fontSize: 13, color: '#92400E', marginBottom: 10 }}>
+                        {t('profileAnalysis.missing', 'أقسام مفقودة من ملفك')}
+                      </div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                        {result.missingSections.map((s, i) => (
+                          <span key={i} style={{ background: '#FEF3C7', color: '#92400E', padding: '4px 12px', borderRadius: 6, fontSize: 12, fontWeight: 800, fontFamily: 'Cairo' }}>{s}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Action Checklist */}
+                  {(result.actionChecklist || []).length > 0 && (
+                    <div style={{ background: '#fff', border: '1px solid var(--wsl-border, #E5E7EB)', borderRadius: 16, padding: 20, boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
+                      <div style={{ fontFamily: 'Cairo', fontWeight: 900, fontSize: 15, color: 'var(--wsl-ink)', marginBottom: 8 }}>
+                        {t('profileAnalysis.checklist', 'قائمة المهام')}
+                      </div>
+                      <div style={{ background: '#F3F4F6', borderRadius: 8, height: 6, marginBottom: 12, overflow: 'hidden' }}>
+                        <motion.div
+                          animate={{ width: totalActions > 0 ? `${(checkedCount / totalActions) * 100}%` : '0%' }}
+                          style={{ height: '100%', background: 'linear-gradient(90deg, #0A8F84, #12B5A8)', borderRadius: 8, transition: 'width 0.3s' }}
+                        />
+                      </div>
+                      <p style={{ fontSize: 11, color: '#6B7280', marginBottom: 12, fontFamily: 'Cairo' }}>{checkedCount} / {totalActions}</p>
+                      {result.actionChecklist.map((item, i) => {
+                        const checked = checkedItems[i] || false;
+                        const prColor = item.priority === 'high' ? '#DC2626' : item.priority === 'medium' ? '#D97706' : '#059669';
+                        const prBg = item.priority === 'high' ? '#FEF2F2' : item.priority === 'medium' ? '#FFFBEB' : '#ECFDF5';
+                        return (
+                          <div key={i} onClick={() => setCheckedItems(prev => ({ ...prev, [i]: !prev[i] }))}
+                            style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderRadius: 10, border: '1px solid var(--wsl-border, #E5E7EB)', marginBottom: 8, cursor: 'pointer', opacity: checked ? 0.5 : 1, transition: 'opacity 0.2s' }}>
+                            <div style={{ width: 20, height: 20, borderRadius: 6, border: '2px solid ' + (checked ? '#0A8F84' : '#D1D5DB'), background: checked ? '#0A8F84' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                              {checked && <Check size={12} color="#fff" />}
+                            </div>
+                            <span style={{ flex: 1, fontSize: 13, color: '#1F2937', textDecoration: checked ? 'line-through' : 'none', fontFamily: 'Cairo' }}>{item.action}</span>
+                            <span style={{ fontSize: 10, color: '#6B7280', fontFamily: 'Inter', flexShrink: 0 }}>{item.time}</span>
+                            <span style={{ fontSize: 10, fontWeight: 800, color: prColor, background: prBg, padding: '2px 8px', borderRadius: 4, flexShrink: 0, fontFamily: 'Cairo' }}>
+                              {item.priority === 'high' ? 'عاجل' : item.priority === 'medium' ? 'متوسط' : 'منخفض'}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Recommendation Template */}
+                  {result.recommendationTemplate && (
+                    <div style={{ background: 'linear-gradient(135deg, #064E49, #0A8F84)', borderRadius: 16, padding: 20, color: '#fff' }}>
+                      <div style={{ fontFamily: 'Cairo', fontWeight: 900, fontSize: 14, marginBottom: 10 }}>
+                        {t('profileAnalysis.recTemplate', 'قالب طلب توصية')}
+                      </div>
+                      <div style={{ background: 'rgba(255,255,255,0.1)', borderRadius: 10, padding: 14, fontSize: 13, lineHeight: 1.8, position: 'relative', fontFamily: 'Cairo' }}>
+                        {result.recommendationTemplate}
+                        <button onClick={() => { navigator.clipboard.writeText(result.recommendationTemplate); toast.push('success', t('posts.copied', 'تم النسخ')); }}
+                          style={{ position: 'absolute', top: 8, insetInlineStart: 8, background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: 6, padding: 4, cursor: 'pointer' }}>
+                          <Copy size={13} color="#fff" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* New Analysis Button */}
+                  <div style={{ display: 'flex', gap: 10, paddingTop: 4 }}>
+                    <button onClick={() => { setResult(null); setUrl(''); setImageBase64(''); setImagePreview(''); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                      style={{ padding: '10px 20px', borderRadius: 10, border: '1px solid var(--wsl-border, #E5E7EB)', background: '#fff', color: 'var(--wsl-ink-2)', fontSize: 13, fontWeight: 800, fontFamily: 'Cairo', cursor: 'pointer' }}>
+                      {t('profileAnalysis.newAnalysis', 'تحليل جديد')}
+                    </button>
+                    <button onClick={() => window.print()}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '10px 20px', borderRadius: 10, border: '1px solid var(--wsl-border, #E5E7EB)', background: '#fff', color: 'var(--wsl-ink-2)', fontSize: 13, fontWeight: 800, fontFamily: 'Cairo', cursor: 'pointer' }}>
+                      <Printer size={14} /> {t('profileAnalysis.print', 'طباعة')}
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* ── Plan Tab ── */}
+              {tab === 'plan' && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                  {result.upgradePlan?.headline && <UpgradeSection title={t('profileAnalysis.headline', 'العنوان الوظيفي (Headline)')} data={result.upgradePlan.headline} />}
+                  {result.upgradePlan?.about && <UpgradeSection title={t('profileAnalysis.about', 'النبذة التعريفية (About)')} data={result.upgradePlan.about} />}
+                  {result.upgradePlan?.experience && <UpgradeSection title={t('profileAnalysis.experience', 'الخبرات المهنية (Experience)')} data={result.upgradePlan.experience} />}
+                  {result.bannerDesign && (
+                    <div style={{ background: result.bannerDesign.background || 'linear-gradient(135deg, #064E49, #0A8F84)', borderRadius: 14, padding: '28px 20px', color: '#fff', marginTop: 14 }}>
+                      <div style={{ fontWeight: 900, fontSize: 20, marginBottom: 4, fontFamily: 'Cairo' }}>{result.bannerDesign.mainText}</div>
+                      <div style={{ fontSize: 13, opacity: 0.85, fontFamily: 'Inter' }}>{result.bannerDesign.tagline}</div>
+                      <div style={{ marginTop: 12, width: 40, height: 4, borderRadius: 2, background: result.bannerDesign.accent || '#C9922A' }} />
+                      <p style={{ fontSize: 11, opacity: 0.7, marginTop: 10, fontFamily: 'Cairo' }}>{t('profileAnalysis.bannerTip', 'احفظ هذا كـ screenshot للاستخدام كبانر')}</p>
+                    </div>
+                  )}
+                </motion.div>
+              )}
+
+              {/* ── History Tab ── */}
+              {tab === 'history' && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                  {historyLoading ? (
+                    <div style={{ textAlign: 'center', padding: 40 }}>
+                      <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }} style={{ display: 'inline-block' }}>
+                        <Loader2 size={24} color="#0A8F84" />
+                      </motion.div>
+                    </div>
+                  ) : history.length === 0 ? (
+                    <div style={{ background: '#fff', border: '2px dashed var(--wsl-border, #E5E7EB)', borderRadius: 16, padding: '50px 24px', textAlign: 'center' }}>
+                      <div style={{ width: 64, height: 64, borderRadius: 16, margin: '0 auto 16px', background: 'linear-gradient(135deg, rgba(10,143,132,0.1), rgba(14,165,233,0.1))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Clock size={28} color="#0A8F84" />
+                      </div>
+                      <div style={{ fontFamily: 'Cairo', fontWeight: 900, fontSize: 16, color: 'var(--wsl-ink)', marginBottom: 6 }}>
+                        {t('profileAnalysis.historyEmpty', 'لا يوجد سجل تحليلات بعد')}
+                      </div>
+                      <div style={{ fontFamily: 'Cairo', fontSize: 13, color: 'var(--wsl-ink-3)' }}>
+                        {t('profileAnalysis.historyEmptySub', 'ابدأ بتحليل ملفك لتظهر نتائجك هنا')}
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      {history.map((h, idx) => {
+                        const color = (h.score || 0) >= 80 ? '#059669' : (h.score || 0) >= 60 ? '#D97706' : '#DC2626';
+                        return (
+                          <motion.div key={h.id}
+                            initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.04 }}
+                            onClick={() => { setResult(h.result); setTab('overview'); }}
+                            style={{ background: '#fff', border: '1px solid var(--wsl-border, #E5E7EB)', borderRadius: 12, padding: '14px 18px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.04)', transition: 'box-shadow 200ms' }}
+                          >
+                            <div style={{ width: 48, height: 48, borderRadius: 12, background: color + '15', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                              <span style={{ fontSize: 18, fontWeight: 900, color, fontFamily: 'Inter' }}>{h.score || '?'}</span>
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--wsl-ink)', fontFamily: 'Cairo', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {h.url || t('profileAnalysis.imageAnalysis', 'تحليل عبر صورة')}
+                              </div>
+                              <div style={{ fontSize: 11, color: 'var(--wsl-ink-3)', fontFamily: 'Cairo', marginTop: 2 }}>
+                                {h.created_at ? new Date(h.created_at).toLocaleDateString(isAr ? 'ar-SA' : 'en-US') : ''}
+                              </div>
+                            </div>
+                            <TrendingUp size={16} style={{ color: '#0A8F84', flexShrink: 0 }} />
+                          </motion.div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </motion.div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Empty state when no analysis yet */}
+        {!result && !loading && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+            style={{ background: '#fff', border: '2px dashed var(--wsl-border, #E5E7EB)', borderRadius: 16, padding: '50px 24px', textAlign: 'center' }}
+          >
+            <div style={{ width: 72, height: 72, borderRadius: 20, margin: '0 auto 18px', background: 'linear-gradient(135deg, rgba(10,143,132,0.1), rgba(14,165,233,0.1))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <UserCheck size={32} color="#0A8F84" />
             </div>
-          </>
+            <div style={{ fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 900, fontSize: 18, color: 'var(--wsl-ink)', marginBottom: 6 }}>
+              {t('profileAnalysis.empty', 'ابدأ بتحليل ملفك المهني')}
+            </div>
+            <div style={{ fontFamily: 'Cairo, Inter, sans-serif', fontSize: 13, color: 'var(--wsl-ink-3)' }}>
+              {t('profileAnalysis.emptySub', 'أدخل رابط LinkedIn أو ارفع صورة الملف املف الشخصي للحصول على تقييم شامل')}
+            </div>
+          </motion.div>
         )}
       </div>
     </DashboardLayout>
   );
 }
+
+const labelStyle: React.CSSProperties = {
+  display: 'block', marginBottom: 6,
+  fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 800, fontSize: 12,
+  color: 'var(--wsl-ink-2)',
+};
 
 export { ProfileAnalysis };
