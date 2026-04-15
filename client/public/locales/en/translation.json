@@ -23,7 +23,8 @@
     "tokens": "Tokens",
     "profile": "Profile",
     "knowledge": "Knowledge Base",
-    "setup": "Account Setup"
+    "setup": "Account Setup",
+    "posts": "Posts"
   },
   "hero": {
     "title": "Multiply Your Job Opportunities Effortlessly",
@@ -761,5 +762,53 @@
     "deselectAll": "Deselect All",
     "prospectsFound": "prospects found",
     "noEmailWarning": "No email available"
+  },
+  "posts": {
+    "title": "Posts",
+    "subtitle": "Create and publish professional LinkedIn posts with AI",
+    "newPost": "New Post",
+    "aiAssistant": "AI Writing Assistant",
+    "topic": "Topic",
+    "topicPlaceholder": "Example: Tips for professional networking in Saudi Arabia",
+    "tone": "Tone",
+    "tones": {
+      "professional": "Professional",
+      "inspirational": "Inspirational",
+      "educational": "Educational",
+      "casual": "Casual"
+    },
+    "language": "Language",
+    "langs": {
+      "ar": "Arabic",
+      "en": "English",
+      "bilingual": "Bilingual"
+    },
+    "includeHashtags": "Include hashtags",
+    "generate": "Generate Post",
+    "generating": "Generating...",
+    "tokenCost": "{{cost}} tokens",
+    "copy": "Copy",
+    "copied": "Copied",
+    "edit": "Edit",
+    "delete": "Delete",
+    "confirmDelete": "Are you sure you want to delete this post?",
+    "saveDraft": "Save as draft",
+    "schedule": "Schedule",
+    "saved": "Saved",
+    "deleted": "Deleted",
+    "tabs": {
+      "all": "All",
+      "drafts": "Drafts",
+      "scheduled": "Scheduled",
+      "posted": "Posted"
+    },
+    "empty": "You haven't created any posts yet",
+    "emptyDescription": "Start by generating your first post with AI",
+    "startWriting": "Start writing",
+    "aiBadge": "AI generated",
+    "errorGenerating": "An error occurred while generating",
+    "notEnoughTokens": "You don’t have enough tokens",
+    "quickAction": "Create a LinkedIn post",
+    "quickActionDesc": "With AI in seconds"
   }
 }

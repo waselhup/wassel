@@ -23,7 +23,8 @@
     "tokens": "الرموز",
     "profile": "الملف الشخصي",
     "knowledge": "قاعدة المعرفة",
-    "setup": "الإعدادات الأولية"
+    "setup": "الإعدادات الأولية",
+    "posts": "المنشورات"
   },
   "hero": {
     "title": "ضاعف فرص توظيفك بدون عناء",
@@ -703,5 +704,53 @@
     "deselectAll": "إلغاء التحديد",
     "prospectsFound": "عميل محتمل",
     "noEmailWarning": "لا يوجد بريد إلكتروني"
+  },
+  "posts": {
+    "title": "المنشورات",
+    "subtitle": "أنشئ ونشر منشورات LinkedIn احترافية بالذكاء الاصطناعي",
+    "newPost": "منشور جديد",
+    "aiAssistant": "مساعد الكتابة الذكي",
+    "topic": "الموضوع",
+    "topicPlaceholder": "مثال: نصائح للتواصل المهني في السعودية",
+    "tone": "الأسلوب",
+    "tones": {
+      "professional": "احترافي",
+      "inspirational": "إلهامي",
+      "educational": "تعليمي",
+      "casual": "غير رسمي"
+    },
+    "language": "اللغة",
+    "langs": {
+      "ar": "عربي",
+      "en": "إنجليزي",
+      "bilingual": "ثنائي اللغة"
+    },
+    "includeHashtags": "إضافة هاشتاقات",
+    "generate": "توليد المنشور",
+    "generating": "جاري التوليد...",
+    "tokenCost": "{{cost}} توكنز",
+    "copy": "نسخ",
+    "copied": "تم النسخ",
+    "edit": "تعديل",
+    "delete": "حذف",
+    "confirmDelete": "هل أنت متأكد من حذف هذا المنشور؟",
+    "saveDraft": "حفظ كمسودة",
+    "schedule": "جدولة",
+    "saved": "تم الحفظ",
+    "deleted": "تم الحذف",
+    "tabs": {
+      "all": "الكل",
+      "drafts": "مسودات",
+      "scheduled": "مجدولة",
+      "posted": "منشورة"
+    },
+    "empty": "لم تنشئ أي منشور بعد",
+    "emptyDescription": "ابدأ بتوليد منشورك الأول باستخدام الذكاء الاصطناعي",
+    "startWriting": "ابدأ الكتابة",
+    "aiBadge": "مولّد بالذكاء الاصطناعي",
+    "errorGenerating": "حدث خطأ أثناء التوليد",
+    "notEnoughTokens": "ليس لديك توكنز كافية",
+    "quickAction": "أنشئ منشور LinkedIn",
+    "quickActionDesc": "بالذكاء الاصطناعي خلال ثوانٍ"
   }
 }

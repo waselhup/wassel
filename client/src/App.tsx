@@ -46,6 +46,7 @@ const Analytics = lazy(() => import('./pages/Analytics'));
 const About = lazy(() => import('./pages/About'));
 const Blog = lazy(() => import('./pages/Blog'));
 const ProfileAnalysis = lazy(() => import('./pages/ProfileAnalysis'));
+const Posts = lazy(() => import('./pages/Posts'));
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -106,6 +107,7 @@ const AppRoutes: React.FC = () => {
   const [matchBlog] = useRoute('/blog');
   const [matchAppAnalytics] = useRoute('/app/analytics');
   const [matchAppProfileAnalysis] = useRoute('/app/profile-analysis');
+  const [matchAppPosts] = useRoute('/app/posts');
 
   if (match) return <LandingPage />;
   if (matchLogin) return <Login />;
@@ -190,6 +192,12 @@ const AppRoutes: React.FC = () => {
     return (
       <ProtectedRoute>
         <ProfileAnalysis />
+      </ProtectedRoute>
+    );
+  if (matchAppPosts)
+    return (
+      <ProtectedRoute>
+        <Posts />
       </ProtectedRoute>
     );
   if (matchAppAnalytics)

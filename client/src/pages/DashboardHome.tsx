@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { Coins, BarChart2, FileText, Send, TrendingUp, Clock, Linkedin, ArrowUpRight, Activity, Star } from 'lucide-react';
+import { Coins, BarChart2, FileText, Send, TrendingUp, Clock, Linkedin, ArrowUpRight, Activity, Star, Sparkles } from 'lucide-react';
 import { WasselLogo } from '../components/WasselLogo';
 import DashboardLayout from "@/components/DashboardLayout";
 import { useAuth } from "@/contexts/AuthContext";
@@ -97,6 +97,9 @@ export default function DashboardHome() {
     { key: "campaign", title: t("home.actions.campaign.title", "أطلق حملة جديدة"),
       desc: t("home.actions.campaign.desc", "ابحث عن متخذي القرار وأرسل إيميلات ذكية"),
       href: "/app/campaigns/new", icon: Send, color: "from-[var(--wsl-teal)] to-[var(--wsl-gold)]" },
+    { key: "posts", title: t("posts.quickAction", "أنشئ منشور LinkedIn"),
+      desc: t("posts.quickActionDesc", "بالذكاء الاصطناعي خلال ثوانٍ"),
+      href: "/app/posts", icon: Sparkles, color: "from-[#0A8F84] to-[#0ea5e9]" },
   ];
 
   const activity: ActivityItem[] = [
