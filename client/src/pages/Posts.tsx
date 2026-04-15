@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import {
   Sparkles, Copy, Edit, Trash2, Calendar, FileText,
-  PenSquare, Check, X, Loader2, Hash, ChevronDown, MoreVertical,
+  PenSquare, Check, X, Loader2, Hash, ChevronDown, MoreVertical, Linkedin,
 } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/contexts/AuthContext';
@@ -244,6 +244,55 @@ export default function Posts() {
       navigator.clipboard.writeText(text);
       toast.push('success', t('posts.copied'));
     } catch { /* noop */ }
+  }
+
+  async function handlePostToLinkedIn(content: string, hashtags: string[]) {
+    const fullContent = hashtags.length > 0
+      ? `${content}\n\n${hashtags.map((h) => (String(h).startsWith('#') ? h : `#${h}`)).join(' ')}`
+      : content;
+    const linkedInUrl = `https://www.linkedin.com/feed/?shareActive=true&text=${encodeURIComponent(fullContent)}`;
+    try {
+      const token = await getAuthToken();
+      if (token) {
+        await fetch('/api/posts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            content: fullContent,
+            ai_generated: true,
+            status: 'posted',
+            posted_to_linkedin: true,
+            posted_at: new Date().toISOString(),
+          }),
+        });
+        void loadPosts();
+      }
+      toast.push('success', t('posts.openingLinkedIn'));
+      window.open(linkedInUrl, '_blank');
+    } catch {
+      window.open(linkedInUrl, '_blank');
+    }
+  }
+
+  async function handlePostFromCard(post: Post) {
+    const fullContent = post.hashtags && post.hashtags.length > 0
+      ? `${post.content}\n\n${post.hashtags.map((h) => (String(h).startsWith('#') ? h : `#${h}`)).join(' ')}`
+      : post.content;
+    const linkedInUrl = `https://www.linkedin.com/feed/?shareActive=true&text=${encodeURIComponent(fullContent)}`;
+    try {
+      const token = await getAuthToken();
+      if (token) {
+        await fetch(`/api/posts/${post.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ status: 'posted' }),
+        });
+        void loadPosts();
+      }
+      toast.push('success', t('posts.openingLinkedIn'));
+    } catch { /* noop */ }
+    window.open(linkedInUrl, '_blank');
+    setMenuOpenId(null);
   }
 
   const counts = useMemo(() => ({
@@ -572,6 +621,18 @@ export default function Posts() {
 
               {/* Action bar */}
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, paddingTop: 14, borderTop: '1px solid var(--wsl-border, #E5E7EB)' }}>
+                <button
+                  onClick={() => handlePostToLinkedIn(preview.content, preview.hashtags)}
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 6,
+                    padding: '8px 16px', borderRadius: 9, border: 'none',
+                    background: '#0077B5', color: '#fff',
+                    fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 900, fontSize: 13,
+                    cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,119,181,0.3)',
+                  }}
+                >
+                  <Linkedin size={14} /> {t('posts.postToLinkedIn')}
+                </button>
                 <button onClick={() => copyToClipboard(
                   preview.content + (preview.hashtags.length ? '\n\n' + preview.hashtags.map((h) => (String(h).startsWith('#') ? h : '#' + h)).join(' ') : '')
                 )} style={actionBtn}>
@@ -586,6 +647,17 @@ export default function Posts() {
                 <button onClick={() => savePost('scheduled')} style={{ ...actionBtn, background: '#FEF3C7', color: '#92400E', borderColor: '#FDE68A' }}>
                   <Calendar size={14} /> {t('posts.schedule')}
                 </button>
+              </div>
+              {/* LinkedIn tip banner */}
+              <div style={{
+                marginTop: 12, padding: '10px 14px', borderRadius: 10,
+                background: '#EFF6FF', border: '1px solid #BFDBFE',
+                display: 'flex', alignItems: 'center', gap: 8,
+                fontSize: 12, color: '#1D4ED8',
+                fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 700,
+              }}>
+                <Linkedin size={14} style={{ flexShrink: 0 }} />
+                {t('posts.linkedInTip')}
               </div>
             </motion.div>
           )}
@@ -666,6 +738,9 @@ export default function Posts() {
                         borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,0.1)',
                         overflow: 'hidden', zIndex: 10,
                       }}>
+                        <button onClick={() => handlePostFromCard(p)} style={{ ...menuItem, color: '#0077B5' }}>
+                          <Linkedin size={13} /> {t('posts.postToLinkedIn')}
+                        </button>
                         <button onClick={() => { copyToClipboard(p.content); setMenuOpenId(null); }} style={menuItem}>
                           <Copy size={13} /> {t('posts.copy')}
                         </button>

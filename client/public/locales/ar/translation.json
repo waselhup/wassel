@@ -751,6 +751,10 @@
     "errorGenerating": "حدث خطأ أثناء التوليد",
     "notEnoughTokens": "ليس لديك توكنز كافية",
     "quickAction": "أنشئ منشور LinkedIn",
-    "quickActionDesc": "بالذكاء الاصطناعي خلال ثوانٍ"
+    "quickActionDesc": "بالذكاء الاصطناعي خلال ثوانٍ",
+    "postToLinkedIn": "نشر في LinkedIn",
+    "openingLinkedIn": "جارٍ فتح LinkedIn...",
+    "linkedInWillOpen": "سيفتح LinkedIn في نافذة جديدة مع منشورك جاهزاً للنشر",
+    "linkedInTip": "ملاحظة: ستفتح صفحة LinkedIn مع نص المنشور جاهز — فقط اضغط Post"
   }
 }

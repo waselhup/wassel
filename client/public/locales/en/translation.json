@@ -809,6 +809,10 @@
     "errorGenerating": "An error occurred while generating",
     "notEnoughTokens": "You don’t have enough tokens",
     "quickAction": "Create a LinkedIn post",
-    "quickActionDesc": "With AI in seconds"
+    "quickActionDesc": "With AI in seconds",
+    "postToLinkedIn": "Post to LinkedIn",
+    "openingLinkedIn": "Opening LinkedIn...",
+    "linkedInWillOpen": "LinkedIn will open in a new tab with your post ready to publish",
+    "linkedInTip": "Note: LinkedIn will open with your post text ready — just click Post"
   }
 }
