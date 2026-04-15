@@ -1,0 +1,19 @@
+▲ [WARNING] The CommonJS "module" variable is treated as a global variable in an ECMAScript module and may not work as expected [commonjs-variable-in-esm]
+
+    server/_core/vercel.ts:109:0:
+      109 │ module.exports = (req: IncomingMessage, res: ServerResponse) => {
+          ╵ ~~~~~~
+
+  This file is considered to be an ECMAScript module because the enclosing "package.json" file sets the type of this file to "module":
+
+    package.json:5:10:
+      5 │   "type": "module",
+        ╵           ~~~~~~~~
+
+  Node's package format requires that CommonJS files in a "type": "module" package use the ".cjs" file extension. If you are using TypeScript, you can use the ".cts" file extension with esbuild instead.
+
+1 warning
+
+  api\index.js  2.2mb
+
+Done in 1932ms

@@ -1,0 +1,4 @@
+[master f6ecd5a] chore: trigger redeploy
+To https://github.com/waselhup/wassel.git
+   2c1e945..f6ecd5a  master -> master
+DONE 

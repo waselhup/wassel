@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { FileText, Download, Loader2, CheckCircle2, Briefcase, Target, Palette, Upload } from 'lucide-react';
+import { FileText, Download, Loader2, CheckCircle2, Briefcase, Target, Palette, Upload, Star } from 'lucide-react';
 import { WasselLogo } from '../components/WasselLogo';
 import DashboardLayout from "@/components/DashboardLayout";
 import { trpc } from "@/lib/trpc";

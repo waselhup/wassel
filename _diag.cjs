@@ -1,0 +1,11 @@
+const fs = require('fs');
+const p = process.argv[2];
+const c = fs.readFileSync(p, 'utf8');
+const arabic = [...c.matchAll(/"[^"]*[\u0600-\u06FF][^"]*"/g)];
+console.log('Arabic count:', arabic.length);
+arabic.slice(0, 8).forEach(m => console.log('  AR:', m[0].slice(0, 120)));
+const r = [...c.matchAll(/[\uFFFD]/g)];
+console.log('U+FFFD replacement char count:', r.length);
+const buf = fs.readFileSync(p);
+console.log('First 6 bytes hex:', [...buf.slice(0, 6)].map(b => b.toString(16).padStart(2, '0')).join(' '));
+console.log('Size:', buf.length);

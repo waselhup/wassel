@@ -1,0 +1,7 @@
+FIXED: client/src/components/landing/Features.tsx
+FIXED: client/src/pages/CVTailor.tsx
+FIXED: client/src/pages/DashboardHome.tsx
+FIXED: client/src/pages/Tokens.tsx
+FIXED ProfileAnalysis line 128
+FIXED mutateAsync call
+trpcMutation exported: true

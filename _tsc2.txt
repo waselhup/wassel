@@ -1,0 +1,11 @@
+client/src/components/DashboardLayout.tsx(9,24): error TS6133: 'X' is declared but its value is never read.
+client/src/components/DashboardLayout.tsx(9,40): error TS6133: 'Settings' is declared but its value is never read.
+client/src/components/landing/Features.tsx(5,1): error TS6133: 'WasselLogo' is declared but its value is never read.
+client/src/components/landing/VideoDemo.tsx(29,13): error TS7030: Not all code paths return a value.
+client/src/components/WasselLogo.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+client/src/pages/DashboardHome.tsx(6,1): error TS6133: 'WasselLogo' is declared but its value is never read.
+client/src/pages/ProfileAnalysis.tsx(4,1): error TS6133: 'trpc' is declared but its value is never read.
+client/src/pages/ProfileAnalysis.tsx(117,9): error TS6133: 't' is declared but its value is never read.
+client/src/pages/ProfileAnalysis.tsx(157,9): error TS2353: Object literal may only specify known properties, and 'linkedinUrl' does not exist in type '{ imageBase64?: string | undefined; mediaType?: string | undefined; profileUrl?: string | undefined; }'.
+client/src/pages/ResetPassword.tsx(51,40): error TS6133: 'data' is declared but its value is never read.
+client/src/pages/Tokens.tsx(5,1): error TS6133: 'WasselLogo' is declared but its value is never read.

@@ -1,0 +1,4 @@
+Arabic count: 0
+U+FFFD replacement char count: 0
+First 6 bytes hex: 69 6d 70 6f 72 74
+Size: 7251

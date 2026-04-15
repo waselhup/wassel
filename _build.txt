@@ -1,0 +1,65 @@
+[36mvite v6.4.2 [32mbuilding for production...[36m[39m
+transforming...
+[32m✓[39m 2364 modules transformed.
+rendering chunks...
+[33m[plugin vite:reporter] 
+(!) C:/Users/WIN11-24H2GPT/Desktop/wassel-v2/client/src/lib/analytics.ts is dynamically imported by C:/Users/WIN11-24H2GPT/Desktop/wassel-v2/client/src/contexts/AuthContext.tsx but also statically imported by C:/Users/WIN11-24H2GPT/Desktop/wassel-v2/client/src/main.tsx, dynamic import will not move module into another chunk.
+[39m
+computing gzip size...
+[2m../dist/[22m[32mindex.html                           [39m[1m[2m  0.82 kB[22m[1m[22m[2m │ gzip:   0.45 kB[22m
+[2m../dist/[22m[35massets/index-s1OjynW8.css            [39m[1m[2m 56.51 kB[22m[1m[22m[2m │ gzip:   9.81 kB[22m
+[2m../dist/[22m[36massets/chevron-up-DjU1xlBL.js        [39m[1m[2m  0.34 kB[22m[1m[22m[2m │ gzip:   0.28 kB[22m[2m │ map:     0.76 kB[22m
+[2m../dist/[22m[36massets/chevron-down-DSwfJYzk.js      [39m[1m[2m  0.35 kB[22m[1m[22m[2m │ gzip:   0.28 kB[22m[2m │ map:     0.78 kB[22m
+[2m../dist/[22m[36massets/x-DhD666fA.js                 [39m[1m[2m  0.36 kB[22m[1m[22m[2m │ gzip:   0.28 kB[22m[2m │ map:     0.81 kB[22m
+[2m../dist/[22m[36massets/filter-B5HHuR4L.js            [39m[1m[2m  0.37 kB[22m[1m[22m[2m │ gzip:   0.30 kB[22m[2m │ map:     0.78 kB[22m
+[2m../dist/[22m[36massets/search-naXjk66B.js            [39m[1m[2m  0.39 kB[22m[1m[22m[2m │ gzip:   0.30 kB[22m[2m │ map:     0.88 kB[22m
+[2m../dist/[22m[36massets/arrow-up-right-CDdfUARf.js    [39m[1m[2m  0.39 kB[22m[1m[22m[2m │ gzip:   0.30 kB[22m[2m │ map:     0.89 kB[22m
+[2m../dist/[22m[36massets/clock-D2r1NyUB.js             [39m[1m[2m  0.40 kB[22m[1m[22m[2m │ gzip:   0.31 kB[22m[2m │ map:     0.89 kB[22m
+[2m../dist/[22m[36massets/briefcase-CpeNfnpr.js         [39m[1m[2m  0.44 kB[22m[1m[22m[2m │ gzip:   0.33 kB[22m[2m │ map:     0.98 kB[22m
+[2m../dist/[22m[36massets/dollar-sign-C8Of0iuu.js       [39m[1m[2m  0.44 kB[22m[1m[22m[2m │ gzip:   0.33 kB[22m[2m │ map:     0.97 kB[22m
+[2m../dist/[22m[36massets/target-BzOhzGey.js            [39m[1m[2m  0.44 kB[22m[1m[22m[2m │ gzip:   0.30 kB[22m[2m │ map:     1.05 kB[22m
+[2m../dist/[22m[36massets/activity-7qfYvVcN.js          [39m[1m[2m  0.45 kB[22m[1m[22m[2m │ gzip:   0.33 kB[22m[2m │ map:     0.90 kB[22m
+[2m../dist/[22m[36massets/upload-Cl3TriIU.js            [39m[1m[2m  0.47 kB[22m[1m[22m[2m │ gzip:   0.35 kB[22m[2m │ map:     1.05 kB[22m
+[2m../dist/[22m[36massets/download-zI9b97Pd.js          [39m[1m[2m  0.48 kB[22m[1m[22m[2m │ gzip:   0.35 kB[22m[2m │ map:     1.07 kB[22m
+[2m../dist/[22m[36massets/user-plus-D706hTcT.js         [39m[1m[2m  0.53 kB[22m[1m[22m[2m │ gzip:   0.37 kB[22m[2m │ map:     1.24 kB[22m
+[2m../dist/[22m[36massets/save-CBE6G4j2.js              [39m[1m[2m  0.54 kB[22m[1m[22m[2m │ gzip:   0.36 kB[22m[2m │ map:     1.10 kB[22m
+[2m../dist/[22m[36massets/input-Dv-5b2Hg.js             [39m[1m[2m  0.56 kB[22m[1m[22m[2m │ gzip:   0.37 kB[22m[2m │ map:     1.14 kB[22m
+[2m../dist/[22m[36massets/chevron-right-DC8bwkmB.js     [39m[1m[2m  0.60 kB[22m[1m[22m[2m │ gzip:   0.32 kB[22m[2m │ map:     1.43 kB[22m
+[2m../dist/[22m[36massets/badge-CgSuVAnc.js             [39m[1m[2m  0.64 kB[22m[1m[22m[2m │ gzip:   0.41 kB[22m[2m │ map:     1.56 kB[22m
+[2m../dist/[22m[36massets/copy-p_QmcnZ9.js              [39m[1m[2m  0.76 kB[22m[1m[22m[2m │ gzip:   0.42 kB[22m[2m │ map:     1.76 kB[22m
+[2m../dist/[22m[36massets/settings-BcGZzmF1.js          [39m[1m[2m  0.94 kB[22m[1m[22m[2m │ gzip:   0.48 kB[22m[2m │ map:     1.48 kB[22m
+[2m../dist/[22m[36massets/Blog-C67YB9xN.js              [39m[1m[2m  1.12 kB[22m[1m[22m[2m │ gzip:   0.66 kB[22m[2m │ map:     2.66 kB[22m
+[2m../dist/[22m[36massets/menu-CxrZ4rFY.js              [39m[1m[2m  1.19 kB[22m[1m[22m[2m │ gzip:   0.49 kB[22m[2m │ map:     2.88 kB[22m
+[2m../dist/[22m[36massets/Payment-3p_RMdf2.js           [39m[1m[2m  1.52 kB[22m[1m[22m[2m │ gzip:   0.60 kB[22m[2m │ map:    17.06 kB[22m
+[2m../dist/[22m[36massets/About-DDLk8MxB.js             [39m[1m[2m  1.52 kB[22m[1m[22m[2m │ gzip:   0.81 kB[22m[2m │ map:     3.89 kB[22m
+[2m../dist/[22m[36massets/trpc-vY0MukiE.js              [39m[1m[2m  1.75 kB[22m[1m[22m[2m │ gzip:   0.84 kB[22m[2m │ map:     6.19 kB[22m
+[2m../dist/[22m[36massets/index-FQTo-DH8.js             [39m[1m[2m  2.97 kB[22m[1m[22m[2m │ gzip:   1.45 kB[22m[2m │ map:    18.34 kB[22m
+[2m../dist/[22m[36massets/TermsOfService-C2rHZstj.js    [39m[1m[2m  4.13 kB[22m[1m[22m[2m │ gzip:   1.78 kB[22m[2m │ map:    12.41 kB[22m
+[2m../dist/[22m[36massets/AdminSettings-BhSUI3wl.js     [39m[1m[2m  4.37 kB[22m[1m[22m[2m │ gzip:   1.87 kB[22m[2m │ map:     9.21 kB[22m
+[2m../dist/[22m[36massets/PrivacyPolicy-gl4CDI7i.js     [39m[1m[2m  4.51 kB[22m[1m[22m[2m │ gzip:   1.88 kB[22m[2m │ map:    13.35 kB[22m
+[2m../dist/[22m[36massets/CampaignList-DSw0Auu3.js      [39m[1m[2m  5.19 kB[22m[1m[22m[2m │ gzip:   2.09 kB[22m[2m │ map:    11.82 kB[22m
+[2m../dist/[22m[36massets/CampaignReport-Bwqj8jwt.js    [39m[1m[2m  5.57 kB[22m[1m[22m[2m │ gzip:   2.19 kB[22m[2m │ map:    11.24 kB[22m
+[2m../dist/[22m[36massets/Onboarding-Bgd7J1Xo.js        [39m[1m[2m  5.82 kB[22m[1m[22m[2m │ gzip:   2.36 kB[22m[2m │ map:    12.74 kB[22m
+[2m../dist/[22m[36massets/AdminDashboard-CoYobHQH.js    [39m[1m[2m  6.39 kB[22m[1m[22m[2m │ gzip:   2.31 kB[22m[2m │ map:    13.85 kB[22m
+[2m../dist/[22m[36massets/Analytics-fo4O1Sni.js         [39m[1m[2m  6.43 kB[22m[1m[22m[2m │ gzip:   2.04 kB[22m[2m │ map:    15.83 kB[22m
+[2m../dist/[22m[36massets/Tokens-lD78uBze.js            [39m[1m[2m  6.76 kB[22m[1m[22m[2m │ gzip:   2.67 kB[22m[2m │ map:    14.63 kB[22m
+[2m../dist/[22m[36massets/AdminUsers-zNInPmWz.js        [39m[1m[2m  7.24 kB[22m[1m[22m[2m │ gzip:   2.44 kB[22m[2m │ map:    14.45 kB[22m
+[2m../dist/[22m[36massets/Pricing-DnHl2htP.js           [39m[1m[2m  7.44 kB[22m[1m[22m[2m │ gzip:   2.56 kB[22m[2m │ map:    19.19 kB[22m
+[2m../dist/[22m[36massets/Profile-DLgq2i3E.js           [39m[1m[2m  7.59 kB[22m[1m[22m[2m │ gzip:   2.90 kB[22m[2m │ map:    16.54 kB[22m
+[2m../dist/[22m[36massets/DashboardHome-DGdlE-GY.js     [39m[1m[2m  9.13 kB[22m[1m[22m[2m │ gzip:   3.35 kB[22m[2m │ map:    19.94 kB[22m
+[2m../dist/[22m[36massets/KnowledgeBase-BWrvVDlN.js     [39m[1m[2m 10.12 kB[22m[1m[22m[2m │ gzip:   3.72 kB[22m[2m │ map:    23.82 kB[22m
+[2m../dist/[22m[36massets/DashboardLayout-DRiHDYeR.js   [39m[1m[2m 10.34 kB[22m[1m[22m[2m │ gzip:   3.13 kB[22m[2m │ map:    25.16 kB[22m
+[2m../dist/[22m[36massets/AdminCampaigns-Btx1pAXE.js    [39m[1m[2m 10.85 kB[22m[1m[22m[2m │ gzip:   3.13 kB[22m[2m │ map:    27.13 kB[22m
+[2m../dist/[22m[36massets/browser-ponyfill-BOhAAqrm.js  [39m[1m[2m 11.08 kB[22m[1m[22m[2m │ gzip:   3.89 kB[22m[2m │ map:    34.14 kB[22m
+[2m../dist/[22m[36massets/CVTailor-milS0svs.js          [39m[1m[2m 12.70 kB[22m[1m[22m[2m │ gzip:   4.45 kB[22m[2m │ map:    28.22 kB[22m
+[2m../dist/[22m[36massets/CampaignNew-D6FDS2qc.js       [39m[1m[2m 15.31 kB[22m[1m[22m[2m │ gzip:   5.09 kB[22m[2m │ map:    35.68 kB[22m
+[2m../dist/[22m[36massets/ProfileAnalysis-PEHW4Wib.js   [39m[1m[2m 16.95 kB[22m[1m[22m[2m │ gzip:   5.30 kB[22m[2m │ map:    39.46 kB[22m
+[2m../dist/[22m[36massets/LinkedInAnalyzer-Ube1rBt_.js  [39m[1m[2m 18.11 kB[22m[1m[22m[2m │ gzip:   4.55 kB[22m[2m │ map:    51.47 kB[22m
+[2m../dist/[22m[36massets/button-D2oHo1_M.js            [39m[1m[2m 25.38 kB[22m[1m[22m[2m │ gzip:   8.70 kB[22m[2m │ map:   128.36 kB[22m
+[2m../dist/[22m[36massets/index-B4d2BKne.js             [39m[1m[33m841.61 kB[39m[22m[2m │ gzip: 255.42 kB[22m[2m │ map: 3,564.42 kB[22m
+[33m
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.[39m
+[32m✓ built in 11.21s[39m

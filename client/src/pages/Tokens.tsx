@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { Coins, Zap, Crown, Check, TrendingUp, ArrowDownRight, ArrowUpRight } from 'lucide-react';
+import { Coins, Zap, Crown, Check, TrendingUp, ArrowDownRight, ArrowUpRight, Star } from 'lucide-react';
 import { WasselLogo } from '../components/WasselLogo';
 import DashboardLayout from "@/components/DashboardLayout";
 import { trpc } from "@/lib/trpc";

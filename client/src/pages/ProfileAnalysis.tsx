@@ -125,7 +125,11 @@ export default function ProfileAnalysis() {
   const [checkedItems, setCheckedItems] = useState<Record<number, boolean>>({});
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const analyzeDeep = trpc.linkedin.analyzeDeep.useMutation();
+  // analyzeDeep client method (uses fetch wrapper)
+  const callAnalyzeDeep = async (input: any) => {
+    const { trpcMutation } = await import('../lib/trpc');
+    return trpcMutation('linkedin.analyzeDeep', input);
+  };
 
   const handleFile = (file: File) => {
     if (!file.type.startsWith('image/')) return;
@@ -149,7 +153,7 @@ export default function ProfileAnalysis() {
     if (!url && !imageBase64) return;
     setLoading(true); setError(''); setResult(null); setCheckedItems({});
     try {
-      const res = await analyzeDeep.mutateAsync({
+      const res = await callAnalyzeDeep({
         linkedinUrl: url || undefined,
         imageBase64: imageBase64 || undefined,
         mediaType,

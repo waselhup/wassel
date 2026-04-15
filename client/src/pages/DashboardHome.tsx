@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { Coins, BarChart2, FileText, Send, TrendingUp, Clock, Linkedin, ArrowUpRight, Activity } from 'lucide-react';
+import { Coins, BarChart2, FileText, Send, TrendingUp, Clock, Linkedin, ArrowUpRight, Activity, Star } from 'lucide-react';
 import { WasselLogo } from '../components/WasselLogo';
 import DashboardLayout from "@/components/DashboardLayout";
 import { useAuth } from "@/contexts/AuthContext";

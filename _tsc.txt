@@ -1,0 +1,14 @@
+client/src/components/DashboardLayout.tsx(9,24): error TS6133: 'X' is declared but its value is never read.
+client/src/components/DashboardLayout.tsx(9,40): error TS6133: 'Settings' is declared but its value is never read.
+client/src/components/landing/Features.tsx(5,1): error TS6133: 'WasselLogo' is declared but its value is never read.
+client/src/components/landing/Features.tsx(17,13): error TS2304: Cannot find name 'Star'.
+client/src/components/landing/VideoDemo.tsx(29,13): error TS7030: Not all code paths return a value.
+client/src/components/WasselLogo.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+client/src/pages/CVTailor.tsx(87,166): error TS2304: Cannot find name 'Star'.
+client/src/pages/DashboardHome.tsx(6,1): error TS6133: 'WasselLogo' is declared but its value is never read.
+client/src/pages/DashboardHome.tsx(102,22): error TS2304: Cannot find name 'Star'.
+client/src/pages/ProfileAnalysis.tsx(117,9): error TS6133: 't' is declared but its value is never read.
+client/src/pages/ProfileAnalysis.tsx(128,37): error TS2339: Property 'analyzeDeep' does not exist on type '{ analyze: (profileUrl: string) => Promise<any>; history: () => Promise<any[]>; }'.
+client/src/pages/ResetPassword.tsx(51,40): error TS6133: 'data' is declared but its value is never read.
+client/src/pages/Tokens.tsx(5,1): error TS6133: 'WasselLogo' is declared but its value is never read.
+client/src/pages/Tokens.tsx(12,131): error TS2304: Cannot find name 'Star'.

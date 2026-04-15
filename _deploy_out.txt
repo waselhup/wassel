@@ -1,0 +1,101 @@
+Retrieving project…
+Deploying waselhupsas-projects/wassel
+Uploading [--------------------] (0.0B/1013B)
+Uploading [=======-------------] (400.0B/1013B)
+Uploading [====================] (1013.0B/1013B)
+Inspect: https://vercel.com/waselhupsas-projects/wassel/EuyoGMvwXrQVS5Un6ejBCFDYzYek [4s]
+Production: https://wassel-jr657jxje-waselhupsas-projects.vercel.app [4s]
+https://wassel-jr657jxje-waselhupsas-projects.vercel.appBuilding...
+Building...
+Building: Running build in Washington, D.C., USA (East) – iad1 (Turbo Build Machine)
+Building: Build machine configuration: 30 cores, 60 GB
+Building: Retrieving list of deployment files...
+Building: Downloading 345 deployment files...
+Building: Restored build cache from previous deployment (C6ytWJr5WYPaNa31BvCTRf3JYKVz)
+Building: Running "vercel build"
+Building: Vercel CLI 50.42.0
+Building: Running "install" command: `npm install --include=dev`...
+Building: up to date, audited 370 packages in 942ms
+Building: 48 packages are looking for funding
+Building: run `npm fund` for details
+Building: 1 moderate severity vulnerability
+Building: To address all issues (including breaking changes), run:
+Building: npm audit fix --force
+Building: Run `npm audit` for details.
+Building: > wassel-v2@1.0.0 build
+Building: > vite build && node build-server.js
+Building: vite v6.4.2 building for production...
+Building: transforming...
+Building: ✓ 2364 modules transformed.
+Building: rendering chunks...
+Building: [plugin vite:reporter]
+Building: (!) /vercel/path0/client/src/lib/analytics.ts is dynamically imported by /vercel/path0/client/src/contexts/AuthContext.tsx but also statically imported by /vercel/path0/client/src/main.tsx, dynamic import will not move module into another chunk.
+Building: computing gzip size...
+Building: ../dist/index.html                             0.82 kB │ gzip:   0.45 kB
+Building: ../dist/assets/index-s1OjynW8.css             56.51 kB │ gzip:   9.81 kB
+Building: ../dist/assets/chevron-up-CkD3yb7Q.js          0.34 kB │ gzip:   0.28 kB │ map:     0.76 kB
+Building: ../dist/assets/chevron-down-L7UgM0Rr.js        0.35 kB │ gzip:   0.28 kB │ map:     0.78 kB
+Building: ../dist/assets/x-CT3tAWdp.js                   0.36 kB │ gzip:   0.28 kB │ map:     0.81 kB
+Building: ../dist/assets/filter-C5zc67a8.js              0.37 kB │ gzip:   0.29 kB │ map:     0.78 kB
+Building: ../dist/assets/search-EyDRevpd.js              0.39 kB │ gzip:   0.30 kB │ map:     0.88 kB
+Building: ../dist/assets/arrow-up-right-B0Jms1M8.js      0.39 kB │ gzip:   0.30 kB │ map:     0.89 kB
+Building: ../dist/assets/clock-PzVbS9Nh.js               0.40 kB │ gzip:   0.31 kB │ map:     0.89 kB
+Building: ../dist/assets/briefcase-AVWbwGLg.js           0.44 kB │ gzip:   0.33 kB │ map:     0.98 kB
+Building: ../dist/assets/dollar-sign-CShIBtd8.js         0.44 kB │ gzip:   0.33 kB │ map:     0.97 kB
+Building: ../dist/assets/target-DT0zlKwf.js              0.44 kB │ gzip:   0.30 kB │ map:     1.05 kB
+Building: ../dist/assets/activity-CVmNSjhN.js            0.45 kB │ gzip:   0.33 kB │ map:     0.90 kB
+Building: ../dist/assets/upload-Cjs4iBR9.js              0.47 kB │ gzip:   0.35 kB │ map:     1.05 kB
+Building: ../dist/assets/download-BK2N5TVz.js            0.48 kB │ gzip:   0.35 kB │ map:     1.07 kB
+Building: ../dist/assets/user-plus-CO50Z1RR.js           0.53 kB │ gzip:   0.37 kB │ map:     1.24 kB
+Building: ../dist/assets/save-DXj_C6c7.js                0.54 kB │ gzip:   0.36 kB │ map:     1.10 kB
+Building: ../dist/assets/input-DDQLHRyu.js               0.56 kB │ gzip:   0.37 kB │ map:     1.14 kB
+Building: ../dist/assets/chevron-right-CfLDIbV6.js       0.60 kB │ gzip:   0.32 kB │ map:     1.43 kB
+Building: ../dist/assets/badge-DMv3-4wI.js               0.64 kB │ gzip:   0.41 kB │ map:     1.56 kB
+Building: ../dist/assets/copy-CtPndijt.js                0.76 kB │ gzip:   0.42 kB │ map:     1.76 kB
+Building: ../dist/assets/settings-DBsWKG8t.js            0.94 kB │ gzip:   0.48 kB │ map:     1.48 kB
+Building: ../dist/assets/Blog-Dng1TpdF.js                1.12 kB │ gzip:   0.66 kB │ map:     2.66 kB
+Building: ../dist/assets/menu-Bg6qDyGu.js                1.19 kB │ gzip:   0.49 kB │ map:     2.88 kB
+Building: ../dist/assets/Payment-DUIiYCsZ.js             1.52 kB │ gzip:   0.60 kB │ map:    17.06 kB
+Building: ../dist/assets/About-mRR1aN-V.js               1.52 kB │ gzip:   0.81 kB │ map:     3.89 kB
+Building: ../dist/assets/trpc-CJdx-k16.js                1.72 kB │ gzip:   0.83 kB │ map:     6.19 kB
+Building: ../dist/assets/index-I0--G-Cf.js               2.97 kB │ gzip:   1.45 kB │ map:    18.34 kB
+Building: ../dist/assets/TermsOfService-osKQoKpS.js      4.13 kB │ gzip:   1.78 kB │ map:    12.41 kB
+Building: ../dist/assets/AdminSettings-jOHalPx4.js       4.37 kB │ gzip:   1.88 kB │ map:     9.21 kB
+Building: ../dist/assets/PrivacyPolicy-BOGiXggA.js       4.51 kB │ gzip:   1.88 kB │ map:    13.35 kB
+Building: ../dist/assets/CampaignList-DhfUc0R7.js        5.19 kB │ gzip:   2.08 kB │ map:    11.82 kB
+Building: ../dist/assets/CampaignReport-ClJzt6NH.js      5.57 kB │ gzip:   2.19 kB │ map:    11.24 kB
+Building: ../dist/assets/Onboarding-0fDyXgtI.js          5.82 kB │ gzip:   2.36 kB │ map:    12.74 kB
+Building: ../dist/assets/AdminDashboard-CaK3h5U4.js      6.39 kB │ gzip:   2.30 kB │ map:    13.85 kB
+Building: ../dist/assets/Analytics-C6zHT0SF.js           6.43 kB │ gzip:   2.04 kB │ map:    15.83 kB
+Building: ../dist/assets/Tokens-CdCQy1ir.js              6.75 kB │ gzip:   2.66 kB │ map:    14.62 kB
+Building: ../dist/assets/AdminUsers-BflSm0BA.js          7.24 kB │ gzip:   2.44 kB │ map:    14.45 kB
+Building: ../dist/assets/Pricing-Bn1qm7fU.js             7.44 kB │ gzip:   2.56 kB │ map:    19.19 kB
+Building: ../dist/assets/Profile-TFH_bxKt.js             7.59 kB │ gzip:   2.90 kB │ map:    16.54 kB
+Building: ../dist/assets/DashboardHome-D1s6sBZ3.js       9.12 kB │ gzip:   3.36 kB │ map:    19.92 kB
+Building: ../dist/assets/KnowledgeBase-DimpNM5B.js      10.11 kB │ gzip:   3.71 kB │ map:    23.82 kB
+Building: ../dist/assets/DashboardLayout-BGb-OiIb.js    10.34 kB │ gzip:   3.13 kB │ map:    25.16 kB
+Building: ../dist/assets/AdminCampaigns-3EMEnDH5.js     10.85 kB │ gzip:   3.13 kB │ map:    27.13 kB
+Building: ../dist/assets/browser-ponyfill-X1p5mJpU.js   11.08 kB │ gzip:   3.88 kB │ map:    34.14 kB
+Building: ../dist/assets/CVTailor-Creq_IKi.js           12.70 kB │ gzip:   4.45 kB │ map:    28.21 kB
+Building: ../dist/assets/CampaignNew-C8Rnweo-.js        15.31 kB │ gzip:   5.09 kB │ map:    35.68 kB
+Building: ../dist/assets/ProfileAnalysis-Co-2hEvr.js    16.68 kB │ gzip:   5.19 kB │ map:    41.07 kB
+Building: ../dist/assets/LinkedInAnalyzer-DVWJ1kqh.js   18.11 kB │ gzip:   4.56 kB │ map:    51.47 kB
+Building: ../dist/assets/button-D-WOyq-m.js             25.38 kB │ gzip:   8.70 kB │ map:   128.36 kB
+Building: ../dist/assets/index-CUer8C0o.js             841.59 kB │ gzip: 255.43 kB │ map: 3,564.42 kB
+Building: ✓ built in 4.79s
+Building: (!) Some chunks are larger than 500 kB after minification. Consider:
+Building: - Using dynamic import() to code-split the application
+Building: - Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+Building: - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+Building: Server: using pre-built api/index.js
+Building: Installing dependencies...
+Building: up to date in 226ms
+Building: 18 packages are looking for funding
+Building: run `npm fund` for details
+Building: Build Completed in /vercel/output [9s]
+Building: Deploying outputs...
+Building: Deployment completed
+[2K[1A[2K[GProduction: https://wassel-jr657jxje-waselhupsas-projects.vercel.app [24s]
+Completing...
+Aliased: https://wassel-alpha.vercel.app [24s]
+EXIT=0 
