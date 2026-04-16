@@ -363,9 +363,13 @@ export const linkedinRouter = router({
           .gt('expires_at', new Date().toISOString())
           .maybeSingle();
 
-        if (cached?.result) {
-          console.log('[DEEP] Cache HIT');
+        if (cached?.result && cached.result.score !== undefined && !cached.result.error) {
+          console.log('[DEEP] Cache HIT, score:', cached.result.score);
           return cached.result;
+        }
+        if (cached?.result?.error) {
+          console.log('[DEEP] Cache has error result, ignoring and re-analyzing');
+          await ctx.supabase.from('ai_cache').delete().eq('cache_key', cacheKey);
         }
 
         // Build profile text
@@ -487,6 +491,7 @@ Profile data:`;
           body: JSON.stringify({
             model: 'claude-sonnet-4-6',
             max_tokens: 3000,
+            system: 'You are a LinkedIn profile analysis API. Respond ONLY with valid JSON. No markdown, no code fences, no explanatory text. Start your response with { and end with }.',
             messages,
           }),
         });
@@ -504,22 +509,44 @@ Profile data:`;
         const text = claudeData.content?.[0]?.text || '';
         const tokensUsed = (claudeData.usage?.input_tokens || 0) + (claudeData.usage?.output_tokens || 0);
 
-        // Parse JSON
+        console.log('[DEEP] Raw Claude response (first 800 chars):', text.substring(0, 800));
+
+        // Robust JSON extraction
         let result: any;
-        try {
-          const jsonMatch = text.match(/\{[\s\S]*\}/);
-          result = JSON.parse(jsonMatch ? jsonMatch[0] : text);
-        } catch {
-          // Retry: strip markdown fences
-          try {
-            const cleaned = text.replace(/```json?/g, '').replace(/```/g, '').trim();
-            const jsonMatch2 = cleaned.match(/\{[\s\S]*\}/);
-            result = JSON.parse(jsonMatch2 ? jsonMatch2[0] : cleaned);
-          } catch {
-            console.error('[DEEP] JSON parse failed:', text.substring(0, 300));
-            return { error: 'فشل تحليل الرد من الذكاء الاصطناعي' };
+        // 1. Direct parse
+        try { result = JSON.parse(text); } catch {}
+        // 2. Strip markdown fences
+        if (!result) {
+          const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+          try { result = JSON.parse(cleaned); } catch {}
+        }
+        // 3. Extract first complete JSON object using brace matching
+        if (!result) {
+          const start = text.indexOf('{');
+          if (start !== -1) {
+            let depth = 0;
+            let end = -1;
+            for (let i = start; i < text.length; i++) {
+              if (text[i] === '{') depth++;
+              else if (text[i] === '}') { depth--; if (depth === 0) { end = i; break; } }
+            }
+            if (end !== -1) {
+              try { result = JSON.parse(text.substring(start, end + 1)); } catch {}
+            }
           }
         }
+        // 4. Greedy regex fallback
+        if (!result) {
+          const match = text.match(/\{[\s\S]*\}/);
+          if (match) {
+            try { result = JSON.parse(match[0]); } catch {}
+          }
+        }
+        if (!result) {
+          console.error('[DEEP] All JSON parse attempts failed. Raw:', text.substring(0, 500));
+          return { error: 'فشل تحليل الرد من الذكاء الاصطناعي', rawPreview: text.substring(0, 200) };
+        }
+        console.log('[DEEP] Parsed OK, has score:', !!result.score);
 
         // Cache result (24h)
         const expires = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();

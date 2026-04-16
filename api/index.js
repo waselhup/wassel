@@ -49791,9 +49791,13 @@ var linkedinRouter = router2({
       }
       const cacheKey = "analyzeDeep:" + (input.linkedinUrl ? normalizeLiUrl(input.linkedinUrl) : ctx.user.id);
       const { data: cached } = await ctx.supabase.from("ai_cache").select("result").eq("cache_key", cacheKey).gt("expires_at", (/* @__PURE__ */ new Date()).toISOString()).maybeSingle();
-      if (cached?.result) {
-        console.log("[DEEP] Cache HIT");
+      if (cached?.result && cached.result.score !== void 0 && !cached.result.error) {
+        console.log("[DEEP] Cache HIT, score:", cached.result.score);
         return cached.result;
+      }
+      if (cached?.result?.error) {
+        console.log("[DEEP] Cache has error result, ignoring and re-analyzing");
+        await ctx.supabase.from("ai_cache").delete().eq("cache_key", cacheKey);
       }
       let profileText = "";
       if (input.linkedinUrl) {
@@ -49889,6 +49893,7 @@ Profile data:`;
         body: JSON.stringify({
           model: "claude-sonnet-4-6",
           max_tokens: 3e3,
+          system: "You are a LinkedIn profile analysis API. Respond ONLY with valid JSON. No markdown, no code fences, no explanatory text. Start your response with { and end with }.",
           messages
         })
       });
@@ -49903,20 +49908,56 @@ Profile data:`;
       const claudeData = await claudeRes.json();
       const text = claudeData.content?.[0]?.text || "";
       const tokensUsed = (claudeData.usage?.input_tokens || 0) + (claudeData.usage?.output_tokens || 0);
+      console.log("[DEEP] Raw Claude response (first 800 chars):", text.substring(0, 800));
       let result;
       try {
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
-        result = JSON.parse(jsonMatch ? jsonMatch[0] : text);
+        result = JSON.parse(text);
       } catch {
+      }
+      if (!result) {
+        const cleaned = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/i, "").trim();
         try {
-          const cleaned = text.replace(/```json?/g, "").replace(/```/g, "").trim();
-          const jsonMatch2 = cleaned.match(/\{[\s\S]*\}/);
-          result = JSON.parse(jsonMatch2 ? jsonMatch2[0] : cleaned);
+          result = JSON.parse(cleaned);
         } catch {
-          console.error("[DEEP] JSON parse failed:", text.substring(0, 300));
-          return { error: "\u0641\u0634\u0644 \u062A\u062D\u0644\u064A\u0644 \u0627\u0644\u0631\u062F \u0645\u0646 \u0627\u0644\u0630\u0643\u0627\u0621 \u0627\u0644\u0627\u0635\u0637\u0646\u0627\u0639\u064A" };
         }
       }
+      if (!result) {
+        const start = text.indexOf("{");
+        if (start !== -1) {
+          let depth = 0;
+          let end = -1;
+          for (let i = start; i < text.length; i++) {
+            if (text[i] === "{") depth++;
+            else if (text[i] === "}") {
+              depth--;
+              if (depth === 0) {
+                end = i;
+                break;
+              }
+            }
+          }
+          if (end !== -1) {
+            try {
+              result = JSON.parse(text.substring(start, end + 1));
+            } catch {
+            }
+          }
+        }
+      }
+      if (!result) {
+        const match = text.match(/\{[\s\S]*\}/);
+        if (match) {
+          try {
+            result = JSON.parse(match[0]);
+          } catch {
+          }
+        }
+      }
+      if (!result) {
+        console.error("[DEEP] All JSON parse attempts failed. Raw:", text.substring(0, 500));
+        return { error: "\u0641\u0634\u0644 \u062A\u062D\u0644\u064A\u0644 \u0627\u0644\u0631\u062F \u0645\u0646 \u0627\u0644\u0630\u0643\u0627\u0621 \u0627\u0644\u0627\u0635\u0637\u0646\u0627\u0639\u064A", rawPreview: text.substring(0, 200) };
+      }
+      console.log("[DEEP] Parsed OK, has score:", !!result.score);
       const expires = new Date(Date.now() + 24 * 60 * 60 * 1e3).toISOString();
       await ctx.supabase.from("ai_cache").upsert({
         cache_key: cacheKey,
