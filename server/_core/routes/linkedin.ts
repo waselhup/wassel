@@ -490,7 +490,7 @@ Profile data:`;
           },
           body: JSON.stringify({
             model: 'claude-sonnet-4-6',
-            max_tokens: 3000,
+            max_tokens: 8192,
             system: 'You are a LinkedIn profile analysis API. Respond ONLY with valid JSON. No markdown, no code fences, no explanatory text. Start your response with { and end with }.',
             messages,
           }),
