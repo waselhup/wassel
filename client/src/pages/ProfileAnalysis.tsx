@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
 import { useAuth } from '../contexts/AuthContext';
+import { trpcMutation } from '../lib/trpc';
 
 // ─── Interfaces ──────────────────────────────────────────────────────────────
 interface ScoreBreakdown {
@@ -262,21 +263,22 @@ export default function ProfileAnalysis() {
   };
 
   async function handleAnalyze() {
-    if (!url.trim() && !imageBase64) return;
+    console.log('[Analyze] Start — url:', url ? 'yes' : 'no', 'image:', imageBase64 ? 'yes' : 'no');
+    if (!url.trim() && !imageBase64) { console.log('[Analyze] No input, returning'); return; }
     setLoading(true); setLoadingStage(0); setResult(null); setCheckedItems({});
     const stageTimer1 = setTimeout(() => setLoadingStage(1), 2000);
     const stageTimer2 = setTimeout(() => setLoadingStage(2), 5000);
     try {
-      const { trpcMutation } = await import('../lib/trpc');
-      console.log('[ProfileAnalysis] calling analyzeDeep, url:', url ? 'yes' : 'no', 'image:', imageBase64 ? 'yes' : 'no');
+      console.log('[Analyze] Before trpcMutation call');
       const res = await trpcMutation('linkedin.analyzeDeep', {
         linkedinUrl: url || undefined,
         imageBase64: imageBase64 || undefined,
         mediaType,
       });
+      console.log('[Analyze] Response received:', res ? 'has data' : 'empty');
       clearTimeout(stageTimer1); clearTimeout(stageTimer2);
       if (!res) {
-        console.error('[ProfileAnalysis] Empty response from analyzeDeep');
+        console.error('[Analyze] Empty response from analyzeDeep');
         toast.push('error', t('profileAnalysis.error', 'حدث خطأ غير متوقع - لم يتم استلام رد'));
       } else if (res.error) {
         toast.push('error', res.error);
@@ -287,11 +289,12 @@ export default function ProfileAnalysis() {
         void loadHistory();
       }
     } catch (err: any) {
-      console.error('[ProfileAnalysis] Error:', err);
+      console.error('[Analyze] CAUGHT ERROR:', err, err?.stack);
       toast.push('error', err?.message || t('profileAnalysis.error', 'حدث خطأ غير متوقع'));
     }
     clearTimeout(stageTimer1); clearTimeout(stageTimer2);
     setLoading(false);
+    console.log('[Analyze] Done, loading set to false');
   }
 
   const checkedCount = Object.values(checkedItems).filter(Boolean).length;

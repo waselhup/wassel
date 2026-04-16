@@ -5,14 +5,34 @@ const BASE = '/api/trpc';
 async function authHeaders(): Promise<Record<string, string>> {
   const h: Record<string, string> = { 'Content-Type': 'application/json' };
   try {
-    const { data } = await supabase.auth.getSession();
-    let token = data.session?.access_token;
+    console.log('[trpc] authHeaders: calling getSession...');
+    const sessionPromise = supabase.auth.getSession();
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('getSession timeout after 5s')), 5000)
+    );
+    const { data } = await Promise.race([sessionPromise, timeoutPromise]) as any;
+    console.log('[trpc] authHeaders: getSession returned, hasSession:', !!data?.session);
+
+    let token = data?.session?.access_token;
     if (!token) {
-      const { data: r } = await supabase.auth.refreshSession();
-      token = r.session?.access_token;
+      console.log('[trpc] authHeaders: no token, trying refresh...');
+      const refreshPromise = supabase.auth.refreshSession();
+      const refreshTimeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('refreshSession timeout after 5s')), 5000)
+      );
+      try {
+        const { data: r } = await Promise.race([refreshPromise, refreshTimeout]) as any;
+        token = r?.session?.access_token;
+        console.log('[trpc] authHeaders: refresh done, hasToken:', !!token);
+      } catch (e) {
+        console.error('[trpc] authHeaders: refresh failed:', e);
+      }
     }
     if (token) h['Authorization'] = `Bearer ${token}`;
-  } catch {}
+  } catch (e) {
+    console.error('[trpc] authHeaders error:', e);
+  }
+  console.log('[trpc] authHeaders: done, hasAuth:', !!h.Authorization);
   return h;
 }
 
@@ -38,12 +58,19 @@ export async function trpcQuery<T = any>(name: string, input?: any): Promise<T> 
 }
 
 export async function trpcMutation<T = any>(name: string, input: any = {}): Promise<T> {
+  console.log('[trpc] trpcMutation called for:', name);
+  console.log('[trpc] Getting auth headers...');
+  const headers = await authHeaders();
+  console.log('[trpc] Got headers, hasAuth:', !!headers.Authorization);
+  console.log('[trpc] Sending fetch to:', `${BASE}/${name}`);
   const res = await fetch(`${BASE}/${name}`, {
     method: 'POST',
-    headers: await authHeaders(),
+    headers,
     body: JSON.stringify(input),
   });
+  console.log('[trpc] Fetch returned, status:', res.status);
   const j = await res.json();
+  console.log('[trpc] Parsed JSON response');
   return handle(j);
 }
 
