@@ -1,0 +1,1 @@
+{"error":{"message":"Not authenticated","code":-32001,"data":{"code":"UNAUTHORIZED","httpStatus":401,"path":"admin.systemStatus"}}}
