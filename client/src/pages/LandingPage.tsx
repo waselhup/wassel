@@ -3,7 +3,7 @@ import { WasselLogo } from '../components/WasselLogo';
 import VideoDemo from '../components/landing/VideoDemo';
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { Linkedin, FileText, Mail, BarChart3, Shield, Check, ArrowRight, Star, Globe2, Users, MessageSquare } from 'lucide-react';
+import { Linkedin, FileText, Mail, BarChart3, Shield, Check, ArrowRight, Star, Globe2, Users, MessageSquare, Coins, Search, PenSquare } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { trpcQuery } from '@/lib/trpc';
 
@@ -95,16 +95,16 @@ export default function LandingPage() {
               {t("hero.badge", "مدعوم بالذكاء الاصطناعي · صنع في السعودية")}
             </div>
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold text-[#064E49] leading-[1.1] mb-6">
-              {t("hero.title")}
+              {t("hero.title", "وصّل")}
               <br />
               <span className="text-[#0A8F84]">
-                {t("hero.title2")}
+                {t("hero.title2", "منصتك الذكية للتسويق عبر LinkedIn")}
               </span>
             </h1>
             <p className="text-xl text-[#6b7280] leading-relaxed mb-10 max-w-xl">
               {t(
                 "hero.subtitle",
-                "حلّل ملفك على لينكدإن، حسّن سيرتك الذاتية، وأرسل 500 رسالة احترافية لصنّاع القرار في الشركات السعودية — كل ذلك بضغطة زر."
+                "حلّل ملفك المهني، خصّص سيرتك الذاتية، أنشئ منشورات LinkedIn، واطلق حملات تواصل ذكية — كل ذلك مدعوم بالذكاء الاصطناعي وخلال دقائق."
               )}
             </p>
             <div className="flex flex-wrap gap-4 mb-10">
@@ -125,22 +125,9 @@ export default function LandingPage() {
               </a>
             </div>
             <div className="flex items-center gap-6 text-sm text-[#6b7280]">
-              <div className="flex items-center gap-2">
-                <div className="flex -space-x-2 rtl:space-x-reverse">
-                  {[1, 2, 3, 4].map((i) => (
-                    <div
-                      key={i}
-                      className="w-8 h-8 rounded-full border-2 border-white bg-gradient-to-br from-[#064E49] to-[#0A8F84]"
-                    />
-                  ))}
-                </div>
-                <span>{t("hero.users", "+2,500 مستخدم")}</span>
-              </div>
-              <div className="flex items-center gap-1">
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <Star key={i} className="w-4 h-4 fill-[#0A8F84] text-[#0A8F84]" />
-                ))}
-                <span className="ms-2">4.9/5</span>
+              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#0A8F84]/5 border border-[#0A8F84]/10">
+                <Coins className="w-4 h-4 text-[#0A8F84]" />
+                <span className="font-semibold text-[#064E49]">{t("hero.freeTokens", "1,000 توكن مجاناً عند التسجيل")}</span>
               </div>
             </div>
           </motion.div>
@@ -216,16 +203,19 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* SOCIAL PROOF BAR */}
-      <section className="bg-white border-y border-gray-200 py-10">
+      {/* QUICK STATS */}
+      <section className="bg-white border-y border-gray-200 py-8">
         <div className="max-w-7xl mx-auto px-6">
-          <p className="text-center text-sm text-[#6b7280] font-medium mb-6 uppercase tracking-wider">
-            {t("trust.title", "موثوق به من قبل محترفين في")}
-          </p>
-          <div className="flex flex-wrap justify-center items-center gap-12 opacity-60">
-            {["Aramco", "STC", "SABIC", "NEOM", "PIF", "Almarai"].map((brand) => (
-              <div key={brand} className="text-2xl font-bold text-[#064E49]">
-                {brand}
+          <div className="flex flex-wrap justify-center items-center gap-8 md:gap-16">
+            {[
+              { label: isRTL ? 'أدوات ذكية' : 'AI Tools', value: '5' },
+              { label: isRTL ? 'توكن مجاناً' : 'Free Tokens', value: '1,000' },
+              { label: isRTL ? 'لغتين' : 'Languages', value: 'AR + EN' },
+              { label: isRTL ? 'صنع في السعودية' : 'Made in Saudi', value: '🇸🇦' },
+            ].map((s, i) => (
+              <div key={i} className="text-center">
+                <div className="text-2xl md:text-3xl font-extrabold text-[#064E49]">{s.value}</div>
+                <div className="text-sm text-[#6b7280] font-medium mt-1">{s.label}</div>
               </div>
             ))}
           </div>
@@ -248,22 +238,22 @@ export default function LandingPage() {
             <p className="text-xl text-[#6b7280] max-w-2xl mx-auto">
               {t(
                 "features.subtitle",
-                "ست أدوات قوية مدعومة بالذكاء الاصطناعي تعمل معاً لتسريع رحلتك المهنية"
+                "خمس أدوات قوية مدعومة بالذكاء الاصطناعي تعمل معاً لتسريع رحلتك المهنية"
               )}
             </p>
           </motion.div>
 
           <motion.div
             {...stagger}
-            className="grid md:grid-cols-2 lg:grid-cols-3 gap-6"
+            className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6"
           >
             {[
               {
                 icon: Linkedin,
-                title: t("features.linkedin.title", "تحليل لينكدإن بالذكاء الاصطناعي"),
+                title: t("features.linkedin.title", "تحليل البروفايل المهني"),
                 desc: t(
                   "features.linkedin.desc",
-                  "احصل على تقييم شامل لملفك من 0 إلى 100 مع خطة تحسين مفصّلة خلال 30 ثانية."
+                  "الذكاء الاصطناعي يحلل ملفك على LinkedIn ويعطيك تقييماً من 100 مع نقاط القوة والضعف وخطة تحسين."
                 ),
               },
               {
@@ -271,39 +261,31 @@ export default function LandingPage() {
                 title: t("features.cv.title", "تخصيص السيرة الذاتية"),
                 desc: t(
                   "features.cv.desc",
-                  "ولّد سيرة ذاتية محسّنة لكل وظيفة تتقدم لها بضغطة زر واحدة."
+                  "أنشئ سيرة ذاتية مُحسّنة لكل وظيفة بثلاثة قوالب مختلفة، مدعومة بمعايير أكسفورد وسوق العمل السعودي."
+                ),
+              },
+              {
+                icon: PenSquare,
+                title: t("features.posts.title", "منشورات LinkedIn"),
+                desc: t(
+                  "features.posts.desc",
+                  "ولّد منشورات LinkedIn احترافية بأي نبرة وموضوع — احترافي، تعليمي، أو ملهم — بالعربية أو الإنجليزية."
                 ),
               },
               {
                 icon: Mail,
-                title: t("features.email.title", "حملات إيميل ذكية"),
+                title: t("features.email.title", "حملات التواصل الذكية"),
                 desc: t(
                   "features.email.desc",
-                  "أرسل 500 رسالة مخصّصة لصنّاع القرار في الشركات السعودية والخليجية."
+                  "أنشئ حملات تواصل مع رسائل مخصصة لكل شركة بالذكاء الاصطناعي — اختر الشركات والنبرة واترك الباقي لنا."
                 ),
               },
               {
-                icon: Users,
-                title: t("features.discovery.title", "اكتشاف الفرص"),
+                icon: Search,
+                title: t("features.discovery.title", "اكتشاف الجمهور"),
                 desc: t(
                   "features.discovery.desc",
-                  "اعثر على المسؤولين المناسبين حسب الصناعة، المنصب، والشركة."
-                ),
-              },
-              {
-                icon: BarChart3,
-                title: t("features.analytics.title", "تحليلات فورية"),
-                desc: t(
-                  "features.analytics.desc",
-                  "تابع معدلات الفتح، الردود، والتحويلات في لوحة تحكم واضحة."
-                ),
-              },
-              {
-                icon: Shield,
-                title: t("features.compliance.title", "متوافق مع نظام حماية البيانات"),
-                desc: t(
-                  "features.compliance.desc",
-                  "متوافق بالكامل مع PDPL السعودي وميزة إلغاء الاشتراك في كل رسالة."
+                  "ابحث عن متخذي القرار المناسبين حسب المنصب الوظيفي والدولة واحصل على قوائم جاهزة للتواصل."
                 ),
               },
             ].map((f, i) => {
@@ -343,18 +325,18 @@ export default function LandingPage() {
             {[
               {
                 step: "01",
-                title: t("how.s1.title", "حلّل ملفك"),
-                desc: t("how.s1.desc", "ألصق رابط لينكدإن واحصل على تقييم فوري + خطة تحسين."),
+                title: t("how.s1.title", "سجّل الدخول بحساب LinkedIn"),
+                desc: t("how.s1.desc", "أنشئ حسابك في ثوانٍ عبر Google أو LinkedIn واحصل على 1000 توكن مجاناً."),
               },
               {
                 step: "02",
-                title: t("how.s2.title", "صمّم حملتك"),
-                desc: t("how.s2.desc", "اختر شريحتك المستهدفة، ودع الذكاء الاصطناعي يكتب الرسائل."),
+                title: t("how.s2.title", "حلّل ملفك أو اطلق حملتك"),
+                desc: t("how.s2.desc", "حلّل بروفايلك، خصّص سيرتك، أنشئ منشورات، أو اطلق حملة تواصل ذكية."),
               },
               {
                 step: "03",
-                title: t("how.s3.title", "أطلق وراقب"),
-                desc: t("how.s3.desc", "أرسل 500 رسالة وتابع الردود في لوحة تحكم واحدة."),
+                title: t("how.s3.title", "احصل على نتائج بالذكاء الاصطناعي"),
+                desc: t("how.s3.desc", "نتائج فورية مدعومة بنماذج Claude المتقدمة — تقييمات، سير ذاتية، ورسائل مخصصة."),
               },
             ].map((s, i) => (
               <motion.div

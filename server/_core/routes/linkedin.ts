@@ -5,7 +5,7 @@ import { logApiCall, mapAnthropicStatusToArabic, mapApifyStatusToArabic } from '
 
 const APIFY_TOKEN = process.env.APIFY_TOKEN || process.env.APIFY_API_TOKEN || '';
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || '';
-const CLAUDE_MODEL = 'claude-haiku-4-5';
+const CLAUDE_MODEL = 'claude-haiku-4-5-20251001';
 
 async function scrapeLinkedInProfile(profileUrl: string): Promise<any> {
   console.log('[APIFY] Starting scrape for:', profileUrl);

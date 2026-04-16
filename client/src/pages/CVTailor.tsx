@@ -112,7 +112,7 @@ export default function CVTailor() {
       };
       console.log('[CV] Calling trpc.cv.generate with fields:', fields);
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('timeout')), 90000)
+        setTimeout(() => reject(new Error('timeout')), 240000)
       );
       const raw = await Promise.race([
         trpc.cv.generate(fields, context),
@@ -129,7 +129,7 @@ export default function CVTailor() {
     } catch (e: any) {
       console.error('[CV] Generation error:', e);
       if (e?.message === 'timeout') {
-        setError('انتهت المهلة (90 ثانية). حاول مرة أخرى.');
+        setError('انتهت المهلة (240 ثانية). حاول مرة أخرى.');
       } else {
         setError(e?.message || t("cv.err.failed", "فشل الإنشاء. حاول مرة أخرى."));
       }

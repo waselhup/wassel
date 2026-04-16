@@ -89,7 +89,7 @@ Make the content specific to ${field}, professional, and optimized for ATS syste
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-5',
+        model: 'claude-sonnet-4-6',
         max_tokens: 8192,
         system: 'You are a professional CV writer. Respond ONLY with valid JSON. No markdown, no code fences, no explanation text. Just the raw JSON object.',
         messages: [{ role: 'user', content: prompt }],
@@ -113,7 +113,8 @@ Make the content specific to ${field}, professional, and optimized for ATS syste
     const textContent = data.content.find((c) => c.type === 'text');
     if (!textContent || !textContent.text) {
       console.error('[CLAUDE] No text content in response');
-      throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Invalid response format from Claude API' });    }
+      throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'خدمة الذكاء الاصطناعي لم ترد. حاول مرة أخرى.' });
+    }
 
     console.log(`[CLAUDE] Parsing JSON response for field: ${field}`);
 
@@ -292,7 +293,7 @@ export const cvRouter = router({
           'anthropic-version': '2023-06-01',
         },
         body: JSON.stringify({
-          model: 'claude-haiku-4-5',
+          model: 'claude-haiku-4-5-20251001',
           max_tokens: 4096,
           system: 'Respond ONLY with valid JSON. No markdown, no code fences, no explanation text.',
           messages: [{

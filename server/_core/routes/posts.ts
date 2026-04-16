@@ -101,7 +101,7 @@ Generate the LinkedIn post now. Return valid JSON only.`;
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-5',
+        model: 'claude-sonnet-4-6',
         max_tokens: 8192,
         system: systemPrompt + '\n\nIMPORTANT: Respond ONLY with valid JSON. No markdown, no code fences.',
         messages: [{ role: 'user', content: userPrompt }],

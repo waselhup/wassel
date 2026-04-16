@@ -154,6 +154,16 @@ export const trpc = {
     reject: (input: { id: string }) => trpcMutation<any>('reviews.reject', input),
     delete: (input: { id: string }) => trpcMutation<any>('reviews.delete', input),
   },
+  feedback: {
+    submit: (input: { category: string; subject: string; description: string; priority?: string; pageUrl?: string }) =>
+      trpcMutation<any>('feedback.submit', input),
+    myTickets: () => trpcQuery<any[]>('feedback.myTickets'),
+    listAll: () => trpcQuery<any[]>('feedback.listAll'),
+    respond: (input: { id: string; response: string; status?: string }) =>
+      trpcMutation<any>('feedback.respond', input),
+    updateStatus: (input: { id: string; status: string }) =>
+      trpcMutation<any>('feedback.updateStatus', input),
+  },
   knowledge: {
     list: () => trpcQuery<any[]>('knowledge.list'),
     save: (input: { type: string; title: string; content: any; tags?: string[] }) =>

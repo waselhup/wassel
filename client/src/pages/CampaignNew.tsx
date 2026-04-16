@@ -48,7 +48,7 @@ export default function CampaignNew() {
     setError(null);
     try {
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('timeout')), 45000)
+        setTimeout(() => reject(new Error('timeout')), 240000)
       );
       const result = await Promise.race([
         trpc.campaign.previewMessages({
@@ -63,7 +63,7 @@ export default function CampaignNew() {
       );
     } catch (e: any) {
       if (e?.message === 'timeout') {
-        setError('انتهت المهلة (45 ثانية). حاول مرة أخرى.');
+        setError('انتهت المهلة (240 ثانية). حاول مرة أخرى.');
       } else {
         setError(e?.message || t("new.err.genFailed", "فشل إنشاء الرسائل"));
       }
@@ -237,7 +237,7 @@ export default function CampaignNew() {
                     <div className="flex flex-col items-center py-12 gap-4">
                       <Loader2 className="w-10 h-10 animate-spin text-[#0A8F84]" />
                       <p className="text-gray-500 font-medium">{t("new.generating", "الذكاء الاصطناعي ينشئ رسائل مخصصة لكل شركة...")}</p>
-                      <p className="text-xs text-gray-400">{t("new.generatingWait", "قد يستغرق 15-30 ثانية")}</p>
+                      <p className="text-xs text-gray-400">{t("new.generatingWait", "قد يستغرق 30-60 ثانية")}</p>
                     </div>
                   )}
 

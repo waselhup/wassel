@@ -4,13 +4,13 @@ import { useTranslation } from 'react-i18next';
 import {
   Shield, Users, Activity, AlertTriangle, Star, CheckCircle2,
   XCircle, Loader2, Search, Coins, BarChart3, MessageSquare,
-  Send, RefreshCw, Ban,
+  Send, RefreshCw, Ban, TicketCheck, MessageSquarePlus,
 } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/contexts/AuthContext';
 
-type Tab = 'overview' | 'users' | 'reviews' | 'alerts' | 'campaigns' | 'tokens';
+type Tab = 'overview' | 'users' | 'reviews' | 'alerts' | 'campaigns' | 'tokens' | 'tickets';
 
 interface Toast { id: number; type: 'success' | 'error'; message: string }
 
@@ -50,6 +50,10 @@ export default function AdminDashboard() {
   const [pendingReviews, setPendingReviews] = useState<any[]>([]);
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [feedbackTickets, setFeedbackTickets] = useState<any[]>([]);
+  const [ticketFilter, setTicketFilter] = useState<string>('all');
+  const [respondModal, setRespondModal] = useState<any | null>(null);
+  const [respondText, setRespondText] = useState('');
   const [addTokensModal, setAddTokensModal] = useState<{ userId: string; name: string } | null>(null);
   const [tokenAmount, setTokenAmount] = useState(100);
   const [tokenReason, setTokenReason] = useState('');
@@ -65,18 +69,20 @@ export default function AdminDashboard() {
   async function loadData() {
     setLoading(true);
     try {
-      const [statsRes, statusRes, usersRes, reviewsRes, campaignsRes] = await Promise.allSettled([
+      const [statsRes, statusRes, usersRes, reviewsRes, campaignsRes, ticketsRes] = await Promise.allSettled([
         trpc.admin.stats(),
         trpc.admin.systemStatus(),
         trpc.admin.users(),
         trpc.reviews.listPending(),
         trpc.admin.campaigns(),
+        trpc.feedback.listAll(),
       ]);
       if (statsRes.status === 'fulfilled') setStats(statsRes.value);
       if (statusRes.status === 'fulfilled') setSystemStatus(statusRes.value);
       if (usersRes.status === 'fulfilled') setUsers(usersRes.value || []);
       if (reviewsRes.status === 'fulfilled') setPendingReviews(reviewsRes.value || []);
       if (campaignsRes.status === 'fulfilled') setCampaigns(campaignsRes.value || []);
+      if (ticketsRes.status === 'fulfilled') setFeedbackTickets(ticketsRes.value || []);
     } catch (e) {
       console.error('[Admin] Load error:', e);
     }
@@ -137,6 +143,7 @@ export default function AdminDashboard() {
     { id: 'alerts', label: isAr ? 'التنبيهات' : 'Alerts', icon: AlertTriangle, count: systemStatus?.recentErrors?.length || 0 },
     { id: 'campaigns', label: isAr ? 'الحملات' : 'Campaigns', icon: Send, count: campaigns.length },
     { id: 'tokens', label: isAr ? 'التوكنز' : 'Tokens', icon: Coins },
+    { id: 'tickets', label: isAr ? 'الملاحظات' : 'Tickets', icon: TicketCheck, count: feedbackTickets.filter(t => t.status === 'open').length },
   ];
 
   const filteredUsers = searchQuery
@@ -411,7 +418,92 @@ export default function AdminDashboard() {
                 </div>
               </motion.div>
             )}
+
+            {tab === 'tickets' && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
+                  {['all', 'open', 'in_progress', 'resolved', 'closed'].map(f => (
+                    <button key={f} onClick={() => setTicketFilter(f)}
+                      style={{ padding: '6px 14px', borderRadius: 8, border: ticketFilter === f ? '1.5px solid #0A8F84' : '1.5px solid var(--wsl-border)', background: ticketFilter === f ? 'rgba(10,143,132,0.07)' : '#fff', color: ticketFilter === f ? '#0A8F84' : '#6B7280', fontWeight: 800, fontSize: 12, cursor: 'pointer', fontFamily: 'Cairo, sans-serif' }}>
+                      {f === 'all' ? (isAr ? 'الكل' : 'All') : f === 'open' ? (isAr ? 'مفتوحة' : 'Open') : f === 'in_progress' ? (isAr ? 'قيد المعالجة' : 'In Progress') : f === 'resolved' ? (isAr ? 'تم الحل' : 'Resolved') : (isAr ? 'مغلقة' : 'Closed')}
+                    </button>
+                  ))}
+                </div>
+                {feedbackTickets.filter(t => ticketFilter === 'all' || t.status === ticketFilter).length === 0 ? (
+                  <div style={{ background: '#fff', borderRadius: 14, border: '2px dashed var(--wsl-border)', padding: '40px 24px', textAlign: 'center' }}>
+                    <TicketCheck size={32} style={{ color: '#059669', margin: '0 auto 12px' }} />
+                    <div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 16, color: '#065F46' }}>{isAr ? 'لا توجد ملاحظات' : 'No Tickets'}</div>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {feedbackTickets.filter(t => ticketFilter === 'all' || t.status === ticketFilter).map(t => {
+                      const stColors: Record<string, string> = { open: '#FEF3C7', in_progress: '#DBEAFE', resolved: '#D1FAE5', closed: '#F3F4F6' };
+                      const stTextColors: Record<string, string> = { open: '#92400E', in_progress: '#1E40AF', resolved: '#065F46', closed: '#6B7280' };
+                      return (
+                        <div key={t.id} style={{ background: '#fff', borderRadius: 14, border: '1px solid var(--wsl-border)', padding: 18 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, flexWrap: 'wrap', gap: 6 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <span style={{ padding: '2px 8px', borderRadius: 999, background: stColors[t.status] || '#F3F4F6', color: stTextColors[t.status] || '#6B7280', fontSize: 10, fontWeight: 900 }}>{t.status}</span>
+                              <span style={{ padding: '2px 6px', borderRadius: 4, background: '#F3F4F6', color: '#6B7280', fontSize: 10, fontWeight: 800 }}>{t.category}</span>
+                              {t.priority === 'urgent' && <span style={{ padding: '2px 6px', borderRadius: 4, background: '#FEE2E2', color: '#DC2626', fontSize: 10, fontWeight: 900 }}>URGENT</span>}
+                              {t.priority === 'high' && <span style={{ padding: '2px 6px', borderRadius: 4, background: '#FEF3C7', color: '#92400E', fontSize: 10, fontWeight: 900 }}>HIGH</span>}
+                            </div>
+                            <span style={{ fontSize: 11, color: 'var(--wsl-ink-4)', fontFamily: 'Inter' }}>{new Date(t.created_at).toLocaleDateString('en', { month: 'short', day: 'numeric' })}</span>
+                          </div>
+                          <h4 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 15, color: 'var(--wsl-ink)', marginBottom: 4 }}>{t.subject}</h4>
+                          <p style={{ fontSize: 13, color: 'var(--wsl-ink-2)', lineHeight: 1.6, marginBottom: 8, fontFamily: 'Cairo, Inter, sans-serif' }}>{t.description.substring(0, 200)}{t.description.length > 200 ? '...' : ''}</p>
+                          <div style={{ fontSize: 11, color: 'var(--wsl-ink-3)', marginBottom: 10 }}>
+                            {isAr ? 'من:' : 'From:'} <strong>{t.user?.full_name || t.user?.email || 'Unknown'}</strong>
+                            {t.page_url && <span style={{ marginInlineStart: 8 }}>({t.page_url})</span>}
+                          </div>
+                          {t.admin_response && (
+                            <div style={{ padding: 10, borderRadius: 8, background: '#F0FDF9', border: '1px solid #A7F3D0', marginBottom: 8 }}>
+                              <div style={{ fontSize: 10, fontWeight: 800, color: '#065F46', marginBottom: 2 }}>{isAr ? 'الرد:' : 'Response:'}</div>
+                              <div style={{ fontSize: 12, color: '#065F46' }}>{t.admin_response}</div>
+                            </div>
+                          )}
+                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                            <button onClick={() => { setRespondModal(t); setRespondText(t.admin_response || ''); }}
+                              style={{ padding: '5px 12px', borderRadius: 6, border: '1px solid #D1FAE5', background: '#ECFDF5', color: '#065F46', fontSize: 11, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <MessageSquarePlus size={12} /> {isAr ? 'رد' : 'Respond'}
+                            </button>
+                            {['open', 'in_progress', 'resolved', 'closed'].filter(s => s !== t.status).map(s => (
+                              <button key={s} onClick={async () => {
+                                try { await trpc.feedback.updateStatus({ id: t.id, status: s }); toast.push('success', 'Updated'); loadData(); } catch (e: any) { toast.push('error', e?.message || 'Failed'); }
+                              }} style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid var(--wsl-border)', background: '#fff', color: '#6B7280', fontSize: 10, fontWeight: 800, cursor: 'pointer' }}>
+                                {s}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </motion.div>
+            )}
           </>
+        )}
+
+        {/* Respond Modal */}
+        {respondModal && (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)' }} onClick={() => setRespondModal(null)} />
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+              style={{ position: 'relative', background: '#fff', borderRadius: 16, padding: 24, width: '90%', maxWidth: 440, boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
+              <h3 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 18, marginBottom: 8 }}>{isAr ? 'الرد على الملاحظة' : 'Respond to Ticket'}</h3>
+              <p style={{ fontSize: 13, color: 'var(--wsl-ink-3)', marginBottom: 16, fontWeight: 800 }}>{respondModal.subject}</p>
+              <textarea value={respondText} onChange={e => setRespondText(e.target.value)} rows={4}
+                placeholder={isAr ? 'اكتب ردك...' : 'Write your response...'}
+                style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1.5px solid var(--wsl-border)', fontSize: 13, fontFamily: 'Cairo, Inter, sans-serif', outline: 'none', resize: 'none', marginBottom: 14, boxSizing: 'border-box' }} />
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                <button onClick={() => setRespondModal(null)} style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid var(--wsl-border)', background: '#fff', cursor: 'pointer', fontFamily: 'Cairo, sans-serif', fontWeight: 800, fontSize: 13 }}>{isAr ? 'إلغاء' : 'Cancel'}</button>
+                <button onClick={async () => {
+                  try { await trpc.feedback.respond({ id: respondModal.id, response: respondText, status: 'resolved' }); toast.push('success', isAr ? 'تم الرد' : 'Responded'); setRespondModal(null); loadData(); } catch (e: any) { toast.push('error', e?.message || 'Failed'); }
+                }} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#0A8F84', color: '#fff', cursor: 'pointer', fontFamily: 'Cairo, sans-serif', fontWeight: 800, fontSize: 13 }}>{isAr ? 'إرسال الرد' : 'Send Response'}</button>
+              </div>
+            </motion.div>
+          </div>
         )}
 
         {/* Add Tokens Modal */}

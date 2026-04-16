@@ -6,8 +6,9 @@ import { supabase } from '@/lib/supabase';
 import { WasselLogo } from './WasselLogo';
 import {
   Home, BarChart2, FileText, Send, Coins, User, BookOpen,
-  LogOut, Globe, Menu, X, ChevronDown, Settings, TrendingUp, UserCheck, PenSquare, Shield
+  LogOut, Globe, Menu, X, ChevronDown, Settings, TrendingUp, UserCheck, PenSquare, Shield, TicketCheck
 } from 'lucide-react';
+import FeedbackFAB from './FeedbackFAB';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -50,6 +51,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, page
     { href: '/app/posts', icon: PenSquare, label: t('nav.posts', '\u0627\u0644\u0645\u0646\u0634\u0648\u0631\u0627\u062a') },
     { href: '/app/knowledge', icon: BookOpen, label: t('nav.knowledge', '\u0627\u0644\u0645\u0639\u0631\u0641\u0629') },
     { href: '/app/analytics', icon: TrendingUp, label: t('nav.analytics', 'التحليلات') },
+    { href: '/app/tickets', icon: TicketCheck, label: t('nav.tickets', 'ملاحظاتي') },
     { href: '/app/profile', icon: User, label: t('nav.profile', '\u0627\u0644\u0645\u0644\u0641') },
   ];
 
@@ -224,6 +226,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, page
         <main style={{ flex: 1, overflow: 'auto', padding: '24px' }}>
           {children}
         </main>
+        <FeedbackFAB />
       </div>
     </div>
   );

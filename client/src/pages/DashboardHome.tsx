@@ -175,6 +175,31 @@ export default function DashboardHome() {
           </div>
         </div>
 
+        {/* Getting Started / Video Guides */}
+        <div>
+          <h2 className="text-lg font-bold text-[var(--wsl-ink)] mb-4">{t("home.guides.title", "ابدأ هنا")}</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              { title: t("home.guides.analyze", "شاهد كيف تحلل ملفك المهني"), duration: "2 min", gradient: "from-[#0077b5] to-[#00a0dc]", icon: Linkedin },
+              { title: t("home.guides.cv", "إنشاء سيرتك الذاتية بالذكاء الاصطناعي"), duration: "90 sec", gradient: "from-emerald-500 to-teal-600", icon: FileText },
+              { title: t("home.guides.campaign", "أطلق حملتك الأولى"), duration: "3 min", gradient: "from-[var(--wsl-teal)] to-[var(--wsl-gold)]", icon: Send },
+              { title: t("home.guides.all", "شاهد كل الميزات"), duration: "5 min", gradient: "from-purple-600 to-fuchsia-600", icon: Sparkles },
+            ].map((g, i) => (
+              <motion.div key={i}
+                initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }} transition={{ delay: i * 0.06, duration: 0.35 }}
+                className={`group relative rounded-2xl bg-gradient-to-br ${g.gradient} p-5 min-h-[140px] flex flex-col justify-end cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden`}
+              >
+                <div className="absolute top-4 end-4 w-12 h-12 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm group-hover:scale-110 transition-transform">
+                  <g.icon className="w-6 h-6 text-white" />
+                </div>
+                <div className="text-xs text-white/60 font-semibold mb-1">{g.duration}</div>
+                <div className="text-sm font-bold text-white leading-snug">{g.title}</div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
           <motion.div
             initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }}

@@ -20,7 +20,7 @@ async function askOZAIL(message: string): Promise<string> {
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-5',
+      model: 'claude-sonnet-4-6',
       max_tokens: 800,
       system: `You are OZAIL, the AI CEO of Wassel (وصل) — Arabic-first LinkedIn outreach SaaS for Saudi Arabia.
 Platform: https://wassel-alpha.vercel.app

@@ -7,6 +7,7 @@ import { tokenRouter } from './routes/tokens';
 import { adminRouter } from './routes/admin';
 import { knowledgeRouter } from './routes/knowledge';
 import { reviewsRouter } from './routes/reviews';
+import { feedbackRouter } from './routes/feedback';
 
 export { router, publicProcedure, protectedProcedure };
 
@@ -38,6 +39,7 @@ export const appRouter = router({
   admin: adminRouter,
   knowledge: knowledgeRouter,
   reviews: reviewsRouter,
+  feedback: feedbackRouter,
 });
 
 export type AppRouter = typeof appRouter;
