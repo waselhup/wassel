@@ -7,7 +7,6 @@ import {
 } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabase';
 
 type PostStatus = 'draft' | 'scheduled' | 'posted';
 type Tone = 'professional' | 'inspirational' | 'educational' | 'casual';
@@ -30,9 +29,23 @@ interface Post {
 
 // -------------- Helpers --------------
 
-async function getAuthToken(): Promise<string | null> {
-  const { data } = await supabase.auth.getSession();
-  return data.session?.access_token ?? null;
+function getAuthToken(): string | null {
+  // Fast path: read from localStorage (avoids getSession() hanging)
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
+        const raw = localStorage.getItem(key);
+        if (!raw) continue;
+        const parsed = JSON.parse(raw);
+        const token = parsed?.access_token || parsed?.currentSession?.access_token;
+        if (token) return token;
+      }
+    }
+  } catch (e) {
+    console.error('[Posts] localStorage token read failed:', e);
+  }
+  return null;
 }
 
 function relativeTime(iso: string, isAr: boolean): string {
@@ -164,7 +177,7 @@ export default function Posts() {
   async function loadPosts() {
     setLoading(true);
     try {
-      const token = await getAuthToken();
+      const token = getAuthToken();
       if (!token) { setLoading(false); return; }
       const res = await fetch('/api/posts', { headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) {
@@ -179,20 +192,36 @@ export default function Posts() {
     if (!topic.trim()) return;
     setGenerating(true);
     setPreview(null);
+    console.log('[Posts] Generating post, topic:', topic, 'tone:', tone, 'lang:', lang);
     try {
-      const token = await getAuthToken();
-      if (!token) { toast.push('error', t('posts.errorGenerating')); setGenerating(false); return; }
+      const token = getAuthToken();
+      if (!token) {
+        console.error('[Posts] No auth token found');
+        toast.push('error', t('posts.errorGenerating'));
+        setGenerating(false);
+        return;
+      }
+      console.log('[Posts] Sending fetch to /api/posts/generate');
       const res = await fetch('/api/posts/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ topic, tone, language: lang, includeHashtags }),
       });
+      console.log('[Posts] Response status:', res.status);
       if (res.status === 402) { toast.push('error', t('posts.notEnoughTokens')); setGenerating(false); return; }
-      if (!res.ok) { toast.push('error', t('posts.errorGenerating')); setGenerating(false); return; }
+      if (!res.ok) {
+        const errBody = await res.text();
+        console.error('[Posts] Generate failed:', res.status, errBody);
+        toast.push('error', t('posts.errorGenerating'));
+        setGenerating(false);
+        return;
+      }
       const data = await res.json();
+      console.log('[Posts] Generated successfully, content length:', data.content?.length || 0);
       setPreview({ content: data.content || '', hashtags: Array.isArray(data.hashtags) ? data.hashtags : [] });
-    } catch {
-      toast.push('error', t('posts.errorGenerating'));
+    } catch (err: any) {
+      console.error('[Posts] Generate error:', err);
+      toast.push('error', err?.message || t('posts.errorGenerating'));
     }
     setGenerating(false);
   }
@@ -200,7 +229,7 @@ export default function Posts() {
   async function savePost(status: PostStatus = 'draft') {
     if (!preview) return;
     try {
-      const token = await getAuthToken();
+      const token = getAuthToken();
       if (!token) return;
       const res = await fetch('/api/posts', {
         method: 'POST',
@@ -225,7 +254,7 @@ export default function Posts() {
   async function deletePost(id: string) {
     if (!confirm(t('posts.confirmDelete'))) return;
     try {
-      const token = await getAuthToken();
+      const token = getAuthToken();
       if (!token) return;
       const res = await fetch(`/api/posts/${id}`, {
         method: 'DELETE',
@@ -252,7 +281,7 @@ export default function Posts() {
       : content;
     const linkedInUrl = `https://www.linkedin.com/feed/?shareActive=true&text=${encodeURIComponent(fullContent)}`;
     try {
-      const token = await getAuthToken();
+      const token = getAuthToken();
       if (token) {
         await fetch('/api/posts', {
           method: 'POST',
@@ -280,7 +309,7 @@ export default function Posts() {
       : post.content;
     const linkedInUrl = `https://www.linkedin.com/feed/?shareActive=true&text=${encodeURIComponent(fullContent)}`;
     try {
-      const token = await getAuthToken();
+      const token = getAuthToken();
       if (token) {
         await fetch(`/api/posts/${post.id}`, {
           method: 'PATCH',

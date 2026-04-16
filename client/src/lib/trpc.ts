@@ -135,6 +135,24 @@ export const trpc = {
   },
   admin: {
     stats: () => trpcQuery<any>('admin.stats'),
+    users: () => trpcQuery<any[]>('admin.users'),
+    addTokens: (input: { userId: string; amount: number; reason: string }) =>
+      trpcMutation<any>('admin.addTokens', input),
+    toggleBan: (input: { userId: string }) =>
+      trpcMutation<any>('admin.toggleBan', input),
+    campaigns: () => trpcQuery<any[]>('admin.campaigns'),
+    systemStatus: () => trpcQuery<any>('admin.systemStatus'),
+  },
+  reviews: {
+    list: () => trpcQuery<any[]>('reviews.list'),
+    submit: (input: { rating: number; comment: string }) =>
+      trpcMutation<any>('reviews.submit', input),
+    myReviews: () => trpcQuery<any[]>('reviews.myReviews'),
+    listPending: () => trpcQuery<any[]>('reviews.listPending'),
+    listAll: () => trpcQuery<any[]>('reviews.listAll'),
+    approve: (input: { id: string }) => trpcMutation<any>('reviews.approve', input),
+    reject: (input: { id: string }) => trpcMutation<any>('reviews.reject', input),
+    delete: (input: { id: string }) => trpcMutation<any>('reviews.delete', input),
   },
   knowledge: {
     list: () => trpcQuery<any[]>('knowledge.list'),

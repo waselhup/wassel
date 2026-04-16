@@ -6,6 +6,7 @@ import { campaignRouter } from './routes/campaign';
 import { tokenRouter } from './routes/tokens';
 import { adminRouter } from './routes/admin';
 import { knowledgeRouter } from './routes/knowledge';
+import { reviewsRouter } from './routes/reviews';
 
 export { router, publicProcedure, protectedProcedure };
 
@@ -36,6 +37,7 @@ export const appRouter = router({
   token: tokenRouter,
   admin: adminRouter,
   knowledge: knowledgeRouter,
+  reviews: reviewsRouter,
 });
 
 export type AppRouter = typeof appRouter;

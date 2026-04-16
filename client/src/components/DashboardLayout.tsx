@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { WasselLogo } from './WasselLogo';
 import {
   Home, BarChart2, FileText, Send, Coins, User, BookOpen,
-  LogOut, Globe, Menu, X, ChevronDown, Settings, TrendingUp, UserCheck, PenSquare
+  LogOut, Globe, Menu, X, ChevronDown, Settings, TrendingUp, UserCheck, PenSquare, Shield
 } from 'lucide-react';
 
 interface DashboardLayoutProps {
@@ -52,6 +52,12 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, page
     { href: '/app/analytics', icon: TrendingUp, label: t('nav.analytics', 'التحليلات') },
     { href: '/app/profile', icon: User, label: t('nav.profile', '\u0627\u0644\u0645\u0644\u0641') },
   ];
+
+  // Add admin link if user is admin
+  const ADMIN_EMAILS = ['waselhup@gmail.com', 'almodhih.1995@gmail.com', 'alhashimali649@gmail.com'];
+  if (ADMIN_EMAILS.includes(user?.email || '')) {
+    nav.push({ href: '/app/admin', icon: Shield, label: t('nav.admin', '\u0644\u0648\u062d\u0629 \u0627\u0644\u0625\u062f\u0627\u0631\u0629') });
+  }
 
   const isActive = (href: string) => href === '/app' ? location === '/app' : location.startsWith(href);
 

@@ -3,7 +3,9 @@ import { WasselLogo } from '../components/WasselLogo';
 import VideoDemo from '../components/landing/VideoDemo';
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { Linkedin, FileText, Mail, BarChart3, Shield, Check, ArrowRight, Star, Globe2, Users } from 'lucide-react';
+import { Linkedin, FileText, Mail, BarChart3, Shield, Check, ArrowRight, Star, Globe2, Users, MessageSquare } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { trpcQuery } from '@/lib/trpc';
 
 const fadeUp = {
   initial: { opacity: 0, y: 24 },
@@ -22,6 +24,11 @@ const stagger = {
 export default function LandingPage() {
   const { t, i18n } = useTranslation();
   const isRTL = i18n.language === "ar";
+  const [userReviews, setUserReviews] = useState<any[]>([]);
+
+  useEffect(() => {
+    trpcQuery('reviews.list').then((data: any[]) => setUserReviews(data || [])).catch(() => {});
+  }, []);
 
   return (
     <div
@@ -606,6 +613,73 @@ export default function LandingPage() {
           </motion.div>
         </div>
       </section>
+
+      {/* USER REVIEWS - real reviews from approved users */}
+      {userReviews.length > 0 && (
+        <section className="py-24 bg-gradient-to-b from-white to-[#f0fdf9]">
+          <div className="max-w-7xl mx-auto px-6">
+            <motion.div {...fadeUp} className="text-center mb-16">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#0A8F84]/10 text-[#0A8F84] text-sm font-semibold mb-4">
+                <MessageSquare className="w-4 h-4" />
+                {isRTL ? 'آراء حقيقية' : 'Real Reviews'}
+              </div>
+              <h2 className="text-4xl md:text-5xl font-extrabold text-[#064E49] mb-4">
+                {isRTL ? 'آراء عملائنا' : 'What Our Users Say'}
+              </h2>
+              <p className="text-xl text-[#6b7280]">
+                {isRTL ? 'تقييمات حقيقية من مستخدمي وصّل' : 'Real feedback from Wassel users'}
+              </p>
+            </motion.div>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {userReviews.slice(0, 6).map((review, i) => (
+                <motion.div
+                  key={review.id}
+                  initial={{ opacity: 0, y: 16 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.08 }}
+                  className="p-8 rounded-2xl bg-white border border-gray-200 hover:shadow-xl transition-shadow"
+                >
+                  <div className="flex items-center gap-1 mb-4">
+                    {[1, 2, 3, 4, 5].map(s => (
+                      <Star key={s} className={`w-4 h-4 ${s <= review.rating ? 'fill-[#0A8F84] text-[#0A8F84]' : 'text-gray-200'}`} />
+                    ))}
+                  </div>
+                  <p className="text-[#1f2937] leading-relaxed mb-6 text-base line-clamp-4">
+                    {review.comment}
+                  </p>
+                  <div className="flex items-center gap-3">
+                    {review.user_avatar ? (
+                      <img src={review.user_avatar} alt="" referrerPolicy="no-referrer"
+                        className="w-10 h-10 rounded-full object-cover border-2 border-[#0A8F84]" />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#064E49] to-[#0A8F84] flex items-center justify-center text-white font-bold text-sm">
+                        {(review.user_name || '?').charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <div>
+                      <div className="font-bold text-[#064E49] text-sm">{review.user_name?.split(' ')[0] || (isRTL ? 'مستخدم' : 'User')}</div>
+                      <div className="text-xs text-[#6b7280]">{new Date(review.created_at).toLocaleDateString(isRTL ? 'ar' : 'en', { month: 'short', year: 'numeric' })}</div>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* No reviews yet — invite */}
+      {userReviews.length === 0 && (
+        <section className="py-16">
+          <div className="max-w-3xl mx-auto px-6 text-center">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#0A8F84]/10 text-[#0A8F84] text-sm font-semibold">
+              <Star className="w-4 h-4" />
+              {isRTL ? 'كن أول من يشارك تجربته' : 'Be the first to share your experience'}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* CTA BANNER */}
       <section className="py-24">

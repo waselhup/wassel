@@ -102,8 +102,8 @@ Generate the LinkedIn post now. Return valid JSON only.`;
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-5',
-        max_tokens: 1024,
-        system: systemPrompt,
+        max_tokens: 8192,
+        system: systemPrompt + '\n\nIMPORTANT: Respond ONLY with valid JSON. No markdown, no code fences.',
         messages: [{ role: 'user', content: userPrompt }],
       }),
     });

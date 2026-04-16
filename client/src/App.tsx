@@ -107,6 +107,7 @@ const AppRoutes: React.FC = () => {
   const [matchAppAnalytics] = useRoute('/app/analytics');
   const [matchAppProfileAnalysis] = useRoute('/app/profile-analysis');
   const [matchAppPosts] = useRoute('/app/posts');
+  const [matchAppAdmin] = useRoute('/app/admin');
 
   if (match) return <LandingPage />;
   if (matchLogin) return <Login />;
@@ -204,8 +205,14 @@ const AppRoutes: React.FC = () => {
         <Analytics />
       </ProtectedRoute>
     );
+  if (matchAppAdmin)
+    return (
+      <ProtectedRoute>
+        <AdminDashboard />
+      </ProtectedRoute>
+    );
 
-  // Admin Routes
+  // Admin Routes (legacy /admin paths)
   if (matchAdminHome)
     return (
       <ProtectedRoute>

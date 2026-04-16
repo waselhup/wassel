@@ -95,8 +95,8 @@ export default function CVTailor() {
       return;
     }
     setLoading(true); setDone(false); setError(null); setVersions([]);
+    console.log('[CV] Starting generation...');
     try {
-      // Send job title as the field, with full context
       const fields = [form.jobTitle];
       const context = {
         name: form.name,
@@ -110,18 +110,26 @@ export default function CVTailor() {
         achievements: form.achievements,
         languages: form.languages,
       };
+      console.log('[CV] Calling trpc.cv.generate with fields:', fields);
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('timeout')), 60000)
+        setTimeout(() => reject(new Error('timeout')), 90000)
       );
-      const result = await Promise.race([
+      const raw = await Promise.race([
         trpc.cv.generate(fields, context),
         timeoutPromise,
-      ]) as { versions: any[]; tokensRemaining: number };
-      setVersions(Array.isArray(result?.versions) ? result.versions : []);
+      ]);
+      console.log('[CV] Raw response:', JSON.stringify(raw).substring(0, 300));
+      // Unwrap nested response shapes
+      const result = (raw as any)?.result?.data ?? (raw as any)?.data ?? raw;
+      console.log('[CV] Unwrapped result keys:', Object.keys(result || {}));
+      const versionsList = Array.isArray(result?.versions) ? result.versions : [];
+      console.log('[CV] Versions count:', versionsList.length);
+      setVersions(versionsList);
       setDone(true);
     } catch (e: any) {
+      console.error('[CV] Generation error:', e);
       if (e?.message === 'timeout') {
-        setError('انتهت المهلة (60 ثانية). حاول مرة أخرى.');
+        setError('انتهت المهلة (90 ثانية). حاول مرة أخرى.');
       } else {
         setError(e?.message || t("cv.err.failed", "فشل الإنشاء. حاول مرة أخرى."));
       }

@@ -90,7 +90,8 @@ Make the content specific to ${field}, professional, and optimized for ATS syste
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-5',
-        max_tokens: 1024,
+        max_tokens: 8192,
+        system: 'You are a professional CV writer. Respond ONLY with valid JSON. No markdown, no code fences, no explanation text. Just the raw JSON object.',
         messages: [{ role: 'user', content: prompt }],
       }),
     });
@@ -116,13 +117,24 @@ Make the content specific to ${field}, professional, and optimized for ATS syste
 
     console.log(`[CLAUDE] Parsing JSON response for field: ${field}`);
 
-    const jsonMatch = textContent.text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      console.error('[CLAUDE] Could not extract JSON from response');
-      throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to parse Claude API response' });
+    let parsedData: any;
+    try {
+      // Try direct parse first
+      parsedData = JSON.parse(textContent.text.trim());
+    } catch {
+      // Fallback: extract JSON from markdown/text
+      const jsonMatch = textContent.text.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        console.error('[CLAUDE] Could not extract JSON from response:', textContent.text.substring(0, 500));
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to parse Claude API response' });
+      }
+      try {
+        parsedData = JSON.parse(jsonMatch[0]);
+      } catch (e2) {
+        console.error('[CLAUDE] JSON parse failed even after extraction:', e2);
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Invalid JSON from Claude API' });
+      }
     }
-
-    const parsedData = JSON.parse(jsonMatch[0]);
 
     const versionData: VersionData = {
       fieldName: field,
@@ -281,7 +293,8 @@ export const cvRouter = router({
         },
         body: JSON.stringify({
           model: 'claude-haiku-4-5',
-          max_tokens: 1500,
+          max_tokens: 4096,
+          system: 'Respond ONLY with valid JSON. No markdown, no code fences, no explanation text.',
           messages: [{
             role: 'user',
             content: `Extract structured CV/resume data from this text. Return ONLY a JSON object with these fields (use empty string if not found):

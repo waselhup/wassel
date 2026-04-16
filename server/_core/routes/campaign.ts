@@ -67,18 +67,18 @@ Response as JSON only:
 
   try {
     console.log('[CLAUDE] Calling claude-sonnet-4-5 model');
-    
+
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'x-api-key': process.env.ANTHROPIC_API_KEY!,
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-5',
-        max_tokens: 4096,
-        system: systemPrompt,
+        max_tokens: 8192,
+        system: systemPrompt + '\n\nIMPORTANT: Respond ONLY with valid JSON. No markdown, no code fences, no explanation text.',
         messages: [
           {
             role: 'user',
@@ -108,19 +108,28 @@ Response as JSON only:
       throw new Error('Unexpected response type from Claude');
     }
 
-    // Parse the JSON response (handle potential markdown wrapping)
+    // Parse the JSON response with robust extraction
     let emailData: Record<string, ClaudeMessage>;
     try {
-      let jsonStr = textContent.text;
-      const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        jsonStr = jsonMatch[0];
-      }      emailData = JSON.parse(jsonStr);
-      console.log('[CAMPAIGN] Successfully parsed', Object.keys(emailData).length, 'emails from Claude');
-    } catch (parseErr) {
-      console.error('[CAMPAIGN] Failed to parse Claude response:', textContent.text.substring(0, 500));
-      throw new Error('Invalid JSON response from Claude');
+      // Try direct parse first
+      emailData = JSON.parse(textContent.text.trim());
+      console.log('[CAMPAIGN] Direct JSON parse succeeded');
+    } catch {
+      // Fallback: extract JSON from markdown/text
+      try {
+        const jsonMatch = textContent.text.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) {
+          console.error('[CAMPAIGN] No JSON found in response:', textContent.text.substring(0, 500));
+          throw new Error('No JSON in Claude response');
+        }
+        emailData = JSON.parse(jsonMatch[0]);
+        console.log('[CAMPAIGN] Regex JSON extraction succeeded');
+      } catch (parseErr) {
+        console.error('[CAMPAIGN] Failed to parse Claude response:', textContent.text.substring(0, 500));
+        throw new Error('Invalid JSON response from Claude');
+      }
     }
+    console.log('[CAMPAIGN] Successfully parsed', Object.keys(emailData).length, 'emails from Claude');
 
     // Convert to Map for easier lookup
     const emailMap = new Map<string, ClaudeMessage>();
@@ -371,13 +380,13 @@ Return JSON array:
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-api-key': process.env.ANTHROPIC_API_KEY,
+            'x-api-key': process.env.ANTHROPIC_API_KEY!,
             'anthropic-version': '2023-06-01',
           },
           body: JSON.stringify({
             model: 'claude-sonnet-4-5',
-            max_tokens: 4096,
-            system: systemPrompt,
+            max_tokens: 8192,
+            system: systemPrompt + '\n\nIMPORTANT: Respond ONLY with valid JSON array. No markdown, no code fences.',
             messages: [{ role: 'user', content: userPrompt }],
           }),
         });
