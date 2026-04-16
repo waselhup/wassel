@@ -276,14 +276,28 @@ export default function ProfileAnalysis() {
         mediaType,
       });
       console.log('[Analyze] Response received:', res ? 'has data' : 'empty');
+      console.log('[Analyze] Response type:', typeof res);
+      console.log('[Analyze] Response keys:', res ? Object.keys(res) : 'null');
+      console.log('[Analyze] Response snippet:', JSON.stringify(res).substring(0, 500));
+      console.log('[Analyze] Has score?', 'score' in (res || {}), 'score value:', res?.score);
       clearTimeout(stageTimer1); clearTimeout(stageTimer2);
-      if (!res) {
+
+      // Unwrap if server returned nested { result: { data: ... } } or { data: ... }
+      const analysis = res?.score !== undefined ? res
+        : res?.data?.score !== undefined ? res.data
+        : res?.result?.score !== undefined ? res.result
+        : res?.result?.data?.score !== undefined ? res.result.data
+        : res;
+      console.log('[Analyze] Final analysis score:', analysis?.score);
+
+      if (!analysis) {
         console.error('[Analyze] Empty response from analyzeDeep');
         toast.push('error', t('profileAnalysis.error', 'حدث خطأ غير متوقع - لم يتم استلام رد'));
-      } else if (res.error) {
-        toast.push('error', res.error);
+      } else if (analysis.error) {
+        toast.push('error', analysis.error);
       } else {
-        setResult(res as AnalysisResult);
+        console.log('[Analyze] Setting result, score:', analysis.score);
+        setResult(analysis as AnalysisResult);
         setTab('overview');
         toast.push('success', t('profileAnalysis.analysisDone', 'تم التحليل بنجاح!'));
         void loadHistory();
