@@ -2,32 +2,44 @@ import { supabase } from './supabase';
 
 const BASE = '/api/trpc';
 
+function getTokenFromLocalStorage(): string | null {
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
+        const raw = localStorage.getItem(key);
+        if (!raw) continue;
+        const parsed = JSON.parse(raw);
+        const token = parsed?.access_token || parsed?.currentSession?.access_token;
+        if (token) return token;
+      }
+    }
+  } catch (e) {
+    console.error('[trpc] localStorage token read failed:', e);
+  }
+  return null;
+}
+
 async function authHeaders(): Promise<Record<string, string>> {
   const h: Record<string, string> = { 'Content-Type': 'application/json' };
+
+  // FAST PATH: read token from localStorage (instant, no hanging)
+  const cachedToken = getTokenFromLocalStorage();
+  if (cachedToken) {
+    h['Authorization'] = `Bearer ${cachedToken}`;
+    console.log('[trpc] Using cached token from localStorage');
+    return h;
+  }
+
+  // SLOW PATH: fallback to getSession with timeout
+  console.log('[trpc] No cached token, calling getSession...');
   try {
-    console.log('[trpc] authHeaders: calling getSession...');
     const sessionPromise = supabase.auth.getSession();
     const timeoutPromise = new Promise((_, reject) =>
       setTimeout(() => reject(new Error('getSession timeout after 5s')), 5000)
     );
     const { data } = await Promise.race([sessionPromise, timeoutPromise]) as any;
-    console.log('[trpc] authHeaders: getSession returned, hasSession:', !!data?.session);
-
-    let token = data?.session?.access_token;
-    if (!token) {
-      console.log('[trpc] authHeaders: no token, trying refresh...');
-      const refreshPromise = supabase.auth.refreshSession();
-      const refreshTimeout = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('refreshSession timeout after 5s')), 5000)
-      );
-      try {
-        const { data: r } = await Promise.race([refreshPromise, refreshTimeout]) as any;
-        token = r?.session?.access_token;
-        console.log('[trpc] authHeaders: refresh done, hasToken:', !!token);
-      } catch (e) {
-        console.error('[trpc] authHeaders: refresh failed:', e);
-      }
-    }
+    const token = data?.session?.access_token;
     if (token) h['Authorization'] = `Bearer ${token}`;
   } catch (e) {
     console.error('[trpc] authHeaders error:', e);
@@ -40,7 +52,6 @@ function handle(j: any) {
   if (j?.error) {
     const code = j.error.data?.code;
     if (code === 'UNAUTHORIZED') {
-      window.location.href = '/login';
       throw new Error('غير مصرّح - يرجى تسجيل الدخول');
     }
     throw new Error(j.error.message || 'Request failed');
