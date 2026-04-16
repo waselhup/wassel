@@ -21,7 +21,7 @@ function handle(j: any) {
     const code = j.error.data?.code;
     if (code === 'UNAUTHORIZED') {
       window.location.href = '/login';
-      return;
+      throw new Error('غير مصرّح - يرجى تسجيل الدخول');
     }
     throw new Error(j.error.message || 'Request failed');
   }
@@ -55,6 +55,8 @@ export const trpc = {
   linkedin: {
     analyze: (profileUrl: string) =>
       trpcMutation<any>('linkedin.analyze', { profileUrl }),
+    analyzeDeep: (input: { linkedinUrl?: string; imageBase64?: string; mediaType?: string }) =>
+      trpcMutation<any>('linkedin.analyzeDeep', input),
     history: () => trpcQuery<any[]>('linkedin.history'),
   },
   cv: {

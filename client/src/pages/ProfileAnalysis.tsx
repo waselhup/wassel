@@ -264,18 +264,21 @@ export default function ProfileAnalysis() {
   async function handleAnalyze() {
     if (!url.trim() && !imageBase64) return;
     setLoading(true); setLoadingStage(0); setResult(null); setCheckedItems({});
+    const stageTimer1 = setTimeout(() => setLoadingStage(1), 2000);
+    const stageTimer2 = setTimeout(() => setLoadingStage(2), 5000);
     try {
       const { trpcMutation } = await import('../lib/trpc');
-      // Cycle through loading stages
-      const stageTimer1 = setTimeout(() => setLoadingStage(1), 2000);
-      const stageTimer2 = setTimeout(() => setLoadingStage(2), 5000);
+      console.log('[ProfileAnalysis] calling analyzeDeep, url:', url ? 'yes' : 'no', 'image:', imageBase64 ? 'yes' : 'no');
       const res = await trpcMutation('linkedin.analyzeDeep', {
         linkedinUrl: url || undefined,
         imageBase64: imageBase64 || undefined,
         mediaType,
       });
       clearTimeout(stageTimer1); clearTimeout(stageTimer2);
-      if (res.error) {
+      if (!res) {
+        console.error('[ProfileAnalysis] Empty response from analyzeDeep');
+        toast.push('error', t('profileAnalysis.error', 'حدث خطأ غير متوقع - لم يتم استلام رد'));
+      } else if (res.error) {
         toast.push('error', res.error);
       } else {
         setResult(res as AnalysisResult);
@@ -284,8 +287,10 @@ export default function ProfileAnalysis() {
         void loadHistory();
       }
     } catch (err: any) {
+      console.error('[ProfileAnalysis] Error:', err);
       toast.push('error', err?.message || t('profileAnalysis.error', 'حدث خطأ غير متوقع'));
     }
+    clearTimeout(stageTimer1); clearTimeout(stageTimer2);
     setLoading(false);
   }
 

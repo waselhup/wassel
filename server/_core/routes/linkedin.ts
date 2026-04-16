@@ -475,7 +475,7 @@ Profile data:`;
           messages.push({ role: 'user', content: DEEP_PROMPT + '\n' + profileText });
         }
 
-        console.log('[DEEP] Calling Claude claude-sonnet-4-5');
+        console.log('[DEEP] Calling Claude claude-sonnet-4-6');
         const _deepT0 = Date.now();
         const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST',
@@ -485,7 +485,7 @@ Profile data:`;
             'anthropic-version': '2023-06-01',
           },
           body: JSON.stringify({
-            model: 'claude-sonnet-4-5',
+            model: 'claude-sonnet-4-6',
             max_tokens: 3000,
             messages,
           }),
@@ -526,7 +526,7 @@ Profile data:`;
         await ctx.supabase.from('ai_cache').upsert({
           cache_key: cacheKey,
           result,
-          model: 'claude-sonnet-4-5',
+          model: 'claude-sonnet-4-6',
           tokens_used: tokensUsed,
           expires_at: expires,
         }, { onConflict: 'cache_key' });

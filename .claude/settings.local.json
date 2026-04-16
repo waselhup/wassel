@@ -2,7 +2,10 @@
   "permissions": {
     "allow": [
       "mcp__supabase__get_publishable_keys",
-      "mcp__supabase__get_project_url"
+      "mcp__supabase__get_project_url",
+      "Bash(npx esbuild:*)",
+      "Bash(pnpm run:*)",
+      "Bash(pnpm install:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
