@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { router, protectedProcedure } from '../trpc-init';
 import { TRPCError } from '@trpc/server';
+import { sendTicketResponseEmail, shouldSendTransactional } from '../lib/email';
 
 const adminProcedure = protectedProcedure.use(async ({ ctx, next }) => {
   const { data: profile } = await ctx.supabase
@@ -84,11 +85,43 @@ export const feedbackRouter = router({
         updated_at: new Date().toISOString(),
       };
       if (input.status) update.status = input.status;
+
+      const { data: ticket, error: fetchErr } = await ctx.supabase
+        .from('feedback_tickets')
+        .select('id, user_id, subject')
+        .eq('id', input.id)
+        .single();
+      if (fetchErr || !ticket) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Ticket not found' });
+      }
+
       const { error } = await ctx.supabase
         .from('feedback_tickets')
         .update(update)
         .eq('id', input.id);
       if (error) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: error.message });
+
+      try {
+        if (await shouldSendTransactional(ctx.supabase, (ticket as any).user_id)) {
+          const { data: profile } = await ctx.supabase
+            .from('profiles')
+            .select('email, full_name, locale')
+            .eq('id', (ticket as any).user_id)
+            .single();
+          if (profile?.email) {
+            const result = await sendTicketResponseEmail({
+              user: { email: profile.email, fullName: profile.full_name, language: profile.locale },
+              ticketSubject: (ticket as any).subject,
+              ticketId: (ticket as any).id,
+              responseText: input.response,
+            });
+            console.log('[feedback.respond] email result:', result);
+          }
+        }
+      } catch (e: any) {
+        console.error('[feedback.respond] email send failed (non-fatal):', e?.message);
+      }
+
       return { success: true };
     }),
 

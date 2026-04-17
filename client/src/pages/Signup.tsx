@@ -83,6 +83,34 @@ export default function Signup() {
     setLoading(true);
     try {
       await signUp?.(email, password, name);
+
+      try {
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
+            const raw = localStorage.getItem(key);
+            if (!raw) continue;
+            const parsed = JSON.parse(raw);
+            const token = parsed?.access_token || parsed?.currentSession?.access_token;
+            if (token) {
+              fetch('/api/email/welcome', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${token}`,
+                },
+              })
+                .then((r) => r.json())
+                .then((j) => console.log('[signup] welcome email:', j))
+                .catch((e) => console.error('[signup] welcome email failed:', e));
+              break;
+            }
+          }
+        }
+      } catch (e) {
+        console.error('[signup] welcome email trigger error:', e);
+      }
+
       setLocation("/app/setup");
     } catch (err: any) {
       setError(err?.message || t("auth.error.signup", "فشل إنشاء الحساب"));

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { router, protectedProcedure } from '../trpc-init';
 import { TRPCError } from '@trpc/server';
+import { sendTokenGrantEmail, shouldSendTransactional } from '../lib/email';
 
 // Middleware to check if user is admin
 const adminProcedure = protectedProcedure.use(async ({ ctx, next }) => {
@@ -113,10 +114,10 @@ export const adminRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       try {
-        // Get current balance
+        // Get current balance + recipient info for email
         const { data: profile } = await ctx.supabase
           .from('profiles')
-          .select('token_balance')
+          .select('token_balance, email, full_name, locale')
           .eq('id', input.userId)
           .single();
         if (!profile) {
@@ -126,17 +127,15 @@ export const adminRouter = router({
           });
         }
 
-        // Update balance
+        const newBalance = (profile.token_balance || 0) + input.amount;
+
         const { error: updateError } = await ctx.supabase
           .from('profiles')
-          .update({
-            token_balance: (profile.token_balance || 0) + input.amount,
-          })
+          .update({ token_balance: newBalance })
           .eq('id', input.userId);
 
         if (updateError) throw updateError;
 
-        // Log transaction
         const { error: transError } = await ctx.supabase
           .from('token_transactions')
           .insert([
@@ -149,6 +148,23 @@ export const adminRouter = router({
           ]);
 
         if (transError) throw transError;
+
+        try {
+          if (
+            profile.email &&
+            (await shouldSendTransactional(ctx.supabase, input.userId))
+          ) {
+            const result = await sendTokenGrantEmail({
+              user: { email: profile.email, fullName: profile.full_name, language: profile.locale },
+              amount: input.amount,
+              reason: input.reason,
+              newBalance,
+            });
+            console.log('[admin.addTokens] email result:', result);
+          }
+        } catch (e: any) {
+          console.error('[admin.addTokens] email send failed (non-fatal):', e?.message);
+        }
 
         return { success: true };
       } catch (err) {

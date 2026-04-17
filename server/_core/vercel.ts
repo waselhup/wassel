@@ -6,6 +6,8 @@ import { createExpressMiddleware } from '@trpc/server/adapters/express';
 import { appRouter } from './trpc';
 import { createContext } from './context';
 import type { IncomingMessage, ServerResponse } from 'http';
+import { createClient } from '@supabase/supabase-js';
+import { sendWelcomeEmail, sendTestEmail } from './lib/email';
 
 const app = express();
 
@@ -54,6 +56,72 @@ app.post('/api/log-error', (req, res) => {
 
 
 app.get('/api/test-route', (_req, res) => { res.json({ok:true,routes:'working'}); });
+
+// ===== Email Routes =====
+const SUPABASE_URL_EMAIL = process.env.VITE_SUPABASE_URL || 'https://hiqotmimlgsrsnovtopd.supabase.co';
+const SUPABASE_SERVICE_KEY_EMAIL = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const ADMIN_EMAILS_LIST = ['waselhup@gmail.com', 'almodhih.1995@gmail.com', 'alhashimali649@gmail.com'];
+
+async function getUserFromAuthHeader(authHeader: string | undefined) {
+  if (!authHeader?.startsWith('Bearer ')) return null;
+  const token = authHeader.replace('Bearer ', '');
+  const sb = createClient(SUPABASE_URL_EMAIL, SUPABASE_SERVICE_KEY_EMAIL);
+  const { data: { user } } = await sb.auth.getUser(token);
+  return user || null;
+}
+
+// Triggered by client right after signup completes — idempotent via welcome_email_sent flag
+app.post('/api/email/welcome', async (req, res) => {
+  try {
+    const user = await getUserFromAuthHeader(req.headers.authorization);
+    if (!user) return res.status(401).json({ error: 'Unauthorized' });
+
+    const sb = createClient(SUPABASE_URL_EMAIL, SUPABASE_SERVICE_KEY_EMAIL);
+    const { data: profile } = await sb
+      .from('profiles')
+      .select('email, full_name, locale, welcome_email_sent')
+      .eq('id', user.id)
+      .single();
+
+    if (!profile?.email) {
+      return res.status(400).json({ error: 'Profile missing email' });
+    }
+    if (profile.welcome_email_sent) {
+      return res.json({ ok: true, skipped: true, reason: 'already_sent' });
+    }
+
+    const result = await sendWelcomeEmail({
+      email: profile.email,
+      fullName: profile.full_name,
+      language: profile.locale,
+    });
+
+    if (result.success) {
+      await sb.from('profiles').update({ welcome_email_sent: true }).eq('id', user.id);
+    }
+    return res.json({ ok: result.success, ...result });
+  } catch (e: any) {
+    console.error('[email/welcome] error:', e?.message);
+    return res.status(500).json({ error: e?.message || 'Internal error' });
+  }
+});
+
+// Admin-only test endpoint — sends a smoke-test email
+app.post('/api/email/test', async (req, res) => {
+  try {
+    const user = await getUserFromAuthHeader(req.headers.authorization);
+    if (!user) return res.status(401).json({ error: 'Unauthorized' });
+    if (!user.email || !ADMIN_EMAILS_LIST.includes(user.email)) {
+      return res.status(403).json({ error: 'Admin only' });
+    }
+    const to = (req.body?.to as string) || user.email;
+    const result = await sendTestEmail(to);
+    return res.json({ ok: result.success, ...result });
+  } catch (e: any) {
+    console.error('[email/test] error:', e?.message);
+    return res.status(500).json({ error: e?.message || 'Internal error' });
+  }
+});
 
 // ===== Gmail OAuth Routes =====
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
