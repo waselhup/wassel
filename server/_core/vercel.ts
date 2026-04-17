@@ -237,6 +237,57 @@ app.get('/api/auth/google/callback', async (req, res) => {
   }
 });
 
+// ===== Unsubscribe (CAN-SPAM / PDPL compliance) =====
+// One-click unsubscribe — /unsubscribe?t=<token>
+app.get('/unsubscribe', async (req, res) => {
+  const token = (req.query.t as string) || '';
+  if (!token || token.length < 16) {
+    return res.status(404).send('<h1>Not found</h1>');
+  }
+  try {
+    const sb = createClient(SUPABASE_URL_EMAIL, SUPABASE_SERVICE_KEY_EMAIL);
+    const { data: tok } = await sb
+      .from('unsubscribe_tokens')
+      .select('token, email, campaign_id, used_at')
+      .eq('token', token)
+      .single();
+    if (!tok) return res.status(404).send('<h1>Not found</h1>');
+
+    if (!tok.used_at) {
+      await sb.from('unsubscribe_tokens').update({ used_at: new Date().toISOString() }).eq('token', token);
+      await sb
+        .from('email_suppressions')
+        .upsert(
+          [
+            {
+              email: tok.email,
+              reason: 'unsubscribed',
+              source_campaign_id: tok.campaign_id,
+            },
+          ],
+          { onConflict: 'email' }
+        );
+    }
+
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(`<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8" /><title>Unsubscribed</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<style>body{font-family:-apple-system,Cairo,Arial,sans-serif;background:#F9FAFB;color:#111827;margin:0;padding:48px 16px;text-align:center;}
+.card{max-width:440px;margin:0 auto;background:#fff;border-radius:16px;padding:32px;box-shadow:0 4px 12px rgba(0,0,0,0.06);}
+h1{font-size:22px;margin:0 0 12px;}p{font-size:14px;line-height:1.7;color:#374151;margin:0 0 16px;}a{color:#0A8F84;}</style>
+</head><body><div class="card">
+<h1>You have been unsubscribed ✓</h1>
+<p>The email <strong>${tok.email}</strong> will no longer receive outreach from Wassel.</p>
+<p>If you unsubscribed by mistake, <a href="mailto:support@wassel-alpha.vercel.app">let us know</a>.</p>
+<p style="font-size:11px;color:#9CA3AF;margin-top:24px;">© 2026 Wassel · Made in Saudi Arabia</p>
+</div></body></html>`);
+  } catch (e: any) {
+    console.error('[unsubscribe] error:', e?.message);
+    res.status(500).send('<h1>Something went wrong</h1>');
+  }
+});
+
 app.use(
   '/api/trpc',
   createExpressMiddleware({

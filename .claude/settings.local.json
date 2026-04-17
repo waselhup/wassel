@@ -5,7 +5,14 @@
       "mcp__supabase__get_project_url",
       "Bash(npx esbuild:*)",
       "Bash(pnpm run:*)",
-      "Bash(pnpm install:*)"
+      "Bash(pnpm install:*)",
+      "Bash(git push *)",
+      "mcp__supabase__list_tables",
+      "mcp__supabase__execute_sql",
+      "mcp__89a08a43-3fbe-4aef-bad5-05effd677f91__list_projects",
+      "mcp__89a08a43-3fbe-4aef-bad5-05effd677f91__execute_sql",
+      "mcp__89a08a43-3fbe-4aef-bad5-05effd677f91__apply_migration",
+      "Bash(npm run *)"
     ]
   },
   "enableAllProjectMcpServers": true,

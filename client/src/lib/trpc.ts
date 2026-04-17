@@ -106,32 +106,43 @@ export const trpc = {
   },
   campaign: {
     list: () => trpcQuery<any[]>('campaign.list'),
+    get: (input: { id: string }) =>
+      trpcQuery<{ campaign: any; recipients: any[] }>('campaign.get', input),
     previewMessages: (input: {
-      jobTitle: string;
-      targetCompanies: string[];
+      senderRole: string;
+      goal: string;
+      tone?: 'professional' | 'friendly' | 'concise';
       language: 'ar' | 'en';
-    }) => trpcMutation<{ messages: Array<{ company: string; subject: string; body: string }> }>('campaign.previewMessages', input),
+      companyIds: string[];
+    }) => trpcMutation<{ messages: Array<{ companyId: string; companyName: string; subject: string; body: string }> }>('campaign.previewMessages', input),
     create: (input: {
       campaignName: string;
-      jobTitle: string;
-      targetCompanies: string[];
-      recipientCount: number;
+      senderRole: string;
+      goal: string;
+      tone?: 'professional' | 'friendly' | 'concise';
       language: 'ar' | 'en';
+      companyIds: string[];
+      dailyLimit?: number;
     }) => trpcMutation<any>('campaign.create', input),
-    discoverProspects: (input: {
-      jobTitle: string;
-      industry: string;
-      location: string;
-    }) => trpcMutation<{ prospects: any[] }>('campaign.discoverProspects', input),
-    generateMessages: (input: {
-      prospects: Array<{ name: string; title: string; company: string; linkedinUrl: string }>;
-      jobTitle: string;
-      language: 'ar' | 'en';
-    }) => trpcMutation<{ messages: Array<{ prospectName: string; company: string; subject: string; body: string }> }>('campaign.generateMessages', input),
-    send: (input: {
-      campaignId: string;
-      messages: Array<{ email: string; subject: string; body: string }>;
-    }) => trpcMutation<{ sent: number; failed: number }>('campaign.send', input),
+    launch: (input: { id: string }) => trpcMutation<any>('campaign.launch', input),
+    pause: (input: { id: string }) => trpcMutation<any>('campaign.pause', input),
+    updateRecipient: (input: { recipientId: string; subject?: string; body?: string }) =>
+      trpcMutation<any>('campaign.updateRecipient', input),
+    processBatch: (input: { batchSize: number }) =>
+      trpcMutation<{ processed: number; active: number; dryRun: boolean }>('campaign.processBatch', input),
+  },
+  companies: {
+    list: (input?: { industry?: string; city?: string; size?: string; search?: string; limit?: number }) =>
+      trpcQuery<any[]>('companies.list', input || {}),
+    industries: () => trpcQuery<string[]>('companies.industries'),
+    get: (input: { id: string }) => trpcQuery<any>('companies.get', input),
+    create: (input: { name: string; name_ar?: string; website?: string; industry?: string; city?: string; size?: string; primary_email?: string }) =>
+      trpcMutation<any>('companies.create', input),
+    update: (input: { id: string; patch: Record<string, any> }) =>
+      trpcMutation<any>('companies.update', input),
+    enrich: (input: { id: string }) =>
+      trpcMutation<{ company: any; emailsFound: number; note: string }>('companies.enrich', input),
+    delete: (input: { id: string }) => trpcMutation<any>('companies.delete', input),
   },
   admin: {
     stats: () => trpcQuery<any>('admin.stats'),

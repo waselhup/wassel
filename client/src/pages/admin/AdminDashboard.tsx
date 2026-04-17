@@ -4,14 +4,15 @@ import { useTranslation } from 'react-i18next';
 import {
   Shield, Users, Activity, AlertTriangle, Star, CheckCircle2,
   XCircle, Loader2, Search, Coins, BarChart3, MessageSquare,
-  Send, RefreshCw, Ban, TicketCheck, MessageSquarePlus, Bot,
+  Send, RefreshCw, Ban, TicketCheck, MessageSquarePlus, Bot, Building2,
 } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/contexts/AuthContext';
 import AdminAgents from './AdminAgents';
+import AdminCompanies from './AdminCompanies';
 
-type Tab = 'overview' | 'users' | 'reviews' | 'alerts' | 'campaigns' | 'tokens' | 'tickets' | 'agents';
+type Tab = 'overview' | 'users' | 'reviews' | 'alerts' | 'campaigns' | 'companies' | 'tokens' | 'tickets' | 'agents';
 
 interface Toast { id: number; type: 'success' | 'error'; message: string }
 
@@ -143,6 +144,7 @@ export default function AdminDashboard() {
     { id: 'reviews', label: isAr ? 'المراجعات' : 'Reviews', icon: Star, count: pendingReviews.length },
     { id: 'alerts', label: isAr ? 'التنبيهات' : 'Alerts', icon: AlertTriangle, count: systemStatus?.recentErrors?.length || 0 },
     { id: 'campaigns', label: isAr ? 'الحملات' : 'Campaigns', icon: Send, count: campaigns.length },
+    { id: 'companies', label: isAr ? 'الشركات' : 'Companies', icon: Building2 },
     { id: 'tokens', label: isAr ? 'التوكنز' : 'Tokens', icon: Coins },
     { id: 'tickets', label: isAr ? 'الملاحظات' : 'Tickets', icon: TicketCheck, count: feedbackTickets.filter(t => t.status === 'open').length },
     { id: 'agents', label: isAr ? 'الوكلاء' : 'Agents', icon: Bot },
@@ -488,6 +490,12 @@ export default function AdminDashboard() {
             {tab === 'agents' && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                 <AdminAgents />
+              </motion.div>
+            )}
+
+            {tab === 'companies' && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                <AdminCompanies />
               </motion.div>
             )}
           </>

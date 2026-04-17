@@ -294,6 +294,42 @@ export async function sendTestEmail(to: string): Promise<SendResult> {
   });
 }
 
+/**
+ * Send an outbound B2B campaign email. Respects dry-run mode.
+ * In dry-run mode, does NOT hit Resend — just returns success with a fake id so the
+ * upstream pipeline can log correctly and exercise all its code paths.
+ */
+export async function sendCampaignEmail(opts: {
+  to: string;
+  subject: string;
+  body: string;
+  unsubscribeToken: string;
+  dryRun?: boolean;
+}): Promise<SendResult> {
+  const unsubUrl = `${APP_URL}/unsubscribe?t=${opts.unsubscribeToken}`;
+  const unsubFooter = `\n\n---\nTo stop receiving emails like this, visit: ${unsubUrl}`;
+  const htmlBody = `
+    <div style="font-family:Cairo,'Helvetica Neue',Arial,sans-serif;font-size:14px;line-height:1.7;color:#111827;white-space:pre-wrap;">${escapeHtml(opts.body)}</div>
+    <hr style="margin:24px 0;border:none;border-top:1px solid #E5E7EB;" />
+    <p style="font-size:11px;color:#9CA3AF;">
+      You received this because your company address is in our public B2B directory.
+      <a href="${unsubUrl}" style="color:#0A8F84;">Unsubscribe</a>.
+    </p>
+  `;
+
+  if (opts.dryRun) {
+    console.log('[email][DRY-RUN] would send to', opts.to, '| subject:', opts.subject.slice(0, 60));
+    return { success: true, messageId: `dry-run-${Date.now()}` };
+  }
+
+  return sendRaw({
+    to: opts.to,
+    subject: opts.subject,
+    html: shell({ isAr: false, preheader: opts.subject.slice(0, 80), bodyInner: htmlBody }),
+    text: opts.body + unsubFooter,
+  });
+}
+
 export async function shouldSendTransactional(supabase: any, userId: string): Promise<boolean> {
   try {
     const { data } = await supabase

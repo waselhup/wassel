@@ -54,7 +54,16 @@ export default function CampaignList() {
 
   useEffect(() => {
     trpcQuery<Campaign[]>("campaign.list")
-      .then(data => setCampaigns(data || []))
+      .then(data => {
+        // Map new router statuses → legacy UI statuses
+        const normalized = (data || []).map((c: any) => {
+          let s: Status = c.status;
+          if (c.status === 'active') s = 'running';
+          else if (c.status === 'ready' || c.status === 'generating') s = 'draft';
+          return { ...c, status: s };
+        });
+        setCampaigns(normalized);
+      })
       .catch(() => toast.push('error', isAr ? 'خطأ في تحميل الحملات' : 'Failed to load campaigns'))
       .finally(() => setLoading(false));
   }, []);

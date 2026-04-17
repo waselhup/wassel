@@ -10,6 +10,7 @@ import { reviewsRouter } from './routes/reviews';
 import { feedbackRouter } from './routes/feedback';
 import { aiFeedbackRouter } from './routes/aiFeedback';
 import { agentsRouter } from './routes/agents';
+import { companiesRouter } from './routes/companies';
 
 export { router, publicProcedure, protectedProcedure };
 
@@ -44,6 +45,7 @@ export const appRouter = router({
   feedback: feedbackRouter,
   aiFeedback: aiFeedbackRouter,
   agents: agentsRouter,
+  companies: companiesRouter,
 });
 
 export type AppRouter = typeof appRouter;
