@@ -195,6 +195,24 @@ export const trpc = {
     activatePrompt: (input: { promptId: string }) =>
       trpcMutation<any>('aiFeedback.activatePrompt', input),
   },
+  executor: {
+    list: () => trpcQuery<any[]>('executor.list'),
+    startConversation: (input: { agentId: string; title?: string }) =>
+      trpcMutation<any>('executor.startConversation', input),
+    listConversations: () => trpcQuery<any[]>('executor.listConversations'),
+    getConversation: (input: { conversationId: string }) =>
+      trpcQuery<{ conversation: any; messages: any[]; actions: any[] }>('executor.getConversation', input),
+    deleteConversation: (input: { conversationId: string }) =>
+      trpcMutation<any>('executor.deleteConversation', input),
+    sendMessage: (input: { conversationId: string; content: string }) =>
+      trpcMutation<{ content: string; pendingActions: any[]; error?: string }>('executor.sendMessage', input),
+    approveAction: (input: { actionId: string }) =>
+      trpcMutation<any>('executor.approveAction', input),
+    rejectAction: (input: { actionId: string }) =>
+      trpcMutation<any>('executor.rejectAction', input),
+    listActions: (input?: { conversationId?: string }) =>
+      trpcQuery<any[]>('executor.listActions', input || {}),
+  },
   agents: {
     list: () => trpcQuery<any[]>('agents.list'),
     startConversation: (input: { agentId: string; title?: string }) =>

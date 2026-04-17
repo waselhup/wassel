@@ -4,6 +4,9 @@
  *
  * If a feature changes (route, name, description), update it here and
  * every consumer will follow.
+ *
+ * Positioning rule: Wassel is a "professional AI platform" — never
+ * surface "B2B", "cold outreach", "mass email", or "automation" in user copy.
  */
 
 export type FeatureKey =
@@ -11,7 +14,6 @@ export type FeatureKey =
   | 'cvTailor'
   | 'posts'
   | 'campaigns'
-  | 'discovery'
   | 'knowledgeBase'
   | 'analytics';
 
@@ -31,10 +33,8 @@ export const FEATURES: Record<FeatureKey, FeatureDef> = {
     id: 'profile_analysis',
     titleAr: 'تحليل البروفايل المهني',
     titleEn: 'Profile Analysis',
-    descriptionAr:
-      'يحلل الذكاء الاصطناعي بروفايلك على LinkedIn ويعطيك درجة من 100 مع نقاط قوة وضعف وخطة تحسين',
-    descriptionEn:
-      'AI analyzes your LinkedIn profile, gives you a score out of 100, identifies strengths and weaknesses, and provides an action plan',
+    descriptionAr: 'تحليل متعمق لبروفايلك على LinkedIn مع خطة تطوير واضحة',
+    descriptionEn: 'Deep LinkedIn profile analysis with a clear growth plan',
     route: '/app/profile-analysis',
     icon: 'Brain',
     color: 'teal',
@@ -43,10 +43,8 @@ export const FEATURES: Record<FeatureKey, FeatureDef> = {
     id: 'cv_tailor',
     titleAr: 'تخصيص السيرة الذاتية',
     titleEn: 'CV Tailor',
-    descriptionAr:
-      'إنشاء سيرة ذاتية مخصصة لكل وظيفة بالذكاء الاصطناعي مع 3 أنماط مختلفة',
-    descriptionEn:
-      'Generate tailored CV for any job description with AI, choose from 3 styles',
+    descriptionAr: 'سيرة ذاتية احترافية مخصصة لكل فرصة تقدم لها',
+    descriptionEn: 'A professional CV tailored to every opportunity',
     route: '/app/cv',
     icon: 'FileText',
     color: 'teal',
@@ -55,45 +53,28 @@ export const FEATURES: Record<FeatureKey, FeatureDef> = {
     id: 'posts',
     titleAr: 'منشورات LinkedIn',
     titleEn: 'LinkedIn Posts',
-    descriptionAr:
-      'إنشاء منشورات احترافية على LinkedIn بالذكاء الاصطناعي مع اختيار النبرة والأسلوب',
-    descriptionEn:
-      'Generate professional LinkedIn posts with AI, choose tone and style',
+    descriptionAr: 'محتوى احترافي لحسابك يجذب التفاعل ويبني سمعتك',
+    descriptionEn: 'Professional content for your profile that drives engagement',
     route: '/app/posts',
     icon: 'Share2',
     color: 'teal',
   },
   campaigns: {
     id: 'campaigns',
-    titleAr: 'الحملات الذكية',
-    titleEn: 'Smart Campaigns',
-    descriptionAr:
-      'أتمتة التواصل على LinkedIn — اكتشاف جمهور مستهدف، رسائل شخصية، تتبع النتائج',
-    descriptionEn:
-      'Automate LinkedIn outreach — find prospects, personalize messages, track results',
+    titleAr: 'التواصل المهني الذكي',
+    titleEn: 'Smart Outreach',
+    descriptionAr: 'وصول احترافي ومنظم لفرص مهنية جديدة',
+    descriptionEn: 'Reach new professional opportunities in a structured way',
     route: '/app/campaigns',
     icon: 'Send',
-    color: 'teal',
-  },
-  discovery: {
-    id: 'discovery',
-    titleAr: 'اكتشاف الجمهور',
-    titleEn: 'Prospect Discovery',
-    descriptionAr:
-      'ابحث عن جمهورك المستهدف على LinkedIn بناءً على معايير متقدمة',
-    descriptionEn:
-      'Find your target audience on LinkedIn with advanced filters',
-    route: '/app/campaigns',
-    icon: 'Search',
     color: 'teal',
   },
   knowledgeBase: {
     id: 'knowledge',
     titleAr: 'قاعدة المعرفة',
     titleEn: 'Knowledge Base',
-    descriptionAr: 'موارد وأدلة لتحسين استخدام وصّل والتسويق على LinkedIn',
-    descriptionEn:
-      'Resources and guides to maximize Wassel and LinkedIn marketing',
+    descriptionAr: 'أدلة ومحتوى لتطوير حضورك المهني على LinkedIn',
+    descriptionEn: 'Guides and content to grow your LinkedIn presence',
     route: '/app/knowledge',
     icon: 'BookOpen',
     color: 'teal',
@@ -102,9 +83,8 @@ export const FEATURES: Record<FeatureKey, FeatureDef> = {
     id: 'analytics',
     titleAr: 'التحليلات',
     titleEn: 'Analytics',
-    descriptionAr: 'تتبع أداء حملاتك، استهلاك التوكنز، ورؤى حول نشاطك',
-    descriptionEn:
-      'Track campaign performance, token usage, and activity insights',
+    descriptionAr: 'تتبع تقدمك وقياس نتائج جهودك المهنية',
+    descriptionEn: 'Track your progress and measure your career growth results',
     route: '/app/analytics',
     icon: 'BarChart3',
     color: 'teal',

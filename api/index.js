@@ -398,8 +398,8 @@ var require_bytes = __commonJS({
         str = str.replace(formatDecimalsRegExp, "$1");
       }
       if (thousandsSeparator) {
-        str = str.split(".").map(function(s, i) {
-          return i === 0 ? s.replace(formatThousandsRegExp, thousandsSeparator) : s;
+        str = str.split(".").map(function(s2, i) {
+          return i === 0 ? s2.replace(formatThousandsRegExp, thousandsSeparator) : s2;
         }).join(".");
       }
       return str + unitSeparator + unit;
@@ -921,8 +921,8 @@ var require_http_errors = __commonJS({
 // ../../../node_modules/.pnpm/ms@2.0.0/node_modules/ms/index.js
 var require_ms = __commonJS({
   "../../../node_modules/.pnpm/ms@2.0.0/node_modules/ms/index.js"(exports2, module2) {
-    var s = 1e3;
-    var m = s * 60;
+    var s2 = 1e3;
+    var m = s2 * 60;
     var h = m * 60;
     var d = h * 24;
     var y = d * 365.25;
@@ -979,7 +979,7 @@ var require_ms = __commonJS({
         case "secs":
         case "sec":
         case "s":
-          return n * s;
+          return n * s2;
         case "milliseconds":
         case "millisecond":
         case "msecs":
@@ -1000,13 +1000,13 @@ var require_ms = __commonJS({
       if (ms >= m) {
         return Math.round(ms / m) + "m";
       }
-      if (ms >= s) {
-        return Math.round(ms / s) + "s";
+      if (ms >= s2) {
+        return Math.round(ms / s2) + "s";
       }
       return ms + "ms";
     }
     function fmtLong(ms) {
-      return plural(ms, d, "day") || plural(ms, h, "hour") || plural(ms, m, "minute") || plural(ms, s, "second") || ms + " ms";
+      return plural(ms, d, "day") || plural(ms, h, "hour") || plural(ms, m, "minute") || plural(ms, s2, "second") || ms + " ms";
     }
     function plural(ms, n, name) {
       if (ms < n) {
@@ -14641,17 +14641,17 @@ var require_object_inspect = __commonJS({
         return typeof obj === "object" && !hasShammedSymbols ? markBoxed(symString) : symString;
       }
       if (isElement(obj)) {
-        var s = "<" + $toLowerCase.call(String(obj.nodeName));
+        var s2 = "<" + $toLowerCase.call(String(obj.nodeName));
         var attrs = obj.attributes || [];
         for (var i = 0; i < attrs.length; i++) {
-          s += " " + attrs[i].name + "=" + wrapQuotes(quote(attrs[i].value), "double", opts);
+          s2 += " " + attrs[i].name + "=" + wrapQuotes(quote(attrs[i].value), "double", opts);
         }
-        s += ">";
+        s2 += ">";
         if (obj.childNodes && obj.childNodes.length) {
-          s += "...";
+          s2 += "...";
         }
-        s += "</" + $toLowerCase.call(String(obj.nodeName)) + ">";
-        return s;
+        s2 += "</" + $toLowerCase.call(String(obj.nodeName)) + ">";
+        return s2;
       }
       if (isArray(obj)) {
         if (obj.length === 0) {
@@ -14742,13 +14742,13 @@ var require_object_inspect = __commonJS({
       }
       return String(obj);
     };
-    function wrapQuotes(s, defaultStyle, opts) {
+    function wrapQuotes(s2, defaultStyle, opts) {
       var style = opts.quoteStyle || defaultStyle;
       var quoteChar = quotes[style];
-      return quoteChar + s + quoteChar;
+      return quoteChar + s2 + quoteChar;
     }
-    function quote(s) {
-      return $replace.call(String(s), /"/g, "&quot;");
+    function quote(s2) {
+      return $replace.call(String(s2), /"/g, "&quot;");
     }
     function canTrustToString(obj) {
       return !toStringTag || !(typeof obj === "object" && (toStringTag in obj || typeof obj[toStringTag] !== "undefined"));
@@ -14840,7 +14840,7 @@ var require_object_inspect = __commonJS({
         mapSize.call(x);
         try {
           setSize.call(x);
-        } catch (s) {
+        } catch (s2) {
           return true;
         }
         return x instanceof Map;
@@ -14856,7 +14856,7 @@ var require_object_inspect = __commonJS({
         weakMapHas.call(x, weakMapHas);
         try {
           weakSetHas.call(x, weakSetHas);
-        } catch (s) {
+        } catch (s2) {
           return true;
         }
         return x instanceof WeakMap;
@@ -14899,7 +14899,7 @@ var require_object_inspect = __commonJS({
         weakSetHas.call(x, weakSetHas);
         try {
           weakMapHas.call(x, weakMapHas);
-        } catch (s) {
+        } catch (s2) {
           return true;
         }
         return x instanceof WeakSet;
@@ -14924,8 +14924,8 @@ var require_object_inspect = __commonJS({
       }
       var quoteRE = quoteREs[opts.quoteStyle || "single"];
       quoteRE.lastIndex = 0;
-      var s = $replace.call($replace.call(str, quoteRE, "\\$1"), /[\x00-\x1f]/g, lowbyte);
-      return wrapQuotes(s, "single", opts);
+      var s2 = $replace.call($replace.call(str, quoteRE, "\\$1"), /[\x00-\x1f]/g, lowbyte);
+      return wrapQuotes(s2, "single", opts);
     }
     function lowbyte(c) {
       var n = c.charCodeAt(0);
@@ -18880,8 +18880,8 @@ var require_mime = __commonJS({
 // ../../../node_modules/.pnpm/ms@2.1.3/node_modules/ms/index.js
 var require_ms2 = __commonJS({
   "../../../node_modules/.pnpm/ms@2.1.3/node_modules/ms/index.js"(exports2, module2) {
-    var s = 1e3;
-    var m = s * 60;
+    var s2 = 1e3;
+    var m = s2 * 60;
     var h = m * 60;
     var d = h * 24;
     var w = d * 7;
@@ -18943,7 +18943,7 @@ var require_ms2 = __commonJS({
         case "secs":
         case "sec":
         case "s":
-          return n * s;
+          return n * s2;
         case "milliseconds":
         case "millisecond":
         case "msecs":
@@ -18965,8 +18965,8 @@ var require_ms2 = __commonJS({
       if (msAbs >= m) {
         return Math.round(ms / m) + "m";
       }
-      if (msAbs >= s) {
-        return Math.round(ms / s) + "s";
+      if (msAbs >= s2) {
+        return Math.round(ms / s2) + "s";
       }
       return ms + "ms";
     }
@@ -18981,8 +18981,8 @@ var require_ms2 = __commonJS({
       if (msAbs >= m) {
         return plural(ms, msAbs, m, "minute");
       }
-      if (msAbs >= s) {
-        return plural(ms, msAbs, s, "second");
+      if (msAbs >= s2) {
+        return plural(ms, msAbs, s2, "second");
       }
       return ms + " ms";
     }
@@ -20910,9 +20910,9 @@ var require_charset = __commonJS({
       return priority;
     }
     function specify(charset, spec, index) {
-      var s = 0;
+      var s2 = 0;
       if (spec.charset.toLowerCase() === charset.toLowerCase()) {
-        s |= 1;
+        s2 |= 1;
       } else if (spec.charset !== "*") {
         return null;
       }
@@ -20920,7 +20920,7 @@ var require_charset = __commonJS({
         i: index,
         o: spec.i,
         q: spec.q,
-        s
+        s: s2
       };
     }
     function preferredCharsets(accept, provided) {
@@ -21008,9 +21008,9 @@ var require_encoding = __commonJS({
       return priority;
     }
     function specify(encoding, spec, index) {
-      var s = 0;
+      var s2 = 0;
       if (spec.encoding.toLowerCase() === encoding.toLowerCase()) {
-        s |= 1;
+        s2 |= 1;
       } else if (spec.encoding !== "*") {
         return null;
       }
@@ -21018,7 +21018,7 @@ var require_encoding = __commonJS({
         i: index,
         o: spec.i,
         q: spec.q,
-        s
+        s: s2
       };
     }
     function preferredEncodings(accept, provided) {
@@ -21099,13 +21099,13 @@ var require_language = __commonJS({
     function specify(language, spec, index) {
       var p = parseLanguage(language);
       if (!p) return null;
-      var s = 0;
+      var s2 = 0;
       if (spec.full.toLowerCase() === p.full.toLowerCase()) {
-        s |= 4;
+        s2 |= 4;
       } else if (spec.prefix.toLowerCase() === p.full.toLowerCase()) {
-        s |= 2;
+        s2 |= 2;
       } else if (spec.full.toLowerCase() === p.prefix.toLowerCase()) {
-        s |= 1;
+        s2 |= 1;
       } else if (spec.full !== "*") {
         return null;
       }
@@ -21113,7 +21113,7 @@ var require_language = __commonJS({
         i: index,
         o: spec.i,
         q: spec.q,
-        s
+        s: s2
       };
     }
     function preferredLanguages(accept, provided) {
@@ -21199,17 +21199,17 @@ var require_mediaType = __commonJS({
     }
     function specify(type, spec, index) {
       var p = parseMediaType(type);
-      var s = 0;
+      var s2 = 0;
       if (!p) {
         return null;
       }
       if (spec.type.toLowerCase() == p.type.toLowerCase()) {
-        s |= 4;
+        s2 |= 4;
       } else if (spec.type != "*") {
         return null;
       }
       if (spec.subtype.toLowerCase() == p.subtype.toLowerCase()) {
-        s |= 2;
+        s2 |= 2;
       } else if (spec.subtype != "*") {
         return null;
       }
@@ -21218,7 +21218,7 @@ var require_mediaType = __commonJS({
         if (keys.every(function(k) {
           return spec.params[k] == "*" || (spec.params[k] || "").toLowerCase() == (p.params[k] || "").toLowerCase();
         })) {
-          s |= 1;
+          s2 |= 1;
         } else {
           return null;
         }
@@ -21227,7 +21227,7 @@ var require_mediaType = __commonJS({
         i: index,
         o: spec.i,
         q: spec.q,
-        s
+        s: s2
       };
     }
     function preferredMediaTypes(accept, provided) {
@@ -22632,14 +22632,14 @@ function __extends(d, b) {
   }
   d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 }
-function __rest(s, e) {
+function __rest(s2, e) {
   var t2 = {};
-  for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
-    t2[p] = s[p];
-  if (s != null && typeof Object.getOwnPropertySymbols === "function")
-    for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
-      if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
-        t2[p[i]] = s[p[i]];
+  for (var p in s2) if (Object.prototype.hasOwnProperty.call(s2, p) && e.indexOf(p) < 0)
+    t2[p] = s2[p];
+  if (s2 != null && typeof Object.getOwnPropertySymbols === "function")
+    for (var i = 0, p = Object.getOwnPropertySymbols(s2); i < p.length; i++) {
+      if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s2, p[i]))
+        t2[p[i]] = s2[p[i]];
     }
   return t2;
 }
@@ -22803,7 +22803,7 @@ function __exportStar(m, o) {
   for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(o, p)) __createBinding(o, m, p);
 }
 function __values(o) {
-  var s = typeof Symbol === "function" && Symbol.iterator, m = s && o[s], i = 0;
+  var s2 = typeof Symbol === "function" && Symbol.iterator, m = s2 && o[s2], i = 0;
   if (m) return m.call(o);
   if (o && typeof o.length === "number") return {
     next: function() {
@@ -22811,7 +22811,7 @@ function __values(o) {
       return { value: o && o[i++], done: !o };
     }
   };
-  throw new TypeError(s ? "Object is not iterable." : "Symbol.iterator is not defined.");
+  throw new TypeError(s2 ? "Object is not iterable." : "Symbol.iterator is not defined.");
 }
 function __read(o, n) {
   var m = typeof Symbol === "function" && o[Symbol.iterator];
@@ -22836,8 +22836,8 @@ function __spread() {
   return ar;
 }
 function __spreadArrays() {
-  for (var s = 0, i = 0, il = arguments.length; i < il; i++) s += arguments[i].length;
-  for (var r = Array(s), k = 0, i = 0; i < il; i++)
+  for (var s2 = 0, i = 0, il = arguments.length; i < il; i++) s2 += arguments[i].length;
+  for (var r = Array(s2), k = 0, i = 0; i < il; i++)
     for (var a = arguments[i], j = 0, jl = a.length; j < jl; j++, k++)
       r[k] = a[j];
   return r;
@@ -22994,23 +22994,23 @@ function __disposeResources(env) {
     env.error = env.hasError ? new _SuppressedError(e, env.error, "An error was suppressed during disposal.") : e;
     env.hasError = true;
   }
-  var r, s = 0;
+  var r, s2 = 0;
   function next() {
     while (r = env.stack.pop()) {
       try {
-        if (!r.async && s === 1) return s = 0, env.stack.push(r), Promise.resolve().then(next);
+        if (!r.async && s2 === 1) return s2 = 0, env.stack.push(r), Promise.resolve().then(next);
         if (r.dispose) {
           var result = r.dispose.call(r.value);
-          if (r.async) return s |= 2, Promise.resolve(result).then(next, function(e) {
+          if (r.async) return s2 |= 2, Promise.resolve(result).then(next, function(e) {
             fail(e);
             return next();
           });
-        } else s |= 1;
+        } else s2 |= 1;
       } catch (e) {
         fail(e);
       }
     }
-    if (s === 1) return env.hasError ? Promise.reject(env.error) : Promise.resolve();
+    if (s2 === 1) return env.hasError ? Promise.reject(env.error) : Promise.resolve();
     if (env.hasError) throw env.error;
   }
   return next();
@@ -23036,9 +23036,9 @@ var init_tslib_es6 = __esm({
     };
     __assign = function() {
       __assign = Object.assign || function __assign2(t2) {
-        for (var s, i = 1, n = arguments.length; i < n; i++) {
-          s = arguments[i];
-          for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p)) t2[p] = s[p];
+        for (var s2, i = 1, n = arguments.length; i < n; i++) {
+          s2 = arguments[i];
+          for (var p in s2) if (Object.prototype.hasOwnProperty.call(s2, p)) t2[p] = s2[p];
         }
         return t2;
       };
@@ -25406,9 +25406,9 @@ ${cause.stack}`;
       * ```
       */
       in(column, values) {
-        const cleanedValues = Array.from(new Set(values)).map((s) => {
-          if (typeof s === "string" && PostgrestReservedCharsRegexp.test(s)) return `"${s}"`;
-          else return `${s}`;
+        const cleanedValues = Array.from(new Set(values)).map((s2) => {
+          if (typeof s2 === "string" && PostgrestReservedCharsRegexp.test(s2)) return `"${s2}"`;
+          else return `${s2}`;
         }).join(",");
         this.url.searchParams.append(column, `in.(${cleanedValues})`);
         return this;
@@ -25420,9 +25420,9 @@ ${cause.stack}`;
       * @param values - The values array to filter with
       */
       notIn(column, values) {
-        const cleanedValues = Array.from(new Set(values)).map((s) => {
-          if (typeof s === "string" && PostgrestReservedCharsRegexp.test(s)) return `"${s}"`;
-          else return `${s}`;
+        const cleanedValues = Array.from(new Set(values)).map((s2) => {
+          if (typeof s2 === "string" && PostgrestReservedCharsRegexp.test(s2)) return `"${s2}"`;
+          else return `${s2}`;
         }).join(",");
         this.url.searchParams.append(column, `not.in.(${cleanedValues})`);
         return this;
@@ -43644,8 +43644,8 @@ var require_object_assign = __commonJS({
       var from;
       var to = toObject(target);
       var symbols;
-      for (var s = 1; s < arguments.length; s++) {
-        from = Object(arguments[s]);
+      for (var s2 = 1; s2 < arguments.length; s2++) {
+        from = Object(arguments[s2]);
         for (var key in from) {
           if (hasOwnProperty.call(from, key)) {
             to[key] = from[key];
@@ -43678,8 +43678,8 @@ var require_lib3 = __commonJS({
         preflightContinue: false,
         optionsSuccessStatus: 204
       };
-      function isString(s) {
-        return typeof s === "string" || s instanceof String;
+      function isString(s2) {
+        return typeof s2 === "string" || s2 instanceof String;
       }
       function isOriginAllowed(origin, allowedOrigin) {
         if (Array.isArray(allowedOrigin)) {
@@ -51597,25 +51597,25 @@ var require_base64 = __commonJS({
           }
           return length / 4 * 3 | 0;
         };
-        Coder2.prototype.decodedLength = function(s) {
-          return this.maxDecodedLength(s.length - this._getPaddingLength(s));
+        Coder2.prototype.decodedLength = function(s2) {
+          return this.maxDecodedLength(s2.length - this._getPaddingLength(s2));
         };
-        Coder2.prototype.decode = function(s) {
-          if (s.length === 0) {
+        Coder2.prototype.decode = function(s2) {
+          if (s2.length === 0) {
             return new Uint8Array(0);
           }
-          var paddingLength = this._getPaddingLength(s);
-          var length = s.length - paddingLength;
+          var paddingLength = this._getPaddingLength(s2);
+          var length = s2.length - paddingLength;
           var out = new Uint8Array(this.maxDecodedLength(length));
           var op = 0;
           var i = 0;
           var haveBad = 0;
           var v0 = 0, v12 = 0, v2 = 0, v32 = 0;
           for (; i < length - 4; i += 4) {
-            v0 = this._decodeChar(s.charCodeAt(i + 0));
-            v12 = this._decodeChar(s.charCodeAt(i + 1));
-            v2 = this._decodeChar(s.charCodeAt(i + 2));
-            v32 = this._decodeChar(s.charCodeAt(i + 3));
+            v0 = this._decodeChar(s2.charCodeAt(i + 0));
+            v12 = this._decodeChar(s2.charCodeAt(i + 1));
+            v2 = this._decodeChar(s2.charCodeAt(i + 2));
+            v32 = this._decodeChar(s2.charCodeAt(i + 3));
             out[op++] = v0 << 2 | v12 >>> 4;
             out[op++] = v12 << 4 | v2 >>> 2;
             out[op++] = v2 << 6 | v32;
@@ -51625,19 +51625,19 @@ var require_base64 = __commonJS({
             haveBad |= v32 & INVALID_BYTE;
           }
           if (i < length - 1) {
-            v0 = this._decodeChar(s.charCodeAt(i));
-            v12 = this._decodeChar(s.charCodeAt(i + 1));
+            v0 = this._decodeChar(s2.charCodeAt(i));
+            v12 = this._decodeChar(s2.charCodeAt(i + 1));
             out[op++] = v0 << 2 | v12 >>> 4;
             haveBad |= v0 & INVALID_BYTE;
             haveBad |= v12 & INVALID_BYTE;
           }
           if (i < length - 2) {
-            v2 = this._decodeChar(s.charCodeAt(i + 2));
+            v2 = this._decodeChar(s2.charCodeAt(i + 2));
             out[op++] = v12 << 4 | v2 >>> 2;
             haveBad |= v2 & INVALID_BYTE;
           }
           if (i < length - 3) {
-            v32 = this._decodeChar(s.charCodeAt(i + 3));
+            v32 = this._decodeChar(s2.charCodeAt(i + 3));
             out[op++] = v2 << 6 | v32;
             haveBad |= v32 & INVALID_BYTE;
           }
@@ -51664,16 +51664,16 @@ var require_base64 = __commonJS({
           result += (96 - c & c - 123) >>> 8 & -INVALID_BYTE + c - 97 + 26;
           return result;
         };
-        Coder2.prototype._getPaddingLength = function(s) {
+        Coder2.prototype._getPaddingLength = function(s2) {
           var paddingLength = 0;
           if (this._paddingCharacter) {
-            for (var i = s.length - 1; i >= 0; i--) {
-              if (s[i] !== this._paddingCharacter) {
+            for (var i = s2.length - 1; i >= 0; i--) {
+              if (s2[i] !== this._paddingCharacter) {
                 break;
               }
               paddingLength++;
             }
-            if (s.length < 4 || paddingLength > 2) {
+            if (s2.length < 4 || paddingLength > 2) {
               throw new Error("Base64Coder: incorrect padding");
             }
           }
@@ -51688,8 +51688,8 @@ var require_base64 = __commonJS({
       return stdCoder.encode(data);
     }
     exports2.encode = encode;
-    function decode(s) {
-      return stdCoder.decode(s);
+    function decode(s2) {
+      return stdCoder.decode(s2);
     }
     exports2.decode = decode;
     var URLSafeCoder = (
@@ -51726,8 +51726,8 @@ var require_base64 = __commonJS({
       return urlSafeCoder.encode(data);
     }
     exports2.encodeURLSafe = encodeURLSafe;
-    function decodeURLSafe(s) {
-      return urlSafeCoder.decode(s);
+    function decodeURLSafe(s2) {
+      return urlSafeCoder.decode(s2);
     }
     exports2.decodeURLSafe = decodeURLSafe;
     exports2.encodedLength = function(length) {
@@ -51736,8 +51736,8 @@ var require_base64 = __commonJS({
     exports2.maxDecodedLength = function(length) {
       return stdCoder.maxDecodedLength(length);
     };
-    exports2.decodedLength = function(s) {
-      return stdCoder.decodedLength(s);
+    exports2.decodedLength = function(s2) {
+      return stdCoder.decodedLength(s2);
     };
   }
 });
@@ -54708,12 +54708,12 @@ var ParseStatus = class _ParseStatus {
   }
   static mergeArray(status, results) {
     const arrayValue = [];
-    for (const s of results) {
-      if (s.status === "aborted")
+    for (const s2 of results) {
+      if (s2.status === "aborted")
         return INVALID;
-      if (s.status === "dirty")
+      if (s2.status === "dirty")
         status.dirty();
-      arrayValue.push(s.value);
+      arrayValue.push(s2.value);
     }
     return { status: status.value, value: arrayValue };
   }
@@ -58275,7 +58275,7 @@ async function analyzeWithClaude(profileData) {
   const connections = profileData.connectionsCount || profileData.connections || 0;
   const experiences = (profileData.experience || profileData.positions || []).slice(0, 5).map((e) => `- ${e.title || e.role || ""} at ${e.companyName || e.company || ""} (${e.duration || e.timePeriod || ""})`).join("\n");
   const education = (profileData.education || []).slice(0, 3).map((e) => `- ${e.degree || e.degreeName || ""} from ${e.schoolName || e.school || ""}`).join("\n");
-  const skills = (profileData.skills || []).slice(0, 15).map((s) => typeof s === "string" ? s : s.name || s.skill || "").filter(Boolean).join(", ");
+  const skills = (profileData.skills || []).slice(0, 15).map((s2) => typeof s2 === "string" ? s2 : s2.name || s2.skill || "").filter(Boolean).join(", ");
   const profileText = `
 Name: ${name}
 Headline: ${headline}
@@ -58498,7 +58498,7 @@ var linkedinRouter = router2({
         const connections = profileData.connectionsCount || profileData.connections || 0;
         const experiences = (profileData.experience || profileData.positions || []).slice(0, 5).map((e) => "- " + (e.title || e.role || "") + " at " + (e.companyName || e.company || "") + " (" + (e.duration || e.timePeriod || "") + ")").join("\n");
         const education = (profileData.education || []).slice(0, 3).map((e) => "- " + (e.degree || e.degreeName || "") + " from " + (e.schoolName || e.school || "")).join("\n");
-        const skills = (profileData.skills || []).slice(0, 15).map((s) => typeof s === "string" ? s : s.name || s.skill || "").filter(Boolean).join(", ");
+        const skills = (profileData.skills || []).slice(0, 15).map((s2) => typeof s2 === "string" ? s2 : s2.name || s2.skill || "").filter(Boolean).join(", ");
         const certs = (profileData.certifications || []).slice(0, 5).map((c) => "- " + (c.name || c.title || "")).join("\n");
         profileText = "Name: " + name + "\nHeadline: " + headline + "\nLocation: " + location2 + "\nConnections: " + connections + "\nSummary: " + summary + "\n\nExperience:\n" + (experiences || "None") + "\n\nEducation:\n" + (education || "None") + "\nSkills: " + (skills || "None") + "\n\nCertifications:\n" + (certs || "None");
       }
@@ -63979,8 +63979,8 @@ function shell(opts) {
 function btn(href, label) {
   return `<a href="${href}" style="display:inline-block;padding:12px 24px;background:#0A8F84;color:#ffffff;text-decoration:none;border-radius:10px;font-weight:800;font-size:14px;">${label}</a>`;
 }
-function escapeHtml2(s) {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+function escapeHtml2(s2) {
+  return s2.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 async function sendWelcomeEmail(user) {
   const isAr = (user.language || "ar") === "ar";
@@ -64373,7 +64373,7 @@ var campaignRouter = router2({
       }
       const emailsToCheck = eligible.map((c) => c.primary_email);
       const { data: suppressed } = await ctx.supabase.from("email_suppressions").select("email").in("email", emailsToCheck);
-      const suppressedSet = new Set((suppressed || []).map((s) => s.email));
+      const suppressedSet = new Set((suppressed || []).map((s2) => s2.email));
       const finalTargets = eligible.filter((c) => !suppressedSet.has(c.primary_email));
       if (finalTargets.length === 0) {
         throw new TRPCError({
@@ -65560,6 +65560,645 @@ var companiesRouter = router2({
   })
 });
 
+// server/_core/lib/agentTools.ts
+function s(v, fallback = "") {
+  return typeof v === "string" ? v : fallback;
+}
+async function fetchUserById(supabase2, userId) {
+  const { data } = await supabase2.from("profiles").select("id, email, full_name, locale, token_balance").eq("id", userId).single();
+  return data;
+}
+var queryPlatformData = {
+  name: "queryPlatformData",
+  description: "Answer a business question from the Wassel database. Returns aggregated stats with NO personally-identifying information. Examples of valid questions: 'How many users signed up this week?', 'Top 5 industries in our companies directory', 'Total tokens consumed today', 'Open tickets count by priority'. The tool decides which safe, pre-registered query to run. It never returns raw user data.",
+  requiresConfirmation: false,
+  inputSchema: {
+    type: "object",
+    properties: {
+      question: {
+        type: "string",
+        description: "Plain-English business question about platform metrics."
+      }
+    },
+    required: ["question"]
+  },
+  execute: async (input, ctx) => {
+    const q = s(input.question).toLowerCase();
+    const sb = ctx.supabase;
+    try {
+      if (q.includes("signup") || q.includes("new user") || q.includes("\u0633\u062C\u0644") || q.includes("\u0645\u0633\u062A\u062E\u062F\u0645\u064A\u0646 \u062C\u062F\u062F")) {
+        const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1e3).toISOString();
+        const { data } = await sb.from("profiles").select("id", { count: "exact", head: true }).gte("created_at", since);
+        const { count: total } = await sb.from("profiles").select("id", { count: "exact", head: true });
+        return { metric: "signups_last_7_days", value: data?.length ?? 0, total_users: total ?? 0 };
+      }
+      if (q.includes("token") && (q.includes("consume") || q.includes("used") || q.includes("usage") || q.includes("\u0627\u0633\u062A\u0647\u0644\u0627\u0643"))) {
+        const { data } = await sb.from("token_transactions").select("amount").lt("amount", 0).gte("created_at", new Date(Date.now() - 30 * 24 * 60 * 60 * 1e3).toISOString());
+        const total = (data || []).reduce((sum, t2) => sum + Math.abs(t2.amount || 0), 0);
+        return { metric: "tokens_consumed_last_30d", value: total };
+      }
+      if (q.includes("ticket") || q.includes("feedback") || q.includes("\u062A\u0630\u0643")) {
+        const { data } = await sb.from("feedback_tickets").select("status, priority");
+        const byStatus = {};
+        const byPriority = {};
+        (data || []).forEach((t2) => {
+          byStatus[t2.status || "unknown"] = (byStatus[t2.status || "unknown"] || 0) + 1;
+          byPriority[t2.priority || "unknown"] = (byPriority[t2.priority || "unknown"] || 0) + 1;
+        });
+        return { metric: "tickets_breakdown", total: data?.length || 0, by_status: byStatus, by_priority: byPriority };
+      }
+      if (q.includes("campaign")) {
+        const { data } = await sb.from("email_campaigns").select("status");
+        const byStatus = {};
+        (data || []).forEach((c) => {
+          byStatus[c.status || "unknown"] = (byStatus[c.status || "unknown"] || 0) + 1;
+        });
+        return { metric: "campaigns_breakdown", total: data?.length || 0, by_status: byStatus };
+      }
+      if (q.includes("compan") || q.includes("\u0634\u0631\u0643")) {
+        const { data } = await sb.from("saudi_companies").select("industry, size");
+        const byIndustry = {};
+        const bySize = {};
+        (data || []).forEach((c) => {
+          byIndustry[c.industry || "unknown"] = (byIndustry[c.industry || "unknown"] || 0) + 1;
+          bySize[c.size || "unknown"] = (bySize[c.size || "unknown"] || 0) + 1;
+        });
+        return { metric: "companies_breakdown", total: data?.length || 0, by_industry: byIndustry, by_size: bySize };
+      }
+      if (q.includes("revenue") || q.includes("mrr") || q.includes("\u0625\u064A\u0631\u0627\u062F")) {
+        const prices = { free: 0, starter: 99, pro: 199, elite: 299 };
+        const { data } = await sb.from("profiles").select("plan");
+        const mrr = (data || []).reduce((sum, p) => sum + (prices[p.plan] || 0), 0);
+        return { metric: "mrr", value: mrr, currency: "SAR" };
+      }
+      const { count: users } = await sb.from("profiles").select("id", { count: "exact", head: true });
+      const { count: campaigns } = await sb.from("email_campaigns").select("id", { count: "exact", head: true });
+      const { count: companies } = await sb.from("saudi_companies").select("id", { count: "exact", head: true });
+      const { count: tickets } = await sb.from("feedback_tickets").select("id", { count: "exact", head: true });
+      return {
+        note: "No specific pattern matched. Here is a platform summary.",
+        totals: { users: users || 0, campaigns: campaigns || 0, companies: companies || 0, tickets: tickets || 0 }
+      };
+    } catch (e) {
+      return { error: e?.message || "Query failed" };
+    }
+  }
+};
+var sendEmailToUser = {
+  name: "sendEmailToUser",
+  description: "Send a transactional email to a registered Wassel user by userId. The email goes through the standard Resend pipeline. Only works for users that exist in our profiles table \u2014 not external addresses.",
+  requiresConfirmation: true,
+  inputSchema: {
+    type: "object",
+    properties: {
+      userId: { type: "string", description: "The profiles.id (UUID) of the Wassel user." },
+      subject: { type: "string", description: "Email subject line." },
+      body: { type: "string", description: "Plain-text email body. Will be wrapped in the Wassel email template." }
+    },
+    required: ["userId", "subject", "body"]
+  },
+  execute: async (input, ctx) => {
+    const user = await fetchUserById(ctx.supabase, s(input.userId));
+    if (!user?.email) return { error: "User not found or has no email" };
+    const result = await sendCampaignEmail({
+      to: user.email,
+      subject: s(input.subject),
+      body: s(input.body),
+      unsubscribeToken: "admin-sent-" + Date.now(),
+      // marker; admin-sent mails aren't unsubscribable at row level
+      dryRun: false
+    });
+    return { success: result.success, messageId: result.messageId, error: result.error, sentTo: user.email };
+  }
+};
+var grantTokensToUser = {
+  name: "grantTokensToUser",
+  description: "Add tokens to a Wassel user balance. Capped at 10,000 per call. Logs to token_transactions with type=admin_grant. Sends the user an email.",
+  requiresConfirmation: true,
+  inputSchema: {
+    type: "object",
+    properties: {
+      userId: { type: "string", description: "The profiles.id (UUID) of the Wassel user." },
+      amount: { type: "integer", description: "Token amount (positive integer \u2264 10000)." },
+      reason: { type: "string", description: 'Human-readable reason, e.g. "Compensation for bug #1234".' }
+    },
+    required: ["userId", "amount", "reason"]
+  },
+  execute: async (input, ctx) => {
+    const amount = Math.min(1e4, Math.max(1, Number(input.amount) | 0));
+    const user = await fetchUserById(ctx.supabase, s(input.userId));
+    if (!user) return { error: "User not found" };
+    const newBalance = (user.token_balance || 0) + amount;
+    const { error: updErr } = await ctx.supabase.from("profiles").update({ token_balance: newBalance }).eq("id", user.id);
+    if (updErr) return { error: updErr.message };
+    await ctx.supabase.from("token_transactions").insert([
+      {
+        user_id: user.id,
+        amount,
+        type: "admin_grant",
+        description: s(input.reason) + " (via executor agent)"
+      }
+    ]);
+    sendTokenGrantEmail({
+      user: { email: user.email, fullName: user.full_name, language: user.locale },
+      amount,
+      reason: s(input.reason),
+      newBalance
+    }).catch((e) => console.error("[grantTokens] email failed:", e?.message));
+    return { success: true, userEmail: user.email, amountGranted: amount, newBalance };
+  }
+};
+var generateDailyReport = {
+  name: "generateDailyReport",
+  description: "Produce a concise daily ops report: signups, token consumption, campaigns launched, tickets opened, errors. Read-only.",
+  requiresConfirmation: false,
+  inputSchema: { type: "object", properties: {}, additionalProperties: false },
+  execute: async (_input, ctx) => {
+    const sb = ctx.supabase;
+    const todayStart = /* @__PURE__ */ new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const yesterdayStart = new Date(todayStart.getTime() - 24 * 60 * 60 * 1e3);
+    const [signupsToday, signupsYesterday, campaignsToday, ticketsToday, tokensConsumed] = await Promise.all([
+      sb.from("profiles").select("id", { count: "exact", head: true }).gte("created_at", todayStart.toISOString()),
+      sb.from("profiles").select("id", { count: "exact", head: true }).gte("created_at", yesterdayStart.toISOString()).lt("created_at", todayStart.toISOString()),
+      sb.from("email_campaigns").select("id", { count: "exact", head: true }).gte("created_at", todayStart.toISOString()),
+      sb.from("feedback_tickets").select("id", { count: "exact", head: true }).gte("created_at", todayStart.toISOString()),
+      sb.from("token_transactions").select("amount").lt("amount", 0).gte("created_at", todayStart.toISOString())
+    ]);
+    const tokens = (tokensConsumed.data || []).reduce((sum, t2) => sum + Math.abs(t2.amount || 0), 0);
+    return {
+      date: todayStart.toISOString().slice(0, 10),
+      signups_today: signupsToday.count || 0,
+      signups_yesterday: signupsYesterday.count || 0,
+      campaigns_created_today: campaignsToday.count || 0,
+      tickets_opened_today: ticketsToday.count || 0,
+      tokens_consumed_today: tokens
+    };
+  }
+};
+var addCompanyToDatabase = {
+  name: "addCompanyToDatabase",
+  description: "Add a new Saudi company to the saudi_companies directory. Requires admin confirmation before insert.",
+  requiresConfirmation: true,
+  inputSchema: {
+    type: "object",
+    properties: {
+      name: { type: "string" },
+      name_ar: { type: "string" },
+      website: { type: "string", description: "Domain like aramco.com (no https://)." },
+      industry: { type: "string" },
+      city: { type: "string" },
+      size: { type: "string", enum: ["startup", "small", "medium", "large", "enterprise"] },
+      primary_email: { type: "string" }
+    },
+    required: ["name", "website"]
+  },
+  execute: async (input, ctx) => {
+    const { data, error } = await ctx.supabase.from("saudi_companies").insert([
+      {
+        name: s(input.name),
+        name_ar: s(input.name_ar) || null,
+        website: s(input.website),
+        industry: s(input.industry) || null,
+        city: s(input.city) || "Riyadh",
+        size: s(input.size) || "medium",
+        primary_email: s(input.primary_email) || null,
+        source: "executor-agent",
+        verified: false
+      }
+    ]).select().single();
+    if (error) return { error: error.message };
+    return { success: true, company: data };
+  }
+};
+var draftTicketResponse = {
+  name: "draftTicketResponse",
+  description: "Draft a response to a user feedback ticket. Returns the draft text; the admin reviews and approves separately. Does not send anything.",
+  requiresConfirmation: false,
+  inputSchema: {
+    type: "object",
+    properties: {
+      ticketId: { type: "string", description: "feedback_tickets.id (UUID)." }
+    },
+    required: ["ticketId"]
+  },
+  execute: async (input, ctx) => {
+    const { data: ticket } = await ctx.supabase.from("feedback_tickets").select("id, subject, description, category, priority, locale, user_id").eq("id", s(input.ticketId)).single();
+    if (!ticket) return { error: "Ticket not found" };
+    if (!process.env.ANTHROPIC_API_KEY) {
+      return { error: "ANTHROPIC_API_KEY not configured" };
+    }
+    const isAr = (ticket.locale || "ar") === "ar";
+    const sys = isAr ? "\u0623\u0646\u062A \u0639\u0636\u0648 \u0641\u064A \u0641\u0631\u064A\u0642 \u062F\u0639\u0645 \u0648\u0635\u0651\u0644. \u0627\u0643\u062A\u0628 \u0631\u062F\u0627\u064B \u0645\u062A\u0639\u0627\u0637\u0641\u0627\u064B \u0648\u0627\u062D\u062A\u0631\u0627\u0641\u064A\u0627\u064B \u0628\u0627\u0644\u0639\u0631\u0628\u064A\u0629." : "You are a Wassel support team member. Write an empathetic, professional response in English.";
+    const user = `Ticket subject: ${ticket.subject}
+Category: ${ticket.category}
+Priority: ${ticket.priority}
+Body: ${ticket.description}
+
+Draft a 3-6 sentence response.`;
+    try {
+      const r = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": process.env.ANTHROPIC_API_KEY,
+          "anthropic-version": "2023-06-01"
+        },
+        body: JSON.stringify({
+          model: "claude-haiku-4-5-20251001",
+          max_tokens: 800,
+          system: sys,
+          messages: [{ role: "user", content: user }]
+        })
+      });
+      const j = await r.json();
+      const draft = j?.content?.[0]?.text || "";
+      return { draft, ticketId: ticket.id, language: isAr ? "ar" : "en" };
+    } catch (e) {
+      return { error: e?.message || "Claude call failed" };
+    }
+  }
+};
+var pauseCampaign = {
+  name: "pauseCampaign",
+  description: "Pause a running campaign (status \u2192 paused). Requires confirmation.",
+  requiresConfirmation: true,
+  inputSchema: {
+    type: "object",
+    properties: {
+      campaignId: { type: "string", description: "email_campaigns.id (UUID)." },
+      reason: { type: "string" }
+    },
+    required: ["campaignId", "reason"]
+  },
+  execute: async (input, ctx) => {
+    const { data, error } = await ctx.supabase.from("email_campaigns").update({ status: "paused" }).eq("id", s(input.campaignId)).select("id, campaign_name, status").single();
+    if (error) return { error: error.message };
+    return { success: true, campaign: data, reason: s(input.reason) };
+  }
+};
+var broadcastAnnouncementToUsers = {
+  name: "broadcastAnnouncementToUsers",
+  description: "Create a platform announcement shown to matching users as a banner. Inserts one row into platform_announcements \u2014 no emails sent.",
+  requiresConfirmation: true,
+  inputSchema: {
+    type: "object",
+    properties: {
+      message_ar: { type: "string" },
+      message_en: { type: "string" },
+      audience: { type: "string", enum: ["all", "active", "pro"] },
+      duration_hours: { type: "integer", description: "How long the banner shows; default 48h." }
+    },
+    required: ["audience"]
+  },
+  execute: async (input, ctx) => {
+    const dur = Math.max(1, Math.min(720, Number(input.duration_hours) || 48));
+    const { data, error } = await ctx.supabase.from("platform_announcements").insert([
+      {
+        message_ar: s(input.message_ar) || null,
+        message_en: s(input.message_en) || null,
+        audience: s(input.audience) || "all",
+        ends_at: new Date(Date.now() + dur * 60 * 60 * 1e3).toISOString(),
+        created_by: ctx.userId
+      }
+    ]).select().single();
+    if (error) return { error: error.message };
+    return { success: true, announcement: data };
+  }
+};
+var exportDataAsCSV = {
+  name: "exportDataAsCSV",
+  description: "Export a CSV snapshot for a data type. Returns a base64-encoded CSV blob. Options: users, campaigns, companies, tickets.",
+  requiresConfirmation: false,
+  inputSchema: {
+    type: "object",
+    properties: {
+      dataType: { type: "string", enum: ["users", "campaigns", "companies", "tickets"] }
+    },
+    required: ["dataType"]
+  },
+  execute: async (input, ctx) => {
+    const type = s(input.dataType);
+    const tables = {
+      users: { table: "profiles", columns: ["id", "email", "full_name", "plan", "token_balance", "created_at"] },
+      campaigns: { table: "email_campaigns", columns: ["id", "campaign_name", "status", "total_recipients", "emails_sent", "created_at"] },
+      companies: { table: "saudi_companies", columns: ["id", "name", "industry", "city", "size", "primary_email"] },
+      tickets: { table: "feedback_tickets", columns: ["id", "subject", "category", "priority", "status", "created_at"] }
+    };
+    const spec = tables[type];
+    if (!spec) return { error: "Unknown dataType" };
+    const { data, error } = await ctx.supabase.from(spec.table).select(spec.columns.join(",")).limit(5e3);
+    if (error) return { error: error.message };
+    const lines = [spec.columns.join(",")];
+    for (const row of data || []) {
+      const r = row;
+      lines.push(spec.columns.map((c) => JSON.stringify(r[c] ?? "")).join(","));
+    }
+    const csv = lines.join("\n");
+    return {
+      success: true,
+      dataType: type,
+      rows: data?.length || 0,
+      csvBase64: Buffer.from(csv, "utf8").toString("base64"),
+      sizeBytes: csv.length
+    };
+  }
+};
+var AGENT_TOOLS = {
+  queryPlatformData,
+  sendEmailToUser,
+  grantTokensToUser,
+  generateDailyReport,
+  addCompanyToDatabase,
+  draftTicketResponse,
+  pauseCampaign,
+  broadcastAnnouncementToUsers,
+  exportDataAsCSV
+};
+var TOOL_NAMES = Object.keys(AGENT_TOOLS);
+
+// server/_core/routes/executorAgents.ts
+var ADMIN_EMAILS3 = ["waselhup@gmail.com", "almodhih.1995@gmail.com", "alhashimali649@gmail.com"];
+var MODEL = "claude-sonnet-4-6";
+async function ensureAdmin(ctx) {
+  const { data: profile } = await ctx.supabase.from("profiles").select("is_admin, email").eq("id", ctx.user.id).single();
+  if (!profile?.is_admin && !ADMIN_EMAILS3.includes(profile?.email || "")) {
+    throw new TRPCError({ code: "FORBIDDEN", message: "Admin only" });
+  }
+}
+async function getKillSwitch(ctx) {
+  const { data } = await ctx.supabase.from("platform_config").select("value").eq("key", "executor_agents_enabled").single();
+  return data?.value !== false;
+}
+async function getRateLimit(ctx) {
+  const { data } = await ctx.supabase.from("platform_config").select("value").eq("key", "executor_max_actions_per_admin_per_hour").single();
+  const v = Number(data?.value);
+  return Number.isFinite(v) && v > 0 ? v : 50;
+}
+function buildToolsForAgent(allowed) {
+  return allowed.map((name) => {
+    const tool = AGENT_TOOLS[name];
+    if (!tool) return null;
+    return {
+      name: tool.name,
+      description: tool.description,
+      input_schema: tool.inputSchema
+    };
+  }).filter(Boolean);
+}
+async function callClaude(params) {
+  if (!process.env.ANTHROPIC_API_KEY) {
+    throw new Error("ANTHROPIC_API_KEY not configured");
+  }
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": process.env.ANTHROPIC_API_KEY,
+      "anthropic-version": "2023-06-01"
+    },
+    body: JSON.stringify({
+      model: MODEL,
+      max_tokens: 4096,
+      system: params.system,
+      messages: params.messages,
+      tools: params.tools.length ? params.tools : void 0
+    })
+  });
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error(`Claude API ${res.status}: ${txt.slice(0, 400)}`);
+  }
+  return await res.json();
+}
+var executorAgentsRouter = router2({
+  list: protectedProcedure.query(async ({ ctx }) => {
+    await ensureAdmin(ctx);
+    if (!await getKillSwitch(ctx)) {
+      return [];
+    }
+    const { data } = await ctx.supabase.from("executor_agents").select("*").eq("enabled", true).order("id");
+    return data || [];
+  }),
+  startConversation: protectedProcedure.input(external_exports.object({ agentId: external_exports.string(), title: external_exports.string().optional() })).mutation(async ({ input, ctx }) => {
+    await ensureAdmin(ctx);
+    const { data, error } = await ctx.supabase.from("executor_conversations").insert([
+      {
+        agent_id: input.agentId,
+        user_id: ctx.user.id,
+        title: input.title || null
+      }
+    ]).select().single();
+    if (error) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
+    return data;
+  }),
+  listConversations: protectedProcedure.query(async ({ ctx }) => {
+    await ensureAdmin(ctx);
+    const { data } = await ctx.supabase.from("executor_conversations").select("id, agent_id, title, created_at, updated_at").eq("user_id", ctx.user.id).order("updated_at", { ascending: false }).limit(50);
+    return data || [];
+  }),
+  getConversation: protectedProcedure.input(external_exports.object({ conversationId: external_exports.string().uuid() })).query(async ({ input, ctx }) => {
+    await ensureAdmin(ctx);
+    const { data: conversation } = await ctx.supabase.from("executor_conversations").select("*").eq("id", input.conversationId).single();
+    if (!conversation || conversation.user_id !== ctx.user.id) {
+      throw new TRPCError({ code: "NOT_FOUND" });
+    }
+    const { data: messages } = await ctx.supabase.from("executor_messages").select("*").eq("conversation_id", input.conversationId).order("created_at");
+    const { data: actions } = await ctx.supabase.from("agent_actions").select("*").eq("conversation_id", input.conversationId).order("created_at");
+    return { conversation, messages: messages || [], actions: actions || [] };
+  }),
+  deleteConversation: protectedProcedure.input(external_exports.object({ conversationId: external_exports.string().uuid() })).mutation(async ({ input, ctx }) => {
+    await ensureAdmin(ctx);
+    await ctx.supabase.from("executor_conversations").delete().eq("id", input.conversationId).eq("user_id", ctx.user.id);
+    return { ok: true };
+  }),
+  /**
+   * Core pipeline. Sends the user's message to Claude with tool schema,
+   * executes non-confirmation tools inline, creates pending action rows for
+   * confirmation-required tools, and returns the assistant response.
+   */
+  sendMessage: protectedProcedure.input(
+    external_exports.object({
+      conversationId: external_exports.string().uuid(),
+      content: external_exports.string().min(1)
+    })
+  ).mutation(async ({ input, ctx }) => {
+    await ensureAdmin(ctx);
+    if (!await getKillSwitch(ctx)) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "Executor agents disabled" });
+    }
+    const limit = await getRateLimit(ctx);
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1e3).toISOString();
+    const { count: recentActions } = await ctx.supabase.from("agent_actions").select("id", { count: "exact", head: true }).eq("admin_user_id", ctx.user.id).gte("created_at", oneHourAgo);
+    if ((recentActions || 0) >= limit) {
+      throw new TRPCError({
+        code: "TOO_MANY_REQUESTS",
+        message: `Rate limit: ${limit} actions/hour reached`
+      });
+    }
+    const { data: conversation } = await ctx.supabase.from("executor_conversations").select("id, agent_id, user_id").eq("id", input.conversationId).single();
+    if (!conversation || conversation.user_id !== ctx.user.id) {
+      throw new TRPCError({ code: "NOT_FOUND" });
+    }
+    const { data: agent } = await ctx.supabase.from("executor_agents").select("*").eq("id", conversation.agent_id).single();
+    if (!agent) throw new TRPCError({ code: "NOT_FOUND", message: "Agent not found" });
+    const { data: prior } = await ctx.supabase.from("executor_messages").select("role, content, tool_calls").eq("conversation_id", input.conversationId).order("created_at");
+    await ctx.supabase.from("executor_messages").insert([
+      {
+        conversation_id: input.conversationId,
+        role: "user",
+        content: input.content
+      }
+    ]);
+    const messages = [];
+    for (const m of prior || []) {
+      if (m.role === "user") {
+        messages.push({ role: "user", content: m.content || "" });
+      } else if (m.role === "assistant") {
+        messages.push({ role: "assistant", content: m.content || "" });
+      }
+    }
+    messages.push({ role: "user", content: input.content });
+    const allowedTools = Array.isArray(agent.allowed_tools) ? agent.allowed_tools : [];
+    const tools = buildToolsForAgent(allowedTools);
+    let response;
+    try {
+      response = await callClaude({ system: agent.system_prompt, messages, tools });
+    } catch (e) {
+      return { error: e?.message || "Claude call failed", pendingActions: [] };
+    }
+    const contentBlocks = response.content || [];
+    const textBlocks = [];
+    const toolUseBlocks = [];
+    for (const block of contentBlocks) {
+      if (block.type === "text") textBlocks.push(block.text);
+      if (block.type === "tool_use") toolUseBlocks.push(block);
+    }
+    const MAX_TOOLS = 5;
+    const capped = toolUseBlocks.slice(0, MAX_TOOLS);
+    const pendingActions = [];
+    const executedResults = [];
+    for (const tu of capped) {
+      const tool = AGENT_TOOLS[tu.name];
+      if (!tool) continue;
+      if (tool.requiresConfirmation) {
+        const { data: actionRow } = await ctx.supabase.from("agent_actions").insert([
+          {
+            conversation_id: input.conversationId,
+            agent_id: agent.id,
+            admin_user_id: ctx.user.id,
+            tool_name: tu.name,
+            tool_input: tu.input,
+            status: "pending",
+            requires_confirmation: true
+          }
+        ]).select().single();
+        pendingActions.push(actionRow);
+      } else {
+        try {
+          const result = await tool.execute(tu.input, {
+            supabase: ctx.supabase,
+            userId: ctx.user.id,
+            conversationId: input.conversationId,
+            agentId: agent.id
+          });
+          await ctx.supabase.from("agent_actions").insert([
+            {
+              conversation_id: input.conversationId,
+              agent_id: agent.id,
+              admin_user_id: ctx.user.id,
+              tool_name: tu.name,
+              tool_input: tu.input,
+              tool_output: result,
+              status: result?.error ? "failed" : "executed",
+              requires_confirmation: false,
+              executed_at: (/* @__PURE__ */ new Date()).toISOString(),
+              error_message: result?.error || null
+            }
+          ]);
+          executedResults.push({ tool_use_id: tu.id, content: JSON.stringify(result) });
+        } catch (e) {
+          executedResults.push({ tool_use_id: tu.id, content: JSON.stringify({ error: e?.message }) });
+        }
+      }
+    }
+    let finalText = textBlocks.join("\n\n");
+    if (executedResults.length > 0) {
+      const followupMessages = [...messages];
+      followupMessages.push({ role: "assistant", content: contentBlocks });
+      followupMessages.push({
+        role: "user",
+        content: executedResults.map((r) => ({
+          type: "tool_result",
+          tool_use_id: r.tool_use_id,
+          content: r.content
+        }))
+      });
+      try {
+        const followup = await callClaude({ system: agent.system_prompt, messages: followupMessages, tools });
+        const followupText = (followup.content || []).filter((b) => b.type === "text").map((b) => b.text).join("\n\n");
+        finalText = [finalText, followupText].filter(Boolean).join("\n\n");
+      } catch (e) {
+        finalText = finalText + `
+
+(tool-followup failed: ${e?.message})`;
+      }
+    }
+    await ctx.supabase.from("executor_messages").insert([
+      {
+        conversation_id: input.conversationId,
+        role: "assistant",
+        content: finalText,
+        tool_calls: capped.length ? capped : null
+      }
+    ]);
+    await ctx.supabase.from("executor_conversations").update({ updated_at: (/* @__PURE__ */ new Date()).toISOString() }).eq("id", input.conversationId);
+    return { content: finalText, pendingActions };
+  }),
+  approveAction: protectedProcedure.input(external_exports.object({ actionId: external_exports.string().uuid() })).mutation(async ({ input, ctx }) => {
+    await ensureAdmin(ctx);
+    const { data: action } = await ctx.supabase.from("agent_actions").select("*").eq("id", input.actionId).single();
+    if (!action) throw new TRPCError({ code: "NOT_FOUND" });
+    if (action.admin_user_id !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN" });
+    if (action.status !== "pending") {
+      throw new TRPCError({ code: "BAD_REQUEST", message: `Already ${action.status}` });
+    }
+    const tool = AGENT_TOOLS[action.tool_name];
+    if (!tool) throw new TRPCError({ code: "BAD_REQUEST", message: "Unknown tool" });
+    let result;
+    try {
+      result = await tool.execute(action.tool_input, {
+        supabase: ctx.supabase,
+        userId: ctx.user.id,
+        conversationId: action.conversation_id,
+        agentId: action.agent_id
+      });
+    } catch (e) {
+      result = { error: e?.message || "Execution failed" };
+    }
+    const { data: updated } = await ctx.supabase.from("agent_actions").update({
+      tool_output: result,
+      status: result?.error ? "failed" : "executed",
+      approved_at: (/* @__PURE__ */ new Date()).toISOString(),
+      executed_at: (/* @__PURE__ */ new Date()).toISOString(),
+      error_message: result?.error || null
+    }).eq("id", input.actionId).select().single();
+    return updated;
+  }),
+  rejectAction: protectedProcedure.input(external_exports.object({ actionId: external_exports.string().uuid() })).mutation(async ({ input, ctx }) => {
+    await ensureAdmin(ctx);
+    const { data } = await ctx.supabase.from("agent_actions").update({ status: "rejected" }).eq("id", input.actionId).eq("admin_user_id", ctx.user.id).select().single();
+    return data;
+  }),
+  listActions: protectedProcedure.input(external_exports.object({ conversationId: external_exports.string().uuid().optional() }).optional()).query(async ({ input, ctx }) => {
+    await ensureAdmin(ctx);
+    let q = ctx.supabase.from("agent_actions").select("*").eq("admin_user_id", ctx.user.id).order("created_at", { ascending: false }).limit(100);
+    if (input?.conversationId) q = q.eq("conversation_id", input.conversationId);
+    const { data } = await q;
+    return data || [];
+  })
+});
+
 // server/_core/trpc.ts
 var appRouter = router2({
   health: publicProcedure.query(async () => {
@@ -65585,7 +66224,8 @@ var appRouter = router2({
   feedback: feedbackRouter,
   aiFeedback: aiFeedbackRouter,
   agents: agentsRouter,
-  companies: companiesRouter
+  companies: companiesRouter,
+  executor: executorAgentsRouter
 });
 
 // server/_core/context.ts

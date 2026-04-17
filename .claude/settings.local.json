@@ -12,7 +12,17 @@
       "mcp__89a08a43-3fbe-4aef-bad5-05effd677f91__list_projects",
       "mcp__89a08a43-3fbe-4aef-bad5-05effd677f91__execute_sql",
       "mcp__89a08a43-3fbe-4aef-bad5-05effd677f91__apply_migration",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(npx vercel *)",
+      "Bash(curl -s -o /dev/null -w \"health=%{http_code}\\\\n\" https://wassel-alpha.vercel.app/api/health)",
+      "Bash(curl -s -o /dev/null -w \"unsub-fake=%{http_code}\\\\n\" \"https://wassel-alpha.vercel.app/unsubscribe?t=notarealtokenxxxxxxxxxxxxxxxx\")",
+      "Bash(curl -s -o /dev/null -w \"unsub-empty=%{http_code}\\\\n\" \"https://wassel-alpha.vercel.app/unsubscribe\")",
+      "Bash(curl -s -o /dev/null -w \"trpc-companies=%{http_code}\\\\n\" \"https://wassel-alpha.vercel.app/api/trpc/companies.list\")",
+      "Bash(curl -s -o /dev/null -w \"unsub-fake=%{http_code}\\\\n\" \"https://wassel-alpha.vercel.app/unsubscribe?t=notarealtoken1234567890abcdef1234\")",
+      "Bash(curl -s -o /dev/null -w \"trpc-auth=%{http_code}\\\\n\" \"https://wassel-alpha.vercel.app/api/trpc/companies.list\")",
+      "Bash(curl -s -o /dev/null -w \"trpc-create=%{http_code}\\\\n\" -X POST \"https://wassel-alpha.vercel.app/api/trpc/campaign.create\" -H 'Content-Type: application/json' -d '{}')",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
     ]
   },
   "enableAllProjectMcpServers": true,

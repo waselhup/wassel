@@ -3,7 +3,7 @@ import { WasselLogo } from '../components/WasselLogo';
 import VideoDemo from '../components/landing/VideoDemo';
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { Linkedin, FileText, Mail, BarChart3, Shield, Check, ArrowRight, Star, Globe2, Users, MessageSquare, Coins, Search, PenSquare } from 'lucide-react';
+import { Linkedin, FileText, Mail, BarChart3, Shield, Check, ArrowRight, Star, Globe2, Users, MessageSquare, Coins, Search, PenSquare, BookOpen } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { trpcQuery } from '@/lib/trpc';
 import UserAvatar from '@/components/UserAvatar';
@@ -99,13 +99,13 @@ export default function LandingPage() {
               {t("hero.title", "وصّل")}
               <br />
               <span className="text-[#0A8F84]">
-                {t("hero.title2", "منصتك الذكية للتسويق عبر LinkedIn")}
+                {t("hero.title2", "منصتك المهنية الذكية")}
               </span>
             </h1>
             <p className="text-xl text-[#6b7280] leading-relaxed mb-10 max-w-xl">
               {t(
                 "hero.subtitle",
-                "حلّل ملفك المهني، خصّص سيرتك الذاتية، أنشئ منشورات LinkedIn، واطلق حملات تواصل ذكية — كل ذلك مدعوم بالذكاء الاصطناعي وخلال دقائق."
+                "من تحليل بروفايلك، إلى تطوير سيرتك الذاتية، إلى التواصل المهني الذكي — كل ما تحتاجه لنمو مسارك المهني في مكان واحد."
               )}
             </p>
             <div className="flex flex-wrap gap-4 mb-10">
@@ -209,7 +209,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex flex-wrap justify-center items-center gap-8 md:gap-16">
             {[
-              { label: isRTL ? 'أدوات ذكية' : 'AI Tools', value: '5' },
+              { label: isRTL ? 'خدمات ذكية' : 'AI Services', value: '6' },
               { label: isRTL ? 'توكن مجاناً' : 'Free Tokens', value: '1,000' },
               { label: isRTL ? 'لغتين' : 'Languages', value: 'AR + EN' },
               { label: isRTL ? 'صنع في السعودية' : 'Made in Saudi', value: '🇸🇦' },
@@ -234,19 +234,19 @@ export default function LandingPage() {
               {t("features.badge", "كل ما تحتاجه")}
             </div>
             <h2 className="text-4xl md:text-5xl font-extrabold text-[#064E49] mb-4">
-              {t("features.title", "منصة واحدة. نتائج حقيقية.")}
+              {t("features.title", "منصة واحدة لنمو مسارك المهني")}
             </h2>
             <p className="text-xl text-[#6b7280] max-w-2xl mx-auto">
               {t(
                 "features.subtitle",
-                "خمس أدوات قوية مدعومة بالذكاء الاصطناعي تعمل معاً لتسريع رحلتك المهنية"
+                "ست خدمات ذكية تعمل معاً لدعم مسيرتك المهنية"
               )}
             </p>
           </motion.div>
 
           <motion.div
             {...stagger}
-            className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6"
+            className="grid md:grid-cols-2 lg:grid-cols-3 gap-6"
           >
             {[
               {
@@ -254,7 +254,7 @@ export default function LandingPage() {
                 title: t("features.linkedin.title", "تحليل البروفايل المهني"),
                 desc: t(
                   "features.linkedin.desc",
-                  "الذكاء الاصطناعي يحلل ملفك على LinkedIn ويعطيك تقييماً من 100 مع نقاط القوة والضعف وخطة تحسين."
+                  "تحليل متعمق لبروفايلك على LinkedIn مع خطة تطوير واضحة وتقييم من 100."
                 ),
               },
               {
@@ -262,7 +262,7 @@ export default function LandingPage() {
                 title: t("features.cv.title", "تخصيص السيرة الذاتية"),
                 desc: t(
                   "features.cv.desc",
-                  "أنشئ سيرة ذاتية مُحسّنة لكل وظيفة بثلاثة قوالب مختلفة، مدعومة بمعايير أكسفورد وسوق العمل السعودي."
+                  "سيرة ذاتية احترافية مخصصة لكل فرصة تقدم لها، بمعايير السوق السعودي."
                 ),
               },
               {
@@ -270,23 +270,31 @@ export default function LandingPage() {
                 title: t("features.posts.title", "منشورات LinkedIn"),
                 desc: t(
                   "features.posts.desc",
-                  "ولّد منشورات LinkedIn احترافية بأي نبرة وموضوع — احترافي، تعليمي، أو ملهم — بالعربية أو الإنجليزية."
+                  "محتوى احترافي لحسابك يجذب التفاعل ويبني سمعتك — بالعربية والإنجليزية."
                 ),
               },
               {
                 icon: Mail,
-                title: t("features.email.title", "حملات التواصل الذكية"),
+                title: t("features.email.title", "التواصل المهني الذكي"),
                 desc: t(
                   "features.email.desc",
-                  "أنشئ حملات تواصل مع رسائل مخصصة لكل شركة بالذكاء الاصطناعي — اختر الشركات والنبرة واترك الباقي لنا."
+                  "وصول احترافي ومنظم لفرص مهنية جديدة، مع رسائل مخصصة لكل جهة بالذكاء الاصطناعي."
                 ),
               },
               {
-                icon: Search,
-                title: t("features.discovery.title", "اكتشاف الجمهور"),
+                icon: BookOpen,
+                title: t("features.knowledge.title", "قاعدة المعرفة"),
                 desc: t(
-                  "features.discovery.desc",
-                  "ابحث عن متخذي القرار المناسبين حسب المنصب الوظيفي والدولة واحصل على قوائم جاهزة للتواصل."
+                  "features.knowledge.desc",
+                  "أدلة ومحتوى لتطوير حضورك المهني على LinkedIn وفهم أفضل الممارسات."
+                ),
+              },
+              {
+                icon: BarChart3,
+                title: t("features.analytics.title", "التحليلات"),
+                desc: t(
+                  "features.analytics.desc",
+                  "تتبع تقدمك وقياس نتائج جهودك المهنية عبر لوحة تحكم مركزية."
                 ),
               },
             ].map((f, i) => {
@@ -395,7 +403,7 @@ export default function LandingPage() {
                 role: t("testimonials.t3.role", "مدير مبيعات · الدمام"),
                 quote: t(
                   "testimonials.t3.quote",
-                  "أرسلت 500 رسالة لشركات في القطاع الحكومي. النتائج فاقت توقعاتي بكثير."
+                  "منشورات LinkedIn التي أنشأتها وصّل ضاعفت تفاعلي خلال شهر. أصبحت أُعرف في مجالي."
                 ),
               },
             ].map((tst, i) => (
@@ -445,49 +453,49 @@ export default function LandingPage() {
                 price: "0",
                 desc: t("pricing.free.desc", "للتجربة"),
                 features: [
-                  t("pricing.free.f1", "تحليل لينكدإن واحد"),
-                  t("pricing.free.f2", "10 رسائل شهرياً"),
+                  t("pricing.free.f1", "1,000 توكن عند التسجيل"),
+                  t("pricing.free.f2", "كل الخدمات الست"),
                   t("pricing.free.f3", "دعم عبر البريد"),
                 ],
                 cta: t("pricing.free.cta", "ابدأ مجاناً"),
                 highlight: false,
               },
               {
-                name: t("pricing.starter.name", "المبتدئ"),
+                name: t("pricing.starter.name", "احترافي"),
                 price: "99",
-                desc: t("pricing.starter.desc", "للباحثين عن عمل"),
+                desc: t("pricing.starter.desc", "للأفراد"),
                 features: [
-                  t("pricing.starter.f1", "تحليلات لينكدإن غير محدودة"),
-                  t("pricing.starter.f2", "100 رسالة شهرياً"),
-                  t("pricing.starter.f3", "تخصيص السيرة الذاتية"),
+                  t("pricing.starter.f1", "10,000 توكن شهرياً"),
+                  t("pricing.starter.f2", "كل الخدمات الست"),
+                  t("pricing.starter.f3", "أولوية في المعالجة"),
                   t("pricing.starter.f4", "دعم خلال 24 ساعة"),
                 ],
                 cta: t("pricing.starter.cta", "اشترك الآن"),
                 highlight: false,
               },
               {
-                name: t("pricing.pro.name", "المحترف"),
-                price: "199",
+                name: t("pricing.pro.name", "احترافي+"),
+                price: "299",
                 desc: t("pricing.pro.desc", "الأكثر شعبية"),
                 features: [
-                  t("pricing.pro.f1", "كل ما في المبتدئ"),
-                  t("pricing.pro.f2", "500 رسالة شهرياً"),
-                  t("pricing.pro.f3", "اكتشاف الفرص المتقدم"),
-                  t("pricing.pro.f4", "تحليلات الحملات"),
-                  t("pricing.pro.f5", "دعم أولوية"),
+                  t("pricing.pro.f1", "50,000 توكن شهرياً"),
+                  t("pricing.pro.f2", "حتى 5 مستخدمين"),
+                  t("pricing.pro.f3", "تحليلات مفصّلة"),
+                  t("pricing.pro.f4", "دعم مخصص"),
+                  t("pricing.pro.f5", "تكامل KB متقدم"),
                 ],
                 cta: t("pricing.pro.cta", "اشترك الآن"),
                 highlight: true,
               },
               {
-                name: t("pricing.business.name", "الأعمال"),
-                price: "299",
-                desc: t("pricing.business.desc", "للفرق والشركات"),
+                name: t("pricing.business.name", "المؤسسة"),
+                price: "—",
+                desc: t("pricing.business.desc", "للشركات"),
                 features: [
-                  t("pricing.business.f1", "كل ما في المحترف"),
-                  t("pricing.business.f2", "1500 رسالة شهرياً"),
-                  t("pricing.business.f3", "حسابات متعددة"),
-                  t("pricing.business.f4", "تكامل CRM"),
+                  t("pricing.business.f1", "توكن غير محدود"),
+                  t("pricing.business.f2", "مستخدمون غير محدودين"),
+                  t("pricing.business.f3", "تدريب مخصص للفريق"),
+                  t("pricing.business.f4", "تكامل مع أنظمتك"),
                   t("pricing.business.f5", "مدير حساب مخصّص"),
                 ],
                 cta: t("pricing.business.cta", "تواصل معنا"),
@@ -515,7 +523,9 @@ export default function LandingPage() {
                   <span className="text-5xl font-extrabold text-[#064E49]">
                     {p.price}
                   </span>
-                  <span className="text-[#6b7280]">SAR / {t("pricing.month", "شهر")}</span>
+                  {p.price !== '—' && (
+                    <span className="text-[#6b7280]">SAR / {t("pricing.month", "شهر")}</span>
+                  )}
                 </div>
                 <p className="text-sm text-[#6b7280] mb-6">{p.desc}</p>
                 <ul className="space-y-3 mb-8">

@@ -9,7 +9,7 @@ import { trpc, trpcMutation, trpcQuery } from "@/lib/trpc";
 import { supabase } from "@/lib/supabase";
 import UserAvatar from "@/components/UserAvatar";
 
-type Tab = 'personal' | 'subscription' | 'settings' | 'security' | 'reviews';
+type Tab = 'personal' | 'career' | 'subscription' | 'settings' | 'security' | 'reviews';
 
 interface Toast { id: number; type: 'success' | 'error'; message: string }
 function useToast() {
@@ -55,6 +55,34 @@ export default function Profile() {
     bio: (profile as any)?.bio || "",
     telegram_chat_id: (profile as any)?.telegram_chat_id || "",
   });
+
+  // Career profile state (separate from personal so the save button can be scoped)
+  const [career, setCareer] = useState({
+    target_role: (profile as any)?.target_role || "",
+    industry: (profile as any)?.industry || "",
+    years_experience: (profile as any)?.years_experience ?? 0,
+    career_goals: (profile as any)?.career_goals || "",
+  });
+  const setC = (k: string, v: any) => setCareer(c => ({ ...c, [k]: v }));
+  const [savingCareer, setSavingCareer] = useState(false);
+
+  async function saveCareer() {
+    if (!user?.id) return;
+    setSavingCareer(true);
+    try {
+      const { error } = await supabase.from('profiles').update({
+        target_role: career.target_role || null,
+        industry: career.industry || null,
+        years_experience: career.years_experience || null,
+        career_goals: career.career_goals || null,
+      }).eq('id', user.id);
+      if (error) throw error;
+      toast.push('success', isAr ? 'تم حفظ مسيرتك المهنية' : 'Career profile saved');
+    } catch (e: any) {
+      toast.push('error', e?.message || 'Failed to save');
+    }
+    setSavingCareer(false);
+  }
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
 
   // Settings state
@@ -150,6 +178,7 @@ export default function Profile() {
 
   const tabs: { id: Tab; label: string; icon: any }[] = [
     { id: 'personal', label: t('profile.tabs.personal', 'المعلومات الشخصية'), icon: User },
+    { id: 'career', label: t('profile.tabs.career', 'مسيرتي المهنية'), icon: Briefcase },
     { id: 'subscription', label: t('profile.tabs.subscription', 'الاشتراك'), icon: CreditCard },
     { id: 'settings', label: t('profile.tabs.settings', 'الإعدادات'), icon: Settings },
     { id: 'security', label: t('profile.tabs.security', 'الأمان'), icon: Shield },
@@ -274,6 +303,40 @@ export default function Profile() {
                 style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 22px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #0A8F84, #0ea5e9)', color: '#fff', fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 14, cursor: 'pointer', boxShadow: '0 4px 12px rgba(10,143,132,0.3)', opacity: saving ? 0.7 : 1 }}>
                 {saving ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <Save size={16} />}
                 {saving ? (isAr ? 'جاري الحفظ...' : 'Saving...') : t('pr.save', 'حفظ')}
+              </button>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Career Tab */}
+        {tab === 'career' && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+            style={{ background: '#fff', borderRadius: 16, border: '1px solid var(--wsl-border)', padding: 24 }}>
+            <div style={{ marginBottom: 20, padding: '14px 18px', borderRadius: 12, background: '#F0FDF9', border: '1px solid #A7F3D0', fontSize: 12, color: '#065F46', fontFamily: 'Cairo, sans-serif', fontWeight: 700, lineHeight: 1.7 }}>
+              {isAr
+                ? 'هذه المعلومات تساعد الذكاء الاصطناعي في تخصيص المحتوى لك — سيتم استخدامها في تحليل البروفايل والسيرة الذاتية والمنشورات والتواصل المهني.'
+                : 'This info helps the AI personalize everything it creates for you — profile analysis, CV, posts, and outreach.'}
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16, marginBottom: 16 }}>
+              <FieldIcon icon={Briefcase} label={t('pr.targetRole', 'الدور المهني المستهدف')}>
+                <input value={career.target_role} onChange={e => setC('target_role', e.target.value)} placeholder={t('pr.targetRolePh', 'مثال: Head of Marketing')} className="wsl-input" />
+              </FieldIcon>
+              <FieldIcon icon={Briefcase} label={t('pr.industry', 'المجال/الصناعة')}>
+                <input value={career.industry} onChange={e => setC('industry', e.target.value)} placeholder={t('pr.industryPh', 'SaaS, FinTech, Retail...')} className="wsl-input" />
+              </FieldIcon>
+              <FieldIcon icon={Star} label={t('pr.yearsExp', 'سنوات الخبرة')}>
+                <input type="number" min={0} max={60} value={career.years_experience} onChange={e => setC('years_experience', Math.max(0, +e.target.value || 0))} className="wsl-input" dir="ltr" />
+              </FieldIcon>
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 800, color: 'var(--wsl-ink-2)', marginBottom: 6, fontFamily: 'Cairo, sans-serif' }}>{t('pr.careerGoals', 'أهدافك المهنية')}</label>
+              <textarea value={career.career_goals} onChange={e => setC('career_goals', e.target.value)} rows={5} placeholder={t('pr.careerGoalsPh', 'ما الذي تسعى له خلال 12 شهراً؟ نوع الفرص التي تبحث عنها؟')} className="wsl-input" style={{ resize: 'none', width: '100%' }} />
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20 }}>
+              <button onClick={saveCareer} disabled={savingCareer}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 22px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #0A8F84, #0ea5e9)', color: '#fff', fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 14, cursor: 'pointer', boxShadow: '0 4px 12px rgba(10,143,132,0.3)', opacity: savingCareer ? 0.7 : 1 }}>
+                {savingCareer ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <Save size={16} />}
+                {savingCareer ? (isAr ? 'جاري الحفظ...' : 'Saving...') : t('pr.save', 'حفظ')}
               </button>
             </div>
           </motion.div>

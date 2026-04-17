@@ -19,13 +19,17 @@
     },
     "linkedin": "تحليل LinkedIn",
     "cv": "السير الذاتية",
-    "campaigns": "الحملات",
+    "campaigns": "التواصل المهني",
     "tokens": "الرموز",
     "profile": "الملف الشخصي",
     "knowledge": "قاعدة المعرفة",
     "setup": "الإعدادات الأولية",
     "posts": "المنشورات",
-    "profileAnalysis": "تحليل البروفايل"
+    "profileAnalysis": "تحليل البروفايل",
+    "career": "مسيرتي المهنية",
+    "analytics": "التحليلات",
+    "tickets": "ملاحظاتي",
+    "admin": "لوحة الإدارة"
   },
   "hero": {
     "title": "ضاعف فرص توظيفك بدون عناء",

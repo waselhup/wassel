@@ -19,13 +19,17 @@
     },
     "linkedin": "LinkedIn Analysis",
     "cv": "Resume",
-    "campaigns": "Campaigns",
+    "campaigns": "Smart Outreach",
     "tokens": "Tokens",
     "profile": "Profile",
     "knowledge": "Knowledge Base",
     "setup": "Account Setup",
     "posts": "Posts",
-    "profileAnalysis": "Profile Analysis"
+    "profileAnalysis": "Profile Analysis",
+    "career": "Career Profile",
+    "analytics": "Analytics",
+    "tickets": "My Tickets",
+    "admin": "Admin"
   },
   "hero": {
     "title": "Multiply Your Job Opportunities Effortlessly",

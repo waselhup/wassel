@@ -4,15 +4,17 @@ import { useTranslation } from 'react-i18next';
 import {
   Shield, Users, Activity, AlertTriangle, Star, CheckCircle2,
   XCircle, Loader2, Search, Coins, BarChart3, MessageSquare,
-  Send, RefreshCw, Ban, TicketCheck, MessageSquarePlus, Bot, Building2,
+  Send, RefreshCw, Ban, TicketCheck, MessageSquarePlus, Bot, Building2, Zap,
 } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/contexts/AuthContext';
 import AdminAgents from './AdminAgents';
 import AdminCompanies from './AdminCompanies';
+import AdminExecutorAgents from './AdminExecutorAgents';
+import ErrorBoundary from '@/components/ErrorBoundary';
 
-type Tab = 'overview' | 'users' | 'reviews' | 'alerts' | 'campaigns' | 'companies' | 'tokens' | 'tickets' | 'agents';
+type Tab = 'overview' | 'users' | 'reviews' | 'alerts' | 'campaigns' | 'companies' | 'tokens' | 'tickets' | 'agents' | 'executor';
 
 interface Toast { id: number; type: 'success' | 'error'; message: string }
 
@@ -148,6 +150,7 @@ export default function AdminDashboard() {
     { id: 'tokens', label: isAr ? 'التوكنز' : 'Tokens', icon: Coins },
     { id: 'tickets', label: isAr ? 'الملاحظات' : 'Tickets', icon: TicketCheck, count: feedbackTickets.filter(t => t.status === 'open').length },
     { id: 'agents', label: isAr ? 'الوكلاء' : 'Agents', icon: Bot },
+    { id: 'executor', label: isAr ? 'الوكلاء التنفيذيين' : 'Executor Agents', icon: Zap },
   ];
 
   const filteredUsers = searchQuery
@@ -496,6 +499,14 @@ export default function AdminDashboard() {
             {tab === 'companies' && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                 <AdminCompanies />
+              </motion.div>
+            )}
+
+            {tab === 'executor' && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                <ErrorBoundary fallbackTitle={isAr ? 'خطأ في الوكلاء التنفيذيين' : 'Executor agents error'}>
+                  <AdminExecutorAgents />
+                </ErrorBoundary>
               </motion.div>
             )}
           </>
