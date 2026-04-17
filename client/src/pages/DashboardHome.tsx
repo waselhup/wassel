@@ -7,6 +7,8 @@ import { WasselLogo } from '../components/WasselLogo';
 import DashboardLayout from "@/components/DashboardLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { trpc } from "@/lib/trpc";
+import { OnboardingWizard } from "@/components/OnboardingWizard";
+import { VideoPlaceholder } from "@/components/VideoPlaceholder";
 
 function useCountUp(target: number, duration = 1200) {
   const [n, setN] = useState(0);
@@ -57,6 +59,13 @@ export default function DashboardHome() {
     (user?.user_metadata?.avatar_url as string) ||
     (user?.user_metadata?.picture as string) ||
     "";
+
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  useEffect(() => {
+    if (profile && (profile as any).onboarded === false) {
+      setShowOnboarding(true);
+    }
+  }, [profile]);
 
   const [counts, setCounts] = useState({ tokens: 0, analyses: 0, cvs: 0, campaigns: 0 });
   useEffect(() => {
@@ -119,6 +128,7 @@ export default function DashboardHome() {
 
   return (
     <DashboardLayout>
+      {showOnboarding && <OnboardingWizard onClose={() => setShowOnboarding(false)} />}
       <div className="space-y-8 p-6 md:p-8">
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }} className="flex items-center gap-4">
           {avatarUrl ? (
@@ -264,6 +274,37 @@ export default function DashboardHome() {
             )}
           </motion.div>
         </div>
+
+        <motion.section
+          initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }} transition={{ duration: 0.45 }}
+          className="space-y-4"
+        >
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-[#0A8F84]" />
+            <h2 className="text-xl font-bold text-[var(--wsl-ink)]">
+              {t("home.videos.title", isAr ? "ابدأ من هنا" : "Start here")}
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <VideoPlaceholder
+              title={t("home.videos.profile", isAr ? "شاهد كيف تحلل بروفايلك المهني" : "How to analyze your profile")}
+              duration={isAr ? "دقيقتان" : "2 min"}
+            />
+            <VideoPlaceholder
+              title={t("home.videos.cv", isAr ? "أنشئ سيرتك الذاتية بالذكاء الاصطناعي" : "Create your CV with AI")}
+              duration={isAr ? "دقيقة ونصف" : "1.5 min"}
+            />
+            <VideoPlaceholder
+              title={t("home.videos.campaigns", isAr ? "أطلق حملتك الأولى على LinkedIn" : "Launch your first campaign")}
+              duration={isAr ? "3 دقائق" : "3 min"}
+            />
+            <VideoPlaceholder
+              title={t("home.videos.tour", isAr ? "جولة كاملة في وصّل" : "Full tour of Wassel")}
+              duration={isAr ? "5 دقائق" : "5 min"}
+            />
+          </div>
+        </motion.section>
       </div>
     </DashboardLayout>
   );

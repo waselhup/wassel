@@ -171,4 +171,36 @@ export const trpc = {
     delete: (id: string) => trpcMutation<any>('knowledge.delete', { id }),
     export: () => trpcQuery<any>('knowledge.export'),
   },
+  aiFeedback: {
+    submit: (input: { feature: string; outputId?: string; rating: number; comment?: string }) =>
+      trpcMutation<{ id: string; success: boolean }>('aiFeedback.submit', input),
+    list: (input?: { feature?: string; rating?: number; limit?: number }) =>
+      trpcQuery<any[]>('aiFeedback.list', input || {}),
+    stats: () => trpcQuery<Record<string, { total: number; avg: number; sum: number }>>('aiFeedback.stats'),
+    listPrompts: (input?: { feature?: string }) =>
+      trpcQuery<any[]>('aiFeedback.listPrompts', input || {}),
+    savePrompt: (input: { feature: string; promptText: string; activate?: boolean }) =>
+      trpcMutation<any>('aiFeedback.savePrompt', input),
+    activatePrompt: (input: { promptId: string }) =>
+      trpcMutation<any>('aiFeedback.activatePrompt', input),
+  },
+  agents: {
+    list: () => trpcQuery<any[]>('agents.list'),
+    startConversation: (input: { agentId: string; title?: string }) =>
+      trpcMutation<any>('agents.startConversation', input),
+    listConversations: (input?: { agentId?: string }) =>
+      trpcQuery<any[]>('agents.listConversations', input || {}),
+    getConversation: (input: { conversationId: string }) =>
+      trpcQuery<{ conversation: any; messages: any[] }>('agents.getConversation', input),
+    sendMessage: (input: { conversationId: string; content: string }) =>
+      trpcMutation<{ content: string; tokensUsed: number }>('agents.sendMessage', input),
+    deleteConversation: (input: { conversationId: string }) =>
+      trpcMutation<any>('agents.deleteConversation', input),
+    listTrainingNotes: (input: { agentId: string }) =>
+      trpcQuery<any[]>('agents.listTrainingNotes', input),
+    addTrainingNote: (input: { agentId: string; note: string }) =>
+      trpcMutation<any>('agents.addTrainingNote', input),
+    deleteTrainingNote: (input: { noteId: string }) =>
+      trpcMutation<any>('agents.deleteTrainingNote', input),
+  },
 };

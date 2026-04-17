@@ -4,13 +4,14 @@ import { useTranslation } from 'react-i18next';
 import {
   Shield, Users, Activity, AlertTriangle, Star, CheckCircle2,
   XCircle, Loader2, Search, Coins, BarChart3, MessageSquare,
-  Send, RefreshCw, Ban, TicketCheck, MessageSquarePlus,
+  Send, RefreshCw, Ban, TicketCheck, MessageSquarePlus, Bot,
 } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/contexts/AuthContext';
+import AdminAgents from './AdminAgents';
 
-type Tab = 'overview' | 'users' | 'reviews' | 'alerts' | 'campaigns' | 'tokens' | 'tickets';
+type Tab = 'overview' | 'users' | 'reviews' | 'alerts' | 'campaigns' | 'tokens' | 'tickets' | 'agents';
 
 interface Toast { id: number; type: 'success' | 'error'; message: string }
 
@@ -144,6 +145,7 @@ export default function AdminDashboard() {
     { id: 'campaigns', label: isAr ? 'الحملات' : 'Campaigns', icon: Send, count: campaigns.length },
     { id: 'tokens', label: isAr ? 'التوكنز' : 'Tokens', icon: Coins },
     { id: 'tickets', label: isAr ? 'الملاحظات' : 'Tickets', icon: TicketCheck, count: feedbackTickets.filter(t => t.status === 'open').length },
+    { id: 'agents', label: isAr ? 'الوكلاء' : 'Agents', icon: Bot },
   ];
 
   const filteredUsers = searchQuery
@@ -480,6 +482,12 @@ export default function AdminDashboard() {
                     })}
                   </div>
                 )}
+              </motion.div>
+            )}
+
+            {tab === 'agents' && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                <AdminAgents />
               </motion.div>
             )}
           </>

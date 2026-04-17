@@ -9,6 +9,7 @@ import {
 import DashboardLayout from '../components/DashboardLayout';
 import { useAuth } from '../contexts/AuthContext';
 import { trpcMutation } from '../lib/trpc';
+import AIFeedbackWidget from '../components/AIFeedbackWidget';
 
 // ─── Interfaces ──────────────────────────────────────────────────────────────
 interface ScoreBreakdown {
@@ -612,6 +613,10 @@ export default function ProfileAnalysis() {
                       style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '10px 20px', borderRadius: 10, border: '1px solid var(--wsl-border, #E5E7EB)', background: '#fff', color: 'var(--wsl-ink-2)', fontSize: 13, fontWeight: 800, fontFamily: 'Cairo', cursor: 'pointer' }}>
                       <Printer size={14} /> {t('profileAnalysis.print', 'طباعة')}
                     </button>
+                  </div>
+
+                  <div style={{ marginTop: 16 }}>
+                    <AIFeedbackWidget feature="profile_analysis" />
                   </div>
                 </motion.div>
               )}

@@ -5,6 +5,7 @@ import { FileText, Download, Loader2, CheckCircle2, Briefcase, Target, Palette, 
 import { WasselLogo } from '../components/WasselLogo';
 import DashboardLayout from "@/components/DashboardLayout";
 import { trpc } from "@/lib/trpc";
+import AIFeedbackWidget from "@/components/AIFeedbackWidget";
 
 type Template = "modern" | "classic" | "creative";
 
@@ -288,6 +289,7 @@ export default function CVTailor() {
                 </div>
               </motion.div>
             ))}
+            <AIFeedbackWidget feature="cv_tailor" />
           </div>
         )}
 

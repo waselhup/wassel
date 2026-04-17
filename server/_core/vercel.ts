@@ -37,6 +37,21 @@ app.get('/api/health', (_req, res) => {
   });
 });
 
+app.post('/api/log-error', (req, res) => {
+  try {
+    const { message, stack, type, url, componentStack } = req.body || {};
+    console.error('[CLIENT_ERROR]', {
+      message,
+      type: type || 'react',
+      url,
+      stack: typeof stack === 'string' ? stack.slice(0, 1500) : '',
+      componentStack: typeof componentStack === 'string' ? componentStack.slice(0, 1500) : '',
+      ts: new Date().toISOString(),
+    });
+  } catch {}
+  res.json({ ok: true });
+});
+
 
 app.get('/api/test-route', (_req, res) => { res.json({ok:true,routes:'working'}); });
 

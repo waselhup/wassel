@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/contexts/AuthContext';
+import AIFeedbackWidget from '@/components/AIFeedbackWidget';
 
 type PostStatus = 'draft' | 'scheduled' | 'posted';
 type Tone = 'professional' | 'inspirational' | 'educational' | 'casual';
@@ -471,17 +472,27 @@ export default function Posts() {
                   <label style={labelStyle}>{t('posts.topic')}</label>
                   <textarea
                     value={topic}
-                    onChange={(e) => setTopic(e.target.value)}
+                    onChange={(e) => setTopic(e.target.value.slice(0, 500))}
                     placeholder={t('posts.topicPlaceholder')}
                     rows={3}
+                    maxLength={500}
                     style={{
                       width: '100%', padding: '12px 14px', borderRadius: 10,
                       border: '1.5px solid var(--wsl-border, #E5E7EB)',
                       fontFamily: 'Cairo, Inter, sans-serif', fontSize: 14, lineHeight: 1.6,
-                      resize: 'vertical', marginBottom: 14, background: '#F9FAFB',
+                      resize: 'vertical', marginBottom: 4, background: '#F9FAFB',
                       outline: 'none', direction: isAr ? 'rtl' : 'ltr',
                     }}
                   />
+                  <div style={{
+                    textAlign: isAr ? 'left' : 'right',
+                    fontSize: 11, fontWeight: 700,
+                    color: topic.length > 450 ? '#DC2626' : 'var(--wsl-ink-3)',
+                    fontFamily: 'Cairo, Inter, sans-serif',
+                    marginBottom: 14,
+                  }}>
+                    {topic.length} / 500
+                  </div>
 
                   {/* Tone + Language */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
@@ -677,6 +688,17 @@ export default function Posts() {
                   <Calendar size={14} /> {t('posts.schedule')}
                 </button>
               </div>
+              {/* Char counter */}
+              <div style={{
+                marginTop: 8,
+                fontSize: 11, fontWeight: 700,
+                color: preview.content.length > 2800 ? '#DC2626' : 'var(--wsl-ink-3)',
+                fontFamily: 'Cairo, Inter, sans-serif',
+                textAlign: isAr ? 'left' : 'right',
+              }}>
+                {preview.content.length} / 3000 {isAr ? 'حرف' : 'chars'}
+              </div>
+
               {/* LinkedIn tip banner */}
               <div style={{
                 marginTop: 12, padding: '10px 14px', borderRadius: 10,
@@ -687,6 +709,11 @@ export default function Posts() {
               }}>
                 <Linkedin size={14} style={{ flexShrink: 0 }} />
                 {t('posts.linkedInTip')}
+              </div>
+
+              {/* AI feedback widget */}
+              <div style={{ marginTop: 12 }}>
+                <AIFeedbackWidget feature="posts" />
               </div>
             </motion.div>
           )}

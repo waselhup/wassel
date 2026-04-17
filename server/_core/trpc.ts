@@ -8,6 +8,8 @@ import { adminRouter } from './routes/admin';
 import { knowledgeRouter } from './routes/knowledge';
 import { reviewsRouter } from './routes/reviews';
 import { feedbackRouter } from './routes/feedback';
+import { aiFeedbackRouter } from './routes/aiFeedback';
+import { agentsRouter } from './routes/agents';
 
 export { router, publicProcedure, protectedProcedure };
 
@@ -40,6 +42,8 @@ export const appRouter = router({
   knowledge: knowledgeRouter,
   reviews: reviewsRouter,
   feedback: feedbackRouter,
+  aiFeedback: aiFeedbackRouter,
+  agents: agentsRouter,
 });
 
 export type AppRouter = typeof appRouter;
