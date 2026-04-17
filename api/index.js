@@ -65672,6 +65672,52 @@ app.post("/api/log-error", (req, res) => {
 app.get("/api/test-route", (_req, res) => {
   res.json({ ok: true, routes: "working" });
 });
+var ALLOWED_AVATAR_HOSTS = /* @__PURE__ */ new Set([
+  "media.licdn.com",
+  "static.licdn.com",
+  "media-exp1.licdn.com",
+  "media-exp2.licdn.com",
+  "lh3.googleusercontent.com",
+  "lh4.googleusercontent.com",
+  "lh5.googleusercontent.com",
+  "lh6.googleusercontent.com",
+  "avatars.githubusercontent.com",
+  "pbs.twimg.com"
+]);
+app.get("/api/avatar-proxy", async (req, res) => {
+  try {
+    const url = req.query.url || "";
+    if (!url) return res.status(400).send("url required");
+    let parsed;
+    try {
+      parsed = new URL(url);
+    } catch {
+      return res.status(400).send("bad url");
+    }
+    if (!ALLOWED_AVATAR_HOSTS.has(parsed.hostname)) {
+      return res.status(403).send("host not allowed");
+    }
+    const upstream = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+        Accept: "image/avif,image/webp,image/png,image/jpeg,*/*;q=0.8",
+        Referer: parsed.hostname.includes("licdn") ? "https://www.linkedin.com/" : `https://${parsed.hostname}/`
+      }
+    });
+    if (!upstream.ok) {
+      return res.status(upstream.status).send("upstream error");
+    }
+    const ct = upstream.headers.get("content-type") || "image/jpeg";
+    res.setHeader("Content-Type", ct);
+    res.setHeader("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    const buf = Buffer.from(await upstream.arrayBuffer());
+    res.send(buf);
+  } catch (e) {
+    console.error("[avatar-proxy] error:", e?.message);
+    res.status(500).send("proxy error");
+  }
+});
 var SUPABASE_URL_EMAIL = process.env.VITE_SUPABASE_URL || "https://hiqotmimlgsrsnovtopd.supabase.co";
 var SUPABASE_SERVICE_KEY_EMAIL = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 var ADMIN_EMAILS_LIST = ["waselhup@gmail.com", "almodhih.1995@gmail.com", "alhashimali649@gmail.com"];

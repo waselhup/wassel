@@ -30,6 +30,31 @@ function getInitials(name?: string | null, email?: string | null): string {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
+const PROXIED_HOSTS = [
+  'media.licdn.com',
+  'static.licdn.com',
+  'media-exp1.licdn.com',
+  'media-exp2.licdn.com',
+  'lh3.googleusercontent.com',
+  'lh4.googleusercontent.com',
+  'lh5.googleusercontent.com',
+  'lh6.googleusercontent.com',
+  'avatars.githubusercontent.com',
+  'pbs.twimg.com',
+];
+
+function resolveAvatarUrl(raw: string): string {
+  try {
+    const u = new URL(raw);
+    if (PROXIED_HOSTS.some((h) => u.hostname === h)) {
+      return `/api/avatar-proxy?url=${encodeURIComponent(raw)}`;
+    }
+    return raw;
+  } catch {
+    return raw;
+  }
+}
+
 /**
  * UserAvatar — single source of truth for displaying user photos.
  * Falls back to initials on missing/broken URL.
@@ -63,7 +88,7 @@ export const UserAvatar: React.FC<Props> = ({
   if (shouldShowImg) {
     return (
       <img
-        src={avatarUrl as string}
+        src={resolveAvatarUrl(avatarUrl as string)}
         alt={name || email || 'User'}
         referrerPolicy="no-referrer"
         onError={() => setErrored(true)}
