@@ -62,23 +62,59 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       let finalProfile: any = data;
 
-      // Auto-sync LinkedIn / Google / OAuth photo into profiles.avatar_url
-      // when the profile has no avatar yet but the OAuth session does.
+      // Auto-sync LinkedIn / Google / OAuth photo into profiles.avatar_url.
+      // LinkedIn URLs are short-lived signed URLs (~30 days) — they expire,
+      // so we refresh from OAuth metadata on every profile fetch, not just
+      // on first sign-in. For LinkedIn, `picture` and `avatar_url` in the
+      // metadata often have different expiry timestamps — pick the freshest.
       try {
-        if (!data?.avatar_url) {
-          const { data: { session } } = await supabase.auth.getSession();
-          const meta = session?.user?.user_metadata as Record<string, any> | undefined;
-          const oauthPhoto: string | undefined =
-            meta?.avatar_url || meta?.picture || meta?.profile_picture || meta?.photo;
+        const { data: { session } } = await supabase.auth.getSession();
+        const meta = session?.user?.user_metadata as Record<string, any> | undefined;
+        if (meta) {
+          const candidates: string[] = [
+            meta.avatar_url,
+            meta.picture,
+            meta.profile_picture,
+            meta.photo,
+          ].filter((v): v is string => typeof v === 'string' && !!v);
+
+          // Pick the candidate with the furthest-out LinkedIn signed-URL expiry.
+          // Non-LinkedIn URLs (e.g. Google) don't have `e=` so we treat them
+          // as infinitely-long-lived.
+          function expiryOf(u: string): number {
+            try {
+              const p = new URL(u);
+              const e = p.searchParams.get('e');
+              if (!e) return Number.MAX_SAFE_INTEGER;
+              return parseInt(e, 10) * 1000;
+            } catch {
+              return 0;
+            }
+          }
+
+          const now = Date.now();
+          const viable = candidates
+            .map((u) => ({ u, exp: expiryOf(u) }))
+            .filter((x) => x.exp > now) // drop already-expired
+            .sort((a, b) => b.exp - a.exp);
+          const bestPhoto = viable[0]?.u;
+
           const oauthName: string | undefined =
-            meta?.full_name || meta?.name || meta?.given_name;
+            meta.full_name || meta.name || meta.given_name;
+
+          const currentExp = data?.avatar_url ? expiryOf(data.avatar_url) : 0;
+          const currentExpired = !!data?.avatar_url && currentExp > 0 && currentExp < now;
 
           const update: Record<string, any> = {};
-          if (oauthPhoto) update.avatar_url = oauthPhoto;
+          // Refresh avatar if: profile has none, or stored one is expired, or
+          // we have a meaningfully better URL than what's stored.
+          if (bestPhoto && (!data?.avatar_url || currentExpired || data.avatar_url !== bestPhoto && expiryOf(bestPhoto) > currentExp)) {
+            update.avatar_url = bestPhoto;
+          }
           if (oauthName && !data?.full_name) update.full_name = oauthName;
 
           if (Object.keys(update).length > 0) {
-            console.log('[AuthContext] Syncing OAuth profile metadata:', Object.keys(update));
+            console.log('[AuthContext] Syncing OAuth profile metadata:', Object.keys(update), currentExpired ? '(avatar was expired)' : '');
             const { data: updated } = await supabase
               .from('profiles')
               .update(update)

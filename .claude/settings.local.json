@@ -22,7 +22,16 @@
       "Bash(curl -s -o /dev/null -w \"trpc-auth=%{http_code}\\\\n\" \"https://wassel-alpha.vercel.app/api/trpc/companies.list\")",
       "Bash(curl -s -o /dev/null -w \"trpc-create=%{http_code}\\\\n\" -X POST \"https://wassel-alpha.vercel.app/api/trpc/campaign.create\" -H 'Content-Type: application/json' -d '{}')",
       "Bash(git add *)",
-      "Bash(git commit -m ' *)"
+      "Bash(git commit -m ' *)",
+      "Bash(curl -s -o /dev/null -w \"landing=%{http_code} size=%{size_download}\\\\n\" https://wassel-alpha.vercel.app/)",
+      "Bash(curl -s -o /dev/null -w \"status=%{http_code} content-type=%{content_type} size=%{size_download}\\\\n\" \"https://wassel-alpha.vercel.app/api/avatar-proxy?url=https%3A%2F%2Fmedia.licdn.com%2Fdms%2Fimage%2Fv2%2FD4D03AQEsyqr0K3JF5g%2Fprofile-displayphoto-shrink_200_200%2FB4DZlHbVD9GkAY-%2F0%2F1757839971728%3Fe%3D1776297600%26v%3Dbeta%26t%3DuW1Ut-vLOa0Dqq7mPLKzSRunddVsTrNzQjH5Squa1VI\")",
+      "Bash(curl -s -o /dev/null -w \"licdn=%{http_code}\\\\n\" \"https://wassel-alpha.vercel.app/api/avatar-proxy?url=https://media.licdn.com/test.jpg\")",
+      "Bash(curl -s -o /dev/null -w \"google=%{http_code}\\\\n\" \"https://wassel-alpha.vercel.app/api/avatar-proxy?url=https://lh3.googleusercontent.com/test\")",
+      "Bash(curl -s -o /dev/null -w \"noparam=%{http_code}\\\\n\" \"https://wassel-alpha.vercel.app/api/avatar-proxy\")",
+      "Bash(python3 -c 'import urllib.parse; print\\(urllib.parse.quote\\(\"https://media.licdn.com/dms/image/v2/D4D03AQEsyqr0K3JF5g/profile-displayphoto-shrink_200_200/B4DZlHbVD9GkAY-/0/1757839971728?e=1776297600&v=beta&t=uW1Ut-vLOa0Dqq7mPLKzSRunddVsTrNzQjH5Squa1VI\", safe=\"\"\\)\\)')",
+      "Bash(curl -s -o /tmp/avatar.bin -w 'status=%{http_code} ct=%{content_type} size=%{size_download}\\\\n' 'https://wassel-alpha.vercel.app/api/avatar-proxy?url=__TRACKED_VAR__')",
+      "Bash(node -e ' *)",
+      "Bash(node -e \"console.log\\('expires:', new Date\\(1776297600 * 1000\\).toISOString\\(\\)\\); console.log\\('now:', new Date\\(\\).toISOString\\(\\)\\);\")"
     ]
   },
   "enableAllProjectMcpServers": true,
