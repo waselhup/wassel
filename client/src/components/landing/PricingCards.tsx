@@ -25,7 +25,7 @@ const PLANS: Plan[] = [
     priceMonthly: 0,
     desc: { ar: 'للتجربة والاستكشاف', en: 'Explore the platform' },
     features: [
-      { ar: '1,000 توكن عند التسجيل', en: '1,000 tokens on signup' },
+      { ar: '100 توكن هدية عند التسجيل', en: '100 tokens gift on signup' },
       { ar: 'الوصول لكل الخدمات الست', en: 'Access to all six services' },
       { ar: 'دعم عبر البريد الإلكتروني', en: 'Email support' },
     ],

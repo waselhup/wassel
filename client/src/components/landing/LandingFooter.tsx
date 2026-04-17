@@ -126,8 +126,8 @@ export default function LandingFooter() {
                 }}
               >
                 {isAr
-                  ? 'حسابك الأول مجاني. 1,000 توكن عند التسجيل. بدون بطاقة ائتمانية.'
-                  : 'Your first account is free. 1,000 tokens on signup. No credit card needed.'}
+                  ? 'حسابك الأول مجاني. 100 توكن هدية عند التسجيل. بدون بطاقة ائتمانية.'
+                  : 'Your first account is free. 100 tokens gift on signup. No credit card needed.'}
               </p>
               <Link
                 href="/signup"

@@ -14,8 +14,8 @@ export default function HowItWorksTimeline() {
       icon: UserPlus,
       title: isAr ? 'سجّل بسرعة' : 'Sign up fast',
       desc: isAr
-        ? 'حساب جديد في ثوانٍ عبر Google أو البريد الإلكتروني. تحصل على 1,000 توكن مجاناً.'
-        : 'Create your account in seconds with Google or email. 1,000 free tokens included.',
+        ? 'حساب جديد في ثوانٍ عبر Google أو البريد الإلكتروني. تحصل على 100 توكن هدية.'
+        : 'Create your account in seconds with Google or email. 100 tokens gift included.',
     },
     {
       n: '02',

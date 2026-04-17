@@ -265,7 +265,7 @@ export default function LandingHero({ onWatchDemo }: { onWatchDemo?: () => void 
           >
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
               <span style={{ color: '#0F766E', fontWeight: 800 }}>✓</span>
-              {isAr ? '1,000 توكن مجاناً' : '1,000 free tokens'}
+              {isAr ? '100 توكن هدية' : '100 tokens gift'}
             </span>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
               <span style={{ color: '#0F766E', fontWeight: 800 }}>✓</span>
@@ -408,7 +408,7 @@ export default function LandingHero({ onWatchDemo }: { onWatchDemo?: () => void 
                       fontFamily: 'Inter, sans-serif',
                     }}
                   >
-                    1,000
+                    100
                   </div>
                 </div>
 

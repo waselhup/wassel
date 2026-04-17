@@ -279,8 +279,8 @@ export const OnboardingWizard: React.FC<Props> = ({ onClose }) => {
                 }}
               >
                 {isAr
-                  ? 'حصلت على 1000 توكن مجاني للبدء. خلال دقيقتين، سنرشدك لأهم أدوات وصّل لتحقق أقصى استفادة.'
-                  : "You got 1000 free tokens to start. In 2 minutes, we'll show you Wassel's most powerful tools."}
+                  ? 'حصلت على 100 توكن هدية للبدء. خلال دقيقتين، سنرشدك لأهم أدوات وصّل لتحقق أقصى استفادة.'
+                  : "You got 100 free tokens to start. In 2 minutes, we'll show you Wassel's most powerful tools."}
               </p>
               <div
                 style={{
@@ -307,14 +307,14 @@ export const OnboardingWizard: React.FC<Props> = ({ onClose }) => {
                     fontSize: 20,
                   }}
                 >
-                  1K
+                  100
                 </div>
                 <div>
                   <div style={{ fontSize: 14, fontWeight: 800, color: '#1F2937' }}>
-                    {isAr ? 'رصيدك الحالي: 1000 توكن' : 'Your balance: 1,000 tokens'}
+                    {isAr ? 'رصيدك الحالي: 100 توكن' : 'Your balance: 100 tokens'}
                   </div>
                   <div style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>
-                    {isAr ? 'كافي لـ 30+ تحليل و 100+ منشور' : 'Enough for 30+ analyses and 100+ posts'}
+                    {isAr ? 'كافٍ لتجربة التحليل وإنشاء سيرة ذاتية' : 'Enough to try an analysis and build one CV'}
                   </div>
                 </div>
               </div>
