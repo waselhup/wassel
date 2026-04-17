@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { trpc } from "@/lib/trpc";
 import { OnboardingWizard } from "@/components/OnboardingWizard";
 import { VideoPlaceholder } from "@/components/VideoPlaceholder";
+import UserAvatar from "@/components/UserAvatar";
 
 function useCountUp(target: number, duration = 1200) {
   const [n, setN] = useState(0);
@@ -131,18 +132,12 @@ export default function DashboardHome() {
       {showOnboarding && <OnboardingWizard onClose={() => setShowOnboarding(false)} />}
       <div className="space-y-8 p-6 md:p-8">
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }} className="flex items-center gap-4">
-          {avatarUrl ? (
-            <img
-              src={avatarUrl}
-              alt={name || ""}
-              referrerPolicy="no-referrer"
-              className="w-14 h-14 rounded-full border-2 border-[#0A8F84] shadow-sm object-cover shrink-0"
-            />
-          ) : (
-            <div className="w-14 h-14 rounded-full bg-[#0A8F84]/10 flex items-center justify-center text-[#0A8F84] text-xl font-bold shrink-0" style={{ fontFamily: "Cairo, sans-serif" }}>
-              {(name || "?").charAt(0).toUpperCase()}
-            </div>
-          )}
+          <UserAvatar
+            avatarUrl={avatarUrl || profile?.avatar_url}
+            name={name}
+            email={user?.email}
+            size="lg"
+          />
           <div className="min-w-0">
             <h1 className="text-2xl md:text-3xl font-bold text-[var(--wsl-ink)] truncate">
               {greeting}{name ? `، ${name}` : ""} 👋

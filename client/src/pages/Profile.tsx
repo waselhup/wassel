@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Link } from "wouter";
 import { trpc, trpcMutation, trpcQuery } from "@/lib/trpc";
 import { supabase } from "@/lib/supabase";
+import UserAvatar from "@/components/UserAvatar";
 
 type Tab = 'personal' | 'subscription' | 'settings' | 'security' | 'reviews';
 
@@ -183,12 +184,12 @@ export default function Profile() {
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
           style={{ background: '#fff', borderRadius: 16, border: '1px solid var(--wsl-border, #E5E7EB)', padding: 24, marginBottom: 16, boxShadow: '0 2px 10px rgba(0,0,0,0.04)', display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
           <div style={{ position: 'relative' }}>
-            {(profile?.avatar_url || user?.user_metadata?.avatar_url) ? (
-              <img src={profile?.avatar_url || user?.user_metadata?.avatar_url} alt={form.name} referrerPolicy="no-referrer"
-                style={{ width: 88, height: 88, borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--wsl-teal, #0A8F84)' }} />
-            ) : (
-              <div style={{ width: 88, height: 88, borderRadius: '50%', background: 'linear-gradient(135deg, #0A8F84, #0ea5e9)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 28, fontWeight: 900, fontFamily: 'Cairo, sans-serif' }}>{initials}</div>
-            )}
+            <UserAvatar
+              avatarUrl={profile?.avatar_url || (user?.user_metadata as any)?.avatar_url || (user?.user_metadata as any)?.picture}
+              name={form.name || profile?.full_name}
+              email={user?.email}
+              size="xl"
+            />
             <button style={{ position: 'absolute', bottom: 0, insetInlineEnd: 0, width: 26, height: 26, borderRadius: '50%', background: '#fff', border: '2px solid var(--wsl-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><Camera size={12} style={{ color: '#6B7280' }} /></button>
           </div>
           <div style={{ flex: 1, minWidth: 200 }}>

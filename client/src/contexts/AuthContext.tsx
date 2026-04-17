@@ -59,12 +59,45 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
 
       console.log('[AuthContext] Profile fetched:', { email: data?.email, token_balance: data?.token_balance, plan: data?.plan });
-      setProfile(data as Profile);
+
+      let finalProfile: any = data;
+
+      // Auto-sync LinkedIn / Google / OAuth photo into profiles.avatar_url
+      // when the profile has no avatar yet but the OAuth session does.
+      try {
+        if (!data?.avatar_url) {
+          const { data: { session } } = await supabase.auth.getSession();
+          const meta = session?.user?.user_metadata as Record<string, any> | undefined;
+          const oauthPhoto: string | undefined =
+            meta?.avatar_url || meta?.picture || meta?.profile_picture || meta?.photo;
+          const oauthName: string | undefined =
+            meta?.full_name || meta?.name || meta?.given_name;
+
+          const update: Record<string, any> = {};
+          if (oauthPhoto) update.avatar_url = oauthPhoto;
+          if (oauthName && !data?.full_name) update.full_name = oauthName;
+
+          if (Object.keys(update).length > 0) {
+            console.log('[AuthContext] Syncing OAuth profile metadata:', Object.keys(update));
+            const { data: updated } = await supabase
+              .from('profiles')
+              .update(update)
+              .eq('id', userId)
+              .select('*')
+              .single();
+            if (updated) finalProfile = updated;
+          }
+        }
+      } catch (syncErr) {
+        console.error('[AuthContext] OAuth photo sync failed (non-fatal):', syncErr);
+      }
+
+      setProfile(finalProfile as Profile);
 
       // Analytics: identify user
       try {
         const { identifyUser } = await import('../lib/analytics');
-        identifyUser(userId, { email: data?.email, plan: data?.plan });
+        identifyUser(userId, { email: finalProfile?.email, plan: finalProfile?.plan });
       } catch (_) {}
     } catch (err) {
       console.error('Error fetching profile:', err);

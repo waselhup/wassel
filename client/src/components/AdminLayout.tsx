@@ -8,6 +8,7 @@ import {
   ChevronDown, ArrowLeft
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import UserAvatar from '@/components/UserAvatar';
 
 interface NavItem {
   label: string;
@@ -178,9 +179,12 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, pageTitle })
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
                   className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-[var(--bg-surface)] transition-colors"
                 >
-                  <div className="w-8 h-8 rounded-full bg-[var(--accent-primary)] flex items-center justify-center text-white font-semibold">
-                    {profile?.full_name?.charAt(0).toUpperCase() || 'A'}
-                  </div>
+                  <UserAvatar
+                    avatarUrl={profile?.avatar_url}
+                    name={profile?.full_name}
+                    email={profile?.email}
+                    size="sm"
+                  />
                   <span className="hidden sm:inline text-sm font-medium text-[var(--text-primary)]">
                     {profile?.full_name?.split(' ')[0] || 'Admin'}
                   </span>

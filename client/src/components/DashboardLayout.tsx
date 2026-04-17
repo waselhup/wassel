@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLocation, Link } from 'wouter';
 import { supabase } from '@/lib/supabase';
+import UserAvatar from '@/components/UserAvatar';
 import { WasselLogo } from './WasselLogo';
 import {
   Home, BarChart2, FileText, Send, Coins, User, BookOpen,
@@ -187,18 +188,12 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, page
             </div>
             <div style={{ position: 'relative' }}>
               <button onClick={() => setUserMenuOpen(!userMenuOpen)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 10px', borderRadius: '8px', border: '1px solid var(--wsl-border)', background: 'var(--wsl-surf)', cursor: 'pointer' }}>
-                {profile?.avatar_url ? (
-                  <img
-                    src={profile.avatar_url}
-                    alt={profile?.full_name || ''}
-                    referrerPolicy="no-referrer"
-                    style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover', border: '1.5px solid var(--wsl-teal)' }}
-                  />
-                ) : (
-                  <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--wsl-teal)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 900, fontSize: '13px', fontFamily: 'Cairo, sans-serif' }}>
-                    {profile?.full_name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || '?'}
-                  </div>
-                )}
+                <UserAvatar
+                  avatarUrl={profile?.avatar_url}
+                  name={profile?.full_name}
+                  email={user?.email}
+                  size="sm"
+                />
                 <span style={{ fontWeight: 700, fontSize: '12px', color: 'var(--wsl-ink-2)', fontFamily: 'Cairo, sans-serif' }}>
                   {profile?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || ''}
                 </span>

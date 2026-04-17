@@ -8,6 +8,7 @@ import {
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import AIFeedbackWidget from '@/components/AIFeedbackWidget';
+import UserAvatar from '@/components/UserAvatar';
 
 type PostStatus = 'draft' | 'scheduled' | 'posted';
 type Tone = 'professional' | 'inspirational' | 'educational' | 'casual';
@@ -590,18 +591,12 @@ export default function Posts() {
             >
               {/* User row */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-                {avatar ? (
-                  <img src={avatar} alt={displayName} referrerPolicy="no-referrer"
-                    style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover', border: '1.5px solid #0A8F84' }} />
-                ) : (
-                  <div style={{
-                    width: 44, height: 44, borderRadius: '50%', background: '#0A8F84',
-                    color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 16,
-                  }}>
-                    {(displayName || '?').charAt(0).toUpperCase()}
-                  </div>
-                )}
+                <UserAvatar
+                  avatarUrl={avatar}
+                  name={displayName}
+                  email={user?.email}
+                  size="md"
+                />
                 <div style={{ flex: 1 }}>
                   <div style={{ fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 900, fontSize: 14, color: 'var(--wsl-ink)' }}>
                     {displayName}

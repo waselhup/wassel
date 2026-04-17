@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { Linkedin, FileText, Mail, BarChart3, Shield, Check, ArrowRight, Star, Globe2, Users, MessageSquare, Coins, Search, PenSquare } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { trpcQuery } from '@/lib/trpc';
+import UserAvatar from '@/components/UserAvatar';
 
 const fadeUp = {
   initial: { opacity: 0, y: 24 },
@@ -631,14 +632,11 @@ export default function LandingPage() {
                     {review.comment}
                   </p>
                   <div className="flex items-center gap-3">
-                    {review.user_avatar ? (
-                      <img src={review.user_avatar} alt="" referrerPolicy="no-referrer"
-                        className="w-10 h-10 rounded-full object-cover border-2 border-[#0A8F84]" />
-                    ) : (
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#064E49] to-[#0A8F84] flex items-center justify-center text-white font-bold text-sm">
-                        {(review.user_name || '?').charAt(0).toUpperCase()}
-                      </div>
-                    )}
+                    <UserAvatar
+                      avatarUrl={review.user_avatar}
+                      name={review.user_name}
+                      size="md"
+                    />
                     <div>
                       <div className="font-bold text-[#064E49] text-sm">{review.user_name?.split(' ')[0] || (isRTL ? 'مستخدم' : 'User')}</div>
                       <div className="text-xs text-[#6b7280]">{new Date(review.created_at).toLocaleDateString(isRTL ? 'ar' : 'en', { month: 'short', year: 'numeric' })}</div>
