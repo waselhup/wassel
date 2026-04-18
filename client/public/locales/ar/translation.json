@@ -861,5 +861,53 @@
     "chart": {
       "total": "إجمالي"
     }
+  },
+  "au": {
+    "title": "المستخدمون",
+    "subtitle": "إدارة حسابات المستخدمين والتوكنز",
+    "refresh": "تحديث",
+    "search": "ابحث بالاسم أو البريد...",
+    "name": "الاسم",
+    "plan": "الخطة",
+    "tokens": "التوكنز",
+    "status": "الحالة",
+    "joined": "انضم",
+    "actions": "",
+    "active": "نشط",
+    "banned": "محظور",
+    "noName": "—",
+    "adminBadge": "مشرف",
+    "grantTokens": "منح توكنز",
+    "ban": "حظر",
+    "unban": "إلغاء الحظر",
+    "grantTitle": "منح توكنز",
+    "currentBalance": "الرصيد الحالي",
+    "amount": "الكمية",
+    "reason": "السبب",
+    "reasonPh": "مكافأة بيتا، دعم، ترقية، إلخ...",
+    "cancel": "إلغاء",
+    "confirmGrant": "تأكيد",
+    "granting": "جاري الإضافة...",
+    "grantSuccess": "تمت إضافة {{amount}} توكن لـ {{name}}",
+    "grantFail": "فشلت إضافة التوكنز",
+    "errAmount": "الكمية يجب أن تكون أكبر من صفر",
+    "errReason": "السبب مطلوب (3 أحرف على الأقل)",
+    "confirmBan": "هل أنت متأكد من حظر {{name}}؟",
+    "bannedNow": "تم حظر المستخدم",
+    "unbannedNow": "تم إلغاء الحظر",
+    "banFail": "فشل تحديث الحالة",
+    "noResults": "لا نتائج لـ '{{q}}'",
+    "empty": "لا يوجد مستخدمون بعد",
+    "errorTitle": "حدث خطأ",
+    "retry": "إعادة المحاولة",
+    "notAuthorized": "غير مصرح",
+    "notAuthorizedDesc": "هذه الصفحة مخصصة للمشرفين فقط",
+    "backToApp": "العودة للتطبيق",
+    "stat": {
+      "total": "إجمالي المستخدمين",
+      "active": "نشط (7 أيام)",
+      "paid": "مشتركون مدفوع",
+      "tokens": "إجمالي التوكنز الممنوحة"
+    }
   }
 }

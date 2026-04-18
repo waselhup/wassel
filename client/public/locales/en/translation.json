@@ -914,5 +914,53 @@
     "chart": {
       "total": "Total"
     }
+  },
+  "au": {
+    "title": "Users",
+    "subtitle": "Manage user accounts and tokens",
+    "refresh": "Refresh",
+    "search": "Search by name or email...",
+    "name": "Name",
+    "plan": "Plan",
+    "tokens": "Tokens",
+    "status": "Status",
+    "joined": "Joined",
+    "actions": "",
+    "active": "Active",
+    "banned": "Banned",
+    "noName": "—",
+    "adminBadge": "Admin",
+    "grantTokens": "Grant tokens",
+    "ban": "Ban",
+    "unban": "Unban",
+    "grantTitle": "Grant tokens",
+    "currentBalance": "Current balance",
+    "amount": "Amount",
+    "reason": "Reason",
+    "reasonPh": "Beta reward, support credit, upgrade, etc...",
+    "cancel": "Cancel",
+    "confirmGrant": "Confirm",
+    "granting": "Granting...",
+    "grantSuccess": "Granted {{amount}} tokens to {{name}}",
+    "grantFail": "Failed to grant tokens",
+    "errAmount": "Amount must be greater than zero",
+    "errReason": "Reason is required (min 3 chars)",
+    "confirmBan": "Are you sure you want to ban {{name}}?",
+    "bannedNow": "User has been banned",
+    "unbannedNow": "User has been unbanned",
+    "banFail": "Failed to update status",
+    "noResults": "No results for '{{q}}'",
+    "empty": "No users yet",
+    "errorTitle": "Something went wrong",
+    "retry": "Retry",
+    "notAuthorized": "Not authorized",
+    "notAuthorizedDesc": "This page is for admins only",
+    "backToApp": "Back to app",
+    "stat": {
+      "total": "Total users",
+      "active": "Active (7 days)",
+      "paid": "Paid users",
+      "tokens": "Total tokens granted"
+    }
   }
 }

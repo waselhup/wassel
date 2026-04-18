@@ -146,11 +146,12 @@ export const trpc = {
   },
   admin: {
     stats: () => trpcQuery<any>('admin.stats'),
-    users: () => trpcQuery<any[]>('admin.users'),
+    users: (input?: { search?: string; limit?: number }) =>
+      trpcQuery<any[]>('admin.users', input || {}),
     addTokens: (input: { userId: string; amount: number; reason: string }) =>
-      trpcMutation<any>('admin.addTokens', input),
+      trpcMutation<{ success: boolean; newBalance: number }>('admin.addTokens', input),
     toggleBan: (input: { userId: string }) =>
-      trpcMutation<any>('admin.toggleBan', input),
+      trpcMutation<{ success: boolean; banned: boolean }>('admin.toggleBan', input),
     campaigns: () => trpcQuery<any[]>('admin.campaigns'),
     systemStatus: () => trpcQuery<any>('admin.systemStatus'),
   },

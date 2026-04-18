@@ -2,6 +2,8 @@ import { z } from 'zod';
 import { router, protectedProcedure } from '../trpc-init';
 import { TRPCError } from '@trpc/server';
 import { sendTokenGrantEmail, shouldSendTransactional } from '../lib/email';
+import * as fs from 'fs';
+import * as path from 'path';
 
 // Middleware to check if user is admin
 const adminProcedure = protectedProcedure.use(async ({ ctx, next }) => {
@@ -87,22 +89,41 @@ export const adminRouter = router({
     }
   }),
 
-  users: adminProcedure.query(async ({ ctx }) => {
-    try {
-      const { data } = await ctx.supabase
-        .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(50);
+  users: adminProcedure
+    .input(
+      z
+        .object({
+          search: z.string().optional(),
+          limit: z.number().int().positive().max(500).default(50),
+        })
+        .optional()
+    )
+    .query(async ({ ctx, input }) => {
+      try {
+        let query = ctx.supabase
+          .from('profiles')
+          .select('id, email, full_name, plan, token_balance, is_banned, is_admin, created_at, avatar_url')
+          .order('created_at', { ascending: false })
+          .limit(input?.limit ?? 50);
 
-      return data || [];
-    } catch (err) {
-      throw new TRPCError({
-        code: 'INTERNAL_SERVER_ERROR',
-        message: 'Failed to fetch users',
-      });
-    }
-  }),
+        const search = input?.search?.trim();
+        if (search) {
+          const escaped = search.replace(/[%,]/g, '');
+          query = query.or(
+            `email.ilike.%${escaped}%,full_name.ilike.%${escaped}%`
+          );
+        }
+
+        const { data, error } = await query;
+        if (error) throw error;
+        return data || [];
+      } catch (err) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to fetch users',
+        });
+      }
+    }),
 
   addTokens: adminProcedure
     .input(
@@ -166,7 +187,22 @@ export const adminRouter = router({
           console.error('[admin.addTokens] email send failed (non-fatal):', e?.message);
         }
 
-        return { success: true };
+        // Append to markdown grant log (non-blocking, fails silently on read-only FS like Vercel)
+        try {
+          const now = new Date();
+          const pad = (n: number) => String(n).padStart(2, '0');
+          const dateStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+          const timeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+          const logDir = path.join(process.cwd(), 'wassel-wiki', 'raw', 'token-grants');
+          const logFile = path.join(logDir, `${dateStr}.md`);
+          const line = `- ${timeStr} — granted ${input.amount} tokens to ${profile.full_name || 'Unknown'} (${profile.email || 'no-email'}) — reason: ${input.reason} — new balance: ${newBalance}\n`;
+          fs.mkdirSync(logDir, { recursive: true });
+          fs.appendFileSync(logFile, line, 'utf8');
+        } catch (e: any) {
+          console.warn('[admin.addTokens] grant log write failed (non-fatal):', e?.message);
+        }
+
+        return { success: true, newBalance };
       } catch (err) {
         if (err instanceof TRPCError) throw err;
         throw new TRPCError({
