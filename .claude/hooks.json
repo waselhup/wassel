@@ -5,7 +5,7 @@
       "hooks": [
         {
           "type": "command",
-          "command": "node scripts/strip-boms.cjs && node scripts/auto-rebuild-api.cjs || true"
+          "command": "node scripts/strip-boms.cjs && node scripts/auto-rebuild-api.cjs && node scripts/auto-ingest-commit.cjs || true"
         }
       ]
     }
