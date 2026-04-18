@@ -3,4 +3,4 @@ Allow: /
 Disallow: /app/admin
 Disallow: /api
 
-Sitemap: https://wassel-alpha.vercel.app/sitemap.xml
+Sitemap: https://wasselhub.com/sitemap.xml

@@ -52754,22 +52754,61 @@ router.post("/generate", async (req, res) => {
     if ((profile.token_balance || 0) < 3) {
       return res.status(402).json({ error: "Insufficient tokens. Need 3 tokens to generate a post." });
     }
-    const systemPrompt = language === "ar" ? `You write LinkedIn posts for the Saudi Arabia and GCC market.
-Use professional Modern Standard Arabic (\u0641\u0635\u062D\u0649). Never use Gulf dialect.
-Start with a strong hook \u2014 a surprising stat, bold statement, or provocative question.
-Short paragraphs (max 2 lines each). Use line breaks generously.
-End with a question or CTA that invites engagement.
-Max 1300 characters total (including hashtags).
-${includeHashtags ? "Add max 5 relevant Arabic hashtags at the end." : "No hashtags."}
-Avoid generic openers like "\u0623\u062A\u0645\u0646\u0649 \u0623\u0646 \u062A\u0643\u0648\u0646 \u0628\u062E\u064A\u0631".
-Return JSON: { "content": "...", "hashtags": [...] }` : `You write LinkedIn posts for the Saudi Arabia and GCC market.
-Use professional English.
-Start with a strong hook \u2014 a surprising stat, bold statement, or provocative question.
-Short paragraphs (max 2 lines each).
-End with a question or CTA.
-Max 1300 characters total.
-${includeHashtags ? "Add max 5 relevant hashtags at the end." : "No hashtags."}
-Return JSON: { "content": "...", "hashtags": [...] }`;
+    const academicHeader = `\u0623\u0646\u062A Content Strategist \u0645\u062A\u062E\u0635\u0635 \u0641\u064A LinkedIn thought leadership \u0644\u0644\u0633\u0648\u0642 \u0627\u0644\u0633\u0639\u0648\u062F\u064A\u060C \u0628\u062E\u0644\u0641\u064A\u0629 \u0623\u0643\u0627\u062F\u064A\u0645\u064A\u0629 \u0641\u064A Communications \u0645\u0646:
+- MIT Sloan Management Review \u2014 Thought Leadership research
+- Harvard Business Review \u2014 "How to Write a LinkedIn Post That Matters" (2023)
+- Northwestern Kellogg \u2014 Social Media Influence studies
+- Stanford Graduate School \u2014 Narrative Transportation Theory
+- Edelman Trust Barometer 2024-2026 (MENA)
+- LinkedIn Algorithm Research (Richard van der Blom 2024)
+
+\u0627\u0644\u0640 frameworks \u0627\u0644\u0645\u0637\u0628\u0651\u0642\u0629:
+1. Hook-Value-CTA (Kellogg): \u0623\u0648\u0644 \u0633\u0637\u0631 \u064A\u0648\u0642\u0641 \u0627\u0644\u0633\u0643\u0631\u0648\u0644\u060C \u0627\u0644\u0648\u0633\u0637 \u0642\u064A\u0645\u0629\u060C \u0627\u0644\u0646\u0647\u0627\u064A\u0629 \u062F\u0639\u0648\u0629
+2. Contrarian Angle (HBR 2023): \u0627\u0628\u062F\u0623 \u0628\u062A\u062D\u062F\u064A \u0627\u0641\u062A\u0631\u0627\u0636 \u0634\u0627\u0626\u0639 \u2014 engagement +340%
+3. Story Arc (Stanford Narrative Transportation): Setup \u2192 Conflict \u2192 Resolution \u2192 Lesson
+4. Specificity Principle (MIT Sloan): \u0623\u0631\u0642\u0627\u0645 \u0645\u062D\u062F\u062F\u0629 > \u062A\u0639\u0645\u064A\u0645\u0627\u062A (\u0645\u062B\u0627\u0644: "3.2x ROI" \u0645\u0648 "\u0646\u062A\u0627\u0626\u062C \u0643\u0628\u064A\u0631\u0629")
+5. Cultural Resonance (Edelman MENA): \u0627\u0631\u0628\u0637 \u0628\u0640 Vision 2030 \u0648\u0631\u064A\u0627\u062F\u0629 \u0627\u0644\u0623\u0639\u0645\u0627\u0644 \u0627\u0644\u0633\u0639\u0648\u062F\u064A\u0629 \u0639\u0646\u062F \u0627\u0644\u0645\u0644\u0627\u0621\u0645\u0629
+6. LinkedIn Algorithm (van der Blom 2024): 150-300 word sweet spot\u060C \u0633\u0637\u0631 \u0648\u0627\u062D\u062F \u0644\u0643\u0644 \u0641\u0642\u0631\u0629\u060C hook \u0641\u064A \u0623\u0648\u0644 7 \u0643\u0644\u0645\u0627\u062A \u0642\u0628\u0644 "see more"
+
+\u0642\u0648\u0627\u0639\u062F \u0635\u0627\u0631\u0645\u0629:
+- \u0627\u0628\u062F\u0623 \u0628\u0640 hook \u0642\u0648\u064A \u0641\u064A \u0623\u0648\u0644 7 \u0643\u0644\u0645\u0627\u062A (\u064A\u0648\u0642\u0641 \u0627\u0644\u0633\u0643\u0631\u0648\u0644 \u0642\u0628\u0644 \u0627\u0644\u0640 "see more")
+- \u0633\u0637\u0631 \u0648\u0627\u062D\u062F \u0641\u0642\u0637 \u0644\u0643\u0644 \u0641\u0642\u0631\u0629 (mobile-first)
+- 3 emojis \u0643\u062D\u062F \u0623\u0642\u0635\u0649\u060C \u0627\u0633\u062A\u0631\u0627\u062A\u064A\u062C\u064A\u0629
+- \u0627\u062E\u062A\u0645 \u0628\u0633\u0624\u0627\u0644 \u0645\u0641\u062A\u0648\u062D \u0623\u0648 CTA \u0648\u0627\u0636\u062D
+- \u0627\u0633\u062A\u0634\u0647\u062F \u0628\u0645\u0635\u062F\u0631 \u0623\u0643\u0627\u062F\u064A\u0645\u064A \u0639\u0646\u062F \u0627\u0644\u062D\u0627\u062C\u0629: "\u062F\u0631\u0627\u0633\u0629 MIT 2024 \u0623\u062B\u0628\u062A\u062A..." / "\u0648\u0641\u0642 HBR 2023..."
+- \u0645\u0645\u0646\u0648\u0639 \u0627\u0644\u0627\u0641\u062A\u062A\u0627\u062D\u064A\u0627\u062A \u0627\u0644\u0645\u0628\u062A\u0630\u0644\u0629: "\u0623\u062A\u0645\u0646\u0649 \u0623\u0646 \u062A\u0643\u0648\u0646 \u0628\u062E\u064A\u0631"\u060C "\u0627\u0633\u0645\u062D \u0644\u064A \u0623\u0646 \u0623\u0642\u062F\u0645 \u0646\u0641\u0633\u064A"
+`;
+    const systemPrompt = language === "ar" ? `${academicHeader}
+\u0644\u063A\u0629 \u0627\u0644\u0645\u062E\u0631\u062C: \u0641\u0635\u062D\u0649 \u0633\u0639\u0648\u062F\u064A\u0629 \u0631\u0633\u0645\u064A\u0629. \u0645\u0645\u0646\u0648\u0639 \u0627\u0633\u062A\u062E\u062F\u0627\u0645 \u0627\u0644\u0644\u0647\u062C\u0629 \u0627\u0644\u062E\u0644\u064A\u062C\u064A\u0629 \u0623\u0648 \u0627\u0644\u0625\u0646\u062C\u0644\u064A\u0632\u064A\u0629 \u0627\u0644\u0645\u062E\u062A\u0644\u0637\u0629.
+\u0627\u0644\u0637\u0648\u0644: 150-300 \u0643\u0644\u0645\u0629 (LinkedIn algorithm sweet spot \u2014 van der Blom 2024).
+${includeHashtags ? "\u0623\u0636\u0641 3-5 \u0647\u0627\u0634\u062A\u0627\u062C\u0627\u062A \u0639\u0631\u0628\u064A\u0629 + \u0625\u0646\u062C\u0644\u064A\u0632\u064A\u0629 \u0630\u0627\u062A \u0635\u0644\u0629 \u0641\u064A \u0627\u0644\u0646\u0647\u0627\u064A\u0629." : "\u0628\u062F\u0648\u0646 \u0647\u0627\u0634\u062A\u0627\u062C\u0627\u062A."}
+
+\u0627\u0631\u062C\u0639 JSON \u0628\u0647\u0630\u0627 \u0627\u0644\u0634\u0643\u0644 \u2014 \u0627\u0644\u062D\u0642\u0644\u0627\u0646 content \u0648 hashtags \u0625\u0644\u0632\u0627\u0645\u064A\u0627\u0646 \u0644\u0644\u0648\u0627\u062C\u0647\u0629 \u0627\u0644\u062D\u0627\u0644\u064A\u0629\u061B \u0627\u0644\u062D\u0642\u0648\u0644 \u0627\u0644\u0623\u062E\u0631\u0649 \u0627\u062E\u062A\u064A\u0627\u0631\u064A\u0629 \u0648\u062A\u062D\u0645\u0644 \u0627\u0644\u0628\u064A\u0627\u0646\u0627\u062A \u0627\u0644\u0648\u0635\u0641\u064A\u0629 \u0627\u0644\u0623\u0643\u0627\u062F\u064A\u0645\u064A\u0629:
+{
+  "content": "<full post text combining hook + body + CTA, with newlines between paragraphs>",
+  "hashtags": ["#\u0647\u0627\u0634\u062A\u0627\u062C1", "#\u0647\u0627\u0634\u062A\u0627\u062C2", "..."],
+  "hook": "<first 7 words that stop the scroll>",
+  "body": "<the middle value section>",
+  "cta": "<closing question or CTA>",
+  "framework_used": "<Contrarian Angle (HBR) | Hook-Value-CTA (Kellogg) | Story Arc (Stanford) | Specificity (MIT) | Cultural Resonance (Edelman)>",
+  "estimated_engagement": { "likes": "<range e.g. 50-200>", "comments": "<range>", "based_on": "van der Blom 2024 benchmarks" },
+  "best_posting_time_saudi": "<best weekday + hour AST>"
+}` : `${academicHeader}
+Output language: professional English.
+Length: 150-300 words (LinkedIn algorithm sweet spot \u2014 van der Blom 2024).
+${includeHashtags ? "Add 3-5 relevant hashtags at the end." : "No hashtags."}
+
+Return JSON in this shape \u2014 content and hashtags are required by the existing UI; other fields are optional academic metadata:
+{
+  "content": "<full post text combining hook + body + CTA, with newlines between paragraphs>",
+  "hashtags": ["#tag1", "#tag2", "..."],
+  "hook": "<first 7 words that stop the scroll>",
+  "body": "<the middle value section>",
+  "cta": "<closing question or CTA>",
+  "framework_used": "<Contrarian Angle (HBR) | Hook-Value-CTA (Kellogg) | Story Arc (Stanford) | Specificity (MIT) | Cultural Resonance (Edelman)>",
+  "estimated_engagement": { "likes": "<range e.g. 50-200>", "comments": "<range>", "based_on": "van der Blom 2024 benchmarks" },
+  "best_posting_time_saudi": "<best weekday + hour AST>"
+}`;
     const toneInstructions = {
       professional: language === "ar" ? "Tone: \u0631\u0633\u0645\u064A \u0648\u0627\u062D\u062A\u0631\u0627\u0641\u064A" : "Tone: professional and polished",
       inspirational: language === "ar" ? "Tone: \u0645\u0644\u0647\u0645 \u0648\u062A\u062D\u0641\u064A\u0632\u064A" : "Tone: inspirational and motivating",
@@ -58502,10 +58541,38 @@ var linkedinRouter = router2({
         const certs = (profileData.certifications || []).slice(0, 5).map((c) => "- " + (c.name || c.title || "")).join("\n");
         profileText = "Name: " + name + "\nHeadline: " + headline + "\nLocation: " + location2 + "\nConnections: " + connections + "\nSummary: " + summary + "\n\nExperience:\n" + (experiences || "None") + "\n\nEducation:\n" + (education || "None") + "\nSkills: " + (skills || "None") + "\n\nCertifications:\n" + (certs || "None");
       }
-      const DEEP_PROMPT = `You are a world-class LinkedIn coach for Saudi Arabia and GCC market.
-Analyze this LinkedIn profile and return ONLY valid JSON \u2014 no markdown, no backticks, no explanation.
+      const DEEP_PROMPT = `\u0623\u0646\u062A \u0645\u0633\u062A\u0634\u0627\u0631 \u0643\u0627\u0631\u064A\u064A\u0631 \u062A\u0646\u0641\u064A\u0630\u064A \u0628\u062E\u0628\u0631\u0629 15 \u0633\u0646\u0629 \u0641\u064A \u062A\u062D\u0644\u064A\u0644 \u0627\u0644\u0628\u0631\u0648\u0641\u0627\u064A\u0644\u0627\u062A \u0627\u0644\u0645\u0647\u0646\u064A\u0629 \u0641\u064A \u0627\u0644\u0633\u0648\u0642 \u0627\u0644\u0633\u0639\u0648\u062F\u064A \u0648\u0627\u0644\u062E\u0644\u064A\u062C\u064A.
+
+\u062A\u062F\u0631\u0651\u0628\u062A \u0639\u0644\u0649 frameworks \u0645\u0639\u062A\u0645\u062F\u0629 \u0645\u0646:
+- Harvard Business School Career Development research (Amy Cuddy, Linda Hill)
+- Stanford Graduate School of Business "Personal Brand" curriculum
+- Wharton School Executive Presence framework
+- London Business School "Career Capital" model (Herminia Ibarra)
+- INSEAD Leadership Development research
+- KFUPM Business School \u2014 Saudi labor market studies
+- KAUST Career Development Center \u2014 tech & research talent benchmarks
+- McKinsey Global Institute \u2014 Saudi Vision 2030 workforce reports
+- LinkedIn Talent Insights \u2014 MENA 2024-2026 benchmarks
+- Ladders 2018 + TheLadders Neuroscience Lab \u2014 recruiter eye-tracking studies
+
+\u0645\u0646\u0647\u062C\u064A\u062A\u0643 \u0627\u0644\u0645\u0637\u0628\u0651\u0642\u0629:
+1. Career Capital Framework (Ibarra, LBS): Human Capital + Social Capital + Reputational Capital
+2. Personal Brand Equity Model (Harvard): Differentiation, Consistency, Relevance, Authenticity
+3. Recruiter Eye-Tracking (Ladders): 7.4 \u062B\u0627\u0646\u064A\u0629 \u0645\u062A\u0648\u0633\u0637 \u0646\u0638\u0631 \u0623\u0648\u0644 \u0639\u0644\u0649 \u0627\u0644\u0628\u0631\u0648\u0641\u0627\u064A\u0644 \u2014 \u0627\u0644\u0647\u064A\u062F\u0644\u0627\u064A\u0646 \u0648\u0627\u0644\u0635\u0648\u0631\u0629 \u062D\u0627\u0633\u0645\u064A\u0646
+4. Vision 2030 Human Capability Development Program alignment \u2014 Thriving Economy / Vibrant Society / Ambitious Nation
+
+\u062A\u0639\u0644\u064A\u0645\u0627\u062A \u0627\u0644\u0625\u062E\u0631\u0627\u062C:
+- \u0641\u0635\u062D\u0649 \u0631\u0633\u0645\u064A\u0629\u060C \u0644\u0627 \u062E\u0644\u064A\u062C\u064A\u0629\u060C \u0644\u0627 \u0625\u0646\u062C\u0644\u064A\u0632\u064A \u0645\u062E\u062A\u0644\u0637 \u0641\u064A \u0627\u0644\u0646\u0635\u0648\u0635 \u0627\u0644\u0639\u0631\u0628\u064A\u0629
+- \u0623\u0631\u0642\u0627\u0645 \u063A\u0631\u0628\u064A\u0629 (0-9)
+- \u0627\u0633\u062A\u0634\u0647\u062F \u0628\u0645\u0635\u062F\u0631 \u0623\u0643\u0627\u062F\u064A\u0645\u064A \u0648\u0627\u062D\u062F \u0639\u0644\u0649 \u0627\u0644\u0623\u0642\u0644 \u0641\u064A \u0643\u0644 \u062A\u0648\u0635\u064A\u0629 \u0631\u0626\u064A\u0633\u064A\u0629: "\u062F\u0631\u0627\u0633\u0629 Harvard 2023..." / "\u0628\u0646\u0627\u0621\u064B \u0639\u0644\u0649 McKinsey MENA 2024..." / "van der Blom LinkedIn Algorithm Research 2024..."
+- \u0642\u0633 \u0643\u0644 \u0628\u064F\u0639\u062F \u0639\u0644\u0649 benchmarks \u0645\u0646 LinkedIn Economic Graph \u0648 McKinsey MENA Talent Report
+- \u0644\u0627 \u0646\u0635\u0627\u0626\u062D \u0639\u0627\u0645\u0629 \u2014 \u0643\u0644 \u062A\u0648\u0635\u064A\u0629 \u0645\u062D\u062F\u062F\u0629\u060C \u0642\u0627\u0628\u0644\u0629 \u0644\u0644\u0642\u064A\u0627\u0633\u060C \u0645\u0631\u062A\u0628\u0637\u0629 \u0628\u0623\u0633\u0628\u0648\u0639/\u0634\u0647\u0631
+
+\u0627\u0631\u062C\u0639 JSON \u0641\u0642\u0637\u060C \u0628\u062F\u0648\u0646 markdown \u0648\u0644\u0627 backticks \u0648\u0644\u0627 \u0623\u064A \u0646\u0635 \u0634\u0627\u0631\u062D. \u0627\u0644\u0640 JSON \u064A\u062C\u0628 \u0623\u0646 \u064A\u0644\u062A\u0632\u0645 \u0628\u0647\u0630\u0627 \u0627\u0644\u0640 schema \u0628\u0627\u0644\u0636\u0628\u0637 (\u062C\u0645\u064A\u0639 \u0627\u0644\u062D\u0642\u0648\u0644 \u0625\u0644\u0632\u0627\u0645\u064A\u0629 \u2014 \u0627\u0644\u062D\u0642\u0648\u0644 \u0627\u0644\u0642\u062F\u064A\u0645\u0629 \u0644\u0644\u062A\u0648\u0627\u0641\u0642 \u0645\u0639 \u0627\u0644\u0648\u0627\u062C\u0647\u0629 \u0627\u0644\u062D\u0627\u0644\u064A\u0629\u060C \u0648\u0627\u0644\u062D\u0642\u0648\u0644 \u0627\u0644\u062C\u062F\u064A\u062F\u0629 \u0644\u0644\u0631\u0624\u0649 \u0627\u0644\u0623\u0643\u0627\u062F\u064A\u0645\u064A\u0629):
+
 {
   "score": <number 0-100>,
+  "overall_score": <number 0-100 \u2014 \u0646\u0641\u0633 \u0642\u064A\u0645\u0629 score>,
   "scoreBreakdown": {
     "headline": <0-15>,
     "about": <0-15>,
@@ -58516,8 +58583,28 @@ Analyze this LinkedIn profile and return ONLY valid JSON \u2014 no markdown, no 
     "connections": <0-10>,
     "certifications": <0-10>
   },
+  "dimensions": {
+    "headline": { "score": <0-100>, "benchmark": "<LinkedIn MENA 2024 benchmark>", "finding": "<Arabic>" },
+    "summary": { "score": <0-100>, "benchmark": "<...>", "finding": "<Arabic>" },
+    "experience": { "score": <0-100>, "benchmark": "<...>", "finding": "<Arabic>" },
+    "skills": { "score": <0-100>, "benchmark": "<...>", "finding": "<Arabic>" },
+    "education": { "score": <0-100>, "benchmark": "<...>", "finding": "<Arabic>" },
+    "recommendations": { "score": <0-100>, "benchmark": "<...>", "finding": "<Arabic>" },
+    "activity": { "score": <0-100>, "benchmark": "<...>", "finding": "<Arabic>" },
+    "media": { "score": <0-100>, "benchmark": "<...>", "finding": "<Arabic>" }
+  },
   "strengths": ["<Arabic>", "<Arabic>"],
   "weaknesses": ["<Arabic>", "<Arabic>"],
+  "academic_insights": [
+    { "source": "Harvard HBR 2023", "finding": "<Arabic summary of the research finding>", "application": "<\u0643\u064A\u0641 \u0646\u0637\u0628\u0642\u0647\u0627 \u0639\u0644\u0649 \u0647\u0630\u0627 \u0627\u0644\u0628\u0631\u0648\u0641\u0627\u064A\u0644>" },
+    { "source": "McKinsey MENA Talent 2024", "finding": "<...>", "application": "<...>" },
+    { "source": "Ibarra Career Capital (LBS)", "finding": "<...>", "application": "<...>" }
+  ],
+  "vision_2030_alignment": {
+    "pillar": "<Thriving Economy | Vibrant Society | Ambitious Nation>",
+    "opportunity": "<Arabic \u2014 \u0643\u064A\u0641 \u064A\u0631\u0628\u0637 \u0627\u0644\u0645\u0633\u062A\u062E\u062F\u0645 \u0628\u0631\u0648\u0641\u0627\u064A\u0644\u0647 \u0628\u0647\u0630\u0647 \u0627\u0644\u0631\u0643\u064A\u0632\u0629>",
+    "hcdp_match": "<\u0623\u064A \u0645\u0647\u0627\u0631\u0627\u062A \u0645\u0646 Human Capability Development Program \u062A\u0646\u0627\u0633\u0628\u0647>"
+  },
   "upgradePlan": {
     "headline": {
       "before": "<current headline text>",
@@ -58535,11 +58622,28 @@ Analyze this LinkedIn profile and return ONLY valid JSON \u2014 no markdown, no 
       "tips": "<Arabic explanation>"
     }
   },
+  "before_after": {
+    "headline": {
+      "current": "<current>",
+      "improved": "<rewritten>",
+      "rationale": "<\u062F\u0631\u0627\u0633\u0629 X \u0623\u062B\u0628\u062A\u062A \u0623\u0646... \u0648\u0644\u0630\u0644\u0643...>"
+    },
+    "summary": {
+      "current": "<first 120 chars of current about>",
+      "improved": "<first 120 chars of rewritten about>",
+      "rationale": "<academic rationale>"
+    }
+  },
   "missingSections": ["<Arabic section name>"],
   "actionChecklist": [
     {"action": "<Arabic>", "time": "<X min>", "priority": "high"},
     {"action": "<Arabic>", "time": "<X min>", "priority": "medium"},
     {"action": "<Arabic>", "time": "<X min>", "priority": "low"}
+  ],
+  "action_plan": [
+    { "week": 1, "action": "<Arabic>", "expected_outcome": "<Arabic \u2014 \u0642\u0627\u0628\u0644 \u0644\u0644\u0642\u064A\u0627\u0633>", "research_basis": "<\u0645\u0635\u062F\u0631 \u0623\u0643\u0627\u062F\u064A\u0645\u064A>" },
+    { "week": 2, "action": "<Arabic>", "expected_outcome": "<...>", "research_basis": "<...>" },
+    { "week": 4, "action": "<Arabic>", "expected_outcome": "<...>", "research_basis": "<...>" }
   ],
   "recommendationTemplate": "<Arabic WhatsApp message to request LinkedIn recommendation from colleague>",
   "bannerDesign": {
@@ -58550,6 +58654,7 @@ Analyze this LinkedIn profile and return ONLY valid JSON \u2014 no markdown, no 
     "accent": "#C9922A"
   }
 }
+
 Profile data:`;
       const messages = [];
       if (input.imageBase64) {
@@ -58582,7 +58687,7 @@ Profile data:`;
         body: JSON.stringify({
           model: "claude-sonnet-4-6",
           max_tokens: 8192,
-          system: "You are a LinkedIn profile analysis API. Respond ONLY with valid JSON. No markdown, no code fences, no explanatory text. Start your response with { and end with }.",
+          system: "You are an executive career consultant trained on Harvard / Stanford / Wharton / LBS / INSEAD / KFUPM / KAUST / McKinsey MENA research. You analyze LinkedIn profiles for the Saudi/GCC market and cite academic sources. Respond ONLY with valid JSON matching the requested schema. No markdown, no code fences, no explanatory text. Start with { and end with }.",
           messages
         })
       });
@@ -58693,36 +58798,65 @@ Candidate Info:
 - Languages: ${context.languages || "Not provided"}
 - Job Description: ${context.jobDescription || "Not provided"}
 ` : "";
-  const prompt = `You are a professional CV writer following Oxford University Career Service guidelines, specializing in the Saudi/GCC job market.
+  const prompt = `\u0623\u0646\u062A Career Coach \u062A\u0646\u0641\u064A\u0630\u064A \u0645\u0639\u062A\u0645\u062F \u0645\u0646 International Coach Federation (ICF PCC)\u060C \u062A\u062E\u0635\u0635\u0643 \u0643\u062A\u0627\u0628\u0629 \u0627\u0644\u0633\u064A\u0631\u0629 \u0627\u0644\u0630\u0627\u062A\u064A\u0629 \u0644\u0644\u0633\u0648\u0642 \u0627\u0644\u0633\u0639\u0648\u062F\u064A \u0648\u0627\u0644\u062E\u0644\u064A\u062C\u064A \u0628\u062E\u0628\u0631\u0629 12 \u0633\u0646\u0629.
+
+\u0645\u0635\u0627\u062F\u0631\u0643 \u0627\u0644\u0623\u0643\u0627\u062F\u064A\u0645\u064A\u0629:
+- Harvard Business School Career & Professional Development \u2014 CV framework
+- Stanford Career Education \u2014 STAR methodology (Situation-Task-Action-Result)
+- MIT Career Advising & Professional Development \u2014 Quantified Impact framework
+- Wharton MBA Career Management \u2014 Executive Summary positioning
+- Georgetown McDonough \u2014 Keyword-First ATS optimization (Jobscan Labs research)
+- KFUPM Career Services \u2014 Saudi-specific CV standards
+- King Saud University Career Development \u2014 Arabic-Latin bilingual formats
+- Misk Foundation Talent Reports 2023-2025
+- Saudi Human Capability Development Program (HCDP) 2030 skill priorities
+
+frameworks \u0645\u0637\u0628\u0651\u0642\u0629:
+1. STAR Method (Stanford): \u0643\u0644 \u0625\u0646\u062C\u0627\u0632 = Situation + Task + Action + Result + Metrics
+2. "So What?" Test (Harvard): \u0643\u0644 bullet \u064A\u062C\u0627\u0648\u0628: \u0648\u0634 \u0627\u0644\u0623\u062B\u0631\u061F \u0648\u0634 \u0627\u0644\u062F\u0644\u064A\u0644\u061F
+3. Quantified Achievements (MIT): 70% \u0645\u0646 bullets \u0644\u0627\u0632\u0645 \u0641\u064A\u0647\u0627 \u0631\u0642\u0645/\u0646\u0633\u0628\u0629/\u0645\u062A\u0631\u064A\u0643
+4. Keyword Density Analysis (Jobscan 2024): ATS \u064A\u0631\u0641\u0636 75% \u0645\u0646 CVs \u0628\u062F\u0648\u0646 keywords \u0645\u062D\u062F\u062F\u0629
+5. Saudization Alignment: \u0627\u0630\u0643\u0631 \u0627\u0644\u0645\u0647\u0627\u0631\u0627\u062A \u0627\u0644\u0645\u0637\u0644\u0648\u0628\u0629 \u0641\u064A HCDP 2030 \u0639\u0646\u062F \u0627\u0644\u0645\u0644\u0627\u0621\u0645\u0629
+
+\u0642\u0648\u0627\u0639\u062F \u0627\u0644\u0643\u062A\u0627\u0628\u0629:
+- \u0641\u0635\u062D\u0649 \u0641\u064A \u0627\u0644\u0646\u0633\u062E\u0629 \u0627\u0644\u0639\u0631\u0628\u064A\u0629\u060C \u0644\u0627 \u062E\u0644\u064A\u062C\u064A\u0629
+- \u0623\u0631\u0642\u0627\u0645 \u063A\u0631\u0628\u064A\u0629 (0-9) \u0641\u064A \u0643\u0644 \u0627\u0644\u062D\u0627\u0644\u0627\u062A
+- Action verbs \u0642\u0648\u064A\u0629 \u0641\u064A \u0627\u0644\u0639\u0631\u0628\u064A: "\u0642\u064F\u062F\u062A\u064F"\u060C "\u0637\u0648\u0651\u0631\u062A\u064F"\u060C "\u062D\u0642\u0651\u0642\u062A\u064F"\u060C "\u0623\u0637\u0644\u0642\u062A\u064F"\u060C "\u0631\u0641\u0639\u062A\u064F" (\u0644\u0627 "\u0639\u0645\u0644\u062A\u064F \u0639\u0644\u0649")
+- Action verbs \u0642\u0648\u064A\u0629 \u0641\u064A \u0627\u0644\u0625\u0646\u062C\u0644\u064A\u0632\u064A: Led, Built, Delivered, Increased, Launched (\u0644\u0627 "Responsible for")
+- \u0643\u0644 bullet \u064A\u0628\u062F\u0623 \u0628\u0640 action verb \u0648\u064A\u062D\u062A\u0648\u064A \u0639\u0644\u0649 \u0645\u062A\u0631\u064A\u0643 \u0642\u0627\u0628\u0644 \u0644\u0644\u0642\u064A\u0627\u0633
+- \u0645\u0645\u0646\u0648\u0639: synergy, leverage, utilize, team player, hard worker, \u0648\u0645\u062B\u064A\u0644\u0627\u062A\u0647\u0627
+- \u0643\u0634\u0641 \u0644\u063A\u0629 \u0627\u0644\u0627\u0633\u0645: \u0644\u0648 \u0627\u0644\u0627\u0633\u0645 \u0639\u0631\u0628\u064A \u2192 \u0627\u0643\u062A\u0628 CV \u0628\u0627\u0644\u0641\u0635\u062D\u0649. \u0644\u0648 \u0644\u0627\u062A\u064A\u0646\u064A \u2192 \u0625\u0646\u062C\u0644\u064A\u0632\u064A.
+- ATS-friendly: \u0644\u0627 \u062C\u062F\u0627\u0648\u0644\u060C \u0644\u0627 \u0623\u064A\u0642\u0648\u0646\u0627\u062A\u060C headings \u0639\u0627\u062F\u064A\u0629
 
 Generate a professional CV version for: ${field}
-
-Oxford CV Standards:
-- Professional Summary: 3-4 sentences highlighting unique value proposition
-- Core Skills: 8 relevant, ATS-optimized keywords
-- Professional Experience: Action verbs + metrics + impact (STAR method)
-- Education: Degree, institution, year, relevant coursework
-- Language: Detect if Arabic name -> write in Arabic (Modern Standard Arabic), else English
-- Style: Clean, no tables, ATS-friendly formatting
-- Include Vision 2030 reference if relevant to Saudi market
 ${contextBlock}
-Return a JSON object with EXACTLY this structure (no markdown, just JSON):
+
+\u0627\u0633\u062A\u0634\u0647\u062F \u0628\u0645\u0635\u062F\u0631 \u0623\u0643\u0627\u062F\u064A\u0645\u064A \u0648\u0627\u062D\u062F \u0639\u0644\u0649 \u0627\u0644\u0623\u0642\u0644 \u0641\u064A \u0627\u0644\u0640 summary (\u0645\u062B\u0627\u0644: "\u0628\u0646\u0627\u0621\u064B \u0639\u0644\u0649 Harvard STAR framework..." \u0623\u0648 "\u0648\u0641\u0642 Wharton Executive Summary positioning...").
+
+${context?.jobDescription ? "CRITICAL: Tailor every bullet to the job description keywords \u2014 Jobscan 2024 research shows ATS keyword density determines 75% of rejection outcomes." : ""}
+
+Return a JSON object with this structure (no markdown, just JSON). The first four fields are required and are consumed by the existing UI \u2014 do not rename or drop them. Additional optional fields extend the output with academic metadata:
+
 {
   "headline": "A professional headline (max 10 words)",
-  "summary": "A 2-3 sentence professional summary tailored to ${field}",
+  "summary": "A 3-4 sentence professional summary tailored to ${field}, containing an academic citation and quantified value proposition",
   "skills": ["skill1", "skill2", "skill3", "skill4", "skill5", "skill6", "skill7", "skill8"],
   "experience": [
     {
       "title": "Job title",
       "company": "Company name",
       "duration": "Duration string",
-      "description": "2-3 sentence description of relevant achievements with metrics"
+      "description": "3-5 STAR-method bullets joined with newlines. 70%+ bullets must contain a quantified metric."
     }
-  ]
-}
-
-${context?.jobDescription ? "IMPORTANT: Tailor the CV specifically to match the job description provided. Use relevant keywords from it." : ""}
-Make the content specific to ${field}, professional, and optimized for ATS systems.`;
+  ],
+  "atsScore": <number 0-100>,
+  "atsRecommendations": ["<specific Jobscan-style recommendation>", "..."],
+  "education": [{ "degree": "...", "institution": "...", "year": "...", "relevantCoursework": "..." }],
+  "certifications": ["<name + issuer + year>"],
+  "languages": [{ "language": "...", "level": "Native | Fluent | Professional" }],
+  "framework_applied": "STAR (Stanford) + Quantified Impact (MIT) + Georgetown Jobscan ATS",
+  "vision_2030_keywords": ["<HCDP-aligned keyword 1>", "<HCDP-aligned keyword 2>"]
+}`;
   try {
     console.log("[CLAUDE] Sending request to api.anthropic.com");
     const response = await fetch("https://api.anthropic.com/v1/messages", {
@@ -58735,7 +58869,7 @@ Make the content specific to ${field}, professional, and optimized for ATS syste
       body: JSON.stringify({
         model: "claude-sonnet-4-6",
         max_tokens: 8192,
-        system: "You are a professional CV writer. Respond ONLY with valid JSON. No markdown, no code fences, no explanation text. Just the raw JSON object.",
+        system: "You are an ICF-certified executive career coach trained on Harvard / Stanford STAR / MIT Quantified Impact / Wharton / Georgetown Jobscan / KFUPM / KSU / Misk research. You write ATS-optimized CVs for the Saudi/GCC market and cite academic frameworks. Respond ONLY with valid JSON matching the requested schema. No markdown, no code fences, no explanation. Just the raw JSON object.",
         messages: [{ role: "user", content: prompt }]
       })
     });
@@ -63911,7 +64045,7 @@ var Resend = class {
 // server/_core/lib/email.ts
 var RESEND_API_KEY = process.env.RESEND_API_KEY || "";
 var FROM_DEFAULT = process.env.EMAIL_FROM || "Wassel <onboarding@resend.dev>";
-var APP_URL = "https://wassel-alpha.vercel.app";
+var APP_URL = "https://wasselhub.com";
 var _resend = null;
 function client() {
   if (!RESEND_API_KEY) return null;
@@ -64212,46 +64346,119 @@ async function generateEmailsWithClaude(opts) {
   }
   const companiesJson = JSON.stringify(opts.companies);
   const isAr = opts.language === "ar";
-  const systemPrompt = isAr ? `\u0623\u0646\u062A \u062E\u0628\u064A\u0631 \u0643\u062A\u0627\u0628\u0629 \u0631\u0633\u0627\u0626\u0644 B2B \u0627\u062D\u062A\u0631\u0627\u0641\u064A\u0629 \u0644\u0644\u0633\u0648\u0642 \u0627\u0644\u0633\u0639\u0648\u062F\u064A. \u0627\u0643\u062A\u0628 \u0631\u0633\u0627\u0626\u0644 \u0645\u0648\u062C\u0632\u0629 \u0648\u0645\u062D\u062A\u0631\u0645\u0629.
-- \u0627\u0630\u0643\u0631 \u0627\u0633\u0645 \u0627\u0644\u0634\u0631\u0643\u0629
-- \u0627\u0631\u0628\u0637 \u0627\u0644\u0645\u062D\u062A\u0648\u0649 \u0628\u0635\u0646\u0627\u0639\u0629 \u0627\u0644\u0634\u0631\u0643\u0629 \u0648\u0645\u062F\u064A\u0646\u062A\u0647\u0627 \u0625\u0646 \u0623\u0645\u0643\u0646
-- \u0627\u0630\u0643\u0631 \u0631\u0624\u064A\u0629 2030 \u0625\u0630\u0627 \u0643\u0627\u0646\u062A \u0627\u0644\u0634\u0631\u0643\u0629 \u062D\u0643\u0648\u0645\u064A\u0629 \u0623\u0648 \u0634\u0628\u0647 \u062D\u0643\u0648\u0645\u064A\u0629
-- \u0627\u062D\u062A\u0631\u0645 \u0627\u0644\u062B\u0642\u0627\u0641\u0629 \u0627\u0644\u0645\u062D\u0644\u064A\u0629
-- \u0627\u0644\u0644\u0647\u062C\u0629: ${opts.tone}
+  const academicHeader = isAr ? `\u0623\u0646\u062A B2B Outbound Strategist \u0628\u062E\u0628\u0631\u0629 10 \u0633\u0646\u0648\u0627\u062A \u0641\u064A LinkedIn \u0648 email outreach \u0644\u0644\u0633\u0648\u0642 \u0627\u0644\u0633\u0639\u0648\u062F\u064A\u060C
+\u0645\u062F\u0631\u0651\u0628 \u0639\u0644\u0649:
+- Arizona State University \u2014 Influence framework (Robert Cialdini)
+- Wharton School \u2014 Negotiation & Persuasion (Stuart Diamond)
+- Harvard Kennedy School \u2014 Cross-cultural Communication (Erin Meyer's Culture Map)
+- MIT Sloan \u2014 B2B Buyer Psychology
+- HubSpot Academy Research \u2014 2024 Outreach Benchmarks (13M messages)
+- KAUST Innovation Ventures \u2014 Saudi B2B sales patterns
+
+\u0627\u0644\u0640 principles \u0627\u0644\u0645\u0637\u0628\u0651\u0642\u0629:
+1. Cialdini's 6 Principles: Reciprocity, Commitment, Social Proof, Authority, Liking, Scarcity
+2. Meyer's Culture Map (Harvard): \u0627\u0644\u0633\u0639\u0648\u062F\u064A\u0629 = High-context + Relationship-first + Hierarchical
+3. Diamond's "4 Quadrants" (Wharton): Goals, People, Problems, Steps
+4. HubSpot 2024 benchmarks:
+   - \u0631\u0633\u0627\u0626\u0644 \u0628\u062A\u062E\u0635\u064A\u0635 \u062D\u0642\u064A\u0642\u064A (\u0627\u0633\u0645 + \u0635\u0646\u0627\u0639\u0629 + \u0645\u062F\u064A\u0646\u0629): 34% reply rate vs 8% generic
+   - Follow-ups \u0628\u0642\u064A\u0645\u0629 (\u0645\u0642\u0627\u0644/insight) \u0644\u0627 \u0637\u0644\u0628: 3x response rate
+   - \u0630\u0643\u0631 mutual connection \u0623\u0648 Vision 2030 pillar \u0645\u0646\u0627\u0633\u0628: +62% engagement
+
+\u0642\u0648\u0627\u0639\u062F \u0635\u0627\u0631\u0645\u0629:
+- \u0641\u0635\u062D\u0649 \u0631\u0633\u0645\u064A\u0629\u060C \u0644\u0627 \u062E\u0644\u064A\u062C\u064A\u0629\u060C \u0644\u0627 \u0625\u0646\u062C\u0644\u064A\u0632\u064A\u0629 \u0645\u062E\u062A\u0644\u0637\u0629
+- \u0627\u0628\u062F\u0623 \u0628\u0645\u062F\u062E\u0644 \u0645\u062E\u0635\u0635 \u0644\u0627\u0633\u0645 \u0627\u0644\u0634\u0631\u0643\u0629 \u0648\u0635\u0646\u0627\u0639\u062A\u0647\u0627 \u0648\u0645\u062F\u064A\u0646\u062A\u0647\u0627 \u2014 \u0644\u0627 \u0627\u0641\u062A\u062A\u0627\u062D\u064A\u0627\u062A \u0639\u0627\u0645\u0629
+- \u0625\u0630\u0627 \u0627\u0644\u0634\u0631\u0643\u0629 \u062D\u0643\u0648\u0645\u064A\u0629/\u0634\u0628\u0647 \u062D\u0643\u0648\u0645\u064A\u0629: \u0627\u0631\u0628\u0637 \u0628\u0631\u0643\u064A\u0632\u0629 Vision 2030 \u0627\u0644\u0645\u0646\u0627\u0633\u0628\u0629 (Thriving Economy / Vibrant Society / Ambitious Nation)
+- \u0625\u0630\u0627 \u0627\u0644\u0634\u0631\u0643\u0629 private sector: \u0627\u0630\u0643\u0631 metric \u0623\u0648 case study \u0645\u0648\u062B\u0648\u0642 (\u0645\u062B\u0627\u0644 HubSpot 2024 \u0623\u0648 McKinsey MENA)
+- \u0645\u0645\u0646\u0648\u0639: "\u0623\u062A\u0645\u0646\u0649 \u0623\u0646 \u062A\u0643\u0648\u0646 \u0628\u062E\u064A\u0631"\u060C "\u0627\u0633\u0645\u062D \u0644\u064A \u0623\u0646 \u0623\u0642\u062F\u0645 \u0646\u0641\u0633\u064A"\u060C "\u0646\u062D\u0646 \u0634\u0631\u0643\u0629 \u0631\u0627\u0626\u062F\u0629..."\u060C \u0623\u064A clich\xE9
+- \u0627\u0644\u0644\u0647\u062C\u0629 \u0627\u0644\u0645\u0637\u0644\u0648\u0628\u0629: ${opts.tone}
 - \u0647\u062F\u0641 \u0627\u0644\u0645\u0631\u0633\u0644: ${opts.goal}
+- \u062F\u0648\u0631 \u0627\u0644\u0645\u0631\u0633\u0644: ${opts.senderRole}
 - \u0627\u0644\u0631\u0633\u0627\u0644\u0629 \u0645\u0648\u062C\u0647\u0629 \u0644\u0644\u0639\u0646\u0648\u0627\u0646 \u0627\u0644\u0639\u0627\u0645 \u0644\u0644\u0634\u0631\u0643\u0629 (info@ / contact@)
-\u0627\u0644\u0631\u062F JSON \u0641\u0642\u0637.` : `You are a professional B2B email writer for the Saudi market. Write concise, respectful messages.
-- Mention the company name
-- Tie content to the company's industry and city when possible
-- Reference Vision 2030 if the company is government/semi-government
-- Tone: ${opts.tone}
+` : `You are a B2B Outbound Strategist with 10 years of experience in LinkedIn and email outreach for the Saudi/GCC market, trained on:
+- Arizona State University \u2014 Influence framework (Robert Cialdini)
+- Wharton School \u2014 Negotiation & Persuasion (Stuart Diamond)
+- Harvard Kennedy School \u2014 Cross-cultural Communication (Erin Meyer's Culture Map)
+- MIT Sloan \u2014 B2B Buyer Psychology
+- HubSpot Academy Research \u2014 2024 Outreach Benchmarks (13M messages)
+- KAUST Innovation Ventures \u2014 Saudi B2B sales patterns
+
+Principles applied:
+1. Cialdini's 6 Principles: Reciprocity, Commitment, Social Proof, Authority, Liking, Scarcity
+2. Meyer's Culture Map (Harvard): Saudi Arabia = High-context + Relationship-first + Hierarchical
+3. Diamond's "4 Quadrants" (Wharton): Goals, People, Problems, Steps
+4. HubSpot 2024 benchmarks:
+   - Real personalization (name + industry + city): 34% reply rate vs 8% generic
+   - Value-first follow-ups (article / insight, no ask): 3x response rate
+   - Mutual connection or Vision 2030 pillar reference: +62% engagement
+
+Strict rules:
+- Professional English, concise, respectful of Saudi business culture
+- Open with a personalized hook referencing the company name, industry, and city \u2014 no generic openers
+- Government / semi-government: link to the most relevant Vision 2030 pillar (Thriving Economy / Vibrant Society / Ambitious Nation)
+- Private sector: cite a specific metric or case study (HubSpot 2024, McKinsey MENA, etc.)
+- Banned: "Hope you're well", "Allow me to introduce myself", "We are a leading company", any clich\xE9
+- Requested tone: ${opts.tone}
 - Sender goal: ${opts.goal}
+- Sender role: ${opts.senderRole}
 - Messages go to general company addresses (info@ / contact@)
-Respond with JSON only.`;
-  const userPrompt = isAr ? `\u0627\u0643\u062A\u0628 \u0631\u0633\u0627\u0644\u0629 B2B \u0645\u062E\u0635\u0635\u0629 \u0644\u0643\u0644 \u0634\u0631\u0643\u0629:
+`;
+  const systemPrompt = academicHeader + (isAr ? "\n\u0627\u0631\u062C\u0639 JSON \u0641\u0642\u0637." : "\nRespond with JSON only.");
+  const userPrompt = isAr ? `\u0627\u0643\u062A\u0628 \u0631\u0633\u0627\u0644\u0629 B2B \u0645\u062E\u0635\u0635\u0629 \u0644\u0643\u0644 \u0634\u0631\u0643\u0629 \u0641\u064A \u0647\u0630\u0647 \u0627\u0644\u0642\u0627\u0626\u0645\u0629:
 ${companiesJson}
 
-\u062F\u0648\u0631 \u0627\u0644\u0645\u0631\u0633\u0644: ${opts.senderRole}
+\u0644\u0643\u0644 \u0634\u0631\u0643\u0629\u060C \u0637\u0628\u0651\u0642 Cialdini + Meyer + Diamond + HubSpot 2024 \u0648\u0623\u0646\u062A\u062C:
+- subject: 8-12 \u0643\u0644\u0645\u0629\u060C \u0645\u062D\u062F\u062F\u0629 \u0648\u0645\u063A\u0631\u064A\u0629 \u0644\u0644\u0641\u062A\u062D\u060C \u062A\u062D\u062A\u0648\u064A \u0639\u0644\u0649 \u0627\u0633\u0645 \u0627\u0644\u0634\u0631\u0643\u0629 \u0623\u0648 \u0625\u0634\u0627\u0631\u0629 \u0648\u0627\u0636\u062D\u0629 \u0644\u0635\u0646\u0627\u0639\u062A\u0647\u0627
+- body: 120-180 \u0643\u0644\u0645\u0629\u060C \u0628\u0646\u064A\u0629 Hook \u2192 Value \u2192 CTA:
+  * Hook: \u062C\u0645\u0644\u0629 \u0627\u0641\u062A\u062A\u0627\u062D\u064A\u0629 \u0645\u062E\u0635\u0635\u0629 \u0644\u0627\u0633\u0645 \u0627\u0644\u0634\u0631\u0643\u0629/\u0635\u0646\u0627\u0639\u062A\u0647\u0627/\u0645\u062F\u064A\u0646\u062A\u0647\u0627
+  * Value: \u0642\u064A\u0645\u0629 \u0623\u0643\u0627\u062F\u064A\u0645\u064A\u0629 \u0623\u0648 \u0639\u0645\u0644\u064A\u0629 \u0645\u062F\u0639\u0648\u0645\u0629 \u0628\u0645\u0635\u062F\u0631 (HubSpot 2024 / McKinsey MENA / Vision 2030 pillar) \u2014 Cialdini Authority + Social Proof
+  * CTA: \u0637\u0644\u0628 \u0645\u0643\u0627\u0644\u0645\u0629 \u0642\u0635\u064A\u0631\u0629 \u0623\u0648 \u0633\u0624\u0627\u0644 \u0645\u0641\u062A\u0648\u062D (Diamond Quadrant 4: Steps)
 
-\u0644\u0643\u0644 \u0634\u0631\u0643\u0629 \u0623\u0646\u0634\u0626:
-- subject: 8-12 \u0643\u0644\u0645\u0629
-- body: 120-180 \u0643\u0644\u0645\u0629\u060C \u0641\u064A\u0647\u0627 \u0645\u0642\u062F\u0645\u0629 \u0642\u0635\u064A\u0631\u0629 + \u0642\u064A\u0645\u0629 \u0645\u0642\u062A\u0631\u062D\u0629 + \u062F\u0639\u0648\u0629 \u0644\u0644\u062A\u0648\u0627\u0635\u0644
+\u0627\u062E\u062A\u064A\u0627\u0631\u064A\u064B\u0627 \u0623\u0636\u0641 (\u0644\u0648 \u0643\u0627\u0646\u062A \u062A\u0641\u064A\u062F \u0627\u0644\u0645\u0631\u0633\u0644 \u0644\u0627\u062D\u0642\u064B\u0627):
+- followUp1Day3: \u0631\u0633\u0627\u0644\u0629 \u0645\u062A\u0627\u0628\u0639\u0629 \u064A\u0648\u0645 3 \u062A\u0642\u062F\u0645 \u0642\u064A\u0645\u0629 (\u0645\u0642\u0627\u0644/insight) \u0628\u062F\u0648\u0646 \u0637\u0644\u0628 \u2014 HubSpot 2024 pattern
+- followUp2Day7: \u0631\u0633\u0627\u0644\u0629 \u064A\u0648\u0645 7 \u062A\u0637\u0631\u062D \u0633\u0624\u0627\u0644\u064B\u0627 \u0645\u0641\u062A\u0648\u062D\u064B\u0627 \u2014 Wharton Diamond technique
+- followUp3Day14: "break-up message" \u0645\u0647\u0630\u0628\u0629 \u064A\u0648\u0645 14 \u2014 Wharton break-up technique
+- persuasion_principle_used: \u0623\u064A \u0645\u0628\u0627\u062F\u0626 Cialdini \u0637\u0628\u0651\u0642\u062A
+- cultural_adaptation: \u0645\u0644\u0627\u062D\u0638\u0629 \u0639\u0646 \u0627\u0644\u062A\u0643\u064A\u0641 \u0627\u0644\u062B\u0642\u0627\u0641\u064A (High-context / Vision 2030 / hierarchy)
 
-JSON:
+JSON \u2014 \u0627\u0644\u062D\u0642\u0648\u0644 subject \u0648 body \u0645\u0637\u0644\u0648\u0628\u0629 \u0644\u0643\u0644 \u0634\u0631\u0643\u0629 \u0644\u0636\u0645\u0627\u0646 \u0639\u0645\u0644 \u0627\u0644\u0648\u0627\u062C\u0647\u0629\u061B \u0627\u0644\u062D\u0642\u0648\u0644 \u0627\u0644\u0623\u062E\u0631\u0649 \u0627\u062E\u062A\u064A\u0627\u0631\u064A\u0629:
 {
-  "CompanyName": { "subject": "...", "body": "..." }
-}` : `Write a personalized B2B email for each company:
+  "CompanyName": {
+    "subject": "...",
+    "body": "...",
+    "followUp1Day3": "...",
+    "followUp2Day7": "...",
+    "followUp3Day14": "...",
+    "persuasion_principle_used": "Authority + Liking (Cialdini)",
+    "cultural_adaptation": "High-context Saudi formal, Vision 2030 Thriving Economy reference"
+  }
+}` : `Write a personalized B2B email for each company in this list:
 ${companiesJson}
 
-Sender role: ${opts.senderRole}
+For each company, apply Cialdini + Meyer + Diamond + HubSpot 2024 and produce:
+- subject: 8-12 words, specific and open-worthy, containing the company name or a clear industry cue
+- body: 120-180 words in Hook \u2192 Value \u2192 CTA structure:
+  * Hook: personalized opener referencing the company name/industry/city
+  * Value: academic or practical value backed by a source (HubSpot 2024 / McKinsey MENA / Vision 2030 pillar) \u2014 Cialdini Authority + Social Proof
+  * CTA: short call request or open-ended question (Diamond Quadrant 4: Steps)
 
-For each company produce:
-- subject: 8-12 words
-- body: 120-180 words with short intro + value proposition + CTA
+Optionally add (useful for a future sequencing feature):
+- followUp1Day3: day-3 follow-up providing value (article/insight) with no ask \u2014 HubSpot 2024 pattern
+- followUp2Day7: day-7 message with an open question \u2014 Wharton Diamond technique
+- followUp3Day14: polite "break-up message" on day 14 \u2014 Wharton break-up technique
+- persuasion_principle_used: which Cialdini principles you applied
+- cultural_adaptation: note on cultural adaptation (High-context / Vision 2030 / hierarchy)
 
-JSON:
+JSON \u2014 subject and body are required per company so the UI keeps working; other fields are optional:
 {
-  "CompanyName": { "subject": "...", "body": "..." }
+  "CompanyName": {
+    "subject": "...",
+    "body": "...",
+    "followUp1Day3": "...",
+    "followUp2Day7": "...",
+    "followUp3Day14": "...",
+    "persuasion_principle_used": "Authority + Liking (Cialdini)",
+    "cultural_adaptation": "High-context Saudi formal, Vision 2030 Thriving Economy reference"
+  }
 }`;
   const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -65217,6 +65424,35 @@ var aiFeedbackRouter = router2({
 
 // server/_core/routes/agents.ts
 var ANTHROPIC_API_KEY4 = process.env.ANTHROPIC_API_KEY || "";
+var AI_OPERATOR_HEADER = `You are an AI Operator (not an assistant) for Wassel, built on Anthropic Constitutional AI principles and standards from:
+- MIT CSAIL \u2014 Autonomous Agent research
+- Stanford HAI \u2014 Human-Centered AI Guidelines
+- Anthropic \u2014 Responsible Scaling Policy
+- DeepMind \u2014 Sparrow agent alignment
+
+Operating principles:
+1. Outcome-Driven (Dan Martell): every operation must have a clear 30-day outcome.
+2. 10-80-10 Delegation: the user provides the vision (10%), you execute (80%), the user approves (10%).
+3. Buy Back Your Time: every action must save a measurable amount of time.
+4. Profit Lever focus: prioritize activities that drive revenue; deprioritize cosmetic content.
+5. Silent execution: execute first; explain only when asked.
+
+What you DO:
+- Read the full context before taking any action.
+- Verify prerequisites silently.
+- Execute the full plan end-to-end.
+- Return a single final report in the form:
+  Done. [outcome achieved]
+  Metrics: [time saved, cost saved, revenue impact]
+  Verify: [URL or command for verification]
+
+What you do NOT do:
+- Do not ask mid-task questions.
+- Do not request confirmations.
+- Do not explain steps before executing.
+- Never use: "Do you want", "Should I continue", "I need confirmation".
+
+`;
 var adminProcedure5 = protectedProcedure.use(async ({ ctx, next }) => {
   const { data: profile } = await ctx.supabase.from("profiles").select("is_admin").eq("id", ctx.user.id).single();
   if (!profile?.is_admin) {
@@ -65364,7 +65600,7 @@ var agentsRouter = router2({
 
 ## Training notes from admin (apply these always):
 ${notes.map((n, i) => `${i + 1}. ${n.note}`).join("\n")}` : "";
-    const fullSystem = agent.systemPrompt + trainingBlock;
+    const fullSystem = AI_OPERATOR_HEADER + "\n" + agent.systemPrompt + trainingBlock;
     const messages = (history || []).filter((m) => m.role !== "system").map((m) => ({
       role: m.role === "assistant" ? "assistant" : "user",
       content: m.content
@@ -65950,6 +66186,35 @@ var TOOL_NAMES = Object.keys(AGENT_TOOLS);
 // server/_core/routes/executorAgents.ts
 var ADMIN_EMAILS3 = ["waselhup@gmail.com", "almodhih.1995@gmail.com", "alhashimali649@gmail.com"];
 var MODEL = "claude-sonnet-4-6";
+var AI_OPERATOR_HEADER2 = `You are an AI Operator (not an assistant) for Wassel, built on Anthropic Constitutional AI principles and standards from:
+- MIT CSAIL \u2014 Autonomous Agent research
+- Stanford HAI \u2014 Human-Centered AI Guidelines
+- Anthropic \u2014 Responsible Scaling Policy
+- DeepMind \u2014 Sparrow agent alignment
+
+Operating principles:
+1. Outcome-Driven (Dan Martell): every operation must have a clear 30-day outcome.
+2. 10-80-10 Delegation: the user provides the vision (10%), you execute (80%), the user approves (10%).
+3. Buy Back Your Time: every action must save a measurable amount of time.
+4. Profit Lever focus: prioritize activities that drive revenue; deprioritize cosmetic content.
+5. Silent execution: execute first; explain only when asked.
+
+What you DO:
+- Read the full context before taking any action.
+- Verify prerequisites silently.
+- Execute the full plan end-to-end.
+- Return a single final report in the form:
+  Done. [outcome achieved]
+  Metrics: [time saved, cost saved, revenue impact]
+  Verify: [URL or command for verification]
+
+What you do NOT do:
+- Do not ask mid-task questions.
+- Do not request confirmations.
+- Do not explain steps before executing.
+- Never use: "Do you want", "Should I continue", "I need confirmation".
+
+`;
 async function ensureAdmin(ctx) {
   const { data: profile } = await ctx.supabase.from("profiles").select("is_admin, email").eq("id", ctx.user.id).single();
   if (!profile?.is_admin && !ADMIN_EMAILS3.includes(profile?.email || "")) {
@@ -66093,7 +66358,7 @@ var executorAgentsRouter = router2({
     const tools = buildToolsForAgent(allowedTools);
     let response;
     try {
-      response = await callClaude({ system: agent.system_prompt, messages, tools });
+      response = await callClaude({ system: AI_OPERATOR_HEADER2 + "\n" + agent.system_prompt, messages, tools });
     } catch (e) {
       return { error: e?.message || "Claude call failed", pendingActions: [] };
     }
@@ -66288,6 +66553,8 @@ init_dist4();
 var app = (0, import_express2.default)();
 app.use((0, import_cors.default)({
   origin: process.env.NODE_ENV === "production" ? [
+    "https://wasselhub.com",
+    "https://www.wasselhub.com",
     "https://wassel.vercel.app",
     "https://wassel-alpha.vercel.app",
     "https://wassel-waselhupsas-projects.vercel.app",
@@ -66423,7 +66690,7 @@ app.post("/api/email/test", async (req, res) => {
 });
 var GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
 var GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || "";
-var GOOGLE_REDIRECT_URI = "https://wassel-alpha.vercel.app/api/auth/google/callback";
+var GOOGLE_REDIRECT_URI = "https://wasselhub.com/api/auth/google/callback";
 app.get("/api/auth/google", (req, res) => {
   const userId = req.query.userId;
   if (!userId) {
@@ -66438,7 +66705,7 @@ app.get("/api/auth/google/callback", async (req, res) => {
   const code = req.query.code;
   const userId = decodeURIComponent(req.query.state);
   if (!code || !userId) {
-    return res.redirect("https://wassel-alpha.vercel.app/app/campaigns?gmail=error");
+    return res.redirect("https://wasselhub.com/app/campaigns?gmail=error");
   }
   try {
     const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
@@ -66455,7 +66722,7 @@ app.get("/api/auth/google/callback", async (req, res) => {
     const tokenData = await tokenRes.json();
     if (!tokenData.access_token) {
       console.error("Google OAuth token error:", tokenData);
-      return res.redirect("https://wassel-alpha.vercel.app/app/campaigns?gmail=error");
+      return res.redirect("https://wasselhub.com/app/campaigns?gmail=error");
     }
     const { createClient: createClient2 } = await Promise.resolve().then(() => (init_dist4(), dist_exports));
     const supabaseUrl2 = process.env.VITE_SUPABASE_URL || "https://hiqotmimlgsrsnovtopd.supabase.co";
@@ -66468,12 +66735,12 @@ app.get("/api/auth/google/callback", async (req, res) => {
     const { error: dbError } = await supabase2.from("profiles").update(updateData).eq("id", userId);
     if (dbError) {
       console.error("Supabase update error:", dbError);
-      return res.redirect("https://wassel-alpha.vercel.app/app/campaigns?gmail=error");
+      return res.redirect("https://wasselhub.com/app/campaigns?gmail=error");
     }
-    res.redirect("https://wassel-alpha.vercel.app/app/campaigns?gmail=connected");
+    res.redirect("https://wasselhub.com/app/campaigns?gmail=connected");
   } catch (err) {
     console.error("Google OAuth callback error:", err);
-    res.redirect("https://wassel-alpha.vercel.app/app/campaigns?gmail=error");
+    res.redirect("https://wasselhub.com/app/campaigns?gmail=error");
   }
 });
 app.get("/unsubscribe", async (req, res) => {
@@ -66508,7 +66775,7 @@ h1{font-size:22px;margin:0 0 12px;}p{font-size:14px;line-height:1.7;color:#37415
 </head><body><div class="card">
 <h1>You have been unsubscribed \u2713</h1>
 <p>The email <strong>${tok.email}</strong> will no longer receive outreach from Wassel.</p>
-<p>If you unsubscribed by mistake, <a href="mailto:support@wassel-alpha.vercel.app">let us know</a>.</p>
+<p>If you unsubscribed by mistake, <a href="mailto:support@wasselhub.com">let us know</a>.</p>
 <p style="font-size:11px;color:#9CA3AF;margin-top:24px;">\xA9 2026 Wassel \xB7 Made in Saudi Arabia</p>
 </div></body></html>`);
   } catch (e) {

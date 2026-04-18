@@ -1,7 +1,7 @@
 # Wassel (وصّل) — Project Identity
 
 ## Live URLs
-- Production: https://wassel-alpha.vercel.app
+- Production: https://wasselhub.com
 - GitHub: https://github.com/waselhup/wassel
 - Local: C:\Users\WIN11-24H2GPT\Desktop\wassel-v2
 

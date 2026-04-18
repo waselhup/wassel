@@ -14,6 +14,8 @@ const app = express();
 app.use(cors({
   origin: process.env.NODE_ENV === 'production'
     ? [
+        'https://wasselhub.com',
+        'https://www.wasselhub.com',
         'https://wassel.vercel.app',
         'https://wassel-alpha.vercel.app',
         'https://wassel-waselhupsas-projects.vercel.app',
@@ -183,7 +185,7 @@ app.post('/api/email/test', async (req, res) => {
 // ===== Gmail OAuth Routes =====
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '';
-const GOOGLE_REDIRECT_URI = 'https://wassel-alpha.vercel.app/api/auth/google/callback';
+const GOOGLE_REDIRECT_URI = 'https://wasselhub.com/api/auth/google/callback';
 
 app.get('/api/auth/google', (req, res) => {
   const userId = req.query.userId as string;
@@ -200,7 +202,7 @@ app.get('/api/auth/google/callback', async (req, res) => {
   const code = req.query.code as string;
   const userId = decodeURIComponent(req.query.state as string);
   if (!code || !userId) {
-    return res.redirect('https://wassel-alpha.vercel.app/app/campaigns?gmail=error');
+    return res.redirect('https://wasselhub.com/app/campaigns?gmail=error');
   }
   try {
     const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
@@ -217,7 +219,7 @@ app.get('/api/auth/google/callback', async (req, res) => {
     const tokenData = await tokenRes.json() as { access_token?: string; refresh_token?: string; error?: string };
     if (!tokenData.access_token) {
       console.error('Google OAuth token error:', tokenData);
-      return res.redirect('https://wassel-alpha.vercel.app/app/campaigns?gmail=error');
+      return res.redirect('https://wasselhub.com/app/campaigns?gmail=error');
     }
     const { createClient } = await import('@supabase/supabase-js');
     const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://hiqotmimlgsrsnovtopd.supabase.co';
@@ -228,12 +230,12 @@ app.get('/api/auth/google/callback', async (req, res) => {
     const { error: dbError } = await supabase.from('profiles').update(updateData).eq('id', userId);
     if (dbError) {
       console.error('Supabase update error:', dbError);
-      return res.redirect('https://wassel-alpha.vercel.app/app/campaigns?gmail=error');
+      return res.redirect('https://wasselhub.com/app/campaigns?gmail=error');
     }
-    res.redirect('https://wassel-alpha.vercel.app/app/campaigns?gmail=connected');
+    res.redirect('https://wasselhub.com/app/campaigns?gmail=connected');
   } catch (err) {
     console.error('Google OAuth callback error:', err);
-    res.redirect('https://wassel-alpha.vercel.app/app/campaigns?gmail=error');
+    res.redirect('https://wasselhub.com/app/campaigns?gmail=error');
   }
 });
 
@@ -279,7 +281,7 @@ h1{font-size:22px;margin:0 0 12px;}p{font-size:14px;line-height:1.7;color:#37415
 </head><body><div class="card">
 <h1>You have been unsubscribed ✓</h1>
 <p>The email <strong>${tok.email}</strong> will no longer receive outreach from Wassel.</p>
-<p>If you unsubscribed by mistake, <a href="mailto:support@wassel-alpha.vercel.app">let us know</a>.</p>
+<p>If you unsubscribed by mistake, <a href="mailto:support@wasselhub.com">let us know</a>.</p>
 <p style="font-size:11px;color:#9CA3AF;margin-top:24px;">© 2026 Wassel · Made in Saudi Arabia</p>
 </div></body></html>`);
   } catch (e: any) {

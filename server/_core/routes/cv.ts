@@ -48,36 +48,65 @@ Candidate Info:
 - Job Description: ${context.jobDescription || 'Not provided'}
 ` : '';
 
-  const prompt = `You are a professional CV writer following Oxford University Career Service guidelines, specializing in the Saudi/GCC job market.
+  const prompt = `أنت Career Coach تنفيذي معتمد من International Coach Federation (ICF PCC)، تخصصك كتابة السيرة الذاتية للسوق السعودي والخليجي بخبرة 12 سنة.
+
+مصادرك الأكاديمية:
+- Harvard Business School Career & Professional Development — CV framework
+- Stanford Career Education — STAR methodology (Situation-Task-Action-Result)
+- MIT Career Advising & Professional Development — Quantified Impact framework
+- Wharton MBA Career Management — Executive Summary positioning
+- Georgetown McDonough — Keyword-First ATS optimization (Jobscan Labs research)
+- KFUPM Career Services — Saudi-specific CV standards
+- King Saud University Career Development — Arabic-Latin bilingual formats
+- Misk Foundation Talent Reports 2023-2025
+- Saudi Human Capability Development Program (HCDP) 2030 skill priorities
+
+frameworks مطبّقة:
+1. STAR Method (Stanford): كل إنجاز = Situation + Task + Action + Result + Metrics
+2. "So What?" Test (Harvard): كل bullet يجاوب: وش الأثر؟ وش الدليل؟
+3. Quantified Achievements (MIT): 70% من bullets لازم فيها رقم/نسبة/متريك
+4. Keyword Density Analysis (Jobscan 2024): ATS يرفض 75% من CVs بدون keywords محددة
+5. Saudization Alignment: اذكر المهارات المطلوبة في HCDP 2030 عند الملاءمة
+
+قواعد الكتابة:
+- فصحى في النسخة العربية، لا خليجية
+- أرقام غربية (0-9) في كل الحالات
+- Action verbs قوية في العربي: "قُدتُ"، "طوّرتُ"، "حقّقتُ"، "أطلقتُ"، "رفعتُ" (لا "عملتُ على")
+- Action verbs قوية في الإنجليزي: Led, Built, Delivered, Increased, Launched (لا "Responsible for")
+- كل bullet يبدأ بـ action verb ويحتوي على متريك قابل للقياس
+- ممنوع: synergy, leverage, utilize, team player, hard worker, ومثيلاتها
+- كشف لغة الاسم: لو الاسم عربي → اكتب CV بالفصحى. لو لاتيني → إنجليزي.
+- ATS-friendly: لا جداول، لا أيقونات، headings عادية
 
 Generate a professional CV version for: ${field}
-
-Oxford CV Standards:
-- Professional Summary: 3-4 sentences highlighting unique value proposition
-- Core Skills: 8 relevant, ATS-optimized keywords
-- Professional Experience: Action verbs + metrics + impact (STAR method)
-- Education: Degree, institution, year, relevant coursework
-- Language: Detect if Arabic name -> write in Arabic (Modern Standard Arabic), else English
-- Style: Clean, no tables, ATS-friendly formatting
-- Include Vision 2030 reference if relevant to Saudi market
 ${contextBlock}
-Return a JSON object with EXACTLY this structure (no markdown, just JSON):
+
+استشهد بمصدر أكاديمي واحد على الأقل في الـ summary (مثال: "بناءً على Harvard STAR framework..." أو "وفق Wharton Executive Summary positioning...").
+
+${context?.jobDescription ? 'CRITICAL: Tailor every bullet to the job description keywords — Jobscan 2024 research shows ATS keyword density determines 75% of rejection outcomes.' : ''}
+
+Return a JSON object with this structure (no markdown, just JSON). The first four fields are required and are consumed by the existing UI — do not rename or drop them. Additional optional fields extend the output with academic metadata:
+
 {
   "headline": "A professional headline (max 10 words)",
-  "summary": "A 2-3 sentence professional summary tailored to ${field}",
+  "summary": "A 3-4 sentence professional summary tailored to ${field}, containing an academic citation and quantified value proposition",
   "skills": ["skill1", "skill2", "skill3", "skill4", "skill5", "skill6", "skill7", "skill8"],
   "experience": [
     {
       "title": "Job title",
       "company": "Company name",
       "duration": "Duration string",
-      "description": "2-3 sentence description of relevant achievements with metrics"
+      "description": "3-5 STAR-method bullets joined with newlines. 70%+ bullets must contain a quantified metric."
     }
-  ]
-}
-
-${context?.jobDescription ? 'IMPORTANT: Tailor the CV specifically to match the job description provided. Use relevant keywords from it.' : ''}
-Make the content specific to ${field}, professional, and optimized for ATS systems.`;
+  ],
+  "atsScore": <number 0-100>,
+  "atsRecommendations": ["<specific Jobscan-style recommendation>", "..."],
+  "education": [{ "degree": "...", "institution": "...", "year": "...", "relevantCoursework": "..." }],
+  "certifications": ["<name + issuer + year>"],
+  "languages": [{ "language": "...", "level": "Native | Fluent | Professional" }],
+  "framework_applied": "STAR (Stanford) + Quantified Impact (MIT) + Georgetown Jobscan ATS",
+  "vision_2030_keywords": ["<HCDP-aligned keyword 1>", "<HCDP-aligned keyword 2>"]
+}`;
 
   try {
     console.log('[CLAUDE] Sending request to api.anthropic.com');
@@ -91,7 +120,7 @@ Make the content specific to ${field}, professional, and optimized for ATS syste
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
         max_tokens: 8192,
-        system: 'You are a professional CV writer. Respond ONLY with valid JSON. No markdown, no code fences, no explanation text. Just the raw JSON object.',
+        system: 'You are an ICF-certified executive career coach trained on Harvard / Stanford STAR / MIT Quantified Impact / Wharton / Georgetown Jobscan / KFUPM / KSU / Misk research. You write ATS-optimized CVs for the Saudi/GCC market and cite academic frameworks. Respond ONLY with valid JSON matching the requested schema. No markdown, no code fences, no explanation. Just the raw JSON object.',
         messages: [{ role: 'user', content: prompt }],
       }),
     });

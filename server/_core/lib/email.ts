@@ -2,7 +2,7 @@ import { Resend } from 'resend';
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
 const FROM_DEFAULT = process.env.EMAIL_FROM || 'Wassel <onboarding@resend.dev>';
-const APP_URL = 'https://wassel-alpha.vercel.app';
+const APP_URL = 'https://wasselhub.com';
 
 let _resend: Resend | null = null;
 function client(): Resend | null {
