@@ -6,6 +6,20 @@
       "maxDuration": 300
     }
   },
+  "redirects": [
+    {
+      "source": "/(.*)",
+      "has": [{ "type": "host", "value": "wassel-alpha.vercel.app" }],
+      "destination": "https://wasselhub.com/$1",
+      "permanent": true
+    },
+    {
+      "source": "/(.*)",
+      "has": [{ "type": "host", "value": "www.wasselhub.com" }],
+      "destination": "https://wasselhub.com/$1",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/index.js" },
     { "source": "/unsubscribe", "destination": "/api/index.js" },

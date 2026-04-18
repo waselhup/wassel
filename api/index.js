@@ -52717,6 +52717,131 @@ function mapApifyStatusToArabic(status) {
   return "\u0641\u0634\u0644 \u062C\u0644\u0628 \u0628\u064A\u0627\u0646\u0627\u062A LinkedIn. \u062D\u0627\u0648\u0644 \u0645\u0631\u0629 \u0623\u062E\u0631\u0649.";
 }
 
+// server/_core/lib/claude-client.ts
+var MODELS = {
+  fast: "claude-haiku-4-5-20251001",
+  // bulk generation, cheap
+  balanced: "claude-sonnet-4-6",
+  // default quality tier
+  deep: "claude-opus-4-7"
+  // reserve for highest-complexity tasks
+};
+var TASK_MODEL = {
+  profile_analysis: MODELS.balanced,
+  // Sonnet — deep analysis with citations
+  cv_generate: MODELS.balanced,
+  // Sonnet — quality matters
+  post_generate: MODELS.fast,
+  // Haiku — short form, fast
+  campaign_message: MODELS.fast,
+  // Haiku — bulk per-company
+  cv_parse: MODELS.fast
+  // Haiku — structured extraction
+};
+function pickModel(task) {
+  return TASK_MODEL[task] ?? MODELS.balanced;
+}
+async function callClaude(params) {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    throw Object.assign(new Error("ANTHROPIC_API_KEY not configured"), { status: 500 });
+  }
+  const model = params.modelOverride || pickModel(params.task);
+  const maxRetries = 4;
+  const body = {
+    model,
+    max_tokens: params.maxTokens ?? 4e3,
+    temperature: params.temperature ?? 0.7,
+    system: params.system,
+    messages: [
+      {
+        role: "user",
+        content: params.userContent
+      }
+    ]
+  };
+  let lastErr = null;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01"
+        },
+        body: JSON.stringify(body)
+      });
+      if (res.ok) {
+        return await res.json();
+      }
+      const status = res.status;
+      const retriable = status === 429 || status === 503 || status === 529;
+      const errText = await res.text();
+      lastErr = Object.assign(new Error(`Claude ${status}: ${errText.slice(0, 300)}`), {
+        status,
+        body: errText
+      });
+      if (!retriable || attempt === maxRetries) {
+        throw lastErr;
+      }
+      const retryAfterSec = parseInt(res.headers.get("retry-after") || "0", 10);
+      const delayMs = retryAfterSec > 0 ? retryAfterSec * 1e3 : Math.min(2 ** attempt * 1e3, 3e4);
+      console.log(
+        `[claude-client] ${params.task} got ${status}, retry ${attempt}/${maxRetries} in ${delayMs}ms`
+      );
+      await new Promise((r) => setTimeout(r, delayMs));
+    } catch (err) {
+      if (err?.status) throw err;
+      lastErr = err;
+      if (attempt === maxRetries) throw err;
+      await new Promise((r) => setTimeout(r, 2e3 * attempt));
+    }
+  }
+  throw lastErr ?? new Error("Claude API failed after retries");
+}
+function extractText(res) {
+  if (!res?.content) return "";
+  return res.content.filter((c) => c.type === "text" && typeof c.text === "string").map((c) => c.text).join("");
+}
+function extractJson(text) {
+  if (!text) return null;
+  try {
+    return JSON.parse(text.trim());
+  } catch {
+  }
+  const stripped = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/i, "").trim();
+  try {
+    return JSON.parse(stripped);
+  } catch {
+  }
+  const start = text.indexOf("{");
+  if (start !== -1) {
+    let depth = 0;
+    for (let i = start; i < text.length; i++) {
+      if (text[i] === "{") depth++;
+      else if (text[i] === "}") {
+        depth--;
+        if (depth === 0) {
+          try {
+            return JSON.parse(text.substring(start, i + 1));
+          } catch {
+          }
+          break;
+        }
+      }
+    }
+  }
+  const m = text.match(/\{[\s\S]*\}/);
+  if (m) {
+    try {
+      return JSON.parse(m[0]);
+    } catch {
+    }
+  }
+  return null;
+}
+
 // server/_core/routes/posts.ts
 var router = (0, import_express.Router)();
 var SUPABASE_URL = process.env.VITE_SUPABASE_URL || "https://hiqotmimlgsrsnovtopd.supabase.co";
@@ -52754,61 +52879,14 @@ router.post("/generate", async (req, res) => {
     if ((profile.token_balance || 0) < 3) {
       return res.status(402).json({ error: "Insufficient tokens. Need 3 tokens to generate a post." });
     }
-    const academicHeader = `\u0623\u0646\u062A Content Strategist \u0645\u062A\u062E\u0635\u0635 \u0641\u064A LinkedIn thought leadership \u0644\u0644\u0633\u0648\u0642 \u0627\u0644\u0633\u0639\u0648\u062F\u064A\u060C \u0628\u062E\u0644\u0641\u064A\u0629 \u0623\u0643\u0627\u062F\u064A\u0645\u064A\u0629 \u0641\u064A Communications \u0645\u0646:
-- MIT Sloan Management Review \u2014 Thought Leadership research
-- Harvard Business Review \u2014 "How to Write a LinkedIn Post That Matters" (2023)
-- Northwestern Kellogg \u2014 Social Media Influence studies
-- Stanford Graduate School \u2014 Narrative Transportation Theory
-- Edelman Trust Barometer 2024-2026 (MENA)
-- LinkedIn Algorithm Research (Richard van der Blom 2024)
-
-\u0627\u0644\u0640 frameworks \u0627\u0644\u0645\u0637\u0628\u0651\u0642\u0629:
-1. Hook-Value-CTA (Kellogg): \u0623\u0648\u0644 \u0633\u0637\u0631 \u064A\u0648\u0642\u0641 \u0627\u0644\u0633\u0643\u0631\u0648\u0644\u060C \u0627\u0644\u0648\u0633\u0637 \u0642\u064A\u0645\u0629\u060C \u0627\u0644\u0646\u0647\u0627\u064A\u0629 \u062F\u0639\u0648\u0629
-2. Contrarian Angle (HBR 2023): \u0627\u0628\u062F\u0623 \u0628\u062A\u062D\u062F\u064A \u0627\u0641\u062A\u0631\u0627\u0636 \u0634\u0627\u0626\u0639 \u2014 engagement +340%
-3. Story Arc (Stanford Narrative Transportation): Setup \u2192 Conflict \u2192 Resolution \u2192 Lesson
-4. Specificity Principle (MIT Sloan): \u0623\u0631\u0642\u0627\u0645 \u0645\u062D\u062F\u062F\u0629 > \u062A\u0639\u0645\u064A\u0645\u0627\u062A (\u0645\u062B\u0627\u0644: "3.2x ROI" \u0645\u0648 "\u0646\u062A\u0627\u0626\u062C \u0643\u0628\u064A\u0631\u0629")
-5. Cultural Resonance (Edelman MENA): \u0627\u0631\u0628\u0637 \u0628\u0640 Vision 2030 \u0648\u0631\u064A\u0627\u062F\u0629 \u0627\u0644\u0623\u0639\u0645\u0627\u0644 \u0627\u0644\u0633\u0639\u0648\u062F\u064A\u0629 \u0639\u0646\u062F \u0627\u0644\u0645\u0644\u0627\u0621\u0645\u0629
-6. LinkedIn Algorithm (van der Blom 2024): 150-300 word sweet spot\u060C \u0633\u0637\u0631 \u0648\u0627\u062D\u062F \u0644\u0643\u0644 \u0641\u0642\u0631\u0629\u060C hook \u0641\u064A \u0623\u0648\u0644 7 \u0643\u0644\u0645\u0627\u062A \u0642\u0628\u0644 "see more"
-
-\u0642\u0648\u0627\u0639\u062F \u0635\u0627\u0631\u0645\u0629:
-- \u0627\u0628\u062F\u0623 \u0628\u0640 hook \u0642\u0648\u064A \u0641\u064A \u0623\u0648\u0644 7 \u0643\u0644\u0645\u0627\u062A (\u064A\u0648\u0642\u0641 \u0627\u0644\u0633\u0643\u0631\u0648\u0644 \u0642\u0628\u0644 \u0627\u0644\u0640 "see more")
-- \u0633\u0637\u0631 \u0648\u0627\u062D\u062F \u0641\u0642\u0637 \u0644\u0643\u0644 \u0641\u0642\u0631\u0629 (mobile-first)
-- 3 emojis \u0643\u062D\u062F \u0623\u0642\u0635\u0649\u060C \u0627\u0633\u062A\u0631\u0627\u062A\u064A\u062C\u064A\u0629
-- \u0627\u062E\u062A\u0645 \u0628\u0633\u0624\u0627\u0644 \u0645\u0641\u062A\u0648\u062D \u0623\u0648 CTA \u0648\u0627\u0636\u062D
-- \u0627\u0633\u062A\u0634\u0647\u062F \u0628\u0645\u0635\u062F\u0631 \u0623\u0643\u0627\u062F\u064A\u0645\u064A \u0639\u0646\u062F \u0627\u0644\u062D\u0627\u062C\u0629: "\u062F\u0631\u0627\u0633\u0629 MIT 2024 \u0623\u062B\u0628\u062A\u062A..." / "\u0648\u0641\u0642 HBR 2023..."
-- \u0645\u0645\u0646\u0648\u0639 \u0627\u0644\u0627\u0641\u062A\u062A\u0627\u062D\u064A\u0627\u062A \u0627\u0644\u0645\u0628\u062A\u0630\u0644\u0629: "\u0623\u062A\u0645\u0646\u0649 \u0623\u0646 \u062A\u0643\u0648\u0646 \u0628\u062E\u064A\u0631"\u060C "\u0627\u0633\u0645\u062D \u0644\u064A \u0623\u0646 \u0623\u0642\u062F\u0645 \u0646\u0641\u0633\u064A"
-`;
-    const systemPrompt = language === "ar" ? `${academicHeader}
-\u0644\u063A\u0629 \u0627\u0644\u0645\u062E\u0631\u062C: \u0641\u0635\u062D\u0649 \u0633\u0639\u0648\u062F\u064A\u0629 \u0631\u0633\u0645\u064A\u0629. \u0645\u0645\u0646\u0648\u0639 \u0627\u0633\u062A\u062E\u062F\u0627\u0645 \u0627\u0644\u0644\u0647\u062C\u0629 \u0627\u0644\u062E\u0644\u064A\u062C\u064A\u0629 \u0623\u0648 \u0627\u0644\u0625\u0646\u062C\u0644\u064A\u0632\u064A\u0629 \u0627\u0644\u0645\u062E\u062A\u0644\u0637\u0629.
-\u0627\u0644\u0637\u0648\u0644: 150-300 \u0643\u0644\u0645\u0629 (LinkedIn algorithm sweet spot \u2014 van der Blom 2024).
-${includeHashtags ? "\u0623\u0636\u0641 3-5 \u0647\u0627\u0634\u062A\u0627\u062C\u0627\u062A \u0639\u0631\u0628\u064A\u0629 + \u0625\u0646\u062C\u0644\u064A\u0632\u064A\u0629 \u0630\u0627\u062A \u0635\u0644\u0629 \u0641\u064A \u0627\u0644\u0646\u0647\u0627\u064A\u0629." : "\u0628\u062F\u0648\u0646 \u0647\u0627\u0634\u062A\u0627\u062C\u0627\u062A."}
-
-\u0627\u0631\u062C\u0639 JSON \u0628\u0647\u0630\u0627 \u0627\u0644\u0634\u0643\u0644 \u2014 \u0627\u0644\u062D\u0642\u0644\u0627\u0646 content \u0648 hashtags \u0625\u0644\u0632\u0627\u0645\u064A\u0627\u0646 \u0644\u0644\u0648\u0627\u062C\u0647\u0629 \u0627\u0644\u062D\u0627\u0644\u064A\u0629\u061B \u0627\u0644\u062D\u0642\u0648\u0644 \u0627\u0644\u0623\u062E\u0631\u0649 \u0627\u062E\u062A\u064A\u0627\u0631\u064A\u0629 \u0648\u062A\u062D\u0645\u0644 \u0627\u0644\u0628\u064A\u0627\u0646\u0627\u062A \u0627\u0644\u0648\u0635\u0641\u064A\u0629 \u0627\u0644\u0623\u0643\u0627\u062F\u064A\u0645\u064A\u0629:
-{
-  "content": "<full post text combining hook + body + CTA, with newlines between paragraphs>",
-  "hashtags": ["#\u0647\u0627\u0634\u062A\u0627\u062C1", "#\u0647\u0627\u0634\u062A\u0627\u062C2", "..."],
-  "hook": "<first 7 words that stop the scroll>",
-  "body": "<the middle value section>",
-  "cta": "<closing question or CTA>",
-  "framework_used": "<Contrarian Angle (HBR) | Hook-Value-CTA (Kellogg) | Story Arc (Stanford) | Specificity (MIT) | Cultural Resonance (Edelman)>",
-  "estimated_engagement": { "likes": "<range e.g. 50-200>", "comments": "<range>", "based_on": "van der Blom 2024 benchmarks" },
-  "best_posting_time_saudi": "<best weekday + hour AST>"
-}` : `${academicHeader}
-Output language: professional English.
-Length: 150-300 words (LinkedIn algorithm sweet spot \u2014 van der Blom 2024).
-${includeHashtags ? "Add 3-5 relevant hashtags at the end." : "No hashtags."}
-
-Return JSON in this shape \u2014 content and hashtags are required by the existing UI; other fields are optional academic metadata:
-{
-  "content": "<full post text combining hook + body + CTA, with newlines between paragraphs>",
-  "hashtags": ["#tag1", "#tag2", "..."],
-  "hook": "<first 7 words that stop the scroll>",
-  "body": "<the middle value section>",
-  "cta": "<closing question or CTA>",
-  "framework_used": "<Contrarian Angle (HBR) | Hook-Value-CTA (Kellogg) | Story Arc (Stanford) | Specificity (MIT) | Cultural Resonance (Edelman)>",
-  "estimated_engagement": { "likes": "<range e.g. 50-200>", "comments": "<range>", "based_on": "van der Blom 2024 benchmarks" },
-  "best_posting_time_saudi": "<best weekday + hour AST>"
-}`;
+    const systemPrompt = `You are a LinkedIn content strategist for the Saudi/GCC market.
+Frameworks: Hook-Value-CTA (Kellogg), Contrarian Angle (HBR), Story Arc (Stanford), Specificity (MIT Sloan), van der Blom 2024 (150-300 word sweet spot).
+Rules: single-line paragraphs (mobile-first), hook in first 7 words (before "see more"), max 3 emojis, close with question/CTA.
+Arabic output = Modern Standard Arabic only (no Gulf dialect, no English mix). Western digits.
+Banned openers: "\u0623\u062A\u0645\u0646\u0649 \u0623\u0646 \u062A\u0643\u0648\u0646 \u0628\u062E\u064A\u0631", "\u0627\u0633\u0645\u062D \u0644\u064A \u0623\u0646 \u0623\u0642\u062F\u0645 \u0646\u0641\u0633\u064A".
+Length: 150-300 words.
+${includeHashtags ? "Include 3-5 relevant hashtags." : "No hashtags."}
+Output: JSON only, no markdown, no code fences.`;
     const toneInstructions = {
       professional: language === "ar" ? "Tone: \u0631\u0633\u0645\u064A \u0648\u0627\u062D\u062A\u0631\u0627\u0641\u064A" : "Tone: professional and polished",
       inspirational: language === "ar" ? "Tone: \u0645\u0644\u0647\u0645 \u0648\u062A\u062D\u0641\u064A\u0632\u064A" : "Tone: inspirational and motivating",
@@ -52820,47 +52898,33 @@ Return JSON in this shape \u2014 content and hashtags are required by the existi
 
 Topic: ${topic}
 
-Generate the LinkedIn post now. Return valid JSON only.`;
+Generate the LinkedIn post now. Return JSON matching this schema:
+{
+  "content": "<full post: hook + body + CTA, newlines between paragraphs>",
+  "hashtags": ["#tag1","#tag2"]
+}`;
     console.log("[POSTS] Generating post for user:", user.id, "| topic:", topic, "| lang:", language);
     const _postsT0 = Date.now();
-    const claudeRes = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": ANTHROPIC_API_KEY2,
-        "anthropic-version": "2023-06-01"
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-6",
-        max_tokens: 8192,
-        system: systemPrompt + "\n\nIMPORTANT: Respond ONLY with valid JSON. No markdown, no code fences.",
-        messages: [{ role: "user", content: userPrompt }]
-      })
-    });
-    if (!claudeRes.ok) {
-      const errText = await claudeRes.text();
-      console.error("[POSTS] Claude error:", claudeRes.status, errText);
-      await logApiCall({ service: "anthropic", endpoint: "/v1/messages:posts", statusCode: claudeRes.status, responseTimeMs: Date.now() - _postsT0, errorMsg: errText, userId: user.id });
-      const statusOut = claudeRes.status === 429 ? 429 : 500;
-      return res.status(statusOut).json({ error: mapAnthropicStatusToArabic(claudeRes.status) });
+    let claudeRes;
+    try {
+      claudeRes = await callClaude({
+        task: "post_generate",
+        system: systemPrompt,
+        userContent: userPrompt,
+        maxTokens: 2e3
+      });
+    } catch (err) {
+      const status = err?.status || 500;
+      console.error("[POSTS] Claude error:", status, err?.message);
+      await logApiCall({ service: "anthropic", endpoint: "/v1/messages:posts", statusCode: status, responseTimeMs: Date.now() - _postsT0, errorMsg: err?.message, userId: user.id });
+      const statusOut = status === 429 ? 429 : 500;
+      return res.status(statusOut).json({ error: mapAnthropicStatusToArabic(status) });
     }
     await logApiCall({ service: "anthropic", endpoint: "/v1/messages:posts", statusCode: 200, responseTimeMs: Date.now() - _postsT0, userId: user.id });
-    const claudeData = await claudeRes.json();
-    const rawText = claudeData?.content?.[0]?.text || "";
-    let content = "";
-    let hashtags = [];
-    try {
-      const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]);
-        content = parsed.content || "";
-        hashtags = Array.isArray(parsed.hashtags) ? parsed.hashtags : [];
-      } else {
-        content = rawText;
-      }
-    } catch {
-      content = rawText;
-    }
+    const rawText = extractText(claudeRes);
+    const parsed = extractJson(rawText);
+    const content = parsed?.content || rawText;
+    const hashtags = Array.isArray(parsed?.hashtags) ? parsed.hashtags : [];
     await supabaseAdmin.from("profiles").update({ token_balance: (profile.token_balance || 0) - 3 }).eq("id", user.id);
     console.log("[POSTS] Generated successfully. Tokens deducted. Remaining:", (profile.token_balance || 0) - 3);
     return res.json({ content, hashtags });
@@ -58254,8 +58318,6 @@ var NEVER = INVALID;
 
 // server/_core/routes/linkedin.ts
 var APIFY_TOKEN = process.env.APIFY_TOKEN || process.env.APIFY_API_TOKEN || "";
-var ANTHROPIC_API_KEY3 = process.env.ANTHROPIC_API_KEY || "";
-var CLAUDE_MODEL = "claude-haiku-4-5-20251001";
 async function scrapeLinkedInProfile(profileUrl) {
   console.log("[APIFY] Starting scrape for:", profileUrl);
   const _apifyT0 = Date.now();
@@ -58306,8 +58368,8 @@ async function scrapeLinkedInProfile(profileUrl) {
 function isArabicName(name) {
   return /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]/.test(name);
 }
-async function analyzeWithClaude(profileData) {
-  const name = profileData.fullName || profileData.firstName + " " + profileData.lastName || "Unknown";
+function buildProfileText(profileData) {
+  const name = profileData.fullName || ((profileData.firstName || "") + " " + (profileData.lastName || "")).trim() || "Unknown";
   const headline = profileData.headline || "";
   const summary = profileData.summary || profileData.about || "";
   const location2 = profileData.location || profileData.addressCountryFull || "";
@@ -58315,8 +58377,8 @@ async function analyzeWithClaude(profileData) {
   const experiences = (profileData.experience || profileData.positions || []).slice(0, 5).map((e) => `- ${e.title || e.role || ""} at ${e.companyName || e.company || ""} (${e.duration || e.timePeriod || ""})`).join("\n");
   const education = (profileData.education || []).slice(0, 3).map((e) => `- ${e.degree || e.degreeName || ""} from ${e.schoolName || e.school || ""}`).join("\n");
   const skills = (profileData.skills || []).slice(0, 15).map((s2) => typeof s2 === "string" ? s2 : s2.name || s2.skill || "").filter(Boolean).join(", ");
-  const profileText = `
-Name: ${name}
+  const certs = (profileData.certifications || []).slice(0, 5).map((c) => "- " + (c.name || c.title || "")).join("\n");
+  const profileText = `Name: ${name}
 Headline: ${headline}
 Location: ${location2}
 Connections: ${connections}
@@ -58329,98 +58391,106 @@ Education:
 ${education || "None listed"}
 
 Skills: ${skills || "None listed"}
-`.trim();
-  console.log("[CLAUDE] Sending analysis request, model:", CLAUDE_MODEL);
-  console.log("[CLAUDE] Profile text length:", profileText.length);
-  const isArabic = isArabicName(name);
-  const lang = isArabic ? "ar" : "en";
-  const claudeBody = {
-    model: CLAUDE_MODEL,
-    max_tokens: 3e3,
-    system: isArabic ? "\u0623\u0646\u062A \u0645\u0633\u062A\u0634\u0627\u0631 LinkedIn \u0645\u062D\u062A\u0631\u0641 \u0648\u0645\u062A\u062E\u0635\u0635 \u0641\u064A \u0627\u0644\u0633\u0648\u0642 \u0627\u0644\u0633\u0639\u0648\u062F\u064A \u0648\u0627\u0644\u062E\u0644\u064A\u062C\u064A. \u062D\u0644\u0644 \u0627\u0644\u0645\u0644\u0641\u0627\u062A \u0627\u0644\u0634\u062E\u0635\u064A\u0629 \u0628\u0639\u0645\u0642 \u0648\u0642\u062F\u0645 \u0646\u0635\u0627\u0626\u062D \u0639\u0645\u0644\u064A\u0629 \u0645\u062D\u062F\u062F\u0629. \u0623\u062C\u0628 \u062F\u0627\u0626\u0645\u0627\u064B \u0628\u0627\u0644\u0639\u0631\u0628\u064A\u0629 \u0627\u0644\u0641\u0635\u062D\u0649." : "You are a senior LinkedIn profile coach specializing in the Saudi/GCC job market. Analyze profiles holistically and provide specific, actionable advice. Always respond in English.",
-    messages: [
-      {
-        role: "user",
-        content: `Analyze this LinkedIn profile thoroughly like a senior LinkedIn coach. Return a JSON object with EXACTLY this structure (no markdown, no code blocks, just raw JSON):
+
+Certifications:
+${certs || "None listed"}`.trim();
+  return { name, profileText };
+}
+var SYSTEM_ANALYZE_AR = `\u0623\u0646\u062A \u0645\u0633\u062A\u0634\u0627\u0631 LinkedIn \u0645\u062D\u062A\u0631\u0641 \u0644\u0644\u0633\u0648\u0642 \u0627\u0644\u0633\u0639\u0648\u062F\u064A/\u0627\u0644\u062E\u0644\u064A\u062C\u064A \u0628\u062E\u0628\u0631\u0629 15 \u0633\u0646\u0629.
+\u0645\u0631\u062C\u0639\u064A\u0627\u062A: Career Capital (LBS), Personal Brand Equity (Harvard), STAR (Stanford), Vision 2030 HCDP, McKinsey MENA 2024.
+\u0642\u0648\u0627\u0639\u062F: \u0641\u0635\u062D\u0649\u060C \u0623\u0631\u0642\u0627\u0645 \u063A\u0631\u0628\u064A\u0629\u060C \u062A\u0648\u0635\u064A\u0627\u062A \u0645\u062D\u062F\u062F\u0629 \u0642\u0627\u0628\u0644\u0629 \u0644\u0644\u0642\u064A\u0627\u0633\u060C \u0644\u0627 \u0639\u0645\u0648\u0645\u064A\u0627\u062A\u060C \u0644\u0627 clich\xE9.
+\u0623\u062E\u0631\u062C JSON \u0641\u0642\u0637 \u2014 \u0628\u062F\u0648\u0646 markdown \u0648\u0644\u0627 code fences.`;
+var SYSTEM_ANALYZE_EN = `You are a senior LinkedIn coach for the Saudi/GCC market with 15 years of experience.
+Frameworks: Career Capital (LBS), Personal Brand Equity (Harvard), STAR (Stanford), Vision 2030 HCDP, McKinsey MENA 2024.
+Rules: concise, specific, measurable; no clich\xE9s.
+Output JSON only \u2014 no markdown, no code fences.`;
+var SYSTEM_DEEP = `You are an executive career consultant applying Career Capital (LBS), Personal Brand Equity (Harvard), STAR (Stanford), Vision 2030 HCDP, and McKinsey MENA 2024 benchmarks to LinkedIn profiles in the Saudi/GCC market.
+Output: valid JSON only. No markdown, no code fences, no prose. Start with { and end with }. Arabic content in Modern Standard Arabic, Western digits (0-9), concise academic citations (framework name only).`;
+function buildAnalyzeUserPrompt(profileText, isArabic) {
+  const lang = isArabic ? "Arabic (MSA)" : "English";
+  return `Analyze this LinkedIn profile and return JSON matching this schema exactly (text content in ${lang}):
 {
-  "score": <number 0-100>,
-  "scoreBreakdown": {
-    "photo": <0-10>,
-    "headline": <0-15>,
-    "summary": <0-15>,
-    "experience": <0-20>,
-    "skills": <0-10>,
-    "education": <0-10>,
-    "connections": <0-10>,
-    "keywords": <0-10>
-  },
-  "headlineCurrent": "<current headline>",
-  "headlineSuggestion": "<improved headline - ${isArabic ? "in Arabic" : "in English"}>",
-  "summaryCurrent": "<current summary or 'No summary provided'>",
-  "summarySuggestion": "<improved professional summary in 3-4 sentences - ${isArabic ? "in Arabic" : "in English"}>",
-  "keywords": ["keyword1", "keyword2", ...up to 10 relevant keywords for this industry],
-  "experienceSuggestions": [{"role": "<role>", "suggestion": "<specific improvement tip - ${isArabic ? "in Arabic" : "in English"}>"}],
-  "strengths": ["<strength1>", "<strength2>", "<strength3>"],
-  "weaknesses": ["<weakness1>", "<weakness2>", "<weakness3>"],
-  "actionPlan": [
-    "<immediate action 1 - ${isArabic ? "in Arabic" : "in English"}>",
-    "<immediate action 2>",
-    "<immediate action 3>"
-  ],
-  "industryTips": "<2-3 sentences of industry-specific advice for Saudi/GCC market - ${isArabic ? "in Arabic" : "in English"}>"
+  "score": <0-100>,
+  "scoreBreakdown": {"photo":<0-10>,"headline":<0-15>,"summary":<0-15>,"experience":<0-20>,"skills":<0-10>,"education":<0-10>,"connections":<0-10>,"keywords":<0-10>},
+  "headlineCurrent": "<current>",
+  "headlineSuggestion": "<improved>",
+  "summaryCurrent": "<current or 'No summary'>",
+  "summarySuggestion": "<3-4 sentence rewrite>",
+  "keywords": ["<up to 10 industry keywords>"],
+  "experienceSuggestions": [{"role":"<role>","suggestion":"<specific tip>"}],
+  "strengths": ["<s1>","<s2>","<s3>"],
+  "weaknesses": ["<w1>","<w2>","<w3>"],
+  "actionPlan": ["<action1>","<action2>","<action3>"],
+  "industryTips": "<2-3 sentences for Saudi/GCC market>"
 }
 
-Score criteria (be strict and realistic):
-- Photo/banner: +10 if likely present (connections > 100 suggests active profile with photo)
-- Headline quality: up to 15 points (is it specific? includes value prop? has keywords?)
-- Summary quality: up to 15 points (tells a story? has CTA? mentions achievements?)
-- Experience detail: up to 20 points (has metrics? action verbs? relevant descriptions?)
-- Skills: up to 10 points (relevant? endorsed? minimum 5 skills listed?)
-- Education: up to 10 points (degrees listed? certifications? courses?)
-- Connections: up to 10 points (500+ = 10, 200+ = 7, 100+ = 5, <100 = 2)
-- Keywords/SEO: up to 10 points (industry terms? job title keywords? searchable?)
+Scoring: photo/banner +10 (connections>100 suggests active), headline up to 15, summary up to 15, experience up to 20 (metrics+verbs), skills up to 10 (>=5 relevant), education up to 10, connections (500+=10,200+=7,100+=5,<100=2), keywords up to 10.
+Reference Vision 2030 where relevant.
 
-${isArabic ? "IMPORTANT: All suggestions, strengths, weaknesses, action plan, and tips MUST be in Arabic (Modern Standard Arabic). Reference Vision 2030 if relevant to Saudi market." : "IMPORTANT: All text must be in English. Reference Vision 2030 if relevant to Saudi market."}
+Profile:
+${profileText}`;
+}
+function buildDeepUserPrompt(profileText) {
+  return `Analyze this LinkedIn profile at executive depth and return JSON matching this schema. Arabic text in MSA, Western digits. Cite a framework name in each academic_insight (e.g. "Career Capital (LBS)").
 
-Profile data:
-${profileText}`
-      }
-    ]
-  };
-  console.log("[CLAUDE] Request body model:", claudeBody.model);
-  const _claudeT0 = Date.now();
-  const claudeRes = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": ANTHROPIC_API_KEY3,
-      "anthropic-version": "2023-06-01"
-    },
-    body: JSON.stringify(claudeBody)
-  });
-  if (!claudeRes.ok) {
-    const errText = await claudeRes.text();
-    console.error("[CLAUDE] API error:", claudeRes.status, errText);
-    await logApiCall({ service: "anthropic", endpoint: "/v1/messages:analyze", statusCode: claudeRes.status, responseTimeMs: Date.now() - _claudeT0, errorMsg: errText });
-    const code = claudeRes.status === 429 ? "TOO_MANY_REQUESTS" : claudeRes.status === 401 ? "UNAUTHORIZED" : "INTERNAL_SERVER_ERROR";
-    throw new TRPCError({ code, message: mapAnthropicStatusToArabic(claudeRes.status) });
+{
+  "score": <0-100>,
+  "overall_score": <same as score>,
+  "scoreBreakdown": {"headline":<0-15>,"about":<0-15>,"experience":<0-20>,"skills":<0-10>,"education":<0-10>,"photo":<0-10>,"connections":<0-10>,"certifications":<0-10>},
+  "dimensions": {
+    "headline":   {"score":<0-100>,"benchmark":"<LinkedIn MENA 2024>","finding":"<Arabic>"},
+    "summary":    {"score":<0-100>,"benchmark":"<...>","finding":"<Arabic>"},
+    "experience": {"score":<0-100>,"benchmark":"<...>","finding":"<Arabic>"},
+    "skills":     {"score":<0-100>,"benchmark":"<...>","finding":"<Arabic>"},
+    "education":  {"score":<0-100>,"benchmark":"<...>","finding":"<Arabic>"},
+    "recommendations": {"score":<0-100>,"benchmark":"<...>","finding":"<Arabic>"},
+    "activity":   {"score":<0-100>,"benchmark":"<...>","finding":"<Arabic>"},
+    "media":      {"score":<0-100>,"benchmark":"<...>","finding":"<Arabic>"}
+  },
+  "strengths": ["<Arabic>","<Arabic>"],
+  "weaknesses": ["<Arabic>","<Arabic>"],
+  "academic_insights": [
+    {"source":"Career Capital (LBS)","finding":"<Arabic>","application":"<Arabic>"},
+    {"source":"McKinsey MENA 2024","finding":"<Arabic>","application":"<Arabic>"},
+    {"source":"Personal Brand Equity (Harvard)","finding":"<Arabic>","application":"<Arabic>"}
+  ],
+  "vision_2030_alignment": {
+    "pillar":"<Thriving Economy | Vibrant Society | Ambitious Nation>",
+    "opportunity":"<Arabic>",
+    "hcdp_match":"<Arabic>"
+  },
+  "upgradePlan": {
+    "headline":   {"before":"<current>","after":"<<=220 chars>","tips":"<Arabic>"},
+    "about":      {"before":"<summary of current>","after":"<>=500 chars Arabic rewrite>","tips":"<Arabic>"},
+    "experience": {"before":"<current bullets>","after":"<rewrite with metrics>","tips":"<Arabic>"}
+  },
+  "before_after": {
+    "headline": {"current":"<current>","improved":"<rewritten>","rationale":"<Arabic framework-based>"},
+    "summary":  {"current":"<first 120ch>","improved":"<first 120ch of rewrite>","rationale":"<Arabic>"}
+  },
+  "missingSections": ["<Arabic section name>"],
+  "actionChecklist": [
+    {"action":"<Arabic>","time":"<X min>","priority":"high"},
+    {"action":"<Arabic>","time":"<X min>","priority":"medium"},
+    {"action":"<Arabic>","time":"<X min>","priority":"low"}
+  ],
+  "action_plan": [
+    {"week":1,"action":"<Arabic>","expected_outcome":"<Arabic>","research_basis":"<framework>"},
+    {"week":2,"action":"<Arabic>","expected_outcome":"<Arabic>","research_basis":"<framework>"},
+    {"week":4,"action":"<Arabic>","expected_outcome":"<Arabic>","research_basis":"<framework>"}
+  ],
+  "recommendationTemplate": "<Arabic WhatsApp message requesting a LinkedIn recommendation>",
+  "bannerDesign": {
+    "background":"linear-gradient(135deg, #064E49, #0A8F84)",
+    "mainText":"<name + title>",
+    "tagline":"<English tagline>",
+    "layout":"right-photo-left-text",
+    "accent":"#C9922A"
   }
-  await logApiCall({ service: "anthropic", endpoint: "/v1/messages:analyze", statusCode: 200, responseTimeMs: Date.now() - _claudeT0 });
-  const claudeData = await claudeRes.json();
-  console.log("[CLAUDE] Response received, stop_reason:", claudeData.stop_reason);
-  const text = claudeData.content?.[0]?.text || "";
-  let jsonStr = text;
-  const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (jsonMatch) {
-    jsonStr = jsonMatch[0];
-  }
-  try {
-    const analysis = JSON.parse(jsonStr);
-    return analysis;
-  } catch (parseErr) {
-    console.error("[CLAUDE] Failed to parse JSON response:", text.substring(0, 500));
-    throw new Error("Failed to parse Claude analysis response");
-  }
+}
+
+Profile:
+${profileText}`;
 }
 function normalizeLiUrl(url) {
   const match = url.match(/linkedin\.com\/in\/([^/?#]+)/i);
@@ -58447,13 +58517,38 @@ var linkedinRouter = router2({
       } else {
         console.log("[LINKEDIN] Cache MISS, calling Apify + Claude");
         const profileData = await scrapeLinkedInProfile(input.profileUrl);
-        console.log("[LINKEDIN] Profile scraped:", profileData?.fullName || profileData?.firstName);
-        analysis = await analyzeWithClaude(profileData);
+        const { name, profileText } = buildProfileText(profileData);
+        console.log("[LINKEDIN] Profile scraped:", name);
+        const isArabic = isArabicName(name);
+        const system = isArabic ? SYSTEM_ANALYZE_AR : SYSTEM_ANALYZE_EN;
+        const userPrompt = buildAnalyzeUserPrompt(profileText, isArabic);
+        const _claudeT0 = Date.now();
+        let claudeRes;
+        try {
+          claudeRes = await callClaude({
+            task: "profile_analysis",
+            system,
+            userContent: userPrompt,
+            maxTokens: 3e3
+          });
+        } catch (err) {
+          const status = err?.status || 500;
+          await logApiCall({ service: "anthropic", endpoint: "/v1/messages:analyze", statusCode: status, responseTimeMs: Date.now() - _claudeT0, errorMsg: err?.message });
+          const code = status === 429 ? "TOO_MANY_REQUESTS" : status === 401 ? "UNAUTHORIZED" : "INTERNAL_SERVER_ERROR";
+          throw new TRPCError({ code, message: mapAnthropicStatusToArabic(status) });
+        }
+        await logApiCall({ service: "anthropic", endpoint: "/v1/messages:analyze", statusCode: 200, responseTimeMs: Date.now() - _claudeT0 });
+        const text = extractText(claudeRes);
+        analysis = extractJson(text);
+        if (!analysis) {
+          console.error("[CLAUDE] Failed to parse JSON response:", text.substring(0, 500));
+          throw new Error("Failed to parse Claude analysis response");
+        }
         const expires = new Date(Date.now() + 24 * 60 * 60 * 1e3).toISOString();
         await ctx.supabase.from("ai_cache").upsert({
           cache_key: cacheKey,
           result: analysis,
-          model: CLAUDE_MODEL,
+          model: claudeRes.model || "claude-haiku-4-5-20251001",
           expires_at: expires
         }, { onConflict: "cache_key" });
         console.log("[LINKEDIN] Cached result, expires:", expires);
@@ -58530,223 +58625,41 @@ var linkedinRouter = router2({
       let profileText = "";
       if (input.linkedinUrl) {
         const profileData = await scrapeLinkedInProfile(input.linkedinUrl);
-        const name = profileData.fullName || profileData.firstName + " " + profileData.lastName || "";
-        const headline = profileData.headline || "";
-        const summary = profileData.summary || profileData.about || "";
-        const location2 = profileData.location || profileData.addressCountryFull || "";
-        const connections = profileData.connectionsCount || profileData.connections || 0;
-        const experiences = (profileData.experience || profileData.positions || []).slice(0, 5).map((e) => "- " + (e.title || e.role || "") + " at " + (e.companyName || e.company || "") + " (" + (e.duration || e.timePeriod || "") + ")").join("\n");
-        const education = (profileData.education || []).slice(0, 3).map((e) => "- " + (e.degree || e.degreeName || "") + " from " + (e.schoolName || e.school || "")).join("\n");
-        const skills = (profileData.skills || []).slice(0, 15).map((s2) => typeof s2 === "string" ? s2 : s2.name || s2.skill || "").filter(Boolean).join(", ");
-        const certs = (profileData.certifications || []).slice(0, 5).map((c) => "- " + (c.name || c.title || "")).join("\n");
-        profileText = "Name: " + name + "\nHeadline: " + headline + "\nLocation: " + location2 + "\nConnections: " + connections + "\nSummary: " + summary + "\n\nExperience:\n" + (experiences || "None") + "\n\nEducation:\n" + (education || "None") + "\nSkills: " + (skills || "None") + "\n\nCertifications:\n" + (certs || "None");
+        profileText = buildProfileText(profileData).profileText;
       }
-      const DEEP_PROMPT = `\u0623\u0646\u062A \u0645\u0633\u062A\u0634\u0627\u0631 \u0643\u0627\u0631\u064A\u064A\u0631 \u062A\u0646\u0641\u064A\u0630\u064A \u0628\u062E\u0628\u0631\u0629 15 \u0633\u0646\u0629 \u0641\u064A \u062A\u062D\u0644\u064A\u0644 \u0627\u0644\u0628\u0631\u0648\u0641\u0627\u064A\u0644\u0627\u062A \u0627\u0644\u0645\u0647\u0646\u064A\u0629 \u0641\u064A \u0627\u0644\u0633\u0648\u0642 \u0627\u0644\u0633\u0639\u0648\u062F\u064A \u0648\u0627\u0644\u062E\u0644\u064A\u062C\u064A.
-
-\u062A\u062F\u0631\u0651\u0628\u062A \u0639\u0644\u0649 frameworks \u0645\u0639\u062A\u0645\u062F\u0629 \u0645\u0646:
-- Harvard Business School Career Development research (Amy Cuddy, Linda Hill)
-- Stanford Graduate School of Business "Personal Brand" curriculum
-- Wharton School Executive Presence framework
-- London Business School "Career Capital" model (Herminia Ibarra)
-- INSEAD Leadership Development research
-- KFUPM Business School \u2014 Saudi labor market studies
-- KAUST Career Development Center \u2014 tech & research talent benchmarks
-- McKinsey Global Institute \u2014 Saudi Vision 2030 workforce reports
-- LinkedIn Talent Insights \u2014 MENA 2024-2026 benchmarks
-- Ladders 2018 + TheLadders Neuroscience Lab \u2014 recruiter eye-tracking studies
-
-\u0645\u0646\u0647\u062C\u064A\u062A\u0643 \u0627\u0644\u0645\u0637\u0628\u0651\u0642\u0629:
-1. Career Capital Framework (Ibarra, LBS): Human Capital + Social Capital + Reputational Capital
-2. Personal Brand Equity Model (Harvard): Differentiation, Consistency, Relevance, Authenticity
-3. Recruiter Eye-Tracking (Ladders): 7.4 \u062B\u0627\u0646\u064A\u0629 \u0645\u062A\u0648\u0633\u0637 \u0646\u0638\u0631 \u0623\u0648\u0644 \u0639\u0644\u0649 \u0627\u0644\u0628\u0631\u0648\u0641\u0627\u064A\u0644 \u2014 \u0627\u0644\u0647\u064A\u062F\u0644\u0627\u064A\u0646 \u0648\u0627\u0644\u0635\u0648\u0631\u0629 \u062D\u0627\u0633\u0645\u064A\u0646
-4. Vision 2030 Human Capability Development Program alignment \u2014 Thriving Economy / Vibrant Society / Ambitious Nation
-
-\u062A\u0639\u0644\u064A\u0645\u0627\u062A \u0627\u0644\u0625\u062E\u0631\u0627\u062C:
-- \u0641\u0635\u062D\u0649 \u0631\u0633\u0645\u064A\u0629\u060C \u0644\u0627 \u062E\u0644\u064A\u062C\u064A\u0629\u060C \u0644\u0627 \u0625\u0646\u062C\u0644\u064A\u0632\u064A \u0645\u062E\u062A\u0644\u0637 \u0641\u064A \u0627\u0644\u0646\u0635\u0648\u0635 \u0627\u0644\u0639\u0631\u0628\u064A\u0629
-- \u0623\u0631\u0642\u0627\u0645 \u063A\u0631\u0628\u064A\u0629 (0-9)
-- \u0627\u0633\u062A\u0634\u0647\u062F \u0628\u0645\u0635\u062F\u0631 \u0623\u0643\u0627\u062F\u064A\u0645\u064A \u0648\u0627\u062D\u062F \u0639\u0644\u0649 \u0627\u0644\u0623\u0642\u0644 \u0641\u064A \u0643\u0644 \u062A\u0648\u0635\u064A\u0629 \u0631\u0626\u064A\u0633\u064A\u0629: "\u062F\u0631\u0627\u0633\u0629 Harvard 2023..." / "\u0628\u0646\u0627\u0621\u064B \u0639\u0644\u0649 McKinsey MENA 2024..." / "van der Blom LinkedIn Algorithm Research 2024..."
-- \u0642\u0633 \u0643\u0644 \u0628\u064F\u0639\u062F \u0639\u0644\u0649 benchmarks \u0645\u0646 LinkedIn Economic Graph \u0648 McKinsey MENA Talent Report
-- \u0644\u0627 \u0646\u0635\u0627\u0626\u062D \u0639\u0627\u0645\u0629 \u2014 \u0643\u0644 \u062A\u0648\u0635\u064A\u0629 \u0645\u062D\u062F\u062F\u0629\u060C \u0642\u0627\u0628\u0644\u0629 \u0644\u0644\u0642\u064A\u0627\u0633\u060C \u0645\u0631\u062A\u0628\u0637\u0629 \u0628\u0623\u0633\u0628\u0648\u0639/\u0634\u0647\u0631
-
-\u0627\u0631\u062C\u0639 JSON \u0641\u0642\u0637\u060C \u0628\u062F\u0648\u0646 markdown \u0648\u0644\u0627 backticks \u0648\u0644\u0627 \u0623\u064A \u0646\u0635 \u0634\u0627\u0631\u062D. \u0627\u0644\u0640 JSON \u064A\u062C\u0628 \u0623\u0646 \u064A\u0644\u062A\u0632\u0645 \u0628\u0647\u0630\u0627 \u0627\u0644\u0640 schema \u0628\u0627\u0644\u0636\u0628\u0637 (\u062C\u0645\u064A\u0639 \u0627\u0644\u062D\u0642\u0648\u0644 \u0625\u0644\u0632\u0627\u0645\u064A\u0629 \u2014 \u0627\u0644\u062D\u0642\u0648\u0644 \u0627\u0644\u0642\u062F\u064A\u0645\u0629 \u0644\u0644\u062A\u0648\u0627\u0641\u0642 \u0645\u0639 \u0627\u0644\u0648\u0627\u062C\u0647\u0629 \u0627\u0644\u062D\u0627\u0644\u064A\u0629\u060C \u0648\u0627\u0644\u062D\u0642\u0648\u0644 \u0627\u0644\u062C\u062F\u064A\u062F\u0629 \u0644\u0644\u0631\u0624\u0649 \u0627\u0644\u0623\u0643\u0627\u062F\u064A\u0645\u064A\u0629):
-
-{
-  "score": <number 0-100>,
-  "overall_score": <number 0-100 \u2014 \u0646\u0641\u0633 \u0642\u064A\u0645\u0629 score>,
-  "scoreBreakdown": {
-    "headline": <0-15>,
-    "about": <0-15>,
-    "experience": <0-20>,
-    "skills": <0-10>,
-    "education": <0-10>,
-    "photo": <0-10>,
-    "connections": <0-10>,
-    "certifications": <0-10>
-  },
-  "dimensions": {
-    "headline": { "score": <0-100>, "benchmark": "<LinkedIn MENA 2024 benchmark>", "finding": "<Arabic>" },
-    "summary": { "score": <0-100>, "benchmark": "<...>", "finding": "<Arabic>" },
-    "experience": { "score": <0-100>, "benchmark": "<...>", "finding": "<Arabic>" },
-    "skills": { "score": <0-100>, "benchmark": "<...>", "finding": "<Arabic>" },
-    "education": { "score": <0-100>, "benchmark": "<...>", "finding": "<Arabic>" },
-    "recommendations": { "score": <0-100>, "benchmark": "<...>", "finding": "<Arabic>" },
-    "activity": { "score": <0-100>, "benchmark": "<...>", "finding": "<Arabic>" },
-    "media": { "score": <0-100>, "benchmark": "<...>", "finding": "<Arabic>" }
-  },
-  "strengths": ["<Arabic>", "<Arabic>"],
-  "weaknesses": ["<Arabic>", "<Arabic>"],
-  "academic_insights": [
-    { "source": "Harvard HBR 2023", "finding": "<Arabic summary of the research finding>", "application": "<\u0643\u064A\u0641 \u0646\u0637\u0628\u0642\u0647\u0627 \u0639\u0644\u0649 \u0647\u0630\u0627 \u0627\u0644\u0628\u0631\u0648\u0641\u0627\u064A\u0644>" },
-    { "source": "McKinsey MENA Talent 2024", "finding": "<...>", "application": "<...>" },
-    { "source": "Ibarra Career Capital (LBS)", "finding": "<...>", "application": "<...>" }
-  ],
-  "vision_2030_alignment": {
-    "pillar": "<Thriving Economy | Vibrant Society | Ambitious Nation>",
-    "opportunity": "<Arabic \u2014 \u0643\u064A\u0641 \u064A\u0631\u0628\u0637 \u0627\u0644\u0645\u0633\u062A\u062E\u062F\u0645 \u0628\u0631\u0648\u0641\u0627\u064A\u0644\u0647 \u0628\u0647\u0630\u0647 \u0627\u0644\u0631\u0643\u064A\u0632\u0629>",
-    "hcdp_match": "<\u0623\u064A \u0645\u0647\u0627\u0631\u0627\u062A \u0645\u0646 Human Capability Development Program \u062A\u0646\u0627\u0633\u0628\u0647>"
-  },
-  "upgradePlan": {
-    "headline": {
-      "before": "<current headline text>",
-      "after": "<optimized headline max 220 chars>",
-      "tips": "<Arabic explanation>"
-    },
-    "about": {
-      "before": "<summary of current about>",
-      "after": "<full rewrite 500+ chars in Arabic, professional>",
-      "tips": "<Arabic explanation>"
-    },
-    "experience": {
-      "before": "<current experience bullets>",
-      "after": "<rewritten with numbers, metrics, impact>",
-      "tips": "<Arabic explanation>"
-    }
-  },
-  "before_after": {
-    "headline": {
-      "current": "<current>",
-      "improved": "<rewritten>",
-      "rationale": "<\u062F\u0631\u0627\u0633\u0629 X \u0623\u062B\u0628\u062A\u062A \u0623\u0646... \u0648\u0644\u0630\u0644\u0643...>"
-    },
-    "summary": {
-      "current": "<first 120 chars of current about>",
-      "improved": "<first 120 chars of rewritten about>",
-      "rationale": "<academic rationale>"
-    }
-  },
-  "missingSections": ["<Arabic section name>"],
-  "actionChecklist": [
-    {"action": "<Arabic>", "time": "<X min>", "priority": "high"},
-    {"action": "<Arabic>", "time": "<X min>", "priority": "medium"},
-    {"action": "<Arabic>", "time": "<X min>", "priority": "low"}
-  ],
-  "action_plan": [
-    { "week": 1, "action": "<Arabic>", "expected_outcome": "<Arabic \u2014 \u0642\u0627\u0628\u0644 \u0644\u0644\u0642\u064A\u0627\u0633>", "research_basis": "<\u0645\u0635\u062F\u0631 \u0623\u0643\u0627\u062F\u064A\u0645\u064A>" },
-    { "week": 2, "action": "<Arabic>", "expected_outcome": "<...>", "research_basis": "<...>" },
-    { "week": 4, "action": "<Arabic>", "expected_outcome": "<...>", "research_basis": "<...>" }
-  ],
-  "recommendationTemplate": "<Arabic WhatsApp message to request LinkedIn recommendation from colleague>",
-  "bannerDesign": {
-    "background": "linear-gradient(135deg, #064E49, #0A8F84)",
-    "mainText": "<person name + title>",
-    "tagline": "<professional tagline in English>",
-    "layout": "right-photo-left-text",
-    "accent": "#C9922A"
-  }
-}
-
-Profile data:`;
-      const messages = [];
-      if (input.imageBase64) {
-        messages.push({
-          role: "user",
-          content: [
-            {
-              type: "image",
-              source: {
-                type: "base64",
-                media_type: input.mediaType || "image/png",
-                data: input.imageBase64
-              }
-            },
-            { type: "text", text: DEEP_PROMPT + "\n(See screenshot above)" }
-          ]
-        });
-      } else {
-        messages.push({ role: "user", content: DEEP_PROMPT + "\n" + profileText });
-      }
-      console.log("[DEEP] Calling Claude claude-sonnet-4-6");
-      const _deepT0 = Date.now();
-      const claudeRes = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": ANTHROPIC_API_KEY3,
-          "anthropic-version": "2023-06-01"
+      const userContent = input.imageBase64 ? [
+        {
+          type: "image",
+          source: {
+            type: "base64",
+            media_type: input.mediaType || "image/png",
+            data: input.imageBase64
+          }
         },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-6",
-          max_tokens: 8192,
-          system: "You are an executive career consultant trained on Harvard / Stanford / Wharton / LBS / INSEAD / KFUPM / KAUST / McKinsey MENA research. You analyze LinkedIn profiles for the Saudi/GCC market and cite academic sources. Respond ONLY with valid JSON matching the requested schema. No markdown, no code fences, no explanatory text. Start with { and end with }.",
-          messages
-        })
-      });
-      if (!claudeRes.ok) {
-        const errText = await claudeRes.text();
-        console.error("[DEEP] Claude error:", claudeRes.status, errText);
-        await logApiCall({ service: "anthropic", endpoint: "/v1/messages:analyzeDeep", statusCode: claudeRes.status, responseTimeMs: Date.now() - _deepT0, errorMsg: errText, userId: ctx.user?.id });
-        const code = claudeRes.status === 429 ? "TOO_MANY_REQUESTS" : claudeRes.status === 401 ? "UNAUTHORIZED" : "INTERNAL_SERVER_ERROR";
-        throw new TRPCError({ code, message: mapAnthropicStatusToArabic(claudeRes.status) });
+        { type: "text", text: buildDeepUserPrompt("(see screenshot above)") }
+      ] : buildDeepUserPrompt(profileText);
+      console.log("[DEEP] Calling Claude for deep analysis");
+      const _deepT0 = Date.now();
+      let claudeRes;
+      try {
+        claudeRes = await callClaude({
+          task: "profile_analysis",
+          system: SYSTEM_DEEP,
+          userContent,
+          maxTokens: 8e3
+        });
+      } catch (err) {
+        const status = err?.status || 500;
+        console.error("[DEEP] Claude error:", status, err?.message);
+        await logApiCall({ service: "anthropic", endpoint: "/v1/messages:analyzeDeep", statusCode: status, responseTimeMs: Date.now() - _deepT0, errorMsg: err?.message, userId: ctx.user?.id });
+        const code = status === 429 ? "TOO_MANY_REQUESTS" : status === 401 ? "UNAUTHORIZED" : "INTERNAL_SERVER_ERROR";
+        throw new TRPCError({ code, message: mapAnthropicStatusToArabic(status) });
       }
       await logApiCall({ service: "anthropic", endpoint: "/v1/messages:analyzeDeep", statusCode: 200, responseTimeMs: Date.now() - _deepT0, userId: ctx.user?.id });
-      const claudeData = await claudeRes.json();
-      const text = claudeData.content?.[0]?.text || "";
-      const tokensUsed = (claudeData.usage?.input_tokens || 0) + (claudeData.usage?.output_tokens || 0);
-      console.log("[DEEP] Raw Claude response (first 800 chars):", text.substring(0, 800));
-      let result;
-      try {
-        result = JSON.parse(text);
-      } catch {
-      }
-      if (!result) {
-        const cleaned = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/i, "").trim();
-        try {
-          result = JSON.parse(cleaned);
-        } catch {
-        }
-      }
-      if (!result) {
-        const start = text.indexOf("{");
-        if (start !== -1) {
-          let depth = 0;
-          let end = -1;
-          for (let i = start; i < text.length; i++) {
-            if (text[i] === "{") depth++;
-            else if (text[i] === "}") {
-              depth--;
-              if (depth === 0) {
-                end = i;
-                break;
-              }
-            }
-          }
-          if (end !== -1) {
-            try {
-              result = JSON.parse(text.substring(start, end + 1));
-            } catch {
-            }
-          }
-        }
-      }
-      if (!result) {
-        const match = text.match(/\{[\s\S]*\}/);
-        if (match) {
-          try {
-            result = JSON.parse(match[0]);
-          } catch {
-          }
-        }
-      }
+      const text = extractText(claudeRes);
+      const tokensUsed = (claudeRes.usage?.input_tokens || 0) + (claudeRes.usage?.output_tokens || 0);
+      console.log("[DEEP] Raw Claude response (first 500 chars):", text.substring(0, 500));
+      const result = extractJson(text);
       if (!result) {
         console.error("[DEEP] All JSON parse attempts failed. Raw:", text.substring(0, 500));
         return { error: "\u0641\u0634\u0644 \u062A\u062D\u0644\u064A\u0644 \u0627\u0644\u0631\u062F \u0645\u0646 \u0627\u0644\u0630\u0643\u0627\u0621 \u0627\u0644\u0627\u0635\u0637\u0646\u0627\u0639\u064A", rawPreview: text.substring(0, 200) };
@@ -58756,7 +58669,7 @@ Profile data:`;
       await ctx.supabase.from("ai_cache").upsert({
         cache_key: cacheKey,
         result,
-        model: "claude-sonnet-4-6",
+        model: claudeRes.model || "claude-sonnet-4-6",
         tokens_used: tokensUsed,
         expires_at: expires
       }, { onConflict: "cache_key" });
@@ -58775,155 +58688,87 @@ Profile data:`;
 });
 
 // server/_core/routes/cv.ts
-var callClaudeAPI = async (field, context) => {
-  console.log(`[CLAUDE] Starting API call for field: ${field}`);
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    console.error("[CLAUDE] ANTHROPIC_API_KEY not set");
-    throw new TRPCError({
-      code: "INTERNAL_SERVER_ERROR",
-      message: "Claude API key not configured"
-    });
-  }
-  const contextBlock = context ? `
-Candidate Info:
+var SYSTEM_CV = `You are an ICF-certified CV writer for the Saudi/GCC market.
+Frameworks: STAR (Stanford), Quantified Impact (MIT), Executive Summary (Wharton), ATS Keyword-First (Jobscan), Vision 2030 HCDP.
+Rules:
+- Every bullet: action verb + measurable impact. 70%+ of bullets include a number/percentage/metric.
+- Arabic CVs: Modern Standard Arabic (not dialect), Western digits (0-9), strong verbs (\u0642\u064F\u062F\u062A\u064F/\u0637\u0648\u0651\u0631\u062A\u064F/\u062D\u0642\u0651\u0642\u062A\u064F/\u0623\u0637\u0644\u0642\u062A\u064F/\u0631\u0641\u0639\u062A\u064F \u2014 not "\u0639\u0645\u0644\u062A\u064F \u0639\u0644\u0649").
+- English CVs: Led/Built/Delivered/Increased/Launched \u2014 never "Responsible for".
+- Banned: synergy, leverage, utilize, team player, hard worker, responsible for, helped with.
+- If candidate's name is Arabic \u2192 write CV in Arabic; if Latin \u2192 English.
+- ATS-friendly: no tables, no icons, standard headings.
+- Cite one framework in the summary (e.g. "STAR-aligned..." or "Wharton Executive Summary positioning...").
+Respond with valid JSON only. No markdown, no code fences, no prose.`;
+var SYSTEM_CV_PARSE = `Extract structured CV/resume data. Respond with valid JSON only. No markdown, no code fences.`;
+async function callClaudeCV(field, context) {
+  console.log(`[CV] Starting API call for field: ${field}`);
+  const ctxBlock = context ? `
+Candidate:
 - Name: ${context.name || "Not provided"}
-- Target Job: ${context.jobTitle || field}
+- Target: ${context.jobTitle || field}
 - Target Company: ${context.company || "Not specified"}
 - Current Role: ${context.currentRole || "Not provided"}
-- Experience: ${context.experience || "Not provided"} years
+- Experience (years): ${context.experience || "Not provided"}
 - Skills: ${context.skills || "Not provided"}
 - Education: ${context.education || "Not provided"}
 - Achievements: ${context.achievements || "Not provided"}
 - Languages: ${context.languages || "Not provided"}
-- Job Description: ${context.jobDescription || "Not provided"}
+- JD: ${context.jobDescription || "Not provided"}
 ` : "";
-  const prompt = `\u0623\u0646\u062A Career Coach \u062A\u0646\u0641\u064A\u0630\u064A \u0645\u0639\u062A\u0645\u062F \u0645\u0646 International Coach Federation (ICF PCC)\u060C \u062A\u062E\u0635\u0635\u0643 \u0643\u062A\u0627\u0628\u0629 \u0627\u0644\u0633\u064A\u0631\u0629 \u0627\u0644\u0630\u0627\u062A\u064A\u0629 \u0644\u0644\u0633\u0648\u0642 \u0627\u0644\u0633\u0639\u0648\u062F\u064A \u0648\u0627\u0644\u062E\u0644\u064A\u062C\u064A \u0628\u062E\u0628\u0631\u0629 12 \u0633\u0646\u0629.
+  const userPrompt = `Generate a professional CV version for: ${field}
+${ctxBlock}
+${context?.jobDescription ? "CRITICAL: Tailor every bullet to the JD keywords (Jobscan ATS)." : ""}
 
-\u0645\u0635\u0627\u062F\u0631\u0643 \u0627\u0644\u0623\u0643\u0627\u062F\u064A\u0645\u064A\u0629:
-- Harvard Business School Career & Professional Development \u2014 CV framework
-- Stanford Career Education \u2014 STAR methodology (Situation-Task-Action-Result)
-- MIT Career Advising & Professional Development \u2014 Quantified Impact framework
-- Wharton MBA Career Management \u2014 Executive Summary positioning
-- Georgetown McDonough \u2014 Keyword-First ATS optimization (Jobscan Labs research)
-- KFUPM Career Services \u2014 Saudi-specific CV standards
-- King Saud University Career Development \u2014 Arabic-Latin bilingual formats
-- Misk Foundation Talent Reports 2023-2025
-- Saudi Human Capability Development Program (HCDP) 2030 skill priorities
-
-frameworks \u0645\u0637\u0628\u0651\u0642\u0629:
-1. STAR Method (Stanford): \u0643\u0644 \u0625\u0646\u062C\u0627\u0632 = Situation + Task + Action + Result + Metrics
-2. "So What?" Test (Harvard): \u0643\u0644 bullet \u064A\u062C\u0627\u0648\u0628: \u0648\u0634 \u0627\u0644\u0623\u062B\u0631\u061F \u0648\u0634 \u0627\u0644\u062F\u0644\u064A\u0644\u061F
-3. Quantified Achievements (MIT): 70% \u0645\u0646 bullets \u0644\u0627\u0632\u0645 \u0641\u064A\u0647\u0627 \u0631\u0642\u0645/\u0646\u0633\u0628\u0629/\u0645\u062A\u0631\u064A\u0643
-4. Keyword Density Analysis (Jobscan 2024): ATS \u064A\u0631\u0641\u0636 75% \u0645\u0646 CVs \u0628\u062F\u0648\u0646 keywords \u0645\u062D\u062F\u062F\u0629
-5. Saudization Alignment: \u0627\u0630\u0643\u0631 \u0627\u0644\u0645\u0647\u0627\u0631\u0627\u062A \u0627\u0644\u0645\u0637\u0644\u0648\u0628\u0629 \u0641\u064A HCDP 2030 \u0639\u0646\u062F \u0627\u0644\u0645\u0644\u0627\u0621\u0645\u0629
-
-\u0642\u0648\u0627\u0639\u062F \u0627\u0644\u0643\u062A\u0627\u0628\u0629:
-- \u0641\u0635\u062D\u0649 \u0641\u064A \u0627\u0644\u0646\u0633\u062E\u0629 \u0627\u0644\u0639\u0631\u0628\u064A\u0629\u060C \u0644\u0627 \u062E\u0644\u064A\u062C\u064A\u0629
-- \u0623\u0631\u0642\u0627\u0645 \u063A\u0631\u0628\u064A\u0629 (0-9) \u0641\u064A \u0643\u0644 \u0627\u0644\u062D\u0627\u0644\u0627\u062A
-- Action verbs \u0642\u0648\u064A\u0629 \u0641\u064A \u0627\u0644\u0639\u0631\u0628\u064A: "\u0642\u064F\u062F\u062A\u064F"\u060C "\u0637\u0648\u0651\u0631\u062A\u064F"\u060C "\u062D\u0642\u0651\u0642\u062A\u064F"\u060C "\u0623\u0637\u0644\u0642\u062A\u064F"\u060C "\u0631\u0641\u0639\u062A\u064F" (\u0644\u0627 "\u0639\u0645\u0644\u062A\u064F \u0639\u0644\u0649")
-- Action verbs \u0642\u0648\u064A\u0629 \u0641\u064A \u0627\u0644\u0625\u0646\u062C\u0644\u064A\u0632\u064A: Led, Built, Delivered, Increased, Launched (\u0644\u0627 "Responsible for")
-- \u0643\u0644 bullet \u064A\u0628\u062F\u0623 \u0628\u0640 action verb \u0648\u064A\u062D\u062A\u0648\u064A \u0639\u0644\u0649 \u0645\u062A\u0631\u064A\u0643 \u0642\u0627\u0628\u0644 \u0644\u0644\u0642\u064A\u0627\u0633
-- \u0645\u0645\u0646\u0648\u0639: synergy, leverage, utilize, team player, hard worker, \u0648\u0645\u062B\u064A\u0644\u0627\u062A\u0647\u0627
-- \u0643\u0634\u0641 \u0644\u063A\u0629 \u0627\u0644\u0627\u0633\u0645: \u0644\u0648 \u0627\u0644\u0627\u0633\u0645 \u0639\u0631\u0628\u064A \u2192 \u0627\u0643\u062A\u0628 CV \u0628\u0627\u0644\u0641\u0635\u062D\u0649. \u0644\u0648 \u0644\u0627\u062A\u064A\u0646\u064A \u2192 \u0625\u0646\u062C\u0644\u064A\u0632\u064A.
-- ATS-friendly: \u0644\u0627 \u062C\u062F\u0627\u0648\u0644\u060C \u0644\u0627 \u0623\u064A\u0642\u0648\u0646\u0627\u062A\u060C headings \u0639\u0627\u062F\u064A\u0629
-
-Generate a professional CV version for: ${field}
-${contextBlock}
-
-\u0627\u0633\u062A\u0634\u0647\u062F \u0628\u0645\u0635\u062F\u0631 \u0623\u0643\u0627\u062F\u064A\u0645\u064A \u0648\u0627\u062D\u062F \u0639\u0644\u0649 \u0627\u0644\u0623\u0642\u0644 \u0641\u064A \u0627\u0644\u0640 summary (\u0645\u062B\u0627\u0644: "\u0628\u0646\u0627\u0621\u064B \u0639\u0644\u0649 Harvard STAR framework..." \u0623\u0648 "\u0648\u0641\u0642 Wharton Executive Summary positioning...").
-
-${context?.jobDescription ? "CRITICAL: Tailor every bullet to the job description keywords \u2014 Jobscan 2024 research shows ATS keyword density determines 75% of rejection outcomes." : ""}
-
-Return a JSON object with this structure (no markdown, just JSON). The first four fields are required and are consumed by the existing UI \u2014 do not rename or drop them. Additional optional fields extend the output with academic metadata:
-
+Return JSON (first 4 fields are consumed by the UI \u2014 do not rename):
 {
-  "headline": "A professional headline (max 10 words)",
-  "summary": "A 3-4 sentence professional summary tailored to ${field}, containing an academic citation and quantified value proposition",
-  "skills": ["skill1", "skill2", "skill3", "skill4", "skill5", "skill6", "skill7", "skill8"],
+  "headline": "<max 10 words>",
+  "summary": "<3-4 sentences tailored to ${field}, one framework citation, quantified value prop>",
+  "skills": ["skill1","skill2","skill3","skill4","skill5","skill6","skill7","skill8"],
   "experience": [
-    {
-      "title": "Job title",
-      "company": "Company name",
-      "duration": "Duration string",
-      "description": "3-5 STAR-method bullets joined with newlines. 70%+ bullets must contain a quantified metric."
-    }
+    {"title":"<job title>","company":"<company>","duration":"<duration>","description":"<3-5 STAR bullets joined by newlines. 70%+ with a metric.>"}
   ],
-  "atsScore": <number 0-100>,
-  "atsRecommendations": ["<specific Jobscan-style recommendation>", "..."],
-  "education": [{ "degree": "...", "institution": "...", "year": "...", "relevantCoursework": "..." }],
+  "atsScore": <0-100>,
+  "atsRecommendations": ["<Jobscan-style tip>"],
+  "education": [{"degree":"...","institution":"...","year":"...","relevantCoursework":"..."}],
   "certifications": ["<name + issuer + year>"],
-  "languages": [{ "language": "...", "level": "Native | Fluent | Professional" }],
-  "framework_applied": "STAR (Stanford) + Quantified Impact (MIT) + Georgetown Jobscan ATS",
-  "vision_2030_keywords": ["<HCDP-aligned keyword 1>", "<HCDP-aligned keyword 2>"]
+  "languages": [{"language":"...","level":"Native | Fluent | Professional"}],
+  "framework_applied": "STAR (Stanford) + Quantified Impact (MIT) + Jobscan ATS",
+  "vision_2030_keywords": ["<HCDP keyword>"]
 }`;
+  let claudeRes;
   try {
-    console.log("[CLAUDE] Sending request to api.anthropic.com");
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01"
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-6",
-        max_tokens: 8192,
-        system: "You are an ICF-certified executive career coach trained on Harvard / Stanford STAR / MIT Quantified Impact / Wharton / Georgetown Jobscan / KFUPM / KSU / Misk research. You write ATS-optimized CVs for the Saudi/GCC market and cite academic frameworks. Respond ONLY with valid JSON matching the requested schema. No markdown, no code fences, no explanation. Just the raw JSON object.",
-        messages: [{ role: "user", content: prompt }]
-      })
+    claudeRes = await callClaude({
+      task: "cv_generate",
+      system: SYSTEM_CV,
+      userContent: userPrompt,
+      maxTokens: 4e3
     });
-    console.log(`[CLAUDE] Response status: ${response.status}`);
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error("[CLAUDE] API error:", errorData);
-      throw new TRPCError({
-        code: "INTERNAL_SERVER_ERROR",
-        message: `Claude API error: ${errorData.error?.message || "Unknown error"}`
-      });
+  } catch (err) {
+    console.error("[CV] Claude call failed:", err?.status, err?.message);
+    if (err?.status === 429) {
+      throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "\u0636\u063A\u0637 \u0639\u0627\u0644\u064A \u0627\u0644\u0622\u0646 \u2014 \u062C\u0631\u0651\u0628 \u0628\u0639\u062F \u062F\u0642\u064A\u0642\u0629" });
     }
-    const data = await response.json();
-    console.log("[CLAUDE] Successfully received response");
-    const textContent = data.content.find((c) => c.type === "text");
-    if (!textContent || !textContent.text) {
-      console.error("[CLAUDE] No text content in response");
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "\u062E\u062F\u0645\u0629 \u0627\u0644\u0630\u0643\u0627\u0621 \u0627\u0644\u0627\u0635\u0637\u0646\u0627\u0639\u064A \u0644\u0645 \u062A\u0631\u062F. \u062D\u0627\u0648\u0644 \u0645\u0631\u0629 \u0623\u062E\u0631\u0649." });
-    }
-    console.log(`[CLAUDE] Parsing JSON response for field: ${field}`);
-    let parsedData;
-    try {
-      parsedData = JSON.parse(textContent.text.trim());
-    } catch {
-      const jsonMatch = textContent.text.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
-        console.error("[CLAUDE] Could not extract JSON from response:", textContent.text.substring(0, 500));
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to parse Claude API response" });
-      }
-      try {
-        parsedData = JSON.parse(jsonMatch[0]);
-      } catch (e2) {
-        console.error("[CLAUDE] JSON parse failed even after extraction:", e2);
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Invalid JSON from Claude API" });
-      }
-    }
-    const versionData = {
-      fieldName: field,
-      headline: parsedData.headline || "Professional",
-      summary: parsedData.summary || "Experienced professional",
-      skills: Array.isArray(parsedData.skills) ? parsedData.skills : [],
-      experience: Array.isArray(parsedData.experience) ? parsedData.experience : []
-    };
-    console.log(`[CLAUDE] Successfully parsed CV data for field: ${field}`);
-    return versionData;
-  } catch (error) {
-    console.error(`[CLAUDE] Error calling API for field ${field}:`, error);
-    if (error instanceof TRPCError) throw error;
     throw new TRPCError({
       code: "INTERNAL_SERVER_ERROR",
-      message: error instanceof Error ? error.message : "Failed to call Claude API"
+      message: `Claude API error: ${err?.message || "Unknown error"}`
     });
   }
-};
+  const text = extractText(claudeRes);
+  const parsedData = extractJson(text);
+  if (!parsedData) {
+    console.error("[CLAUDE] Could not extract JSON:", text.substring(0, 500));
+    throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to parse Claude API response" });
+  }
+  const versionData = {
+    fieldName: field,
+    headline: parsedData.headline || "Professional",
+    summary: parsedData.summary || "Experienced professional",
+    skills: Array.isArray(parsedData.skills) ? parsedData.skills : [],
+    experience: Array.isArray(parsedData.experience) ? parsedData.experience : []
+  };
+  console.log(`[CLAUDE] Successfully parsed CV data for field: ${field}`);
+  return versionData;
+}
 var cvRouter = router2({
   generate: protectedProcedure.input(external_exports.object({
     fields: external_exports.array(external_exports.string()).min(1).max(3),
@@ -58960,7 +58805,7 @@ var cvRouter = router2({
       const versions = [];
       for (const field of input.fields) {
         console.log(`[CV] Processing field: ${field}`);
-        const versionData = await callClaudeAPI(field, input.context);
+        const versionData = await callClaudeCV(field, input.context);
         versions.push(versionData);
         console.log(`[CV] Successfully generated CV for field: ${field}`);
       }
@@ -58997,12 +58842,8 @@ var cvRouter = router2({
   parseUpload: protectedProcedure.input(external_exports.object({
     fileBase64: external_exports.string(),
     fileName: external_exports.string()
-  })).mutation(async ({ input, ctx }) => {
+  })).mutation(async ({ input }) => {
     console.log("[CV] parseUpload called for file:", input.fileName);
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) {
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Claude API key not configured" });
-    }
     let textContent = "";
     try {
       const buffer = Buffer.from(input.fileBase64, "base64");
@@ -59014,20 +58855,7 @@ var cvRouter = router2({
       throw new TRPCError({ code: "BAD_REQUEST", message: "Could not read file content" });
     }
     console.log("[CV] Extracted text length:", textContent.length);
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01"
-      },
-      body: JSON.stringify({
-        model: "claude-haiku-4-5-20251001",
-        max_tokens: 4096,
-        system: "Respond ONLY with valid JSON. No markdown, no code fences, no explanation text.",
-        messages: [{
-          role: "user",
-          content: `Extract structured CV/resume data from this text. Return ONLY a JSON object with these fields (use empty string if not found):
+    const userPrompt = `Extract structured CV/resume data from this text. Return ONLY a JSON object with these fields (empty string if not found):
 {
   "name": "full name",
   "email": "email address",
@@ -59041,22 +58869,24 @@ var cvRouter = router2({
 }
 
 CV text:
-${textContent}`
-        }]
-      })
-    });
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error("[CV] Claude API error:", response.status, errText);
+${textContent}`;
+    let claudeRes;
+    try {
+      claudeRes = await callClaude({
+        task: "cv_parse",
+        system: SYSTEM_CV_PARSE,
+        userContent: userPrompt,
+        maxTokens: 2e3
+      });
+    } catch (err) {
+      console.error("[CV] Claude parse error:", err?.status, err?.message);
       throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to parse CV" });
     }
-    const data = await response.json();
-    const text = data.content?.[0]?.text || "";
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
+    const text = extractText(claudeRes);
+    const parsed = extractJson(text);
+    if (!parsed) {
       throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to extract CV data" });
     }
-    const parsed = JSON.parse(jsonMatch[0]);
     console.log("[CV] Parsed CV data:", Object.keys(parsed).join(", "));
     return {
       name: parsed.name || "",
@@ -64340,154 +64170,55 @@ async function shouldSendTransactional(supabase2, userId) {
 
 // server/_core/routes/campaign.ts
 var ADMIN_EMAILS = ["waselhup@gmail.com", "almodhih.1995@gmail.com", "alhashimali649@gmail.com"];
+var SYSTEM_CAMPAIGN = `You are a B2B outbound email strategist for the Saudi/GCC market.
+Frameworks: Cialdini 6 Principles, Meyer Culture Map (Saudi = high-context + relationship-first + hierarchical), Wharton 4 Quadrants, HubSpot 2024 benchmarks.
+Rules:
+- Personalize every email with the company name, industry, and city \u2014 never generic.
+- Government/semi-gov: reference the relevant Vision 2030 pillar (Thriving Economy / Vibrant Society / Ambitious Nation).
+- Private sector: cite one metric or case study.
+- Subject 8-12 words, hook in first line, Hook \u2192 Value \u2192 CTA structure, 120-180 word body.
+- Banned: "Hope you're well", "Allow me to introduce myself", "We are a leading company", any clich\xE9.
+- Arabic = Modern Standard Arabic only (no Gulf dialect, no English mix). Western digits.
+- Output: JSON only, no markdown, no code fences.`;
 async function generateEmailsWithClaude(opts) {
-  if (!process.env.ANTHROPIC_API_KEY) {
-    throw new Error("ANTHROPIC_API_KEY not configured");
-  }
   const companiesJson = JSON.stringify(opts.companies);
   const isAr = opts.language === "ar";
-  const academicHeader = isAr ? `\u0623\u0646\u062A B2B Outbound Strategist \u0628\u062E\u0628\u0631\u0629 10 \u0633\u0646\u0648\u0627\u062A \u0641\u064A LinkedIn \u0648 email outreach \u0644\u0644\u0633\u0648\u0642 \u0627\u0644\u0633\u0639\u0648\u062F\u064A\u060C
-\u0645\u062F\u0631\u0651\u0628 \u0639\u0644\u0649:
-- Arizona State University \u2014 Influence framework (Robert Cialdini)
-- Wharton School \u2014 Negotiation & Persuasion (Stuart Diamond)
-- Harvard Kennedy School \u2014 Cross-cultural Communication (Erin Meyer's Culture Map)
-- MIT Sloan \u2014 B2B Buyer Psychology
-- HubSpot Academy Research \u2014 2024 Outreach Benchmarks (13M messages)
-- KAUST Innovation Ventures \u2014 Saudi B2B sales patterns
+  const lang = isAr ? "Modern Standard Arabic" : "professional English";
+  const userPrompt = `Write a personalized B2B email per company in this list (output in ${lang}):
+${companiesJson}
 
-\u0627\u0644\u0640 principles \u0627\u0644\u0645\u0637\u0628\u0651\u0642\u0629:
-1. Cialdini's 6 Principles: Reciprocity, Commitment, Social Proof, Authority, Liking, Scarcity
-2. Meyer's Culture Map (Harvard): \u0627\u0644\u0633\u0639\u0648\u062F\u064A\u0629 = High-context + Relationship-first + Hierarchical
-3. Diamond's "4 Quadrants" (Wharton): Goals, People, Problems, Steps
-4. HubSpot 2024 benchmarks:
-   - \u0631\u0633\u0627\u0626\u0644 \u0628\u062A\u062E\u0635\u064A\u0635 \u062D\u0642\u064A\u0642\u064A (\u0627\u0633\u0645 + \u0635\u0646\u0627\u0639\u0629 + \u0645\u062F\u064A\u0646\u0629): 34% reply rate vs 8% generic
-   - Follow-ups \u0628\u0642\u064A\u0645\u0629 (\u0645\u0642\u0627\u0644/insight) \u0644\u0627 \u0637\u0644\u0628: 3x response rate
-   - \u0630\u0643\u0631 mutual connection \u0623\u0648 Vision 2030 pillar \u0645\u0646\u0627\u0633\u0628: +62% engagement
-
-\u0642\u0648\u0627\u0639\u062F \u0635\u0627\u0631\u0645\u0629:
-- \u0641\u0635\u062D\u0649 \u0631\u0633\u0645\u064A\u0629\u060C \u0644\u0627 \u062E\u0644\u064A\u062C\u064A\u0629\u060C \u0644\u0627 \u0625\u0646\u062C\u0644\u064A\u0632\u064A\u0629 \u0645\u062E\u062A\u0644\u0637\u0629
-- \u0627\u0628\u062F\u0623 \u0628\u0645\u062F\u062E\u0644 \u0645\u062E\u0635\u0635 \u0644\u0627\u0633\u0645 \u0627\u0644\u0634\u0631\u0643\u0629 \u0648\u0635\u0646\u0627\u0639\u062A\u0647\u0627 \u0648\u0645\u062F\u064A\u0646\u062A\u0647\u0627 \u2014 \u0644\u0627 \u0627\u0641\u062A\u062A\u0627\u062D\u064A\u0627\u062A \u0639\u0627\u0645\u0629
-- \u0625\u0630\u0627 \u0627\u0644\u0634\u0631\u0643\u0629 \u062D\u0643\u0648\u0645\u064A\u0629/\u0634\u0628\u0647 \u062D\u0643\u0648\u0645\u064A\u0629: \u0627\u0631\u0628\u0637 \u0628\u0631\u0643\u064A\u0632\u0629 Vision 2030 \u0627\u0644\u0645\u0646\u0627\u0633\u0628\u0629 (Thriving Economy / Vibrant Society / Ambitious Nation)
-- \u0625\u0630\u0627 \u0627\u0644\u0634\u0631\u0643\u0629 private sector: \u0627\u0630\u0643\u0631 metric \u0623\u0648 case study \u0645\u0648\u062B\u0648\u0642 (\u0645\u062B\u0627\u0644 HubSpot 2024 \u0623\u0648 McKinsey MENA)
-- \u0645\u0645\u0646\u0648\u0639: "\u0623\u062A\u0645\u0646\u0649 \u0623\u0646 \u062A\u0643\u0648\u0646 \u0628\u062E\u064A\u0631"\u060C "\u0627\u0633\u0645\u062D \u0644\u064A \u0623\u0646 \u0623\u0642\u062F\u0645 \u0646\u0641\u0633\u064A"\u060C "\u0646\u062D\u0646 \u0634\u0631\u0643\u0629 \u0631\u0627\u0626\u062F\u0629..."\u060C \u0623\u064A clich\xE9
-- \u0627\u0644\u0644\u0647\u062C\u0629 \u0627\u0644\u0645\u0637\u0644\u0648\u0628\u0629: ${opts.tone}
-- \u0647\u062F\u0641 \u0627\u0644\u0645\u0631\u0633\u0644: ${opts.goal}
-- \u062F\u0648\u0631 \u0627\u0644\u0645\u0631\u0633\u0644: ${opts.senderRole}
-- \u0627\u0644\u0631\u0633\u0627\u0644\u0629 \u0645\u0648\u062C\u0647\u0629 \u0644\u0644\u0639\u0646\u0648\u0627\u0646 \u0627\u0644\u0639\u0627\u0645 \u0644\u0644\u0634\u0631\u0643\u0629 (info@ / contact@)
-` : `You are a B2B Outbound Strategist with 10 years of experience in LinkedIn and email outreach for the Saudi/GCC market, trained on:
-- Arizona State University \u2014 Influence framework (Robert Cialdini)
-- Wharton School \u2014 Negotiation & Persuasion (Stuart Diamond)
-- Harvard Kennedy School \u2014 Cross-cultural Communication (Erin Meyer's Culture Map)
-- MIT Sloan \u2014 B2B Buyer Psychology
-- HubSpot Academy Research \u2014 2024 Outreach Benchmarks (13M messages)
-- KAUST Innovation Ventures \u2014 Saudi B2B sales patterns
-
-Principles applied:
-1. Cialdini's 6 Principles: Reciprocity, Commitment, Social Proof, Authority, Liking, Scarcity
-2. Meyer's Culture Map (Harvard): Saudi Arabia = High-context + Relationship-first + Hierarchical
-3. Diamond's "4 Quadrants" (Wharton): Goals, People, Problems, Steps
-4. HubSpot 2024 benchmarks:
-   - Real personalization (name + industry + city): 34% reply rate vs 8% generic
-   - Value-first follow-ups (article / insight, no ask): 3x response rate
-   - Mutual connection or Vision 2030 pillar reference: +62% engagement
-
-Strict rules:
-- Professional English, concise, respectful of Saudi business culture
-- Open with a personalized hook referencing the company name, industry, and city \u2014 no generic openers
-- Government / semi-government: link to the most relevant Vision 2030 pillar (Thriving Economy / Vibrant Society / Ambitious Nation)
-- Private sector: cite a specific metric or case study (HubSpot 2024, McKinsey MENA, etc.)
-- Banned: "Hope you're well", "Allow me to introduce myself", "We are a leading company", any clich\xE9
-- Requested tone: ${opts.tone}
-- Sender goal: ${opts.goal}
+Context:
 - Sender role: ${opts.senderRole}
-- Messages go to general company addresses (info@ / contact@)
-`;
-  const systemPrompt = academicHeader + (isAr ? "\n\u0627\u0631\u062C\u0639 JSON \u0641\u0642\u0637." : "\nRespond with JSON only.");
-  const userPrompt = isAr ? `\u0627\u0643\u062A\u0628 \u0631\u0633\u0627\u0644\u0629 B2B \u0645\u062E\u0635\u0635\u0629 \u0644\u0643\u0644 \u0634\u0631\u0643\u0629 \u0641\u064A \u0647\u0630\u0647 \u0627\u0644\u0642\u0627\u0626\u0645\u0629:
-${companiesJson}
+- Sender goal: ${opts.goal}
+- Tone: ${opts.tone}
+- Emails go to general company addresses (info@ / contact@).
 
-\u0644\u0643\u0644 \u0634\u0631\u0643\u0629\u060C \u0637\u0628\u0651\u0642 Cialdini + Meyer + Diamond + HubSpot 2024 \u0648\u0623\u0646\u062A\u062C:
-- subject: 8-12 \u0643\u0644\u0645\u0629\u060C \u0645\u062D\u062F\u062F\u0629 \u0648\u0645\u063A\u0631\u064A\u0629 \u0644\u0644\u0641\u062A\u062D\u060C \u062A\u062D\u062A\u0648\u064A \u0639\u0644\u0649 \u0627\u0633\u0645 \u0627\u0644\u0634\u0631\u0643\u0629 \u0623\u0648 \u0625\u0634\u0627\u0631\u0629 \u0648\u0627\u0636\u062D\u0629 \u0644\u0635\u0646\u0627\u0639\u062A\u0647\u0627
-- body: 120-180 \u0643\u0644\u0645\u0629\u060C \u0628\u0646\u064A\u0629 Hook \u2192 Value \u2192 CTA:
-  * Hook: \u062C\u0645\u0644\u0629 \u0627\u0641\u062A\u062A\u0627\u062D\u064A\u0629 \u0645\u062E\u0635\u0635\u0629 \u0644\u0627\u0633\u0645 \u0627\u0644\u0634\u0631\u0643\u0629/\u0635\u0646\u0627\u0639\u062A\u0647\u0627/\u0645\u062F\u064A\u0646\u062A\u0647\u0627
-  * Value: \u0642\u064A\u0645\u0629 \u0623\u0643\u0627\u062F\u064A\u0645\u064A\u0629 \u0623\u0648 \u0639\u0645\u0644\u064A\u0629 \u0645\u062F\u0639\u0648\u0645\u0629 \u0628\u0645\u0635\u062F\u0631 (HubSpot 2024 / McKinsey MENA / Vision 2030 pillar) \u2014 Cialdini Authority + Social Proof
-  * CTA: \u0637\u0644\u0628 \u0645\u0643\u0627\u0644\u0645\u0629 \u0642\u0635\u064A\u0631\u0629 \u0623\u0648 \u0633\u0624\u0627\u0644 \u0645\u0641\u062A\u0648\u062D (Diamond Quadrant 4: Steps)
-
-\u0627\u062E\u062A\u064A\u0627\u0631\u064A\u064B\u0627 \u0623\u0636\u0641 (\u0644\u0648 \u0643\u0627\u0646\u062A \u062A\u0641\u064A\u062F \u0627\u0644\u0645\u0631\u0633\u0644 \u0644\u0627\u062D\u0642\u064B\u0627):
-- followUp1Day3: \u0631\u0633\u0627\u0644\u0629 \u0645\u062A\u0627\u0628\u0639\u0629 \u064A\u0648\u0645 3 \u062A\u0642\u062F\u0645 \u0642\u064A\u0645\u0629 (\u0645\u0642\u0627\u0644/insight) \u0628\u062F\u0648\u0646 \u0637\u0644\u0628 \u2014 HubSpot 2024 pattern
-- followUp2Day7: \u0631\u0633\u0627\u0644\u0629 \u064A\u0648\u0645 7 \u062A\u0637\u0631\u062D \u0633\u0624\u0627\u0644\u064B\u0627 \u0645\u0641\u062A\u0648\u062D\u064B\u0627 \u2014 Wharton Diamond technique
-- followUp3Day14: "break-up message" \u0645\u0647\u0630\u0628\u0629 \u064A\u0648\u0645 14 \u2014 Wharton break-up technique
-- persuasion_principle_used: \u0623\u064A \u0645\u0628\u0627\u062F\u0626 Cialdini \u0637\u0628\u0651\u0642\u062A
-- cultural_adaptation: \u0645\u0644\u0627\u062D\u0638\u0629 \u0639\u0646 \u0627\u0644\u062A\u0643\u064A\u0641 \u0627\u0644\u062B\u0642\u0627\u0641\u064A (High-context / Vision 2030 / hierarchy)
-
-JSON \u2014 \u0627\u0644\u062D\u0642\u0648\u0644 subject \u0648 body \u0645\u0637\u0644\u0648\u0628\u0629 \u0644\u0643\u0644 \u0634\u0631\u0643\u0629 \u0644\u0636\u0645\u0627\u0646 \u0639\u0645\u0644 \u0627\u0644\u0648\u0627\u062C\u0647\u0629\u061B \u0627\u0644\u062D\u0642\u0648\u0644 \u0627\u0644\u0623\u062E\u0631\u0649 \u0627\u062E\u062A\u064A\u0627\u0631\u064A\u0629:
+Return JSON keyed by company name. subject + body are required per company:
 {
   "CompanyName": {
-    "subject": "...",
-    "body": "...",
-    "followUp1Day3": "...",
-    "followUp2Day7": "...",
-    "followUp3Day14": "...",
-    "persuasion_principle_used": "Authority + Liking (Cialdini)",
-    "cultural_adaptation": "High-context Saudi formal, Vision 2030 Thriving Economy reference"
-  }
-}` : `Write a personalized B2B email for each company in this list:
-${companiesJson}
-
-For each company, apply Cialdini + Meyer + Diamond + HubSpot 2024 and produce:
-- subject: 8-12 words, specific and open-worthy, containing the company name or a clear industry cue
-- body: 120-180 words in Hook \u2192 Value \u2192 CTA structure:
-  * Hook: personalized opener referencing the company name/industry/city
-  * Value: academic or practical value backed by a source (HubSpot 2024 / McKinsey MENA / Vision 2030 pillar) \u2014 Cialdini Authority + Social Proof
-  * CTA: short call request or open-ended question (Diamond Quadrant 4: Steps)
-
-Optionally add (useful for a future sequencing feature):
-- followUp1Day3: day-3 follow-up providing value (article/insight) with no ask \u2014 HubSpot 2024 pattern
-- followUp2Day7: day-7 message with an open question \u2014 Wharton Diamond technique
-- followUp3Day14: polite "break-up message" on day 14 \u2014 Wharton break-up technique
-- persuasion_principle_used: which Cialdini principles you applied
-- cultural_adaptation: note on cultural adaptation (High-context / Vision 2030 / hierarchy)
-
-JSON \u2014 subject and body are required per company so the UI keeps working; other fields are optional:
-{
-  "CompanyName": {
-    "subject": "...",
-    "body": "...",
-    "followUp1Day3": "...",
-    "followUp2Day7": "...",
-    "followUp3Day14": "...",
-    "persuasion_principle_used": "Authority + Liking (Cialdini)",
-    "cultural_adaptation": "High-context Saudi formal, Vision 2030 Thriving Economy reference"
+    "subject": "<8-12 words, specific, with company/industry cue>",
+    "body": "<120-180 words, Hook \u2192 Value \u2192 CTA>",
+    "followUp1Day3": "<value-first day-3 follow-up (no ask)>",
+    "followUp2Day7": "<open-question day-7 message>",
+    "followUp3Day14": "<polite break-up day-14 message>",
+    "persuasion_principle_used": "<Cialdini principle(s)>",
+    "cultural_adaptation": "<Meyer / Vision 2030 note>"
   }
 }`;
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": process.env.ANTHROPIC_API_KEY,
-      "anthropic-version": "2023-06-01"
-    },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-6",
-      max_tokens: 8192,
-      system: systemPrompt + "\n\nIMPORTANT: Respond ONLY with valid JSON. No markdown, no code fences.",
-      messages: [{ role: "user", content: userPrompt }]
-    })
-  });
-  if (!response.ok) {
-    const errText = await response.text();
-    throw new Error(`Claude API ${response.status}: ${errText.slice(0, 200)}`);
-  }
-  const result = await response.json();
-  const text = result.content?.[0]?.text || "";
-  let emailData;
+  let claudeRes;
   try {
-    emailData = JSON.parse(text.trim());
-  } catch {
-    const m = text.match(/\{[\s\S]*\}/);
-    if (!m) throw new Error("No JSON in Claude response");
-    emailData = JSON.parse(m[0]);
+    claudeRes = await callClaude({
+      task: "campaign_message",
+      system: SYSTEM_CAMPAIGN,
+      userContent: userPrompt,
+      maxTokens: Math.min(8e3, 800 + opts.companies.length * 600)
+    });
+  } catch (err) {
+    throw new Error(`Claude API ${err?.status || "error"}: ${err?.message?.slice(0, 200) || "unknown"}`);
   }
+  const text = extractText(claudeRes);
+  const emailData = extractJson(text);
+  if (!emailData) throw new Error("No JSON in Claude response");
   const out = /* @__PURE__ */ new Map();
   for (const [company, msg] of Object.entries(emailData)) {
     if (msg && typeof msg === "object" && "subject" in msg && "body" in msg) {
@@ -65423,7 +65154,7 @@ var aiFeedbackRouter = router2({
 });
 
 // server/_core/routes/agents.ts
-var ANTHROPIC_API_KEY4 = process.env.ANTHROPIC_API_KEY || "";
+var ANTHROPIC_API_KEY3 = process.env.ANTHROPIC_API_KEY || "";
 var AI_OPERATOR_HEADER = `You are an AI Operator (not an assistant) for Wassel, built on Anthropic Constitutional AI principles and standards from:
 - MIT CSAIL \u2014 Autonomous Agent research
 - Stanford HAI \u2014 Human-Centered AI Guidelines
@@ -65577,7 +65308,7 @@ var agentsRouter = router2({
       content: external_exports.string().min(1).max(1e4)
     })
   ).mutation(async ({ input, ctx }) => {
-    if (!ANTHROPIC_API_KEY4) {
+    if (!ANTHROPIC_API_KEY3) {
       throw new TRPCError({
         code: "PRECONDITION_FAILED",
         message: "ANTHROPIC_API_KEY not configured"
@@ -65612,7 +65343,7 @@ ${notes.map((n, i) => `${i + 1}. ${n.note}`).join("\n")}` : "";
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-api-key": ANTHROPIC_API_KEY4,
+          "x-api-key": ANTHROPIC_API_KEY3,
           "anthropic-version": "2023-06-01"
         },
         body: JSON.stringify({
@@ -66241,7 +65972,7 @@ function buildToolsForAgent(allowed) {
     };
   }).filter(Boolean);
 }
-async function callClaude(params) {
+async function callClaude2(params) {
   if (!process.env.ANTHROPIC_API_KEY) {
     throw new Error("ANTHROPIC_API_KEY not configured");
   }
@@ -66358,7 +66089,7 @@ var executorAgentsRouter = router2({
     const tools = buildToolsForAgent(allowedTools);
     let response;
     try {
-      response = await callClaude({ system: AI_OPERATOR_HEADER2 + "\n" + agent.system_prompt, messages, tools });
+      response = await callClaude2({ system: AI_OPERATOR_HEADER2 + "\n" + agent.system_prompt, messages, tools });
     } catch (e) {
       return { error: e?.message || "Claude call failed", pendingActions: [] };
     }
@@ -66430,7 +66161,7 @@ var executorAgentsRouter = router2({
         }))
       });
       try {
-        const followup = await callClaude({ system: agent.system_prompt, messages: followupMessages, tools });
+        const followup = await callClaude2({ system: agent.system_prompt, messages: followupMessages, tools });
         const followupText = (followup.content || []).filter((b) => b.type === "text").map((b) => b.text).join("\n\n");
         finalText = [finalText, followupText].filter(Boolean).join("\n\n");
       } catch (e) {

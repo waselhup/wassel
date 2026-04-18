@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { createClient } from '@supabase/supabase-js';
 import { logApiCall, mapAnthropicStatusToArabic } from '../lib/apiLogger';
+import { callClaude, extractText, extractJson } from '../lib/claude-client';
 
 const router = Router();
 
@@ -57,64 +58,14 @@ router.post('/generate', async (req: Request, res: Response) => {
       return res.status(402).json({ error: 'Insufficient tokens. Need 3 tokens to generate a post.' });
     }
 
-    const academicHeader = `أنت Content Strategist متخصص في LinkedIn thought leadership للسوق السعودي، بخلفية أكاديمية في Communications من:
-- MIT Sloan Management Review — Thought Leadership research
-- Harvard Business Review — "How to Write a LinkedIn Post That Matters" (2023)
-- Northwestern Kellogg — Social Media Influence studies
-- Stanford Graduate School — Narrative Transportation Theory
-- Edelman Trust Barometer 2024-2026 (MENA)
-- LinkedIn Algorithm Research (Richard van der Blom 2024)
-
-الـ frameworks المطبّقة:
-1. Hook-Value-CTA (Kellogg): أول سطر يوقف السكرول، الوسط قيمة، النهاية دعوة
-2. Contrarian Angle (HBR 2023): ابدأ بتحدي افتراض شائع — engagement +340%
-3. Story Arc (Stanford Narrative Transportation): Setup → Conflict → Resolution → Lesson
-4. Specificity Principle (MIT Sloan): أرقام محددة > تعميمات (مثال: "3.2x ROI" مو "نتائج كبيرة")
-5. Cultural Resonance (Edelman MENA): اربط بـ Vision 2030 وريادة الأعمال السعودية عند الملاءمة
-6. LinkedIn Algorithm (van der Blom 2024): 150-300 word sweet spot، سطر واحد لكل فقرة، hook في أول 7 كلمات قبل "see more"
-
-قواعد صارمة:
-- ابدأ بـ hook قوي في أول 7 كلمات (يوقف السكرول قبل الـ "see more")
-- سطر واحد فقط لكل فقرة (mobile-first)
-- 3 emojis كحد أقصى، استراتيجية
-- اختم بسؤال مفتوح أو CTA واضح
-- استشهد بمصدر أكاديمي عند الحاجة: "دراسة MIT 2024 أثبتت..." / "وفق HBR 2023..."
-- ممنوع الافتتاحيات المبتذلة: "أتمنى أن تكون بخير"، "اسمح لي أن أقدم نفسي"
-`;
-
-    const systemPrompt = language === 'ar'
-      ? `${academicHeader}
-لغة المخرج: فصحى سعودية رسمية. ممنوع استخدام اللهجة الخليجية أو الإنجليزية المختلطة.
-الطول: 150-300 كلمة (LinkedIn algorithm sweet spot — van der Blom 2024).
-${includeHashtags ? 'أضف 3-5 هاشتاجات عربية + إنجليزية ذات صلة في النهاية.' : 'بدون هاشتاجات.'}
-
-ارجع JSON بهذا الشكل — الحقلان content و hashtags إلزاميان للواجهة الحالية؛ الحقول الأخرى اختيارية وتحمل البيانات الوصفية الأكاديمية:
-{
-  "content": "<full post text combining hook + body + CTA, with newlines between paragraphs>",
-  "hashtags": ["#هاشتاج1", "#هاشتاج2", "..."],
-  "hook": "<first 7 words that stop the scroll>",
-  "body": "<the middle value section>",
-  "cta": "<closing question or CTA>",
-  "framework_used": "<Contrarian Angle (HBR) | Hook-Value-CTA (Kellogg) | Story Arc (Stanford) | Specificity (MIT) | Cultural Resonance (Edelman)>",
-  "estimated_engagement": { "likes": "<range e.g. 50-200>", "comments": "<range>", "based_on": "van der Blom 2024 benchmarks" },
-  "best_posting_time_saudi": "<best weekday + hour AST>"
-}`
-      : `${academicHeader}
-Output language: professional English.
-Length: 150-300 words (LinkedIn algorithm sweet spot — van der Blom 2024).
-${includeHashtags ? 'Add 3-5 relevant hashtags at the end.' : 'No hashtags.'}
-
-Return JSON in this shape — content and hashtags are required by the existing UI; other fields are optional academic metadata:
-{
-  "content": "<full post text combining hook + body + CTA, with newlines between paragraphs>",
-  "hashtags": ["#tag1", "#tag2", "..."],
-  "hook": "<first 7 words that stop the scroll>",
-  "body": "<the middle value section>",
-  "cta": "<closing question or CTA>",
-  "framework_used": "<Contrarian Angle (HBR) | Hook-Value-CTA (Kellogg) | Story Arc (Stanford) | Specificity (MIT) | Cultural Resonance (Edelman)>",
-  "estimated_engagement": { "likes": "<range e.g. 50-200>", "comments": "<range>", "based_on": "van der Blom 2024 benchmarks" },
-  "best_posting_time_saudi": "<best weekday + hour AST>"
-}`;
+    const systemPrompt = `You are a LinkedIn content strategist for the Saudi/GCC market.
+Frameworks: Hook-Value-CTA (Kellogg), Contrarian Angle (HBR), Story Arc (Stanford), Specificity (MIT Sloan), van der Blom 2024 (150-300 word sweet spot).
+Rules: single-line paragraphs (mobile-first), hook in first 7 words (before "see more"), max 3 emojis, close with question/CTA.
+Arabic output = Modern Standard Arabic only (no Gulf dialect, no English mix). Western digits.
+Banned openers: "أتمنى أن تكون بخير", "اسمح لي أن أقدم نفسي".
+Length: 150-300 words.
+${includeHashtags ? 'Include 3-5 relevant hashtags.' : 'No hashtags.'}
+Output: JSON only, no markdown, no code fences.`;
 
     const toneInstructions: Record<string, string> = {
       professional: language === 'ar' ? 'Tone: رسمي واحترافي' : 'Tone: professional and polished',
@@ -128,53 +79,36 @@ Return JSON in this shape — content and hashtags are required by the existing 
 
 Topic: ${topic}
 
-Generate the LinkedIn post now. Return valid JSON only.`;
+Generate the LinkedIn post now. Return JSON matching this schema:
+{
+  "content": "<full post: hook + body + CTA, newlines between paragraphs>",
+  "hashtags": ["#tag1","#tag2"]
+}`;
 
     console.log('[POSTS] Generating post for user:', user.id, '| topic:', topic, '| lang:', language);
 
     const _postsT0 = Date.now();
-    const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 8192,
-        system: systemPrompt + '\n\nIMPORTANT: Respond ONLY with valid JSON. No markdown, no code fences.',
-        messages: [{ role: 'user', content: userPrompt }],
-      }),
-    });
-
-    if (!claudeRes.ok) {
-      const errText = await claudeRes.text();
-      console.error('[POSTS] Claude error:', claudeRes.status, errText);
-      await logApiCall({ service: 'anthropic', endpoint: '/v1/messages:posts', statusCode: claudeRes.status, responseTimeMs: Date.now() - _postsT0, errorMsg: errText, userId: user.id });
-      const statusOut = claudeRes.status === 429 ? 429 : 500;
-      return res.status(statusOut).json({ error: mapAnthropicStatusToArabic(claudeRes.status) });
+    let claudeRes;
+    try {
+      claudeRes = await callClaude({
+        task: 'post_generate',
+        system: systemPrompt,
+        userContent: userPrompt,
+        maxTokens: 2000,
+      });
+    } catch (err: any) {
+      const status = err?.status || 500;
+      console.error('[POSTS] Claude error:', status, err?.message);
+      await logApiCall({ service: 'anthropic', endpoint: '/v1/messages:posts', statusCode: status, responseTimeMs: Date.now() - _postsT0, errorMsg: err?.message, userId: user.id });
+      const statusOut = status === 429 ? 429 : 500;
+      return res.status(statusOut).json({ error: mapAnthropicStatusToArabic(status) });
     }
     await logApiCall({ service: 'anthropic', endpoint: '/v1/messages:posts', statusCode: 200, responseTimeMs: Date.now() - _postsT0, userId: user.id });
 
-    const claudeData = await claudeRes.json() as any;
-    const rawText: string = claudeData?.content?.[0]?.text || '';
-
-    let content = '';
-    let hashtags: string[] = [];
-
-    try {
-      const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]);
-        content = parsed.content || '';
-        hashtags = Array.isArray(parsed.hashtags) ? parsed.hashtags : [];
-      } else {
-        content = rawText;
-      }
-    } catch {
-      content = rawText;
-    }
+    const rawText = extractText(claudeRes);
+    const parsed = extractJson<any>(rawText);
+    const content = parsed?.content || rawText;
+    const hashtags: string[] = Array.isArray(parsed?.hashtags) ? parsed.hashtags : [];
 
     // Deduct 3 tokens
     await supabaseAdmin

@@ -3,6 +3,7 @@ import { router, protectedProcedure } from '../trpc-init';
 import { TRPCError } from '@trpc/server';
 import { randomUUID } from 'crypto';
 import { sendCampaignEmail } from '../lib/email';
+import { callClaude, extractText, extractJson } from '../lib/claude-client';
 
 const ADMIN_EMAILS = ['waselhup@gmail.com', 'almodhih.1995@gmail.com', 'alhashimali649@gmail.com'];
 
@@ -11,6 +12,17 @@ interface ClaudeMessage {
   body: string;
 }
 
+const SYSTEM_CAMPAIGN = `You are a B2B outbound email strategist for the Saudi/GCC market.
+Frameworks: Cialdini 6 Principles, Meyer Culture Map (Saudi = high-context + relationship-first + hierarchical), Wharton 4 Quadrants, HubSpot 2024 benchmarks.
+Rules:
+- Personalize every email with the company name, industry, and city — never generic.
+- Government/semi-gov: reference the relevant Vision 2030 pillar (Thriving Economy / Vibrant Society / Ambitious Nation).
+- Private sector: cite one metric or case study.
+- Subject 8-12 words, hook in first line, Hook → Value → CTA structure, 120-180 word body.
+- Banned: "Hope you're well", "Allow me to introduce myself", "We are a leading company", any cliché.
+- Arabic = Modern Standard Arabic only (no Gulf dialect, no English mix). Western digits.
+- Output: JSON only, no markdown, no code fences.`;
+
 async function generateEmailsWithClaude(opts: {
   companies: Array<{ name: string; industry?: string | null; city?: string | null }>;
   senderRole: string;
@@ -18,165 +30,47 @@ async function generateEmailsWithClaude(opts: {
   tone: string;
   language: 'ar' | 'en';
 }): Promise<Map<string, ClaudeMessage>> {
-  if (!process.env.ANTHROPIC_API_KEY) {
-    throw new Error('ANTHROPIC_API_KEY not configured');
-  }
-
   const companiesJson = JSON.stringify(opts.companies);
   const isAr = opts.language === 'ar';
+  const lang = isAr ? 'Modern Standard Arabic' : 'professional English';
 
-  const academicHeader = isAr
-    ? `أنت B2B Outbound Strategist بخبرة 10 سنوات في LinkedIn و email outreach للسوق السعودي،
-مدرّب على:
-- Arizona State University — Influence framework (Robert Cialdini)
-- Wharton School — Negotiation & Persuasion (Stuart Diamond)
-- Harvard Kennedy School — Cross-cultural Communication (Erin Meyer's Culture Map)
-- MIT Sloan — B2B Buyer Psychology
-- HubSpot Academy Research — 2024 Outreach Benchmarks (13M messages)
-- KAUST Innovation Ventures — Saudi B2B sales patterns
+  const userPrompt = `Write a personalized B2B email per company in this list (output in ${lang}):
+${companiesJson}
 
-الـ principles المطبّقة:
-1. Cialdini's 6 Principles: Reciprocity, Commitment, Social Proof, Authority, Liking, Scarcity
-2. Meyer's Culture Map (Harvard): السعودية = High-context + Relationship-first + Hierarchical
-3. Diamond's "4 Quadrants" (Wharton): Goals, People, Problems, Steps
-4. HubSpot 2024 benchmarks:
-   - رسائل بتخصيص حقيقي (اسم + صناعة + مدينة): 34% reply rate vs 8% generic
-   - Follow-ups بقيمة (مقال/insight) لا طلب: 3x response rate
-   - ذكر mutual connection أو Vision 2030 pillar مناسب: +62% engagement
-
-قواعد صارمة:
-- فصحى رسمية، لا خليجية، لا إنجليزية مختلطة
-- ابدأ بمدخل مخصص لاسم الشركة وصناعتها ومدينتها — لا افتتاحيات عامة
-- إذا الشركة حكومية/شبه حكومية: اربط بركيزة Vision 2030 المناسبة (Thriving Economy / Vibrant Society / Ambitious Nation)
-- إذا الشركة private sector: اذكر metric أو case study موثوق (مثال HubSpot 2024 أو McKinsey MENA)
-- ممنوع: "أتمنى أن تكون بخير"، "اسمح لي أن أقدم نفسي"، "نحن شركة رائدة..."، أي cliché
-- اللهجة المطلوبة: ${opts.tone}
-- هدف المرسل: ${opts.goal}
-- دور المرسل: ${opts.senderRole}
-- الرسالة موجهة للعنوان العام للشركة (info@ / contact@)
-`
-    : `You are a B2B Outbound Strategist with 10 years of experience in LinkedIn and email outreach for the Saudi/GCC market, trained on:
-- Arizona State University — Influence framework (Robert Cialdini)
-- Wharton School — Negotiation & Persuasion (Stuart Diamond)
-- Harvard Kennedy School — Cross-cultural Communication (Erin Meyer's Culture Map)
-- MIT Sloan — B2B Buyer Psychology
-- HubSpot Academy Research — 2024 Outreach Benchmarks (13M messages)
-- KAUST Innovation Ventures — Saudi B2B sales patterns
-
-Principles applied:
-1. Cialdini's 6 Principles: Reciprocity, Commitment, Social Proof, Authority, Liking, Scarcity
-2. Meyer's Culture Map (Harvard): Saudi Arabia = High-context + Relationship-first + Hierarchical
-3. Diamond's "4 Quadrants" (Wharton): Goals, People, Problems, Steps
-4. HubSpot 2024 benchmarks:
-   - Real personalization (name + industry + city): 34% reply rate vs 8% generic
-   - Value-first follow-ups (article / insight, no ask): 3x response rate
-   - Mutual connection or Vision 2030 pillar reference: +62% engagement
-
-Strict rules:
-- Professional English, concise, respectful of Saudi business culture
-- Open with a personalized hook referencing the company name, industry, and city — no generic openers
-- Government / semi-government: link to the most relevant Vision 2030 pillar (Thriving Economy / Vibrant Society / Ambitious Nation)
-- Private sector: cite a specific metric or case study (HubSpot 2024, McKinsey MENA, etc.)
-- Banned: "Hope you're well", "Allow me to introduce myself", "We are a leading company", any cliché
-- Requested tone: ${opts.tone}
-- Sender goal: ${opts.goal}
+Context:
 - Sender role: ${opts.senderRole}
-- Messages go to general company addresses (info@ / contact@)
-`;
+- Sender goal: ${opts.goal}
+- Tone: ${opts.tone}
+- Emails go to general company addresses (info@ / contact@).
 
-  const systemPrompt = academicHeader + (isAr ? '\nارجع JSON فقط.' : '\nRespond with JSON only.');
-
-  const userPrompt = isAr
-    ? `اكتب رسالة B2B مخصصة لكل شركة في هذه القائمة:
-${companiesJson}
-
-لكل شركة، طبّق Cialdini + Meyer + Diamond + HubSpot 2024 وأنتج:
-- subject: 8-12 كلمة، محددة ومغرية للفتح، تحتوي على اسم الشركة أو إشارة واضحة لصناعتها
-- body: 120-180 كلمة، بنية Hook → Value → CTA:
-  * Hook: جملة افتتاحية مخصصة لاسم الشركة/صناعتها/مدينتها
-  * Value: قيمة أكاديمية أو عملية مدعومة بمصدر (HubSpot 2024 / McKinsey MENA / Vision 2030 pillar) — Cialdini Authority + Social Proof
-  * CTA: طلب مكالمة قصيرة أو سؤال مفتوح (Diamond Quadrant 4: Steps)
-
-اختياريًا أضف (لو كانت تفيد المرسل لاحقًا):
-- followUp1Day3: رسالة متابعة يوم 3 تقدم قيمة (مقال/insight) بدون طلب — HubSpot 2024 pattern
-- followUp2Day7: رسالة يوم 7 تطرح سؤالًا مفتوحًا — Wharton Diamond technique
-- followUp3Day14: "break-up message" مهذبة يوم 14 — Wharton break-up technique
-- persuasion_principle_used: أي مبادئ Cialdini طبّقت
-- cultural_adaptation: ملاحظة عن التكيف الثقافي (High-context / Vision 2030 / hierarchy)
-
-JSON — الحقول subject و body مطلوبة لكل شركة لضمان عمل الواجهة؛ الحقول الأخرى اختيارية:
+Return JSON keyed by company name. subject + body are required per company:
 {
   "CompanyName": {
-    "subject": "...",
-    "body": "...",
-    "followUp1Day3": "...",
-    "followUp2Day7": "...",
-    "followUp3Day14": "...",
-    "persuasion_principle_used": "Authority + Liking (Cialdini)",
-    "cultural_adaptation": "High-context Saudi formal, Vision 2030 Thriving Economy reference"
-  }
-}`
-    : `Write a personalized B2B email for each company in this list:
-${companiesJson}
-
-For each company, apply Cialdini + Meyer + Diamond + HubSpot 2024 and produce:
-- subject: 8-12 words, specific and open-worthy, containing the company name or a clear industry cue
-- body: 120-180 words in Hook → Value → CTA structure:
-  * Hook: personalized opener referencing the company name/industry/city
-  * Value: academic or practical value backed by a source (HubSpot 2024 / McKinsey MENA / Vision 2030 pillar) — Cialdini Authority + Social Proof
-  * CTA: short call request or open-ended question (Diamond Quadrant 4: Steps)
-
-Optionally add (useful for a future sequencing feature):
-- followUp1Day3: day-3 follow-up providing value (article/insight) with no ask — HubSpot 2024 pattern
-- followUp2Day7: day-7 message with an open question — Wharton Diamond technique
-- followUp3Day14: polite "break-up message" on day 14 — Wharton break-up technique
-- persuasion_principle_used: which Cialdini principles you applied
-- cultural_adaptation: note on cultural adaptation (High-context / Vision 2030 / hierarchy)
-
-JSON — subject and body are required per company so the UI keeps working; other fields are optional:
-{
-  "CompanyName": {
-    "subject": "...",
-    "body": "...",
-    "followUp1Day3": "...",
-    "followUp2Day7": "...",
-    "followUp3Day14": "...",
-    "persuasion_principle_used": "Authority + Liking (Cialdini)",
-    "cultural_adaptation": "High-context Saudi formal, Vision 2030 Thriving Economy reference"
+    "subject": "<8-12 words, specific, with company/industry cue>",
+    "body": "<120-180 words, Hook → Value → CTA>",
+    "followUp1Day3": "<value-first day-3 follow-up (no ask)>",
+    "followUp2Day7": "<open-question day-7 message>",
+    "followUp3Day14": "<polite break-up day-14 message>",
+    "persuasion_principle_used": "<Cialdini principle(s)>",
+    "cultural_adaptation": "<Meyer / Vision 2030 note>"
   }
 }`;
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': process.env.ANTHROPIC_API_KEY!,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 8192,
-      system: systemPrompt + '\n\nIMPORTANT: Respond ONLY with valid JSON. No markdown, no code fences.',
-      messages: [{ role: 'user', content: userPrompt }],
-    }),
-  });
-
-  if (!response.ok) {
-    const errText = await response.text();
-    throw new Error(`Claude API ${response.status}: ${errText.slice(0, 200)}`);
-  }
-
-  const result = (await response.json()) as { content: Array<{ type: string; text: string }> };
-  const text = result.content?.[0]?.text || '';
-
-  let emailData: Record<string, ClaudeMessage>;
+  let claudeRes;
   try {
-    emailData = JSON.parse(text.trim());
-  } catch {
-    const m = text.match(/\{[\s\S]*\}/);
-    if (!m) throw new Error('No JSON in Claude response');
-    emailData = JSON.parse(m[0]);
+    claudeRes = await callClaude({
+      task: 'campaign_message',
+      system: SYSTEM_CAMPAIGN,
+      userContent: userPrompt,
+      maxTokens: Math.min(8000, 800 + opts.companies.length * 600),
+    });
+  } catch (err: any) {
+    throw new Error(`Claude API ${err?.status || 'error'}: ${err?.message?.slice(0, 200) || 'unknown'}`);
   }
+
+  const text = extractText(claudeRes);
+  const emailData = extractJson<Record<string, ClaudeMessage>>(text);
+  if (!emailData) throw new Error('No JSON in Claude response');
 
   const out = new Map<string, ClaudeMessage>();
   for (const [company, msg] of Object.entries(emailData)) {

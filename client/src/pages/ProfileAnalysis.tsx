@@ -174,11 +174,32 @@ export default function ProfileAnalysis() {
   const [historyLoading, setHistoryLoading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const STAGES = [
-    t('profileAnalysis.stages.fetching', 'جاري جلب بيانات الملف...'),
-    t('profileAnalysis.stages.analyzing', 'جاري تحليل ملفك بالذكاء امناعي...'),
-    t('profileAnalysis.stages.preparing', 'جاري إعداد التقرير...'),
-  ];
+  // Rotating academic loading messages (tick every 4s while loading)
+  const STAGES = useMemo(() => isAr ? [
+    'نقرأ البروفايل من LinkedIn...',
+    'نطبّق Career Capital Framework من LBS...',
+    'نقارن بـ McKinsey MENA benchmarks...',
+    'نحلّل 8 أبعاد مهنية...',
+    'نربط بركائز رؤية 2030...',
+    'نصيغ التوصيات الأكاديمية...',
+    'نعدّ خطة 4 أسابيع...',
+    'نضع اللمسات الأخيرة...',
+  ] : [
+    'Reading the profile from LinkedIn...',
+    'Applying Career Capital (LBS)...',
+    'Comparing to McKinsey MENA benchmarks...',
+    'Analyzing 8 professional dimensions...',
+    'Aligning with Vision 2030 pillars...',
+    'Drafting academic recommendations...',
+    'Building your 4-week plan...',
+    'Finishing touches...',
+  ], [isAr]);
+
+  useEffect(() => {
+    if (!loading) return;
+    const id = setInterval(() => setLoadingStage((i) => (i + 1) % STAGES.length), 4000);
+    return () => clearInterval(id);
+  }, [loading, STAGES.length]);
 
   // Pre-fill LinkedIn URL from profile
   useEffect(() => {
@@ -267,28 +288,27 @@ export default function ProfileAnalysis() {
     console.log('[Analyze] Start — url:', url ? 'yes' : 'no', 'image:', imageBase64 ? 'yes' : 'no');
     if (!url.trim() && !imageBase64) { console.log('[Analyze] No input, returning'); return; }
     setLoading(true); setLoadingStage(0); setResult(null); setCheckedItems({});
-    const stageTimer1 = setTimeout(() => setLoadingStage(1), 2000);
-    const stageTimer2 = setTimeout(() => setLoadingStage(2), 5000);
     try {
       console.log('[Analyze] Before trpcMutation call');
-      const res = await trpcMutation('linkedin.analyzeDeep', {
+      const timeoutMs = 180000; // 180s
+      const callPromise = trpcMutation('linkedin.analyzeDeep', {
         linkedinUrl: url || undefined,
         imageBase64: imageBase64 || undefined,
         mediaType,
       });
-      console.log('[Analyze] Response received:', res ? 'has data' : 'empty');
-      console.log('[Analyze] Response type:', typeof res);
-      console.log('[Analyze] Response keys:', res ? Object.keys(res) : 'null');
-      console.log('[Analyze] Response snippet:', JSON.stringify(res).substring(0, 500));
-      console.log('[Analyze] Has score?', 'score' in (res || {}), 'score value:', res?.score);
-      clearTimeout(stageTimer1); clearTimeout(stageTimer2);
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('TIMEOUT')), timeoutMs)
+      );
+      const res = await Promise.race([callPromise, timeoutPromise]);
+      console.log('[Analyze] Response received, has score?', res && 'score' in (res as any));
 
       // Unwrap if server returned nested { result: { data: ... } } or { data: ... }
-      const analysis = res?.score !== undefined ? res
-        : res?.data?.score !== undefined ? res.data
-        : res?.result?.score !== undefined ? res.result
-        : res?.result?.data?.score !== undefined ? res.result.data
-        : res;
+      const r: any = res;
+      const analysis = r?.score !== undefined ? r
+        : r?.data?.score !== undefined ? r.data
+        : r?.result?.score !== undefined ? r.result
+        : r?.result?.data?.score !== undefined ? r.result.data
+        : r;
       console.log('[Analyze] Final analysis score:', analysis?.score);
 
       if (!analysis) {
@@ -305,9 +325,15 @@ export default function ProfileAnalysis() {
       }
     } catch (err: any) {
       console.error('[Analyze] CAUGHT ERROR:', err, err?.stack);
-      toast.push('error', err?.message || t('profileAnalysis.error', 'حدث خطأ غير متوقع'));
+      const msg: string = err?.message || '';
+      if (msg === 'TIMEOUT') {
+        toast.push('error', isAr ? 'التحليل استغرق وقتاً طويلاً — حاول مرة ثانية' : 'Analysis took too long — please try again');
+      } else if (msg.includes('429') || msg.toLowerCase().includes('rate')) {
+        toast.push('error', isAr ? 'ضغط عالي الآن — جرّب بعد دقيقة' : 'High load right now — try again in a minute');
+      } else {
+        toast.push('error', msg || t('profileAnalysis.error', 'حدث خطأ غير متوقع'));
+      }
     }
-    clearTimeout(stageTimer1); clearTimeout(stageTimer2);
     setLoading(false);
     console.log('[Analyze] Done, loading set to false');
   }
@@ -441,6 +467,11 @@ export default function ProfileAnalysis() {
                 </>
               )}
             </button>
+            {loading && (
+              <p style={{ textAlign: 'center', marginTop: 10, fontSize: 12, color: 'var(--wsl-ink-3)', fontFamily: 'Cairo, sans-serif' }}>
+                {isAr ? 'قد يستغرق التحليل حتى دقيقتين — جودة أفضل تستحق الانتظار' : 'Analysis may take up to 2 minutes — quality is worth the wait'}
+              </p>
+            )}
           </div>
         </motion.div>
 
