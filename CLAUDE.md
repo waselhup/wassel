@@ -1,4 +1,4 @@
-﻿# Wassel (وصّل) — Project Identity
+# Wassel (وصّل) — Project Identity
 
 ## Live URLs
 - Production: https://wassel-alpha.vercel.app
@@ -108,3 +108,27 @@ Pushed to master at 2026-04-11. Vercel auto-deploys.
 2. Early Access / Pricing page
 3. Privacy Policy / ToS pages
 4. Analytics Dashboard
+
+## LESSONS LEARNED (update after every mistake)
+
+1. **BOM breaks builds** — Desktop Commander write_file injects BOMs; always use Node fs.writeFileSync 'utf8' or PowerShell WriteAllText. PostToolUse hook now auto-strips BOMs.
+
+2. **api/index.js must rebuild after ANY server/_core/* change** — stale bundles cause "why isn't my fix live?" confusion. PostToolUse hook now auto-rebuilds.
+
+3. **Vercel cancels parallel deploys** — running multiple Claude Code sessions pushing to master simultaneously = all but one get CANCELED. Use separate git checkouts, coordinate pushes.
+
+4. **"Ready" in Vercel UI can be a stale Redeploy** — always verify by commit hash, not by status color. verify-app subagent checks this now.
+
+5. **DB schema can drift from code silently** — tRPC errors look like API bugs but the root cause may be missing tables/columns. Verify schema with Supabase MCP before any DB-dependent feature work.
+
+6. **Mock data in admin pages is deceptive** — AdminUsers.tsx uses hardcoded users array; wire to real admin.listUsers tRPC before claiming admin panel "works".
+
+7. **Don't mention Apify, Waalaxy, or LinkedIn automation in UI** — Wassel is a legal/compliant Saudi career platform aligned with Vision 2030. The word is "اكتشاف" (discovery), never "scraping".
+
+8. **Plan Mode first for non-trivial tasks** — no writing code before plan is approved.
+
+## THREE CORE PRINCIPLES (Boris Cherny)
+
+1. **Simple** — Prefer deleting lines over adding them. Minimal code.
+2. **Root cause** — No band-aid fixes. Dig until you find the real cause.
+3. **Minimal touch** — Only change what's necessary. No side effects.

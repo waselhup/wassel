@@ -1,0 +1,13 @@
+{
+  "PostToolUse": [
+    {
+      "matcher": "Write|Edit",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node scripts/strip-boms.cjs && node scripts/auto-rebuild-api.cjs || true"
+        }
+      ]
+    }
+  ]
+}
