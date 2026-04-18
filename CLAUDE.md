@@ -127,6 +127,10 @@ Pushed to master at 2026-04-11. Vercel auto-deploys.
 
 8. **Plan Mode first for non-trivial tasks** — no writing code before plan is approved.
 
+9. **Secrets never go in CLAUDE.md or any tracked file** — even in private repos. Credentials live in Vercel env vars (prod) or PowerShell env vars (local verify-app). If you need VERCEL_TOKEN for verify-app check 3, Ali sets it via:
+   `[Environment]::SetEnvironmentVariable("VERCEL_TOKEN", "vcp_...", "User")`
+   Never paste tokens into repo files.
+
 ## THREE CORE PRINCIPLES (Boris Cherny)
 
 1. **Simple** — Prefer deleting lines over adding them. Minimal code.

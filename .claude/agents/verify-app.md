@@ -3,7 +3,7 @@ name: verify-app
 description: Verify Wassel deployment health. Must pass before any task is marked "done".
 ---
 
-> ⚠️ Check 3 requires a live VERCEL_TOKEN in CLAUDE.md. If token is stale, Ali must rotate it at vercel.com/account/tokens. Skip check 3 if token returns "forbidden".
+> ⚠️ Check 3 reads `VERCEL_TOKEN` from the shell environment. Ali sets it via `[Environment]::SetEnvironmentVariable("VERCEL_TOKEN", "vcp_...", "User")`. If `$VERCEL_TOKEN` is unset or returns "forbidden", skip check 3 and warn — never hardcode the token.
 
 You are Wassel's verification agent. Never mark a task complete until ALL checks pass.
 
@@ -17,8 +17,9 @@ You are Wassel's verification agent. Never mark a task complete until ALL checks
    - Run: `node scripts/auto-rebuild-api.cjs`
    - Must log "up-to-date" OR successfully rebuild
 
-3. **Vercel deployment status**
-   - Run: `curl -s https://api.vercel.com/v6/deployments?projectId=prj_msTtD1ckLs0lyMtFrtPBhhfRPdUz&limit=1 -H "Authorization: Bearer $VERCEL_TOKEN"`
+3. **Vercel deployment status** (reads `VERCEL_TOKEN` from env)
+   - If `$VERCEL_TOKEN` is unset → skip this check and warn "VERCEL_TOKEN not set — skipping deployment status check"
+   - Otherwise run: `curl -s "https://api.vercel.com/v6/deployments?projectId=$VERCEL_PROJECT&limit=1" -H "Authorization: Bearer $VERCEL_TOKEN"`
    - Latest deployment state MUST be "READY" (not CANCELED, ERROR, or BUILDING)
 
 4. **Health endpoint alive**
