@@ -342,3 +342,67 @@ export async function shouldSendTransactional(supabase: any, userId: string): Pr
     return true;
   }
 }
+
+// ─── Analysis report email ─────────────────────────────────────────
+export interface AnalysisEmailInput {
+  to: string;
+  language: 'ar' | 'en';
+  overallScore: number;
+  headlineVerdict?: string;
+  quickWinsCount?: number;
+  linkedinUrl?: string;
+}
+
+export async function sendAnalysisReportEmail(input: AnalysisEmailInput): Promise<SendResult> {
+  const isAr = input.language === 'ar';
+  const subject = isAr
+    ? `تقريرك من وصّل — نتيجة ${input.overallScore}/100`
+    : `Your Wassel Report — Score ${input.overallScore}/100`;
+
+  const verdictHtml = input.headlineVerdict
+    ? `<blockquote style="border-inline-start:4px solid #0A8F84;background:#ECFDFB;padding:14px 18px;margin:18px 0;border-radius:0 12px 12px 0;font-style:italic;color:#065F58;font-size:13px;line-height:1.7;">"${escapeHtml(input.headlineVerdict)}"</blockquote>`
+    : '';
+
+  const body = isAr
+    ? `
+      <h1 style="font-size:22px;font-weight:900;color:#111827;margin:0 0 12px;">تقريرك جاهز 📊</h1>
+      <p style="font-size:14px;color:#374151;line-height:1.8;margin:0 0 14px;">اكتمل تحليل بروفايلك المهني بواسطة وصّل. النتيجة الإجمالية:</p>
+      <div style="text-align:center;background:linear-gradient(135deg,#ECFDFB,#FDF6E4);border-radius:14px;padding:22px;margin:14px 0;">
+        <div style="font-size:48px;font-weight:900;background:linear-gradient(135deg,#0A8F84,#C9922A);-webkit-background-clip:text;-webkit-text-fill-color:transparent;color:#0A8F84;">${input.overallScore}</div>
+        <div style="font-size:12px;color:#64748B;margin-top:4px;">من 100</div>
+      </div>
+      ${verdictHtml}
+      <p style="font-size:13px;color:#374151;line-height:1.8;">يحتوي تقريرك الكامل على:</p>
+      <ul style="font-size:13px;line-height:1.9;color:#374151;padding-inline-start:20px;margin:8px 0 18px;">
+        <li>تحليل 8 أبعاد بالتفصيل</li>
+        <li>3 رؤى أكاديمية من Harvard و LBS و McKinsey</li>
+        <li>مواءمة رؤية 2030</li>
+        <li>${input.quickWinsCount || 0} تعديل فوري قابل للتنفيذ</li>
+      </ul>
+      <div style="text-align:center;margin-top:22px;">${btn(`${APP_URL}/app/profile-analysis`, 'افتح التقرير في وصّل')}</div>
+    `
+    : `
+      <h1 style="font-size:22px;font-weight:900;color:#111827;margin:0 0 12px;">Your Report is Ready 📊</h1>
+      <p style="font-size:14px;color:#374151;line-height:1.8;margin:0 0 14px;">Your professional profile analysis is complete. Overall score:</p>
+      <div style="text-align:center;background:linear-gradient(135deg,#ECFDFB,#FDF6E4);border-radius:14px;padding:22px;margin:14px 0;">
+        <div style="font-size:48px;font-weight:900;background:linear-gradient(135deg,#0A8F84,#C9922A);-webkit-background-clip:text;-webkit-text-fill-color:transparent;color:#0A8F84;">${input.overallScore}</div>
+        <div style="font-size:12px;color:#64748B;margin-top:4px;">out of 100</div>
+      </div>
+      ${verdictHtml}
+      <p style="font-size:13px;color:#374151;line-height:1.8;">Your full report includes:</p>
+      <ul style="font-size:13px;line-height:1.9;color:#374151;padding-inline-start:20px;margin:8px 0 18px;">
+        <li>8-dimension detailed breakdown</li>
+        <li>3 academic insights from Harvard, LBS, McKinsey</li>
+        <li>Vision 2030 alignment</li>
+        <li>${input.quickWinsCount || 0} immediate actionable items</li>
+      </ul>
+      <div style="text-align:center;margin-top:22px;">${btn(`${APP_URL}/app/profile-analysis`, 'Open Report in Wassel')}</div>
+    `;
+
+  const html = shell({ isAr, preheader: subject, bodyInner: body });
+  const text = isAr
+    ? `تقريرك من وصّل جاهز — النتيجة ${input.overallScore}/100. افتح: ${APP_URL}/app/profile-analysis`
+    : `Your Wassel report is ready — Score ${input.overallScore}/100. Open: ${APP_URL}/app/profile-analysis`;
+
+  return sendRaw({ to: input.to, subject, html, text });
+}

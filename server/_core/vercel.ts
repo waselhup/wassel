@@ -7,7 +7,7 @@ import { appRouter } from './trpc';
 import { createContext } from './context';
 import type { IncomingMessage, ServerResponse } from 'http';
 import { createClient } from '@supabase/supabase-js';
-import { sendWelcomeEmail, sendTestEmail } from './lib/email';
+import { sendWelcomeEmail, sendTestEmail, sendAnalysisReportEmail } from './lib/email';
 
 const app = express();
 
@@ -161,6 +161,35 @@ app.post('/api/email/welcome', async (req, res) => {
     return res.json({ ok: result.success, ...result });
   } catch (e: any) {
     console.error('[email/welcome] error:', e?.message);
+    return res.status(500).json({ error: e?.message || 'Internal error' });
+  }
+});
+
+// Send analysis report by email — auth required
+app.post('/api/analyzer/send-email', async (req, res) => {
+  try {
+    const user = await getUserFromAuthHeader(req.headers.authorization);
+    if (!user) return res.status(401).json({ error: 'Unauthorized' });
+
+    const { recipientEmail, language, result, linkedinUrl } = req.body || {};
+    if (!recipientEmail || !result) {
+      return res.status(400).json({ error: 'Missing recipientEmail or result' });
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipientEmail)) {
+      return res.status(400).json({ error: 'Invalid email' });
+    }
+
+    const r = await sendAnalysisReportEmail({
+      to: recipientEmail,
+      language: language === 'en' ? 'en' : 'ar',
+      overallScore: Number(result.overall_score ?? result.score ?? 0),
+      headlineVerdict: typeof result.headline_verdict === 'string' ? result.headline_verdict : undefined,
+      quickWinsCount: Array.isArray(result.quick_wins) ? result.quick_wins.length : 0,
+      linkedinUrl: typeof linkedinUrl === 'string' ? linkedinUrl : undefined,
+    });
+    return res.json({ ok: r.success, ...r });
+  } catch (e: any) {
+    console.error('[analyzer/send-email] error:', e?.message);
     return res.status(500).json({ error: e?.message || 'Internal error' });
   }
 });

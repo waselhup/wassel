@@ -2,17 +2,20 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import {
-  Sparkles, Link as LinkIcon, Loader2, AlertCircle, Check, X,
-  Upload, FileDown, RotateCcw, MessageCircle, Award, BookOpen,
+  Sparkles, Link as LinkIcon, AlertCircle, Check, X, CheckCircle,
+  Upload, FileDown, RotateCcw, MessageCircle, Award, BookOpen, Mail, Zap,
 } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
 import { useAuth } from '../contexts/AuthContext';
 import { trpcMutation } from '../lib/trpc';
+import { supabase } from '../lib/supabase';
+import { AnalysisPDFTemplate } from '../components/AnalysisPDFTemplate';
 
 // ─── Types (loose: backend produces a superset, we read what's there) ──
 interface Dimension { score: number; verdict?: string; finding?: string; benchmark?: string }
 interface AcademicInsight { framework?: string; source?: string; category?: string; finding: string; application: string }
 interface ActionStep { week: number; title?: string; description?: string; action?: string; framework?: string; research_basis?: string }
+interface QuickWin { action: string; why: string; effort: '5min' | '15min' | '30min' | '1h' | string; priority: 'high' | 'medium' | 'low' | string; example?: string }
 interface VisionPillar { status?: string; note?: string }
 interface AnalysisResult {
   score?: number;
@@ -36,7 +39,10 @@ interface AnalysisResult {
     summary_opening?: { before?: string; after?: string };
   };
   action_plan?: ActionStep[];
+  quick_wins?: QuickWin[];
   upgradePlan?: { headline?: { before: string; after: string }; about?: { before: string; after: string }; experience?: { before: string; after: string } };
+  completeness_warning?: string | null;
+  _meta?: { completeness?: number; missing_sections?: string[]; detected_language?: 'ar' | 'en'; actor?: string };
   error?: string;
 }
 
@@ -86,12 +92,14 @@ const TIER_STYLES: Record<string, { bg: string; color: string; border: string }>
   excellent: { bg: '#CCFBF1', color: '#0F766E', border: '#5EEAD4' },
 };
 
-function gradientFor(score: number): string {
+function gradientFor(score: number | null): string {
+  if (score == null) return 'linear-gradient(90deg, #CBD5E1, #94A3B8)';
   if (score >= 75) return 'linear-gradient(90deg, #0A8F84, #12B5A8)';
   if (score >= 50) return 'linear-gradient(90deg, #C9922A, #F59E0B)';
   return 'linear-gradient(90deg, #DC2626, #F43F5E)';
 }
-function colorFor(score: number): string {
+function colorFor(score: number | null): string {
+  if (score == null) return '#94A3B8';
   if (score >= 75) return '#0F766E';
   if (score >= 50) return '#92400E';
   return '#991B1B';
@@ -148,23 +156,25 @@ export default function ProfileAnalysis() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const STAGES = useMemo(() => isRTL ? [
-    'نقرأ البروفايل من LinkedIn...',
-    'نطبّق Career Capital Framework من LBS...',
-    'نقارن بـ McKinsey MENA benchmarks...',
-    'نحلّل 8 أبعاد مهنية...',
-    'نربط بركائز رؤية 2030...',
-    'نصيغ التوصيات الأكاديمية...',
-    'نعدّ خطة 4 أسابيع...',
-    'نضع اللمسات الأخيرة...',
+    'نقرأ بروفايلك بعمق من LinkedIn...',
+    'نستخرج كل قسم بدقة — الخبرات، المهارات، التعليم، النشاط...',
+    '💡 نحلّل بذكاء عميق — ركّز معنا في النتيجة',
+    'نطبّق 15 إطاراً أكاديمياً من Harvard و LBS و McKinsey...',
+    'نقيس 8 أبعاد مهنية بمعايير السوق السعودي والخليجي...',
+    '🎯 خذ ما يعجبك من التعديلات، واترك ما لا يعجبك — أنت صاحب القرار',
+    'نربط نقاط قوتك وضعفك بركائز رؤية 2030...',
+    'نصوغ تعديلات فورية قابلة للتنفيذ خلال دقائق...',
+    'نضع اللمسات الأخيرة على تقريرك...',
   ] : [
-    'Reading the profile from LinkedIn...',
-    'Applying Career Capital (LBS)...',
-    'Comparing to McKinsey MENA benchmarks...',
-    'Analyzing 8 professional dimensions...',
-    'Aligning with Vision 2030 pillars...',
-    'Drafting academic recommendations...',
-    'Building your 4-week plan...',
-    'Finishing touches...',
+    'Reading your profile deeply from LinkedIn...',
+    'Extracting each section — Experience, Skills, Education, Activity...',
+    '💡 Deep AI analysis in progress — focus on the results',
+    'Applying 15 academic frameworks from Harvard, LBS, McKinsey...',
+    'Measuring 8 professional dimensions by Saudi/GCC market standards...',
+    "🎯 Take what you like, leave what you don't — you're the decision maker",
+    'Aligning your strengths with Vision 2030 pillars...',
+    'Crafting immediate actionable changes (minutes, not weeks)...',
+    'Finalizing your report...',
   ], [isRTL]);
 
   useEffect(() => {
@@ -243,8 +253,74 @@ export default function ProfileAnalysis() {
     setLoading(false);
   }
 
-  function handleExportPDF() {
-    window.print();
+  const pdfRef = useRef<HTMLDivElement>(null);
+  const [pdfBusy, setPdfBusy] = useState(false);
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [emailAddress, setEmailAddress] = useState('');
+  const [emailBusy, setEmailBusy] = useState(false);
+
+  // Pre-fill email from auth user
+  useEffect(() => {
+    const u: any = (profile as any) || {};
+    if (!emailAddress && u?.email) setEmailAddress(u.email);
+  }, [profile]);
+
+  async function handleExportPDF() {
+    if (!pdfRef.current || !result) return;
+    setPdfBusy(true);
+    try {
+      const mod: any = await import('html2pdf.js');
+      const html2pdf = mod.default || mod;
+      await html2pdf()
+        .set({
+          margin: 0,
+          filename: `wassel-analysis-${Date.now()}.pdf`,
+          image: { type: 'jpeg', quality: 0.95 },
+          html2canvas: { scale: 2, useCORS: true, logging: false, backgroundColor: '#FFFFFF' },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true },
+          pagebreak: { mode: ['css', 'legacy'] },
+        })
+        .from(pdfRef.current)
+        .save();
+      toast.push('success', t('analyzer.pdfSuccess'));
+    } catch (err: any) {
+      console.error('PDF export failed:', err);
+      toast.push('error', t('analyzer.pdfError'));
+    } finally {
+      setPdfBusy(false);
+    }
+  }
+
+  async function handleSendEmail() {
+    if (!emailAddress.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+      toast.push('error', t('analyzer.invalidEmail'));
+      return;
+    }
+    if (!result) return;
+    setEmailBusy(true);
+    try {
+      const { data: sess } = await supabase.auth.getSession();
+      const tok = sess?.session?.access_token;
+      const res = await fetch('/api/analyzer/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(tok ? { Authorization: `Bearer ${tok}` } : {}) },
+        body: JSON.stringify({
+          recipientEmail: emailAddress,
+          language: i18n.language,
+          result,
+          linkedinUrl: url,
+        }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok || !j.ok) throw new Error(j?.error || 'send failed');
+      toast.push('success', t('analyzer.emailSuccess'));
+      setShowEmailModal(false);
+    } catch (err: any) {
+      console.error('Email send failed:', err);
+      toast.push('error', t('analyzer.emailError'));
+    } finally {
+      setEmailBusy(false);
+    }
   }
 
   function handleReset() {
@@ -257,9 +333,13 @@ export default function ProfileAnalysis() {
   const tierStyle = TIER_STYLES[tier];
   const headlineVerdict = result?.headline_verdict || (result?.dimensions?.headline?.finding) || '';
 
-  function dimScore(name: string): { score: number; verdict?: string } {
-    const d = result?.dimensions?.[name];
-    if (d) return { score: d.score || 0, verdict: d.verdict || d.finding };
+  function dimScore(name: string): { score: number | null; verdict?: string } {
+    const d: any = result?.dimensions?.[name];
+    if (d) {
+      // honor explicit null + data_found:false → no data
+      if (d.score === null || d.data_found === false) return { score: null, verdict: d.verdict || d.finding };
+      return { score: typeof d.score === 'number' ? d.score : 0, verdict: d.verdict || d.finding };
+    }
     // fallback to scoreBreakdown (different scale 0-15/20)
     const breakdownMax: Record<string, number> = { headline: 15, about: 15, summary: 15, experience: 20, skills: 10, education: 10, photo: 10, recommendations: 10, activity: 10, media: 10, certifications: 10 };
     const altKey = name === 'summary' ? 'about' : name === 'media' ? 'photo' : name === 'recommendations' ? 'connections' : name === 'activity' ? 'connections' : name;
@@ -275,16 +355,27 @@ export default function ProfileAnalysis() {
     application: i.application,
   }));
 
-  const ba = result?.before_after?.headline;
+  const ba: any = result?.before_after?.headline;
+  const baKept = ba?.kept_as_is === true;
   const baBefore = ba?.before || ba?.current;
   const baAfter = ba?.after || ba?.improved;
+  const baReason = ba?.reason || ba?.rationale;
+  const baLang: 'ar' | 'en' = ba?.language === 'en' ? 'en' : 'ar';
 
-  const actionPlan = (result?.action_plan || []).slice(0, 4).map(s => ({
-    week: s.week,
-    title: s.title || s.action || '',
-    description: s.description || s.action || '',
-    framework: s.framework || s.research_basis || '',
-  }));
+  const quickWins: QuickWin[] = (result?.quick_wins || []).slice(0, 6) as QuickWin[];
+
+  function effortMinutes(e: string): number {
+    if (e === '5min') return 5;
+    if (e === '15min') return 15;
+    if (e === '30min') return 30;
+    if (e === '1h') return 60;
+    return 15;
+  }
+  function totalQuickWinTime(): string {
+    const m = quickWins.reduce((s, w) => s + effortMinutes(w.effort), 0);
+    if (m < 60) return isRTL ? `${m} دقيقة` : `${m} min`;
+    return isRTL ? `${Math.round(m / 60)} ساعة` : `${Math.round(m / 60)}h`;
+  }
 
   const v2030 = result?.vision_2030_alignment;
   const v2030Pillars: Array<['thriving_economy' | 'vibrant_society' | 'ambitious_nation', VisionPillar | undefined]> = [
@@ -448,6 +539,28 @@ export default function ProfileAnalysis() {
               </div>
             </div>
 
+            {/* Data completeness warning */}
+            {(result?.completeness_warning || ((result?._meta?.completeness ?? 100) < 70) || (result?._meta?.missing_sections?.length ?? 0) > 0) && (
+              <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 14, padding: 14, display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                <AlertCircle size={18} style={{ color: '#B45309', flexShrink: 0, marginTop: 2 }} />
+                <div style={{ flex: 1 }}>
+                  <p style={{ margin: 0, fontSize: 13, fontWeight: 800, color: '#92400E', fontFamily: 'Cairo, sans-serif' }}>
+                    {t('analyzer.completenessWarning.title', { n: result?._meta?.completeness ?? '—' })}
+                  </p>
+                  {result?._meta?.missing_sections?.length ? (
+                    <p style={{ margin: '4px 0 0', fontSize: 12, color: '#78350F', fontFamily: 'Cairo, sans-serif', lineHeight: 1.6 }}>
+                      {t('analyzer.completenessWarning.missing')}: {result._meta.missing_sections.map(s => t(`analyzer.dimensions.${s}`, s)).join('، ')}
+                    </p>
+                  ) : null}
+                  {result?.completeness_warning && (
+                    <p style={{ margin: '4px 0 0', fontSize: 12, color: '#78350F', fontFamily: 'Cairo, sans-serif', lineHeight: 1.6 }}>
+                      {result.completeness_warning}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Hero score */}
             <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
               className="print-content"
@@ -504,12 +617,12 @@ export default function ProfileAnalysis() {
                           {t(`analyzer.dimensions.${dim}`)}
                         </span>
                         <span style={{ fontSize: 13, fontWeight: 800, color: colorFor(d.score), fontFamily: 'Inter', direction: 'ltr' }}>
-                          {d.score}
+                          {d.score == null ? '—' : d.score}
                         </span>
                       </div>
                       <div style={{ height: 6, background: '#F1F5F9', borderRadius: 999, overflow: 'hidden' }}>
                         <div style={{
-                          height: '100%', width: `${d.score}%`,
+                          height: '100%', width: `${d.score ?? 0}%`,
                           background: gradientFor(d.score),
                           borderRadius: 999,
                           transition: 'width 700ms ease',
@@ -605,18 +718,38 @@ export default function ProfileAnalysis() {
               </div>
             )}
 
-            {/* Before / After */}
-            {(baBefore || baAfter) && (
+            {/* Before / After — smart: shows "kept as is" if model said so */}
+            {baKept && (
+              <div className="print-content" style={{ background: 'linear-gradient(135deg, #ECFDF5, #FFFFFF)', border: '1px solid #A7F3D0', borderRadius: 16, padding: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
+                <CheckCircle size={26} style={{ color: '#0A8F84', flexShrink: 0 }} />
+                <div>
+                  <p style={{ margin: 0, fontSize: 14, fontWeight: 900, color: '#065F46', fontFamily: 'Cairo, sans-serif' }}>
+                    {t('analyzer.beforeAfter.keptAsIs')} — Headline
+                  </p>
+                  {baReason && (
+                    <p style={{ margin: '4px 0 0', fontSize: 12, color: '#0F766E', fontFamily: 'Cairo, sans-serif', lineHeight: 1.6 }}>
+                      {baReason}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+            {!baKept && (baBefore || baAfter) && (
               <div className="print-content" style={{ background: '#fff', border: '1px solid var(--wsl-border, #E5E7EB)', borderRadius: 16, padding: 22, boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
-                <h2 style={{ fontSize: 16, fontWeight: 900, color: 'var(--wsl-ink)', fontFamily: 'Cairo, sans-serif', margin: '0 0 14px' }}>
+                <h2 style={{ fontSize: 16, fontWeight: 900, color: 'var(--wsl-ink)', fontFamily: 'Cairo, sans-serif', margin: '0 0 6px' }}>
                   {t('analyzer.beforeAfter.title')} — Headline
                 </h2>
+                {baReason && (
+                  <p style={{ fontSize: 12, color: 'var(--wsl-ink-3)', fontFamily: 'Cairo, sans-serif', lineHeight: 1.6, margin: '0 0 12px' }}>
+                    {baReason}
+                  </p>
+                )}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12 }}>
                   <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 12, padding: 14 }}>
                     <p style={{ fontSize: 10.5, fontWeight: 800, color: '#991B1B', fontFamily: 'Cairo, sans-serif', textTransform: 'uppercase', letterSpacing: 0.5, margin: '0 0 8px' }}>
                       {t('analyzer.beforeAfter.before')}
                     </p>
-                    <p style={{ fontSize: 13, color: '#7F1D1D', fontFamily: 'Inter', direction: 'ltr', textAlign: 'left', lineHeight: 1.6, margin: 0 }}>
+                    <p style={{ fontSize: 13, color: '#7F1D1D', fontFamily: baLang === 'ar' ? 'Cairo, sans-serif' : 'Inter', direction: baLang === 'ar' ? 'rtl' : 'ltr', textAlign: baLang === 'ar' ? 'right' : 'left', lineHeight: 1.6, margin: 0 }}>
                       {baBefore || '—'}
                     </p>
                   </div>
@@ -624,7 +757,7 @@ export default function ProfileAnalysis() {
                     <p style={{ fontSize: 10.5, fontWeight: 800, color: '#065F46', fontFamily: 'Cairo, sans-serif', textTransform: 'uppercase', letterSpacing: 0.5, margin: '0 0 8px' }}>
                       {t('analyzer.beforeAfter.after')}
                     </p>
-                    <p style={{ fontSize: 13, color: '#064E3B', fontFamily: 'Inter', direction: 'ltr', textAlign: 'left', lineHeight: 1.6, margin: 0 }}>
+                    <p style={{ fontSize: 13, color: '#064E3B', fontFamily: baLang === 'ar' ? 'Cairo, sans-serif' : 'Inter', direction: baLang === 'ar' ? 'rtl' : 'ltr', textAlign: baLang === 'ar' ? 'right' : 'left', lineHeight: 1.6, margin: 0 }}>
                       {baAfter || '—'}
                     </p>
                   </div>
@@ -632,72 +765,102 @@ export default function ProfileAnalysis() {
               </div>
             )}
 
-            {/* 4-Week Action Plan */}
-            {actionPlan.length > 0 && (
+            {/* Quick Wins — replaces 4-week plan */}
+            {quickWins.length > 0 && (
               <div className="print-content" style={{ background: '#fff', border: '1px solid var(--wsl-border, #E5E7EB)', borderRadius: 16, padding: 22, boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-                  <h2 style={{ fontSize: 16, fontWeight: 900, color: 'var(--wsl-ink)', fontFamily: 'Cairo, sans-serif', margin: 0 }}>
-                    {t('analyzer.actionPlan.title')}
-                  </h2>
-                  <span style={{ fontSize: 10.5, color: 'var(--wsl-ink-3)', fontFamily: 'Inter' }}>STAR Framework · Stanford</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4, flexWrap: 'wrap', gap: 8 }}>
+                  <div>
+                    <h2 style={{ fontSize: 16, fontWeight: 900, color: 'var(--wsl-ink)', fontFamily: 'Cairo, sans-serif', margin: 0 }}>
+                      {t('analyzer.quickWins.title')}
+                    </h2>
+                    <p style={{ fontSize: 12, color: 'var(--wsl-ink-3)', fontFamily: 'Cairo, sans-serif', margin: '4px 0 0' }}>
+                      {t('analyzer.quickWins.subtitle')}
+                    </p>
+                  </div>
+                  <span style={{ fontSize: 11, color: '#0F766E', background: '#ECFDF5', padding: '4px 10px', borderRadius: 999, border: '1px solid #A7F3D0', fontWeight: 800, fontFamily: 'Cairo, sans-serif' }}>
+                    {t('analyzer.quickWins.timeTotal', { n: totalQuickWinTime() })}
+                  </span>
                 </div>
-                <div style={{ position: 'relative', paddingInlineStart: 24 }}>
-                  <div style={{
-                    position: 'absolute',
-                    insetInlineStart: 7,
-                    top: 8, bottom: 8, width: 2,
-                    background: 'linear-gradient(180deg, #0A8F84, #C9922A)',
-                  }} />
-                  {actionPlan.map((step, i) => {
-                    const dotColors = ['#0A8F84', '#0F766E', '#C9922A', '#92400E'];
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 }}>
+                  {quickWins.map((win, i) => {
+                    const effortStyle = win.effort === '5min' ? { bg: '#D1FAE5', text: '#065F46', icon: '⚡' }
+                      : win.effort === '15min' ? { bg: '#CCFBF1', text: '#0F766E', icon: '🔹' }
+                      : win.effort === '30min' ? { bg: '#FEF3C7', text: '#92400E', icon: '⏱️' }
+                      : { bg: '#FFE4E6', text: '#9F1239', icon: '📌' };
+                    const priorityStyle = win.priority === 'high' ? { border: '#F43F5E', bg: '#FFF1F2' }
+                      : win.priority === 'medium' ? { border: '#F59E0B', bg: '#FFFBEB' }
+                      : { border: '#0A8F84', bg: '#ECFDF5' };
                     return (
-                      <div key={i} style={{ position: 'relative', marginBottom: i < actionPlan.length - 1 ? 16 : 0 }}>
-                        <div style={{
-                          position: 'absolute',
-                          insetInlineStart: -23,
-                          top: 2, width: 16, height: 16, borderRadius: '50%',
-                          background: dotColors[i % 4], border: '2px solid #fff',
-                          boxShadow: `0 0 0 1px ${dotColors[i % 4]}`,
-                        }} />
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
-                          <span style={{
-                            fontSize: 11, color: '#fff', padding: '2px 8px', borderRadius: 6,
-                            background: dotColors[i % 4], fontWeight: 800, fontFamily: 'Cairo, sans-serif',
-                          }}>
-                            {t('analyzer.actionPlan.week')} <span style={{ direction: 'ltr', fontFamily: 'Inter' }}>{step.week}</span>
+                      <div key={i} style={{
+                        background: priorityStyle.bg,
+                        borderInlineStart: `4px solid ${priorityStyle.border}`,
+                        borderRadius: isRTL ? '12px 0 0 12px' : '0 12px 12px 0',
+                        padding: 14,
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
+                          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, flex: 1, minWidth: 220 }}>
+                            <span style={{ fontSize: 16 }}>{effortStyle.icon}</span>
+                            <h3 style={{ fontSize: 13.5, fontWeight: 800, color: 'var(--wsl-ink)', fontFamily: 'Cairo, sans-serif', margin: 0, lineHeight: 1.5 }}>
+                              {win.action}
+                            </h3>
+                          </div>
+                          <span style={{ background: effortStyle.bg, color: effortStyle.text, fontSize: 11, fontWeight: 800, padding: '3px 9px', borderRadius: 6, whiteSpace: 'nowrap', fontFamily: 'Inter' }}>
+                            {win.effort}
                           </span>
-                          <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--wsl-ink)', fontFamily: 'Cairo, sans-serif' }}>{step.title}</span>
                         </div>
-                        <p style={{ fontSize: 13, color: 'var(--wsl-ink-2, #475569)', fontFamily: 'Cairo, sans-serif', lineHeight: 1.7, margin: 0 }}>{step.description}</p>
-                        {step.framework && (
-                          <span style={{
-                            display: 'inline-block', marginTop: 6,
-                            fontSize: 10.5, color: 'var(--wsl-ink-2)',
-                            background: '#F1F5F9', padding: '2px 8px', borderRadius: 6, fontFamily: 'Inter', fontWeight: 600,
-                          }}>
-                            {step.framework}
-                          </span>
+                        <p style={{ fontSize: 12.5, color: 'var(--wsl-ink-2, #334155)', fontFamily: 'Cairo, sans-serif', lineHeight: 1.7, margin: 0 }}>
+                          <strong>{t('analyzer.quickWins.why')}:</strong> {win.why}
+                        </p>
+                        {win.example && (
+                          <div style={{ marginTop: 8, padding: '8px 10px', background: 'rgba(255,255,255,0.7)', border: '1px solid var(--wsl-border, #E5E7EB)', borderRadius: 6 }}>
+                            <p style={{ fontSize: 10.5, color: 'var(--wsl-ink-3)', fontWeight: 800, margin: '0 0 4px', fontFamily: 'Cairo, sans-serif' }}>
+                              {t('analyzer.quickWins.example')}:
+                            </p>
+                            <p style={{ fontSize: 11.5, color: 'var(--wsl-ink-2)', fontFamily: 'monospace', lineHeight: 1.55, margin: 0 }}>
+                              {win.example}
+                            </p>
+                          </div>
                         )}
                       </div>
                     );
                   })}
+                </div>
+
+                <div style={{ marginTop: 14, padding: 12, background: '#ECFDFB', border: '1px solid #99F6E4', borderRadius: 10, display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                  <Sparkles size={14} style={{ color: '#0F766E', flexShrink: 0, marginTop: 2 }} />
+                  <p style={{ fontSize: 12, color: '#065F46', fontFamily: 'Cairo, sans-serif', lineHeight: 1.65, margin: 0 }}>
+                    {t('analyzer.quickWins.tip')}
+                  </p>
                 </div>
               </div>
             )}
 
             {/* Actions */}
             <div className="no-print" style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-              <button onClick={handleExportPDF}
+              <button onClick={handleExportPDF} disabled={pdfBusy}
                 style={{
                   flex: 1, minWidth: 140,
                   background: 'linear-gradient(135deg, #0A8F84, #0ea5e9)', color: '#fff',
-                  padding: '13px 18px', borderRadius: 12, border: 'none', cursor: 'pointer',
+                  padding: '13px 18px', borderRadius: 12, border: 'none',
+                  cursor: pdfBusy ? 'wait' : 'pointer', opacity: pdfBusy ? 0.7 : 1,
                   fontSize: 13, fontWeight: 800, fontFamily: 'Cairo, sans-serif',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                   boxShadow: '0 6px 16px rgba(10,143,132,0.25)',
                 }}>
                 <FileDown size={16} />
-                {t('analyzer.actions.exportPDF')}
+                {pdfBusy ? t('analyzer.pdfGenerating') : t('analyzer.actions.exportPDF')}
+              </button>
+              <button onClick={() => setShowEmailModal(true)}
+                style={{
+                  flex: 1, minWidth: 140,
+                  background: '#fff', color: '#B45309',
+                  border: '1px solid #FCD34D', padding: '13px 18px', borderRadius: 12, cursor: 'pointer',
+                  fontSize: 13, fontWeight: 800, fontFamily: 'Cairo, sans-serif',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                }}>
+                <Mail size={16} />
+                {t('analyzer.actions.sendEmail')}
               </button>
               <button onClick={handleReset}
                 style={{
@@ -710,19 +873,70 @@ export default function ProfileAnalysis() {
                 <RotateCcw size={16} />
                 {t('analyzer.actions.regenerate')}
               </button>
-              <button onClick={() => toast.push('info', t('analyzer.actions.comingSoon'))}
-                style={{
-                  flex: 1, minWidth: 140,
-                  background: '#fff', color: 'var(--wsl-ink-2, #475569)',
-                  border: '1px solid var(--wsl-border, #E5E7EB)', padding: '13px 18px', borderRadius: 12, cursor: 'pointer',
-                  fontSize: 13, fontWeight: 800, fontFamily: 'Cairo, sans-serif',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                }}>
-                <MessageCircle size={16} />
-                {t('analyzer.actions.discuss')}
-              </button>
+            </div>
+
+            {/* Hidden PDF template (rendered off-screen, used by html2pdf) */}
+            <div className="no-print" style={{ position: 'absolute', left: '-99999px', top: 0, pointerEvents: 'none' }} aria-hidden>
+              <AnalysisPDFTemplate
+                ref={pdfRef}
+                result={result}
+                linkedinUrl={url}
+                language={i18n.language === 'en' ? 'en' : 'ar'}
+              />
             </div>
           </>
+        )}
+
+        {/* Email modal */}
+        {showEmailModal && (
+          <div
+            onClick={() => setShowEmailModal(false)}
+            style={{
+              position: 'fixed', inset: 0, zIndex: 9998,
+              background: 'rgba(15,23,42,0.55)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              padding: 16,
+            }}>
+            <div
+              onClick={e => e.stopPropagation()}
+              style={{ background: '#fff', borderRadius: 18, padding: 22, maxWidth: 420, width: '100%', boxShadow: '0 16px 40px rgba(0,0,0,0.18)' }}
+              dir={isRTL ? 'rtl' : 'ltr'}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+                <div style={{ width: 38, height: 38, borderRadius: 10, background: 'linear-gradient(135deg, #FBBF24, #C9922A)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Mail size={18} color="#fff" />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 16, fontWeight: 900, color: 'var(--wsl-ink)', fontFamily: 'Cairo, sans-serif' }}>
+                    {t('analyzer.emailModal.title')}
+                  </h3>
+                  <p style={{ margin: '2px 0 0', fontSize: 11.5, color: 'var(--wsl-ink-3)', fontFamily: 'Cairo, sans-serif' }}>
+                    {t('analyzer.emailModal.subtitle')}
+                  </p>
+                </div>
+              </div>
+              <input
+                type="email"
+                value={emailAddress}
+                onChange={e => setEmailAddress(e.target.value)}
+                placeholder="your@email.com"
+                style={{ width: '100%', padding: '12px 14px', border: '1.5px solid var(--wsl-border, #E5E7EB)', borderRadius: 10, fontSize: 14, fontFamily: 'Inter', direction: 'ltr', textAlign: 'left', boxSizing: 'border-box' }}
+              />
+              <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+                <button
+                  onClick={() => setShowEmailModal(false)}
+                  disabled={emailBusy}
+                  style={{ flex: 1, padding: '11px 16px', borderRadius: 10, border: '1px solid var(--wsl-border, #E5E7EB)', background: '#fff', color: 'var(--wsl-ink-2)', fontFamily: 'Cairo, sans-serif', fontSize: 13, fontWeight: 800, cursor: emailBusy ? 'wait' : 'pointer' }}>
+                  {isRTL ? 'إلغاء' : 'Cancel'}
+                </button>
+                <button
+                  onClick={handleSendEmail}
+                  disabled={emailBusy}
+                  style={{ flex: 1, padding: '11px 16px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #0A8F84, #0ea5e9)', color: '#fff', fontFamily: 'Cairo, sans-serif', fontSize: 13, fontWeight: 800, cursor: emailBusy ? 'wait' : 'pointer', opacity: emailBusy ? 0.7 : 1 }}>
+                  {emailBusy ? t('analyzer.emailSending') : t('analyzer.emailModal.send')}
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </DashboardLayout>

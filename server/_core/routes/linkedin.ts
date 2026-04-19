@@ -3,6 +3,7 @@ import { router, protectedProcedure } from '../trpc-init';
 import { TRPCError } from '@trpc/server';
 import { logApiCall, mapAnthropicStatusToArabic, mapApifyStatusToArabic } from '../lib/apiLogger';
 import { callClaude, extractText, extractJson } from '../lib/claude-client';
+import { scrapeLinkedInProfileMulti, detectLanguage } from '../lib/linkedin-scraper';
 
 const APIFY_TOKEN = process.env.APIFY_TOKEN || process.env.APIFY_API_TOKEN || '';
 
@@ -158,70 +159,94 @@ Profile:
 ${profileText}`;
 }
 
-function buildDeepUserPrompt(profileText: string) {
-  return `Analyze this LinkedIn profile at executive depth and return JSON matching this schema. Arabic text in MSA, Western digits. Cite a framework name in each academic_insight (e.g. "Career Capital (LBS)").
+function buildDeepUserPrompt(
+  profileText: string,
+  ctx: {
+    completeness?: number;
+    missingSections?: string[];
+    detectedLanguage?: 'ar' | 'en';
+  } = {}
+) {
+  const lang = ctx.detectedLanguage || 'ar';
+  const completeness = ctx.completeness ?? 100;
+  const missing = (ctx.missingSections || []).join(', ') || 'none';
+  return `Analyze this LinkedIn profile at executive depth.
+
+⚠️ STRICT NON-NEGOTIABLE RULES:
+
+1. DATA COMPLETENESS RULE:
+   - Profile data completeness: ${completeness}%
+   - Missing/empty sections: ${missing}
+   - For each missing section: dimensions[section].score MUST be null (not 0).
+     dimensions[section].data_found = false.
+     verdict = "${lang === 'ar' ? 'لم نستطع قراءة هذا القسم — تأكد من ظهور بروفايلك للعامة' : 'We could not read this section — make sure your profile is public'}"
+   - NEVER guess. NEVER fabricate scores. If you did not see data, mark it null.
+
+2. LANGUAGE MATCHING RULE:
+   - User's profile language detected: ${lang === 'ar' ? 'Arabic' : 'English'}
+   - All before_after suggestions MUST be in the SAME language as the original.
+   - Set before_after.headline.language = "${lang}". Same for summary_opening.
+   - NEVER change the user's language without their request.
+   - Other text fields (verdict, finding, application, quick_wins) → Arabic MSA.
+
+3. KEPT-AS-IS RULE:
+   - Only suggest before/after if the "after" is genuinely 20%+ better.
+   - If headline is already strong → before_after.headline = {"kept_as_is": true, "reason": "...", "language": "${lang}"} — do NOT include before/after fields.
+   - Same for summary_opening.
+   - Forbidden: changing strong content just to fill the field.
+
+4. QUICK WINS RULE (NOT 4-week plans):
+   - User wants to act NOW.
+   - quick_wins: 3 to 5 specific actions executable in minutes.
+   - Each quick_win:
+     * action: "what to do exactly" (one sentence, Arabic MSA)
+     * why: "why this raises which dimension"
+     * effort: "5min" | "15min" | "30min" | "1h"
+     * priority: "high" | "medium" | "low"
+     * example?: optional concrete copy-pastable example text
+   - Sort by priority (high first).
+
+Output JSON ONLY (no markdown, no fences). Schema:
 
 {
-  "score": <0-100>,
-  "overall_score": <same as score>,
+  "score": <0-100, weighted by completeness>,
+  "overall_score": <same>,
   "tier": "<weak | fair | good | excellent>",
-  "headline_verdict": "<Arabic single-sentence verdict explaining the score>",
+  "headline_verdict": "<single sentence in ${lang}>",
+  "completeness_warning": <string in ${lang} if completeness<70 else null>,
   "scoreBreakdown": {"headline":<0-15>,"about":<0-15>,"experience":<0-20>,"skills":<0-10>,"education":<0-10>,"photo":<0-10>,"connections":<0-10>,"certifications":<0-10>},
   "dimensions": {
-    "headline":   {"score":<0-100>,"benchmark":"<LinkedIn MENA 2024>","finding":"<Arabic>"},
-    "summary":    {"score":<0-100>,"benchmark":"<...>","finding":"<Arabic>"},
-    "experience": {"score":<0-100>,"benchmark":"<...>","finding":"<Arabic>"},
-    "skills":     {"score":<0-100>,"benchmark":"<...>","finding":"<Arabic>"},
-    "education":  {"score":<0-100>,"benchmark":"<...>","finding":"<Arabic>"},
-    "recommendations": {"score":<0-100>,"benchmark":"<...>","finding":"<Arabic>"},
-    "activity":   {"score":<0-100>,"benchmark":"<...>","finding":"<Arabic>"},
-    "media":      {"score":<0-100>,"benchmark":"<...>","finding":"<Arabic>"}
+    "headline":   {"score":<0-100|null>,"verdict":"<Arabic>","data_found":<bool>},
+    "summary":    {"score":<0-100|null>,"verdict":"<Arabic>","data_found":<bool>},
+    "experience": {"score":<0-100|null>,"verdict":"<Arabic>","data_found":<bool>},
+    "skills":     {"score":<0-100|null>,"verdict":"<Arabic>","data_found":<bool>},
+    "education":  {"score":<0-100|null>,"verdict":"<Arabic>","data_found":<bool>},
+    "recommendations": {"score":<0-100|null>,"verdict":"<Arabic>","data_found":<bool>},
+    "activity":   {"score":<0-100|null>,"verdict":"<Arabic>","data_found":<bool>},
+    "media":      {"score":<0-100|null>,"verdict":"<Arabic>","data_found":<bool>}
   },
-  "strengths": ["<Arabic>","<Arabic>"],
-  "weaknesses": ["<Arabic>","<Arabic>"],
   "academic_insights": [
-    {"source":"Career Capital (LBS)","finding":"<Arabic>","application":"<Arabic>"},
-    {"source":"McKinsey MENA 2024","finding":"<Arabic>","application":"<Arabic>"},
-    {"source":"Personal Brand Equity (Harvard)","finding":"<Arabic>","application":"<Arabic>"}
+    {"framework":"Career Capital (LBS)","category":"<short tag>","finding":"<Arabic>","application":"<Arabic>"},
+    {"framework":"McKinsey MENA 2024","category":"<short tag>","finding":"<Arabic>","application":"<Arabic>"},
+    {"framework":"Personal Brand Equity (Harvard)","category":"<short tag>","finding":"<Arabic>","application":"<Arabic>"}
   ],
   "vision_2030_alignment": {
-    "pillar":"<Thriving Economy | Vibrant Society | Ambitious Nation>",
-    "opportunity":"<Arabic>",
-    "hcdp_match":"<Arabic>",
     "thriving_economy": {"status":"<aligned|partial|missing>","note":"<Arabic short>"},
     "vibrant_society": {"status":"<aligned|partial|missing>","note":"<Arabic short>"},
     "ambitious_nation": {"status":"<aligned|partial|missing>","note":"<Arabic short>"}
   },
-  "upgradePlan": {
-    "headline":   {"before":"<current>","after":"<<=220 chars>","tips":"<Arabic>"},
-    "about":      {"before":"<summary of current>","after":"<>=500 chars Arabic rewrite>","tips":"<Arabic>"},
-    "experience": {"before":"<current bullets>","after":"<rewrite with metrics>","tips":"<Arabic>"}
-  },
   "before_after": {
-    "headline": {"current":"<current>","improved":"<rewritten>","rationale":"<Arabic framework-based>"},
-    "summary":  {"current":"<first 120ch>","improved":"<first 120ch of rewrite>","rationale":"<Arabic>"}
+    "headline": <{"kept_as_is":true,"reason":"<Arabic>","language":"${lang}"} OR {"kept_as_is":false,"before":"<original ${lang}>","after":"<improved ${lang}>","reason":"<Arabic>","language":"${lang}"}>,
+    "summary_opening": <same shape as headline>
   },
-  "missingSections": ["<Arabic section name>"],
-  "actionChecklist": [
-    {"action":"<Arabic>","time":"<X min>","priority":"high"},
-    {"action":"<Arabic>","time":"<X min>","priority":"medium"},
-    {"action":"<Arabic>","time":"<X min>","priority":"low"}
-  ],
-  "action_plan": [
-    {"week":1,"title":"<Arabic short>","description":"<Arabic 1-2 sentences>","framework":"Harvard HBR","action":"<same as description>","expected_outcome":"<Arabic>","research_basis":"Harvard HBR"},
-    {"week":2,"title":"<Arabic short>","description":"<Arabic 1-2 sentences>","framework":"STAR (Stanford)","action":"<same as description>","expected_outcome":"<Arabic>","research_basis":"STAR (Stanford)"},
-    {"week":3,"title":"<Arabic short>","description":"<Arabic 1-2 sentences>","framework":"Kellogg · MIT Sloan","action":"<same as description>","expected_outcome":"<Arabic>","research_basis":"Kellogg · MIT Sloan"},
-    {"week":4,"title":"<Arabic short>","description":"<Arabic 1-2 sentences>","framework":"Cialdini","action":"<same as description>","expected_outcome":"<Arabic>","research_basis":"Cialdini"}
-  ],
-  "recommendationTemplate": "<Arabic WhatsApp message requesting a LinkedIn recommendation>",
-  "bannerDesign": {
-    "background":"linear-gradient(135deg, #064E49, #0A8F84)",
-    "mainText":"<name + title>",
-    "tagline":"<English tagline>",
-    "layout":"right-photo-left-text",
-    "accent":"#C9922A"
-  }
+  "quick_wins": [
+    {"action":"<Arabic, one sentence>","why":"<Arabic>","effort":"<5min|15min|30min|1h>","priority":"high","example":"<optional copy-paste text>"},
+    {"action":"<Arabic>","why":"<Arabic>","effort":"<...>","priority":"<...>"}
+  ]
 }
+
+Reminder: tier mapping → 0-39=weak, 40-59=fair, 60-79=good, 80-100=excellent.
+Western digits everywhere.
 
 Profile:
 ${profileText}`;
@@ -419,14 +444,25 @@ export const linkedinRouter = router({
           await ctx.supabase.from('ai_cache').delete().eq('cache_key', cacheKey);
         }
 
-        // Build profile text
+        // Build profile text via multi-actor scraper (or skip for image flow)
         let profileText = '';
+        let scrapeMeta: { completeness: number; missingSections: string[]; detectedLanguage: 'ar' | 'en'; actor: string } | null = null;
         if (input.linkedinUrl) {
-          const profileData = await scrapeLinkedInProfile(input.linkedinUrl);
-          profileText = buildProfileText(profileData).profileText;
+          const outcome = await scrapeLinkedInProfileMulti(input.linkedinUrl);
+          profileText = buildProfileText(outcome.profile).profileText;
+          scrapeMeta = {
+            completeness: outcome.completeness,
+            missingSections: outcome.missingSections,
+            detectedLanguage: detectLanguage(outcome.profile),
+            actor: outcome.actor,
+          };
+          console.log('[DEEP] scrape ok via', outcome.actor, 'completeness=', outcome.completeness, 'missing=', outcome.missingSections.join(','), 'lang=', scrapeMeta.detectedLanguage);
         }
 
         // Build Claude user content (image or text)
+        const promptCtx = scrapeMeta
+          ? { completeness: scrapeMeta.completeness, missingSections: scrapeMeta.missingSections, detectedLanguage: scrapeMeta.detectedLanguage }
+          : { detectedLanguage: 'ar' as const };
         const userContent: any = input.imageBase64
           ? [
               {
@@ -437,9 +473,9 @@ export const linkedinRouter = router({
                   data: input.imageBase64,
                 },
               },
-              { type: 'text', text: buildDeepUserPrompt('(see screenshot above)') },
+              { type: 'text', text: buildDeepUserPrompt('(see screenshot above)', promptCtx) },
             ]
-          : buildDeepUserPrompt(profileText);
+          : buildDeepUserPrompt(profileText, promptCtx);
 
         console.log('[DEEP] Calling Claude for deep analysis');
         const _deepT0 = Date.now();
@@ -470,6 +506,16 @@ export const linkedinRouter = router({
           return { error: 'فشل تحليل الرد من الذكاء الاصطناعي', rawPreview: text.substring(0, 200) };
         }
         console.log('[DEEP] Parsed OK, has score:', !!result.score);
+
+        // Attach scrape meta so the UI can show completeness/language banner
+        if (scrapeMeta) {
+          result._meta = {
+            completeness: scrapeMeta.completeness,
+            missing_sections: scrapeMeta.missingSections,
+            detected_language: scrapeMeta.detectedLanguage,
+            actor: scrapeMeta.actor,
+          };
+        }
 
         // Cache result (24h)
         const expires = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();

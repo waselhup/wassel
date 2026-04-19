@@ -58316,13 +58316,113 @@ var coerce = {
 };
 var NEVER = INVALID;
 
-// server/_core/routes/linkedin.ts
+// server/_core/lib/linkedin-scraper.ts
 var APIFY_TOKEN = process.env.APIFY_TOKEN || process.env.APIFY_API_TOKEN || "";
+var ACTORS = [
+  { id: "dev_fusion~Linkedin-Profile-Scraper", inputKey: "profileUrls" },
+  { id: "apimaestro~linkedin-profile-detail", inputKey: "profileUrls" },
+  { id: "harvestapi~linkedin-profile-scraper", inputKey: "linkedinUrls" }
+];
+var WEIGHTS = {
+  headline: 10,
+  summary: 15,
+  experience: 25,
+  skills: 15,
+  education: 15,
+  recommendations: 5,
+  activity: 10,
+  certifications: 5
+};
+function computeCompleteness(p) {
+  if (!p) return 0;
+  let score = 0;
+  if ((p.headline || "").length > 10) score += WEIGHTS.headline;
+  if ((p.summary || p.about || "").length > 50) score += WEIGHTS.summary;
+  if ((p.experience?.length || p.positions?.length || 0) > 0) score += WEIGHTS.experience;
+  if ((p.skills?.length || 0) > 0) score += WEIGHTS.skills;
+  if ((p.education?.length || 0) > 0) score += WEIGHTS.education;
+  if ((p.recommendations?.length || p.recommendationsReceived?.length || 0) > 0) score += WEIGHTS.recommendations;
+  if ((p.activity?.length || p.posts?.length || 0) > 0) score += WEIGHTS.activity;
+  if ((p.certifications?.length || p.licenses?.length || 0) > 0) score += WEIGHTS.certifications;
+  return Math.min(score, 100);
+}
+function detectLanguage(profile) {
+  const text = [
+    profile?.headline || "",
+    profile?.summary || profile?.about || "",
+    ...(profile?.experience || profile?.positions || []).map((e) => e?.description || e?.summary || "")
+  ].join(" ");
+  const arabicChars = (text.match(/[\u0600-\u06FF]/g) || []).length;
+  const totalChars = text.replace(/\s/g, "").length;
+  if (totalChars === 0) return "en";
+  return arabicChars / totalChars > 0.3 ? "ar" : "en";
+}
+async function tryActor(actor, url, timeoutMs = 9e4) {
+  try {
+    const body = { [actor.inputKey]: [url] };
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+    const res = await fetch(
+      `https://api.apify.com/v2/acts/${actor.id}/run-sync-get-dataset-items?token=${APIFY_TOKEN}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+        signal: ctrl.signal
+      }
+    );
+    clearTimeout(timer);
+    if (!res.ok) {
+      console.warn(`[scraper] ${actor.id} HTTP ${res.status}`);
+      return null;
+    }
+    const data = await res.json();
+    const profile = Array.isArray(data) ? data[0] : data;
+    return profile || null;
+  } catch (err) {
+    console.warn(`[scraper] ${actor.id} failed:`, err?.message);
+    return null;
+  }
+}
+async function scrapeLinkedInProfileMulti(url) {
+  if (!APIFY_TOKEN) throw new Error("APIFY_TOKEN missing");
+  let best = null;
+  let bestScore = 0;
+  let bestActor = "";
+  for (const actor of ACTORS) {
+    const profile = await tryActor(actor, url);
+    if (!profile) continue;
+    const score = computeCompleteness(profile);
+    console.log(`[scraper] ${actor.id} completeness=${score}%`);
+    if (score > bestScore) {
+      best = profile;
+      bestScore = score;
+      bestActor = actor.id;
+    }
+    if (score >= 85) break;
+  }
+  if (!best || bestScore < 30) {
+    throw new Error(`LinkedIn profile data too incomplete (best=${bestScore}%) \u2014 profile may be private`);
+  }
+  const missing = [];
+  if (!best.headline || best.headline.length < 10) missing.push("headline");
+  if (!(best.summary || best.about) || (best.summary || best.about || "").length < 50) missing.push("summary");
+  if (!(best.experience?.length || best.positions?.length)) missing.push("experience");
+  if (!best.skills?.length) missing.push("skills");
+  if (!best.education?.length) missing.push("education");
+  if (!(best.recommendations?.length || best.recommendationsReceived?.length)) missing.push("recommendations");
+  if (!(best.activity?.length || best.posts?.length)) missing.push("activity");
+  if (!(best.certifications?.length || best.licenses?.length)) missing.push("media");
+  return { profile: best, completeness: bestScore, actor: bestActor, missingSections: missing };
+}
+
+// server/_core/routes/linkedin.ts
+var APIFY_TOKEN2 = process.env.APIFY_TOKEN || process.env.APIFY_API_TOKEN || "";
 async function scrapeLinkedInProfile(profileUrl) {
   console.log("[APIFY] Starting scrape for:", profileUrl);
   const _apifyT0 = Date.now();
   const runRes = await fetch(
-    `https://api.apify.com/v2/acts/dev_fusion~Linkedin-Profile-Scraper/runs?token=${APIFY_TOKEN}`,
+    `https://api.apify.com/v2/acts/dev_fusion~Linkedin-Profile-Scraper/runs?token=${APIFY_TOKEN2}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -58344,7 +58444,7 @@ async function scrapeLinkedInProfile(profileUrl) {
   while (status !== "SUCCEEDED" && status !== "FAILED" && status !== "ABORTED" && attempts < 40) {
     await new Promise((r) => setTimeout(r, 3e3));
     const pollRes = await fetch(
-      `https://api.apify.com/v2/actor-runs/${runId}?token=${APIFY_TOKEN}`
+      `https://api.apify.com/v2/actor-runs/${runId}?token=${APIFY_TOKEN2}`
     );
     const pollData = await pollRes.json();
     status = pollData?.data?.status;
@@ -58356,7 +58456,7 @@ async function scrapeLinkedInProfile(profileUrl) {
   }
   const datasetId = runData?.data?.defaultDatasetId;
   const itemsRes = await fetch(
-    `https://api.apify.com/v2/datasets/${datasetId}/items?token=${APIFY_TOKEN}`
+    `https://api.apify.com/v2/datasets/${datasetId}/items?token=${APIFY_TOKEN2}`
   );
   const items = await itemsRes.json();
   console.log("[APIFY] Got", Array.isArray(items) ? items.length : 0, "profile(s)");
@@ -58430,70 +58530,87 @@ Reference Vision 2030 where relevant.
 Profile:
 ${profileText}`;
 }
-function buildDeepUserPrompt(profileText) {
-  return `Analyze this LinkedIn profile at executive depth and return JSON matching this schema. Arabic text in MSA, Western digits. Cite a framework name in each academic_insight (e.g. "Career Capital (LBS)").
+function buildDeepUserPrompt(profileText, ctx = {}) {
+  const lang = ctx.detectedLanguage || "ar";
+  const completeness = ctx.completeness ?? 100;
+  const missing = (ctx.missingSections || []).join(", ") || "none";
+  return `Analyze this LinkedIn profile at executive depth.
+
+\u26A0\uFE0F STRICT NON-NEGOTIABLE RULES:
+
+1. DATA COMPLETENESS RULE:
+   - Profile data completeness: ${completeness}%
+   - Missing/empty sections: ${missing}
+   - For each missing section: dimensions[section].score MUST be null (not 0).
+     dimensions[section].data_found = false.
+     verdict = "${lang === "ar" ? "\u0644\u0645 \u0646\u0633\u062A\u0637\u0639 \u0642\u0631\u0627\u0621\u0629 \u0647\u0630\u0627 \u0627\u0644\u0642\u0633\u0645 \u2014 \u062A\u0623\u0643\u062F \u0645\u0646 \u0638\u0647\u0648\u0631 \u0628\u0631\u0648\u0641\u0627\u064A\u0644\u0643 \u0644\u0644\u0639\u0627\u0645\u0629" : "We could not read this section \u2014 make sure your profile is public"}"
+   - NEVER guess. NEVER fabricate scores. If you did not see data, mark it null.
+
+2. LANGUAGE MATCHING RULE:
+   - User's profile language detected: ${lang === "ar" ? "Arabic" : "English"}
+   - All before_after suggestions MUST be in the SAME language as the original.
+   - Set before_after.headline.language = "${lang}". Same for summary_opening.
+   - NEVER change the user's language without their request.
+   - Other text fields (verdict, finding, application, quick_wins) \u2192 Arabic MSA.
+
+3. KEPT-AS-IS RULE:
+   - Only suggest before/after if the "after" is genuinely 20%+ better.
+   - If headline is already strong \u2192 before_after.headline = {"kept_as_is": true, "reason": "...", "language": "${lang}"} \u2014 do NOT include before/after fields.
+   - Same for summary_opening.
+   - Forbidden: changing strong content just to fill the field.
+
+4. QUICK WINS RULE (NOT 4-week plans):
+   - User wants to act NOW.
+   - quick_wins: 3 to 5 specific actions executable in minutes.
+   - Each quick_win:
+     * action: "what to do exactly" (one sentence, Arabic MSA)
+     * why: "why this raises which dimension"
+     * effort: "5min" | "15min" | "30min" | "1h"
+     * priority: "high" | "medium" | "low"
+     * example?: optional concrete copy-pastable example text
+   - Sort by priority (high first).
+
+Output JSON ONLY (no markdown, no fences). Schema:
 
 {
-  "score": <0-100>,
-  "overall_score": <same as score>,
+  "score": <0-100, weighted by completeness>,
+  "overall_score": <same>,
   "tier": "<weak | fair | good | excellent>",
-  "headline_verdict": "<Arabic single-sentence verdict explaining the score>",
+  "headline_verdict": "<single sentence in ${lang}>",
+  "completeness_warning": <string in ${lang} if completeness<70 else null>,
   "scoreBreakdown": {"headline":<0-15>,"about":<0-15>,"experience":<0-20>,"skills":<0-10>,"education":<0-10>,"photo":<0-10>,"connections":<0-10>,"certifications":<0-10>},
   "dimensions": {
-    "headline":   {"score":<0-100>,"benchmark":"<LinkedIn MENA 2024>","finding":"<Arabic>"},
-    "summary":    {"score":<0-100>,"benchmark":"<...>","finding":"<Arabic>"},
-    "experience": {"score":<0-100>,"benchmark":"<...>","finding":"<Arabic>"},
-    "skills":     {"score":<0-100>,"benchmark":"<...>","finding":"<Arabic>"},
-    "education":  {"score":<0-100>,"benchmark":"<...>","finding":"<Arabic>"},
-    "recommendations": {"score":<0-100>,"benchmark":"<...>","finding":"<Arabic>"},
-    "activity":   {"score":<0-100>,"benchmark":"<...>","finding":"<Arabic>"},
-    "media":      {"score":<0-100>,"benchmark":"<...>","finding":"<Arabic>"}
+    "headline":   {"score":<0-100|null>,"verdict":"<Arabic>","data_found":<bool>},
+    "summary":    {"score":<0-100|null>,"verdict":"<Arabic>","data_found":<bool>},
+    "experience": {"score":<0-100|null>,"verdict":"<Arabic>","data_found":<bool>},
+    "skills":     {"score":<0-100|null>,"verdict":"<Arabic>","data_found":<bool>},
+    "education":  {"score":<0-100|null>,"verdict":"<Arabic>","data_found":<bool>},
+    "recommendations": {"score":<0-100|null>,"verdict":"<Arabic>","data_found":<bool>},
+    "activity":   {"score":<0-100|null>,"verdict":"<Arabic>","data_found":<bool>},
+    "media":      {"score":<0-100|null>,"verdict":"<Arabic>","data_found":<bool>}
   },
-  "strengths": ["<Arabic>","<Arabic>"],
-  "weaknesses": ["<Arabic>","<Arabic>"],
   "academic_insights": [
-    {"source":"Career Capital (LBS)","finding":"<Arabic>","application":"<Arabic>"},
-    {"source":"McKinsey MENA 2024","finding":"<Arabic>","application":"<Arabic>"},
-    {"source":"Personal Brand Equity (Harvard)","finding":"<Arabic>","application":"<Arabic>"}
+    {"framework":"Career Capital (LBS)","category":"<short tag>","finding":"<Arabic>","application":"<Arabic>"},
+    {"framework":"McKinsey MENA 2024","category":"<short tag>","finding":"<Arabic>","application":"<Arabic>"},
+    {"framework":"Personal Brand Equity (Harvard)","category":"<short tag>","finding":"<Arabic>","application":"<Arabic>"}
   ],
   "vision_2030_alignment": {
-    "pillar":"<Thriving Economy | Vibrant Society | Ambitious Nation>",
-    "opportunity":"<Arabic>",
-    "hcdp_match":"<Arabic>",
     "thriving_economy": {"status":"<aligned|partial|missing>","note":"<Arabic short>"},
     "vibrant_society": {"status":"<aligned|partial|missing>","note":"<Arabic short>"},
     "ambitious_nation": {"status":"<aligned|partial|missing>","note":"<Arabic short>"}
   },
-  "upgradePlan": {
-    "headline":   {"before":"<current>","after":"<<=220 chars>","tips":"<Arabic>"},
-    "about":      {"before":"<summary of current>","after":"<>=500 chars Arabic rewrite>","tips":"<Arabic>"},
-    "experience": {"before":"<current bullets>","after":"<rewrite with metrics>","tips":"<Arabic>"}
-  },
   "before_after": {
-    "headline": {"current":"<current>","improved":"<rewritten>","rationale":"<Arabic framework-based>"},
-    "summary":  {"current":"<first 120ch>","improved":"<first 120ch of rewrite>","rationale":"<Arabic>"}
+    "headline": <{"kept_as_is":true,"reason":"<Arabic>","language":"${lang}"} OR {"kept_as_is":false,"before":"<original ${lang}>","after":"<improved ${lang}>","reason":"<Arabic>","language":"${lang}"}>,
+    "summary_opening": <same shape as headline>
   },
-  "missingSections": ["<Arabic section name>"],
-  "actionChecklist": [
-    {"action":"<Arabic>","time":"<X min>","priority":"high"},
-    {"action":"<Arabic>","time":"<X min>","priority":"medium"},
-    {"action":"<Arabic>","time":"<X min>","priority":"low"}
-  ],
-  "action_plan": [
-    {"week":1,"title":"<Arabic short>","description":"<Arabic 1-2 sentences>","framework":"Harvard HBR","action":"<same as description>","expected_outcome":"<Arabic>","research_basis":"Harvard HBR"},
-    {"week":2,"title":"<Arabic short>","description":"<Arabic 1-2 sentences>","framework":"STAR (Stanford)","action":"<same as description>","expected_outcome":"<Arabic>","research_basis":"STAR (Stanford)"},
-    {"week":3,"title":"<Arabic short>","description":"<Arabic 1-2 sentences>","framework":"Kellogg \xB7 MIT Sloan","action":"<same as description>","expected_outcome":"<Arabic>","research_basis":"Kellogg \xB7 MIT Sloan"},
-    {"week":4,"title":"<Arabic short>","description":"<Arabic 1-2 sentences>","framework":"Cialdini","action":"<same as description>","expected_outcome":"<Arabic>","research_basis":"Cialdini"}
-  ],
-  "recommendationTemplate": "<Arabic WhatsApp message requesting a LinkedIn recommendation>",
-  "bannerDesign": {
-    "background":"linear-gradient(135deg, #064E49, #0A8F84)",
-    "mainText":"<name + title>",
-    "tagline":"<English tagline>",
-    "layout":"right-photo-left-text",
-    "accent":"#C9922A"
-  }
+  "quick_wins": [
+    {"action":"<Arabic, one sentence>","why":"<Arabic>","effort":"<5min|15min|30min|1h>","priority":"high","example":"<optional copy-paste text>"},
+    {"action":"<Arabic>","why":"<Arabic>","effort":"<...>","priority":"<...>"}
+  ]
 }
+
+Reminder: tier mapping \u2192 0-39=weak, 40-59=fair, 60-79=good, 80-100=excellent.
+Western digits everywhere.
 
 Profile:
 ${profileText}`;
@@ -58629,10 +58746,19 @@ var linkedinRouter = router2({
         await ctx.supabase.from("ai_cache").delete().eq("cache_key", cacheKey);
       }
       let profileText = "";
+      let scrapeMeta = null;
       if (input.linkedinUrl) {
-        const profileData = await scrapeLinkedInProfile(input.linkedinUrl);
-        profileText = buildProfileText(profileData).profileText;
+        const outcome = await scrapeLinkedInProfileMulti(input.linkedinUrl);
+        profileText = buildProfileText(outcome.profile).profileText;
+        scrapeMeta = {
+          completeness: outcome.completeness,
+          missingSections: outcome.missingSections,
+          detectedLanguage: detectLanguage(outcome.profile),
+          actor: outcome.actor
+        };
+        console.log("[DEEP] scrape ok via", outcome.actor, "completeness=", outcome.completeness, "missing=", outcome.missingSections.join(","), "lang=", scrapeMeta.detectedLanguage);
       }
+      const promptCtx = scrapeMeta ? { completeness: scrapeMeta.completeness, missingSections: scrapeMeta.missingSections, detectedLanguage: scrapeMeta.detectedLanguage } : { detectedLanguage: "ar" };
       const userContent = input.imageBase64 ? [
         {
           type: "image",
@@ -58642,8 +58768,8 @@ var linkedinRouter = router2({
             data: input.imageBase64
           }
         },
-        { type: "text", text: buildDeepUserPrompt("(see screenshot above)") }
-      ] : buildDeepUserPrompt(profileText);
+        { type: "text", text: buildDeepUserPrompt("(see screenshot above)", promptCtx) }
+      ] : buildDeepUserPrompt(profileText, promptCtx);
       console.log("[DEEP] Calling Claude for deep analysis");
       const _deepT0 = Date.now();
       let claudeRes;
@@ -58671,6 +58797,14 @@ var linkedinRouter = router2({
         return { error: "\u0641\u0634\u0644 \u062A\u062D\u0644\u064A\u0644 \u0627\u0644\u0631\u062F \u0645\u0646 \u0627\u0644\u0630\u0643\u0627\u0621 \u0627\u0644\u0627\u0635\u0637\u0646\u0627\u0639\u064A", rawPreview: text.substring(0, 200) };
       }
       console.log("[DEEP] Parsed OK, has score:", !!result.score);
+      if (scrapeMeta) {
+        result._meta = {
+          completeness: scrapeMeta.completeness,
+          missing_sections: scrapeMeta.missingSections,
+          detected_language: scrapeMeta.detectedLanguage,
+          actor: scrapeMeta.actor
+        };
+      }
       const expires = new Date(Date.now() + 24 * 60 * 60 * 1e3).toISOString();
       await ctx.supabase.from("ai_cache").upsert({
         cache_key: cacheKey,
@@ -64173,6 +64307,47 @@ async function shouldSendTransactional(supabase2, userId) {
     return true;
   }
 }
+async function sendAnalysisReportEmail(input) {
+  const isAr = input.language === "ar";
+  const subject = isAr ? `\u062A\u0642\u0631\u064A\u0631\u0643 \u0645\u0646 \u0648\u0635\u0651\u0644 \u2014 \u0646\u062A\u064A\u062C\u0629 ${input.overallScore}/100` : `Your Wassel Report \u2014 Score ${input.overallScore}/100`;
+  const verdictHtml = input.headlineVerdict ? `<blockquote style="border-inline-start:4px solid #0A8F84;background:#ECFDFB;padding:14px 18px;margin:18px 0;border-radius:0 12px 12px 0;font-style:italic;color:#065F58;font-size:13px;line-height:1.7;">"${escapeHtml2(input.headlineVerdict)}"</blockquote>` : "";
+  const body = isAr ? `
+      <h1 style="font-size:22px;font-weight:900;color:#111827;margin:0 0 12px;">\u062A\u0642\u0631\u064A\u0631\u0643 \u062C\u0627\u0647\u0632 \u{1F4CA}</h1>
+      <p style="font-size:14px;color:#374151;line-height:1.8;margin:0 0 14px;">\u0627\u0643\u062A\u0645\u0644 \u062A\u062D\u0644\u064A\u0644 \u0628\u0631\u0648\u0641\u0627\u064A\u0644\u0643 \u0627\u0644\u0645\u0647\u0646\u064A \u0628\u0648\u0627\u0633\u0637\u0629 \u0648\u0635\u0651\u0644. \u0627\u0644\u0646\u062A\u064A\u062C\u0629 \u0627\u0644\u0625\u062C\u0645\u0627\u0644\u064A\u0629:</p>
+      <div style="text-align:center;background:linear-gradient(135deg,#ECFDFB,#FDF6E4);border-radius:14px;padding:22px;margin:14px 0;">
+        <div style="font-size:48px;font-weight:900;background:linear-gradient(135deg,#0A8F84,#C9922A);-webkit-background-clip:text;-webkit-text-fill-color:transparent;color:#0A8F84;">${input.overallScore}</div>
+        <div style="font-size:12px;color:#64748B;margin-top:4px;">\u0645\u0646 100</div>
+      </div>
+      ${verdictHtml}
+      <p style="font-size:13px;color:#374151;line-height:1.8;">\u064A\u062D\u062A\u0648\u064A \u062A\u0642\u0631\u064A\u0631\u0643 \u0627\u0644\u0643\u0627\u0645\u0644 \u0639\u0644\u0649:</p>
+      <ul style="font-size:13px;line-height:1.9;color:#374151;padding-inline-start:20px;margin:8px 0 18px;">
+        <li>\u062A\u062D\u0644\u064A\u0644 8 \u0623\u0628\u0639\u0627\u062F \u0628\u0627\u0644\u062A\u0641\u0635\u064A\u0644</li>
+        <li>3 \u0631\u0624\u0649 \u0623\u0643\u0627\u062F\u064A\u0645\u064A\u0629 \u0645\u0646 Harvard \u0648 LBS \u0648 McKinsey</li>
+        <li>\u0645\u0648\u0627\u0621\u0645\u0629 \u0631\u0624\u064A\u0629 2030</li>
+        <li>${input.quickWinsCount || 0} \u062A\u0639\u062F\u064A\u0644 \u0641\u0648\u0631\u064A \u0642\u0627\u0628\u0644 \u0644\u0644\u062A\u0646\u0641\u064A\u0630</li>
+      </ul>
+      <div style="text-align:center;margin-top:22px;">${btn(`${APP_URL}/app/profile-analysis`, "\u0627\u0641\u062A\u062D \u0627\u0644\u062A\u0642\u0631\u064A\u0631 \u0641\u064A \u0648\u0635\u0651\u0644")}</div>
+    ` : `
+      <h1 style="font-size:22px;font-weight:900;color:#111827;margin:0 0 12px;">Your Report is Ready \u{1F4CA}</h1>
+      <p style="font-size:14px;color:#374151;line-height:1.8;margin:0 0 14px;">Your professional profile analysis is complete. Overall score:</p>
+      <div style="text-align:center;background:linear-gradient(135deg,#ECFDFB,#FDF6E4);border-radius:14px;padding:22px;margin:14px 0;">
+        <div style="font-size:48px;font-weight:900;background:linear-gradient(135deg,#0A8F84,#C9922A);-webkit-background-clip:text;-webkit-text-fill-color:transparent;color:#0A8F84;">${input.overallScore}</div>
+        <div style="font-size:12px;color:#64748B;margin-top:4px;">out of 100</div>
+      </div>
+      ${verdictHtml}
+      <p style="font-size:13px;color:#374151;line-height:1.8;">Your full report includes:</p>
+      <ul style="font-size:13px;line-height:1.9;color:#374151;padding-inline-start:20px;margin:8px 0 18px;">
+        <li>8-dimension detailed breakdown</li>
+        <li>3 academic insights from Harvard, LBS, McKinsey</li>
+        <li>Vision 2030 alignment</li>
+        <li>${input.quickWinsCount || 0} immediate actionable items</li>
+      </ul>
+      <div style="text-align:center;margin-top:22px;">${btn(`${APP_URL}/app/profile-analysis`, "Open Report in Wassel")}</div>
+    `;
+  const html = shell({ isAr, preheader: subject, bodyInner: body });
+  const text = isAr ? `\u062A\u0642\u0631\u064A\u0631\u0643 \u0645\u0646 \u0648\u0635\u0651\u0644 \u062C\u0627\u0647\u0632 \u2014 \u0627\u0644\u0646\u062A\u064A\u062C\u0629 ${input.overallScore}/100. \u0627\u0641\u062A\u062D: ${APP_URL}/app/profile-analysis` : `Your Wassel report is ready \u2014 Score ${input.overallScore}/100. Open: ${APP_URL}/app/profile-analysis`;
+  return sendRaw({ to: input.to, subject, html, text });
+}
 
 // server/_core/routes/campaign.ts
 var ADMIN_EMAILS = ["waselhup@gmail.com", "almodhih.1995@gmail.com", "alhashimali649@gmail.com"];
@@ -66641,6 +66816,31 @@ app.post("/api/email/welcome", async (req, res) => {
     return res.json({ ok: result.success, ...result });
   } catch (e) {
     console.error("[email/welcome] error:", e?.message);
+    return res.status(500).json({ error: e?.message || "Internal error" });
+  }
+});
+app.post("/api/analyzer/send-email", async (req, res) => {
+  try {
+    const user = await getUserFromAuthHeader(req.headers.authorization);
+    if (!user) return res.status(401).json({ error: "Unauthorized" });
+    const { recipientEmail, language, result, linkedinUrl } = req.body || {};
+    if (!recipientEmail || !result) {
+      return res.status(400).json({ error: "Missing recipientEmail or result" });
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipientEmail)) {
+      return res.status(400).json({ error: "Invalid email" });
+    }
+    const r = await sendAnalysisReportEmail({
+      to: recipientEmail,
+      language: language === "en" ? "en" : "ar",
+      overallScore: Number(result.overall_score ?? result.score ?? 0),
+      headlineVerdict: typeof result.headline_verdict === "string" ? result.headline_verdict : void 0,
+      quickWinsCount: Array.isArray(result.quick_wins) ? result.quick_wins.length : 0,
+      linkedinUrl: typeof linkedinUrl === "string" ? linkedinUrl : void 0
+    });
+    return res.json({ ok: r.success, ...r });
+  } catch (e) {
+    console.error("[analyzer/send-email] error:", e?.message);
     return res.status(500).json({ error: e?.message || "Internal error" });
   }
 });

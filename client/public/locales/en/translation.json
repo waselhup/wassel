@@ -1049,7 +1049,8 @@
     "beforeAfter": {
       "title": "Before / After",
       "before": "Before",
-      "after": "After"
+      "after": "After",
+      "keptAsIs": "Excellent as-is"
     },
     "actionPlan": {
       "title": "4-Week Plan",
@@ -1059,7 +1060,31 @@
       "exportPDF": "Export PDF",
       "regenerate": "Regenerate",
       "discuss": "Discuss with Advisor",
-      "comingSoon": "Coming soon — AI chat to discuss your plan"
+      "comingSoon": "Coming soon — AI chat to discuss your plan",
+      "sendEmail": "Send to email"
+    },
+    "quickWins": {
+      "title": "Quick Wins — Act Now",
+      "subtitle": "Specific actions with clear timing, ordered by priority",
+      "why": "Why",
+      "example": "Example",
+      "timeTotal": "Total time: ~{{n}}",
+      "tip": "💡 These are suggestions — you're the decision maker. Take what works, leave what doesn't. Run the analysis again after applying changes."
+    },
+    "completenessWarning": {
+      "title": "Profile data extracted: {{n}}%",
+      "missing": "Sections we could not read"
+    },
+    "pdfGenerating": "Preparing report...",
+    "pdfSuccess": "Report downloaded",
+    "emailSending": "Sending...",
+    "emailSuccess": "Report sent to your inbox",
+    "emailError": "Send failed — try again",
+    "invalidEmail": "Invalid email",
+    "emailModal": {
+      "title": "Email this report",
+      "subtitle": "Receive the score summary and a link to the full report",
+      "send": "Send"
     }
   }
 }
