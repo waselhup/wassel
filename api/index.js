@@ -58318,48 +58318,117 @@ var NEVER = INVALID;
 
 // server/_core/lib/linkedin-scraper.ts
 var APIFY_TOKEN = process.env.APIFY_TOKEN || process.env.APIFY_API_TOKEN || "";
-var ACTORS = [
-  { id: "dev_fusion~Linkedin-Profile-Scraper", inputKey: "profileUrls" },
-  { id: "apimaestro~linkedin-profile-detail", inputKey: "profileUrls" },
-  { id: "harvestapi~linkedin-profile-scraper", inputKey: "linkedinUrls" }
-];
-var WEIGHTS = {
-  headline: 10,
-  summary: 15,
-  experience: 25,
-  skills: 15,
-  education: 15,
-  recommendations: 5,
-  activity: 10,
-  certifications: 5
-};
+function normalizeDevFusion(raw) {
+  const fullName = raw.fullName || `${raw.firstName || ""} ${raw.lastName || ""}`.trim();
+  const exp = Array.isArray(raw.experiences) ? raw.experiences : [];
+  const edu = Array.isArray(raw.educations) ? raw.educations : [];
+  const skillsArr = Array.isArray(raw.skills) ? raw.skills : [];
+  const certs = Array.isArray(raw.licenseAndCertificates) ? raw.licenseAndCertificates : [];
+  const langs = Array.isArray(raw.languages) ? raw.languages : [];
+  return {
+    fullName,
+    firstName: raw.firstName || fullName.split(" ")[0] || "",
+    headline: raw.headline || raw.jobTitle || "",
+    summary: raw.about || raw.summary || "",
+    location: raw.addressWithCountry || raw.addressCountryFull || raw.jobLocation || "",
+    profilePicture: raw.profilePic || raw.profilePicture || raw.profilePicHighQuality || "",
+    experience: exp.map((e) => ({
+      title: e.title || e.jobTitle || "",
+      company: e.companyName || e.company || "",
+      duration: e.duration || `${e.jobStartedOn?.year || ""} - ${e.jobStillWorking ? "Present" : e.jobEndedOn?.year || ""}`.trim(),
+      location: e.jobLocation || e.location || "",
+      description: e.jobDescription || e.description || ""
+    })),
+    education: edu.map((e) => ({
+      school: e.title || e.schoolName || e.school || "",
+      degree: e.subtitle || e.degree || "",
+      field: e.field || e.fieldOfStudy || "",
+      year: e.period || e.year || e.endDate || ""
+    })),
+    skills: skillsArr.map((s2) => typeof s2 === "string" ? s2 : s2.title || s2.name || s2.skill || "").filter(Boolean),
+    certifications: certs.map((c) => ({ name: c.name || c.title || "", issuer: c.authority || c.issuer || c.organization || "" })),
+    recommendations: (raw.recommendations || []).map((r) => ({ from: r.from || r.author || "", text: r.text || r.content || "" })),
+    languages: langs.map((l) => ({ name: l.name || l.language || "", proficiency: l.proficiency || l.level || "" })),
+    activity: (raw.posts || raw.activity || raw.recentActivity || []).slice(0, 10).map((a) => ({ title: a.title || a.text || a.content || "", date: a.date || "" }))
+  };
+}
+function normalizeApiMaestro(raw) {
+  const bi = raw.basic_info || {};
+  const exp = Array.isArray(raw.experience) ? raw.experience : [];
+  const edu = Array.isArray(raw.education) ? raw.education : [];
+  const skillsArr = Array.isArray(raw.skills) ? raw.skills : [];
+  const certs = Array.isArray(raw.certifications) ? raw.certifications : [];
+  const langs = Array.isArray(raw.languages) ? raw.languages : [];
+  const fullName = bi.fullname || `${bi.first_name || ""} ${bi.last_name || ""}`.trim();
+  return {
+    fullName,
+    firstName: bi.first_name || fullName.split(" ")[0] || "",
+    headline: bi.headline || "",
+    summary: bi.about || "",
+    location: bi.location?.full || bi.location || "",
+    profilePicture: bi.profile_picture_url || "",
+    experience: exp.map((e) => ({
+      title: e.title || e.position || "",
+      company: e.company || e.company_name || "",
+      duration: e.duration || e.date_range || `${e.start_date || ""} - ${e.end_date || ""}`,
+      location: e.location || "",
+      description: e.description || ""
+    })),
+    education: edu.map((e) => ({
+      school: e.school || e.school_name || "",
+      degree: e.degree || "",
+      field: e.field || e.field_of_study || "",
+      year: e.date_range || e.duration || ""
+    })),
+    skills: skillsArr.map((s2) => typeof s2 === "string" ? s2 : s2.name || s2.title || "").filter(Boolean),
+    certifications: certs.map((c) => ({ name: c.name || "", issuer: c.issuer || c.organization || "" })),
+    recommendations: (raw.recommendations || []).map((r) => ({ from: r.from || "", text: r.text || "" })),
+    languages: langs.map((l) => ({ name: l.language || l.name || "", proficiency: l.proficiency || "" })),
+    activity: (raw.posts || raw.activity || []).slice(0, 10).map((a) => ({ title: a.title || a.text || "", date: a.date || "" }))
+  };
+}
+function normalizeGeneric(raw) {
+  if (raw?.basic_info) return normalizeApiMaestro(raw);
+  return normalizeDevFusion(raw);
+}
 function computeCompleteness(p) {
-  if (!p) return 0;
   let score = 0;
-  if ((p.headline || "").length > 10) score += WEIGHTS.headline;
-  if ((p.summary || p.about || "").length > 50) score += WEIGHTS.summary;
-  if ((p.experience?.length || p.positions?.length || 0) > 0) score += WEIGHTS.experience;
-  if ((p.skills?.length || 0) > 0) score += WEIGHTS.skills;
-  if ((p.education?.length || 0) > 0) score += WEIGHTS.education;
-  if ((p.recommendations?.length || p.recommendationsReceived?.length || 0) > 0) score += WEIGHTS.recommendations;
-  if ((p.activity?.length || p.posts?.length || 0) > 0) score += WEIGHTS.activity;
-  if ((p.certifications?.length || p.licenses?.length || 0) > 0) score += WEIGHTS.certifications;
+  if (p.headline && p.headline.length > 15) score += 10;
+  if (p.summary && p.summary.length > 100) score += 15;
+  if (p.experience.length > 0) score += 20;
+  if (p.experience[0]?.description && p.experience[0].description.length > 50) score += 5;
+  if (p.skills.length > 3) score += 15;
+  if (p.skills.length > 10) score += 5;
+  if (p.education.length > 0) score += 15;
+  if (p.certifications.length > 0) score += 5;
+  if (p.languages.length > 0) score += 5;
+  if (p.activity.length > 0) score += 5;
   return Math.min(score, 100);
 }
-function detectLanguage(profile) {
-  const text = [
-    profile?.headline || "",
-    profile?.summary || profile?.about || "",
-    ...(profile?.experience || profile?.positions || []).map((e) => e?.description || e?.summary || "")
-  ].join(" ");
+function detectLanguage(p) {
+  const text = [p.headline, p.summary, ...p.experience.map((e) => e.description || "")].join(" ");
   const arabicChars = (text.match(/[\u0600-\u06FF]/g) || []).length;
-  const totalChars = text.replace(/\s/g, "").length;
-  if (totalChars === 0) return "en";
-  return arabicChars / totalChars > 0.3 ? "ar" : "en";
+  if (text.length === 0) return "en";
+  return arabicChars / text.length > 0.3 ? "ar" : "en";
 }
-async function tryActor(actor, url, timeoutMs = 9e4) {
+function getMissingSections(p) {
+  const missing = [];
+  if (!p.headline || p.headline.length < 15) missing.push("headline");
+  if (!p.summary || p.summary.length < 100) missing.push("summary");
+  if (p.experience.length === 0) missing.push("experience");
+  if (p.skills.length < 3) missing.push("skills");
+  if (p.education.length === 0) missing.push("education");
+  if (p.certifications.length === 0) missing.push("certifications");
+  if (p.languages.length === 0) missing.push("languages");
+  return missing;
+}
+var ACTORS = [
+  { id: "dev_fusion~Linkedin-Profile-Scraper", inputKey: "profileUrls", normalize: normalizeDevFusion },
+  { id: "apimaestro~linkedin-profile-detail", inputKey: "profileUrls", normalize: normalizeApiMaestro },
+  { id: "harvestapi~linkedin-profile-scraper", inputKey: "linkedinUrls", normalize: normalizeGeneric }
+];
+async function runActor(actor, url, timeoutMs = 9e4) {
   try {
-    const body = { [actor.inputKey]: [url] };
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), timeoutMs);
     const res = await fetch(
@@ -58367,20 +58436,17 @@ async function tryActor(actor, url, timeoutMs = 9e4) {
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ [actor.inputKey]: [url] }),
         signal: ctrl.signal
       }
     );
     clearTimeout(timer);
-    if (!res.ok) {
-      console.warn(`[scraper] ${actor.id} HTTP ${res.status}`);
-      return null;
-    }
+    if (!res.ok) return null;
     const data = await res.json();
-    const profile = Array.isArray(data) ? data[0] : data;
-    return profile || null;
-  } catch (err) {
-    console.warn(`[scraper] ${actor.id} failed:`, err?.message);
+    const raw = Array.isArray(data) ? data[0] : data;
+    if (!raw) return null;
+    return actor.normalize(raw);
+  } catch {
     return null;
   }
 }
@@ -58388,32 +58454,34 @@ async function scrapeLinkedInProfileMulti(url) {
   if (!APIFY_TOKEN) throw new Error("APIFY_TOKEN missing");
   let best = null;
   let bestScore = 0;
-  let bestActor = "";
+  let bestSource = "";
+  const attempts = [];
   for (const actor of ACTORS) {
-    const profile = await tryActor(actor, url);
-    if (!profile) continue;
+    const profile = await runActor(actor, url);
+    if (!profile) {
+      attempts.push(`${actor.id}: FAILED/empty`);
+      continue;
+    }
     const score = computeCompleteness(profile);
-    console.log(`[scraper] ${actor.id} completeness=${score}%`);
+    attempts.push(`${actor.id}: ${score}%`);
+    console.log(`[scraper] ${actor.id} completeness=${score}% (skills=${profile.skills.length}, exp=${profile.experience.length}, edu=${profile.education.length})`);
     if (score > bestScore) {
       best = profile;
       bestScore = score;
-      bestActor = actor.id;
+      bestSource = actor.id;
     }
     if (score >= 85) break;
   }
-  if (!best || bestScore < 30) {
-    throw new Error(`LinkedIn profile data too incomplete (best=${bestScore}%) \u2014 profile may be private`);
+  if (!best || bestScore < 25) {
+    throw new Error(`Profile data too incomplete to analyze. Attempts: ${attempts.join(", ")}`);
   }
-  const missing = [];
-  if (!best.headline || best.headline.length < 10) missing.push("headline");
-  if (!(best.summary || best.about) || (best.summary || best.about || "").length < 50) missing.push("summary");
-  if (!(best.experience?.length || best.positions?.length)) missing.push("experience");
-  if (!best.skills?.length) missing.push("skills");
-  if (!best.education?.length) missing.push("education");
-  if (!(best.recommendations?.length || best.recommendationsReceived?.length)) missing.push("recommendations");
-  if (!(best.activity?.length || best.posts?.length)) missing.push("activity");
-  if (!(best.certifications?.length || best.licenses?.length)) missing.push("media");
-  return { profile: best, completeness: bestScore, actor: bestActor, missingSections: missing };
+  return {
+    profile: best,
+    completeness: bestScore,
+    source: bestSource,
+    missingSections: getMissingSections(best),
+    attempts
+  };
 }
 
 // server/_core/routes/linkedin.ts
@@ -58747,16 +58815,40 @@ var linkedinRouter = router2({
       }
       let profileText = "";
       let scrapeMeta = null;
+      let unifiedProfile = null;
       if (input.linkedinUrl) {
         const outcome = await scrapeLinkedInProfileMulti(input.linkedinUrl);
-        profileText = buildProfileText(outcome.profile).profileText;
+        unifiedProfile = outcome.profile;
+        const p = outcome.profile;
+        profileText = [
+          `Name: ${p.fullName || "Unknown"}`,
+          `Headline: ${p.headline || ""}`,
+          `Location: ${p.location || ""}`,
+          `Summary: ${p.summary || "None"}`,
+          "",
+          `Experience (${p.experience.length} positions):`,
+          ...p.experience.slice(0, 6).map(
+            (e) => `- ${e.title || ""} at ${e.company || ""} (${e.duration || ""})${e.description ? ` \u2014 ${String(e.description).slice(0, 250)}` : ""}`
+          ),
+          "",
+          `Education (${p.education.length}):`,
+          ...p.education.slice(0, 4).map((e) => `- ${e.degree || ""} ${e.field ? `in ${e.field}` : ""} from ${e.school || ""} ${e.year ? `(${e.year})` : ""}`),
+          "",
+          `Skills (${p.skills.length}): ${p.skills.slice(0, 25).join(", ")}`,
+          "",
+          `Certifications (${p.certifications.length}):`,
+          ...p.certifications.slice(0, 6).map((c) => `- ${c.name || ""}${c.issuer ? ` \u2014 ${c.issuer}` : ""}`),
+          "",
+          `Languages: ${p.languages.map((l) => `${l.name} (${l.proficiency || ""})`).join(", ") || "None"}`
+        ].join("\n").trim();
         scrapeMeta = {
           completeness: outcome.completeness,
           missingSections: outcome.missingSections,
           detectedLanguage: detectLanguage(outcome.profile),
-          actor: outcome.actor
+          source: outcome.source,
+          attempts: outcome.attempts
         };
-        console.log("[DEEP] scrape ok via", outcome.actor, "completeness=", outcome.completeness, "missing=", outcome.missingSections.join(","), "lang=", scrapeMeta.detectedLanguage);
+        console.log("[DEEP] scrape ok via", outcome.source, "completeness=", outcome.completeness, "missing=", outcome.missingSections.join(","), "lang=", scrapeMeta.detectedLanguage);
       }
       const promptCtx = scrapeMeta ? { completeness: scrapeMeta.completeness, missingSections: scrapeMeta.missingSections, detectedLanguage: scrapeMeta.detectedLanguage } : { detectedLanguage: "ar" };
       const userContent = input.imageBase64 ? [
@@ -58802,8 +58894,12 @@ var linkedinRouter = router2({
           completeness: scrapeMeta.completeness,
           missing_sections: scrapeMeta.missingSections,
           detected_language: scrapeMeta.detectedLanguage,
-          actor: scrapeMeta.actor
+          source: scrapeMeta.source,
+          attempts: scrapeMeta.attempts
         };
+      }
+      if (unifiedProfile) {
+        result._profile = unifiedProfile;
       }
       const expires = new Date(Date.now() + 24 * 60 * 60 * 1e3).toISOString();
       await ctx.supabase.from("ai_cache").upsert({

@@ -9,7 +9,7 @@ import DashboardLayout from '../components/DashboardLayout';
 import { useAuth } from '../contexts/AuthContext';
 import { trpcMutation } from '../lib/trpc';
 import { supabase } from '../lib/supabase';
-import { AnalysisPDFTemplate } from '../components/AnalysisPDFTemplate';
+import { generateAnalysisPDF } from '../lib/pdf-generator';
 
 // ─── Types (loose: backend produces a superset, we read what's there) ──
 interface Dimension { score: number; verdict?: string; finding?: string; benchmark?: string }
@@ -253,7 +253,6 @@ export default function ProfileAnalysis() {
     setLoading(false);
   }
 
-  const pdfRef = useRef<HTMLDivElement>(null);
   const [pdfBusy, setPdfBusy] = useState(false);
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [emailAddress, setEmailAddress] = useState('');
@@ -266,22 +265,15 @@ export default function ProfileAnalysis() {
   }, [profile]);
 
   async function handleExportPDF() {
-    if (!pdfRef.current || !result) return;
+    if (!result) return;
     setPdfBusy(true);
     try {
-      const mod: any = await import('html2pdf.js');
-      const html2pdf = mod.default || mod;
-      await html2pdf()
-        .set({
-          margin: 0,
-          filename: `wassel-analysis-${Date.now()}.pdf`,
-          image: { type: 'jpeg', quality: 0.95 },
-          html2canvas: { scale: 2, useCORS: true, logging: false, backgroundColor: '#FFFFFF' },
-          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true },
-          pagebreak: { mode: ['css', 'legacy'] },
-        })
-        .from(pdfRef.current)
-        .save();
+      await generateAnalysisPDF({
+        result,
+        profile: (result as any)._profile,
+        linkedinUrl: url,
+        language: i18n.language === 'en' ? 'en' : 'ar',
+      });
       toast.push('success', t('analyzer.pdfSuccess'));
     } catch (err: any) {
       console.error('PDF export failed:', err);
@@ -875,15 +867,6 @@ export default function ProfileAnalysis() {
               </button>
             </div>
 
-            {/* Hidden PDF template (rendered off-screen, used by html2pdf) */}
-            <div className="no-print" style={{ position: 'absolute', left: '-99999px', top: 0, pointerEvents: 'none' }} aria-hidden>
-              <AnalysisPDFTemplate
-                ref={pdfRef}
-                result={result}
-                linkedinUrl={url}
-                language={i18n.language === 'en' ? 'en' : 'ar'}
-              />
-            </div>
           </>
         )}
 

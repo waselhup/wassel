@@ -446,17 +446,43 @@ export const linkedinRouter = router({
 
         // Build profile text via multi-actor scraper (or skip for image flow)
         let profileText = '';
-        let scrapeMeta: { completeness: number; missingSections: string[]; detectedLanguage: 'ar' | 'en'; actor: string } | null = null;
+        let scrapeMeta: { completeness: number; missingSections: string[]; detectedLanguage: 'ar' | 'en'; source: string; attempts: string[] } | null = null;
+        let unifiedProfile: any = null;
         if (input.linkedinUrl) {
           const outcome = await scrapeLinkedInProfileMulti(input.linkedinUrl);
-          profileText = buildProfileText(outcome.profile).profileText;
+          unifiedProfile = outcome.profile;
+          // Build profile text from UnifiedProfile (new shape, not raw Apify)
+          const p = outcome.profile;
+          profileText = [
+            `Name: ${p.fullName || 'Unknown'}`,
+            `Headline: ${p.headline || ''}`,
+            `Location: ${p.location || ''}`,
+            `Summary: ${p.summary || 'None'}`,
+            '',
+            `Experience (${p.experience.length} positions):`,
+            ...p.experience.slice(0, 6).map((e: any) =>
+              `- ${e.title || ''} at ${e.company || ''} (${e.duration || ''})${e.description ? ` — ${String(e.description).slice(0, 250)}` : ''}`
+            ),
+            '',
+            `Education (${p.education.length}):`,
+            ...p.education.slice(0, 4).map((e: any) => `- ${e.degree || ''} ${e.field ? `in ${e.field}` : ''} from ${e.school || ''} ${e.year ? `(${e.year})` : ''}`),
+            '',
+            `Skills (${p.skills.length}): ${p.skills.slice(0, 25).join(', ')}`,
+            '',
+            `Certifications (${p.certifications.length}):`,
+            ...p.certifications.slice(0, 6).map((c: any) => `- ${c.name || ''}${c.issuer ? ` — ${c.issuer}` : ''}`),
+            '',
+            `Languages: ${p.languages.map((l: any) => `${l.name} (${l.proficiency || ''})`).join(', ') || 'None'}`,
+          ].join('\n').trim();
+
           scrapeMeta = {
             completeness: outcome.completeness,
             missingSections: outcome.missingSections,
             detectedLanguage: detectLanguage(outcome.profile),
-            actor: outcome.actor,
+            source: outcome.source,
+            attempts: outcome.attempts,
           };
-          console.log('[DEEP] scrape ok via', outcome.actor, 'completeness=', outcome.completeness, 'missing=', outcome.missingSections.join(','), 'lang=', scrapeMeta.detectedLanguage);
+          console.log('[DEEP] scrape ok via', outcome.source, 'completeness=', outcome.completeness, 'missing=', outcome.missingSections.join(','), 'lang=', scrapeMeta.detectedLanguage);
         }
 
         // Build Claude user content (image or text)
@@ -507,14 +533,18 @@ export const linkedinRouter = router({
         }
         console.log('[DEEP] Parsed OK, has score:', !!result.score);
 
-        // Attach scrape meta so the UI can show completeness/language banner
+        // Attach scrape meta + profile so the UI / PDF can render real data
         if (scrapeMeta) {
           result._meta = {
             completeness: scrapeMeta.completeness,
             missing_sections: scrapeMeta.missingSections,
             detected_language: scrapeMeta.detectedLanguage,
-            actor: scrapeMeta.actor,
+            source: scrapeMeta.source,
+            attempts: scrapeMeta.attempts,
           };
+        }
+        if (unifiedProfile) {
+          result._profile = unifiedProfile;
         }
 
         // Cache result (24h)
