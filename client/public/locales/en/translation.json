@@ -1000,5 +1000,66 @@
       "paid": "Paid users",
       "tokens": "Total tokens granted"
     }
+  },
+  "analyzer": {
+    "title": "Deep Profile Analysis",
+    "subtitle": "15 academic frameworks from Harvard, LBS, and Wharton",
+    "resultsSubtitle": "Analysis results ordered by priority",
+    "inputLabel": "LinkedIn URL",
+    "analyze": "Analyze",
+    "disclaimer": "We use automated extraction then Claude Sonnet for analysis — your results are private",
+    "cost": "Cost: {{n}} tokens",
+    "used": "Used: {{n}} tokens",
+    "success": "Analysis complete",
+    "error": "Error — please try again",
+    "rateLimit": "High load now — try in a minute",
+    "timeout": "Analysis timed out — retry",
+    "invalidUrl": "Invalid URL — must start with linkedin.com/in/",
+    "pdfError": "PDF export failed",
+    "waitNote": "Analysis takes up to 2 minutes — quality takes time",
+    "outOf100": "out of 100",
+    "tiers": {
+      "weak": "Needs work",
+      "fair": "Fair — room to grow",
+      "good": "Good — can improve",
+      "excellent": "Excellent"
+    },
+    "dimensions": {
+      "title": "Eight-Dimension Breakdown",
+      "headline": "Headline",
+      "summary": "Summary",
+      "experience": "Experience",
+      "skills": "Skills",
+      "education": "Education",
+      "recommendations": "Recommendations",
+      "activity": "Activity",
+      "media": "Media"
+    },
+    "insights": {
+      "title": "Academic Insights",
+      "finding": "Finding",
+      "application": "Application"
+    },
+    "vision2030": {
+      "title": "Vision 2030 Alignment",
+      "thriving_economy": "Thriving Economy",
+      "vibrant_society": "Vibrant Society",
+      "ambitious_nation": "Ambitious Nation"
+    },
+    "beforeAfter": {
+      "title": "Before / After",
+      "before": "Before",
+      "after": "After"
+    },
+    "actionPlan": {
+      "title": "4-Week Plan",
+      "week": "Week"
+    },
+    "actions": {
+      "exportPDF": "Export PDF",
+      "regenerate": "Regenerate",
+      "discuss": "Discuss with Advisor",
+      "comingSoon": "Coming soon — AI chat to discuss your plan"
+    }
   }
 }

@@ -947,5 +947,66 @@
       "paid": "مشتركون مدفوع",
       "tokens": "إجمالي التوكنز الممنوحة"
     }
+  },
+  "analyzer": {
+    "title": "تحليل البروفايل العميق",
+    "subtitle": "15 إطاراً أكاديمياً من Harvard و LBS و Wharton",
+    "resultsSubtitle": "نتائج التحليل مرتّبة حسب الأهمية",
+    "inputLabel": "رابط LinkedIn",
+    "analyze": "تحليل",
+    "disclaimer": "تستخدم الأداة استخراجاً آلياً ثم Claude Sonnet للتحليل — نتائجك خاصة ولا تُشارَك",
+    "cost": "استهلاك: {{n}} توكن",
+    "used": "تم استهلاك: {{n}} توكن",
+    "success": "اكتمل التحليل",
+    "error": "حدث خطأ — حاول مرة أخرى",
+    "rateLimit": "ضغط عالٍ الآن — جرّب بعد دقيقة",
+    "timeout": "استغرق التحليل وقتاً طويلاً — أعد المحاولة",
+    "invalidUrl": "الرابط غير صحيح — يجب أن يبدأ بـ linkedin.com/in/",
+    "pdfError": "فشل تصدير PDF",
+    "waitNote": "قد يستغرق التحليل حتى دقيقتين — جودة أفضل تستحق الانتظار",
+    "outOf100": "من 100",
+    "tiers": {
+      "weak": "يحتاج تطويراً",
+      "fair": "مقبول — قابل للتحسين",
+      "good": "جيد — قابل للتحسين",
+      "excellent": "ممتاز"
+    },
+    "dimensions": {
+      "title": "تحليل الأبعاد الثمانية",
+      "headline": "العنوان الوظيفي",
+      "summary": "الملخص",
+      "experience": "الخبرات",
+      "skills": "المهارات",
+      "education": "التعليم",
+      "recommendations": "التوصيات",
+      "activity": "النشاط",
+      "media": "الوسائط"
+    },
+    "insights": {
+      "title": "رؤى أكاديمية",
+      "finding": "الاكتشاف",
+      "application": "التطبيق"
+    },
+    "vision2030": {
+      "title": "مواءمة رؤية 2030",
+      "thriving_economy": "اقتصاد مزدهر",
+      "vibrant_society": "مجتمع حيوي",
+      "ambitious_nation": "وطن طموح"
+    },
+    "beforeAfter": {
+      "title": "قبل / بعد",
+      "before": "قبل",
+      "after": "بعد"
+    },
+    "actionPlan": {
+      "title": "خطة 4 أسابيع",
+      "week": "الأسبوع"
+    },
+    "actions": {
+      "exportPDF": "تصدير PDF",
+      "regenerate": "إعادة التحليل",
+      "discuss": "ناقش مع مستشار",
+      "comingSoon": "هذه الميزة قريباً — سنطلق محادثة AI لنقاش خطتك"
+    }
   }
 }

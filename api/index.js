@@ -58436,6 +58436,8 @@ function buildDeepUserPrompt(profileText) {
 {
   "score": <0-100>,
   "overall_score": <same as score>,
+  "tier": "<weak | fair | good | excellent>",
+  "headline_verdict": "<Arabic single-sentence verdict explaining the score>",
   "scoreBreakdown": {"headline":<0-15>,"about":<0-15>,"experience":<0-20>,"skills":<0-10>,"education":<0-10>,"photo":<0-10>,"connections":<0-10>,"certifications":<0-10>},
   "dimensions": {
     "headline":   {"score":<0-100>,"benchmark":"<LinkedIn MENA 2024>","finding":"<Arabic>"},
@@ -58457,7 +58459,10 @@ function buildDeepUserPrompt(profileText) {
   "vision_2030_alignment": {
     "pillar":"<Thriving Economy | Vibrant Society | Ambitious Nation>",
     "opportunity":"<Arabic>",
-    "hcdp_match":"<Arabic>"
+    "hcdp_match":"<Arabic>",
+    "thriving_economy": {"status":"<aligned|partial|missing>","note":"<Arabic short>"},
+    "vibrant_society": {"status":"<aligned|partial|missing>","note":"<Arabic short>"},
+    "ambitious_nation": {"status":"<aligned|partial|missing>","note":"<Arabic short>"}
   },
   "upgradePlan": {
     "headline":   {"before":"<current>","after":"<<=220 chars>","tips":"<Arabic>"},
@@ -58475,9 +58480,10 @@ function buildDeepUserPrompt(profileText) {
     {"action":"<Arabic>","time":"<X min>","priority":"low"}
   ],
   "action_plan": [
-    {"week":1,"action":"<Arabic>","expected_outcome":"<Arabic>","research_basis":"<framework>"},
-    {"week":2,"action":"<Arabic>","expected_outcome":"<Arabic>","research_basis":"<framework>"},
-    {"week":4,"action":"<Arabic>","expected_outcome":"<Arabic>","research_basis":"<framework>"}
+    {"week":1,"title":"<Arabic short>","description":"<Arabic 1-2 sentences>","framework":"Harvard HBR","action":"<same as description>","expected_outcome":"<Arabic>","research_basis":"Harvard HBR"},
+    {"week":2,"title":"<Arabic short>","description":"<Arabic 1-2 sentences>","framework":"STAR (Stanford)","action":"<same as description>","expected_outcome":"<Arabic>","research_basis":"STAR (Stanford)"},
+    {"week":3,"title":"<Arabic short>","description":"<Arabic 1-2 sentences>","framework":"Kellogg \xB7 MIT Sloan","action":"<same as description>","expected_outcome":"<Arabic>","research_basis":"Kellogg \xB7 MIT Sloan"},
+    {"week":4,"title":"<Arabic short>","description":"<Arabic 1-2 sentences>","framework":"Cialdini","action":"<same as description>","expected_outcome":"<Arabic>","research_basis":"Cialdini"}
   ],
   "recommendationTemplate": "<Arabic WhatsApp message requesting a LinkedIn recommendation>",
   "bannerDesign": {

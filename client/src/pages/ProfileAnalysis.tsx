@@ -1,53 +1,53 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import {
-  Sparkles, CheckCircle, XCircle, Copy, ChevronDown, Upload,
-  Link as LinkIcon, Loader2, AlertCircle, UserCheck, Check, X,
-  Clock, TrendingUp, Printer, MoreVertical,
+  Sparkles, Link as LinkIcon, Loader2, AlertCircle, Check, X,
+  Upload, FileDown, RotateCcw, MessageCircle, Award, BookOpen,
 } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
 import { useAuth } from '../contexts/AuthContext';
 import { trpcMutation } from '../lib/trpc';
-import AIFeedbackWidget from '../components/AIFeedbackWidget';
 
-// ─── Interfaces ──────────────────────────────────────────────────────────────
-interface ScoreBreakdown {
-  headline: number; about: number; experience: number; skills: number;
-  education: number; photo: number; connections: number; certifications: number;
-}
-interface UpgradeItem { before: string; after: string; tips: string; }
-interface ActionItem { action: string; time: string; priority: string; }
-interface BannerDesign { background: string; mainText: string; tagline: string; accent: string; }
+// ─── Types (loose: backend produces a superset, we read what's there) ──
+interface Dimension { score: number; verdict?: string; finding?: string; benchmark?: string }
+interface AcademicInsight { framework?: string; source?: string; category?: string; finding: string; application: string }
+interface ActionStep { week: number; title?: string; description?: string; action?: string; framework?: string; research_basis?: string }
+interface VisionPillar { status?: string; note?: string }
 interface AnalysisResult {
-  score: number; scoreBreakdown: ScoreBreakdown;
-  strengths: string[]; weaknesses: string[];
-  upgradePlan: { headline: UpgradeItem; about: UpgradeItem; experience: UpgradeItem; };
-  missingSections: string[]; actionChecklist: ActionItem[];
-  recommendationTemplate: string; bannerDesign: BannerDesign; error?: string;
-}
-interface HistoryItem {
-  id: string; score: number; url: string; created_at: string; result: AnalysisResult;
+  score?: number;
+  overall_score?: number;
+  tier?: 'weak' | 'fair' | 'good' | 'excellent';
+  headline_verdict?: string;
+  dimensions?: Record<string, Dimension>;
+  scoreBreakdown?: Record<string, number>;
+  academic_insights?: AcademicInsight[];
+  vision_2030_alignment?: {
+    pillar?: string;
+    opportunity?: string;
+    hcdp_match?: string;
+    thriving_economy?: VisionPillar;
+    vibrant_society?: VisionPillar;
+    ambitious_nation?: VisionPillar;
+  };
+  before_after?: {
+    headline?: { before?: string; after?: string; current?: string; improved?: string; rationale?: string };
+    summary?: { before?: string; after?: string; current?: string; improved?: string; rationale?: string };
+    summary_opening?: { before?: string; after?: string };
+  };
+  action_plan?: ActionStep[];
+  upgradePlan?: { headline?: { before: string; after: string }; about?: { before: string; after: string }; experience?: { before: string; after: string } };
+  error?: string;
 }
 
-// ─── Constants ───────────────────────────────────────────────────────────────
-const BREAKDOWN_MAX: Record<string, number> = {
-  headline: 15, about: 15, experience: 20, skills: 10,
-  education: 10, photo: 10, connections: 10, certifications: 10,
-};
-const BREAKDOWN_LABELS_AR: Record<string, string> = {
-  headline: 'العنوان', about: 'النبذة', experience: 'الخبرات', skills: 'المهارات',
-  education: 'التعليم', photo: 'الصورة', connections: 'الشبكة', certifications: 'الشهادات',
-};
-
-// ─── Toast ───────────────────────────────────────────────────────────────────
-interface ToastItem { id: number; type: 'success' | 'error'; message: string; }
+// ─── Toast ─────────────────────────────────────────────────────────────
+interface ToastItem { id: number; type: 'success' | 'error' | 'info'; message: string }
 function useToast() {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const push = (type: ToastItem['type'], message: string) => {
     const id = Date.now() + Math.random();
     setToasts(t => [...t, { id, type, message }]);
-    setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 3200);
+    setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 3500);
   };
   const View = () => (
     <div style={{ position: 'fixed', top: 20, insetInlineEnd: 20, zIndex: 9999, display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -59,15 +59,14 @@ function useToast() {
             exit={{ opacity: 0, x: 40 }}
             style={{
               padding: '12px 18px', borderRadius: 12, minWidth: 260,
-              background: t.type === 'success' ? '#ECFDF5' : '#FEF2F2',
-              color: t.type === 'success' ? '#065F46' : '#991B1B',
-              border: `1px solid ${t.type === 'success' ? '#A7F3D0' : '#FECACA'}`,
+              background: t.type === 'success' ? '#ECFDF5' : t.type === 'error' ? '#FEF2F2' : '#EFF6FF',
+              color: t.type === 'success' ? '#065F46' : t.type === 'error' ? '#991B1B' : '#1E40AF',
+              border: `1px solid ${t.type === 'success' ? '#A7F3D0' : t.type === 'error' ? '#FECACA' : '#BFDBFE'}`,
               boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
               fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 700, fontSize: 13,
               display: 'flex', alignItems: 'center', gap: 10,
-            }}
-          >
-            {t.type === 'success' ? <Check size={16} /> : <X size={16} />}
+            }}>
+            {t.type === 'success' ? <Check size={16} /> : t.type === 'error' ? <X size={16} /> : <AlertCircle size={16} />}
             {t.message}
           </motion.div>
         ))}
@@ -77,8 +76,29 @@ function useToast() {
   return { push, View };
 }
 
-// ─── Score Circle ─────────────────────────────────────────────────────────────
-function ScoreCircle({ score }: { score: number }) {
+// ─── Constants ───────────────────────────────────────────────────────
+const DIMENSIONS = ['headline', 'summary', 'experience', 'skills', 'education', 'recommendations', 'activity', 'media'] as const;
+
+const TIER_STYLES: Record<string, { bg: string; color: string; border: string }> = {
+  weak: { bg: '#FEE2E2', color: '#991B1B', border: '#FECACA' },
+  fair: { bg: '#FEF3C7', color: '#92400E', border: '#FDE68A' },
+  good: { bg: '#D1FAE5', color: '#065F46', border: '#A7F3D0' },
+  excellent: { bg: '#CCFBF1', color: '#0F766E', border: '#5EEAD4' },
+};
+
+function gradientFor(score: number): string {
+  if (score >= 75) return 'linear-gradient(90deg, #0A8F84, #12B5A8)';
+  if (score >= 50) return 'linear-gradient(90deg, #C9922A, #F59E0B)';
+  return 'linear-gradient(90deg, #DC2626, #F43F5E)';
+}
+function colorFor(score: number): string {
+  if (score >= 75) return '#0F766E';
+  if (score >= 50) return '#92400E';
+  return '#991B1B';
+}
+
+// ─── Score Ring ──────────────────────────────────────────────────────
+function ScoreRing({ score, label }: { score: number; label: string }) {
   const [anim, setAnim] = useState(0);
   useEffect(() => {
     let frame: number; let start: number;
@@ -92,90 +112,42 @@ function ScoreCircle({ score }: { score: number }) {
     frame = requestAnimationFrame(step);
     return () => cancelAnimationFrame(frame);
   }, [score]);
-  const r = 54; const c = 2 * Math.PI * r;
-  const offset = c - (anim / 100) * c;
-  const color = anim >= 80 ? '#0A8F84' : anim >= 60 ? '#C9922A' : '#DC2626';
+  const r = 60; const c = 2 * Math.PI * r;
+  const dash = (anim / 100) * c;
   return (
-    <div style={{ position: 'relative', width: 140, height: 140 }}>
-      <svg width={140} height={140} style={{ transform: 'rotate(-90deg)' }}>
-        <circle cx={70} cy={70} r={r} fill="none" stroke="#E5E7EB" strokeWidth={9} />
-        <circle cx={70} cy={70} r={r} fill="none" stroke={color} strokeWidth={9}
-          strokeDasharray={c} strokeDashoffset={offset} strokeLinecap="round"
-          style={{ transition: 'stroke-dashoffset 0.3s ease' }} />
-      </svg>
-      <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-        <span style={{ fontSize: 36, fontWeight: 900, color, fontFamily: 'Inter' }}>{anim}</span>
-        <span style={{ fontSize: 11, color: '#6B7280', fontFamily: 'Cairo' }}>من 100</span>
-      </div>
-    </div>
+    <svg width={140} height={140} viewBox="0 0 140 140">
+      <circle cx={70} cy={70} r={r} fill="none" stroke="#E2E8F0" strokeWidth={10} />
+      <circle cx={70} cy={70} r={r} fill="none" stroke="url(#heroGrad)" strokeWidth={10}
+        strokeLinecap="round" strokeDasharray={`${dash} ${c}`} transform="rotate(-90 70 70)" />
+      <defs>
+        <linearGradient id="heroGrad" x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0%" stopColor="#0A8F84" />
+          <stop offset="100%" stopColor="#C9922A" />
+        </linearGradient>
+      </defs>
+      <text x="70" y="76" textAnchor="middle" fontSize="36" fontWeight="700" fill="#0F172A" style={{ direction: 'ltr', fontFamily: 'Inter' } as any}>{anim}</text>
+      <text x="70" y="96" textAnchor="middle" fontSize="11" fill="#64748B" style={{ fontFamily: 'Cairo' } as any}>{label}</text>
+    </svg>
   );
 }
 
-// ─── Upgrade Section ──────────────────────────────────────────────────────────
-function UpgradeSection({ title, data }: { title: string; data: UpgradeItem }) {
-  const [open, setOpen] = useState(false);
-  const [showAfter, setShowAfter] = useState(true);
-  const [copied, setCopied] = useState(false);
-  const copy = () => { navigator.clipboard.writeText(data.after); setCopied(true); setTimeout(() => setCopied(false), 2000); };
-  return (
-    <div style={{ background: '#fff', borderRadius: 12, border: '1px solid var(--wsl-border, #E5E7EB)', overflow: 'hidden', marginBottom: 10 }}>
-      <button onClick={() => setOpen(!open)}
-        style={{ width: '100%', padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'Cairo', fontWeight: 800, fontSize: 14, color: 'var(--wsl-ink)' }}>
-        <span>{title}</span>
-        <ChevronDown size={16} style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 200ms' }} />
-      </button>
-      <AnimatePresence>
-        {open && (
-          <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }} style={{ overflow: 'hidden' }}>
-            <div style={{ padding: '0 16px 16px' }}>
-              <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-                <button onClick={() => setShowAfter(false)}
-                  style={{ padding: '5px 14px', borderRadius: 8, border: '1px solid ' + (!showAfter ? '#DC2626' : '#E5E7EB'), background: !showAfter ? '#FEF2F2' : '#fff', color: !showAfter ? '#DC2626' : '#6B7280', fontFamily: 'Cairo', fontWeight: 800, fontSize: 12, cursor: 'pointer' }}>قبل</button>
-                <button onClick={() => setShowAfter(true)}
-                  style={{ padding: '5px 14px', borderRadius: 8, border: '1px solid ' + (showAfter ? '#0A8F84' : '#E5E7EB'), background: showAfter ? '#ECFDF5' : '#fff', color: showAfter ? '#0A8F84' : '#6B7280', fontFamily: 'Cairo', fontWeight: 800, fontSize: 12, cursor: 'pointer' }}>بعد</button>
-              </div>
-              <div style={{ background: showAfter ? '#F0FDF9' : '#FEF2F2', borderRadius: 8, padding: 14, fontSize: 13, lineHeight: 1.8, color: '#1F2937', fontFamily: 'Cairo', whiteSpace: 'pre-wrap', position: 'relative' }}>
-                {showAfter ? data.after : data.before}
-                {showAfter && (
-                  <button onClick={copy} style={{ position: 'absolute', top: 8, insetInlineStart: 8, background: 'none', border: 'none', cursor: 'pointer', color: copied ? '#059669' : '#9CA3AF' }}>
-                    <Copy size={14} />
-                  </button>
-                )}
-              </div>
-              <p style={{ fontSize: 11, color: '#9CA3AF', marginTop: 8, fontFamily: 'Cairo' }}>{data.tips}</p>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
-
-// ─── Main Component ───────────────────────────────────────────────────────────
+// ─── Main ────────────────────────────────────────────────────────────
 export default function ProfileAnalysis() {
   const { t, i18n } = useTranslation();
-  const { user, profile } = useAuth();
-  const isAr = i18n.language === 'ar';
+  const { profile } = useAuth();
+  const isRTL = i18n.language === 'ar';
   const toast = useToast();
 
-  // Input state
   const [url, setUrl] = useState('');
   const [imageBase64, setImageBase64] = useState('');
   const [imagePreview, setImagePreview] = useState('');
   const [mediaType, setMediaType] = useState('image/png');
-
-  // UI state
   const [loading, setLoading] = useState(false);
   const [loadingStage, setLoadingStage] = useState(0);
   const [result, setResult] = useState<AnalysisResult | null>(null);
-  const [tab, setTab] = useState<'overview' | 'plan' | 'history'>('overview');
-  const [checkedItems, setCheckedItems] = useState<Record<number, boolean>>({});
-  const [history, setHistory] = useState<HistoryItem[]>([]);
-  const [historyLoading, setHistoryLoading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // Rotating academic loading messages (tick every 4s while loading)
-  const STAGES = useMemo(() => isAr ? [
+  const STAGES = useMemo(() => isRTL ? [
     'نقرأ البروفايل من LinkedIn...',
     'نطبّق Career Capital Framework من LBS...',
     'نقارن بـ McKinsey MENA benchmarks...',
@@ -193,56 +165,26 @@ export default function ProfileAnalysis() {
     'Drafting academic recommendations...',
     'Building your 4-week plan...',
     'Finishing touches...',
-  ], [isAr]);
+  ], [isRTL]);
 
   useEffect(() => {
     if (!loading) return;
-    const id = setInterval(() => setLoadingStage((i) => (i + 1) % STAGES.length), 4000);
+    const id = setInterval(() => setLoadingStage(i => (i + 1) % STAGES.length), 4000);
     return () => clearInterval(id);
   }, [loading, STAGES.length]);
 
-  // Pre-fill LinkedIn URL from profile
   useEffect(() => {
-    if ((profile as any)?.linkedin_url && !url) {
-      setUrl((profile as any).linkedin_url);
-    }
+    if ((profile as any)?.linkedin_url && !url) setUrl((profile as any).linkedin_url);
   }, [profile]);
 
-  // Load history
-  useEffect(() => {
-    void loadHistory();
-  }, []);
-
-  async function loadHistory() {
-    setHistoryLoading(true);
-    try {
-      const { supabase } = await import('../lib/supabase');
-      const { data } = await supabase
-        .from('linkedin_analyses')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(10);
-      if (data) setHistory(data as HistoryItem[]);
-    } catch { /* noop */ }
-    setHistoryLoading(false);
-  }
-
-  const handleFile = (file: File) => {
-    if (!file.type.startsWith('image/')) {
-      toast.push('error', 'الملف يجب أن يكون صورة');
-      return;
-    }
-    if (file.size > 10 * 1024 * 1024) {
-      toast.push('error', 'الصورة كبيرة جداً (الحد الأقصى 10 ميجا)');
-      return;
-    }
-    
+  function handleFile(file: File) {
+    if (!file.type.startsWith('image/')) { toast.push('error', isRTL ? 'الملف يجب أن يكون صورة' : 'File must be an image'); return; }
+    if (file.size > 10 * 1024 * 1024) { toast.push('error', isRTL ? 'الصورة كبيرة جداً (10 ميجا حد أقصى)' : 'Image too large (max 10MB)'); return; }
     const reader = new FileReader();
     reader.onload = () => {
       const dataUrl = reader.result as string;
       const img = new Image();
       img.onload = () => {
-        // Compress: max 1920px wide, JPEG quality 0.8
         const maxW = 1920;
         const ratio = Math.min(1, maxW / img.width);
         const canvas = document.createElement('canvas');
@@ -250,505 +192,539 @@ export default function ProfileAnalysis() {
         canvas.height = img.height * ratio;
         const ctx = canvas.getContext('2d');
         if (!ctx) {
-          setImagePreview(dataUrl);
-          setImageBase64(dataUrl.split(',')[1]);
-          setMediaType(file.type);
+          setImagePreview(dataUrl); setImageBase64(dataUrl.split(',')[1]); setMediaType(file.type);
           return;
         }
         ctx.fillStyle = '#fff';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        
-        let quality = 0.8;
-        let compressed = canvas.toDataURL('image/jpeg', quality);
-        const targetSize = 3 * 1024 * 1024 * 1.37; // 3MB after base64 inflation
-        while (compressed.length > targetSize && quality > 0.3) {
-          quality -= 0.1;
-          compressed = canvas.toDataURL('image/jpeg', quality);
-        }
-        const sizeMB = (compressed.length * 0.75 / 1024 / 1024).toFixed(2);
-        console.log('[Compress] ' + sizeMB + 'MB at quality ' + quality.toFixed(1));
-        
-        setImagePreview(compressed);
-        setImageBase64(compressed.split(',')[1]);
-        setMediaType('image/jpeg');
-      };
-      img.onerror = () => {
-        toast.push('error', 'فشل قراءة الصورة');
+        let q = 0.8;
+        let c = canvas.toDataURL('image/jpeg', q);
+        const target = 3 * 1024 * 1024 * 1.37;
+        while (c.length > target && q > 0.3) { q -= 0.1; c = canvas.toDataURL('image/jpeg', q); }
+        setImagePreview(c); setImageBase64(c.split(',')[1]); setMediaType('image/jpeg');
       };
       img.src = dataUrl;
     };
-    reader.onerror = () => {
-      toast.push('error', 'فشل قراءة الملف');
-    };
     reader.readAsDataURL(file);
-  };
+  }
 
   async function handleAnalyze() {
-    console.log('[Analyze] Start — url:', url ? 'yes' : 'no', 'image:', imageBase64 ? 'yes' : 'no');
-    if (!url.trim() && !imageBase64) { console.log('[Analyze] No input, returning'); return; }
-    setLoading(true); setLoadingStage(0); setResult(null); setCheckedItems({});
+    if (!url.trim() && !imageBase64) return;
+    if (url && !url.match(/linkedin\.com\/in\//i)) {
+      toast.push('error', t('analyzer.invalidUrl'));
+      return;
+    }
+    setLoading(true); setLoadingStage(0); setResult(null);
     try {
-      console.log('[Analyze] Before trpcMutation call');
-      const timeoutMs = 180000; // 180s
+      const timeoutMs = 180000;
       const callPromise = trpcMutation('linkedin.analyzeDeep', {
         linkedinUrl: url || undefined,
         imageBase64: imageBase64 || undefined,
         mediaType,
       });
-      const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('TIMEOUT')), timeoutMs)
-      );
+      const timeoutPromise = new Promise<never>((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), timeoutMs));
       const res = await Promise.race([callPromise, timeoutPromise]);
-      console.log('[Analyze] Response received, has score?', res && 'score' in (res as any));
-
-      // Unwrap if server returned nested { result: { data: ... } } or { data: ... }
       const r: any = res;
-      const analysis = r?.score !== undefined ? r
-        : r?.data?.score !== undefined ? r.data
-        : r?.result?.score !== undefined ? r.result
-        : r?.result?.data?.score !== undefined ? r.result.data
-        : r;
-      console.log('[Analyze] Final analysis score:', analysis?.score);
-
-      if (!analysis) {
-        console.error('[Analyze] Empty response from analyzeDeep');
-        toast.push('error', t('profileAnalysis.error', 'حدث خطأ غير متوقع - لم يتم استلام رد'));
-      } else if (analysis.error) {
-        toast.push('error', analysis.error);
+      const analysis = r?.score !== undefined || r?.overall_score !== undefined ? r
+        : r?.data || r?.result?.data || r?.result || r;
+      if (!analysis || analysis.error) {
+        toast.push('error', analysis?.error || t('analyzer.error'));
       } else {
-        console.log('[Analyze] Setting result, score:', analysis.score);
         setResult(analysis as AnalysisResult);
-        setTab('overview');
-        toast.push('success', t('profileAnalysis.analysisDone', 'تم التحليل بنجاح!'));
-        void loadHistory();
+        toast.push('success', t('analyzer.success'));
       }
     } catch (err: any) {
-      console.error('[Analyze] CAUGHT ERROR:', err, err?.stack);
       const msg: string = err?.message || '';
-      if (msg === 'TIMEOUT') {
-        toast.push('error', isAr ? 'التحليل استغرق وقتاً طويلاً — حاول مرة ثانية' : 'Analysis took too long — please try again');
-      } else if (msg.includes('429') || msg.toLowerCase().includes('rate')) {
-        toast.push('error', isAr ? 'ضغط عالي الآن — جرّب بعد دقيقة' : 'High load right now — try again in a minute');
-      } else {
-        toast.push('error', msg || t('profileAnalysis.error', 'حدث خطأ غير متوقع'));
-      }
+      if (msg === 'TIMEOUT') toast.push('error', t('analyzer.timeout'));
+      else if (msg.includes('429') || msg.toLowerCase().includes('rate')) toast.push('error', t('analyzer.rateLimit'));
+      else toast.push('error', msg || t('analyzer.error'));
     }
     setLoading(false);
-    console.log('[Analyze] Done, loading set to false');
   }
 
-  const checkedCount = Object.values(checkedItems).filter(Boolean).length;
-  const totalActions = result?.actionChecklist?.length || 0;
-  const canAnalyze = (url.trim().length > 10 || !!imageBase64) && !loading;
+  function handleExportPDF() {
+    window.print();
+  }
 
-  const tabList = [
-    { id: 'overview' as const, label: t('profileAnalysis.tabs.overview', 'نظرة عامة') },
-    { id: 'plan' as const, label: t('profileAnalysis.tabs.plan', 'خطة التحسين') },
-    { id: 'history' as const, label: t('profileAnalysis.tabs.history', 'السجل'), count: history.length },
+  function handleReset() {
+    setResult(null); setUrl(''); setImageBase64(''); setImagePreview('');
+  }
+
+  // Normalized helpers
+  const overallScore = result?.overall_score ?? result?.score ?? 0;
+  const tier = result?.tier || (overallScore >= 80 ? 'excellent' : overallScore >= 60 ? 'good' : overallScore >= 40 ? 'fair' : 'weak');
+  const tierStyle = TIER_STYLES[tier];
+  const headlineVerdict = result?.headline_verdict || (result?.dimensions?.headline?.finding) || '';
+
+  function dimScore(name: string): { score: number; verdict?: string } {
+    const d = result?.dimensions?.[name];
+    if (d) return { score: d.score || 0, verdict: d.verdict || d.finding };
+    // fallback to scoreBreakdown (different scale 0-15/20)
+    const breakdownMax: Record<string, number> = { headline: 15, about: 15, summary: 15, experience: 20, skills: 10, education: 10, photo: 10, recommendations: 10, activity: 10, media: 10, certifications: 10 };
+    const altKey = name === 'summary' ? 'about' : name === 'media' ? 'photo' : name === 'recommendations' ? 'connections' : name === 'activity' ? 'connections' : name;
+    const raw = result?.scoreBreakdown?.[altKey] ?? 0;
+    const max = breakdownMax[altKey] || 10;
+    return { score: Math.round((raw / max) * 100) };
+  }
+
+  const insights = (result?.academic_insights || []).slice(0, 3).map(i => ({
+    framework: i.framework || i.source || 'Framework',
+    category: i.category,
+    finding: i.finding,
+    application: i.application,
+  }));
+
+  const ba = result?.before_after?.headline;
+  const baBefore = ba?.before || ba?.current;
+  const baAfter = ba?.after || ba?.improved;
+
+  const actionPlan = (result?.action_plan || []).slice(0, 4).map(s => ({
+    week: s.week,
+    title: s.title || s.action || '',
+    description: s.description || s.action || '',
+    framework: s.framework || s.research_basis || '',
+  }));
+
+  const v2030 = result?.vision_2030_alignment;
+  const v2030Pillars: Array<['thriving_economy' | 'vibrant_society' | 'ambitious_nation', VisionPillar | undefined]> = [
+    ['thriving_economy', v2030?.thriving_economy],
+    ['vibrant_society', v2030?.vibrant_society],
+    ['ambitious_nation', v2030?.ambitious_nation],
   ];
 
+  const hasResult = !!result && !result.error;
+
   return (
-    <DashboardLayout pageTitle={t('profileAnalysis.title', 'تحليل البروفايل')}>
+    <DashboardLayout pageTitle={t('analyzer.title')}>
       <toast.View />
-      <div style={{ maxWidth: 900, margin: '0 auto', padding: '0 4px' }}>
+      <div className="max-w-5xl mx-auto px-1 pb-12 space-y-5" dir={isRTL ? 'rtl' : 'ltr'}>
 
-        {/* ── Header ── */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
-          style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 20, marginBottom: 24, flexWrap: 'wrap' }}
-        >
-          <div style={{ flex: 1, minWidth: 260 }}>
-            <h1 style={{ fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 900, fontSize: 30, color: 'var(--wsl-ink)', letterSpacing: '-0.5px', margin: 0 }}>
-              {t('profileAnalysis.title', 'تحليل البروفايل المهني')}
-            </h1>
-            <p style={{ marginTop: 6, color: 'var(--wsl-ink-3)', fontFamily: 'Cairo, Inter, sans-serif', fontSize: 14, lineHeight: 1.6 }}>
-              {t('profileAnalysis.subtitle', 'احصل عميق تحليل عميق لملفك الشخصي LinkedIn بالذكاء الاصورة')}
-            </p>
-          </div>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 10, background: '#FFFBEB', border: '1px solid #FDE68A' }}>
-            <AlertCircle size={14} style={{ color: '#D97706' }} />
-            <span style={{ fontSize: 12, color: '#92400E', fontFamily: 'Cairo, sans-serif', fontWeight: 800 }}>
-              25 {t('profileAnalysis.tokens', 'توكن للتحليل')}
-            </span>
-          </div>
-        </motion.div>
+        {/* Print styles */}
+        <style>{`@media print {
+          @page { size: A4; margin: 16mm; }
+          body { background: white !important; }
+          aside, nav, header, button, .no-print { display: none !important; }
+          .print-content { box-shadow: none !important; border: 1px solid #E2E8F0 !important; break-inside: avoid; }
+        }`}</style>
 
-        {/* ── Input Card ── */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.05 }}
-          style={{ background: '#fff', border: '1px solid var(--wsl-border, #E5E7EB)', borderRadius: 16, marginBottom: 24, overflow: 'hidden', boxShadow: '0 2px 10px rgba(0,0,0,0.04)' }}
-        >
-          {/* Card Header */}
-          <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--wsl-border, #E5E7EB)', background: 'linear-gradient(135deg, rgba(10,143,132,0.06) 0%, rgba(14,165,233,0.06) 100%)', display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ width: 40, height: 40, borderRadius: 10, background: 'linear-gradient(135deg, #0A8F84 0%, #0ea5e9 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <UserCheck size={20} color="#fff" />
-            </div>
+        {/* Header — hidden after analysis to maximize report space */}
+        {!hasResult && !loading && (
+          <div className="flex items-start justify-between flex-wrap gap-3">
             <div>
-              <div style={{ fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 900, fontSize: 15, color: 'var(--wsl-ink)' }}>
-                {t('profileAnalysis.inputTitle', 'رابط LinkedIn أو صورة الملف الشخصي')}
-              </div>
-              <div style={{ fontSize: 12, color: 'var(--wsl-ink-3)', fontFamily: 'Cairo, sans-serif' }}>
-                {t('profileAnalysis.inputSub', 'أدخل الرابط أو ارفع صورة لبدء التحليل')}
-              </div>
-            </div>
-          </div>
-
-          <div style={{ padding: 20 }}>
-            {/* URL Input */}
-            <label style={labelStyle}>{t('profileAnalysis.urlLabel', 'رابط LinkedIn')}</label>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#F9FAFB', borderRadius: 10, border: '1.5px solid var(--wsl-border, #E5E7EB)', padding: '10px 14px', marginBottom: 16 }}>
-              <LinkIcon size={16} style={{ color: '#9CA3AF', flexShrink: 0 }} />
-              <input
-                value={url}
-                onChange={e => setUrl(e.target.value)}
-                placeholder="https://www.linkedin.com/in/your-profile"
-                style={{ flex: 1, background: 'none', border: 'none', outline: 'none', fontSize: 14, fontFamily: 'Inter', direction: 'ltr', textAlign: 'left' }}
-              />
-              {(profile as any)?.linkedin_url && url !== (profile as any).linkedin_url && (
-                <button onClick={() => setUrl((profile as any).linkedin_url)}
-                  style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid #0A8F84', background: '#F0FDF9', color: '#0A8F84', fontSize: 11, fontWeight: 800, fontFamily: 'Cairo', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                  {t('profileAnalysis.myProfile', 'ملفي')}
-                </button>
-              )}
-            </div>
-
-            {/* OR Divider */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '14px 0' }}>
-              <div style={{ flex: 1, height: 1, background: '#E5E7EB' }} />
-              <span style={{ color: '#9CA3AF', fontSize: 12, fontWeight: 800, fontFamily: 'Cairo' }}>{t('common.or', 'أو')}</span>
-              <div style={{ flex: 1, height: 1, background: '#E5E7EB' }} />
-            </div>
-
-            {/* Image Drop Zone */}
-            <div
-              onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handleFile(f); }}
-              onDragOver={e => e.preventDefault()}
-              onClick={() => fileRef.current?.click()}
-              style={{ border: '2px dashed ' + (imagePreview ? '#0A8F84' : '#D1D5DB'), borderRadius: 12, padding: '20px 24px', textAlign: 'center', cursor: 'pointer', background: imagePreview ? '#F0FDF9' : '#F9FAFB', transition: 'all 0.2s', marginBottom: 18 }}
-            >
-              <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => { if (e.target.files?.[0]) handleFile(e.target.files[0]); }} />
-              {imagePreview ? (
-                <img src={imagePreview} alt="preview" style={{ maxHeight: 120, borderRadius: 8, margin: '0 auto' }} />
-              ) : (
-                <>
-                  <Upload size={28} style={{ margin: '0 auto 8px', color: '#9CA3AF' }} />
-                  <p style={{ color: '#6B7280', fontSize: 13, fontFamily: 'Cairo' }}>{t('profileAnalysis.dropZone', 'اسحب صورة ملفك الشخصي هنا أو انقر للاختيار')}</p>
-                </>
-              )}
-            </div>
-
-            {/* Analyze Button */}
-            <button
-              onClick={handleAnalyze}
-              disabled={!canAnalyze}
-              style={{
-                width: '100%', padding: '13px 24px', borderRadius: 12, border: 'none',
-                background: canAnalyze ? 'linear-gradient(135deg, #0A8F84 0%, #0ea5e9 100%)' : '#E5E7EB',
-                color: canAnalyze ? '#fff' : '#9CA3AF',
-                fontSize: 15, fontWeight: 900, fontFamily: 'Cairo, sans-serif',
-                cursor: canAnalyze ? 'pointer' : 'not-allowed',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-                boxShadow: canAnalyze ? '0 6px 16px rgba(10,143,132,0.25)' : 'none',
-                transition: 'all 200ms',
-              }}
-            >
-              {loading ? (
-                <>
-                  <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}>
-                    <Loader2 size={18} />
-                  </motion.div>
-                  <span>{STAGES[loadingStage]}</span>
-                </>
-              ) : (
-                <>
-                  <Sparkles size={18} />
-                  {t('profileAnalysis.analyze', 'تحليل ملفي الآن')}
-                </>
-              )}
-            </button>
-            {loading && (
-              <p style={{ textAlign: 'center', marginTop: 10, fontSize: 12, color: 'var(--wsl-ink-3)', fontFamily: 'Cairo, sans-serif' }}>
-                {isAr ? 'قد يستغرق التحليل حتى دقيقتين — جودة أفضل تستحق الانتظار' : 'Analysis may take up to 2 minutes — quality is worth the wait'}
+              <h1 style={{ fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 900, fontSize: 28, color: 'var(--wsl-ink)', margin: 0, letterSpacing: '-0.5px' }}>
+                {t('analyzer.title')}
+              </h1>
+              <p style={{ marginTop: 6, color: 'var(--wsl-ink-3)', fontFamily: 'Cairo, Inter, sans-serif', fontSize: 14 }}>
+                {t('analyzer.subtitle')}
               </p>
-            )}
+            </div>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 13px', borderRadius: 999, background: '#FFFBEB', border: '1px solid #FDE68A' }}>
+              <Sparkles size={13} style={{ color: '#B45309' }} />
+              <span style={{ fontSize: 12, color: '#92400E', fontFamily: 'Cairo, sans-serif', fontWeight: 800 }}>
+                {t('analyzer.cost', { n: 25 })}
+              </span>
+            </div>
           </div>
-        </motion.div>
+        )}
 
-        {/* ── Results ── */}
-        <AnimatePresence>
-          {result && (
-            <motion.div
-              initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-              transition={{ duration: 0.4 }}
-            >
-              {/* Tabs */}
-              <div style={{ display: 'flex', gap: 4, padding: 4, borderRadius: 12, background: 'var(--wsl-surf-2, #F3F4F6)', marginBottom: 20, overflowX: 'auto' }}>
-                {tabList.map(tb => {
-                  const active = tab === tb.id;
+        {/* INPUT */}
+        {!hasResult && !loading && (
+          <>
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+              className="bg-white border border-ink-200 rounded-2xl p-5 shadow-sm"
+              style={{ border: '1px solid var(--wsl-border, #E5E7EB)' }}>
+              <label style={{ fontSize: 11, color: 'var(--wsl-ink-3)', fontFamily: 'Cairo, sans-serif', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                {t('analyzer.inputLabel')}
+              </label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#F9FAFB', borderRadius: 10, border: '1.5px solid var(--wsl-border, #E5E7EB)', padding: '10px 14px', marginTop: 8, marginBottom: 14 }}>
+                <LinkIcon size={16} style={{ color: '#9CA3AF', flexShrink: 0 }} />
+                <input
+                  value={url}
+                  onChange={e => setUrl(e.target.value)}
+                  placeholder="https://www.linkedin.com/in/your-profile"
+                  style={{ flex: 1, background: 'none', border: 'none', outline: 'none', fontSize: 14, fontFamily: 'Inter', direction: 'ltr', textAlign: 'left' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '12px 0' }}>
+                <div style={{ flex: 1, height: 1, background: '#E5E7EB' }} />
+                <span style={{ color: '#9CA3AF', fontSize: 11, fontWeight: 800, fontFamily: 'Cairo' }}>{isRTL ? 'أو' : 'OR'}</span>
+                <div style={{ flex: 1, height: 1, background: '#E5E7EB' }} />
+              </div>
+
+              <div
+                onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handleFile(f); }}
+                onDragOver={e => e.preventDefault()}
+                onClick={() => fileRef.current?.click()}
+                style={{ border: '2px dashed ' + (imagePreview ? '#0A8F84' : '#D1D5DB'), borderRadius: 12, padding: '18px 22px', textAlign: 'center', cursor: 'pointer', background: imagePreview ? '#F0FDF9' : '#F9FAFB', marginBottom: 14 }}>
+                <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => { if (e.target.files?.[0]) handleFile(e.target.files[0]); }} />
+                {imagePreview ? (
+                  <img src={imagePreview} alt="preview" style={{ maxHeight: 100, borderRadius: 8, margin: '0 auto' }} />
+                ) : (
+                  <>
+                    <Upload size={24} style={{ margin: '0 auto 6px', color: '#9CA3AF' }} />
+                    <p style={{ color: '#6B7280', fontSize: 12, fontFamily: 'Cairo' }}>{isRTL ? 'اسحب صورة هنا أو انقر للاختيار' : 'Drag an image here or click to choose'}</p>
+                  </>
+                )}
+              </div>
+
+              <button
+                onClick={handleAnalyze}
+                disabled={!url.trim() && !imageBase64}
+                style={{
+                  width: '100%', padding: '13px 24px', borderRadius: 12, border: 'none',
+                  background: (url.trim() || imageBase64) ? 'linear-gradient(135deg, #0A8F84 0%, #0ea5e9 100%)' : '#E5E7EB',
+                  color: (url.trim() || imageBase64) ? '#fff' : '#9CA3AF',
+                  fontSize: 15, fontWeight: 900, fontFamily: 'Cairo, sans-serif',
+                  cursor: (url.trim() || imageBase64) ? 'pointer' : 'not-allowed',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+                  boxShadow: (url.trim() || imageBase64) ? '0 6px 16px rgba(10,143,132,0.25)' : 'none',
+                }}>
+                <Sparkles size={18} />
+                {t('analyzer.analyze')}
+              </button>
+              <p style={{ fontSize: 11, color: 'var(--wsl-ink-3)', marginTop: 10, fontFamily: 'Cairo' }}>{t('analyzer.disclaimer')}</p>
+            </motion.div>
+
+            {/* Frameworks teaser */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+              {['Career Capital · LBS', 'Personal Brand · HBR', 'McKinsey MENA 2024'].map(f => (
+                <div key={f} style={{ background: '#fff', border: '1px solid var(--wsl-border, #E5E7EB)', borderRadius: 12, padding: '10px 8px', textAlign: 'center' }}>
+                  <p style={{ fontSize: 11, color: 'var(--wsl-ink-3)', fontFamily: 'Cairo, sans-serif', fontWeight: 700, margin: 0 }}>📚 {f}</p>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* LOADING */}
+        {loading && (
+          <div style={{ background: '#fff', border: '1px solid var(--wsl-border, #E5E7EB)', borderRadius: 16, padding: '60px 24px', textAlign: 'center' }}>
+            <div style={{ position: 'relative', width: 80, height: 80, margin: '0 auto 16px' }}>
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ repeat: Infinity, duration: 1.2, ease: 'linear' }}
+                style={{ width: 80, height: 80, borderRadius: '50%', border: '4px solid #CCFBF1', borderTopColor: '#0A8F84' }} />
+              <Sparkles size={24} style={{ position: 'absolute', inset: 0, margin: 'auto', color: '#0A8F84' }} />
+            </div>
+            <p style={{ fontSize: 17, fontWeight: 800, color: 'var(--wsl-ink)', fontFamily: 'Cairo, sans-serif', marginBottom: 8, transition: 'all 200ms' }}>
+              {STAGES[loadingStage]}
+            </p>
+            <p style={{ fontSize: 12, color: 'var(--wsl-ink-3)', fontFamily: 'Cairo, sans-serif', maxWidth: 420, margin: '0 auto 16px' }}>
+              {t('analyzer.waitNote')}
+            </p>
+            <div style={{ display: 'flex', gap: 4, justifyContent: 'center' }}>
+              {STAGES.map((_, i) => (
+                <div key={i} style={{
+                  height: 4, borderRadius: 999,
+                  background: i <= loadingStage ? '#0A8F84' : '#E5E7EB',
+                  width: i <= loadingStage ? 28 : 14,
+                  transition: 'all 300ms',
+                }} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* RESULTS */}
+        {hasResult && (
+          <>
+            {/* Header with actions */}
+            <div className="no-print flex items-start justify-between flex-wrap gap-3">
+              <div>
+                <h1 style={{ fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 900, fontSize: 26, color: 'var(--wsl-ink)', margin: 0 }}>
+                  {t('analyzer.title')}
+                </h1>
+                <p style={{ marginTop: 4, color: 'var(--wsl-ink-3)', fontFamily: 'Cairo, sans-serif', fontSize: 13 }}>
+                  {t('analyzer.resultsSubtitle')}
+                </p>
+              </div>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 13px', borderRadius: 999, background: '#FFFBEB', border: '1px solid #FDE68A' }}>
+                <Sparkles size={13} style={{ color: '#B45309' }} />
+                <span style={{ fontSize: 12, color: '#92400E', fontFamily: 'Cairo, sans-serif', fontWeight: 800 }}>
+                  {t('analyzer.used', { n: 25 })}
+                </span>
+              </div>
+            </div>
+
+            {/* Hero score */}
+            <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
+              className="print-content"
+              style={{
+                background: 'linear-gradient(135deg, #ECFDFB 0%, #FFFFFF 50%, #FDF6E4 100%)',
+                border: '1px solid #99F6E4',
+                borderRadius: 18,
+                padding: 24,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 24,
+                flexWrap: 'wrap',
+                boxShadow: '0 4px 14px rgba(10,143,132,0.06)',
+              }}>
+              <ScoreRing score={overallScore} label={t('analyzer.outOf100')} />
+              <div style={{ flex: 1, minWidth: 240 }}>
+                <span style={{
+                  display: 'inline-block', padding: '4px 12px', borderRadius: 999,
+                  background: tierStyle.bg, color: tierStyle.color, border: `1px solid ${tierStyle.border}`,
+                  fontSize: 11, fontWeight: 800, fontFamily: 'Cairo, sans-serif',
+                }}>
+                  {t(`analyzer.tiers.${tier}`)}
+                </span>
+                <p style={{ marginTop: 10, fontSize: 16, fontWeight: 700, color: 'var(--wsl-ink)', fontFamily: 'Cairo, sans-serif', lineHeight: 1.6 }}>
+                  {headlineVerdict || (isRTL ? 'تم التحليل — راجع الأبعاد أدناه' : 'Analysis complete — review the dimensions below')}
+                </p>
+                {insights.length > 0 && (
+                  <div style={{ display: 'flex', gap: 6, marginTop: 12, flexWrap: 'wrap' }}>
+                    {insights.map((ins, i) => (
+                      <span key={i} style={{
+                        fontSize: 10.5, background: '#fff', color: 'var(--wsl-ink)', padding: '3px 8px',
+                        borderRadius: 6, border: '1px solid var(--wsl-border, #E5E7EB)', fontFamily: 'Inter', fontWeight: 600,
+                      }}>
+                        {ins.framework}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+
+            {/* 8-Dimension Breakdown */}
+            <div className="print-content" style={{ background: '#fff', border: '1px solid var(--wsl-border, #E5E7EB)', borderRadius: 16, padding: 22, boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
+              <h2 style={{ fontSize: 16, fontWeight: 900, color: 'var(--wsl-ink)', fontFamily: 'Cairo, sans-serif', margin: '0 0 16px' }}>
+                {t('analyzer.dimensions.title')}
+              </h2>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '14px 28px' }}>
+                {DIMENSIONS.map(dim => {
+                  const d = dimScore(dim);
                   return (
-                    <button key={tb.id} onClick={() => setTab(tb.id)}
-                      style={{
-                        flex: 1, minWidth: 110, padding: '9px 14px', borderRadius: 9,
-                        border: 'none', cursor: 'pointer',
-                        background: active ? '#fff' : 'transparent',
-                        color: active ? 'var(--wsl-ink)' : 'var(--wsl-ink-3)',
-                        fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 900, fontSize: 13,
-                        boxShadow: active ? '0 2px 6px rgba(0,0,0,0.06)' : 'none',
-                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                        transition: 'all 150ms ease',
-                      }}
-                    >
-                      {tb.label}
-                      {tb.count !== undefined && (
-                        <span style={{ padding: '1px 8px', borderRadius: 999, fontSize: 11, fontWeight: 900, background: active ? 'var(--wsl-teal-bg, #E0F7F5)' : 'rgba(0,0,0,0.06)', color: active ? 'var(--wsl-teal, #0A8F84)' : 'var(--wsl-ink-3)', fontFamily: 'Inter, sans-serif' }}>
-                          {tb.count}
+                    <div key={dim}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--wsl-ink)', fontFamily: 'Cairo, sans-serif' }}>
+                          {t(`analyzer.dimensions.${dim}`)}
                         </span>
+                        <span style={{ fontSize: 13, fontWeight: 800, color: colorFor(d.score), fontFamily: 'Inter', direction: 'ltr' }}>
+                          {d.score}
+                        </span>
+                      </div>
+                      <div style={{ height: 6, background: '#F1F5F9', borderRadius: 999, overflow: 'hidden' }}>
+                        <div style={{
+                          height: '100%', width: `${d.score}%`,
+                          background: gradientFor(d.score),
+                          borderRadius: 999,
+                          transition: 'width 700ms ease',
+                        }} />
+                      </div>
+                      {d.verdict && (
+                        <p style={{ fontSize: 11, color: 'var(--wsl-ink-3)', marginTop: 5, fontFamily: 'Cairo, sans-serif', lineHeight: 1.5 }}>
+                          {d.verdict}
+                        </p>
                       )}
-                    </button>
+                    </div>
                   );
                 })}
               </div>
-
-              {/* ── Overview Tab ── */}
-              {tab === 'overview' && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                  {/* Score + Breakdown */}
-                  <div style={{ background: '#fff', border: '1px solid var(--wsl-border, #E5E7EB)', borderRadius: 16, padding: 24, boxShadow: '0 1px 4px rgba(0,0,0,0.04)', display: 'flex', flexWrap: 'wrap', gap: 24, alignItems: 'center' }}>
-                    <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontFamily: 'Cairo', fontWeight: 900, fontSize: 14, color: 'var(--wsl-ink-2)', marginBottom: 12 }}>
-                        {t('profileAnalysis.score', 'تقييم LinkedIn')}
-                      </div>
-                      <ScoreCircle score={result.score} />
-                    </div>
-                    <div style={{ flex: 1, minWidth: 240 }}>
-                      {Object.entries(result.scoreBreakdown || {}).map(([key, val]) => {
-                        const max = BREAKDOWN_MAX[key] || 10;
-                        const pct = Math.round((val / max) * 100);
-                        const color = pct >= 80 ? '#059669' : pct >= 60 ? '#D97706' : '#DC2626';
-                        return (
-                          <div key={key} style={{ marginBottom: 10 }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                              <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--wsl-ink-2)', fontFamily: 'Cairo' }}>{BREAKDOWN_LABELS_AR[key] || key}</span>
-                              <span style={{ fontSize: 12, fontWeight: 900, color, fontFamily: 'Inter' }}>{val}/{max}</span>
-                            </div>
-                            <div style={{ height: 5, borderRadius: 999, background: '#E5E7EB', overflow: 'hidden' }}>
-                              <motion.div
-                                initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.8, delay: 0.1 }}
-                                style={{ height: '100%', borderRadius: 999, background: color }}
-                              />
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Strengths + Weaknesses */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 14 }}>
-                    <div style={{ background: '#ECFDF5', border: '1px solid #A7F3D0', borderRadius: 14, padding: 18 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                        <CheckCircle size={18} style={{ color: '#059669' }} />
-                        <span style={{ fontFamily: 'Cairo', fontWeight: 900, fontSize: 14, color: '#065F46' }}>
-                          {t('profileAnalysis.strengths', 'نقاط القوة')}
-                        </span>
-                      </div>
-                      {(result.strengths || []).map((s, i) => (
-                        <div key={i} style={{ fontSize: 13, color: '#065F46', marginBottom: 8, paddingInlineStart: 10, borderInlineStart: '3px solid #059669', lineHeight: 1.6, fontFamily: 'Cairo' }}>{s}</div>
-                      ))}
-                    </div>
-                    <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 14, padding: 18 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                        <XCircle size={18} style={{ color: '#DC2626' }} />
-                        <span style={{ fontFamily: 'Cairo', fontWeight: 900, fontSize: 14, color: '#991B1B' }}>
-                          {t('profileAnalysis.weaknesses', 'نقاط الضعف')}
-                        </span>
-                      </div>
-                      {(result.weaknesses || []).map((w, i) => (
-                        <div key={i} style={{ fontSize: 13, color: '#991B1B', marginBottom: 8, paddingInlineStart: 10, borderInlineStart: '3px solid #DC2626', lineHeight: 1.6, fontFamily: 'Cairo' }}>{w}</div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Missing Sections */}
-                  {result.missingSections && result.missingSections.length > 0 && (
-                    <div style={{ background: '#FFFBEB', borderRadius: 14, border: '1px solid #FDE68A', padding: 16 }}>
-                      <div style={{ fontFamily: 'Cairo', fontWeight: 900, fontSize: 13, color: '#92400E', marginBottom: 10 }}>
-                        {t('profileAnalysis.missing', 'أقسام مفقودة من ملفك')}
-                      </div>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                        {result.missingSections.map((s, i) => (
-                          <span key={i} style={{ background: '#FEF3C7', color: '#92400E', padding: '4px 12px', borderRadius: 6, fontSize: 12, fontWeight: 800, fontFamily: 'Cairo' }}>{s}</span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Action Checklist */}
-                  {(result.actionChecklist || []).length > 0 && (
-                    <div style={{ background: '#fff', border: '1px solid var(--wsl-border, #E5E7EB)', borderRadius: 16, padding: 20, boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
-                      <div style={{ fontFamily: 'Cairo', fontWeight: 900, fontSize: 15, color: 'var(--wsl-ink)', marginBottom: 8 }}>
-                        {t('profileAnalysis.checklist', 'قائمة المهام')}
-                      </div>
-                      <div style={{ background: '#F3F4F6', borderRadius: 8, height: 6, marginBottom: 12, overflow: 'hidden' }}>
-                        <motion.div
-                          animate={{ width: totalActions > 0 ? `${(checkedCount / totalActions) * 100}%` : '0%' }}
-                          style={{ height: '100%', background: 'linear-gradient(90deg, #0A8F84, #12B5A8)', borderRadius: 8, transition: 'width 0.3s' }}
-                        />
-                      </div>
-                      <p style={{ fontSize: 11, color: '#6B7280', marginBottom: 12, fontFamily: 'Cairo' }}>{checkedCount} / {totalActions}</p>
-                      {result.actionChecklist.map((item, i) => {
-                        const checked = checkedItems[i] || false;
-                        const prColor = item.priority === 'high' ? '#DC2626' : item.priority === 'medium' ? '#D97706' : '#059669';
-                        const prBg = item.priority === 'high' ? '#FEF2F2' : item.priority === 'medium' ? '#FFFBEB' : '#ECFDF5';
-                        return (
-                          <div key={i} onClick={() => setCheckedItems(prev => ({ ...prev, [i]: !prev[i] }))}
-                            style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderRadius: 10, border: '1px solid var(--wsl-border, #E5E7EB)', marginBottom: 8, cursor: 'pointer', opacity: checked ? 0.5 : 1, transition: 'opacity 0.2s' }}>
-                            <div style={{ width: 20, height: 20, borderRadius: 6, border: '2px solid ' + (checked ? '#0A8F84' : '#D1D5DB'), background: checked ? '#0A8F84' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                              {checked && <Check size={12} color="#fff" />}
-                            </div>
-                            <span style={{ flex: 1, fontSize: 13, color: '#1F2937', textDecoration: checked ? 'line-through' : 'none', fontFamily: 'Cairo' }}>{item.action}</span>
-                            <span style={{ fontSize: 10, color: '#6B7280', fontFamily: 'Inter', flexShrink: 0 }}>{item.time}</span>
-                            <span style={{ fontSize: 10, fontWeight: 800, color: prColor, background: prBg, padding: '2px 8px', borderRadius: 4, flexShrink: 0, fontFamily: 'Cairo' }}>
-                              {item.priority === 'high' ? 'عاجل' : item.priority === 'medium' ? 'متوسط' : 'منخفض'}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  {/* Recommendation Template */}
-                  {result.recommendationTemplate && (
-                    <div style={{ background: 'linear-gradient(135deg, #064E49, #0A8F84)', borderRadius: 16, padding: 20, color: '#fff' }}>
-                      <div style={{ fontFamily: 'Cairo', fontWeight: 900, fontSize: 14, marginBottom: 10 }}>
-                        {t('profileAnalysis.recTemplate', 'قالب طلب توصية')}
-                      </div>
-                      <div style={{ background: 'rgba(255,255,255,0.1)', borderRadius: 10, padding: 14, fontSize: 13, lineHeight: 1.8, position: 'relative', fontFamily: 'Cairo' }}>
-                        {result.recommendationTemplate}
-                        <button onClick={() => { navigator.clipboard.writeText(result.recommendationTemplate); toast.push('success', t('posts.copied', 'تم النسخ')); }}
-                          style={{ position: 'absolute', top: 8, insetInlineStart: 8, background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: 6, padding: 4, cursor: 'pointer' }}>
-                          <Copy size={13} color="#fff" />
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* New Analysis Button */}
-                  <div style={{ display: 'flex', gap: 10, paddingTop: 4 }}>
-                    <button onClick={() => { setResult(null); setUrl(''); setImageBase64(''); setImagePreview(''); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                      style={{ padding: '10px 20px', borderRadius: 10, border: '1px solid var(--wsl-border, #E5E7EB)', background: '#fff', color: 'var(--wsl-ink-2)', fontSize: 13, fontWeight: 800, fontFamily: 'Cairo', cursor: 'pointer' }}>
-                      {t('profileAnalysis.newAnalysis', 'تحليل جديد')}
-                    </button>
-                    <button onClick={() => window.print()}
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '10px 20px', borderRadius: 10, border: '1px solid var(--wsl-border, #E5E7EB)', background: '#fff', color: 'var(--wsl-ink-2)', fontSize: 13, fontWeight: 800, fontFamily: 'Cairo', cursor: 'pointer' }}>
-                      <Printer size={14} /> {t('profileAnalysis.print', 'طباعة')}
-                    </button>
-                  </div>
-
-                  <div style={{ marginTop: 16 }}>
-                    <AIFeedbackWidget feature="profile_analysis" />
-                  </div>
-                </motion.div>
-              )}
-
-              {/* ── Plan Tab ── */}
-              {tab === 'plan' && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                  {result.upgradePlan?.headline && <UpgradeSection title={t('profileAnalysis.headline', 'العنوان الوظيفي (Headline)')} data={result.upgradePlan.headline} />}
-                  {result.upgradePlan?.about && <UpgradeSection title={t('profileAnalysis.about', 'النبذة التعريفية (About)')} data={result.upgradePlan.about} />}
-                  {result.upgradePlan?.experience && <UpgradeSection title={t('profileAnalysis.experience', 'الخبرات المهنية (Experience)')} data={result.upgradePlan.experience} />}
-                  {result.bannerDesign && (
-                    <div style={{ background: result.bannerDesign.background || 'linear-gradient(135deg, #064E49, #0A8F84)', borderRadius: 14, padding: '28px 20px', color: '#fff', marginTop: 14 }}>
-                      <div style={{ fontWeight: 900, fontSize: 20, marginBottom: 4, fontFamily: 'Cairo' }}>{result.bannerDesign.mainText}</div>
-                      <div style={{ fontSize: 13, opacity: 0.85, fontFamily: 'Inter' }}>{result.bannerDesign.tagline}</div>
-                      <div style={{ marginTop: 12, width: 40, height: 4, borderRadius: 2, background: result.bannerDesign.accent || '#C9922A' }} />
-                      <p style={{ fontSize: 11, opacity: 0.7, marginTop: 10, fontFamily: 'Cairo' }}>{t('profileAnalysis.bannerTip', 'احفظ هذا كـ screenshot للاستخدام كبانر')}</p>
-                    </div>
-                  )}
-                </motion.div>
-              )}
-
-              {/* ── History Tab ── */}
-              {tab === 'history' && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                  {historyLoading ? (
-                    <div style={{ textAlign: 'center', padding: 40 }}>
-                      <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }} style={{ display: 'inline-block' }}>
-                        <Loader2 size={24} color="#0A8F84" />
-                      </motion.div>
-                    </div>
-                  ) : history.length === 0 ? (
-                    <div style={{ background: '#fff', border: '2px dashed var(--wsl-border, #E5E7EB)', borderRadius: 16, padding: '50px 24px', textAlign: 'center' }}>
-                      <div style={{ width: 64, height: 64, borderRadius: 16, margin: '0 auto 16px', background: 'linear-gradient(135deg, rgba(10,143,132,0.1), rgba(14,165,233,0.1))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <Clock size={28} color="#0A8F84" />
-                      </div>
-                      <div style={{ fontFamily: 'Cairo', fontWeight: 900, fontSize: 16, color: 'var(--wsl-ink)', marginBottom: 6 }}>
-                        {t('profileAnalysis.historyEmpty', 'لا يوجد سجل تحليلات بعد')}
-                      </div>
-                      <div style={{ fontFamily: 'Cairo', fontSize: 13, color: 'var(--wsl-ink-3)' }}>
-                        {t('profileAnalysis.historyEmptySub', 'ابدأ بتحليل ملفك لتظهر نتائجك هنا')}
-                      </div>
-                    </div>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                      {history.map((h, idx) => {
-                        const color = (h.score || 0) >= 80 ? '#059669' : (h.score || 0) >= 60 ? '#D97706' : '#DC2626';
-                        return (
-                          <motion.div key={h.id}
-                            initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.04 }}
-                            onClick={() => { setResult(h.result); setTab('overview'); }}
-                            style={{ background: '#fff', border: '1px solid var(--wsl-border, #E5E7EB)', borderRadius: 12, padding: '14px 18px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.04)', transition: 'box-shadow 200ms' }}
-                          >
-                            <div style={{ width: 48, height: 48, borderRadius: 12, background: color + '15', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                              <span style={{ fontSize: 18, fontWeight: 900, color, fontFamily: 'Inter' }}>{h.score || '?'}</span>
-                            </div>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--wsl-ink)', fontFamily: 'Cairo', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                {h.url || t('profileAnalysis.imageAnalysis', 'تحليل عبر صورة')}
-                              </div>
-                              <div style={{ fontSize: 11, color: 'var(--wsl-ink-3)', fontFamily: 'Cairo', marginTop: 2 }}>
-                                {h.created_at ? new Date(h.created_at).toLocaleDateString(isAr ? 'ar-SA' : 'en-US') : ''}
-                              </div>
-                            </div>
-                            <TrendingUp size={16} style={{ color: '#0A8F84', flexShrink: 0 }} />
-                          </motion.div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </motion.div>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Empty state when no analysis yet */}
-        {!result && !loading && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-            style={{ background: '#fff', border: '2px dashed var(--wsl-border, #E5E7EB)', borderRadius: 16, padding: '50px 24px', textAlign: 'center' }}
-          >
-            <div style={{ width: 72, height: 72, borderRadius: 20, margin: '0 auto 18px', background: 'linear-gradient(135deg, rgba(10,143,132,0.1), rgba(14,165,233,0.1))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <UserCheck size={32} color="#0A8F84" />
             </div>
-            <div style={{ fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 900, fontSize: 18, color: 'var(--wsl-ink)', marginBottom: 6 }}>
-              {t('profileAnalysis.empty', 'ابدأ بتحليل ملفك المهني')}
+
+            {/* Academic Insights */}
+            {insights.length > 0 && (
+              <div className="print-content" style={{ background: '#fff', border: '1px solid var(--wsl-border, #E5E7EB)', borderRadius: 16, padding: 22, boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
+                <h2 style={{ fontSize: 16, fontWeight: 900, color: 'var(--wsl-ink)', fontFamily: 'Cairo, sans-serif', margin: '0 0 14px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <BookOpen size={18} style={{ color: '#0A8F84' }} />
+                  {t('analyzer.insights.title')}
+                </h2>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {insights.map((ins, i) => {
+                    const colors = [
+                      { border: '#A78BFA', bg: '#F5F3FF', text: '#5B21B6', accent: '#7C3AED' },
+                      { border: '#0A8F84', bg: '#ECFDF5', text: '#065F46', accent: '#0F766E' },
+                      { border: '#C9922A', bg: '#FFFBEB', text: '#78350F', accent: '#92400E' },
+                    ][i % 3];
+                    return (
+                      <div key={i} style={{
+                        background: colors.bg,
+                        borderInlineStart: `4px solid ${colors.border}`,
+                        borderRadius: isRTL ? '12px 0 0 12px' : '0 12px 12px 0',
+                        padding: 14,
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: 11, fontWeight: 800, background: '#fff', padding: '3px 8px', borderRadius: 6, color: 'var(--wsl-ink)', fontFamily: 'Inter' }}>
+                            {ins.framework}
+                          </span>
+                          {ins.category && <span style={{ fontSize: 11, color: colors.accent, fontFamily: 'Cairo, sans-serif', fontWeight: 700 }}>{ins.category}</span>}
+                        </div>
+                        <p style={{ fontSize: 13, color: colors.text, fontFamily: 'Cairo, sans-serif', lineHeight: 1.7, margin: 0 }}>
+                          <strong>{t('analyzer.insights.finding')}:</strong> {ins.finding}
+                        </p>
+                        <p style={{ fontSize: 13, color: colors.accent, fontFamily: 'Cairo, sans-serif', lineHeight: 1.7, marginTop: 6 }}>
+                          <strong>{t('analyzer.insights.application')}:</strong> {ins.application}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Vision 2030 */}
+            {v2030 && (v2030Pillars.some(([, p]) => p?.note) || v2030.opportunity) && (
+              <div className="print-content" style={{
+                background: 'linear-gradient(135deg, #064E49, #0A8F84)',
+                borderRadius: 18,
+                padding: 22,
+                color: '#fff',
+                boxShadow: '0 8px 24px rgba(6,78,73,0.20)',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
+                  <div style={{ width: 38, height: 38, borderRadius: 10, background: 'rgba(245,158,11,0.25)', border: '1px solid rgba(252,211,77,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Award size={20} style={{ color: '#FCD34D' }} />
+                  </div>
+                  <div>
+                    <h2 style={{ margin: 0, fontSize: 16, fontWeight: 900, fontFamily: 'Cairo, sans-serif' }}>{t('analyzer.vision2030.title')}</h2>
+                    <p style={{ margin: '2px 0 0', fontSize: 11, color: '#99F6E4', fontFamily: 'Inter' }}>Human Capability Development Program</p>
+                  </div>
+                </div>
+                {v2030Pillars.some(([, p]) => p?.note) ? (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10 }}>
+                    {v2030Pillars.map(([key, p]) => (
+                      <div key={key} style={{ background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 12, padding: 12 }}>
+                        <p style={{ fontSize: 11, color: '#FCD34D', fontWeight: 800, fontFamily: 'Cairo, sans-serif', margin: '0 0 4px' }}>
+                          {t(`analyzer.vision2030.${key}`)}
+                        </p>
+                        <p style={{ fontSize: 12.5, color: '#fff', fontFamily: 'Cairo, sans-serif', lineHeight: 1.6, margin: 0 }}>
+                          {p?.note || (isRTL ? '—' : '—')}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p style={{ fontSize: 13, color: '#fff', fontFamily: 'Cairo, sans-serif', lineHeight: 1.7, margin: 0 }}>
+                    {v2030.opportunity}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Before / After */}
+            {(baBefore || baAfter) && (
+              <div className="print-content" style={{ background: '#fff', border: '1px solid var(--wsl-border, #E5E7EB)', borderRadius: 16, padding: 22, boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
+                <h2 style={{ fontSize: 16, fontWeight: 900, color: 'var(--wsl-ink)', fontFamily: 'Cairo, sans-serif', margin: '0 0 14px' }}>
+                  {t('analyzer.beforeAfter.title')} — Headline
+                </h2>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12 }}>
+                  <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 12, padding: 14 }}>
+                    <p style={{ fontSize: 10.5, fontWeight: 800, color: '#991B1B', fontFamily: 'Cairo, sans-serif', textTransform: 'uppercase', letterSpacing: 0.5, margin: '0 0 8px' }}>
+                      {t('analyzer.beforeAfter.before')}
+                    </p>
+                    <p style={{ fontSize: 13, color: '#7F1D1D', fontFamily: 'Inter', direction: 'ltr', textAlign: 'left', lineHeight: 1.6, margin: 0 }}>
+                      {baBefore || '—'}
+                    </p>
+                  </div>
+                  <div style={{ background: '#ECFDF5', border: '1px solid #A7F3D0', borderRadius: 12, padding: 14 }}>
+                    <p style={{ fontSize: 10.5, fontWeight: 800, color: '#065F46', fontFamily: 'Cairo, sans-serif', textTransform: 'uppercase', letterSpacing: 0.5, margin: '0 0 8px' }}>
+                      {t('analyzer.beforeAfter.after')}
+                    </p>
+                    <p style={{ fontSize: 13, color: '#064E3B', fontFamily: 'Inter', direction: 'ltr', textAlign: 'left', lineHeight: 1.6, margin: 0 }}>
+                      {baAfter || '—'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 4-Week Action Plan */}
+            {actionPlan.length > 0 && (
+              <div className="print-content" style={{ background: '#fff', border: '1px solid var(--wsl-border, #E5E7EB)', borderRadius: 16, padding: 22, boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+                  <h2 style={{ fontSize: 16, fontWeight: 900, color: 'var(--wsl-ink)', fontFamily: 'Cairo, sans-serif', margin: 0 }}>
+                    {t('analyzer.actionPlan.title')}
+                  </h2>
+                  <span style={{ fontSize: 10.5, color: 'var(--wsl-ink-3)', fontFamily: 'Inter' }}>STAR Framework · Stanford</span>
+                </div>
+                <div style={{ position: 'relative', paddingInlineStart: 24 }}>
+                  <div style={{
+                    position: 'absolute',
+                    insetInlineStart: 7,
+                    top: 8, bottom: 8, width: 2,
+                    background: 'linear-gradient(180deg, #0A8F84, #C9922A)',
+                  }} />
+                  {actionPlan.map((step, i) => {
+                    const dotColors = ['#0A8F84', '#0F766E', '#C9922A', '#92400E'];
+                    return (
+                      <div key={i} style={{ position: 'relative', marginBottom: i < actionPlan.length - 1 ? 16 : 0 }}>
+                        <div style={{
+                          position: 'absolute',
+                          insetInlineStart: -23,
+                          top: 2, width: 16, height: 16, borderRadius: '50%',
+                          background: dotColors[i % 4], border: '2px solid #fff',
+                          boxShadow: `0 0 0 1px ${dotColors[i % 4]}`,
+                        }} />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
+                          <span style={{
+                            fontSize: 11, color: '#fff', padding: '2px 8px', borderRadius: 6,
+                            background: dotColors[i % 4], fontWeight: 800, fontFamily: 'Cairo, sans-serif',
+                          }}>
+                            {t('analyzer.actionPlan.week')} <span style={{ direction: 'ltr', fontFamily: 'Inter' }}>{step.week}</span>
+                          </span>
+                          <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--wsl-ink)', fontFamily: 'Cairo, sans-serif' }}>{step.title}</span>
+                        </div>
+                        <p style={{ fontSize: 13, color: 'var(--wsl-ink-2, #475569)', fontFamily: 'Cairo, sans-serif', lineHeight: 1.7, margin: 0 }}>{step.description}</p>
+                        {step.framework && (
+                          <span style={{
+                            display: 'inline-block', marginTop: 6,
+                            fontSize: 10.5, color: 'var(--wsl-ink-2)',
+                            background: '#F1F5F9', padding: '2px 8px', borderRadius: 6, fontFamily: 'Inter', fontWeight: 600,
+                          }}>
+                            {step.framework}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="no-print" style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              <button onClick={handleExportPDF}
+                style={{
+                  flex: 1, minWidth: 140,
+                  background: 'linear-gradient(135deg, #0A8F84, #0ea5e9)', color: '#fff',
+                  padding: '13px 18px', borderRadius: 12, border: 'none', cursor: 'pointer',
+                  fontSize: 13, fontWeight: 800, fontFamily: 'Cairo, sans-serif',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  boxShadow: '0 6px 16px rgba(10,143,132,0.25)',
+                }}>
+                <FileDown size={16} />
+                {t('analyzer.actions.exportPDF')}
+              </button>
+              <button onClick={handleReset}
+                style={{
+                  flex: 1, minWidth: 140,
+                  background: '#fff', color: '#0A8F84',
+                  border: '1px solid #0A8F84', padding: '13px 18px', borderRadius: 12, cursor: 'pointer',
+                  fontSize: 13, fontWeight: 800, fontFamily: 'Cairo, sans-serif',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                }}>
+                <RotateCcw size={16} />
+                {t('analyzer.actions.regenerate')}
+              </button>
+              <button onClick={() => toast.push('info', t('analyzer.actions.comingSoon'))}
+                style={{
+                  flex: 1, minWidth: 140,
+                  background: '#fff', color: 'var(--wsl-ink-2, #475569)',
+                  border: '1px solid var(--wsl-border, #E5E7EB)', padding: '13px 18px', borderRadius: 12, cursor: 'pointer',
+                  fontSize: 13, fontWeight: 800, fontFamily: 'Cairo, sans-serif',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                }}>
+                <MessageCircle size={16} />
+                {t('analyzer.actions.discuss')}
+              </button>
             </div>
-            <div style={{ fontFamily: 'Cairo, Inter, sans-serif', fontSize: 13, color: 'var(--wsl-ink-3)' }}>
-              {t('profileAnalysis.emptySub', 'أدخل رابط LinkedIn أو ارفع صورة الملف املف الشخصي للحصول على تقييم شامل')}
-            </div>
-          </motion.div>
+          </>
         )}
       </div>
     </DashboardLayout>
   );
 }
-
-const labelStyle: React.CSSProperties = {
-  display: 'block', marginBottom: 6,
-  fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 800, fontSize: 12,
-  color: 'var(--wsl-ink-2)',
-};
-
-export { ProfileAnalysis };
