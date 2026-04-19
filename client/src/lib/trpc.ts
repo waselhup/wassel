@@ -214,6 +214,47 @@ export const trpc = {
     listActions: (input?: { conversationId?: string }) =>
       trpcQuery<any[]>('executor.listActions', input || {}),
   },
+  analytics: {
+    overview: (input: { range: 'today' | 'week' | 'month' | 'all' }) =>
+      trpcQuery<{
+        range: string;
+        kpis: {
+          profile_analyses: number;
+          cvs_generated: number;
+          posts_generated: number;
+          campaigns_active: number;
+          messages_sent: number;
+          connections_accepted: number;
+          response_rate: number;
+          jobs_applied: number;
+        };
+        tokens: { balance: number; used_total: number };
+      }>('analytics.overview', input),
+    activityTimeseries: (input: { days: number }) =>
+      trpcQuery<Array<{ date: string; analyses: number; cvs: number; posts: number }>>(
+        'analytics.activityTimeseries',
+        input
+      ),
+    campaignPerformance: () =>
+      trpcQuery<Array<{
+        id: string;
+        name: string;
+        status: string;
+        prospects_count: number;
+        sent: number;
+        accepted: number;
+        acceptance_rate: number;
+      }>>('analytics.campaignPerformance'),
+    prospectStatusDistribution: () =>
+      trpcQuery<Array<{ status: string; count: number }>>(
+        'analytics.prospectStatusDistribution'
+      ),
+    tokensBreakdown: (input: { range: 'today' | 'week' | 'month' | 'all' }) =>
+      trpcQuery<Array<{ feature: string; total: number }>>(
+        'analytics.tokensBreakdown',
+        input
+      ),
+  },
   agents: {
     list: () => trpcQuery<any[]>('agents.list'),
     startConversation: (input: { agentId: string; title?: string }) =>

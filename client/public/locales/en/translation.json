@@ -887,21 +887,59 @@
     }
   },
   "analytics": {
-    "title": "Your Analytics",
-    "subtitle": "Comprehensive overview of your activity on Wassel",
-    "tabs": {
-      "week": "This Week",
-      "month": "This Month",
-      "quarter": "Last 90 Days"
+    "title": "Analytics Dashboard",
+    "subtitle": "Track your professional performance with academic rigor",
+    "range": {
+      "today": "Today",
+      "week": "Week",
+      "month": "Month",
+      "all": "All time"
     },
-    "stats": {
-      "analyses": "LinkedIn Analyses",
-      "cvs": "CVs Created",
-      "campaigns": "Campaigns",
-      "posts": "Posts",
-      "tokens": "Tokens Used"
+    "kpi": {
+      "analyses": "Profile Analyses",
+      "cvs": "CVs Generated",
+      "posts": "Posts Generated",
+      "campaigns": "Active Campaigns",
+      "messagesSent": "Messages Sent",
+      "accepted": "Replies Received",
+      "responseRate": "Response Rate",
+      "jobsApplied": "Jobs Applied"
     },
-    "empty": "Start using Wassel for your analytics to appear here"
+    "tokens": {
+      "balance": "Token Balance",
+      "usedTotal": "Total used: {{n}} tokens",
+      "breakdown": "Token usage by feature"
+    },
+    "activity": {
+      "title": "Your activity",
+      "last30": "Last 30 days"
+    },
+    "status": {
+      "title": "Prospect status distribution"
+    },
+    "empty": {
+      "status": "No data yet",
+      "tokens": "No transactions in this period"
+    },
+    "campaigns": {
+      "title": "Campaign Performance",
+      "empty": "No campaigns yet — start your first from the Outreach page",
+      "name": "Campaign",
+      "prospects": "Prospects",
+      "sent": "Sent",
+      "accepted": "Replies",
+      "rate": "Rate",
+      "status": "Status",
+      "statuses": {
+        "active": "Active",
+        "sending": "Sending",
+        "running": "Running",
+        "paused": "Paused",
+        "completed": "Completed",
+        "draft": "Draft"
+      }
+    },
+    "academicNote": "Built on LBS Career Capital framework, Cialdini's persuasion principles, and McKinsey MENA 2024 benchmarks — aligned with Vision 2030"
   },
   "home": {
     "activity": {

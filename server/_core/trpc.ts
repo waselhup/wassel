@@ -12,6 +12,7 @@ import { aiFeedbackRouter } from './routes/aiFeedback';
 import { agentsRouter } from './routes/agents';
 import { companiesRouter } from './routes/companies';
 import { executorAgentsRouter } from './routes/executorAgents';
+import { analyticsRouter } from './routes/analytics';
 
 export { router, publicProcedure, protectedProcedure };
 
@@ -48,6 +49,7 @@ export const appRouter = router({
   agents: agentsRouter,
   companies: companiesRouter,
   executor: executorAgentsRouter,
+  analytics: analyticsRouter,
 });
 
 export type AppRouter = typeof appRouter;

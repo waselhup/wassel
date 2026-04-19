@@ -2,207 +2,397 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import DashboardLayout from '../components/DashboardLayout';
-import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
-import { BarChart2, FileText, Send, PenSquare, Coins, TrendingUp, Link } from 'lucide-react';
+import { trpc } from '../lib/trpc';
+import {
+  LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
+} from 'recharts';
+import {
+  TrendingUp, FileText, MessageCircle, Users, Sparkles,
+  Briefcase, CheckCircle, Zap, Coins,
+} from 'lucide-react';
 
-type PeriodTab = 'week' | 'month' | 'quarter';
+type TimeRange = 'today' | 'week' | 'month' | 'all';
 
-interface Stats {
-  analyses: number; cvs: number; campaigns: number;
-  posts: number; tokensUsed: number; tokenBalance: number;
+const COLORS = ['#0A8F84', '#C9922A', '#10B981', '#3B82F6', '#A78BFA', '#EF4444', '#F59E0B', '#06B6D4'];
+
+interface Overview {
+  range: string;
+  kpis: {
+    profile_analyses: number;
+    cvs_generated: number;
+    posts_generated: number;
+    campaigns_active: number;
+    messages_sent: number;
+    connections_accepted: number;
+    response_rate: number;
+    jobs_applied: number;
+  };
+  tokens: { balance: number; used_total: number };
+}
+
+interface ActivityRow {
+  date: string;
+  analyses: number;
+  cvs: number;
+  posts: number;
+}
+
+interface CampaignRow {
+  id: string;
+  name: string;
+  status: string;
+  prospects_count: number;
+  sent: number;
+  accepted: number;
+  acceptance_rate: number;
 }
 
 export default function Analytics() {
   const { t, i18n } = useTranslation();
-  const { user } = useAuth();
-  const isAr = i18n.language === 'ar';
-  const [stats, setStats] = useState<Stats>({ analyses: 0, cvs: 0, campaigns: 0, posts: 0, tokensUsed: 0, tokenBalance: 0 });
-  const [daily, setDaily] = useState<{ day: string; count: number }[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<PeriodTab>('month');
+  const isRTL = i18n.language === 'ar';
+
+  const [range, setRange] = useState<TimeRange>('month');
+  const [overview, setOverview] = useState<Overview | null>(null);
+  const [activity, setActivity] = useState<ActivityRow[]>([]);
+  const [campaigns, setCampaigns] = useState<CampaignRow[]>([]);
+  const [statusDist, setStatusDist] = useState<Array<{ status: string; count: number }>>([]);
+  const [tokensBd, setTokensBd] = useState<Array<{ feature: string; total: number }>>([]);
+  const [loadingOv, setLoadingOv] = useState(true);
+  const [loadingTs, setLoadingTs] = useState(true);
+  const [loadingCp, setLoadingCp] = useState(true);
 
   useEffect(() => {
-    if (!user?.id) return;
-    void load(user.id);
-  }, [user?.id, tab]);
+    let cancelled = false;
+    setLoadingOv(true);
+    trpc.analytics.overview({ range })
+      .then(d => { if (!cancelled) setOverview(d); })
+      .catch(e => console.error('[analytics.overview]', e))
+      .finally(() => { if (!cancelled) setLoadingOv(false); });
+    trpc.analytics.tokensBreakdown({ range })
+      .then(d => { if (!cancelled) setTokensBd(d || []); })
+      .catch(e => console.error('[analytics.tokens]', e));
+    return () => { cancelled = true; };
+  }, [range]);
 
-  async function load(uid: string) {
-    setLoading(true);
-    try {
-      const now = new Date();
-      let since: Date;
-      if (tab === 'week') { since = new Date(now.getTime() - 7 * 86400000); }
-      else if (tab === 'month') { since = new Date(now.getFullYear(), now.getMonth(), 1); }
-      else { since = new Date(now.getTime() - 90 * 86400000); }
-      const sinceIso = since.toISOString();
+  useEffect(() => {
+    let cancelled = false;
+    setLoadingTs(true);
+    trpc.analytics.activityTimeseries({ days: 30 })
+      .then(d => { if (!cancelled) setActivity(d || []); })
+      .catch(e => console.error('[analytics.timeseries]', e))
+      .finally(() => { if (!cancelled) setLoadingTs(false); });
 
-      const safeCount = async (table: string, extra?: Record<string, string>) => {
-        try {
-          let q = supabase.from(table).select('id', { count: 'exact', head: true }).eq('user_id', uid).gte('created_at', sinceIso);
-          if (extra) { for (const [k, v] of Object.entries(extra)) q = q.eq(k, v); }
-          const { count } = await q;
-          return count || 0;
-        } catch { return 0; }
-      };
+    setLoadingCp(true);
+    trpc.analytics.campaignPerformance()
+      .then(d => { if (!cancelled) setCampaigns(d || []); })
+      .catch(e => console.error('[analytics.campaigns]', e))
+      .finally(() => { if (!cancelled) setLoadingCp(false); });
 
-      const [an, cv, ca, po] = await Promise.all([
-        safeCount('linkedin_analyses'),
-        safeCount('cv_documents'),
-        safeCount('campaigns'),
-        safeCount('posts'),
-      ]);
+    trpc.analytics.prospectStatusDistribution()
+      .then(d => { if (!cancelled) setStatusDist(d || []); })
+      .catch(e => console.error('[analytics.status]', e));
+    return () => { cancelled = true; };
+  }, []);
 
-      let tokensUsed = 0;
-      let tokenBalance = 0;
-      try {
-        const { data: txs } = await supabase.from('token_transactions').select('amount').eq('user_id', uid);
-        tokensUsed = (txs || []).filter((r: any) => r.amount < 0).reduce((s: number, r: any) => s + Math.abs(r.amount), 0);
-      } catch { /* noop */ }
-      try {
-        const { data: prof } = await supabase.from('profiles').select('token_balance').eq('id', uid).single();
-        tokenBalance = prof?.token_balance ?? 0;
-      } catch { /* noop */ }
+  const k = overview?.kpis;
 
-      setStats({ analyses: an, cvs: cv, campaigns: ca, posts: po, tokensUsed, tokenBalance });
-
-      // Daily activity (last 7 days from linkedin_analyses)
-      const days: { day: string; count: number }[] = [];
-      for (let d = 6; d >= 0; d--) {
-        const dt = new Date(now.getTime() - d * 86400000);
-        const nextDt = new Date(dt.getTime() + 86400000);
-        try {
-          const { count } = await supabase.from('linkedin_analyses').select('id', { count: 'exact', head: true }).eq('user_id', uid).gte('created_at', dt.toISOString()).lt('created_at', nextDt.toISOString());
-          days.push({ day: dt.toLocaleDateString(isAr ? 'ar-SA' : 'en-US', { weekday: 'short' }), count: count || 0 });
-        } catch { days.push({ day: '?', count: 0 }); }
-      }
-      setDaily(days);
-    } catch { /* noop */ }
-    setLoading(false);
-  }
-
-  const hasData = stats.analyses + stats.cvs + stats.campaigns + stats.posts > 0;
-  const maxDaily = Math.max(...daily.map(d => d.count), 1);
-
-  const statCards = [
-    { label: t('analytics.stats.analyses', 'تحليلات LinkedIn'), value: stats.analyses, icon: BarChart2, color: '#8B5CF6', bg: '#F5F3FF' },
-    { label: t('analytics.stats.cvs', 'سير مُنشأة'), value: stats.cvs, icon: FileText, color: '#059669', bg: '#ECFDF5' },
-    { label: t('analytics.stats.campaigns', 'حملات'), value: stats.campaigns, icon: Send, color: '#0077B5', bg: '#EFF6FF' },
-    { label: t('analytics.stats.posts', 'منشورات'), value: stats.posts, icon: PenSquare, color: '#0A8F84', bg: '#F0FDF9' },
+  const kpiCards = [
+    { key: 'profile_analyses', icon: Sparkles, label: t('analytics.kpi.analyses'), value: k?.profile_analyses, color: '#0A8F84', bg: '#ECFDF5', framework: 'Harvard HBR' },
+    { key: 'cvs_generated', icon: FileText, label: t('analytics.kpi.cvs'), value: k?.cvs_generated, color: '#C9922A', bg: '#FEF3C7', framework: 'STAR · Stanford' },
+    { key: 'posts_generated', icon: TrendingUp, label: t('analytics.kpi.posts'), value: k?.posts_generated, color: '#3B82F6', bg: '#DBEAFE', framework: 'Kellogg' },
+    { key: 'campaigns_active', icon: Briefcase, label: t('analytics.kpi.campaigns'), value: k?.campaigns_active, color: '#A78BFA', bg: '#EDE9FE' },
+    { key: 'messages_sent', icon: MessageCircle, label: t('analytics.kpi.messagesSent'), value: k?.messages_sent, color: '#0077B5', bg: '#EFF6FF' },
+    { key: 'connections_accepted', icon: Users, label: t('analytics.kpi.accepted'), value: k?.connections_accepted, color: '#10B981', bg: '#D1FAE5' },
+    { key: 'response_rate', icon: CheckCircle, label: t('analytics.kpi.responseRate'), value: k?.response_rate, suffix: '%', color: '#F43F5E', bg: '#FFE4E6' },
+    { key: 'jobs_applied', icon: Zap, label: t('analytics.kpi.jobsApplied'), value: k?.jobs_applied, color: '#06B6D4', bg: '#CFFAFE' },
   ];
 
-  const tabs: { id: PeriodTab; ar: string; en: string }[] = [
-    { id: 'week', ar: 'هذا الأسبوع', en: 'This Week' },
-    { id: 'month', ar: 'هذا الشهر', en: 'This Month' },
-    { id: 'quarter', ar: 'آخر 90 يوم', en: 'Last 90 Days' },
-  ];
+  const ranges: TimeRange[] = ['today', 'week', 'month', 'all'];
+
+  const cardBase: React.CSSProperties = {
+    background: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    border: '1px solid var(--wsl-border, #E5E7EB)',
+    boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
+  };
 
   return (
-    <DashboardLayout pageTitle={t('analytics.title', 'تحليلاتك')}>
-      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 4px' }}>
+    <DashboardLayout pageTitle={t('analytics.title', 'لوحة التحليلات')}>
+      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 4px', paddingBottom: 48 }}>
 
-        {/* Header */}
-        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-          style={{ marginBottom: 24 }}>
-          <h1 style={{ fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 900, fontSize: 30, color: 'var(--wsl-ink)', letterSpacing: '-0.5px', margin: 0 }}>
-            {t('analytics.title', 'تحليلاتك')}
-          </h1>
-          <p style={{ marginTop: 6, color: 'var(--wsl-ink-3)', fontFamily: 'Cairo, Inter, sans-serif', fontSize: 14 }}>
-            {t('analytics.subtitle', 'نظرة شاملة على نشاطك في وصّل')}
-          </p>
+        {/* Header + Filter */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 16, marginBottom: 24 }}>
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
+            <h1 style={{ fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 900, fontSize: 30, color: 'var(--wsl-ink)', letterSpacing: '-0.5px', margin: 0 }}>
+              {t('analytics.title', 'لوحة التحليلات')}
+            </h1>
+            <p style={{ marginTop: 6, color: 'var(--wsl-ink-3)', fontFamily: 'Cairo, Inter, sans-serif', fontSize: 14 }}>
+              {t('analytics.subtitle', 'تتبّع أداءك المهني بمعايير أكاديمية')}
+            </p>
+          </motion.div>
+
+          <div style={{ display: 'flex', gap: 4, padding: 4, borderRadius: 12, background: 'var(--wsl-surf-2, #F3F4F6)', width: 'fit-content', border: '1px solid var(--wsl-border, #E5E7EB)' }}>
+            {ranges.map(r => {
+              const active = range === r;
+              return (
+                <button
+                  key={r}
+                  onClick={() => setRange(r)}
+                  style={{
+                    padding: '8px 14px',
+                    borderRadius: 9,
+                    border: 'none',
+                    cursor: 'pointer',
+                    background: active ? 'linear-gradient(135deg, #0A8F84, #12B5A8)' : 'transparent',
+                    color: active ? '#fff' : 'var(--wsl-ink-3)',
+                    fontFamily: 'Cairo, Inter, sans-serif',
+                    fontWeight: 900,
+                    fontSize: 12.5,
+                    transition: 'all 150ms ease',
+                  }}
+                >
+                  {t(`analytics.range.${r}`)}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Token Balance Hero */}
+        <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
+          style={{
+            background: 'linear-gradient(135deg, #FFFBEB, #FEF3C7 60%, #FFFFFF)',
+            border: '1px solid #FDE68A',
+            borderRadius: 18,
+            padding: 22,
+            marginBottom: 20,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            boxShadow: '0 4px 14px rgba(217,119,6,0.08)',
+          }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Coins size={16} style={{ color: '#B45309' }} />
+              <span style={{ fontSize: 13, color: '#92400E', fontFamily: 'Cairo, sans-serif', fontWeight: 800 }}>
+                {t('analytics.tokens.balance', 'رصيد التوكنات')}
+              </span>
+            </div>
+            <div style={{ fontSize: 38, fontWeight: 900, color: '#92400E', fontFamily: 'Inter', marginTop: 4, lineHeight: 1 }}>
+              {(overview?.tokens?.balance ?? 0).toLocaleString('en-US')}
+            </div>
+            <div style={{ fontSize: 11, color: '#B45309', fontFamily: 'Cairo, sans-serif', marginTop: 6 }}>
+              {t('analytics.tokens.usedTotal', { n: (overview?.tokens?.used_total ?? 0).toLocaleString('en-US') })}
+            </div>
+          </div>
+          <div style={{ width: 56, height: 56, borderRadius: 16, background: 'linear-gradient(135deg, #F59E0B, #C9922A)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 6px 18px rgba(217,119,6,0.25)' }}>
+            <Zap size={28} color="#fff" />
+          </div>
         </motion.div>
 
-        {/* Period Tabs */}
-        <div style={{ display: 'flex', gap: 4, padding: 4, borderRadius: 12, background: 'var(--wsl-surf-2, #F3F4F6)', marginBottom: 24, width: 'fit-content' }}>
-          {tabs.map(tb => {
-            const active = tab === tb.id;
+        {/* KPI Grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 22 }}>
+          {kpiCards.map((c, i) => {
+            const Icon = c.icon;
             return (
-              <button key={tb.id} onClick={() => setTab(tb.id)}
-                style={{ padding: '8px 16px', borderRadius: 9, border: 'none', cursor: 'pointer', background: active ? '#fff' : 'transparent', color: active ? 'var(--wsl-ink)' : 'var(--wsl-ink-3)', fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 900, fontSize: 13, boxShadow: active ? '0 2px 6px rgba(0,0,0,0.06)' : 'none', transition: 'all 150ms ease' }}>
-                {isAr ? tb.ar : tb.en}
-              </button>
+              <motion.div key={c.key} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
+                style={cardBase}>
+                <div style={{ width: 38, height: 38, borderRadius: 10, background: c.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 10 }}>
+                  <Icon size={18} style={{ color: c.color }} />
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--wsl-ink-3)', fontFamily: 'Cairo, sans-serif', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.4 }}>
+                  {c.label}
+                </div>
+                <div style={{ fontSize: 30, fontWeight: 900, color: 'var(--wsl-ink)', fontFamily: 'Inter', marginTop: 4, lineHeight: 1 }}>
+                  {loadingOv ? (
+                    <span style={{ display: 'inline-block', width: 50, height: 26, background: '#F3F4F6', borderRadius: 6 }} />
+                  ) : (
+                    <>
+                      {(c.value ?? 0).toLocaleString('en-US')}
+                      {c.suffix && <span style={{ fontSize: 16, color: 'var(--wsl-ink-3)', marginInlineStart: 4 }}>{c.suffix}</span>}
+                    </>
+                  )}
+                </div>
+                {c.framework && (
+                  <div style={{ fontSize: 9.5, color: 'var(--wsl-ink-4, #94A3B8)', marginTop: 8, fontFamily: 'Inter', letterSpacing: 0.3 }}>
+                    📚 {c.framework}
+                  </div>
+                )}
+              </motion.div>
             );
           })}
         </div>
 
-        {loading ? (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 0' }}>
-            <div style={{ width: 32, height: 32, borderRadius: '50%', border: '4px solid var(--wsl-border, #E5E7EB)', borderTopColor: 'var(--wsl-teal, #0A8F84)', animation: 'spin 1s linear infinite' }} />
+        {/* Activity Timeline */}
+        <div style={{ ...cardBase, padding: 22, marginBottom: 20 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+            <h2 style={{ fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 900, fontSize: 16, color: 'var(--wsl-ink)', margin: 0 }}>
+              {t('analytics.activity.title', 'نشاطك خلال الفترة')}
+            </h2>
+            <span style={{ fontSize: 11, color: 'var(--wsl-ink-3)', fontFamily: 'Cairo, sans-serif' }}>
+              {t('analytics.activity.last30', 'آخر 30 يوماً')}
+            </span>
           </div>
-        ) : !hasData ? (
-          /* Empty State */
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-            style={{ background: '#fff', border: '2px dashed var(--wsl-border, #E5E7EB)', borderRadius: 16, padding: '60px 24px', textAlign: 'center', marginBottom: 24 }}>
-            <div style={{ width: 72, height: 72, borderRadius: 20, margin: '0 auto 18px', background: 'linear-gradient(135deg, rgba(10,143,132,0.1), rgba(14,165,233,0.1))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <TrendingUp size={32} color="#0A8F84" />
-            </div>
-            <div style={{ fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 900, fontSize: 18, color: 'var(--wsl-ink)', marginBottom: 8 }}>
-              {t('analytics.empty', 'ابدأ باستخدام وصّل لتظهر تحليلاتك هنا')}
-            </div>
-            <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap', marginTop: 16 }}>
-              <a href="/app/profile-analysis" style={{ padding: '9px 16px', borderRadius: 9, background: 'linear-gradient(135deg, #0A8F84, #0ea5e9)', color: '#fff', textDecoration: 'none', fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 13 }}>
-                {isAr ? 'تحليل ملفك' : 'Analyze Profile'}
-              </a>
-              <a href="/app/campaigns/new" style={{ padding: '9px 16px', borderRadius: 9, background: '#F3F4F6', color: 'var(--wsl-ink)', textDecoration: 'none', fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 13 }}>
-                {isAr ? 'حملة جديدة' : 'New Campaign'}
-              </a>
-            </div>
-          </motion.div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-            {/* Stat Cards */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14 }}>
-              {statCards.map((c, i) => (
-                <motion.div key={c.label} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
-                  style={{ background: '#fff', borderRadius: 16, padding: 20, border: '1px solid var(--wsl-border, #E5E7EB)', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-                    <div style={{ width: 40, height: 40, borderRadius: 10, background: c.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <c.icon size={20} style={{ color: c.color }} />
-                    </div>
-                  </div>
-                  <div style={{ fontSize: 36, fontWeight: 900, color: 'var(--wsl-ink)', fontFamily: 'Inter' }}>{c.value}</div>
-                  <div style={{ fontSize: 12, color: 'var(--wsl-ink-3)', marginTop: 4, fontFamily: 'Cairo, sans-serif', fontWeight: 700 }}>{c.label}</div>
-                </motion.div>
-              ))}
-            </div>
+          <div style={{ height: 280 }}>
+            {loadingTs ? (
+              <div style={{ width: '100%', height: '100%', background: '#F3F4F6', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--wsl-ink-3)', fontFamily: 'Cairo, sans-serif', fontSize: 13 }}>
+                {isRTL ? '...جاري التحميل' : 'Loading...'}
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={activity} margin={{ top: 8, right: 8, left: -8, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
+                  <XAxis
+                    dataKey="date"
+                    stroke="#64748B"
+                    fontSize={10}
+                    reversed={isRTL}
+                    tickFormatter={d => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  />
+                  <YAxis stroke="#64748B" fontSize={10} allowDecimals={false} orientation={isRTL ? 'right' : 'left'} />
+                  <Tooltip
+                    contentStyle={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 12, boxShadow: '0 4px 14px rgba(0,0,0,0.08)', fontFamily: 'Cairo, Inter, sans-serif', fontSize: 12 }}
+                    labelFormatter={d => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  />
+                  <Legend wrapperStyle={{ fontFamily: 'Cairo, Inter, sans-serif', fontSize: 12 }} />
+                  <Line type="monotone" dataKey="analyses" stroke="#0A8F84" strokeWidth={2.5} dot={{ r: 2 }} name={t('analytics.kpi.analyses')} />
+                  <Line type="monotone" dataKey="cvs" stroke="#C9922A" strokeWidth={2.5} dot={{ r: 2 }} name={t('analytics.kpi.cvs')} />
+                  <Line type="monotone" dataKey="posts" stroke="#3B82F6" strokeWidth={2.5} dot={{ r: 2 }} name={t('analytics.kpi.posts')} />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </div>
 
-            {/* Token Usage Card */}
-            <div style={{ background: '#fff', borderRadius: 16, padding: 24, border: '1px solid var(--wsl-border, #E5E7EB)', boxShadow: '0 1px 4px rgba(0,0,0,0.04)', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 20 }}>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                  <Coins size={16} style={{ color: '#D97706' }} />
-                  <span style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 800, fontSize: 13, color: 'var(--wsl-ink-2)' }}>{t('analytics.stats.tokens', 'توكن مُستخدم')}</span>
+        {/* Two Column: Status Pie + Tokens Bar */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16, marginBottom: 20 }}>
+          <div style={{ ...cardBase, padding: 22 }}>
+            <h2 style={{ fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 900, fontSize: 16, color: 'var(--wsl-ink)', margin: '0 0 14px' }}>
+              {t('analytics.status.title', 'توزيع حالات العملاء المحتملين')}
+            </h2>
+            <div style={{ height: 240 }}>
+              {statusDist.length === 0 ? (
+                <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--wsl-ink-3)', fontFamily: 'Cairo, sans-serif', fontSize: 13 }}>
+                  {t('analytics.empty.status', 'لا توجد بيانات بعد')}
                 </div>
-                <div style={{ fontSize: 32, fontWeight: 900, color: '#D97706', fontFamily: 'Inter' }}>{stats.tokensUsed.toLocaleString('en-US')}</div>
-              </div>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                  <Coins size={16} style={{ color: '#0A8F84' }} />
-                  <span style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 800, fontSize: 13, color: 'var(--wsl-ink-2)' }}>{isAr ? 'الرصيد المتبقي' : 'Remaining Balance'}</span>
-                </div>
-                <div style={{ fontSize: 32, fontWeight: 900, color: '#0A8F84', fontFamily: 'Inter' }}>{stats.tokenBalance.toLocaleString('en-US')}</div>
-              </div>
-            </div>
-
-            {/* Daily Activity Chart */}
-            <div style={{ background: '#fff', borderRadius: 16, padding: 24, border: '1px solid var(--wsl-border, #E5E7EB)', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
-              <div style={{ fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 900, fontSize: 15, color: 'var(--wsl-ink)', marginBottom: 20 }}>
-                {isAr ? 'نشاط آخر 7 أيام (تحليلا֪)' : 'Last 7 Days Activity (Analyses)'}
-              </div>
-              <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12, height: 120 }}>
-                {daily.map((d, i) => (
-                  <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-                    <span style={{ fontSize: 11, fontWeight: 900, color: 'var(--wsl-ink-2)', fontFamily: 'Inter' }}>{d.count}</span>
-                    <div style={{ width: '100%', borderRadius: '4px 4px 0 0', background: d.count > 0 ? 'linear-gradient(180deg, #0A8F84, #12B5A8)' : '#F3F4F6', minHeight: 4, height: Math.max(4, (d.count / maxDaily) * 80), transition: 'height 0.6s ease' }} />
-                    <span style={{ fontSize: 10, color: 'var(--wsl-ink-4)', fontFamily: 'Cairo, sans-serif' }}>{d.day}</span>
-                  </div>
-                ))}
-              </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={statusDist} dataKey="count" nameKey="status" cx="50%" cy="50%" innerRadius={50} outerRadius={90} paddingAngle={2}>
+                      {statusDist.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                    </Pie>
+                    <Tooltip contentStyle={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 12, fontFamily: 'Cairo, Inter, sans-serif', fontSize: 12 }} />
+                    <Legend wrapperStyle={{ fontFamily: 'Cairo, Inter, sans-serif', fontSize: 11 }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
             </div>
           </div>
-        )}
+
+          <div style={{ ...cardBase, padding: 22 }}>
+            <h2 style={{ fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 900, fontSize: 16, color: 'var(--wsl-ink)', margin: '0 0 14px' }}>
+              {t('analytics.tokens.breakdown', 'استهلاك التوكنات حسب الميزة')}
+            </h2>
+            <div style={{ height: 240 }}>
+              {tokensBd.length === 0 ? (
+                <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--wsl-ink-3)', fontFamily: 'Cairo, sans-serif', fontSize: 13 }}>
+                  {t('analytics.empty.tokens', 'لا توجد معاملات في هذه الفترة')}
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={tokensBd} margin={{ top: 8, right: 8, left: -8, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
+                    <XAxis dataKey="feature" stroke="#64748B" fontSize={10} reversed={isRTL} />
+                    <YAxis stroke="#64748B" fontSize={10} allowDecimals={false} orientation={isRTL ? 'right' : 'left'} />
+                    <Tooltip contentStyle={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 12, fontFamily: 'Cairo, Inter, sans-serif', fontSize: 12 }} />
+                    <Bar dataKey="total" fill="#C9922A" radius={[8, 8, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Campaign Performance Table */}
+        <div style={{ ...cardBase, padding: 22, marginBottom: 20 }}>
+          <h2 style={{ fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 900, fontSize: 16, color: 'var(--wsl-ink)', margin: '0 0 14px' }}>
+            {t('analytics.campaigns.title', 'أداء الحملات')}
+          </h2>
+          {loadingCp ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {[1, 2, 3].map(i => <div key={i} style={{ height: 48, background: '#F3F4F6', borderRadius: 10 }} />)}
+            </div>
+          ) : campaigns.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--wsl-ink-3)', fontFamily: 'Cairo, sans-serif' }}>
+              <Briefcase size={36} style={{ opacity: 0.25, margin: '0 auto 10px', display: 'block' }} />
+              <div style={{ fontSize: 14 }}>{t('analytics.campaigns.empty', 'لا توجد حملات بعد')}</div>
+            </div>
+          ) : (
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--wsl-border, #E5E7EB)', color: 'var(--wsl-ink-3)', fontFamily: 'Cairo, sans-serif' }}>
+                    <th style={{ padding: '10px 8px', textAlign: isRTL ? 'right' : 'left', fontSize: 11, fontWeight: 800, textTransform: 'uppercase' }}>{t('analytics.campaigns.name')}</th>
+                    <th style={{ padding: '10px 8px', textAlign: 'center', fontSize: 11, fontWeight: 800, textTransform: 'uppercase' }}>{t('analytics.campaigns.prospects')}</th>
+                    <th style={{ padding: '10px 8px', textAlign: 'center', fontSize: 11, fontWeight: 800, textTransform: 'uppercase' }}>{t('analytics.campaigns.sent')}</th>
+                    <th style={{ padding: '10px 8px', textAlign: 'center', fontSize: 11, fontWeight: 800, textTransform: 'uppercase' }}>{t('analytics.campaigns.accepted')}</th>
+                    <th style={{ padding: '10px 8px', textAlign: 'center', fontSize: 11, fontWeight: 800, textTransform: 'uppercase' }}>{t('analytics.campaigns.rate')}</th>
+                    <th style={{ padding: '10px 8px', textAlign: 'center', fontSize: 11, fontWeight: 800, textTransform: 'uppercase' }}>{t('analytics.campaigns.status')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {campaigns.map(c => (
+                    <tr key={c.id} style={{ borderBottom: '1px solid #F1F5F9' }}>
+                      <td style={{ padding: '12px 8px', fontWeight: 700, color: 'var(--wsl-ink)', fontFamily: 'Cairo, Inter, sans-serif' }}>{c.name}</td>
+                      <td style={{ padding: '12px 8px', textAlign: 'center', fontFamily: 'Inter', color: 'var(--wsl-ink-2)' }}>{c.prospects_count.toLocaleString('en-US')}</td>
+                      <td style={{ padding: '12px 8px', textAlign: 'center', fontFamily: 'Inter', color: 'var(--wsl-ink-2)' }}>{c.sent.toLocaleString('en-US')}</td>
+                      <td style={{ padding: '12px 8px', textAlign: 'center', fontFamily: 'Inter', color: 'var(--wsl-ink-2)' }}>{c.accepted.toLocaleString('en-US')}</td>
+                      <td style={{ padding: '12px 8px', textAlign: 'center' }}>
+                        <span style={{
+                          display: 'inline-block', padding: '3px 9px', borderRadius: 999, fontSize: 11, fontWeight: 800, fontFamily: 'Inter',
+                          background: c.acceptance_rate >= 30 ? '#D1FAE5' : c.acceptance_rate >= 15 ? '#FEF3C7' : '#FEE2E2',
+                          color: c.acceptance_rate >= 30 ? '#065F46' : c.acceptance_rate >= 15 ? '#92400E' : '#991B1B',
+                        }}>
+                          {c.acceptance_rate}%
+                        </span>
+                      </td>
+                      <td style={{ padding: '12px 8px', textAlign: 'center' }}>
+                        <span style={{
+                          display: 'inline-block', padding: '3px 10px', borderRadius: 999, fontSize: 11, fontWeight: 800, fontFamily: 'Cairo, sans-serif',
+                          background: c.status === 'active' || c.status === 'sending' || c.status === 'running' ? '#CCFBF1' :
+                                       c.status === 'paused' ? '#FEF3C7' :
+                                       c.status === 'completed' ? '#E0E7FF' : '#F1F5F9',
+                          color: c.status === 'active' || c.status === 'sending' || c.status === 'running' ? '#0F766E' :
+                                  c.status === 'paused' ? '#92400E' :
+                                  c.status === 'completed' ? '#3730A3' : '#475569',
+                        }}>
+                          {t(`analytics.campaigns.statuses.${c.status}`, c.status)}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* Academic Note */}
+        <div style={{
+          background: 'linear-gradient(135deg, #ECFDF5, #FFFFFF)',
+          border: '1px solid #A7F3D0',
+          borderRadius: 14,
+          padding: 16,
+          fontSize: 13,
+          color: '#065F46',
+          fontFamily: 'Cairo, sans-serif',
+          lineHeight: 1.6,
+        }}>
+          📚 {t('analytics.academicNote', 'التحليلات مبنية على إطار Career Capital من LBS، وإطار Cialdini للإقناع، ومعايير McKinsey MENA 2024 مع مواءمة رؤية 2030')}
+        </div>
       </div>
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </DashboardLayout>
   );
 }
