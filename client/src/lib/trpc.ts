@@ -273,6 +273,79 @@ export const trpc = {
         input
       ),
   },
+  posts: {
+    generate: (input: {
+      topic: string;
+      tones: string[];
+      dialect: string;
+      audience?: string;
+      goal?: string;
+      length?: 'short' | 'medium' | 'long';
+      extras?: {
+        hashtags?: boolean;
+        callToAction?: boolean;
+        emojis?: boolean;
+        endingQuestion?: boolean;
+        personalStory?: boolean;
+      };
+      useStyleSamples?: boolean;
+      inspirationUrl?: string;
+    }) =>
+      trpcMutation<{
+        id: string;
+        dna: {
+          topic: string;
+          tones: string[];
+          dialect: string;
+          language: string;
+          audience: string;
+          goal: string;
+          length: string;
+          dnaScore: number;
+        };
+        variations: Array<{
+          id: 'safe' | 'balanced' | 'bold';
+          label: string;
+          content: string;
+          charCount: number;
+          hook: string;
+          hashtags: string[];
+        }>;
+        tips: string[];
+        tokensUsed: number;
+      }>('posts.generate', input),
+    selectVariation: (input: {
+      postId: string;
+      variationId: 'safe' | 'balanced' | 'bold';
+    }) => trpcMutation<{ success: boolean }>('posts.selectVariation', input),
+    addStyleSample: (input: { content: string }) =>
+      trpcMutation<{ id: string; styleAnalysis: any }>(
+        'posts.addStyleSample',
+        input
+      ),
+    listStyleSamples: () =>
+      trpcQuery<
+        Array<{
+          id: string;
+          content: string;
+          style_analysis: any;
+          created_at: string;
+        }>
+      >('posts.listStyleSamples'),
+    deleteStyleSample: (input: { id: string }) =>
+      trpcMutation<{ success: boolean }>('posts.deleteStyleSample', input),
+    previewInspiration: (input: { url: string }) =>
+      trpcMutation<{
+        source: 'youtube' | 'article' | 'text';
+        title: string;
+        preview: string;
+      }>('posts.previewInspiration', input),
+    list: () => trpcQuery<any[]>('posts.list'),
+    delete: (input: { id: string }) =>
+      trpcMutation<{ success: boolean }>('posts.delete', input),
+    update: (input: { id: string; patch: Record<string, any> }) =>
+      trpcMutation<any>('posts.update', input),
+  },
   agents: {
     list: () => trpcQuery<any[]>('agents.list'),
     startConversation: (input: { agentId: string; title?: string }) =>

@@ -37,6 +37,7 @@
     "lucide-react": "^0.468.0",
     "mammoth": "^1.12.0",
     "micromatch": "^4.0.8",
+    "node-html-parser": "^7.1.0",
     "pdf-parse": "^2.4.5",
     "posthog-js": "^1.367.0",
     "react": "^19.0.0",

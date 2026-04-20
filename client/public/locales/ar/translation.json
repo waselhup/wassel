@@ -841,7 +841,183 @@
     "postToLinkedIn": "نشر في LinkedIn",
     "openingLinkedIn": "جارٍ فتح LinkedIn...",
     "linkedInWillOpen": "سيفتح LinkedIn في نافذة جديدة مع منشورك جاهزاً للنشر",
-    "linkedInTip": "ملاحظة: ستفتح صفحة LinkedIn مع نص المنشور جاهز — فقط اضغط Post"
+    "linkedInTip": "ملاحظة: ستفتح صفحة LinkedIn مع نص المنشور جاهز — فقط اضغط Post",
+    "studio": {
+      "title": "استوديو المنشورات",
+      "subtitle": "اصنع منشوراً يشبهك تماماً — بلهجتك ونبرتك",
+      "voice": {
+        "label": "سجّل بالصوت",
+        "comingSoonTooltip": "قريباً — تحدث بفكرتك وسنحوّلها لنص تلقائياً"
+      },
+      "topic": {
+        "label": "اكتب فكرتك",
+        "placeholder": "مثال: ليش الشركات السعودية لازم تستعجل في تبني AI",
+        "hint": "كلما تفصّل أكثر، يطلع البوست أقرب لرغبتك",
+        "charCount": "{{count}} / 2000"
+      },
+      "tones": {
+        "label": "كيف تبي يطلع البوست؟",
+        "hint": "اختر 1-3 نبرات",
+        "limit": "الحد الأقصى 3 نبرات",
+        "professional": "احترافي",
+        "friendly": "ودّي",
+        "humorous": "فكاهي",
+        "humble": "متواضع",
+        "bold": "جريء",
+        "analytical": "تحليلي",
+        "storytelling": "قصصي",
+        "motivational": "تحفيزي",
+        "sarcastic": "ساخر",
+        "provocative": "صادم"
+      },
+      "language": {
+        "label": "اللغة",
+        "ar": "العربية",
+        "en": "الإنجليزية",
+        "mixed": "مزيج عربي-إنجليزي"
+      },
+      "dialect": {
+        "label": "اللهجة",
+        "hint": "اختر لهجة جمهورك",
+        "msa": "فصحى",
+        "saudi-general": "سعودي عام",
+        "saudi-eastern": "شرقاوي",
+        "saudi-hasawi": "حساوي",
+        "saudi-hasawi-badge": "لهجة وصّل",
+        "saudi-najdi": "نجدي",
+        "saudi-hijazi": "حجازي",
+        "english": "إنجليزي",
+        "mixed": "مزيج"
+      },
+      "advanced": {
+        "toggle": "خيارات متقدمة",
+        "collapse": "إخفاء",
+        "audience": {
+          "label": "جمهورك المستهدف",
+          "optional": "اختياري",
+          "entrepreneurs": "رواد أعمال",
+          "employees": "موظفين",
+          "hr-recruiters": "HR / موظفي توظيف",
+          "developers": "مطورين",
+          "executives": "قيادات تنفيذية",
+          "investors": "مستثمرين",
+          "general": "عموم"
+        },
+        "goal": {
+          "label": "هدف البوست",
+          "optional": "اختياري",
+          "thought-leadership": "قيادة فكرية",
+          "lead-generation": "جذب عملاء",
+          "product-launch": "إعلان منتج",
+          "followers-growth": "بناء متابعين",
+          "share-experience": "مشاركة تجربة",
+          "announcement": "إعلان"
+        },
+        "length": {
+          "label": "طول البوست",
+          "short": "قصير",
+          "shortHint": "أقل من 500 حرف",
+          "medium": "متوسط",
+          "mediumHint": "500-1500 حرف",
+          "long": "طويل",
+          "longHint": "أكثر من 1500 حرف"
+        },
+        "extras": {
+          "label": "عناصر إضافية",
+          "hashtags": "هاشتاقات",
+          "callToAction": "دعوة لاتخاذ إجراء",
+          "emojis": "إيموجي",
+          "endingQuestion": "سؤال في النهاية",
+          "personalStory": "قصة شخصية"
+        },
+        "styleSamples": {
+          "label": "اكتب بأسلوبي",
+          "description": "ارفع 2-3 بوستات سابقة لك وسنحاكي أسلوبك",
+          "enable": "تفعيل",
+          "disable": "إلغاء",
+          "manage": "إدارة العينات",
+          "dialogTitle": "عينات الكتابة بأسلوبك",
+          "dialogSubtitle": "أضف بوستات سابقة كتبتها بنفسك لنتعلم أسلوبك",
+          "empty": "لا توجد عينات بعد",
+          "add": "إضافة عينة",
+          "placeholder": "الصق بوست سابق كتبته بنفسك (الحد الأدنى 50 حرف)...",
+          "minChars": "الحد الأدنى 50 حرف",
+          "maxChars": "الحد الأقصى 5000 حرف",
+          "savedAt": "أضيفت في {{date}}",
+          "saved": "تم الحفظ",
+          "analyzing": "نحلل أسلوبك...",
+          "delete": "حذف",
+          "confirmDelete": "حذف هذه العينة؟",
+          "count": "{{count}} عينات",
+          "close": "إغلاق"
+        },
+        "inspiration": {
+          "label": "استوحِ من مصدر",
+          "description": "رابط فيديو YouTube أو مقال — نستخرج الأفكار ونبني من منظورك",
+          "placeholder": "https://youtube.com/... أو https://...",
+          "preview": "معاينة",
+          "previewing": "نحمّل المحتوى...",
+          "loaded": "تم تحميل المحتوى",
+          "loadedTitle": "العنوان:",
+          "loadedPreview": "معاينة:",
+          "failed": "فشل الاستخراج",
+          "clear": "إلغاء"
+        }
+      },
+      "dna": {
+        "title": "ملخص اختياراتك",
+        "subtitle": "راجع اختياراتك قبل التوليد",
+        "topic": "الموضوع",
+        "tones": "النبرة",
+        "dialect": "اللهجة",
+        "audience": "الجمهور",
+        "goal": "الهدف",
+        "length": "الطول",
+        "score": "درجة التوافق"
+      },
+      "generate": {
+        "button": "توليد 3 نسخ",
+        "buttonTokens": "توليد 3 نسخ • {{tokens}} توكن",
+        "generating": "نصنع بوستك الخاص...",
+        "loading1": "نستوحي من اللهجة المختارة...",
+        "loading2": "نخلط النبرات بذكاء...",
+        "loading3": "نكتب نسخة آمنة...",
+        "loading4": "نصنع نسخة متوازنة...",
+        "loading5": "نجرؤ على نسخة جريئة...",
+        "loading6": "نراجع التدفق والإيقاع...",
+        "loading7": "نضيف اللمسة النهائية...",
+        "error": "فشل التوليد — حاول مرة أخرى"
+      },
+      "variations": {
+        "safe": "آمن",
+        "safeHint": "احترافي وآمن — مناسب لأي جمهور",
+        "balanced": "متوازن",
+        "balancedHint": "تفاعل جيد مع الحفاظ على الاحترافية",
+        "bold": "جريء",
+        "boldHint": "ضرب قوي — تفاعل عالي ولكن أعلى مخاطرة",
+        "recommended": "الموصى به",
+        "charCount": "{{count}} حرف",
+        "tipsTitle": "نصائح للنشر",
+        "actions": {
+          "copy": "نسخ",
+          "copied": "تم النسخ!",
+          "edit": "تعديل",
+          "save": "حفظ كمسودة",
+          "saved": "تم الحفظ",
+          "regenerate": "إعادة توليد",
+          "publish": "نشر على LinkedIn",
+          "select": "اختيار هذه النسخة"
+        }
+      },
+      "history": {
+        "title": "بوستاتي السابقة",
+        "empty": "لم تُنشئ أي بوست بعد",
+        "emptyHint": "ابدأ بإنشاء بوستك الأول",
+        "draft": "مسودة",
+        "published": "منشور",
+        "scheduled": "مجدول"
+      }
+    }
   },
   "profileAnalysis": {
     "title": "تحليل البروفايل المهني",

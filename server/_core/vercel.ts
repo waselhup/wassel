@@ -1,5 +1,4 @@
 import { telegramHandler } from './telegram';
-import { postsRouter } from './routes/posts';
 import express from 'express';
 import cors from 'cors';
 import { createExpressMiddleware } from '@trpc/server/adapters/express';
@@ -29,9 +28,6 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 
 app.post('/api/telegram', telegramHandler);
-
-// ===== Posts Routes =====
-app.use('/api/posts', postsRouter);
 
 app.get('/api/health', (_req, res) => {
   res.json({

@@ -847,7 +847,183 @@
     "postToLinkedIn": "Post to LinkedIn",
     "openingLinkedIn": "Opening LinkedIn...",
     "linkedInWillOpen": "LinkedIn will open in a new tab with your post ready to publish",
-    "linkedInTip": "Note: LinkedIn will open with your post text ready — just click Post"
+    "linkedInTip": "Note: LinkedIn will open with your post text ready — just click Post",
+    "studio": {
+      "title": "Posts Studio",
+      "subtitle": "Craft a post that sounds exactly like you — your dialect, your tone",
+      "voice": {
+        "label": "Record with voice",
+        "comingSoonTooltip": "Coming soon — speak your idea and we'll transcribe it"
+      },
+      "topic": {
+        "label": "Write your idea",
+        "placeholder": "Example: Why Saudi companies must move faster on AI adoption",
+        "hint": "The more detail you give, the closer the post lands to your intent",
+        "charCount": "{{count}} / 2000"
+      },
+      "tones": {
+        "label": "How should the post feel?",
+        "hint": "Pick 1-3 tones",
+        "limit": "Maximum 3 tones",
+        "professional": "Professional",
+        "friendly": "Friendly",
+        "humorous": "Humorous",
+        "humble": "Humble",
+        "bold": "Bold",
+        "analytical": "Analytical",
+        "storytelling": "Storytelling",
+        "motivational": "Motivational",
+        "sarcastic": "Sarcastic",
+        "provocative": "Provocative"
+      },
+      "language": {
+        "label": "Language",
+        "ar": "Arabic",
+        "en": "English",
+        "mixed": "Mixed Arabic-English"
+      },
+      "dialect": {
+        "label": "Dialect",
+        "hint": "Pick your audience's dialect",
+        "msa": "Modern Standard",
+        "saudi-general": "Saudi General",
+        "saudi-eastern": "Eastern (Sharqawi)",
+        "saudi-hasawi": "Hasawi",
+        "saudi-hasawi-badge": "Wassel dialect",
+        "saudi-najdi": "Najdi",
+        "saudi-hijazi": "Hijazi",
+        "english": "English",
+        "mixed": "Mixed"
+      },
+      "advanced": {
+        "toggle": "Advanced options",
+        "collapse": "Hide",
+        "audience": {
+          "label": "Target audience",
+          "optional": "optional",
+          "entrepreneurs": "Entrepreneurs",
+          "employees": "Employees",
+          "hr-recruiters": "HR / Recruiters",
+          "developers": "Developers",
+          "executives": "Executives",
+          "investors": "Investors",
+          "general": "General"
+        },
+        "goal": {
+          "label": "Post goal",
+          "optional": "optional",
+          "thought-leadership": "Thought leadership",
+          "lead-generation": "Lead generation",
+          "product-launch": "Product launch",
+          "followers-growth": "Grow followers",
+          "share-experience": "Share experience",
+          "announcement": "Announcement"
+        },
+        "length": {
+          "label": "Post length",
+          "short": "Short",
+          "shortHint": "Under 500 chars",
+          "medium": "Medium",
+          "mediumHint": "500-1500 chars",
+          "long": "Long",
+          "longHint": "Over 1500 chars"
+        },
+        "extras": {
+          "label": "Extra elements",
+          "hashtags": "Hashtags",
+          "callToAction": "Call to action",
+          "emojis": "Emojis",
+          "endingQuestion": "Ending question",
+          "personalStory": "Personal story"
+        },
+        "styleSamples": {
+          "label": "Write in my style",
+          "description": "Upload 2-3 previous posts — we'll mirror your voice",
+          "enable": "Enable",
+          "disable": "Disable",
+          "manage": "Manage samples",
+          "dialogTitle": "Your writing style samples",
+          "dialogSubtitle": "Add previous posts you wrote yourself so we can learn your voice",
+          "empty": "No samples yet",
+          "add": "Add sample",
+          "placeholder": "Paste a previous post you wrote yourself (min 50 chars)...",
+          "minChars": "Minimum 50 chars",
+          "maxChars": "Maximum 5000 chars",
+          "savedAt": "Added on {{date}}",
+          "saved": "Saved",
+          "analyzing": "Analyzing your style...",
+          "delete": "Delete",
+          "confirmDelete": "Delete this sample?",
+          "count": "{{count}} samples",
+          "close": "Close"
+        },
+        "inspiration": {
+          "label": "Take inspiration from a source",
+          "description": "YouTube video or article link — we extract ideas and write from your perspective",
+          "placeholder": "https://youtube.com/... or https://...",
+          "preview": "Preview",
+          "previewing": "Loading content...",
+          "loaded": "Content loaded",
+          "loadedTitle": "Title:",
+          "loadedPreview": "Preview:",
+          "failed": "Extraction failed",
+          "clear": "Clear"
+        }
+      },
+      "dna": {
+        "title": "Your choices summary",
+        "subtitle": "Review before generating",
+        "topic": "Topic",
+        "tones": "Tones",
+        "dialect": "Dialect",
+        "audience": "Audience",
+        "goal": "Goal",
+        "length": "Length",
+        "score": "Coherence score"
+      },
+      "generate": {
+        "button": "Generate 3 versions",
+        "buttonTokens": "Generate 3 versions • {{tokens}} tokens",
+        "generating": "Crafting your post...",
+        "loading1": "Drawing inspiration from the dialect...",
+        "loading2": "Blending tones intelligently...",
+        "loading3": "Writing the safe version...",
+        "loading4": "Crafting the balanced version...",
+        "loading5": "Daring a bold version...",
+        "loading6": "Reviewing flow and rhythm...",
+        "loading7": "Adding final touches...",
+        "error": "Generation failed — please try again"
+      },
+      "variations": {
+        "safe": "Safe",
+        "safeHint": "Professional and safe — fits any audience",
+        "balanced": "Balanced",
+        "balancedHint": "Good engagement while staying professional",
+        "bold": "Bold",
+        "boldHint": "Strong punch — high engagement, higher risk",
+        "recommended": "Recommended",
+        "charCount": "{{count}} chars",
+        "tipsTitle": "Publishing tips",
+        "actions": {
+          "copy": "Copy",
+          "copied": "Copied!",
+          "edit": "Edit",
+          "save": "Save as draft",
+          "saved": "Saved",
+          "regenerate": "Regenerate",
+          "publish": "Publish on LinkedIn",
+          "select": "Select this version"
+        }
+      },
+      "history": {
+        "title": "My previous posts",
+        "empty": "No posts yet",
+        "emptyHint": "Start by creating your first post",
+        "draft": "Draft",
+        "published": "Published",
+        "scheduled": "Scheduled"
+      }
+    }
   },
   "profileAnalysis": {
     "title": "Professional Profile Analysis",
