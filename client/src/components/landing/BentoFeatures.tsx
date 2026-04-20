@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'wouter';
-import { Brain, Send, FileText, Share2, BookOpen, BarChart3, ArrowRight } from 'lucide-react';
+import { Brain, FileText, Share2, BarChart3, ArrowRight } from 'lucide-react';
 import { useState } from 'react';
 
 const ease = [0.16, 1, 0.3, 1] as const;
@@ -53,8 +53,8 @@ function SectionHeader() {
         }}
       >
         {isAr
-          ? 'ست خدمات ذكية مصممة بعناية، تعمل معاً لدعم حضورك المهني.'
-          : 'Six carefully designed services working together to support your professional presence.'}
+          ? 'خدمات ذكية مصممة بعناية، تعمل معاً لدعم حضورك المهني.'
+          : 'Carefully designed services working together to support your professional presence.'}
       </p>
     </motion.div>
   );
@@ -104,81 +104,6 @@ function ScoreMeter() {
           </div>
         </div>
       ))}
-    </div>
-  );
-}
-
-function ComposerMock() {
-  const { i18n } = useTranslation();
-  const isAr = i18n.language === 'ar';
-  const linesAr = [
-    'مرحباً فريق نيوم،',
-    'تواصلت معكم لاقتراح شراكة جديدة',
-    'في مجال أتمتة التوظيف الذكي...',
-  ];
-  const linesEn = [
-    'Hi NEOM team,',
-    'Writing to propose a new partnership',
-    'in smart hiring automation...',
-  ];
-  const lines = isAr ? linesAr : linesEn;
-  return (
-    <div
-      style={{
-        marginTop: 22,
-        background: '#fff',
-        border: '1px solid rgba(15,23,42,0.06)',
-        borderRadius: 12,
-        padding: 14,
-        fontFamily: isAr ? 'Cairo, sans-serif' : 'Inter, sans-serif',
-      }}
-    >
-      <div
-        style={{
-          fontSize: 10,
-          color: '#94A3B8',
-          marginBottom: 8,
-          fontWeight: 700,
-          letterSpacing: 0.3,
-          fontFamily: 'Inter, sans-serif',
-          textTransform: 'uppercase',
-          direction: 'ltr',
-          textAlign: isAr ? 'right' : 'left',
-        }}
-      >
-        To: info@neom.com
-      </div>
-      {lines.map((line, i) => (
-        <motion.div
-          key={i}
-          initial={{ opacity: 0, y: 6 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.4, delay: 0.2 + i * 0.2, ease }}
-          style={{
-            fontSize: 13,
-            color: '#0B1220',
-            marginBottom: 4,
-            lineHeight: 1.5,
-          }}
-        >
-          {line}
-        </motion.div>
-      ))}
-      <motion.span
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true }}
-        transition={{ delay: 0.8 }}
-        style={{
-          display: 'inline-block',
-          width: 8,
-          height: 14,
-          background: '#0F766E',
-          marginInlineStart: 2,
-          verticalAlign: 'middle',
-        }}
-      />
     </div>
   );
 }
@@ -432,16 +357,12 @@ export default function BentoFeatures() {
           />
 
           <SmallCard
+            colStart={1}
+            colSpan={2}
             icon={Share2}
             title={isAr ? 'منشورات LinkedIn' : 'LinkedIn Posts'}
             desc={isAr ? 'محتوى احترافي يجذب التفاعل ويبني سمعتك.' : 'Thoughtful posts that build your reputation.'}
             route="/app/posts"
-          />
-          <SmallCard
-            icon={BookOpen}
-            title={isAr ? 'قاعدة المعرفة' : 'Knowledge Base'}
-            desc={isAr ? 'أدلة لتطوير حضورك المهني على LinkedIn.' : 'Guides for growing your LinkedIn presence.'}
-            route="/app/knowledge"
           />
           <SmallCard
             icon={BarChart3}
@@ -449,20 +370,6 @@ export default function BentoFeatures() {
             desc={isAr ? 'تتبع تقدمك وقياس نتائج جهودك.' : 'Track your progress and measure outcomes.'}
             route="/app/analytics"
           />
-
-          <LargeCard
-            colStart={1}
-            colSpan={3}
-            icon={Send}
-            iconBg="linear-gradient(135deg, rgba(212,162,46,0.15), rgba(15,118,110,0.08))"
-            title={isAr ? 'التواصل المهني الذكي' : 'Smart outreach'}
-            desc={isAr
-              ? 'وصول احترافي لفرص مهنية جديدة — اختر شركات من دليل منسّق، ودع الذكاء يكتب لك رسائل مخصصة لكل جهة.'
-              : 'A principled way to reach new opportunities — pick companies from a curated directory and let AI craft messages that feel personal.'}
-            route="/app/campaigns"
-          >
-            <ComposerMock />
-          </LargeCard>
         </div>
       </div>
 

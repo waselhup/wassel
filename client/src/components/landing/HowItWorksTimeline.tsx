@@ -22,16 +22,16 @@ export default function HowItWorksTimeline() {
       icon: Wand2,
       title: isAr ? 'اختر أداتك' : 'Choose a tool',
       desc: isAr
-        ? 'حلّل بروفايلك، أو طوّر سيرتك الذاتية، أو اكتب منشوراً، أو ابدأ حملة تواصل.'
-        : 'Analyze your profile, refine your résumé, write a post, or launch a thoughtful outreach campaign.',
+        ? 'حلّل بروفايلك، أو طوّر سيرتك الذاتية، أو اكتب منشوراً احترافياً على LinkedIn.'
+        : 'Analyze your profile, refine your résumé, or write a professional LinkedIn post.',
     },
     {
       n: '03',
       icon: Sparkles,
       title: isAr ? 'حقّق نتائج' : 'See results',
       desc: isAr
-        ? 'نتائج فورية مدعومة بنماذج Claude — تقييمات، سير ذاتية، ورسائل مخصصة لكل جهة.'
-        : 'Instant results powered by Claude — scores, tailored CVs, and per-recipient messages.',
+        ? 'نتائج فورية مدعومة بنماذج Claude — تقييمات، سير ذاتية، ومنشورات احترافية.'
+        : 'Instant results powered by Claude — scores, tailored CVs, and professional posts.',
     },
   ];
 

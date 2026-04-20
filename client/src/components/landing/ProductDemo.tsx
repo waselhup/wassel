@@ -16,7 +16,7 @@ const CHAPTERS: Chapter[] = [
   { key: 'profile', labelAr: 'تحليل البروفايل', labelEn: 'Profile analysis', time: '0:15' },
   { key: 'cv', labelAr: 'السيرة الذاتية', labelEn: 'CV Tailor', time: '0:45' },
   { key: 'posts', labelAr: 'المنشورات', labelEn: 'LinkedIn Posts', time: '1:20' },
-  { key: 'outreach', labelAr: 'التواصل المهني', labelEn: 'Smart Outreach', time: '1:50' },
+  { key: 'analytics', labelAr: 'التحليلات', labelEn: 'Analytics', time: '1:50' },
 ];
 
 interface Props {
@@ -120,8 +120,8 @@ const ProductDemo = forwardRef<HTMLDivElement, Props>(function ProductDemo({ vid
           }}
         >
           {isAr
-            ? 'جولة سريعة في كل خدمة — من تحليل البروفايل إلى حملة تواصل مبنية بعناية.'
-            : 'A quick tour through every service — from profile analysis to a thoughtfully-built outreach campaign.'}
+            ? 'جولة سريعة في كل خدمة — من تحليل البروفايل إلى منشور LinkedIn احترافي.'
+            : 'A quick tour through every service — from profile analysis to a polished LinkedIn post.'}
         </motion.p>
 
         <motion.div

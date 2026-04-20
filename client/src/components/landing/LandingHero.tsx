@@ -172,8 +172,8 @@ export default function LandingHero({ onWatchDemo }: { onWatchDemo?: () => void 
             }}
           >
             {isAr
-              ? 'حلّل بروفايلك، طوّر سيرتك الذاتية، انشر محتوى احترافي، وتواصل مع الفرص المناسبة — كل هذا في منصة واحدة مصممة بعناية.'
-              : 'Analyze your profile, craft your résumé, publish thoughtful posts, and reach the right opportunities — all in one carefully designed platform.'}
+              ? 'حلّل بروفايلك، طوّر سيرتك الذاتية، وانشر محتوى احترافي — كل هذا في منصة واحدة مصممة بعناية.'
+              : 'Analyze your profile, craft your résumé, and publish thoughtful posts — all in one carefully designed platform.'}
           </motion.p>
 
           {/* CTAs */}
@@ -478,13 +478,13 @@ export default function LandingHero({ onWatchDemo }: { onWatchDemo?: () => void 
               }}
             >
               <div style={{ fontSize: 10, color: '#94A3B8', fontWeight: 600 }}>
-                {isAr ? 'أُطلقت للتو' : 'Just launched'}
+                {isAr ? 'منشور جديد' : 'New post'}
               </div>
               <div style={{ fontSize: 14, fontWeight: 800, marginTop: 2 }}>
-                {isAr ? 'حملة Q1' : 'Q1 campaign'}
+                {isAr ? 'منشور LinkedIn احترافي' : 'LinkedIn post draft'}
               </div>
               <div style={{ fontSize: 11, color: '#14B8A6', fontFamily: 'Inter, sans-serif', fontWeight: 700, marginTop: 4 }}>
-                ● 18 {isAr ? 'رسالة جاهزة' : 'messages ready'}
+                ● {isAr ? 'جاهز للنشر' : 'Ready to publish'}
               </div>
             </motion.div>
           </motion.div>

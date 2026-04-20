@@ -3,8 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import {
   Shield, Users, Activity, AlertTriangle, Star, CheckCircle2,
-  XCircle, Loader2, Search, Coins, BarChart3, MessageSquare,
-  Send, RefreshCw, Ban, TicketCheck, MessageSquarePlus, Bot, Building2, Zap,
+  XCircle, Loader2, Search, Coins, BarChart3,
+  RefreshCw, Ban, TicketCheck, MessageSquarePlus, Bot, Building2, Zap,
 } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { trpc } from '@/lib/trpc';
@@ -14,7 +14,7 @@ import AdminCompanies from './AdminCompanies';
 import AdminExecutorAgents from './AdminExecutorAgents';
 import ErrorBoundary from '@/components/ErrorBoundary';
 
-type Tab = 'overview' | 'users' | 'reviews' | 'alerts' | 'campaigns' | 'companies' | 'tokens' | 'tickets' | 'agents' | 'executor';
+type Tab = 'overview' | 'users' | 'reviews' | 'alerts' | 'companies' | 'tokens' | 'tickets' | 'agents' | 'executor';
 
 interface Toast { id: number; type: 'success' | 'error'; message: string }
 
@@ -52,7 +52,6 @@ export default function AdminDashboard() {
   const [systemStatus, setSystemStatus] = useState<any>(null);
   const [users, setUsers] = useState<any[]>([]);
   const [pendingReviews, setPendingReviews] = useState<any[]>([]);
-  const [campaigns, setCampaigns] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [feedbackTickets, setFeedbackTickets] = useState<any[]>([]);
   const [ticketFilter, setTicketFilter] = useState<string>('all');
@@ -73,19 +72,17 @@ export default function AdminDashboard() {
   async function loadData() {
     setLoading(true);
     try {
-      const [statsRes, statusRes, usersRes, reviewsRes, campaignsRes, ticketsRes] = await Promise.allSettled([
+      const [statsRes, statusRes, usersRes, reviewsRes, ticketsRes] = await Promise.allSettled([
         trpc.admin.stats(),
         trpc.admin.systemStatus(),
         trpc.admin.users(),
         trpc.reviews.listPending(),
-        trpc.admin.campaigns(),
         trpc.feedback.listAll(),
       ]);
       if (statsRes.status === 'fulfilled') setStats(statsRes.value);
       if (statusRes.status === 'fulfilled') setSystemStatus(statusRes.value);
       if (usersRes.status === 'fulfilled') setUsers(usersRes.value || []);
       if (reviewsRes.status === 'fulfilled') setPendingReviews(reviewsRes.value || []);
-      if (campaignsRes.status === 'fulfilled') setCampaigns(campaignsRes.value || []);
       if (ticketsRes.status === 'fulfilled') setFeedbackTickets(ticketsRes.value || []);
     } catch (e) {
       console.error('[Admin] Load error:', e);
@@ -145,7 +142,6 @@ export default function AdminDashboard() {
     { id: 'users', label: isAr ? 'المستخدمين' : 'Users', icon: Users, count: users.length },
     { id: 'reviews', label: isAr ? 'المراجعات' : 'Reviews', icon: Star, count: pendingReviews.length },
     { id: 'alerts', label: isAr ? 'التنبيهات' : 'Alerts', icon: AlertTriangle, count: systemStatus?.recentErrors?.length || 0 },
-    { id: 'campaigns', label: isAr ? 'الحملات' : 'Campaigns', icon: Send, count: campaigns.length },
     { id: 'companies', label: isAr ? 'الشركات' : 'Companies', icon: Building2 },
     { id: 'tokens', label: isAr ? 'التوكنز' : 'Tokens', icon: Coins },
     { id: 'tickets', label: isAr ? 'الملاحظات' : 'Tickets', icon: TicketCheck, count: feedbackTickets.filter(t => t.status === 'open').length },
@@ -204,8 +200,6 @@ export default function AdminDashboard() {
                   {[
                     { label: isAr ? 'المستخدمين' : 'Users', value: stats?.totalUsers || 0, icon: Users, color: '#0A8F84' },
                     { label: isAr ? 'الإيراد الشهري' : 'MRR', value: `${stats?.mrr || 0} SAR`, icon: Coins, color: '#D97706' },
-                    { label: isAr ? 'الحملات' : 'Campaigns', value: stats?.totalCampaigns || 0, icon: Send, color: '#7C3AED' },
-                    { label: isAr ? 'الرسائل' : 'Emails', value: stats?.emailsSent || 0, icon: MessageSquare, color: '#2563EB' },
                     { label: isAr ? 'مراجعات معلقة' : 'Pending', value: pendingReviews.length, icon: Star, color: '#DC2626' },
                     { label: isAr ? 'نشط' : 'Active', value: stats?.activeUsers || 0, icon: Activity, color: '#059669' },
                   ].map((s, i) => (
@@ -374,37 +368,6 @@ export default function AdminDashboard() {
                     ))}
                   </div>
                 )}
-              </motion.div>
-            )}
-
-            {tab === 'campaigns' && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                <div style={{ background: '#fff', borderRadius: 14, border: '1px solid var(--wsl-border)', overflow: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                    <thead>
-                      <tr style={{ background: '#F9FAFB', borderBottom: '1px solid var(--wsl-border)' }}>
-                        <th style={thStyle}>{isAr ? 'الحملة' : 'Campaign'}</th>
-                        <th style={thStyle}>{isAr ? 'المستخدم' : 'User'}</th>
-                        <th style={thStyle}>{isAr ? 'الحالة' : 'Status'}</th>
-                        <th style={thStyle}>{isAr ? 'المستلمين' : 'Recipients'}</th>
-                        <th style={thStyle}>{isAr ? 'التاريخ' : 'Date'}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {campaigns.slice(0, 20).map(c => (
-                        <tr key={c.id} style={{ borderBottom: '1px solid var(--wsl-border)' }}>
-                          <td style={tdStyle}><span style={{ fontWeight: 800 }}>{c.campaign_name || '-'}</span></td>
-                          <td style={tdStyle}><span style={{ fontSize: 12, color: 'var(--wsl-ink-3)' }}>{c.profiles?.full_name || c.profiles?.email || '-'}</span></td>
-                          <td style={tdStyle}>
-                            <span style={{ padding: '2px 8px', borderRadius: 999, background: c.status === 'completed' ? '#D1FAE5' : '#F3F4F6', color: c.status === 'completed' ? '#065F46' : '#6B7280', fontSize: 11, fontWeight: 800 }}>{c.status}</span>
-                          </td>
-                          <td style={tdStyle}>{c.total_recipients || 0}</td>
-                          <td style={tdStyle}><span style={{ fontSize: 11, color: 'var(--wsl-ink-3)', fontFamily: 'Inter' }}>{new Date(c.created_at).toLocaleDateString('en', { month: 'short', day: 'numeric' })}</span></td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
               </motion.div>
             )}
 

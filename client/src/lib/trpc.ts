@@ -176,13 +176,6 @@ export const trpc = {
     updateStatus: (input: { id: string; status: string }) =>
       trpcMutation<any>('feedback.updateStatus', input),
   },
-  knowledge: {
-    list: () => trpcQuery<any[]>('knowledge.list'),
-    save: (input: { type: string; title: string; content: any; tags?: string[] }) =>
-      trpcMutation<any>('knowledge.save', input),
-    delete: (id: string) => trpcMutation<any>('knowledge.delete', { id }),
-    export: () => trpcQuery<any>('knowledge.export'),
-  },
   aiFeedback: {
     submit: (input: { feature: string; outputId?: string; rating: number; comment?: string }) =>
       trpcMutation<{ id: string; success: boolean }>('aiFeedback.submit', input),

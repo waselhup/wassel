@@ -38,8 +38,8 @@ export default function LandingFooter() {
     {
       title: { ar: 'الموارد', en: 'Resources' },
       links: [
-        { href: '/app/knowledge', ar: 'قاعدة المعرفة', en: 'Knowledge Base' },
         { href: '/login', ar: 'تسجيل الدخول', en: 'Sign in' },
+        { href: '/signup', ar: 'إنشاء حساب', en: 'Sign up' },
       ],
     },
     {

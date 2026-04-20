@@ -4,17 +4,14 @@ import { motion } from 'framer-motion';
 import DashboardLayout from '../components/DashboardLayout';
 import { trpc } from '../lib/trpc';
 import {
-  LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
+  LineChart, Line, BarChart, Bar,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from 'recharts';
 import {
-  TrendingUp, FileText, MessageCircle, Users, Sparkles,
-  Briefcase, CheckCircle, Zap, Coins,
+  TrendingUp, FileText, Sparkles, Zap, Coins,
 } from 'lucide-react';
 
 type TimeRange = 'today' | 'week' | 'month' | 'all';
-
-const COLORS = ['#0A8F84', '#C9922A', '#10B981', '#3B82F6', '#A78BFA', '#EF4444', '#F59E0B', '#06B6D4'];
 
 interface Overview {
   range: string;
@@ -22,11 +19,11 @@ interface Overview {
     profile_analyses: number;
     cvs_generated: number;
     posts_generated: number;
-    campaigns_active: number;
-    messages_sent: number;
-    connections_accepted: number;
-    response_rate: number;
-    jobs_applied: number;
+    campaigns_active?: number;
+    messages_sent?: number;
+    connections_accepted?: number;
+    response_rate?: number;
+    jobs_applied?: number;
   };
   tokens: { balance: number; used_total: number };
 }
@@ -38,16 +35,6 @@ interface ActivityRow {
   posts: number;
 }
 
-interface CampaignRow {
-  id: string;
-  name: string;
-  status: string;
-  prospects_count: number;
-  sent: number;
-  accepted: number;
-  acceptance_rate: number;
-}
-
 export default function Analytics() {
   const { t, i18n } = useTranslation();
   const isRTL = i18n.language === 'ar';
@@ -55,12 +42,9 @@ export default function Analytics() {
   const [range, setRange] = useState<TimeRange>('month');
   const [overview, setOverview] = useState<Overview | null>(null);
   const [activity, setActivity] = useState<ActivityRow[]>([]);
-  const [campaigns, setCampaigns] = useState<CampaignRow[]>([]);
-  const [statusDist, setStatusDist] = useState<Array<{ status: string; count: number }>>([]);
   const [tokensBd, setTokensBd] = useState<Array<{ feature: string; total: number }>>([]);
   const [loadingOv, setLoadingOv] = useState(true);
   const [loadingTs, setLoadingTs] = useState(true);
-  const [loadingCp, setLoadingCp] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
@@ -82,30 +66,18 @@ export default function Analytics() {
       .then(d => { if (!cancelled) setActivity(d || []); })
       .catch(e => console.error('[analytics.timeseries]', e))
       .finally(() => { if (!cancelled) setLoadingTs(false); });
-
-    setLoadingCp(true);
-    trpc.analytics.campaignPerformance()
-      .then(d => { if (!cancelled) setCampaigns(d || []); })
-      .catch(e => console.error('[analytics.campaigns]', e))
-      .finally(() => { if (!cancelled) setLoadingCp(false); });
-
-    trpc.analytics.prospectStatusDistribution()
-      .then(d => { if (!cancelled) setStatusDist(d || []); })
-      .catch(e => console.error('[analytics.status]', e));
     return () => { cancelled = true; };
   }, []);
 
   const k = overview?.kpis;
 
-  const kpiCards = [
+  const kpiCards: Array<{
+    key: string; icon: any; label: string; value: number | undefined;
+    color: string; bg: string; framework?: string; suffix?: string;
+  }> = [
     { key: 'profile_analyses', icon: Sparkles, label: t('analytics.kpi.analyses'), value: k?.profile_analyses, color: '#0A8F84', bg: '#ECFDF5', framework: 'Harvard HBR' },
     { key: 'cvs_generated', icon: FileText, label: t('analytics.kpi.cvs'), value: k?.cvs_generated, color: '#C9922A', bg: '#FEF3C7', framework: 'STAR · Stanford' },
     { key: 'posts_generated', icon: TrendingUp, label: t('analytics.kpi.posts'), value: k?.posts_generated, color: '#3B82F6', bg: '#DBEAFE', framework: 'Kellogg' },
-    { key: 'campaigns_active', icon: Briefcase, label: t('analytics.kpi.campaigns'), value: k?.campaigns_active, color: '#A78BFA', bg: '#EDE9FE' },
-    { key: 'messages_sent', icon: MessageCircle, label: t('analytics.kpi.messagesSent'), value: k?.messages_sent, color: '#0077B5', bg: '#EFF6FF' },
-    { key: 'connections_accepted', icon: Users, label: t('analytics.kpi.accepted'), value: k?.connections_accepted, color: '#10B981', bg: '#D1FAE5' },
-    { key: 'response_rate', icon: CheckCircle, label: t('analytics.kpi.responseRate'), value: k?.response_rate, suffix: '%', color: '#F43F5E', bg: '#FFE4E6' },
-    { key: 'jobs_applied', icon: Zap, label: t('analytics.kpi.jobsApplied'), value: k?.jobs_applied, color: '#06B6D4', bg: '#CFFAFE' },
   ];
 
   const ranges: TimeRange[] = ['today', 'week', 'month', 'all'];
@@ -266,117 +238,28 @@ export default function Analytics() {
           </div>
         </div>
 
-        {/* Two Column: Status Pie + Tokens Bar */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16, marginBottom: 20 }}>
-          <div style={{ ...cardBase, padding: 22 }}>
-            <h2 style={{ fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 900, fontSize: 16, color: 'var(--wsl-ink)', margin: '0 0 14px' }}>
-              {t('analytics.status.title', 'توزيع حالات العملاء المحتملين')}
-            </h2>
-            <div style={{ height: 240 }}>
-              {statusDist.length === 0 ? (
-                <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--wsl-ink-3)', fontFamily: 'Cairo, sans-serif', fontSize: 13 }}>
-                  {t('analytics.empty.status', 'لا توجد بيانات بعد')}
-                </div>
-              ) : (
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie data={statusDist} dataKey="count" nameKey="status" cx="50%" cy="50%" innerRadius={50} outerRadius={90} paddingAngle={2}>
-                      {statusDist.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                    </Pie>
-                    <Tooltip contentStyle={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 12, fontFamily: 'Cairo, Inter, sans-serif', fontSize: 12 }} />
-                    <Legend wrapperStyle={{ fontFamily: 'Cairo, Inter, sans-serif', fontSize: 11 }} />
-                  </PieChart>
-                </ResponsiveContainer>
-              )}
-            </div>
-          </div>
-
-          <div style={{ ...cardBase, padding: 22 }}>
-            <h2 style={{ fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 900, fontSize: 16, color: 'var(--wsl-ink)', margin: '0 0 14px' }}>
-              {t('analytics.tokens.breakdown', 'استهلاك التوكنات حسب الميزة')}
-            </h2>
-            <div style={{ height: 240 }}>
-              {tokensBd.length === 0 ? (
-                <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--wsl-ink-3)', fontFamily: 'Cairo, sans-serif', fontSize: 13 }}>
-                  {t('analytics.empty.tokens', 'لا توجد معاملات في هذه الفترة')}
-                </div>
-              ) : (
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={tokensBd} margin={{ top: 8, right: 8, left: -8, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
-                    <XAxis dataKey="feature" stroke="#64748B" fontSize={10} reversed={isRTL} />
-                    <YAxis stroke="#64748B" fontSize={10} allowDecimals={false} orientation={isRTL ? 'right' : 'left'} />
-                    <Tooltip contentStyle={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 12, fontFamily: 'Cairo, Inter, sans-serif', fontSize: 12 }} />
-                    <Bar dataKey="total" fill="#C9922A" radius={[8, 8, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Campaign Performance Table */}
+        {/* Tokens Breakdown */}
         <div style={{ ...cardBase, padding: 22, marginBottom: 20 }}>
           <h2 style={{ fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 900, fontSize: 16, color: 'var(--wsl-ink)', margin: '0 0 14px' }}>
-            {t('analytics.campaigns.title', 'أداء الحملات')}
+            {t('analytics.tokens.breakdown', 'استهلاك التوكنات حسب الميزة')}
           </h2>
-          {loadingCp ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {[1, 2, 3].map(i => <div key={i} style={{ height: 48, background: '#F3F4F6', borderRadius: 10 }} />)}
-            </div>
-          ) : campaigns.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--wsl-ink-3)', fontFamily: 'Cairo, sans-serif' }}>
-              <Briefcase size={36} style={{ opacity: 0.25, margin: '0 auto 10px', display: 'block' }} />
-              <div style={{ fontSize: 14 }}>{t('analytics.campaigns.empty', 'لا توجد حملات بعد')}</div>
-            </div>
-          ) : (
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                <thead>
-                  <tr style={{ borderBottom: '1px solid var(--wsl-border, #E5E7EB)', color: 'var(--wsl-ink-3)', fontFamily: 'Cairo, sans-serif' }}>
-                    <th style={{ padding: '10px 8px', textAlign: isRTL ? 'right' : 'left', fontSize: 11, fontWeight: 800, textTransform: 'uppercase' }}>{t('analytics.campaigns.name')}</th>
-                    <th style={{ padding: '10px 8px', textAlign: 'center', fontSize: 11, fontWeight: 800, textTransform: 'uppercase' }}>{t('analytics.campaigns.prospects')}</th>
-                    <th style={{ padding: '10px 8px', textAlign: 'center', fontSize: 11, fontWeight: 800, textTransform: 'uppercase' }}>{t('analytics.campaigns.sent')}</th>
-                    <th style={{ padding: '10px 8px', textAlign: 'center', fontSize: 11, fontWeight: 800, textTransform: 'uppercase' }}>{t('analytics.campaigns.accepted')}</th>
-                    <th style={{ padding: '10px 8px', textAlign: 'center', fontSize: 11, fontWeight: 800, textTransform: 'uppercase' }}>{t('analytics.campaigns.rate')}</th>
-                    <th style={{ padding: '10px 8px', textAlign: 'center', fontSize: 11, fontWeight: 800, textTransform: 'uppercase' }}>{t('analytics.campaigns.status')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {campaigns.map(c => (
-                    <tr key={c.id} style={{ borderBottom: '1px solid #F1F5F9' }}>
-                      <td style={{ padding: '12px 8px', fontWeight: 700, color: 'var(--wsl-ink)', fontFamily: 'Cairo, Inter, sans-serif' }}>{c.name}</td>
-                      <td style={{ padding: '12px 8px', textAlign: 'center', fontFamily: 'Inter', color: 'var(--wsl-ink-2)' }}>{c.prospects_count.toLocaleString('en-US')}</td>
-                      <td style={{ padding: '12px 8px', textAlign: 'center', fontFamily: 'Inter', color: 'var(--wsl-ink-2)' }}>{c.sent.toLocaleString('en-US')}</td>
-                      <td style={{ padding: '12px 8px', textAlign: 'center', fontFamily: 'Inter', color: 'var(--wsl-ink-2)' }}>{c.accepted.toLocaleString('en-US')}</td>
-                      <td style={{ padding: '12px 8px', textAlign: 'center' }}>
-                        <span style={{
-                          display: 'inline-block', padding: '3px 9px', borderRadius: 999, fontSize: 11, fontWeight: 800, fontFamily: 'Inter',
-                          background: c.acceptance_rate >= 30 ? '#D1FAE5' : c.acceptance_rate >= 15 ? '#FEF3C7' : '#FEE2E2',
-                          color: c.acceptance_rate >= 30 ? '#065F46' : c.acceptance_rate >= 15 ? '#92400E' : '#991B1B',
-                        }}>
-                          {c.acceptance_rate}%
-                        </span>
-                      </td>
-                      <td style={{ padding: '12px 8px', textAlign: 'center' }}>
-                        <span style={{
-                          display: 'inline-block', padding: '3px 10px', borderRadius: 999, fontSize: 11, fontWeight: 800, fontFamily: 'Cairo, sans-serif',
-                          background: c.status === 'active' || c.status === 'sending' || c.status === 'running' ? '#CCFBF1' :
-                                       c.status === 'paused' ? '#FEF3C7' :
-                                       c.status === 'completed' ? '#E0E7FF' : '#F1F5F9',
-                          color: c.status === 'active' || c.status === 'sending' || c.status === 'running' ? '#0F766E' :
-                                  c.status === 'paused' ? '#92400E' :
-                                  c.status === 'completed' ? '#3730A3' : '#475569',
-                        }}>
-                          {t(`analytics.campaigns.statuses.${c.status}`, c.status)}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+          <div style={{ height: 260 }}>
+            {tokensBd.length === 0 ? (
+              <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--wsl-ink-3)', fontFamily: 'Cairo, sans-serif', fontSize: 13 }}>
+                {t('analytics.empty.tokens', 'لا توجد معاملات في هذه الفترة')}
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={tokensBd} margin={{ top: 8, right: 8, left: -8, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
+                  <XAxis dataKey="feature" stroke="#64748B" fontSize={10} reversed={isRTL} />
+                  <YAxis stroke="#64748B" fontSize={10} allowDecimals={false} orientation={isRTL ? 'right' : 'left'} />
+                  <Tooltip contentStyle={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 12, fontFamily: 'Cairo, Inter, sans-serif', fontSize: 12 }} />
+                  <Bar dataKey="total" fill="#C9922A" radius={[8, 8, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
         </div>
 
         {/* Academic Note */}

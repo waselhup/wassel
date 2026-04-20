@@ -71,6 +71,7 @@ Output: JSON only, no markdown, no code fences.`;
       professional: language === 'ar' ? 'Tone: رسمي واحترافي' : 'Tone: professional and polished',
       inspirational: language === 'ar' ? 'Tone: ملهم وتحفيزي' : 'Tone: inspirational and motivating',
       educational: language === 'ar' ? 'Tone: تعليمي وتثقيفي' : 'Tone: educational and informative',
+      casual: language === 'ar' ? 'Tone: ودّي وعفوي، احترافي مع لمسة إنسانية' : 'Tone: casual yet professional, warm and human',
       storytelling: language === 'ar' ? 'Tone: سردي وقصصي' : 'Tone: storytelling and narrative',
       analytical: language === 'ar' ? 'Tone: تحليلي وبيانات' : 'Tone: analytical and data-driven',
     };

@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase';
 import UserAvatar from '@/components/UserAvatar';
 import { WasselLogo } from './WasselLogo';
 import {
-  Home, BarChart2, FileText, Send, Coins, User, BookOpen,
+  Home, BarChart2, FileText, Send, Coins, User,
   LogOut, Globe, Menu, X, ChevronDown, Settings, TrendingUp, UserCheck, PenSquare, Shield, TicketCheck
 } from 'lucide-react';
 import FeedbackFAB from './FeedbackFAB';
@@ -44,13 +44,12 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, page
     elite: isRTL ? '\u0625\u0644\u064a\u062a' : 'Elite',
   };
 
-  const nav = [
+  const nav: Array<{ href: string; icon: any; label: string; comingSoon?: boolean }> = [
     { href: '/app', icon: Home, label: t('nav.home', '\u0627\u0644\u0631\u0626\u064a\u0633\u064a\u0629') },
     { href: '/app/profile-analysis', icon: UserCheck, label: t('nav.profileAnalysis', 'تحليل البروفايل') },
     { href: '/app/cv', icon: FileText, label: t('nav.cv', '\u0627\u0644\u0633\u064a\u0631\u0629') },
-    { href: '/app/campaigns', icon: Send, label: t('nav.campaigns', 'التواصل المهني') },
     { href: '/app/posts', icon: PenSquare, label: t('nav.posts', '\u0627\u0644\u0645\u0646\u0634\u0648\u0631\u0627\u062a') },
-    { href: '/app/knowledge', icon: BookOpen, label: t('nav.knowledge', '\u0627\u0644\u0645\u0639\u0631\u0641\u0629') },
+    { href: '/app/coming-soon?feature=campaigns', icon: Send, label: t('nav.campaigns', 'التواصل المهني'), comingSoon: true },
     { href: '/app/analytics', icon: TrendingUp, label: t('nav.analytics', 'التحليلات') },
     { href: '/app/tickets', icon: TicketCheck, label: t('nav.tickets', 'ملاحظاتي') },
     { href: '/app/profile', icon: User, label: t('nav.profile', '\u0627\u0644\u0645\u0644\u0641') },
@@ -62,7 +61,11 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, page
     nav.push({ href: '/app/admin', icon: Shield, label: t('nav.admin', '\u0644\u0648\u062d\u0629 \u0627\u0644\u0625\u062f\u0627\u0631\u0629') });
   }
 
-  const isActive = (href: string) => href === '/app' ? location === '/app' : location.startsWith(href);
+  const isActive = (href: string) => {
+    const base = href.split('?')[0];
+    if (base === '/app') return location === '/app';
+    return location.startsWith(base);
+  };
 
   const handleLogout = async () => {
     await signOut();
@@ -94,6 +97,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, page
       <nav style={{ flex: 1, padding: '12px 8px' }}>
         {nav.map(item => {
           const active = isActive(item.href);
+          const dim = item.comingSoon;
           return (
             <Link
               key={item.href}
@@ -103,16 +107,29 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, page
                 display: 'flex', alignItems: 'center', gap: '10px',
                 padding: '9px 12px', borderRadius: '8px', marginBottom: '2px',
                 background: active ? 'var(--wsl-teal-bg)' : 'transparent',
-                color: active ? 'var(--wsl-ink)' : 'var(--wsl-ink-3)',
+                color: active ? 'var(--wsl-ink)' : (dim ? 'var(--wsl-ink-4)' : 'var(--wsl-ink-3)'),
                 fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: '13px',
                 textDecoration: 'none', cursor: 'pointer',
                 borderInlineStart: active ? '2.5px solid var(--wsl-teal)' : '2.5px solid transparent',
+                opacity: dim ? 0.65 : 1,
                 transition: 'all 150ms ease',
               }}
             >
               <item.icon size={16} />
               <span>{item.label}</span>
-              {active && <span style={{ marginInlineStart: 'auto', width: '4px', height: '4px', borderRadius: '50%', background: 'var(--wsl-teal)' }} />}
+              {item.comingSoon && (
+                <span style={{
+                  marginInlineStart: 'auto',
+                  fontSize: '9px', fontWeight: 900,
+                  padding: '2px 6px', borderRadius: '999px',
+                  background: '#FEF3C7', color: '#B45309',
+                  fontFamily: 'Cairo, sans-serif',
+                  letterSpacing: 0,
+                }}>
+                  {t('common.comingSoon', 'قريباً')}
+                </span>
+              )}
+              {active && !item.comingSoon && <span style={{ marginInlineStart: 'auto', width: '4px', height: '4px', borderRadius: '50%', background: 'var(--wsl-teal)' }} />}
             </Link>
           );
         })}

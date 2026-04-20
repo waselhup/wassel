@@ -63,7 +63,6 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, pageTitle })
   const navItems: NavItem[] = [
     { label: t('admin.dashboard'), icon: <BarChart3 className="w-5 h-5" />, href: '/admin' },
     { label: t('admin.users'), icon: <Users className="w-5 h-5" />, href: '/admin/users' },
-    { label: t('admin.campaigns'), icon: <Mail className="w-5 h-5" />, href: '/admin/campaigns' },
     { label: t('admin.settings'), icon: <Settings className="w-5 h-5" />, href: '/admin/settings' },
   ];
 

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { Coins, BarChart2, FileText, Send, TrendingUp, Clock, Linkedin, ArrowUpRight, Activity, Star, Sparkles } from 'lucide-react';
+import { Coins, BarChart2, FileText, PenSquare, TrendingUp, Clock, Linkedin, ArrowUpRight, Activity, Sparkles } from 'lucide-react';
 import { WasselLogo } from '../components/WasselLogo';
 import DashboardLayout from "@/components/DashboardLayout";
 import { useAuth } from "@/contexts/AuthContext";
@@ -68,20 +68,19 @@ export default function DashboardHome() {
     }
   }, [profile]);
 
-  const [counts, setCounts] = useState({ tokens: 0, analyses: 0, cvs: 0, campaigns: 0 });
+  const [counts, setCounts] = useState({ tokens: 0, analyses: 0, cvs: 0, posts: 0 });
   useEffect(() => {
     (async () => {
-      const [bal, lh, ch, cl] = await Promise.allSettled([
+      const [bal, lh, ch] = await Promise.allSettled([
         trpc.token.balance(),
         trpc.linkedin.history(),
         trpc.cv.history(),
-        trpc.campaign.list(),
       ]);
       setCounts({
         tokens: bal.status === "fulfilled" ? (bal.value?.balance ?? 0) : 0,
         analyses: lh.status === "fulfilled" && Array.isArray(lh.value) ? lh.value.length : 0,
         cvs: ch.status === "fulfilled" && Array.isArray(ch.value) ? ch.value.length : 0,
-        campaigns: cl.status === "fulfilled" && Array.isArray(cl.value) ? cl.value.length : 0,
+        posts: 0,
       });
     })();
   }, []);
@@ -93,34 +92,28 @@ export default function DashboardHome() {
       icon: BarChart2, gradient: "from-blue-50 to-cyan-50", iconBg: "bg-blue-500" },
     { key: "cvs", label: t("home.stats.cvs", "سير مُنشأة"), value: counts.cvs, delta: "",
       icon: FileText, gradient: "from-emerald-50 to-teal-50", iconBg: "bg-emerald-500" },
-    { key: "campaigns", label: t("home.stats.campaigns", "حملات مُرسلة"), value: counts.campaigns, delta: "",
-      icon: Send, gradient: "from-purple-50 to-fuchsia-50", iconBg: "bg-purple-500" },
   ];
 
   const actions: Action[] = [
     { key: "linkedin", title: t("home.actions.linkedin.title", "حلّل ملفك على LinkedIn"),
-      desc: t("home.actions.linkedin.desc", "احصل على تقييم فوري واقتراحات لتحسين ملفك"),
+      desc: t("home.actions.linkedin.desc", "احصل على تقييم أكاديمي من 15 إطار"),
       href: "/app/profile-analysis", icon: Linkedin, color: "from-[#0077b5] to-[#00a0dc]" },
     { key: "cv", title: t("home.actions.cv.title", "خصّص سيرتك الذاتية"),
-      desc: t("home.actions.cv.desc", "أنشئ سيرة ذاتية مُحسّنة لكل وظيفة تتقدم لها"),
+      desc: t("home.actions.cv.desc", "سيرة مُحسَّنة لكل وظيفة تتقدّم لها"),
       href: "/app/cv", icon: FileText, color: "from-emerald-500 to-teal-600" },
-    { key: "campaign", title: t("home.actions.campaign.title", "أطلق حملة جديدة"),
-      desc: t("home.actions.campaign.desc", "ابحث عن متخذي القرار وأرسل إيميلات ذكية"),
-      href: "/app/campaigns/new", icon: Send, color: "from-[var(--wsl-teal)] to-[var(--wsl-gold)]" },
-    { key: "posts", title: t("posts.quickAction", "أنشئ منشور LinkedIn"),
-      desc: t("posts.quickActionDesc", "بالذكاء الاصطناعي خلال ثوانٍ"),
-      href: "/app/posts", icon: Sparkles, color: "from-[#0A8F84] to-[#0ea5e9]" },
+    { key: "posts", title: t("home.actions.post.title", "أنشئ منشور احترافي"),
+      desc: t("home.actions.post.desc", "منشورات LinkedIn ذكية بلهجة مناسبة"),
+      href: "/app/posts", icon: PenSquare, color: "from-[#0A8F84] to-[#0ea5e9]" },
   ];
 
   const activity: ActivityItem[] = [
     ...(counts.analyses > 0 ? [{ id: "a", icon: BarChart2, title: `${t("home.activity.analysisCount", "تحليلات ملف شخصي")}: ${counts.analyses}`, time: "", color: "bg-blue-100 text-blue-600" }] : []),
     ...(counts.cvs > 0 ? [{ id: "c", icon: FileText, title: `${t("home.activity.cvCount", "سير ذاتية")}: ${counts.cvs}`, time: "", color: "bg-emerald-100 text-emerald-600" }] : []),
-    ...(counts.campaigns > 0 ? [{ id: "m", icon: Send, title: `${t("home.activity.campaignCount", "حملات")}: ${counts.campaigns}`, time: "", color: "bg-purple-100 text-purple-600" }] : []),
     ...(counts.tokens > 0 ? [{ id: "t", icon: Coins, title: `${t("home.activity.tokensCount", "رصيد التوكنز")}: ${counts.tokens}`, time: "", color: "bg-amber-100 text-amber-600" }] : []),
   ];
 
-  const chartData = counts.analyses + counts.cvs + counts.campaigns > 0
-    ? [0, 0, 0, 0, 0, 0, counts.analyses + counts.cvs + counts.campaigns]
+  const chartData = counts.analyses + counts.cvs > 0
+    ? [0, 0, 0, 0, 0, 0, counts.analyses + counts.cvs]
     : [0, 0, 0, 0, 0, 0, 0];
   const days = isAr
     ? ["السبت","الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة"]
@@ -149,7 +142,7 @@ export default function DashboardHome() {
         <motion.div
           initial="hidden" animate="visible"
           variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.08 } } }}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
         >
           {stats.map((s) => <StatCard key={s.key} stat={s} />)}
         </motion.div>
@@ -183,12 +176,11 @@ export default function DashboardHome() {
         {/* Getting Started / Video Guides */}
         <div>
           <h2 className="text-lg font-bold text-[var(--wsl-ink)] mb-4">{t("home.guides.title", "ابدأ هنا")}</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {[
               { title: t("home.guides.analyze", "شاهد كيف تحلل ملفك المهني"), duration: "2 min", gradient: "from-[#0077b5] to-[#00a0dc]", icon: Linkedin },
               { title: t("home.guides.cv", "إنشاء سيرتك الذاتية بالذكاء الاصطناعي"), duration: "90 sec", gradient: "from-emerald-500 to-teal-600", icon: FileText },
-              { title: t("home.guides.campaign", "أطلق حملتك الأولى"), duration: "3 min", gradient: "from-[var(--wsl-teal)] to-[var(--wsl-gold)]", icon: Send },
-              { title: t("home.guides.all", "شاهد كل الميزات"), duration: "5 min", gradient: "from-purple-600 to-fuchsia-600", icon: Sparkles },
+              { title: t("home.guides.post", "كتابة منشور LinkedIn احترافي"), duration: "2 min", gradient: "from-[var(--wsl-teal)] to-[var(--wsl-gold)]", icon: PenSquare },
             ].map((g, i) => (
               <motion.div key={i}
                 initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }}
@@ -291,8 +283,8 @@ export default function DashboardHome() {
               duration={isAr ? "دقيقة ونصف" : "1.5 min"}
             />
             <VideoPlaceholder
-              title={t("home.videos.campaigns", isAr ? "أطلق حملتك الأولى على LinkedIn" : "Launch your first campaign")}
-              duration={isAr ? "3 دقائق" : "3 min"}
+              title={t("home.videos.posts", isAr ? "اكتب منشور LinkedIn احترافي" : "Write a professional LinkedIn post")}
+              duration={isAr ? "دقيقتان" : "2 min"}
             />
             <VideoPlaceholder
               title={t("home.videos.tour", isAr ? "جولة كاملة في وصّل" : "Full tour of Wassel")}

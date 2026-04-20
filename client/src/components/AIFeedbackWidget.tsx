@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { trpc } from '@/lib/trpc';
 
 interface Props {
-  feature: 'profile_analysis' | 'cv_tailor' | 'posts' | 'campaigns' | 'campaign_message';
+  feature: 'profile_analysis' | 'cv_tailor' | 'posts';
   outputId?: string;
 }
 

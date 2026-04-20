@@ -29,12 +29,11 @@ const CVTailor = lazy(() => import('./pages/CVTailor'));
 const CampaignList = lazy(() => import('./pages/CampaignList'));
 const CampaignNew = lazy(() => import('./pages/CampaignNew'));
 const CampaignReport = lazy(() => import('./pages/CampaignReport'));
-const KnowledgeBase = lazy(() => import('./pages/KnowledgeBase'));
+const ComingSoon = lazy(() => import('./pages/ComingSoon'));
 
 // Admin Pages
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
 const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'));
-const AdminCampaigns = lazy(() => import('./pages/admin/AdminCampaigns'));
 const AdminSettings = lazy(() => import('./pages/admin/AdminSettings'));
 
 // New Pages
@@ -87,7 +86,7 @@ const AppRoutes: React.FC = () => {
   const [matchAppCampaignsReport] = useRoute('/app/campaigns/:id');
   const [matchAppTokens] = useRoute('/app/tokens');
   const [matchAppPayment] = useRoute('/app/payment');
-  const [matchAppKnowledge] = useRoute('/app/knowledge');
+  const [matchAppComingSoon] = useRoute('/app/coming-soon');
   const [matchAppProfile] = useRoute('/app/profile');
   const [matchLogin] = useRoute('/login');
   const [matchSignup] = useRoute('/signup');
@@ -96,7 +95,6 @@ const AppRoutes: React.FC = () => {
   // Admin Routes
   const [matchAdminHome] = useRoute('/admin');
   const [matchAdminUsers] = useRoute('/admin/users');
-  const [matchAdminCampaigns] = useRoute('/admin/campaigns');
   const [matchAdminSettings] = useRoute('/admin/settings');
 
   // New routes
@@ -164,30 +162,16 @@ const AppRoutes: React.FC = () => {
         <CVTailor />
       </ProtectedRoute>
     );
-  if (matchAppKnowledge)
+  if (matchAppComingSoon)
     return (
       <ProtectedRoute>
-        <KnowledgeBase />
+        <ComingSoon />
       </ProtectedRoute>
     );
-  if (matchAppCampaignsNew)
-    return (
-      <ProtectedRoute>
-        <CampaignNew />
-      </ProtectedRoute>
-    );
-  if (matchAppCampaignsReport)
-    return (
-      <ProtectedRoute>
-        <CampaignReport />
-      </ProtectedRoute>
-    );
-  if (matchAppCampaignsList)
-    return (
-      <ProtectedRoute>
-        <CampaignList />
-      </ProtectedRoute>
-    );
+  if (matchAppCampaignsNew || matchAppCampaignsReport || matchAppCampaignsList) {
+    window.location.replace('/app/coming-soon?feature=campaigns');
+    return null;
+  }
 
   if (matchAppProfileAnalysis)
     return (
@@ -231,12 +215,6 @@ const AppRoutes: React.FC = () => {
     return (
       <ProtectedRoute>
         <AdminUsers />
-      </ProtectedRoute>
-    );
-  if (matchAdminCampaigns)
-    return (
-      <ProtectedRoute>
-        <AdminCampaigns />
       </ProtectedRoute>
     );
   if (matchAdminSettings)

@@ -231,7 +231,7 @@ app.get('/api/auth/google/callback', async (req, res) => {
   const code = req.query.code as string;
   const userId = decodeURIComponent(req.query.state as string);
   if (!code || !userId) {
-    return res.redirect('https://wasselhub.com/app/campaigns?gmail=error');
+    return res.redirect('https://wasselhub.com/app/coming-soon?feature=campaigns');
   }
   try {
     const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
@@ -248,7 +248,7 @@ app.get('/api/auth/google/callback', async (req, res) => {
     const tokenData = await tokenRes.json() as { access_token?: string; refresh_token?: string; error?: string };
     if (!tokenData.access_token) {
       console.error('Google OAuth token error:', tokenData);
-      return res.redirect('https://wasselhub.com/app/campaigns?gmail=error');
+      return res.redirect('https://wasselhub.com/app/coming-soon?feature=campaigns');
     }
     const { createClient } = await import('@supabase/supabase-js');
     const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://hiqotmimlgsrsnovtopd.supabase.co';
@@ -259,12 +259,12 @@ app.get('/api/auth/google/callback', async (req, res) => {
     const { error: dbError } = await supabase.from('profiles').update(updateData).eq('id', userId);
     if (dbError) {
       console.error('Supabase update error:', dbError);
-      return res.redirect('https://wasselhub.com/app/campaigns?gmail=error');
+      return res.redirect('https://wasselhub.com/app/coming-soon?feature=campaigns');
     }
-    res.redirect('https://wasselhub.com/app/campaigns?gmail=connected');
+    res.redirect('https://wasselhub.com/app/coming-soon?feature=campaigns');
   } catch (err) {
     console.error('Google OAuth callback error:', err);
-    res.redirect('https://wasselhub.com/app/campaigns?gmail=error');
+    res.redirect('https://wasselhub.com/app/coming-soon?feature=campaigns');
   }
 });
 

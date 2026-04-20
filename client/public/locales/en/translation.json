@@ -22,7 +22,6 @@
     "campaigns": "Smart Outreach",
     "tokens": "Tokens",
     "profile": "Profile",
-    "knowledge": "Knowledge Base",
     "setup": "Account Setup",
     "posts": "Posts",
     "profileAnalysis": "Profile Analysis",
@@ -295,7 +294,7 @@
     "next": "Next",
     "submit": "Submit",
     "tryAgain": "Try again",
-    "comingSoon": "Coming Soon",
+    "comingSoon": "Coming soon",
     "skip": "Skip",
     "email": "Email",
     "name": "Name",
@@ -310,7 +309,6 @@
     "campaigns": "Campaigns",
     "tokens": "Tokens",
     "profile": "Profile",
-    "knowledge": "Knowledge Base",
     "logout": "Logout"
   },
   "onboarding": {

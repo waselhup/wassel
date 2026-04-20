@@ -13,8 +13,6 @@ export type FeatureKey =
   | 'profileAnalysis'
   | 'cvTailor'
   | 'posts'
-  | 'campaigns'
-  | 'knowledgeBase'
   | 'analytics';
 
 export interface FeatureDef {
@@ -57,26 +55,6 @@ export const FEATURES: Record<FeatureKey, FeatureDef> = {
     descriptionEn: 'Professional content for your profile that drives engagement',
     route: '/app/posts',
     icon: 'Share2',
-    color: 'teal',
-  },
-  campaigns: {
-    id: 'campaigns',
-    titleAr: 'التواصل المهني الذكي',
-    titleEn: 'Smart Outreach',
-    descriptionAr: 'وصول احترافي ومنظم لفرص مهنية جديدة',
-    descriptionEn: 'Reach new professional opportunities in a structured way',
-    route: '/app/campaigns',
-    icon: 'Send',
-    color: 'teal',
-  },
-  knowledgeBase: {
-    id: 'knowledge',
-    titleAr: 'قاعدة المعرفة',
-    titleEn: 'Knowledge Base',
-    descriptionAr: 'أدلة ومحتوى لتطوير حضورك المهني على LinkedIn',
-    descriptionEn: 'Guides and content to grow your LinkedIn presence',
-    route: '/app/knowledge',
-    icon: 'BookOpen',
     color: 'teal',
   },
   analytics: {
