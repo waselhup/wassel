@@ -1,5 +1,5 @@
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } from 'docx';
-import jsPDF from 'jspdf';
+import { jsPDF } from 'jspdf';
 
 interface AnalysisDimension {
   name: string;
