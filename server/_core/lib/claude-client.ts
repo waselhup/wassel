@@ -91,6 +91,7 @@ export async function callClaude(params: ClaudeCallParams): Promise<ClaudeRespon
       lastErr = Object.assign(new Error(`Claude ${status}: ${errText.slice(0, 300)}`), {
         status,
         body: errText,
+        responseBody: errText,
       });
 
       if (!retriable || attempt === maxRetries) {

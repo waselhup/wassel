@@ -59,6 +59,80 @@ app.post('/api/log-error', (req, res) => {
 
 app.get('/api/test-route', (_req, res) => { res.json({ok:true,routes:'working'}); });
 
+// ===== Cron: Anthropic health check =====
+// Vercel calls this on a schedule (see vercel.json crons). Sends Telegram alert
+// only on failure so a healthy ping is a no-op. Auth via CRON_SECRET header
+// (Vercel includes `Authorization: Bearer <CRON_SECRET>` automatically).
+app.get('/api/cron/anthropic-health', async (req, res) => {
+  const expected = process.env.CRON_SECRET;
+  const auth = req.headers.authorization || '';
+  if (expected && auth !== `Bearer ${expected}`) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    return res.status(500).json({ ok: false, error: 'ANTHROPIC_API_KEY missing' });
+  }
+
+  const t0 = Date.now();
+  let status = 0;
+  let bodyText = '';
+  try {
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 5,
+        messages: [{ role: 'user', content: 'ping' }],
+      }),
+    });
+    status = r.status;
+    bodyText = await r.text();
+  } catch (e: any) {
+    bodyText = e?.message || 'fetch failed';
+  }
+
+  const latencyMs = Date.now() - t0;
+  const creditOut = /credit balance is too low|insufficient credit/i.test(bodyText);
+  const healthy = status === 200;
+
+  if (!healthy) {
+    const tgToken = process.env.TELEGRAM_BOT_TOKEN;
+    if (tgToken) {
+      const ALI_CHAT = '1205315908';
+      const msg = '🔴 *Anthropic API DOWN*\n\n' +
+        `HTTP: \`${status || 'network_error'}\`\n` +
+        `Latency: ${latencyMs}ms\n` +
+        (creditOut ? '*السبب*: انتهت الكريديتس\n' : '') +
+        `Body: \`${bodyText.slice(0, 180).replace(/`/g, "'")}\`\n\n` +
+        '🔗 https://console.anthropic.com/settings/billing';
+      try {
+        await fetch(`https://api.telegram.org/bot${tgToken}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ chat_id: ALI_CHAT, text: msg, parse_mode: 'Markdown' }),
+        });
+      } catch (e: any) {
+        console.error('[cron/anthropic-health] Telegram send failed:', e?.message);
+      }
+    }
+  }
+
+  return res.json({
+    ok: healthy,
+    status,
+    latencyMs,
+    creditExhausted: creditOut,
+    timestamp: new Date().toISOString(),
+  });
+});
+
 // ===== Avatar proxy =====
 // LinkedIn (media.licdn.com), Google (lh3.googleusercontent.com), and other
 // CDNs sometimes return 403 to browsers loading <img src="..."> directly

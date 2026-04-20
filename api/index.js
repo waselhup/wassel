@@ -52702,12 +52702,47 @@ async function sendTelegramAlert(service, errorCount, lastError) {
     console.error("[Alert] Telegram send failed:", e?.message || e);
   }
 }
-function mapAnthropicStatusToArabic(status) {
+function mapAnthropicStatusToArabic(status, bodyText) {
+  if (bodyText && /credit balance is too low|insufficient credit/i.test(bodyText)) {
+    return "\u0627\u0644\u062E\u062F\u0645\u0629 \u0645\u0639\u0637\u0651\u0644\u0629 \u0645\u0624\u0642\u062A\u0627\u064B (\u0627\u0646\u062A\u0647\u062A \u0627\u0644\u0643\u0631\u064A\u062F\u064A\u062A\u0633). \u0646\u0639\u0645\u0644 \u0639\u0644\u0649 \u062D\u0644\u0647\u0627.";
+  }
   if (status === 401) return "\u0645\u0641\u062A\u0627\u062D Claude API \u063A\u064A\u0631 \u0635\u062D\u064A\u062D. \u062A\u0648\u0627\u0635\u0644 \u0645\u0639 \u0627\u0644\u062F\u0639\u0645.";
   if (status === 402) return "\u0627\u0644\u062E\u062F\u0645\u0629 \u0645\u0639\u0637\u0651\u0644\u0629 \u0645\u0624\u0642\u062A\u0627\u064B (\u0627\u0646\u062A\u0647\u062A \u0627\u0644\u0643\u0631\u064A\u062F\u064A\u062A\u0633). \u0646\u0639\u0645\u0644 \u0639\u0644\u0649 \u062D\u0644\u0647\u0627.";
+  if (status === 403) return "\u0627\u0644\u0648\u0635\u0648\u0644 \u0645\u0631\u0641\u0648\u0636 \u0645\u0646 \u062E\u062F\u0645\u0629 Claude. \u062A\u0648\u0627\u0635\u0644 \u0645\u0639 \u0627\u0644\u062F\u0639\u0645.";
   if (status === 429) return "\u062A\u062C\u0627\u0648\u0632\u0646\u0627 \u0627\u0644\u062D\u062F \u0627\u0644\u0645\u0633\u0645\u0648\u062D. \u062D\u0627\u0648\u0644 \u0628\u0639\u062F \u062F\u0642\u064A\u0642\u0629.";
-  if (status >= 500) return "\u062E\u0637\u0623 \u0641\u064A \u062E\u062F\u0645\u0629 Claude. \u062D\u0627\u0648\u0644 \u0645\u0631\u0629 \u0623\u062E\u0631\u0649.";
+  if (status === 400) return "\u0627\u0644\u0637\u0644\u0628 \u063A\u064A\u0631 \u0635\u062D\u064A\u062D. \u062D\u0627\u0648\u0644 \u0645\u0631\u0629 \u0623\u062E\u0631\u0649 \u0623\u0648 \u062A\u0648\u0627\u0635\u0644 \u0645\u0639 \u0627\u0644\u062F\u0639\u0645.";
+  if (status >= 500) return "\u062E\u0637\u0623 \u0641\u064A \u062E\u062F\u0645\u0629 Claude. \u062D\u0627\u0648\u0644 \u0645\u0631\u0629 \u0623\u062E\u0631\u0649 \u062E\u0644\u0627\u0644 \u062F\u0642\u064A\u0642\u0629.";
   return "\u0641\u0634\u0644 \u0627\u0644\u0637\u0644\u0628. \u062D\u0627\u0648\u0644 \u0645\u0631\u0629 \u0623\u062E\u0631\u0649.";
+}
+function classifyClaudeError(status, bodyText) {
+  const body = bodyText || "";
+  const creditOut = /credit balance is too low|insufficient credit/i.test(body);
+  let kind = "unknown";
+  if (creditOut) kind = "credit_exhausted";
+  else if (status === 401 || status === 403) kind = "auth";
+  else if (status === 429) kind = "rate_limit";
+  else if (status >= 500) kind = "server_error";
+  else if (status === 400) kind = "bad_request";
+  return {
+    status,
+    userMessage: mapAnthropicStatusToArabic(status, body),
+    devDetail: `Claude ${status}: ${body.slice(0, 300)}`,
+    alertOps: creditOut || status === 401 || status === 403 || status >= 500,
+    kind
+  };
+}
+async function sendClaudeOpsAlert(info, endpoint) {
+  if (!info.alertOps) return;
+  try {
+    await logApiCall({
+      service: "anthropic",
+      endpoint,
+      statusCode: info.status > 0 ? info.status : 500,
+      errorMsg: info.devDetail
+    });
+  } catch (e) {
+    console.error("[sendClaudeOpsAlert] failed:", e?.message || e);
+  }
 }
 function mapApifyStatusToArabic(status) {
   if (status === 401 || status === 403) return "\u0645\u0641\u062A\u0627\u062D Apify \u063A\u064A\u0631 \u0635\u062D\u064A\u062D. \u062A\u0648\u0627\u0635\u0644 \u0645\u0639 \u0627\u0644\u062F\u0639\u0645.";
@@ -52780,7 +52815,8 @@ async function callClaude(params) {
       const errText = await res.text();
       lastErr = Object.assign(new Error(`Claude ${status}: ${errText.slice(0, 300)}`), {
         status,
-        body: errText
+        body: errText,
+        responseBody: errText
       });
       if (!retriable || attempt === maxRetries) {
         throw lastErr;
@@ -52916,10 +52952,13 @@ Generate the LinkedIn post now. Return JSON matching this schema:
       });
     } catch (err) {
       const status = err?.status || 500;
-      console.error("[POSTS] Claude error:", status, err?.message);
-      await logApiCall({ service: "anthropic", endpoint: "/v1/messages:posts", statusCode: status, responseTimeMs: Date.now() - _postsT0, errorMsg: err?.message, userId: user.id });
+      const body = err?.responseBody || err?.body || err?.message || "";
+      const info = classifyClaudeError(status, body);
+      console.error("[POSTS] Claude error:", status, info.kind, err?.message);
+      await logApiCall({ service: "anthropic", endpoint: "/v1/messages:posts", statusCode: status, responseTimeMs: Date.now() - _postsT0, errorMsg: info.devDetail, userId: user.id });
+      if (info.alertOps) void sendClaudeOpsAlert(info, "/v1/messages:posts");
       const statusOut = status === 429 ? 429 : 500;
-      return res.status(statusOut).json({ error: mapAnthropicStatusToArabic(status) });
+      return res.status(statusOut).json({ error: info.userMessage });
     }
     await logApiCall({ service: "anthropic", endpoint: "/v1/messages:posts", statusCode: 200, responseTimeMs: Date.now() - _postsT0, userId: user.id });
     const rawText = extractText(claudeRes);
@@ -58725,9 +58764,12 @@ var linkedinRouter = router2({
           });
         } catch (err) {
           const status = err?.status || 500;
-          await logApiCall({ service: "anthropic", endpoint: "/v1/messages:analyze", statusCode: status, responseTimeMs: Date.now() - _claudeT0, errorMsg: err?.message });
-          const code = status === 429 ? "TOO_MANY_REQUESTS" : status === 401 ? "UNAUTHORIZED" : "INTERNAL_SERVER_ERROR";
-          throw new TRPCError({ code, message: mapAnthropicStatusToArabic(status) });
+          const body = err?.responseBody || err?.body || err?.message || "";
+          const info = classifyClaudeError(status, body);
+          await logApiCall({ service: "anthropic", endpoint: "/v1/messages:analyze", statusCode: status, responseTimeMs: Date.now() - _claudeT0, errorMsg: info.devDetail });
+          if (info.alertOps) void sendClaudeOpsAlert(info, "/v1/messages:analyze");
+          const code = status === 429 ? "TOO_MANY_REQUESTS" : status === 401 || status === 403 ? "UNAUTHORIZED" : "INTERNAL_SERVER_ERROR";
+          throw new TRPCError({ code, message: info.userMessage });
         }
         await logApiCall({ service: "anthropic", endpoint: "/v1/messages:analyze", statusCode: 200, responseTimeMs: Date.now() - _claudeT0 });
         const text = extractText(claudeRes);
@@ -58875,10 +58917,13 @@ var linkedinRouter = router2({
         });
       } catch (err) {
         const status = err?.status || 500;
-        console.error("[DEEP] Claude error:", status, err?.message);
-        await logApiCall({ service: "anthropic", endpoint: "/v1/messages:analyzeDeep", statusCode: status, responseTimeMs: Date.now() - _deepT0, errorMsg: err?.message, userId: ctx.user?.id });
-        const code = status === 429 ? "TOO_MANY_REQUESTS" : status === 401 ? "UNAUTHORIZED" : "INTERNAL_SERVER_ERROR";
-        throw new TRPCError({ code, message: mapAnthropicStatusToArabic(status) });
+        const body = err?.responseBody || err?.body || err?.message || "";
+        const info = classifyClaudeError(status, body);
+        console.error("[DEEP] Claude error:", status, info.kind, err?.message);
+        await logApiCall({ service: "anthropic", endpoint: "/v1/messages:analyzeDeep", statusCode: status, responseTimeMs: Date.now() - _deepT0, errorMsg: info.devDetail, userId: ctx.user?.id });
+        if (info.alertOps) void sendClaudeOpsAlert(info, "/v1/messages:analyzeDeep");
+        const code = status === 429 ? "TOO_MANY_REQUESTS" : status === 401 || status === 403 ? "UNAUTHORIZED" : "INTERNAL_SERVER_ERROR";
+        throw new TRPCError({ code, message: info.userMessage });
       }
       await logApiCall({ service: "anthropic", endpoint: "/v1/messages:analyzeDeep", statusCode: 200, responseTimeMs: Date.now() - _deepT0, userId: ctx.user?.id });
       const text = extractText(claudeRes);
@@ -65588,17 +65633,19 @@ ${notes.map((n, i) => `${i + 1}. ${n.note}`).join("\n")}` : "";
     }
     if (!claudeRes.ok) {
       const errText = await claudeRes.text();
+      const info = classifyClaudeError(claudeRes.status, errText);
       await logApiCall({
         service: "anthropic",
         endpoint: "/v1/messages:agents",
         statusCode: claudeRes.status,
         responseTimeMs: Date.now() - _t0,
-        errorMsg: errText,
+        errorMsg: info.devDetail,
         userId: ctx.user.id
       });
+      if (info.alertOps) void sendClaudeOpsAlert(info, "/v1/messages:agents");
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
-        message: mapAnthropicStatusToArabic(claudeRes.status)
+        message: info.userMessage
       });
     }
     const claudeData = await claudeRes.json();
@@ -66680,6 +66727,73 @@ var analyticsRouter = router2({
   })
 });
 
+// server/_core/routes/ops.ts
+var ADMIN_EMAILS4 = ["waselhup@gmail.com", "almodhih.1995@gmail.com", "alhashimali649@gmail.com"];
+var opsRouter = router2({
+  /**
+   * Admin-only: probe Anthropic with a tiny ping to check key health + billing.
+   * Returns enough info for an admin dashboard widget to show green/amber/red.
+   */
+  anthropicHealth: protectedProcedure.query(async ({ ctx }) => {
+    if (!ctx.user?.email || !ADMIN_EMAILS4.includes(ctx.user.email)) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "Admin only" });
+    }
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      return {
+        status: "unreachable",
+        httpCode: 0,
+        message: "ANTHROPIC_API_KEY not configured",
+        creditExhausted: false,
+        latencyMs: 0,
+        timestamp: (/* @__PURE__ */ new Date()).toISOString()
+      };
+    }
+    const t0 = Date.now();
+    try {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01"
+        },
+        body: JSON.stringify({
+          model: "claude-haiku-4-5-20251001",
+          max_tokens: 5,
+          messages: [{ role: "user", content: "ping" }]
+        })
+      });
+      const latencyMs = Date.now() - t0;
+      const bodyText = await res.text();
+      let parsed = null;
+      try {
+        parsed = JSON.parse(bodyText);
+      } catch {
+      }
+      const creditExhausted = /credit balance is too low|insufficient credit/i.test(bodyText);
+      const errMsg = parsed?.error?.message || bodyText.slice(0, 300);
+      return {
+        status: res.ok ? "healthy" : "error",
+        httpCode: res.status,
+        message: res.ok ? "Claude API reachable" : errMsg,
+        creditExhausted,
+        latencyMs,
+        timestamp: (/* @__PURE__ */ new Date()).toISOString()
+      };
+    } catch (err) {
+      return {
+        status: "unreachable",
+        httpCode: 0,
+        message: err?.message || "Network error",
+        creditExhausted: false,
+        latencyMs: Date.now() - t0,
+        timestamp: (/* @__PURE__ */ new Date()).toISOString()
+      };
+    }
+  })
+});
+
 // server/_core/trpc.ts
 var appRouter = router2({
   health: publicProcedure.query(async () => {
@@ -66706,7 +66820,8 @@ var appRouter = router2({
   agents: agentsRouter,
   companies: companiesRouter,
   executor: executorAgentsRouter,
-  analytics: analyticsRouter
+  analytics: analyticsRouter,
+  ops: opsRouter
 });
 
 // server/_core/context.ts
@@ -66776,6 +66891,71 @@ app.post("/api/log-error", (req, res) => {
 });
 app.get("/api/test-route", (_req, res) => {
   res.json({ ok: true, routes: "working" });
+});
+app.get("/api/cron/anthropic-health", async (req, res) => {
+  const expected = process.env.CRON_SECRET;
+  const auth = req.headers.authorization || "";
+  if (expected && auth !== `Bearer ${expected}`) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    return res.status(500).json({ ok: false, error: "ANTHROPIC_API_KEY missing" });
+  }
+  const t0 = Date.now();
+  let status = 0;
+  let bodyText = "";
+  try {
+    const r = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01"
+      },
+      body: JSON.stringify({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 5,
+        messages: [{ role: "user", content: "ping" }]
+      })
+    });
+    status = r.status;
+    bodyText = await r.text();
+  } catch (e) {
+    bodyText = e?.message || "fetch failed";
+  }
+  const latencyMs = Date.now() - t0;
+  const creditOut = /credit balance is too low|insufficient credit/i.test(bodyText);
+  const healthy = status === 200;
+  if (!healthy) {
+    const tgToken = process.env.TELEGRAM_BOT_TOKEN;
+    if (tgToken) {
+      const ALI_CHAT = "1205315908";
+      const msg = `\u{1F534} *Anthropic API DOWN*
+
+HTTP: \`${status || "network_error"}\`
+Latency: ${latencyMs}ms
+` + (creditOut ? "*\u0627\u0644\u0633\u0628\u0628*: \u0627\u0646\u062A\u0647\u062A \u0627\u0644\u0643\u0631\u064A\u062F\u064A\u062A\u0633\n" : "") + `Body: \`${bodyText.slice(0, 180).replace(/`/g, "'")}\`
+
+\u{1F517} https://console.anthropic.com/settings/billing`;
+      try {
+        await fetch(`https://api.telegram.org/bot${tgToken}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ chat_id: ALI_CHAT, text: msg, parse_mode: "Markdown" })
+        });
+      } catch (e) {
+        console.error("[cron/anthropic-health] Telegram send failed:", e?.message);
+      }
+    }
+  }
+  return res.json({
+    ok: healthy,
+    status,
+    latencyMs,
+    creditExhausted: creditOut,
+    timestamp: (/* @__PURE__ */ new Date()).toISOString()
+  });
 });
 var ALLOWED_AVATAR_HOSTS = /* @__PURE__ */ new Set([
   "media.licdn.com",

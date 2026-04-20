@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { createClient } from '@supabase/supabase-js';
-import { logApiCall, mapAnthropicStatusToArabic } from '../lib/apiLogger';
+import { logApiCall, classifyClaudeError, sendClaudeOpsAlert } from '../lib/apiLogger';
 import { callClaude, extractText, extractJson } from '../lib/claude-client';
 
 const router = Router();
@@ -99,10 +99,13 @@ Generate the LinkedIn post now. Return JSON matching this schema:
       });
     } catch (err: any) {
       const status = err?.status || 500;
-      console.error('[POSTS] Claude error:', status, err?.message);
-      await logApiCall({ service: 'anthropic', endpoint: '/v1/messages:posts', statusCode: status, responseTimeMs: Date.now() - _postsT0, errorMsg: err?.message, userId: user.id });
+      const body = err?.responseBody || err?.body || err?.message || '';
+      const info = classifyClaudeError(status, body);
+      console.error('[POSTS] Claude error:', status, info.kind, err?.message);
+      await logApiCall({ service: 'anthropic', endpoint: '/v1/messages:posts', statusCode: status, responseTimeMs: Date.now() - _postsT0, errorMsg: info.devDetail, userId: user.id });
+      if (info.alertOps) void sendClaudeOpsAlert(info, '/v1/messages:posts');
       const statusOut = status === 429 ? 429 : 500;
-      return res.status(statusOut).json({ error: mapAnthropicStatusToArabic(status) });
+      return res.status(statusOut).json({ error: info.userMessage });
     }
     await logApiCall({ service: 'anthropic', endpoint: '/v1/messages:posts', statusCode: 200, responseTimeMs: Date.now() - _postsT0, userId: user.id });
 

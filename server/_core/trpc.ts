@@ -12,6 +12,7 @@ import { agentsRouter } from './routes/agents';
 import { companiesRouter } from './routes/companies';
 import { executorAgentsRouter } from './routes/executorAgents';
 import { analyticsRouter } from './routes/analytics';
+import { opsRouter } from './routes/ops';
 
 export { router, publicProcedure, protectedProcedure };
 
@@ -48,6 +49,7 @@ export const appRouter = router({
   companies: companiesRouter,
   executor: executorAgentsRouter,
   analytics: analyticsRouter,
+  ops: opsRouter,
 });
 
 export type AppRouter = typeof appRouter;

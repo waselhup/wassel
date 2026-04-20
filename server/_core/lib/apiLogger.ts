@@ -102,12 +102,73 @@ async function sendTelegramAlert(service: string, errorCount: number, lastError?
   }
 }
 
-export function mapAnthropicStatusToArabic(status: number): string {
+/**
+ * Map an Anthropic API error to an Arabic user-facing message.
+ * Anthropic returns HTTP 400 with `invalid_request_error` for low balance
+ * (NOT 402), so we body-sniff for the credit string before falling back to
+ * status-code branches.
+ */
+export function mapAnthropicStatusToArabic(status: number, bodyText?: string): string {
+  if (bodyText && /credit balance is too low|insufficient credit/i.test(bodyText)) {
+    return 'الخدمة معطّلة مؤقتاً (انتهت الكريديتس). نعمل على حلها.';
+  }
   if (status === 401) return 'مفتاح Claude API غير صحيح. تواصل مع الدعم.';
   if (status === 402) return 'الخدمة معطّلة مؤقتاً (انتهت الكريديتس). نعمل على حلها.';
+  if (status === 403) return 'الوصول مرفوض من خدمة Claude. تواصل مع الدعم.';
   if (status === 429) return 'تجاوزنا الحد المسموح. حاول بعد دقيقة.';
-  if (status >= 500) return 'خطأ في خدمة Claude. حاول مرة أخرى.';
+  if (status === 400) return 'الطلب غير صحيح. حاول مرة أخرى أو تواصل مع الدعم.';
+  if (status >= 500) return 'خطأ في خدمة Claude. حاول مرة أخرى خلال دقيقة.';
   return 'فشل الطلب. حاول مرة أخرى.';
+}
+
+export interface ClaudeErrorInfo {
+  status: number;
+  userMessage: string;
+  devDetail: string;
+  alertOps: boolean;
+  kind: 'credit_exhausted' | 'auth' | 'rate_limit' | 'bad_request' | 'server_error' | 'unknown';
+}
+
+/**
+ * Classify a Claude API failure — returns message to show the user, dev
+ * detail for logs, and a flag for whether ops should be alerted on Telegram.
+ */
+export function classifyClaudeError(status: number, bodyText: string): ClaudeErrorInfo {
+  const body = bodyText || '';
+  const creditOut = /credit balance is too low|insufficient credit/i.test(body);
+
+  let kind: ClaudeErrorInfo['kind'] = 'unknown';
+  if (creditOut) kind = 'credit_exhausted';
+  else if (status === 401 || status === 403) kind = 'auth';
+  else if (status === 429) kind = 'rate_limit';
+  else if (status >= 500) kind = 'server_error';
+  else if (status === 400) kind = 'bad_request';
+
+  return {
+    status,
+    userMessage: mapAnthropicStatusToArabic(status, body),
+    devDetail: `Claude ${status}: ${body.slice(0, 300)}`,
+    alertOps: creditOut || status === 401 || status === 403 || status >= 500,
+    kind,
+  };
+}
+
+/**
+ * Send a one-off ops alert for critical Claude errors — thin wrapper around
+ * the existing repeat-aware alerter so individual callers can fire-and-forget.
+ */
+export async function sendClaudeOpsAlert(info: ClaudeErrorInfo, endpoint: string): Promise<void> {
+  if (!info.alertOps) return;
+  try {
+    await logApiCall({
+      service: 'anthropic',
+      endpoint,
+      statusCode: info.status > 0 ? info.status : 500,
+      errorMsg: info.devDetail,
+    });
+  } catch (e: any) {
+    console.error('[sendClaudeOpsAlert] failed:', e?.message || e);
+  }
 }
 
 export function mapApifyStatusToArabic(status: number): string {

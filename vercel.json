@@ -6,6 +6,9 @@
       "maxDuration": 300
     }
   },
+  "crons": [
+    { "path": "/api/cron/anthropic-health", "schedule": "0 */2 * * *" }
+  ],
   "redirects": [
     {
       "source": "/(.*)",

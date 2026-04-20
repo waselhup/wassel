@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { router, protectedProcedure } from '../trpc-init';
 import { TRPCError } from '@trpc/server';
-import { logApiCall, mapAnthropicStatusToArabic, mapApifyStatusToArabic } from '../lib/apiLogger';
+import { logApiCall, mapAnthropicStatusToArabic, mapApifyStatusToArabic, classifyClaudeError, sendClaudeOpsAlert } from '../lib/apiLogger';
 import { callClaude, extractText, extractJson } from '../lib/claude-client';
 import { scrapeLinkedInProfileMulti, detectLanguage } from '../lib/linkedin-scraper';
 
@@ -314,9 +314,12 @@ export const linkedinRouter = router({
             });
           } catch (err: any) {
             const status = err?.status || 500;
-            await logApiCall({ service: 'anthropic', endpoint: '/v1/messages:analyze', statusCode: status, responseTimeMs: Date.now() - _claudeT0, errorMsg: err?.message });
-            const code = status === 429 ? 'TOO_MANY_REQUESTS' : status === 401 ? 'UNAUTHORIZED' : 'INTERNAL_SERVER_ERROR';
-            throw new TRPCError({ code, message: mapAnthropicStatusToArabic(status) });
+            const body = err?.responseBody || err?.body || err?.message || '';
+            const info = classifyClaudeError(status, body);
+            await logApiCall({ service: 'anthropic', endpoint: '/v1/messages:analyze', statusCode: status, responseTimeMs: Date.now() - _claudeT0, errorMsg: info.devDetail });
+            if (info.alertOps) void sendClaudeOpsAlert(info, '/v1/messages:analyze');
+            const code = status === 429 ? 'TOO_MANY_REQUESTS' : (status === 401 || status === 403) ? 'UNAUTHORIZED' : 'INTERNAL_SERVER_ERROR';
+            throw new TRPCError({ code, message: info.userMessage });
           }
           await logApiCall({ service: 'anthropic', endpoint: '/v1/messages:analyze', statusCode: 200, responseTimeMs: Date.now() - _claudeT0 });
 
@@ -515,10 +518,13 @@ export const linkedinRouter = router({
           });
         } catch (err: any) {
           const status = err?.status || 500;
-          console.error('[DEEP] Claude error:', status, err?.message);
-          await logApiCall({ service: 'anthropic', endpoint: '/v1/messages:analyzeDeep', statusCode: status, responseTimeMs: Date.now() - _deepT0, errorMsg: err?.message, userId: ctx.user?.id });
-          const code = status === 429 ? 'TOO_MANY_REQUESTS' : status === 401 ? 'UNAUTHORIZED' : 'INTERNAL_SERVER_ERROR';
-          throw new TRPCError({ code, message: mapAnthropicStatusToArabic(status) });
+          const body = err?.responseBody || err?.body || err?.message || '';
+          const info = classifyClaudeError(status, body);
+          console.error('[DEEP] Claude error:', status, info.kind, err?.message);
+          await logApiCall({ service: 'anthropic', endpoint: '/v1/messages:analyzeDeep', statusCode: status, responseTimeMs: Date.now() - _deepT0, errorMsg: info.devDetail, userId: ctx.user?.id });
+          if (info.alertOps) void sendClaudeOpsAlert(info, '/v1/messages:analyzeDeep');
+          const code = status === 429 ? 'TOO_MANY_REQUESTS' : (status === 401 || status === 403) ? 'UNAUTHORIZED' : 'INTERNAL_SERVER_ERROR';
+          throw new TRPCError({ code, message: info.userMessage });
         }
         await logApiCall({ service: 'anthropic', endpoint: '/v1/messages:analyzeDeep', statusCode: 200, responseTimeMs: Date.now() - _deepT0, userId: ctx.user?.id });
 

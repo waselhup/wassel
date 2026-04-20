@@ -60,6 +60,7 @@ export default function AdminDashboard() {
   const [addTokensModal, setAddTokensModal] = useState<{ userId: string; name: string } | null>(null);
   const [tokenAmount, setTokenAmount] = useState(100);
   const [tokenReason, setTokenReason] = useState('');
+  const [anthropicHealth, setAnthropicHealth] = useState<any>(null);
 
   const ADMIN_EMAILS = ['waselhup@gmail.com', 'almodhih.1995@gmail.com', 'alhashimali649@gmail.com'];
   const isAdmin = ADMIN_EMAILS.includes(user?.email || '');
@@ -68,6 +69,26 @@ export default function AdminDashboard() {
     if (!isAdmin) return;
     loadData();
   }, [isAdmin]);
+
+  // Poll Anthropic health every 60s when overview tab is open
+  useEffect(() => {
+    if (!isAdmin || tab !== 'overview') return;
+    let cancelled = false;
+    const fetchHealth = async () => {
+      try {
+        const h = await trpc.ops.anthropicHealth();
+        if (!cancelled) setAnthropicHealth(h);
+      } catch {
+        /* swallow — widget renders a neutral state */
+      }
+    };
+    void fetchHealth();
+    const iv = setInterval(fetchHealth, 60_000);
+    return () => {
+      cancelled = true;
+      clearInterval(iv);
+    };
+  }, [isAdmin, tab]);
 
   async function loadData() {
     setLoading(true);
@@ -215,6 +236,53 @@ export default function AdminDashboard() {
                     </motion.div>
                   ))}
                 </div>
+
+                {/* Anthropic API Health */}
+                {(() => {
+                  const h = anthropicHealth;
+                  const dotColor = !h ? '#9CA3AF'
+                    : h.creditExhausted ? '#DC2626'
+                    : h.status === 'healthy' ? '#059669'
+                    : h.status === 'error' ? '#DC2626'
+                    : '#D97706';
+                  const bgTint = !h ? '#F9FAFB'
+                    : h.creditExhausted || h.status === 'error' ? '#FEF2F2'
+                    : h.status === 'healthy' ? '#ECFDF5'
+                    : '#FFFBEB';
+                  const borderTint = !h ? '#E5E7EB'
+                    : h.creditExhausted || h.status === 'error' ? '#FECACA'
+                    : h.status === 'healthy' ? '#A7F3D0'
+                    : '#FDE68A';
+                  return (
+                    <div style={{
+                      background: bgTint, borderRadius: 14, border: `1px solid ${borderTint}`,
+                      padding: 16, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 14,
+                    }}>
+                      <div style={{
+                        width: 14, height: 14, borderRadius: '50%', background: dotColor,
+                        flexShrink: 0, boxShadow: `0 0 0 4px ${dotColor}22`,
+                      }} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 14, color: 'var(--wsl-ink)', marginBottom: 4 }}>
+                          Claude API {h ? `· ${h.httpCode || '0'}` : ''} {h?.latencyMs ? `· ${h.latencyMs}ms` : ''}
+                        </div>
+                        <div style={{ fontSize: 12, color: 'var(--wsl-ink-3)', fontFamily: 'Cairo, Inter, sans-serif', lineHeight: 1.5 }}>
+                          {!h ? (isAr ? '...جاري الفحص' : 'Checking...') : h.message}
+                        </div>
+                        {h?.creditExhausted && (
+                          <a
+                            href="https://console.anthropic.com/settings/billing"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ fontSize: 12, color: '#DC2626', fontWeight: 900, textDecoration: 'underline', marginTop: 6, display: 'inline-block' }}
+                          >
+                            ⚠️ {isAr ? 'اشحن Anthropic فوراً' : 'Top up Anthropic now'}
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* System Status */}
                 <div style={{ background: '#fff', borderRadius: 14, border: '1px solid var(--wsl-border, #E5E7EB)', padding: 20, marginBottom: 20 }}>

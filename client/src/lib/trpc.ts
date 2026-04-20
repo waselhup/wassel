@@ -176,6 +176,16 @@ export const trpc = {
     updateStatus: (input: { id: string; status: string }) =>
       trpcMutation<any>('feedback.updateStatus', input),
   },
+  ops: {
+    anthropicHealth: () => trpcQuery<{
+      status: 'healthy' | 'error' | 'unreachable';
+      httpCode: number;
+      message: string;
+      creditExhausted: boolean;
+      latencyMs: number;
+      timestamp: string;
+    }>('ops.anthropicHealth'),
+  },
   aiFeedback: {
     submit: (input: { feature: string; outputId?: string; rating: number; comment?: string }) =>
       trpcMutation<{ id: string; success: boolean }>('aiFeedback.submit', input),

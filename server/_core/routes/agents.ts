@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { router, protectedProcedure } from '../trpc-init';
 import { TRPCError } from '@trpc/server';
-import { logApiCall, mapAnthropicStatusToArabic } from '../lib/apiLogger';
+import { logApiCall, classifyClaudeError, sendClaudeOpsAlert } from '../lib/apiLogger';
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || '';
 
@@ -303,17 +303,19 @@ export const agentsRouter = router({
 
       if (!claudeRes.ok) {
         const errText = await claudeRes.text();
+        const info = classifyClaudeError(claudeRes.status, errText);
         await logApiCall({
           service: 'anthropic',
           endpoint: '/v1/messages:agents',
           statusCode: claudeRes.status,
           responseTimeMs: Date.now() - _t0,
-          errorMsg: errText,
+          errorMsg: info.devDetail,
           userId: ctx.user.id,
         });
+        if (info.alertOps) void sendClaudeOpsAlert(info, '/v1/messages:agents');
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
-          message: mapAnthropicStatusToArabic(claudeRes.status),
+          message: info.userMessage,
         });
       }
 
