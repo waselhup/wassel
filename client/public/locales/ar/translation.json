@@ -711,22 +711,74 @@
     "elite": "نخبة"
   },
   "cv": {
-    "uploadCV": "رفع سيرتي الذاتية",
-    "uploading": "جاري الرفع...",
-    "uploadSuccess": "تم استخراج البيانات بنجاح",
-    "uploadError": "فشل رفع الملف",
-    "acceptedFormats": "صيغ مقبولة: PDF, DOCX, TXT",
-    "downloadPDF": "تحميل PDF",
     "title": "تخصيص السيرة الذاتية",
-    "subtitle": "أنشئ سيرة ذاتية احترافية مخصصة لكل وظيفة",
-    "yourInfo": "معلوماتك",
-    "template": {
-      "choose": "اختر القالب"
+    "subtitle": "سيرة بفورمات MIT و Harvard — محسّنة لاجتياز أنظمة ATS",
+    "upload": {
+      "title": "رفع سيرتي الذاتية",
+      "subtitle": "اختياري — ارفع سيرتك الحالية لاستخراج البيانات تلقائياً",
+      "hint": "اسحب وأفلِت الملف هنا أو انقر للتصفح",
+      "button": "اختر ملف",
+      "formats": "PDF، DOCX، TXT — حتى 5MB",
+      "parsing": "نستخرج بياناتك من السيرة...",
+      "parsingHint": "10-20 ثانية",
+      "success": "تم الاستخراج بنجاح",
+      "successToast": "تم استخراج البيانات — راجع وأضف التفاصيل",
+      "errorToast": "فشل الاستخراج",
+      "tooLarge": "الملف أكبر من 5MB",
+      "unsupportedType": "نوع الملف غير مدعوم"
     },
-    "ready": "جاهز للإنشاء؟",
-    "tokenCost": "يستخدم 10 توكنز لكل سيرة",
-    "generate": "أنشئ السيرة",
-    "generating": "جاري الإنشاء..."
+    "form": {
+      "sectionYourInfo": "معلوماتك الشخصية",
+      "sectionTargetJob": "الوظيفة المستهدفة",
+      "fullName": "الاسم الكامل *",
+      "email": "البريد الإلكتروني",
+      "phone": "رقم الجوال",
+      "location": "المدينة، الدولة",
+      "linkedinUrl": "رابط LinkedIn",
+      "currentRole": "الدور الحالي",
+      "currentCompany": "الشركة الحالية",
+      "yearsExperience": "سنوات الخبرة",
+      "summary": "نبذة مهنية (اختياري)",
+      "skills": "المهارات (مفصولة بفواصل)",
+      "languages": "اللغات",
+      "education": "التعليم",
+      "experience": "الخبرات",
+      "certifications": "الشهادات",
+      "achievements": "أبرز الإنجازات (كل إنجاز في سطر)",
+      "targetRole": "المسمى الوظيفي المستهدف *",
+      "targetCompany": "الشركة المستهدفة",
+      "jobDescription": "الوصف الوظيفي",
+      "jobDescriptionHint": "الصق وصف الوظيفة — سنستخلص الكلمات المفتاحية للـ ATS"
+    },
+    "templates": {
+      "chooseTitle": "اختر القالب",
+      "chooseSubtitle": "قالبان مُختبران ضد أنظمة ATS",
+      "mit": {
+        "name": "MIT الكلاسيكي",
+        "desc": "قالب أكاديمي صارم بأقسام واضحة — معتمد في الهندسة والتقنية والحكومية"
+      },
+      "harvard": {
+        "name": "Harvard التنفيذي",
+        "desc": "تصميم عصري يُبرز الإنجازات القابلة للقياس — أعمال واستشارات"
+      }
+    },
+    "generate": {
+      "title": "جاهز للإنشاء؟",
+      "subtitle": "10 توكن لكل سيرة (DOCX + PDF)",
+      "button": "إنشاء السيرة — 10 توكن",
+      "success": "تم الإنشاء!",
+      "error": "فشل الإنشاء"
+    },
+    "history": {
+      "title": "سيرك السابقة",
+      "emptyTitle": "لم تُنشئ أي سيرة بعد",
+      "emptyDesc": "اتبع الخطوات أعلاه لإنشاء سيرتك الأولى",
+      "noCompany": "بدون شركة محددة",
+      "regenerate": "إعادة إنشاء",
+      "delete": "حذف",
+      "confirmDelete": "هل أنت متأكد من حذف هذه السيرة؟",
+      "deleted": "تم الحذف"
+    }
   },
   "campaign": {
     "discoverProspects": "اكتشاف العملاء المحتملين",

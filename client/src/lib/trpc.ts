@@ -98,11 +98,26 @@ export const trpc = {
     history: () => trpcQuery<any[]>('linkedin.history'),
   },
   cv: {
-    generate: (fields: string[], context?: Record<string, string>) =>
-      trpcMutation<{ versions: any[]; tokensRemaining: number }>('cv.generate', { fields, context }),
-    parseUpload: (fileBase64: string, fileName: string) =>
-      trpcMutation<{ name: string; email: string; phone: string; currentRole: string; experience: string; skills: string; education: string; achievements: string; languages: string }>('cv.parseUpload', { fileBase64, fileName }),
-    history: () => trpcQuery<any[]>('cv.history'),
+    parseUpload: (input: { fileBase64: string; fileName: string; mimeType: string }) =>
+      trpcMutation<{ success: boolean; extracted: any; textLength: number }>('cv.parseUpload', input),
+    generate: (input: {
+      userData: any;
+      targetRole: string;
+      targetCompany?: string;
+      jobDescription?: string;
+      template: 'mit-classic' | 'harvard-executive';
+      language: 'ar' | 'en';
+    }) => trpcMutation<{
+      id: string;
+      cvData: any;
+      docxUrl: string | null;
+      pdfUrl: string | null;
+      tokensUsed: number;
+      tokensRemaining: number;
+    }>('cv.generate', input),
+    list: () => trpcQuery<any[]>('cv.list'),
+    getById: (input: { id: string }) => trpcQuery<any>('cv.getById', input),
+    deleteById: (input: { id: string }) => trpcMutation<{ success: boolean }>('cv.deleteById', input),
   },
   campaign: {
     list: () => trpcQuery<any[]>('campaign.list'),

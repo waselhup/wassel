@@ -717,69 +717,74 @@
     "name": "Wassel"
   },
   "cv": {
-    "chooseTemplate": "Choose Template",
-    "subtitle": "Create a professional CV tailored to each job",
-    "info": "Your Information",
-    "cost": "Uses 10 tokens per CV",
     "title": "CV Tailor",
-    "err": {
-      "failed": "Generation failed. Try again.",
-      "noTitle": "Enter target job title first"
+    "subtitle": "MIT & Harvard formats — ATS-optimized for every application",
+    "upload": {
+      "title": "Upload My CV",
+      "subtitle": "Optional — upload your existing CV to auto-fill the form below",
+      "hint": "Drag & drop or click to browse",
+      "button": "Choose file",
+      "formats": "PDF, DOCX, TXT — up to 5MB",
+      "parsing": "Parsing your CV...",
+      "parsingHint": "10-20 seconds",
+      "success": "Extracted successfully",
+      "successToast": "Data extracted — review and add details",
+      "errorToast": "Upload failed",
+      "tooLarge": "File exceeds 5MB",
+      "unsupportedType": "Unsupported file type"
     },
-    "ready": "Ready to Generate?",
-    "f": {
-      "ach": "Key Achievements",
-      "skills": "Skills",
-      "currentRole": "Current Role",
-      "lang": "Languages",
-      "jobTitle": "Target Job Title",
-      "name": "Full Name",
-      "company": "Company Name",
-      "edu": "Education",
+    "form": {
+      "sectionYourInfo": "Your Information",
+      "sectionTargetJob": "Target Job",
+      "fullName": "Full Name *",
+      "email": "Email",
       "phone": "Phone",
-      "exp": "Years of Experience",
-      "jobDesc": "Job Description",
-      "email": "Email"
-    },
-    "generate": "Generate CV",
-    "generating": "Generating...",
-    "t": {
-      "modernD": "Clean design with bold colors",
-      "creative": "Creative",
-      "classic": "Classic",
-      "creativeD": "Distinctive for design and marketing roles",
-      "modern": "Modern",
-      "classicD": "Professional for formal sectors"
-    },
-    "regen": "Regenerate",
-    "ph": {
-      "ach": "Increased sales by 40% in 2024",
-      "skills": "Google Ads, SEO, Analytics",
-      "currentRole": "Marketing Specialist",
-      "lang": "Arabic, English",
-      "jobTitle": "Digital Marketing Manager",
-      "name": "Ahmed Mohammed Al-Rashid",
-      "company": "Saudi Aramco",
-      "edu": "BSc Business Administration",
-      "jobDesc": "Paste job description"
-    },
-    "versions": "Generated Versions",
-    "section": {
-      "summary": "Professional Summary",
+      "location": "City, Country",
+      "linkedinUrl": "LinkedIn URL",
+      "currentRole": "Current Role",
+      "currentCompany": "Current Company",
+      "yearsExperience": "Years of Experience",
+      "summary": "Professional Summary (optional)",
+      "skills": "Skills (comma-separated)",
+      "languages": "Languages",
+      "education": "Education",
       "experience": "Experience",
-      "skills": "Skills"
+      "certifications": "Certifications",
+      "achievements": "Key Achievements (one per line)",
+      "targetRole": "Target Role *",
+      "targetCompany": "Target Company",
+      "jobDescription": "Job Description",
+      "jobDescriptionHint": "Paste the JD — we extract keywords for ATS tailoring"
     },
-    "uploadCV": "Upload My CV",
-    "uploading": "Uploading...",
-    "uploadSuccess": "Data extracted successfully",
-    "uploadError": "Failed to upload file",
-    "acceptedFormats": "Accepted formats: PDF, DOCX, TXT",
-    "downloadPDF": "Download PDF",
-    "yourInfo": "Your Information",
-    "template": {
-      "choose": "Choose Template"
+    "templates": {
+      "chooseTitle": "Choose Template",
+      "chooseSubtitle": "Two ATS-tested templates",
+      "mit": {
+        "name": "MIT Classic",
+        "desc": "Austere academic layout with crisp sections — engineering, tech, gov"
+      },
+      "harvard": {
+        "name": "Harvard Executive",
+        "desc": "Modern design with achievement-forward bullets — business, consulting"
+      }
     },
-    "tokenCost": "Uses 10 tokens per CV"
+    "generate": {
+      "title": "Ready to Generate?",
+      "subtitle": "10 tokens per CV (DOCX + PDF)",
+      "button": "Generate CV — 10 tokens",
+      "success": "Generated!",
+      "error": "Generation failed"
+    },
+    "history": {
+      "title": "Your Previous CVs",
+      "emptyTitle": "No CVs generated yet",
+      "emptyDesc": "Follow the steps above to create your first CV",
+      "noCompany": "No specific company",
+      "regenerate": "Regenerate",
+      "delete": "Delete",
+      "confirmDelete": "Delete this CV?",
+      "deleted": "Deleted"
+    }
   },
   "campaign": {
     "discoverProspects": "Discover Prospects",
