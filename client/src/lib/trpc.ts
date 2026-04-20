@@ -99,7 +99,7 @@ export const trpc = {
   },
   cv: {
     parseUpload: (input: { fileBase64: string; fileName: string; mimeType: string }) =>
-      trpcMutation<{ success: boolean; extracted: any; textLength: number }>('cv.parseUpload', input),
+      trpcMutation<{ success: boolean; extracted: any; textLength: number; parseMethod: 'docx' | 'pdf-text' | 'pdf-ocr' | 'manual' }>('cv.parseUpload', input),
     generate: (input: {
       userData: any;
       targetRole: string;
@@ -107,14 +107,26 @@ export const trpc = {
       jobDescription?: string;
       template: 'mit-classic' | 'harvard-executive';
       language: 'ar' | 'en';
+      includeCoverLetter?: boolean;
+      calculateATS?: boolean;
+      sourceParseMethod?: 'docx' | 'pdf-text' | 'pdf-ocr' | 'manual';
     }) => trpcMutation<{
       id: string;
       cvData: any;
       docxUrl: string | null;
       pdfUrl: string | null;
+      atsScore: any | null;
+      coverLetter: { docxUrl: string | null; pdfUrl: string | null } | null;
       tokensUsed: number;
       tokensRemaining: number;
     }>('cv.generate', input),
+    compareCvs: (input: { olderId: string; newerId: string }) =>
+      trpcQuery<{
+        older: { id: string; template: string; targetRole: string; createdAt: string; atsScore: number | null };
+        newer: { id: string; template: string; targetRole: string; createdAt: string; atsScore: number | null };
+        segments: Array<{ type: 'added' | 'removed' | 'unchanged'; text: string }>;
+        metrics: { wordsAdded: number; wordsRemoved: number; atsDelta: number | null };
+      }>('cv.compareCvs', input),
     list: () => trpcQuery<any[]>('cv.list'),
     getById: (input: { id: string }) => trpcQuery<any>('cv.getById', input),
     deleteById: (input: { id: string }) => trpcMutation<{ success: boolean }>('cv.deleteById', input),

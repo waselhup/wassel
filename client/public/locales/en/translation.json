@@ -298,6 +298,7 @@
     "skip": "Skip",
     "email": "Email",
     "name": "Name",
+    "tokens": "tokens",
     "plan": "plan",
     "or": "or"
   },
@@ -731,7 +732,43 @@
       "successToast": "Data extracted — review and add details",
       "errorToast": "Upload failed",
       "tooLarge": "File exceeds 5MB",
-      "unsupportedType": "Unsupported file type"
+      "unsupportedType": "Unsupported file type",
+      "supportedFormats": "Supported formats",
+      "docxDesc": "Word document — 95%+ extraction accuracy",
+      "pdfWordDesc": "PDF created from Word — 85-90% accuracy",
+      "pdfScannedDesc": "Scanned PDF — uses OCR",
+      "bestAccuracy": "(Best)",
+      "goodAccuracy": "(Good)",
+      "slowerOcr": "(Slower)"
+    },
+    "errors": {
+      "parseFailed": "Could not read the file",
+      "solution1": "Upload a Word file (.docx) — highest accuracy",
+      "solution2": "Or re-export the PDF from Word/Google Docs",
+      "fillManually": "Fill manually"
+    },
+    "coverLetter": {
+      "label": "Add a Cover Letter",
+      "description": "Same language & tone as the CV, tailored to the job",
+      "ready": "Cover Letter Ready",
+      "downloadDocx": "Download Cover Letter DOCX",
+      "downloadPdf": "Download Cover Letter PDF"
+    },
+    "ats": {
+      "title": "ATS Compatibility Score",
+      "basedOnJd": "Based on the job description",
+      "keywordMatch": "Keyword Match",
+      "formatSafety": "Format Safety",
+      "length": "Length",
+      "structure": "Structure",
+      "missingKeywords": "Missing Keywords",
+      "improvements": "Improvements"
+    },
+    "compare": {
+      "title": "CV Comparison",
+      "changes": "Changes",
+      "wordsAdded": "words added",
+      "wordsRemoved": "words removed"
     },
     "form": {
       "sectionYourInfo": "Your Information",
@@ -783,7 +820,9 @@
       "regenerate": "Regenerate",
       "delete": "Delete",
       "confirmDelete": "Delete this CV?",
-      "deleted": "Deleted"
+      "deleted": "Deleted",
+      "compareHint": "Select two CVs below to compare",
+      "compareSelected": "Compare Selected"
     }
   },
   "campaign": {

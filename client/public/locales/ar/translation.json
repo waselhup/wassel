@@ -298,6 +298,7 @@
     "skip": "تخطي",
     "email": "البريد الإلكتروني",
     "name": "الاسم",
+    "tokens": "توكن",
     "plan": "باقة",
     "or": "أو"
   },
@@ -725,7 +726,43 @@
       "successToast": "تم استخراج البيانات — راجع وأضف التفاصيل",
       "errorToast": "فشل الاستخراج",
       "tooLarge": "الملف أكبر من 5MB",
-      "unsupportedType": "نوع الملف غير مدعوم"
+      "unsupportedType": "نوع الملف غير مدعوم",
+      "supportedFormats": "الصيغ المدعومة",
+      "docxDesc": "مستند Word — دقة الاستخراج 95%+",
+      "pdfWordDesc": "PDF مُنشأ من Word — دقة 85-90%",
+      "pdfScannedDesc": "PDF ممسوح ضوئياً — يستخدم OCR",
+      "bestAccuracy": "(الأفضل)",
+      "goodAccuracy": "(جيد)",
+      "slowerOcr": "(أبطأ)"
+    },
+    "errors": {
+      "parseFailed": "لم نتمكن من قراءة الملف",
+      "solution1": "ارفع ملف Word (.docx) — أدق استخراج",
+      "solution2": "أو أعد إنشاء PDF من Word/Google Docs",
+      "fillManually": "املأ البيانات يدوياً"
+    },
+    "coverLetter": {
+      "label": "أضف خطاب تقديم (Cover Letter)",
+      "description": "بنفس لغة ونبرة السيرة الذاتية، مخصص للوظيفة",
+      "ready": "خطاب التقديم جاهز",
+      "downloadDocx": "تحميل خطاب التقديم DOCX",
+      "downloadPdf": "تحميل خطاب التقديم PDF"
+    },
+    "ats": {
+      "title": "درجة توافق ATS",
+      "basedOnJd": "محسوبة من وصف الوظيفة",
+      "keywordMatch": "مطابقة الكلمات المفتاحية",
+      "formatSafety": "سلامة التنسيق",
+      "length": "الطول",
+      "structure": "الهيكل",
+      "missingKeywords": "كلمات مفقودة",
+      "improvements": "اقتراحات للتحسين"
+    },
+    "compare": {
+      "title": "مقارنة السيرتين",
+      "changes": "الفروقات",
+      "wordsAdded": "كلمة مضافة",
+      "wordsRemoved": "كلمة محذوفة"
     },
     "form": {
       "sectionYourInfo": "معلوماتك الشخصية",
@@ -777,7 +814,9 @@
       "regenerate": "إعادة إنشاء",
       "delete": "حذف",
       "confirmDelete": "هل أنت متأكد من حذف هذه السيرة؟",
-      "deleted": "تم الحذف"
+      "deleted": "تم الحذف",
+      "compareHint": "حدّد سيرتين من القائمة لمقارنتهما",
+      "compareSelected": "قارن المحدد"
     }
   },
   "campaign": {

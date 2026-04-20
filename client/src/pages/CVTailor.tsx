@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import {
   Upload, FileText, Download, Trash2, RefreshCw, Loader2, CheckCircle2,
-  X, Sparkles, Plus, Target,
+  X, Sparkles, Plus, Target, BarChart3, GitCompare, Mail, AlertTriangle,
 } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { trpc } from '@/lib/trpc';
@@ -65,6 +65,15 @@ export default function CVTailor() {
   const [history, setHistory] = useState<any[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
 
+  // v3 state
+  const [includeCoverLetter, setIncludeCoverLetter] = useState(false);
+  const [parseError, setParseError] = useState<string | null>(null);
+  const [parseMethod, setParseMethod] = useState<'docx' | 'pdf-text' | 'pdf-ocr' | 'manual'>('manual');
+  const [lastResult, setLastResult] = useState<any | null>(null);
+  const [selectedForCompare, setSelectedForCompare] = useState<string[]>([]);
+  const [compareData, setCompareData] = useState<any | null>(null);
+  const [comparing, setComparing] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
 
@@ -110,6 +119,7 @@ export default function CVTailor() {
       pushToast('err', t('cv.upload.tooLarge', isAr ? 'الملف أكبر من 5MB' : 'File exceeds 5MB'));
       return;
     }
+    setParseError(null);
     setUploading(true);
     try {
       const buf = await file.arrayBuffer();
@@ -122,6 +132,7 @@ export default function CVTailor() {
         mimeType: file.type || '',
       });
       const ext = res.extracted;
+      setParseMethod(res.parseMethod || 'manual');
       setForm({
         fullName: ext.fullName || '',
         email: ext.email || '',
@@ -142,7 +153,9 @@ export default function CVTailor() {
       if (ext.currentRole && !targetRole) setTargetRole(ext.currentRole);
       pushToast('ok', t('cv.upload.successToast', isAr ? 'تم استخراج البيانات' : 'Extracted successfully'));
     } catch (e: any) {
-      pushToast('err', e?.message || t('cv.upload.errorToast', isAr ? 'فشل الاستخراج' : 'Upload failed'));
+      const msg = e?.message || (isAr ? 'فشل الاستخراج' : 'Upload failed');
+      setParseError(msg);
+      pushToast('err', msg);
     } finally {
       setUploading(false);
     }
@@ -159,6 +172,7 @@ export default function CVTailor() {
     }
     setGenerating(true);
     setLoadingMsgIdx(0);
+    setLastResult(null);
     try {
       const res = await trpc.cv.generate({
         userData: form,
@@ -167,7 +181,11 @@ export default function CVTailor() {
         jobDescription: jobDescription.trim(),
         template,
         language,
+        includeCoverLetter,
+        calculateATS: true,
+        sourceParseMethod: parseMethod,
       });
+      setLastResult(res);
       pushToast('ok', t('cv.generate.success', isAr ? 'تم الإنشاء!' : 'Generated!'));
       if (res.docxUrl) window.open(res.docxUrl, '_blank');
       if (res.pdfUrl) window.open(res.pdfUrl, '_blank');
@@ -176,6 +194,34 @@ export default function CVTailor() {
       pushToast('err', e?.message || t('cv.generate.error', isAr ? 'فشل الإنشاء' : 'Generation failed'));
     } finally {
       setGenerating(false);
+    }
+  }
+
+  function toggleCompareSelection(id: string) {
+    setSelectedForCompare((prev) => {
+      if (prev.includes(id)) return prev.filter((x) => x !== id);
+      if (prev.length >= 2) return prev;
+      return [...prev, id];
+    });
+  }
+
+  async function openCompareView() {
+    if (selectedForCompare.length !== 2) return;
+    setComparing(true);
+    try {
+      const rows = history.filter((h) => selectedForCompare.includes(h.id));
+      const sorted = rows.sort(
+        (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      );
+      const data = await trpc.cv.compareCvs({
+        olderId: sorted[0].id,
+        newerId: sorted[1].id,
+      });
+      setCompareData(data);
+    } catch (e: any) {
+      pushToast('err', e?.message || (isAr ? 'فشل المقارنة' : 'Compare failed'));
+    } finally {
+      setComparing(false);
     }
   }
 
@@ -263,6 +309,46 @@ export default function CVTailor() {
         <Section title={t('cv.upload.title', isAr ? 'رفع سيرتي الذاتية' : 'Upload My CV')}
           subtitle={t('cv.upload.subtitle', isAr ? 'اختياري — ارفع سيرتك الحالية لاستخراج البيانات تلقائياً' : 'Optional — upload to auto-fill the form below')}
           icon={<Upload size={18} />}>
+
+          {/* Upload Helper Card — v3 */}
+          <div style={{
+            background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: 10,
+            padding: 14, marginBottom: 14, fontFamily: 'Cairo, Inter, sans-serif',
+          }}>
+            <div style={{ fontWeight: 900, fontSize: 13, color: '#1E3A8A', marginBottom: 8 }}>
+              {t('cv.upload.supportedFormats', isAr ? 'الصيغ المدعومة' : 'Supported formats')}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12, color: 'var(--wsl-ink-2, #374151)' }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                <span style={{ color: '#16a34a', fontSize: 16, lineHeight: 1 }}>●</span>
+                <span>
+                  <strong>DOCX</strong> — {t('cv.upload.docxDesc', isAr ? 'مستند Word — دقة الاستخراج 95%+' : 'Word document — 95%+ extraction accuracy')}
+                  <span style={{ color: '#16a34a', fontSize: 11, marginInlineStart: 6 }}>
+                    {t('cv.upload.bestAccuracy', isAr ? '(الأفضل)' : '(Best)')}
+                  </span>
+                </span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                <span style={{ color: '#0A8F84', fontSize: 16, lineHeight: 1 }}>●</span>
+                <span>
+                  <strong>PDF (from Word)</strong> — {t('cv.upload.pdfWordDesc', isAr ? 'PDF مُنشأ من Word — دقة 85-90%' : 'PDF created from Word — 85-90% accuracy')}
+                  <span style={{ color: '#0A8F84', fontSize: 11, marginInlineStart: 6 }}>
+                    {t('cv.upload.goodAccuracy', isAr ? '(جيد)' : '(Good)')}
+                  </span>
+                </span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                <span style={{ color: '#d97706', fontSize: 16, lineHeight: 1 }}>●</span>
+                <span>
+                  <strong>PDF (Scanned)</strong> — {t('cv.upload.pdfScannedDesc', isAr ? 'PDF ممسوح ضوئياً — يستخدم OCR' : 'Scanned PDF — uses OCR')}
+                  <span style={{ color: '#d97706', fontSize: 11, marginInlineStart: 6 }}>
+                    {t('cv.upload.slowerOcr', isAr ? '(أبطأ)' : '(Slower)')}
+                  </span>
+                </span>
+              </div>
+            </div>
+          </div>
+
           <div
             onClick={() => fileInputRef.current?.click()}
             onDragOver={(e) => e.preventDefault()}
@@ -311,6 +397,38 @@ export default function CVTailor() {
               if (fileInputRef.current) fileInputRef.current.value = '';
             }}
           />
+
+          {/* Smart Error Message — v3 */}
+          {parseError && (
+            <div style={{
+              marginTop: 14, padding: 14, borderRadius: 10,
+              background: '#FEF2F2', border: '1px solid #FECACA',
+              fontFamily: 'Cairo, Inter, sans-serif',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                <AlertTriangle size={16} style={{ color: '#B91C1C' }} />
+                <div style={{ fontWeight: 900, fontSize: 13, color: '#991B1B' }}>
+                  {t('cv.errors.parseFailed', isAr ? 'لم نتمكن من قراءة الملف' : 'Could not read the file')}
+                </div>
+              </div>
+              <div style={{ fontSize: 12, color: '#7F1D1D', marginBottom: 10 }}>{parseError}</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, color: 'var(--wsl-ink-2)' }}>
+                <div>✅ {t('cv.errors.solution1', isAr ? 'ارفع ملف Word (.docx) — أدق استخراج' : 'Upload a Word file (.docx) — highest accuracy')}</div>
+                <div>✅ {t('cv.errors.solution2', isAr ? 'أو أعد إنشاء PDF من Word/Google Docs' : 'Or re-export the PDF from Word/Google Docs')}</div>
+                <button
+                  onClick={() => { setParseError(null); setParseMethod('manual'); pushToast('ok', isAr ? 'يمكنك الآن ملء البيانات يدوياً' : 'You can now fill fields manually'); }}
+                  style={{
+                    marginTop: 8, padding: '6px 12px', border: '1px solid #0A8F84',
+                    background: '#fff', color: '#0A8F84', borderRadius: 6,
+                    fontWeight: 800, fontSize: 12, cursor: 'pointer', alignSelf: 'flex-start',
+                    fontFamily: 'Cairo, Inter, sans-serif',
+                  }}
+                >
+                  {t('cv.errors.fillManually', isAr ? 'املأ البيانات يدوياً' : 'Fill manually')} →
+                </button>
+              </div>
+            </div>
+          )}
         </Section>
 
         <Section title={t('cv.form.sectionYourInfo', isAr ? 'معلوماتك الشخصية' : 'Your Information')}
@@ -567,6 +685,33 @@ export default function CVTailor() {
         <Section title={t('cv.generate.title', isAr ? 'جاهز للإنشاء؟' : 'Ready to Generate?')}
           subtitle={t('cv.generate.subtitle', isAr ? '10 توكن لكل سيرة (DOCX + PDF)' : '10 tokens per CV (DOCX + PDF)')}
           icon={<Download size={18} />}>
+
+          {/* Cover Letter Checkbox — v3 */}
+          <label style={{
+            display: 'flex', alignItems: 'flex-start', gap: 10, padding: 12,
+            background: '#FFFBEB', border: '1px solid #FCD34D', borderRadius: 10,
+            marginBottom: 12, cursor: 'pointer', fontFamily: 'Cairo, Inter, sans-serif',
+          }}>
+            <input
+              type="checkbox"
+              checked={includeCoverLetter}
+              onChange={(e) => setIncludeCoverLetter(e.target.checked)}
+              style={{ marginTop: 2, accentColor: '#D97706' }}
+            />
+            <div style={{ flex: 1, fontSize: 13, color: 'var(--wsl-ink-2)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                <Mail size={14} style={{ color: '#D97706' }} />
+                <strong>{t('cv.coverLetter.label', isAr ? 'أضف خطاب تقديم (Cover Letter)' : 'Add a Cover Letter')}</strong>
+                <span style={{ background: '#D97706', color: '#fff', padding: '2px 8px', borderRadius: 999, fontSize: 11, fontWeight: 800 }}>
+                  +5 {t('common.tokens', isAr ? 'توكن' : 'tokens')}
+                </span>
+              </div>
+              <div style={{ marginTop: 4, color: 'var(--wsl-ink-3)', fontSize: 12 }}>
+                {t('cv.coverLetter.description', isAr ? 'بنفس لغة ونبرة السيرة الذاتية، مخصص للوظيفة' : 'Same language & tone as the CV, tailored to the job')}
+              </div>
+            </div>
+          </label>
+
           <button
             onClick={handleGenerate}
             disabled={generating}
@@ -591,14 +736,88 @@ export default function CVTailor() {
             ) : (
               <>
                 <Sparkles size={16} />
-                {t('cv.generate.button', isAr ? 'إنشاء السيرة — 10 توكن' : 'Generate CV — 10 tokens')}
+                {includeCoverLetter
+                  ? (isAr ? 'إنشاء السيرة + خطاب التقديم — 15 توكن' : 'Generate CV + Cover Letter — 15 tokens')
+                  : t('cv.generate.button', isAr ? 'إنشاء السيرة — 10 توكن' : 'Generate CV — 10 tokens')}
               </>
             )}
           </button>
+
+          {/* ATS Score + Cover Letter downloads — v3 */}
+          {lastResult && (
+            <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {lastResult.atsScore && (
+                <ATSScoreCard atsScore={lastResult.atsScore} isAr={isAr} t={t} />
+              )}
+              {lastResult.coverLetter && (lastResult.coverLetter.docxUrl || lastResult.coverLetter.pdfUrl) && (
+                <div style={{
+                  padding: 14, borderRadius: 10,
+                  background: '#FFFBEB', border: '1px solid #FCD34D',
+                  fontFamily: 'Cairo, Inter, sans-serif',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                    <Mail size={16} style={{ color: '#D97706' }} />
+                    <div style={{ fontWeight: 900, fontSize: 14, color: 'var(--wsl-ink)' }}>
+                      {t('cv.coverLetter.ready', isAr ? 'خطاب التقديم جاهز' : 'Cover Letter Ready')}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    {lastResult.coverLetter.docxUrl && (
+                      <a href={lastResult.coverLetter.docxUrl} target="_blank" rel="noopener noreferrer" style={actionBtn}>
+                        <Download size={12} /> {t('cv.coverLetter.downloadDocx', isAr ? 'تحميل خطاب التقديم DOCX' : 'Download Cover Letter DOCX')}
+                      </a>
+                    )}
+                    {lastResult.coverLetter.pdfUrl && (
+                      <a href={lastResult.coverLetter.pdfUrl} target="_blank" rel="noopener noreferrer" style={actionBtn}>
+                        <Download size={12} /> {t('cv.coverLetter.downloadPdf', isAr ? 'تحميل خطاب التقديم PDF' : 'Download Cover Letter PDF')}
+                      </a>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </Section>
 
         <Section title={t('cv.history.title', isAr ? 'سيرك السابقة' : 'Your Previous CVs')}
           icon={<FileText size={18} />}>
+
+          {/* Compare header — v3 */}
+          {history.length >= 2 && (
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              marginBottom: 10, padding: '8px 12px', borderRadius: 8,
+              background: '#F3F4F6', fontFamily: 'Cairo, Inter, sans-serif', fontSize: 12,
+              color: 'var(--wsl-ink-2)', gap: 10, flexWrap: 'wrap',
+            }}>
+              <div>
+                {t('cv.history.compareHint', isAr ? 'حدّد سيرتين من القائمة لمقارنتهما' : 'Select two CVs below to compare')}
+                {selectedForCompare.length > 0 && (
+                  <span style={{ marginInlineStart: 8, fontWeight: 800, color: '#0A8F84' }}>
+                    ({selectedForCompare.length}/2)
+                  </span>
+                )}
+              </div>
+              {selectedForCompare.length === 2 && (
+                <button
+                  onClick={openCompareView}
+                  disabled={comparing}
+                  style={{
+                    padding: '6px 14px', borderRadius: 8, border: 'none',
+                    background: comparing ? '#E5E7EB' : 'linear-gradient(135deg, #0A8F84, #0ea5e9)',
+                    color: comparing ? '#9CA3AF' : '#fff',
+                    fontWeight: 900, fontSize: 12, cursor: comparing ? 'not-allowed' : 'pointer',
+                    fontFamily: 'Cairo, Inter, sans-serif',
+                    display: 'inline-flex', alignItems: 'center', gap: 6,
+                  }}
+                >
+                  {comparing ? <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} /> : <GitCompare size={12} />}
+                  {t('cv.history.compareSelected', isAr ? 'قارن المحدد' : 'Compare Selected')}
+                </button>
+              )}
+            </div>
+          )}
+
           {historyLoading ? (
             <div style={{ padding: 40, textAlign: 'center' }}>
               <Loader2 size={24} style={{ color: '#0A8F84', animation: 'spin 1s linear infinite' }} />
@@ -615,52 +834,314 @@ export default function CVTailor() {
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {history.map((cv) => (
-                <div key={cv.id} style={{
-                  padding: 14, borderRadius: 10, border: '1px solid var(--wsl-border, #E5E7EB)',
-                  background: '#fff', display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap',
-                }}>
-                  <div style={{ flex: 1, minWidth: 200 }}>
-                    <div style={{ fontWeight: 900, fontSize: 14, color: 'var(--wsl-ink)', fontFamily: 'Cairo, Inter, sans-serif' }}>
-                      {cv.target_role}
+              {history.map((cv) => {
+                const isSelected = selectedForCompare.includes(cv.id);
+                const disabled = !isSelected && selectedForCompare.length >= 2;
+                const atsOverall = cv.ats_score?.overall;
+                return (
+                  <div key={cv.id} style={{
+                    padding: 14, borderRadius: 10,
+                    border: isSelected ? '2px solid #0A8F84' : '1px solid var(--wsl-border, #E5E7EB)',
+                    background: isSelected ? 'rgba(10,143,132,0.04)' : '#fff',
+                    display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap',
+                  }}>
+                    {history.length >= 2 && (
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        disabled={disabled}
+                        onChange={() => toggleCompareSelection(cv.id)}
+                        style={{ width: 16, height: 16, cursor: disabled ? 'not-allowed' : 'pointer', accentColor: '#0A8F84' }}
+                      />
+                    )}
+                    <div style={{ flex: 1, minWidth: 200 }}>
+                      <div style={{ fontWeight: 900, fontSize: 14, color: 'var(--wsl-ink)', fontFamily: 'Cairo, Inter, sans-serif', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        {cv.target_role}
+                        {typeof atsOverall === 'number' && atsOverall > 0 && (
+                          <span style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 4,
+                            padding: '2px 8px', borderRadius: 999, fontSize: 11, fontWeight: 900,
+                            background: atsOverall >= 85 ? '#DCFCE7' : atsOverall >= 70 ? '#FEF9C3' : atsOverall >= 50 ? '#FFEDD5' : '#FEE2E2',
+                            color: atsOverall >= 85 ? '#166534' : atsOverall >= 70 ? '#854D0E' : atsOverall >= 50 ? '#9A3412' : '#991B1B',
+                          }}>
+                            <BarChart3 size={10} /> ATS {atsOverall}
+                          </span>
+                        )}
+                        {cv.cover_letter_generated && (
+                          <span style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 4,
+                            padding: '2px 8px', borderRadius: 999, fontSize: 11, fontWeight: 800,
+                            background: '#FFFBEB', color: '#92400E', border: '1px solid #FCD34D',
+                          }}>
+                            <Mail size={10} /> CL
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: 12, color: 'var(--wsl-ink-3)', marginTop: 2, fontFamily: 'Cairo, Inter, sans-serif' }}>
+                        {cv.target_company || t('cv.history.noCompany', isAr ? 'بدون شركة محددة' : 'No specific company')}
+                        {' · '}
+                        <span style={{ textTransform: 'capitalize' }}>{cv.template.replace('-', ' ')}</span>
+                        {' · '}
+                        {new Date(cv.created_at).toLocaleDateString(isAr ? 'ar-SA' : 'en-US', {
+                          year: 'numeric', month: 'short', day: 'numeric',
+                        })}
+                      </div>
                     </div>
-                    <div style={{ fontSize: 12, color: 'var(--wsl-ink-3)', marginTop: 2, fontFamily: 'Cairo, Inter, sans-serif' }}>
-                      {cv.target_company || t('cv.history.noCompany', isAr ? 'بدون شركة محددة' : 'No specific company')}
-                      {' · '}
-                      <span style={{ textTransform: 'capitalize' }}>{cv.template.replace('-', ' ')}</span>
-                      {' · '}
-                      {new Date(cv.created_at).toLocaleDateString(isAr ? 'ar-SA' : 'en-US', {
-                        year: 'numeric', month: 'short', day: 'numeric',
-                      })}
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                      {cv.docxUrl && (
+                        <a href={cv.docxUrl} target="_blank" rel="noopener noreferrer" style={actionBtn}>
+                          <Download size={12} /> DOCX
+                        </a>
+                      )}
+                      {cv.pdfUrl && (
+                        <a href={cv.pdfUrl} target="_blank" rel="noopener noreferrer" style={actionBtn}>
+                          <Download size={12} /> PDF
+                        </a>
+                      )}
+                      {cv.coverLetterDocxUrl && (
+                        <a href={cv.coverLetterDocxUrl} target="_blank" rel="noopener noreferrer" style={{ ...actionBtn, borderColor: '#FCD34D', color: '#92400E' }}>
+                          <Mail size={12} /> CL DOCX
+                        </a>
+                      )}
+                      {cv.coverLetterPdfUrl && (
+                        <a href={cv.coverLetterPdfUrl} target="_blank" rel="noopener noreferrer" style={{ ...actionBtn, borderColor: '#FCD34D', color: '#92400E' }}>
+                          <Mail size={12} /> CL PDF
+                        </a>
+                      )}
+                      <button onClick={() => handleRegenerate(cv)} style={actionBtn}>
+                        <RefreshCw size={12} /> {t('cv.history.regenerate', isAr ? 'إعادة إنشاء' : 'Regenerate')}
+                      </button>
+                      <button onClick={() => handleDelete(cv.id)} style={{ ...actionBtn, color: '#DC2626', borderColor: '#FECACA' }}>
+                        <Trash2 size={12} /> {t('cv.history.delete', isAr ? 'حذف' : 'Delete')}
+                      </button>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                    {cv.docxUrl && (
-                      <a href={cv.docxUrl} target="_blank" rel="noopener noreferrer" style={actionBtn}>
-                        <Download size={12} /> DOCX
-                      </a>
-                    )}
-                    {cv.pdfUrl && (
-                      <a href={cv.pdfUrl} target="_blank" rel="noopener noreferrer" style={actionBtn}>
-                        <Download size={12} /> PDF
-                      </a>
-                    )}
-                    <button onClick={() => handleRegenerate(cv)} style={actionBtn}>
-                      <RefreshCw size={12} /> {t('cv.history.regenerate', isAr ? 'إعادة إنشاء' : 'Regenerate')}
-                    </button>
-                    <button onClick={() => handleDelete(cv.id)} style={{ ...actionBtn, color: '#DC2626', borderColor: '#FECACA' }}>
-                      <Trash2 size={12} /> {t('cv.history.delete', isAr ? 'حذف' : 'Delete')}
-                    </button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </Section>
       </div>
 
+      {/* Compare Modal — v3 */}
+      {compareData && (
+        <CompareModal
+          data={compareData}
+          isAr={isAr}
+          t={t}
+          onClose={() => { setCompareData(null); setSelectedForCompare([]); }}
+        />
+      )}
+
       <style>{`@keyframes spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }`}</style>
     </DashboardLayout>
+  );
+}
+
+function ATSScoreCard({ atsScore, isAr, t }: { atsScore: any; isAr: boolean; t: any }) {
+  const overall = atsScore.overall || 0;
+  const color = overall >= 85 ? '#16a34a' : overall >= 70 ? '#ca8a04' : overall >= 50 ? '#ea580c' : '#dc2626';
+  const bg = overall >= 85 ? '#DCFCE7' : overall >= 70 ? '#FEF9C3' : overall >= 50 ? '#FFEDD5' : '#FEE2E2';
+  const bd = atsScore.breakdown || {};
+  const km = bd.keywordMatch || {};
+  const fs = bd.formatSafety || {};
+  const ln = bd.length || {};
+  const st = bd.structure || {};
+  const improvements: string[] = Array.isArray(atsScore.improvements) ? atsScore.improvements : [];
+  const missing: string[] = Array.isArray(km.missing) ? km.missing : [];
+
+  return (
+    <div style={{
+      padding: 18, borderRadius: 12, background: '#fff',
+      border: '1px solid var(--wsl-border, #E5E7EB)',
+      fontFamily: 'Cairo, Inter, sans-serif',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+        <BarChart3 size={18} style={{ color: '#0A8F84' }} />
+        <div style={{ fontWeight: 900, fontSize: 15, color: 'var(--wsl-ink)' }}>
+          {t('cv.ats.title', isAr ? 'درجة توافق ATS' : 'ATS Compatibility Score')}
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 14, flexWrap: 'wrap' }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          width: 96, height: 96, borderRadius: '50%', background: bg,
+          color, fontSize: 28, fontWeight: 900,
+        }}>
+          {overall}
+        </div>
+        <div>
+          <div style={{ fontSize: 18, fontWeight: 900, color }}>{atsScore.verdict || '—'}</div>
+          <div style={{ fontSize: 12, color: 'var(--wsl-ink-3)', marginTop: 4 }}>
+            {t('cv.ats.basedOnJd', isAr ? 'محسوبة من وصف الوظيفة' : 'Based on the job description')}
+          </div>
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10, fontSize: 12, marginBottom: 14 }}>
+        <ScoreBar label={t('cv.ats.keywordMatch', isAr ? 'مطابقة الكلمات المفتاحية' : 'Keyword Match')} score={km.score || 0} max={50} />
+        <ScoreBar label={t('cv.ats.formatSafety', isAr ? 'سلامة التنسيق' : 'Format Safety')} score={fs.score || 0} max={20} />
+        <ScoreBar label={t('cv.ats.length', isAr ? 'الطول' : 'Length')} score={ln.score || 0} max={15} />
+        <ScoreBar label={t('cv.ats.structure', isAr ? 'الهيكل' : 'Structure')} score={st.score || 0} max={15} />
+      </div>
+
+      {missing.length > 0 && (
+        <div style={{ padding: 10, borderRadius: 8, background: '#FFFBEB', border: '1px solid #FCD34D', marginBottom: 12 }}>
+          <div style={{ fontWeight: 900, fontSize: 12, color: '#92400E', marginBottom: 6 }}>
+            {t('cv.ats.missingKeywords', isAr ? 'كلمات مفقودة' : 'Missing Keywords')}
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {missing.map((kw, i) => (
+              <span key={i} style={{
+                padding: '3px 8px', background: '#fff', border: '1px solid #FCD34D',
+                borderRadius: 999, fontSize: 11, color: '#92400E', fontWeight: 800,
+              }}>
+                {kw}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {improvements.length > 0 && (
+        <div>
+          <div style={{ fontWeight: 900, fontSize: 12, color: 'var(--wsl-ink)', marginBottom: 6 }}>
+            {t('cv.ats.improvements', isAr ? 'اقتراحات للتحسين' : 'Improvements')}
+          </div>
+          <ul style={{ margin: 0, paddingInlineStart: 18, fontSize: 12, color: 'var(--wsl-ink-2)', lineHeight: 1.6 }}>
+            {improvements.map((tip, i) => (
+              <li key={i}>{tip}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ScoreBar({ label, score, max }: { label: string; score: number; max: number }) {
+  const pct = Math.min(100, Math.max(0, (score / max) * 100));
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4, color: 'var(--wsl-ink-2)' }}>
+        <span style={{ fontWeight: 800, fontFamily: 'Cairo, Inter, sans-serif' }}>{label}</span>
+        <span style={{ fontWeight: 900, fontFamily: 'Cairo, Inter, sans-serif' }}>{score}/{max}</span>
+      </div>
+      <div style={{ height: 6, background: '#F3F4F6', borderRadius: 999, overflow: 'hidden' }}>
+        <div style={{ width: `${pct}%`, height: '100%', background: 'linear-gradient(90deg, #0A8F84, #0ea5e9)' }} />
+      </div>
+    </div>
+  );
+}
+
+function CompareModal({ data, isAr, t, onClose }: { data: any; isAr: boolean; t: any; onClose: () => void }) {
+  const metrics = data.metrics || {};
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)',
+        zIndex: 9998, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20,
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: '#fff', borderRadius: 14, maxWidth: 920, width: '100%',
+          maxHeight: '90vh', overflow: 'auto', padding: 24,
+          fontFamily: 'Cairo, Inter, sans-serif',
+        }}
+        dir={isAr ? 'rtl' : 'ltr'}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <GitCompare size={20} style={{ color: '#0A8F84' }} />
+            <h2 style={{ margin: 0, fontSize: 18, fontWeight: 900, color: 'var(--wsl-ink)' }}>
+              {t('cv.compare.title', isAr ? 'مقارنة السيرتين' : 'CV Comparison')}
+            </h2>
+          </div>
+          <button onClick={onClose} style={{
+            border: 'none', background: '#F3F4F6', cursor: 'pointer',
+            width: 32, height: 32, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <X size={16} />
+          </button>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+          <div style={{ padding: 12, borderRadius: 10, border: '1px solid #FECACA', background: '#FEF2F2' }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: '#991B1B', marginBottom: 4 }}>
+              {isAr ? 'الأقدم' : 'Older'}
+            </div>
+            <div style={{ fontWeight: 900, fontSize: 13, color: 'var(--wsl-ink)' }}>{data.older?.targetRole || '—'}</div>
+            <div style={{ fontSize: 11, color: 'var(--wsl-ink-3)', marginTop: 2, textTransform: 'capitalize' }}>
+              {(data.older?.template || '').replace('-', ' ')}
+              {' · '}
+              {data.older?.createdAt && new Date(data.older.createdAt).toLocaleDateString(isAr ? 'ar-SA' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+            </div>
+            {typeof data.older?.atsScore === 'number' && (
+              <div style={{ marginTop: 4, fontSize: 11, color: '#991B1B', fontWeight: 800 }}>ATS {data.older.atsScore}</div>
+            )}
+          </div>
+          <div style={{ padding: 12, borderRadius: 10, border: '1px solid #A7F3D0', background: '#ECFDF5' }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: '#065F46', marginBottom: 4 }}>
+              {isAr ? 'الأحدث' : 'Newer'}
+            </div>
+            <div style={{ fontWeight: 900, fontSize: 13, color: 'var(--wsl-ink)' }}>{data.newer?.targetRole || '—'}</div>
+            <div style={{ fontSize: 11, color: 'var(--wsl-ink-3)', marginTop: 2, textTransform: 'capitalize' }}>
+              {(data.newer?.template || '').replace('-', ' ')}
+              {' · '}
+              {data.newer?.createdAt && new Date(data.newer.createdAt).toLocaleDateString(isAr ? 'ar-SA' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+            </div>
+            {typeof data.newer?.atsScore === 'number' && (
+              <div style={{ marginTop: 4, fontSize: 11, color: '#065F46', fontWeight: 800 }}>ATS {data.newer.atsScore}</div>
+            )}
+          </div>
+        </div>
+
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ fontWeight: 900, fontSize: 13, marginBottom: 8, color: 'var(--wsl-ink)' }}>
+            {t('cv.compare.changes', isAr ? 'الفروقات' : 'Changes')}
+          </div>
+          <div style={{
+            padding: 14, borderRadius: 10, border: '1px solid var(--wsl-border, #E5E7EB)',
+            background: '#FAFAFA', fontSize: 12, lineHeight: 1.7,
+            whiteSpace: 'pre-wrap', maxHeight: 380, overflow: 'auto',
+            fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+          }}>
+            {(data.segments || []).map((seg: any, i: number) => (
+              <span
+                key={i}
+                style={{
+                  background: seg.type === 'added' ? '#DCFCE7' : seg.type === 'removed' ? '#FEE2E2' : 'transparent',
+                  color: seg.type === 'added' ? '#166534' : seg.type === 'removed' ? '#991B1B' : 'var(--wsl-ink-2)',
+                  textDecoration: seg.type === 'removed' ? 'line-through' : 'none',
+                  padding: seg.type === 'unchanged' ? 0 : '1px 2px',
+                  borderRadius: 3,
+                }}
+              >
+                {seg.text}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <div style={{
+          padding: 12, borderRadius: 10, background: '#EFF6FF',
+          border: '1px solid #BFDBFE', fontSize: 12,
+          display: 'flex', gap: 16, flexWrap: 'wrap',
+        }}>
+          <span>✅ <strong>{metrics.wordsAdded || 0}</strong> {t('cv.compare.wordsAdded', isAr ? 'كلمة مضافة' : 'words added')}</span>
+          <span>❌ <strong>{metrics.wordsRemoved || 0}</strong> {t('cv.compare.wordsRemoved', isAr ? 'كلمة محذوفة' : 'words removed')}</span>
+          {metrics.atsDelta !== null && typeof metrics.atsDelta === 'number' && (
+            <span style={{ color: metrics.atsDelta >= 0 ? '#166534' : '#991B1B', fontWeight: 800 }}>
+              📊 ATS Delta: {metrics.atsDelta >= 0 ? '+' : ''}{metrics.atsDelta}
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 

@@ -15,10 +15,18 @@ import {
   type CVData,
   type CVTemplate,
 } from '../lib/cv-generator';
+import { calculateATSScore, type ATSScore } from '../lib/ats-scorer';
+import {
+  generateCoverLetterContent,
+  generateCoverLetterDocx,
+  generateCoverLetterPdf,
+} from '../lib/cover-letter-generator';
 
 const TEMPLATE = z.enum(['mit-classic', 'harvard-executive']);
 const LANGUAGE = z.enum(['ar', 'en']);
+const PARSE_METHOD = z.enum(['docx', 'pdf-text', 'pdf-ocr', 'manual']);
 const TOKEN_COST = 10;
+const COVER_LETTER_EXTRA_COST = 5;
 
 const CV_BUILDER_SYSTEM = `You are an expert ATS-optimized CV writer trained on MIT Career Services and Harvard Business School standards.
 
@@ -84,8 +92,11 @@ export const cvRouter = router({
       }
 
       let rawText: string;
+      let parseMethod: 'docx' | 'pdf-text' | 'pdf-ocr' | 'manual' = 'manual';
       try {
-        rawText = await extractTextFromFile(buffer, input.mimeType, input.fileName);
+        const extracted = await extractTextFromFile(buffer, input.mimeType, input.fileName);
+        rawText = extracted.text;
+        parseMethod = extracted.method;
       } catch (err: any) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
@@ -96,7 +107,7 @@ export const cvRouter = router({
       if (!rawText || rawText.trim().length < 80) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
-          message: 'Could not extract text from file. Is it a scanned image?',
+          message: 'لم نتمكن من استخراج نص كافٍ من الملف. ارفع ملف Word (.docx) للحصول على أدق استخراج.',
         });
       }
 
@@ -119,6 +130,7 @@ export const cvRouter = router({
         success: true,
         extracted,
         textLength: rawText.length,
+        parseMethod,
       };
     }),
 
@@ -146,8 +158,13 @@ export const cvRouter = router({
       jobDescription: z.string().default(''),
       template: TEMPLATE,
       language: LANGUAGE.default('en'),
+      includeCoverLetter: z.boolean().default(false),
+      calculateATS: z.boolean().default(true),
+      sourceParseMethod: PARSE_METHOD.default('manual'),
     }))
     .mutation(async ({ input, ctx }) => {
+      const totalCost = TOKEN_COST + (input.includeCoverLetter ? COVER_LETTER_EXTRA_COST : 0);
+
       // Token check
       const { data: profile, error: profErr } = await ctx.supabase
         .from('profiles')
@@ -159,10 +176,10 @@ export const cvRouter = router({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'User profile not found' });
       }
 
-      if ((profile.token_balance || 0) < TOKEN_COST) {
+      if ((profile.token_balance || 0) < totalCost) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
-          message: `رصيد التوكن غير كافٍ. تحتاج ${TOKEN_COST} توكن.`,
+          message: `رصيد التوكن غير كافٍ. تحتاج ${totalCost} توكن.`,
         });
       }
 
@@ -239,6 +256,79 @@ export const cvRouter = router({
         ctx.supabase.storage.from('cv-exports').createSignedUrl(pdfPath, weekSec),
       ]);
 
+      // ATS Score (if JD provided and enabled)
+      let atsScore: ATSScore | null = null;
+      if (input.calculateATS && input.jobDescription && input.jobDescription.trim().length > 20) {
+        try {
+          atsScore = await calculateATSScore(cvData, input.jobDescription, input.language);
+        } catch (err: any) {
+          console.error('[cv.generate] ATS scoring failed:', err?.message);
+          // non-fatal — CV still generated
+        }
+      }
+
+      // Cover Letter (optional add-on)
+      let coverLetterDocxPath: string | null = null;
+      let coverLetterPdfPath: string | null = null;
+      let coverLetterDocxUrl: string | null = null;
+      let coverLetterPdfUrl: string | null = null;
+
+      if (input.includeCoverLetter && input.jobDescription && input.jobDescription.trim().length > 20) {
+        try {
+          const clContent = await generateCoverLetterContent({
+            cvData,
+            jobDescription: input.jobDescription,
+            language: input.language,
+            targetRole: input.targetRole,
+            targetCompany: input.targetCompany,
+          });
+
+          const candidateInfo = {
+            name: cvData.fullName,
+            email: cvData.contact.email,
+            phone: cvData.contact.phone,
+            location: cvData.contact.location,
+          };
+
+          const [clDocxBuf, clPdfBuf] = await Promise.all([
+            generateCoverLetterDocx(clContent, candidateInfo, input.language),
+            Promise.resolve(generateCoverLetterPdf(clContent, candidateInfo, input.language)),
+          ]);
+
+          coverLetterDocxPath = `${ctx.user.id}/cover-letters/${ts}_${safeRole}_cl.docx`;
+          coverLetterPdfPath = `${ctx.user.id}/cover-letters/${ts}_${safeRole}_cl.pdf`;
+
+          const [clDocxErr, clPdfErr] = await Promise.all([
+            ctx.supabase.storage.from('cv-exports').upload(coverLetterDocxPath, clDocxBuf, {
+              contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+              upsert: false,
+            }).then((r: any) => r.error),
+            ctx.supabase.storage.from('cv-exports').upload(coverLetterPdfPath, clPdfBuf, {
+              contentType: 'application/pdf',
+              upsert: false,
+            }).then((r: any) => r.error),
+          ]);
+
+          if (clDocxErr) throw new Error(`Cover letter DOCX upload failed: ${clDocxErr.message}`);
+          if (clPdfErr) throw new Error(`Cover letter PDF upload failed: ${clPdfErr.message}`);
+
+          const [clDocxSigned, clPdfSigned] = await Promise.all([
+            ctx.supabase.storage.from('cv-exports').createSignedUrl(coverLetterDocxPath, weekSec),
+            ctx.supabase.storage.from('cv-exports').createSignedUrl(coverLetterPdfPath, weekSec),
+          ]);
+          coverLetterDocxUrl = clDocxSigned.data?.signedUrl || null;
+          coverLetterPdfUrl = clPdfSigned.data?.signedUrl || null;
+        } catch (err: any) {
+          console.error('[cv.generate] cover letter failed:', err?.message);
+          // non-fatal — keep CV. Deduct only CV tokens below.
+          coverLetterDocxPath = null;
+          coverLetterPdfPath = null;
+        }
+      }
+
+      const coverLetterGenerated = !!(coverLetterDocxPath && coverLetterPdfPath);
+      const actualCost = TOKEN_COST + (coverLetterGenerated ? COVER_LETTER_EXTRA_COST : 0);
+
       // Persist record
       const { data: saved, error: saveErr } = await ctx.supabase
         .from('generated_cvs')
@@ -253,7 +343,12 @@ export const cvRouter = router({
           content_json: cvData,
           docx_path: docxPath,
           pdf_path: pdfPath,
-          tokens_used: TOKEN_COST,
+          tokens_used: actualCost,
+          ats_score: atsScore || null,
+          cover_letter_generated: coverLetterGenerated,
+          cover_letter_docx_path: coverLetterDocxPath,
+          cover_letter_pdf_path: coverLetterPdfPath,
+          source_parse_method: input.sourceParseMethod,
         })
         .select()
         .single();
@@ -265,7 +360,7 @@ export const cvRouter = router({
       // Deduct tokens
       await ctx.supabase
         .from('profiles')
-        .update({ token_balance: (profile.token_balance || 0) - TOKEN_COST })
+        .update({ token_balance: (profile.token_balance || 0) - actualCost })
         .eq('id', ctx.user.id);
 
       return {
@@ -273,15 +368,126 @@ export const cvRouter = router({
         cvData,
         docxUrl: docxSigned.data?.signedUrl || null,
         pdfUrl: pdfSigned.data?.signedUrl || null,
-        tokensUsed: TOKEN_COST,
-        tokensRemaining: (profile.token_balance || 0) - TOKEN_COST,
+        atsScore,
+        coverLetter: coverLetterGenerated
+          ? { docxUrl: coverLetterDocxUrl, pdfUrl: coverLetterPdfUrl }
+          : null,
+        tokensUsed: actualCost,
+        tokensRemaining: (profile.token_balance || 0) - actualCost,
+      };
+    }),
+
+  compareCvs: protectedProcedure
+    .input(z.object({
+      olderId: z.string().uuid(),
+      newerId: z.string().uuid(),
+    }))
+    .query(async ({ input, ctx }) => {
+      const { data: cvs, error } = await ctx.supabase
+        .from('generated_cvs')
+        .select('id, content_json, template, created_at, ats_score, target_role')
+        .in('id', [input.olderId, input.newerId])
+        .eq('user_id', ctx.user.id)
+        .is('deleted_at', null);
+
+      if (error) {
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: error.message });
+      }
+      if (!cvs || cvs.length !== 2) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Both CVs not found' });
+      }
+
+      const sorted = [...cvs].sort(
+        (a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      );
+      const older = sorted[0];
+      const newer = sorted[1];
+
+      const extractText = (cv: any): string => {
+        const c = cv.content_json || {};
+        const parts: string[] = [];
+        if (c.fullName) parts.push(`NAME\n${c.fullName}`);
+        if (c.summary) parts.push(`SUMMARY\n${c.summary}`);
+        if (Array.isArray(c.experience) && c.experience.length) {
+          parts.push('EXPERIENCE');
+          c.experience.forEach((exp: any) => {
+            parts.push(`${exp.title || ''} @ ${exp.company || ''} (${exp.dates || ''})`);
+            (exp.bullets || []).forEach((b: string) => parts.push(`• ${b}`));
+          });
+        }
+        if (Array.isArray(c.education) && c.education.length) {
+          parts.push('EDUCATION');
+          c.education.forEach((e: any) => {
+            parts.push(`${e.degree || ''} — ${e.school || ''} (${e.year || ''})`);
+          });
+        }
+        if (Array.isArray(c.skills) && c.skills.length) {
+          parts.push('SKILLS');
+          c.skills.forEach((s: any) => {
+            const cat = s?.categoryName || '';
+            const items = Array.isArray(s?.items) ? s.items.join(', ') : '';
+            parts.push(`${cat}: ${items}`);
+          });
+        }
+        return parts.join('\n\n');
+      };
+
+      const olderText = extractText(older);
+      const newerText = extractText(newer);
+
+      const dmpMod: any = await import('diff-match-patch');
+      const DMP = dmpMod.diff_match_patch || dmpMod.default || dmpMod;
+      const dmp = new DMP();
+      const diffs: Array<[number, string]> = dmp.diff_main(olderText, newerText);
+      dmp.diff_cleanupSemantic(diffs);
+
+      const segments = diffs.map(([op, text]: [number, string]) => ({
+        type: op === 1 ? 'added' : op === -1 ? 'removed' : 'unchanged',
+        text,
+      }));
+
+      const wordsAdded = diffs
+        .filter(([op]: [number, string]) => op === 1)
+        .reduce((sum: number, [, text]: [number, string]) => sum + text.split(/\s+/).filter(Boolean).length, 0);
+      const wordsRemoved = diffs
+        .filter(([op]: [number, string]) => op === -1)
+        .reduce((sum: number, [, text]: [number, string]) => sum + text.split(/\s+/).filter(Boolean).length, 0);
+
+      const olderOverall = (older as any).ats_score?.overall ?? null;
+      const newerOverall = (newer as any).ats_score?.overall ?? null;
+      const atsDelta =
+        olderOverall !== null && newerOverall !== null
+          ? newerOverall - olderOverall
+          : null;
+
+      return {
+        older: {
+          id: (older as any).id,
+          template: (older as any).template,
+          targetRole: (older as any).target_role,
+          createdAt: (older as any).created_at,
+          atsScore: olderOverall,
+        },
+        newer: {
+          id: (newer as any).id,
+          template: (newer as any).template,
+          targetRole: (newer as any).target_role,
+          createdAt: (newer as any).created_at,
+          atsScore: newerOverall,
+        },
+        segments,
+        metrics: {
+          wordsAdded,
+          wordsRemoved,
+          atsDelta,
+        },
       };
     }),
 
   list: protectedProcedure.query(async ({ ctx }) => {
     const { data, error } = await ctx.supabase
       .from('generated_cvs')
-      .select('id, target_role, target_company, template, language, created_at, docx_path, pdf_path, tokens_used')
+      .select('id, target_role, target_company, template, language, created_at, docx_path, pdf_path, tokens_used, ats_score, cover_letter_generated, cover_letter_docx_path, cover_letter_pdf_path, source_parse_method')
       .eq('user_id', ctx.user.id)
       .is('deleted_at', null)
       .order('created_at', { ascending: false })
@@ -292,19 +498,27 @@ export const cvRouter = router({
     }
 
     const rows = data || [];
-    const withUrls = await Promise.all(rows.map(async (cv) => {
-      const [docx, pdf] = await Promise.all([
+    const withUrls = await Promise.all(rows.map(async (cv: any) => {
+      const [docx, pdf, clDocx, clPdf] = await Promise.all([
         cv.docx_path
           ? ctx.supabase.storage.from('cv-exports').createSignedUrl(cv.docx_path, 3600)
           : Promise.resolve({ data: null as any }),
         cv.pdf_path
           ? ctx.supabase.storage.from('cv-exports').createSignedUrl(cv.pdf_path, 3600)
           : Promise.resolve({ data: null as any }),
+        cv.cover_letter_docx_path
+          ? ctx.supabase.storage.from('cv-exports').createSignedUrl(cv.cover_letter_docx_path, 3600)
+          : Promise.resolve({ data: null as any }),
+        cv.cover_letter_pdf_path
+          ? ctx.supabase.storage.from('cv-exports').createSignedUrl(cv.cover_letter_pdf_path, 3600)
+          : Promise.resolve({ data: null as any }),
       ]);
       return {
         ...cv,
         docxUrl: (docx as any).data?.signedUrl || null,
         pdfUrl: (pdf as any).data?.signedUrl || null,
+        coverLetterDocxUrl: (clDocx as any).data?.signedUrl || null,
+        coverLetterPdfUrl: (clPdf as any).data?.signedUrl || null,
       };
     }));
 
@@ -327,12 +541,18 @@ export const cvRouter = router({
       }
 
       const weekSec = 7 * 24 * 60 * 60;
-      const [docx, pdf] = await Promise.all([
+      const [docx, pdf, clDocx, clPdf] = await Promise.all([
         data.docx_path
           ? ctx.supabase.storage.from('cv-exports').createSignedUrl(data.docx_path, weekSec)
           : Promise.resolve({ data: null as any }),
         data.pdf_path
           ? ctx.supabase.storage.from('cv-exports').createSignedUrl(data.pdf_path, weekSec)
+          : Promise.resolve({ data: null as any }),
+        data.cover_letter_docx_path
+          ? ctx.supabase.storage.from('cv-exports').createSignedUrl(data.cover_letter_docx_path, weekSec)
+          : Promise.resolve({ data: null as any }),
+        data.cover_letter_pdf_path
+          ? ctx.supabase.storage.from('cv-exports').createSignedUrl(data.cover_letter_pdf_path, weekSec)
           : Promise.resolve({ data: null as any }),
       ]);
 
@@ -340,6 +560,8 @@ export const cvRouter = router({
         ...data,
         docxUrl: (docx as any).data?.signedUrl || null,
         pdfUrl: (pdf as any).data?.signedUrl || null,
+        coverLetterDocxUrl: (clDocx as any).data?.signedUrl || null,
+        coverLetterPdfUrl: (clPdf as any).data?.signedUrl || null,
       };
     }),
 
