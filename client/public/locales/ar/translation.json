@@ -1259,5 +1259,126 @@
       "subtitle": "يصلك ملخص النتيجة مع رابط التقرير الكامل",
       "send": "إرسال"
     }
+  },
+  "profileRadar": {
+    "title": "Profile Radar",
+    "subtitle": "تحليل موجّه لهدفك بالضبط",
+    "url": {
+      "label": "رابط LinkedIn الخاص بك",
+      "placeholder": "https://linkedin.com/in/username",
+      "helperTitle": "كيف تجد رابط بروفايلك؟",
+      "helperStep1": "افتح LinkedIn (موقع أو تطبيق)",
+      "helperStep2": "اضغط على صورتك الشخصية",
+      "helperStep3": "اختر «عرض البروفايل»",
+      "helperStep4": "انسخ الرابط من أعلى المتصفح",
+      "openLinkedIn": "افتح بروفايلي في LinkedIn",
+      "errors": {
+        "empty": "الرجاء إدخال رابط LinkedIn",
+        "feed_url": "أدخلت رابط الصفحة الرئيسية، نحتاج رابط بروفايلك",
+        "edit_url": "هذا رابط صفحة التعديل، نحتاج رابط البروفايل العام",
+        "missing_username": "الرابط لا يحتوي على اسم بروفايل صحيح",
+        "not_linkedin": "هذا ليس رابط LinkedIn",
+        "invalid_format": "صيغة الرابط غير صحيحة"
+      }
+    },
+    "goal": {
+      "label": "ما هدفك من تحسين البروفايل؟",
+      "hint": "التحليل يتغير كلياً حسب هدفك",
+      "job-search": "البحث عن وظيفة",
+      "investment": "جذب استثمار",
+      "thought-leadership": "قيادة فكرية",
+      "sales-b2b": "مبيعات B2B",
+      "career-change": "تغيير مجال",
+      "internal-promotion": "ترقية داخلية"
+    },
+    "industry": {
+      "label": "في أي مجال تعمل؟",
+      "oil-gas": "نفط وغاز",
+      "tech": "تقنية",
+      "finance": "مالي / مصرفي",
+      "healthcare": "صحي",
+      "legal": "قانوني",
+      "consulting": "استشارات",
+      "government": "حكومي",
+      "academic": "أكاديمي",
+      "entrepreneurship": "ريادة أعمال",
+      "real-estate": "عقارات"
+    },
+    "language": {
+      "label": "لغة التقرير",
+      "ar": "العربية",
+      "en": "English"
+    },
+    "advanced": {
+      "toggle": "خيارات متقدمة",
+      "collapse": "إخفاء الخيارات المتقدمة",
+      "targetRole": "الوظيفة المستهدفة (اختياري)",
+      "targetRoleHint": "مثال: Senior Product Manager",
+      "targetCompany": "الشركة المستهدفة (اختياري)",
+      "targetCompanyHint": "مثال: Aramco Digital"
+    },
+    "dna": {
+      "title": "ملخص اختياراتك",
+      "subtitle": "راجع قبل البدء",
+      "url": "الرابط",
+      "goal": "الهدف",
+      "industry": "المجال",
+      "language": "اللغة",
+      "score": "درجة توافق التحليل"
+    },
+    "generate": {
+      "button": "بدء التحليل",
+      "buttonTokens": "تحليل • {{tokens}} توكن",
+      "analyzing": "نحلل بروفايلك...",
+      "loadingMessages": [
+        "نستخرج بيانات بروفايلك...",
+        "نطبق عدسة هدفك...",
+        "نقارن مع معايير مجالك...",
+        "نحسب المؤشرات الثمانية...",
+        "نكتب التوصيات...",
+        "نضيف اللمسات الأخيرة..."
+      ]
+    },
+    "result": {
+      "score": "الدرجة الإجمالية",
+      "verdict": "التقييم",
+      "dimensions": "الأبعاد التفصيلية",
+      "recommendations": "التوصيات",
+      "topPriorities": "أولويات عليا",
+      "vision2030": "توافق مع رؤية 2030",
+      "exportPdf": "تحميل PDF",
+      "exportDocx": "تحميل DOCX (+5 توكن)",
+      "exportDocxFree": "تحميل DOCX (مدفوع مسبقاً)"
+    },
+    "history": {
+      "title": "تحليلاتي السابقة",
+      "empty": "لم تجري أي تحليل بعد",
+      "selectToCompare": "اختر تحليلين للمقارنة",
+      "compareButton": "قارن المحدد ({{count}})",
+      "compareMax": "يمكن مقارنة تحليلين فقط",
+      "delete": "حذف",
+      "confirmDelete": "حذف هذا التحليل؟"
+    },
+    "comparison": {
+      "title": "مقارنة التقدم",
+      "subtitle": "الفرق بين التحليلين",
+      "before": "قبل",
+      "after": "بعد",
+      "delta": "الفرق",
+      "overallProgress": "التقدم الإجمالي",
+      "points": "نقطة",
+      "improved": "تحسن",
+      "declined": "تراجع",
+      "unchanged": "بدون تغيير",
+      "dimensionsTable": "مقارنة الأبعاد",
+      "improvedAreas": "ما تحسن",
+      "stillNeedsWork": "لا يزال يحتاج عمل",
+      "close": "إغلاق"
+    },
+    "errors": {
+      "analysisFailed": "فشل التحليل — حاول مرة أخرى",
+      "tokenInsufficient": "رصيد التوكن غير كافٍ",
+      "exportFailed": "فشل التحميل"
+    }
   }
 }

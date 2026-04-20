@@ -1,0 +1,20 @@
+Retrieving project…
+Resolving deployment "wasselhub.com"
+Fetching logs...
+TIME         HOST           LEVEL                                          
+11:30:02.94  wasselhub.com  error  λ POST /api/trpc/linkedin.analyzeDeep   
+[DEEP] Error: فشل الطلب. حاول مرة أخرى.
+
+11:29:47.75  wasselhub.com  info   λ POST /api/trpc/linkedin.analyzeDeep   
+[DEEP] analyzeDeep request, hasUrl: false hasImage: false
+
+11:17:59.34  wasselhub.com  info   λ POST /api/trpc/linkedin.analyzeDeep   
+[DEEP] analyzeDeep request, hasUrl: true hasImage: false
+
+11:17:30.60  wasselhub.com  info   λ POST /api/trpc/linkedin.analyzeDeep   
+[DEEP] analyzeDeep request, hasUrl: true hasImage: false
+
+11:17:05.12  wasselhub.com  info   λ POST /api/trpc/linkedin.analyzeDeep   
+[DEEP] analyzeDeep request, hasUrl: true hasImage: false
+
+Fetched 5 logs for waselhupsas-projects/wassel

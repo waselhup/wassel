@@ -1,0 +1,1 @@
+{"result":{"data":{"status":"error","httpCode":400,"message":"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.","creditExhausted":true,"latencyMs":64,"timestamp":"2026-04-20T09:00:25.444Z"}}}

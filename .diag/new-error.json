@@ -1,0 +1,1 @@
+{"error":{"message":"الخدمة معطّلة مؤقتاً (انتهت الكريديتس). نعمل على حلها.","code":-32603,"data":{"code":"INTERNAL_SERVER_ERROR","httpStatus":500,"path":"linkedin.analyzeDeep"}}}

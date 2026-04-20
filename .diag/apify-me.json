@@ -1,0 +1,188 @@
+{
+  "data": {
+    "id": "yHFvoG1WLHP96Ged8",
+    "username": "WASSELHUP",
+    "profile": {
+      "name": "Waselhup",
+      "pictureUrl": "https://lh3.googleusercontent.com/a/ACg8ocJMK2DCCRWVnCz9k2YDiAMquNz5Gto6XAWG-FNpNprG7H6N0g=s96-c"
+    },
+    "email": "waselhup@gmail.com",
+    "proxy": {
+      "password": "apify_proxy_eZisWcxvQn9hY2qKQKGwobQVRYJhMk0jVWEY",
+      "groups": [
+        {
+          "name": "BUYPROXIES94952",
+          "description": "Proxies from USA 2",
+          "availableCount": 27
+        },
+        {
+          "name": "GOOGLE_SERP",
+          "description": "Enables downloading of Google Search result pages",
+          "availableCount": 0
+        },
+        {
+          "name": "RESIDENTIAL",
+          "description": "Residential proxies",
+          "availableCount": 0
+        },
+        {
+          "name": "StaticUS3",
+          "description": "Static IPs - 107.175.80.80, 162.212.175.22, 107.172.69.119",
+          "availableCount": 3
+        }
+      ]
+    },
+    "plan": {
+      "id": "STARTER",
+      "planVersion": 9,
+      "description": "Cost-effective plan for freelancers and developers.",
+      "isEnabled": true,
+      "tier": "BRONZE",
+      "monthlyBasePriceUsd": 29,
+      "monthlyUsageCreditsUsd": 29,
+      "enabledPlatformFeatures": [
+        "ACTORS",
+        "STORAGE",
+        "SCHEDULER",
+        "WEBHOOKS",
+        "PROXY",
+        "PROXY_EXTERNAL_ACCESS",
+        "PROXY_RESIDENTIAL",
+        "PROXY_SERPS",
+        "ACTORS_PUBLIC_ALL"
+      ],
+      "maxActorMemoryGbytes": 32,
+      "apiRateLimitBoosts": 0,
+      "maxMonthlyUsageUsd": 29,
+      "maxMonthlyActorComputeUnits": 1999999,
+      "maxMonthlyResidentialProxyGbytes": 49999,
+      "maxMonthlyProxySerps": 9999999,
+      "maxMonthlyExternalDataTransferGbytes": 999999,
+      "maxActorCount": 500,
+      "maxActorTaskCount": 5000,
+      "maxScheduleCount": 100,
+      "maxConcurrentActorRuns": 32,
+      "dataRetentionDays": 31,
+      "availableProxyGroups": {
+        "BUYPROXIES94952": 27,
+        "qfCaFFuCodXxAS59E": 3
+      },
+      "teamAccountSeatCount": 999,
+      "supportLevel": "CHAT",
+      "availableAddOns": [
+        "SHARED_DATACENTER_PROXIES",
+        "MAX_ACTOR_MEMORY_GBYTES",
+        "PRIORITY_SUPPORT",
+        "PERSONALIZED_SUPPORT_HOURS",
+        "MAX_CONCURRENT_ACTOR_RUNS"
+      ],
+      "planPricing": {
+        "chargeableServiceUnitPricesUsd": {
+          "ACTOR_COMPUTE_UNITS": 0.3,
+          "PROXY_RESIDENTIAL_TRANSFER_GBYTES": 8,
+          "PROXY_SERPS": 0.0025,
+          "DATA_TRANSFER_INTERNAL_GBYTES": 0.05,
+          "DATA_TRANSFER_EXTERNAL_GBYTES": 0.2,
+          "DATASET_TIMED_STORAGE_GBYTE_HOURS": 0.001,
+          "DATASET_READS": 4e-7,
+          "DATASET_WRITES": 0.000005,
+          "KEY_VALUE_STORE_TIMED_STORAGE_GBYTE_HOURS": 0.001,
+          "KEY_VALUE_STORE_READS": 0.000005,
+          "KEY_VALUE_STORE_WRITES": 0.00005,
+          "KEY_VALUE_STORE_LISTS": 0.00005,
+          "REQUEST_QUEUE_TIMED_STORAGE_GBYTE_HOURS": 0.004,
+          "REQUEST_QUEUE_READS": 0.000004,
+          "REQUEST_QUEUE_WRITES": 0.00002,
+          "PAID_ACTORS_FLAT_PRICE_PER_MONTH": 1,
+          "PAID_ACTORS_PER_DATASET_ITEM": 1,
+          "PAID_ACTORS_PER_EVENT": 1
+        },
+        "addOnMonthlyUnitPricesUsd": {
+          "SHARED_DATACENTER_PROXIES": 1,
+          "MAX_ACTOR_MEMORY_GBYTES": 2,
+          "TEAM_ACCOUNT_SEATS": 49,
+          "PRIORITY_SUPPORT": 100,
+          "ACCOUNT_MANAGER_SUPPORT": 100,
+          "API_RATE_LIMIT_BOOSTS": 300,
+          "PERSONALIZED_SUPPORT_HOURS": 150,
+          "MAX_CONCURRENT_ACTOR_RUNS": 5
+        },
+        "chargeableServicesVolumeDiscountTiers": {}
+      }
+    },
+    "effectivePlatformFeatures": {
+      "ACTORS": {
+        "isEnabled": true,
+        "disabledReason": null,
+        "disabledReasonType": null,
+        "isTrial": false,
+        "trialExpirationAt": null
+      },
+      "STORAGE": {
+        "isEnabled": true,
+        "disabledReason": null,
+        "disabledReasonType": null,
+        "isTrial": false,
+        "trialExpirationAt": null
+      },
+      "SCHEDULER": {
+        "isEnabled": true,
+        "disabledReason": null,
+        "disabledReasonType": null,
+        "isTrial": false,
+        "trialExpirationAt": null
+      },
+      "PROXY": {
+        "isEnabled": true,
+        "disabledReason": null,
+        "disabledReasonType": null,
+        "isTrial": false,
+        "trialExpirationAt": null
+      },
+      "PROXY_EXTERNAL_ACCESS": {
+        "isEnabled": true,
+        "disabledReason": null,
+        "disabledReasonType": null,
+        "isTrial": false,
+        "trialExpirationAt": null
+      },
+      "PROXY_RESIDENTIAL": {
+        "isEnabled": true,
+        "disabledReason": null,
+        "disabledReasonType": null,
+        "isTrial": false,
+        "trialExpirationAt": null
+      },
+      "PROXY_SERPS": {
+        "isEnabled": true,
+        "disabledReason": null,
+        "disabledReasonType": null,
+        "isTrial": false,
+        "trialExpirationAt": null
+      },
+      "WEBHOOKS": {
+        "isEnabled": true,
+        "disabledReason": null,
+        "disabledReasonType": null,
+        "isTrial": false,
+        "trialExpirationAt": null
+      },
+      "ACTORS_PUBLIC_ALL": {
+        "isEnabled": true,
+        "disabledReason": null,
+        "disabledReasonType": null,
+        "isTrial": false,
+        "trialExpirationAt": null
+      },
+      "ACTORS_PUBLIC_DEVELOPER": {
+        "isEnabled": false,
+        "disabledReason": "The \"Selected public Actors for developers\" feature is not enabled for your account. Please upgrade your plan or contact support@apify.com",
+        "disabledReasonType": "DISABLED",
+        "isTrial": false,
+        "trialExpirationAt": null
+      }
+    },
+    "createdAt": "2026-03-29T10:38:56.264Z",
+    "isPaying": true
+  }
+}

@@ -1,0 +1,8 @@
+Retrieving project…
+Resolving deployment "wasselhub.com"
+Fetching logs...
+TIME         HOST           LEVEL                                          
+11:32:23.02  wasselhub.com  info   λ POST /api/trpc/linkedin.analyzeDeep   
+[DEEP] analyzeDeep request, hasUrl: true hasImage: false
+
+Fetched 1 logs for waselhupsas-projects/wassel

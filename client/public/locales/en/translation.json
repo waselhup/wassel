@@ -1265,5 +1265,126 @@
       "subtitle": "Receive the score summary and a link to the full report",
       "send": "Send"
     }
+  },
+  "profileRadar": {
+    "title": "Profile Radar",
+    "subtitle": "Goal-targeted analysis built for you",
+    "url": {
+      "label": "Your LinkedIn URL",
+      "placeholder": "https://linkedin.com/in/username",
+      "helperTitle": "How to find your profile URL",
+      "helperStep1": "Open LinkedIn (web or app)",
+      "helperStep2": "Tap your profile picture",
+      "helperStep3": "Choose 'View Profile'",
+      "helperStep4": "Copy the URL from the address bar",
+      "openLinkedIn": "Open my LinkedIn",
+      "errors": {
+        "empty": "Please enter a LinkedIn URL",
+        "feed_url": "You entered the feed URL, we need your profile URL",
+        "edit_url": "This is the edit page URL, we need the public profile URL",
+        "missing_username": "URL does not contain a valid profile name",
+        "not_linkedin": "This is not a LinkedIn URL",
+        "invalid_format": "Invalid URL format"
+      }
+    },
+    "goal": {
+      "label": "What's your goal?",
+      "hint": "Analysis changes completely based on your goal",
+      "job-search": "Job search",
+      "investment": "Raise investment",
+      "thought-leadership": "Thought leadership",
+      "sales-b2b": "B2B sales",
+      "career-change": "Career change",
+      "internal-promotion": "Internal promotion"
+    },
+    "industry": {
+      "label": "Your industry",
+      "oil-gas": "Oil & Gas",
+      "tech": "Technology",
+      "finance": "Finance / Banking",
+      "healthcare": "Healthcare",
+      "legal": "Legal",
+      "consulting": "Consulting",
+      "government": "Government",
+      "academic": "Academic",
+      "entrepreneurship": "Entrepreneurship",
+      "real-estate": "Real Estate"
+    },
+    "language": {
+      "label": "Report language",
+      "ar": "Arabic",
+      "en": "English"
+    },
+    "advanced": {
+      "toggle": "Advanced options",
+      "collapse": "Hide advanced options",
+      "targetRole": "Target role (optional)",
+      "targetRoleHint": "e.g. Senior Product Manager",
+      "targetCompany": "Target company (optional)",
+      "targetCompanyHint": "e.g. Aramco Digital"
+    },
+    "dna": {
+      "title": "Your selections",
+      "subtitle": "Review before starting",
+      "url": "URL",
+      "goal": "Goal",
+      "industry": "Industry",
+      "language": "Language",
+      "score": "Analysis fit score"
+    },
+    "generate": {
+      "button": "Start analysis",
+      "buttonTokens": "Analyze • {{tokens}} tokens",
+      "analyzing": "Analyzing your profile...",
+      "loadingMessages": [
+        "Extracting your profile data...",
+        "Applying your goal lens...",
+        "Comparing against industry benchmarks...",
+        "Scoring the eight dimensions...",
+        "Writing recommendations...",
+        "Adding finishing touches..."
+      ]
+    },
+    "result": {
+      "score": "Overall score",
+      "verdict": "Verdict",
+      "dimensions": "Detailed dimensions",
+      "recommendations": "Recommendations",
+      "topPriorities": "Top priorities",
+      "vision2030": "Vision 2030 alignment",
+      "exportPdf": "Download PDF",
+      "exportDocx": "Download DOCX (+5 tokens)",
+      "exportDocxFree": "Download DOCX (already paid)"
+    },
+    "history": {
+      "title": "My previous analyses",
+      "empty": "No analyses yet",
+      "selectToCompare": "Select two analyses to compare",
+      "compareButton": "Compare selected ({{count}})",
+      "compareMax": "Only two analyses can be compared",
+      "delete": "Delete",
+      "confirmDelete": "Delete this analysis?"
+    },
+    "comparison": {
+      "title": "Progress comparison",
+      "subtitle": "Difference between the two analyses",
+      "before": "Before",
+      "after": "After",
+      "delta": "Delta",
+      "overallProgress": "Overall progress",
+      "points": "points",
+      "improved": "Improved",
+      "declined": "Declined",
+      "unchanged": "Unchanged",
+      "dimensionsTable": "Dimension comparison",
+      "improvedAreas": "What improved",
+      "stillNeedsWork": "Still needs work",
+      "close": "Close"
+    },
+    "errors": {
+      "analysisFailed": "Analysis failed - try again",
+      "tokenInsufficient": "Insufficient token balance",
+      "exportFailed": "Export failed"
+    }
   }
 }

@@ -1,0 +1,8 @@
+Retrieving project…
+Resolving deployment "wasselhub.com"
+Fetching logs...
+TIME         HOST           LEVEL                                          
+11:35:23.11  wasselhub.com  info   λ POST /api/trpc/linkedin.analyzeDeep   
+[scraper] dev_fusion~Linkedin-Profile-Scraper completeness=60% (skills=0, exp=5, edu=3)
+
+Fetched 1 logs for waselhupsas-projects/wassel

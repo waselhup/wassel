@@ -4,6 +4,107 @@ import { TRPCError } from '@trpc/server';
 import { logApiCall, mapAnthropicStatusToArabic, mapApifyStatusToArabic, classifyClaudeError, sendClaudeOpsAlert } from '../lib/apiLogger';
 import { callClaude, extractText, extractJson } from '../lib/claude-client';
 import { scrapeLinkedInProfileMulti, detectLanguage } from '../lib/linkedin-scraper';
+import { validateAndNormalizeLinkedInUrl } from '../lib/linkedin-url-validator';
+import { generateDocxReport, generatePdfReport } from '../lib/profile-report-generator';
+
+const TARGET_GOAL = z.enum([
+  'job-search', 'investment', 'thought-leadership',
+  'sales-b2b', 'career-change', 'internal-promotion',
+]);
+
+const INDUSTRY = z.enum([
+  'oil-gas', 'tech', 'finance', 'healthcare', 'legal',
+  'consulting', 'government', 'academic', 'entrepreneurship', 'real-estate',
+]);
+
+const REPORT_LANGUAGE = z.enum(['ar', 'en']);
+
+const PROFILE_RADAR_SYSTEM = `You are an elite LinkedIn profile strategist specializing in the Saudi Arabian and GCC market. You have 10+ years of experience advising executives, founders, and job seekers in the Kingdom.
+
+CRITICAL: Your analysis must change DRAMATICALLY based on:
+1. The user's target_goal (what they want FROM their profile)
+2. Their industry (benchmarks + vocabulary differ massively)
+3. Their target_role/target_company (if provided)
+
+Never give generic advice. Every insight must be actionable, specific, and tied to the target goal.
+
+TARGET GOAL LENSES (analyze THROUGH this lens):
+
+1. job-search: How recruiters scan this profile in 6 seconds
+   - Focus: ATS keywords, headline scannability, quick signals
+   - Metric: "recruiter appeal" not general quality
+
+2. investment: How VCs/investors assess founder credibility
+   - Focus: traction signals, storytelling, "why this founder, why now"
+   - Metric: "investor confidence"
+
+3. thought-leadership: How peers perceive expertise + authority
+   - Focus: content consistency, unique POV, engagement patterns
+   - Metric: "thought leadership score"
+
+4. sales-b2b: How prospects evaluate trust before responding
+   - Focus: social proof, specificity, connection potential
+   - Metric: "prospect trust signals"
+
+5. career-change: Transferable skills visibility, pivot credibility
+   - Focus: bridging language, reframing past, learning signals
+   - Metric: "pivot readiness"
+
+6. internal-promotion: Visibility to senior leadership, cross-functional impact
+   - Focus: scope signals, business impact, leadership indicators
+   - Metric: "leadership readiness"
+
+INDUSTRY CONTEXTS:
+- oil-gas: Aramco/SABIC context, HSE standards, Vision 2030 energy transition
+- tech: SaaS metrics, technical depth, AI/ML positioning, open-source
+- finance: Tadawul, CMA regulations, banking, fintech, Saudi Central Bank
+- healthcare: MOH, SCFHS licensing, health sector transformation
+- legal: SJC, regulatory expertise, Saudi legal system
+- consulting: McKinsey/BCG frameworks, case approach
+- government: Vision 2030 alignment, ministerial context, PIF ecosystem
+- academic: KFUPM/KAUST/KSU context, research output
+- entrepreneurship: Saudi startup ecosystem, VC landscape, Monsha'at
+- real-estate: ROSHN, NHC, REDF, Saudi real estate transformation
+
+OUTPUT LANGUAGE: Respond ENTIRELY in the specified report_language:
+- 'ar': Formal Modern Standard Arabic (فصحى). No Gulf dialect. No English words except technical terms that have no Arabic equivalent.
+- 'en': Professional English.
+
+TONE: Direct, specific, actionable. No filler. Use imperatives:
+- Arabic: "اكتب", "أضف", "احذف", "ابدأ", "تجنب"
+- English: "Write", "Add", "Remove", "Start", "Avoid"
+
+No "consider", "perhaps", "you might", "ربما", "قد".
+
+OUTPUT FORMAT (valid JSON only, no markdown fences):
+
+{
+  "overall_score": number (0-100),
+  "verdict": string (one paragraph summary in target language),
+  "target_alignment": {
+    "goal_match_score": number (0-100, how well profile serves the stated goal),
+    "notes": string
+  },
+  "dimensions": [
+    {
+      "name": string (dimension name in target language),
+      "score": number (0-10),
+      "feedback": string (specific, actionable feedback in target language)
+    }
+  ],
+  "recommendations": string[] (5-7 specific, prioritized actions),
+  "vision_2030_alignment": string (only if relevant to target_goal/industry),
+  "top_3_priorities": string[] (the 3 MOST impactful changes, ordered by impact)
+}
+
+Always include 8 dimensions: Headline, Summary/About, Experience, Skills, Profile Photo, Activity/Posts, Recommendations, Vision 2030 / Industry Alignment.
+
+CRITICAL RULES:
+1. If target_goal = 'job-search' and industry = 'tech', focus on tech recruiter signals, GitHub links, live portfolios.
+2. If target_goal = 'investment' and industry = 'entrepreneurship', focus on founder signals, traction metrics, storytelling.
+3. Always reference the specific industry in recommendations.
+4. Scores must be calibrated: 8-10 = exceptional, 6-7 = strong, 4-5 = average, 1-3 = needs work.
+5. Recommendations must be SPECIFIC.`;
 
 const APIFY_TOKEN = process.env.APIFY_TOKEN || process.env.APIFY_API_TOKEN || '';
 
@@ -579,6 +680,327 @@ export const linkedinRouter = router({
           message: err?.message || 'فشل في التحليل العميق',
         });
       }
+    }),
+
+  // ── PROFILE RADAR v3 ────────────────────────────────────────────────────
+  analyzeTargeted: protectedProcedure
+    .input(z.object({
+      linkedinUrl: z.string().optional(),
+      imageBase64: z.string().optional(),
+      mediaType: z.string().optional(),
+      targetGoal: TARGET_GOAL,
+      industry: INDUSTRY,
+      targetRole: z.string().max(200).optional(),
+      targetCompany: z.string().max(200).optional(),
+      reportLanguage: REPORT_LANGUAGE.default('ar'),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const TOKEN_COST = 25;
+
+      let normalizedUrl = input.linkedinUrl;
+      if (input.linkedinUrl) {
+        const validation = validateAndNormalizeLinkedInUrl(input.linkedinUrl);
+        if (!validation.valid) {
+          const msg = input.reportLanguage === 'ar'
+            ? `${validation.errorMessageAr}. ${validation.suggestion || ''}`
+            : `${validation.errorMessageEn}. ${validation.suggestion || ''}`;
+          throw new TRPCError({ code: 'BAD_REQUEST', message: msg.trim() });
+        }
+        normalizedUrl = validation.normalizedUrl;
+      }
+
+      const { data: profile } = await ctx.supabase
+        .from('profiles')
+        .select('token_balance')
+        .eq('id', ctx.user.id)
+        .single();
+
+      if (!profile || (profile.token_balance || 0) < TOKEN_COST) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: input.reportLanguage === 'ar'
+            ? `رصيد التوكن غير كافٍ — تحتاج ${TOKEN_COST} توكن`
+            : `Insufficient tokens - need ${TOKEN_COST} tokens`,
+        });
+      }
+
+      let unifiedProfile: any = null;
+      let profileText = '';
+      if (normalizedUrl) {
+        try {
+          const outcome = await scrapeLinkedInProfileMulti(normalizedUrl);
+          unifiedProfile = outcome.profile;
+          const p = outcome.profile;
+          profileText = [
+            `Name: ${p.fullName || 'Unknown'}`,
+            `Headline: ${p.headline || ''}`,
+            `Location: ${p.location || ''}`,
+            `Summary: ${p.summary || 'None'}`,
+            '',
+            `Experience (${p.experience.length} positions):`,
+            ...p.experience.slice(0, 6).map((e: any) =>
+              `- ${e.title || ''} at ${e.company || ''} (${e.duration || ''})${e.description ? ` — ${String(e.description).slice(0, 250)}` : ''}`
+            ),
+            '',
+            `Education (${p.education.length}):`,
+            ...p.education.slice(0, 4).map((e: any) => `- ${e.degree || ''} ${e.field ? `in ${e.field}` : ''} from ${e.school || ''} ${e.year ? `(${e.year})` : ''}`),
+            '',
+            `Skills (${p.skills.length}): ${p.skills.slice(0, 25).join(', ')}`,
+            '',
+            `Certifications (${p.certifications.length}):`,
+            ...p.certifications.slice(0, 6).map((c: any) => `- ${c.name || ''}${c.issuer ? ` — ${c.issuer}` : ''}`),
+          ].join('\n').trim();
+        } catch (e: any) {
+          console.error('[RADAR] scrape failed:', e?.message);
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: input.reportLanguage === 'ar'
+              ? 'فشل قراءة البروفايل من LinkedIn — تأكد من أن البروفايل عام'
+              : 'Failed to read profile from LinkedIn - ensure profile is public',
+          });
+        }
+      }
+
+      const userPayload = {
+        profile: profileText || '(no profile data — analyze from screenshot if attached)',
+        target_goal: input.targetGoal,
+        industry: input.industry,
+        target_role: input.targetRole || null,
+        target_company: input.targetCompany || null,
+        report_language: input.reportLanguage,
+      };
+
+      const userContent: any = input.imageBase64
+        ? [
+            { type: 'image', source: { type: 'base64', media_type: input.mediaType || 'image/png', data: input.imageBase64 } },
+            { type: 'text', text: JSON.stringify(userPayload) },
+          ]
+        : JSON.stringify(userPayload);
+
+      let result: any;
+      const _t0 = Date.now();
+      try {
+        const claudeRes = await callClaude({
+          task: 'profile_analysis',
+          system: PROFILE_RADAR_SYSTEM,
+          userContent,
+          maxTokens: 6000,
+        });
+        await logApiCall({ service: 'anthropic', endpoint: '/v1/messages:analyzeTargeted', statusCode: 200, responseTimeMs: Date.now() - _t0, userId: ctx.user?.id });
+        const text = extractText(claudeRes);
+        result = extractJson<any>(text);
+        if (!result || typeof result.overall_score !== 'number') {
+          console.error('[RADAR] JSON parse failed. Raw:', text.substring(0, 500));
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: input.reportLanguage === 'ar' ? 'فشل تحليل الرد' : 'Failed to parse analysis response' });
+        }
+      } catch (err: any) {
+        if (err instanceof TRPCError) throw err;
+        const status = err?.status || 500;
+        const body = err?.responseBody || err?.body || err?.message || '';
+        const info = classifyClaudeError(status, body);
+        await logApiCall({ service: 'anthropic', endpoint: '/v1/messages:analyzeTargeted', statusCode: status, responseTimeMs: Date.now() - _t0, errorMsg: info.devDetail, userId: ctx.user?.id });
+        if (info.alertOps) void sendClaudeOpsAlert(info, '/v1/messages:analyzeTargeted');
+        const code = status === 429 ? 'TOO_MANY_REQUESTS' : (status === 401 || status === 403) ? 'UNAUTHORIZED' : 'INTERNAL_SERVER_ERROR';
+        throw new TRPCError({ code, message: info.userMessage });
+      }
+
+      const { data: saved, error: saveErr } = await ctx.supabase
+        .from('profile_analyses')
+        .insert({
+          user_id: ctx.user.id,
+          linkedin_url: normalizedUrl || null,
+          analysis_data: result,
+          target_goal: input.targetGoal,
+          industry: input.industry,
+          target_role: input.targetRole || null,
+          target_company: input.targetCompany || null,
+          report_language: input.reportLanguage,
+          profile_data: unifiedProfile,
+          tokens_used: TOKEN_COST,
+        })
+        .select()
+        .single();
+
+      if (saveErr) {
+        console.error('[RADAR] save error:', saveErr);
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: saveErr.message });
+      }
+
+      await ctx.supabase
+        .from('profiles')
+        .update({ token_balance: (profile.token_balance || 0) - TOKEN_COST })
+        .eq('id', ctx.user.id);
+
+      return {
+        id: saved.id,
+        analysis: result,
+        linkedinUrl: normalizedUrl,
+        tokensUsed: TOKEN_COST,
+      };
+    }),
+
+  exportReport: protectedProcedure
+    .input(z.object({
+      analysisId: z.string().uuid(),
+      format: z.enum(['pdf', 'docx']),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const { data: analysis } = await ctx.supabase
+        .from('profile_analyses')
+        .select('*')
+        .eq('id', input.analysisId)
+        .eq('user_id', ctx.user.id)
+        .single();
+
+      if (!analysis) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'التحليل غير موجود' });
+      }
+
+      if (input.format === 'docx') {
+        const DOCX_COST = 5;
+        if (!analysis.docx_generated) {
+          const { data: profile } = await ctx.supabase
+            .from('profiles')
+            .select('token_balance')
+            .eq('id', ctx.user.id)
+            .single();
+
+          if (!profile || (profile.token_balance || 0) < DOCX_COST) {
+            throw new TRPCError({
+              code: 'FORBIDDEN',
+              message: `رصيد غير كافٍ — DOCX يحتاج ${DOCX_COST} توكن إضافية`,
+            });
+          }
+
+          await ctx.supabase
+            .from('profiles')
+            .update({ token_balance: (profile.token_balance || 0) - DOCX_COST })
+            .eq('id', ctx.user.id);
+
+          await ctx.supabase
+            .from('profile_analyses')
+            .update({ docx_generated: true })
+            .eq('id', input.analysisId);
+        }
+      }
+
+      const userName = (analysis.profile_data as any)?.fullName
+                    || (analysis.profile_data as any)?.name
+                    || undefined;
+
+      const reportOpts = {
+        language: analysis.report_language as 'ar' | 'en',
+        userName,
+        targetGoal: analysis.target_goal,
+        industry: analysis.industry,
+        targetRole: analysis.target_role,
+        targetCompany: analysis.target_company,
+        analysisData: analysis.analysis_data as any,
+      };
+
+      let buffer: Buffer;
+      let mimeType: string;
+      let filename: string;
+
+      if (input.format === 'pdf') {
+        buffer = generatePdfReport(reportOpts);
+        mimeType = 'application/pdf';
+        filename = `profile-analysis-${analysis.id.slice(0, 8)}.pdf`;
+      } else {
+        buffer = await generateDocxReport(reportOpts);
+        mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+        filename = `profile-analysis-${analysis.id.slice(0, 8)}.docx`;
+      }
+
+      return {
+        filename,
+        mimeType,
+        base64: buffer.toString('base64'),
+      };
+    }),
+
+  listAnalyses: protectedProcedure.query(async ({ ctx }) => {
+    const { data } = await ctx.supabase
+      .from('profile_analyses')
+      .select('id, linkedin_url, target_goal, industry, report_language, analysis_data, created_at')
+      .eq('user_id', ctx.user.id)
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false })
+      .limit(20);
+
+    return (data || []).map((a: any) => ({
+      id: a.id,
+      linkedin_url: a.linkedin_url,
+      target_goal: a.target_goal,
+      industry: a.industry,
+      language: a.report_language,
+      overall_score: a.analysis_data?.overall_score || 0,
+      verdict: a.analysis_data?.verdict || '',
+      created_at: a.created_at,
+    }));
+  }),
+
+  compareAnalyses: protectedProcedure
+    .input(z.object({
+      olderId: z.string().uuid(),
+      newerId: z.string().uuid(),
+    }))
+    .query(async ({ input, ctx }) => {
+      const { data: analyses } = await ctx.supabase
+        .from('profile_analyses')
+        .select('id, analysis_data, target_goal, industry, created_at')
+        .in('id', [input.olderId, input.newerId])
+        .eq('user_id', ctx.user.id);
+
+      if (!analyses || analyses.length !== 2) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'التحليلات غير موجودة' });
+      }
+
+      const sorted = [...analyses].sort((a: any, b: any) =>
+        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      );
+      const older = sorted[0];
+      const newer = sorted[1];
+
+      const olderData = older.analysis_data as any;
+      const newerData = newer.analysis_data as any;
+
+      const dimensionChanges = (olderData?.dimensions || []).map((oldDim: any) => {
+        const newDim = (newerData?.dimensions || []).find((d: any) => d.name === oldDim.name);
+        const delta = newDim ? newDim.score - oldDim.score : 0;
+        return {
+          name: oldDim.name,
+          before: oldDim.score,
+          after: newDim?.score ?? oldDim.score,
+          delta,
+          status: delta > 0 ? 'improved' : delta < 0 ? 'declined' : 'unchanged',
+        };
+      });
+
+      const improvedCount = dimensionChanges.filter((c: any) => c.status === 'improved').length;
+      const declinedCount = dimensionChanges.filter((c: any) => c.status === 'declined').length;
+      const unchangedCount = dimensionChanges.filter((c: any) => c.status === 'unchanged').length;
+
+      return {
+        older: { id: older.id, score: olderData?.overall_score || 0, date: older.created_at },
+        newer: { id: newer.id, score: newerData?.overall_score || 0, date: newer.created_at },
+        overallDelta: (newerData?.overall_score || 0) - (olderData?.overall_score || 0),
+        dimensionChanges,
+        summary: { improved: improvedCount, declined: declinedCount, unchanged: unchangedCount },
+        improvedAreas: dimensionChanges.filter((c: any) => c.status === 'improved').map((c: any) => ({ name: c.name, delta: c.delta })),
+        stillNeedsWork: dimensionChanges.filter((c: any) => c.after < 7).map((c: any) => c.name),
+      };
+    }),
+
+  deleteAnalysis: protectedProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ input, ctx }) => {
+      await ctx.supabase
+        .from('profile_analyses')
+        .update({ deleted_at: new Date().toISOString() })
+        .eq('id', input.id)
+        .eq('user_id', ctx.user.id);
+      return { success: true };
     }),
 
 });
