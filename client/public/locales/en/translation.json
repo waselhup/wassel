@@ -1586,12 +1586,14 @@
       "hassan": {
         "name": "Hassan Al-Mudhi",
         "role": "Co-Founder & CEO",
-        "bio": "Hassan is the business mind behind Wassel. With deep experience in the Saudi market and a genuine understanding of what professionals here need, he leads product vision and customer relationships. He believes real technology is the kind that simplifies life — not the kind that complicates it."
+        "bio": "Co-founder of Wassel, leading our business side and customer relationships.\n\nThe Saudi market taught me one thing: professionals here need tools that understand their context — not imported solutions. That's what Ali and I set out to build — a platform that bridges the gap between ambition and opportunity.\n\nMy vision: to bring intelligent tools to every Saudi professional that respect their time, their language, and their aspirations.",
+        "signature": "— Hassan Al-Mudhi"
       },
       "ali": {
         "name": "Ali Alhashim",
         "role": "Co-Founder & CTO",
-        "bio": "Ali is the engineer who built Wassel from the ground up. Passionate about AI and systems that just work, he leads the technical architecture and product development. Based in Al-Ahsa, he believes the best products are built when the engineer deeply understands the customer."
+        "bio": "Co-founder of Wassel, leading product and engineering.\n\nI started this project in Al-Ahsa with one question: why don't our professional tools truly understand us? Since that day, I've been working to answer it — one line, one feature at a time.\n\nI believe the best products are built when the engineer understands who they're building for, before understanding the technology itself.",
+        "signature": "— Ali Alhashim"
       }
     },
     "location_label": "Location",

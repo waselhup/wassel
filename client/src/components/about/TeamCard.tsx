@@ -6,6 +6,7 @@ interface TeamCardProps {
   name: string;
   role: string;
   bio: string;
+  signature?: string;
   linkedinUrl?: string;
   fontFamily: string;
 }
@@ -16,6 +17,7 @@ export default function TeamCard({
   name,
   role,
   bio,
+  signature,
   linkedinUrl,
   fontFamily,
 }: TeamCardProps) {
@@ -32,14 +34,17 @@ export default function TeamCard({
     fontFamily,
   };
 
+  // Portrait crop — aspect 4/5 + objectPosition 'center 20%' keeps the top of the head visible
   const photoWrap: CSSProperties = {
     width: '100%',
-    aspectRatio: '1 / 1',
+    aspectRatio: '4 / 5',
     borderRadius: 14,
     overflow: 'hidden',
     background: 'var(--bg-off)',
     position: 'relative',
   };
+
+  const paragraphs = bio.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
 
   return (
     <div
@@ -62,6 +67,7 @@ export default function TeamCard({
             width: '100%',
             height: '100%',
             objectFit: 'cover',
+            objectPosition: 'center 20%',
             display: 'block',
           }}
         />
@@ -91,16 +97,38 @@ export default function TeamCard({
         </div>
       </div>
 
-      <p
-        style={{
-          fontSize: '0.9rem',
-          color: 'var(--text-body)',
-          lineHeight: 1.7,
-          margin: 0,
-        }}
-      >
-        {bio}
-      </p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
+        {paragraphs.map((para, i) => (
+          <p
+            key={i}
+            style={{
+              fontSize: '0.9rem',
+              color: 'var(--text-body)',
+              lineHeight: 1.8,
+              margin: 0,
+            }}
+          >
+            {para}
+          </p>
+        ))}
+      </div>
+
+      {signature && (
+        <p
+          style={{
+            marginTop: '0.4rem',
+            paddingTop: '0.85rem',
+            borderTop: '1px solid var(--border-soft)',
+            fontSize: '0.85rem',
+            color: 'var(--text-dim)',
+            fontWeight: 400,
+            letterSpacing: 0.1,
+            margin: 0,
+          }}
+        >
+          {signature}
+        </p>
+      )}
 
       {linkedinUrl && (
         <a

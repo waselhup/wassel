@@ -177,6 +177,7 @@ export default function About() {
               name={t('about.team.hassan.name')}
               role={t('about.team.hassan.role')}
               bio={t('about.team.hassan.bio')}
+              signature={t('about.team.hassan.signature')}
               fontFamily={font}
             />
             <TeamCard
@@ -185,6 +186,7 @@ export default function About() {
               name={t('about.team.ali.name')}
               role={t('about.team.ali.role')}
               bio={t('about.team.ali.bio')}
+              signature={t('about.team.ali.signature')}
               fontFamily={font}
             />
           </div>
