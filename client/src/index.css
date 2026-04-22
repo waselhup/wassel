@@ -39,6 +39,230 @@
   --radius: 12px;
   --radius-sm: 8px;
   --radius-lg: 16px;
+
+  /* ============================================
+     Landing v4 — Qatalog-inspired tokens
+     (light bg, mint accent, thin 500-weight heads)
+     ============================================ */
+  --v4-bg: #ffffff;
+  --v4-bg-off: #fafafa;
+  --v4-bg-card: #ffffff;
+
+  --v4-text: #0a0a0a;
+  --v4-text-body: #3f3f46;
+  --v4-text-dim: #71717a;
+  --v4-text-muted: #a1a1aa;
+  --v4-text-faint: #d4d4d8;
+
+  --v4-accent: #6ee7b7;
+  --v4-accent-strong: #34d399;
+  --v4-accent-dark: #10b981;
+
+  --v4-border: #e4e4e7;
+  --v4-border-soft: #f4f4f5;
+  --v4-border-strong: #d4d4d8;
+
+  --v4-card-purple: #8b5cf6;
+  --v4-card-blue: #3b82f6;
+  --v4-card-pink: #ec4899;
+  --v4-card-orange: #fb923c;
+}
+
+/* ============================================
+   Landing v4 — scoped styles
+   Only applied inside .v4-landing container.
+   Keeps dashboard / app pages untouched.
+   ============================================ */
+.v4-landing {
+  background: var(--v4-bg);
+  color: var(--v4-text);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+.v4-landing ::selection { background: var(--v4-accent); color: var(--v4-text); }
+
+/* Override default body/h1-h6 typography inside v4-landing only */
+.v4-landing p {
+  color: var(--v4-text-body);
+  line-height: 1.5;
+}
+.v4-landing h1,
+.v4-landing h2,
+.v4-landing h3,
+.v4-landing h4,
+.v4-landing h5 {
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  color: var(--v4-text);
+}
+.v4-landing a { color: inherit; text-decoration: none; }
+.v4-landing a:hover { color: inherit; }
+
+/* Concentric background circles */
+.v4-bg-circles {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100vw;
+  max-width: 1600px;
+  height: 800px;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+.v4-bg-circles::before,
+.v4-bg-circles::after,
+.v4-bg-circles span {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 1px solid var(--v4-border-soft);
+}
+.v4-bg-circles::before { width: 800px; height: 800px; }
+.v4-bg-circles::after { width: 1200px; height: 1200px; }
+.v4-bg-circles span:nth-child(1) { width: 400px; height: 400px; }
+.v4-bg-circles span:nth-child(2) { width: 600px; height: 600px; }
+.v4-bg-circles span:nth-child(3) { width: 1000px; height: 1000px; border-color: var(--v4-border); opacity: 0.5; }
+
+/* Floating cards collage */
+.v4-hero-collage {
+  position: relative;
+  margin: 4rem auto 0;
+  height: 320px;
+  max-width: 1100px;
+}
+.v4-float-card {
+  position: absolute;
+  background: white;
+  border: 1px solid var(--v4-border);
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.4s;
+}
+.v4-float-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+.v4-fc-label {
+  font-size: 0.65rem;
+  color: var(--v4-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.4rem;
+  font-weight: 500;
+}
+.v4-fc-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  line-height: 1.3;
+}
+
+/* Card positions LTR */
+.v4-fc-1 { width: 150px; top: 20px; left: 12%; padding: 0; overflow: hidden; }
+.v4-fc-1-img {
+  width: 100%; height: 160px;
+  background: linear-gradient(135deg, #1e40af 0%, #6366f1 40%, #ec4899 100%);
+  position: relative;
+}
+.v4-fc-1-img::after {
+  content: '';
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(circle at 30% 40%, rgba(255, 255, 255, 0.3) 0%, transparent 50%),
+    radial-gradient(circle at 70% 70%, rgba(168, 85, 247, 0.4) 0%, transparent 50%);
+}
+
+.v4-fc-2 { width: 220px; top: 10px; left: 26%; }
+.v4-fc-3 { width: 220px; top: 40px; left: 44%; padding: 0; overflow: hidden; }
+.v4-fc-3-header {
+  height: 90px;
+  background: linear-gradient(135deg, #fb923c 0%, #f472b6 30%, #a855f7 60%, #3b82f6 100%);
+  position: relative;
+}
+.v4-fc-3-header::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(circle at 70% 30%, rgba(255, 255, 255, 0.4) 0%, transparent 60%);
+}
+.v4-fc-4 {
+  width: 180px; top: 90px; left: 62%;
+  background: linear-gradient(180deg, #fafafa 0%, white 100%);
+}
+.v4-fc-5 { width: 200px; top: 200px; left: 18%; }
+.v4-fc-6 { width: 200px; top: 170px; left: 38%; }
+.v4-fc-7 { width: 200px; top: 230px; left: 55%; padding: 0; overflow: hidden; }
+.v4-fc-8 {
+  width: 170px; top: 70px; right: 8%;
+  background: linear-gradient(180deg, #fefce8 0%, white 100%);
+}
+.v4-fc-9 {
+  width: 170px; top: 200px; right: 4%;
+  display: flex; align-items: center; gap: 0.6rem;
+}
+
+/* RTL mirror — swap left↔right on absolutely-positioned cards */
+[dir="rtl"] .v4-fc-1 { left: auto; right: 12%; }
+[dir="rtl"] .v4-fc-2 { left: auto; right: 26%; }
+[dir="rtl"] .v4-fc-3 { left: auto; right: 44%; }
+[dir="rtl"] .v4-fc-4 { left: auto; right: 62%; }
+[dir="rtl"] .v4-fc-5 { left: auto; right: 18%; }
+[dir="rtl"] .v4-fc-6 { left: auto; right: 38%; }
+[dir="rtl"] .v4-fc-7 { left: auto; right: 55%; }
+[dir="rtl"] .v4-fc-8 { right: auto; left: 8%; }
+[dir="rtl"] .v4-fc-9 { right: auto; left: 4%; }
+
+/* Fits section card stack */
+.v4-card-stack {
+  position: absolute;
+  width: 260px;
+  padding: 0.75rem 1rem;
+  background: white;
+  border: 1px solid var(--v4-border);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+.v4-card-stack.s1 { top: 0; left: 10%; opacity: 0.7; }
+.v4-card-stack.s2 { top: 55px; left: 20%; opacity: 0.85; }
+.v4-card-stack.s3 { top: 110px; left: 32%; z-index: 2; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08); }
+.v4-card-stack.s4 { top: 165px; left: 44%; opacity: 0.85; }
+.v4-card-stack.s5 { top: 220px; left: 54%; opacity: 0.7; }
+
+[dir="rtl"] .v4-card-stack.s1 { left: auto; right: 10%; }
+[dir="rtl"] .v4-card-stack.s2 { left: auto; right: 20%; }
+[dir="rtl"] .v4-card-stack.s3 { left: auto; right: 32%; }
+[dir="rtl"] .v4-card-stack.s4 { left: auto; right: 44%; }
+[dir="rtl"] .v4-card-stack.s5 { left: auto; right: 54%; }
+
+/* Reveal on scroll */
+.v4-reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1), transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.v4-reveal.is-in { opacity: 1; transform: translateY(0); }
+
+/* Responsive: stack cards, hide collage on mobile */
+@media (max-width: 900px) {
+  .v4-hero-collage { display: none; }
+  .v4-fits-visual .v4-card-stack {
+    position: static !important;
+    width: 100% !important;
+    opacity: 1 !important;
+    margin-bottom: 0.5rem;
+  }
 }
 
 * {

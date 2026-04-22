@@ -1,55 +1,70 @@
-import { useRef } from 'react';
+import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import LandingNav from '@/components/landing/LandingNav';
-import LandingHero from '@/components/landing/LandingHero';
-import SocialProof from '@/components/landing/SocialProof';
-import BentoFeatures from '@/components/landing/BentoFeatures';
-import HowItWorksTimeline from '@/components/landing/HowItWorksTimeline';
-import ProductDemo from '@/components/landing/ProductDemo';
-import TestimonialsGrid from '@/components/landing/TestimonialsGrid';
-import PricingCards from '@/components/landing/PricingCards';
-import LandingFooter from '@/components/landing/LandingFooter';
+import V4BgCircles from '@/components/landing/v4/V4BgCircles';
+import V4Nav from '@/components/landing/v4/V4Nav';
+import V4Hero from '@/components/landing/v4/V4Hero';
+import V4HubSection from '@/components/landing/v4/V4HubSection';
+import V4FitsSection from '@/components/landing/v4/V4FitsSection';
+import V4BentoSection from '@/components/landing/v4/V4BentoSection';
+import V4FinalCTA from '@/components/landing/v4/V4FinalCTA';
+import V4Footer from '@/components/landing/v4/V4Footer';
 
 /**
- * Wassel landing page — world-class composition.
+ * Wassel landing page — v4 (Qatalog-inspired).
+ * Light background, mint accent, thin 500-weight headlines,
+ * floating cards collage hero, bento sections.
  *
- * Configuration:
- *  - To activate the demo video, set `DEMO_VIDEO_URL` below to a YouTube or
- *    Vimeo URL (e.g. "https://youtu.be/abc123"). Leaving it undefined shows a
- *    polished "coming soon" state but keeps the UI interactive.
+ * Brand assets preserved:
+ *  - Uses existing WasselLogo SVG component
+ *  - Uses existing Cairo (AR) + Inter (EN) fonts
+ *  - Brand name "Wassel" / "وصّل" unchanged
  */
-const DEMO_VIDEO_URL: string | undefined = undefined;
-
 export default function LandingPage() {
   const { i18n } = useTranslation();
   const isRTL = i18n.language === 'ar';
-  const demoRef = useRef<HTMLDivElement>(null);
 
-  function scrollToDemo() {
-    const el = document.getElementById('demo');
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
+  // Reveal-on-scroll
+  useEffect(() => {
+    const els = document.querySelectorAll<HTMLElement>('.v4-reveal');
+    if (!('IntersectionObserver' in window)) {
+      els.forEach((el) => el.classList.add('is-in'));
+      return;
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting) {
+            e.target.classList.add('is-in');
+            io.unobserve(e.target);
+          }
+        });
+      },
+      { threshold: 0.12 },
+    );
+    els.forEach((el) => io.observe(el));
+    return () => io.disconnect();
+  }, []);
 
   return (
     <div
+      className="v4-landing"
       dir={isRTL ? 'rtl' : 'ltr'}
       lang={isRTL ? 'ar' : 'en'}
       style={{
-        background: '#fff',
-        color: '#0B1220',
         fontFamily: isRTL ? 'Cairo, sans-serif' : 'Inter, sans-serif',
+        background: 'var(--v4-bg)',
+        color: 'var(--v4-text)',
         minHeight: '100vh',
       }}
     >
-      <LandingNav />
-      <LandingHero onWatchDemo={scrollToDemo} />
-      <SocialProof />
-      <BentoFeatures />
-      <HowItWorksTimeline />
-      <ProductDemo ref={demoRef} videoUrl={DEMO_VIDEO_URL} />
-      <TestimonialsGrid />
-      <PricingCards />
-      <LandingFooter />
+      <V4BgCircles />
+      <V4Nav />
+      <V4Hero />
+      <V4HubSection />
+      <V4FitsSection />
+      <V4BentoSection />
+      <V4FinalCTA />
+      <V4Footer />
     </div>
   );
 }
