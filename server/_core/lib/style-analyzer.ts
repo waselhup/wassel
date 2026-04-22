@@ -30,7 +30,7 @@ Return ONLY valid JSON:
 }
 
 Focus on what makes THIS user DIFFERENT from generic AI writing.
-Detect Arabic dialect variants carefully (Hasawi, Najdi, Hijazi, Eastern).`;
+Detect Arabic dialect variants carefully (Hasawi, Najdi, Hijazi).`;
 
 export async function analyzeWritingStyle(
   samples: string[]

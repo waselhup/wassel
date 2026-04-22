@@ -38,8 +38,13 @@ export default function V4Footer() {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <WasselLogo size={28} />
-          <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)', fontFamily }}>
-            {t('landing_v4.footer.copyright')}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)', fontFamily }}>
+              {t('landing_v4.footer.copyright')}
+            </div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontFamily, letterSpacing: 0.2 }}>
+              {t('landing_v4.footer.cr_number')}
+            </div>
           </div>
         </div>
       </div>

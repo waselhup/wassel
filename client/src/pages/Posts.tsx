@@ -23,7 +23,7 @@ type Tone =
   | 'analytical' | 'storytelling' | 'motivational' | 'sarcastic' | 'provocative';
 
 type Dialect =
-  | 'msa' | 'saudi-general' | 'saudi-eastern' | 'saudi-hasawi'
+  | 'msa' | 'saudi-general' | 'saudi-hasawi'
   | 'saudi-najdi' | 'saudi-hijazi' | 'english' | 'mixed';
 
 type Audience =
@@ -91,7 +91,7 @@ const ALL_TONES: Tone[] = [
 ];
 
 const ALL_DIALECTS: Dialect[] = [
-  'msa', 'saudi-general', 'saudi-eastern', 'saudi-hasawi',
+  'msa', 'saudi-general', 'saudi-hasawi',
   'saudi-najdi', 'saudi-hijazi', 'english', 'mixed',
 ];
 
