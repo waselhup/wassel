@@ -289,7 +289,7 @@ export default function AdminExecutorAgents() {
                 <div key={m.id} style={{ display: 'flex', justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start' }}>
                   <div style={{
                     maxWidth: '82%', padding: '10px 14px', borderRadius: 12,
-                    background: m.role === 'user' ? '#0A8F84' : '#F9FAFB',
+                    background: m.role === 'user' ? '#14b8a6' : '#F9FAFB',
                     color: m.role === 'user' ? '#fff' : '#111827',
                     fontFamily: 'Cairo, Inter, sans-serif', fontSize: 13, lineHeight: 1.7,
                     whiteSpace: 'pre-wrap', wordBreak: 'break-word',
@@ -337,7 +337,7 @@ export default function AdminExecutorAgents() {
                 onClick={sendMessage}
                 disabled={!input.trim() || sending}
                 style={{
-                  padding: '0 16px', borderRadius: 10, background: '#0A8F84', color: '#fff',
+                  padding: '0 16px', borderRadius: 10, background: '#14b8a6', color: '#fff',
                   border: 'none', cursor: 'pointer', opacity: !input.trim() || sending ? 0.5 : 1,
                   display: 'flex', alignItems: 'center', gap: 6, fontWeight: 800, fontSize: 12, fontFamily: 'Cairo, sans-serif',
                 }}

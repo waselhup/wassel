@@ -226,7 +226,7 @@ export default function AdminUsers() {
             {t("au.notAuthorizedDesc", "هذه الصفحة مخصصة للمشرفين فقط")}
           </p>
           <Link href="/app">
-            <a className="inline-block px-5 py-3 rounded-xl bg-[#0A8F84] text-white font-semibold shadow-lg shadow-[#0A8F84]/30 hover:bg-[#064E49] transition">
+            <a className="inline-block px-5 py-3 rounded-xl bg-[#14b8a6] text-white font-semibold shadow-lg shadow-[#14b8a6]/30 hover:bg-[#0f766e] transition">
               {t("au.backToApp", "العودة للتطبيق")}
             </a>
           </Link>
@@ -310,7 +310,7 @@ export default function AdminUsers() {
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder={t("au.search", "ابحث بالاسم أو البريد...")}
-                className="w-full ps-10 pe-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-[#0A8F84] focus:outline-none focus:ring-2 focus:ring-[#0A8F84]/20 transition"
+                className="w-full ps-10 pe-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-[#14b8a6] focus:outline-none focus:ring-2 focus:ring-[#14b8a6]/20 transition"
               />
             </div>
           </div>
@@ -379,7 +379,7 @@ export default function AdminUsers() {
                     >
                       <td className="py-3">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-teal-100 to-teal-200 text-[#0A8F84] font-bold text-xs inline-flex items-center justify-center flex-shrink-0 overflow-hidden">
+                          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-teal-100 to-teal-200 text-[#14b8a6] font-bold text-xs inline-flex items-center justify-center flex-shrink-0 overflow-hidden">
                             {u.avatar_url ? (
                               <img src={u.avatar_url} alt="" className="w-full h-full object-cover" />
                             ) : (
@@ -432,7 +432,7 @@ export default function AdminUsers() {
                             onClick={() =>
                               setOpenMenuId(openMenuId === u.id ? null : u.id)
                             }
-                            className="w-8 h-8 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-[#0A8F84] inline-flex items-center justify-center transition"
+                            className="w-8 h-8 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-[#14b8a6] inline-flex items-center justify-center transition"
                           >
                             <MoreVertical className="w-4 h-4" />
                           </button>
@@ -539,7 +539,7 @@ export default function AdminUsers() {
                 value={grantAmount}
                 onChange={(e) => setGrantAmount(+e.target.value)}
                 min={1}
-                className="w-full ps-10 pe-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-[#0A8F84] focus:outline-none focus:ring-2 focus:ring-[#0A8F84]/20 transition tabular-nums"
+                className="w-full ps-10 pe-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-[#14b8a6] focus:outline-none focus:ring-2 focus:ring-[#14b8a6]/20 transition tabular-nums"
                 dir="ltr"
                 disabled={grantSubmitting}
               />
@@ -552,7 +552,7 @@ export default function AdminUsers() {
                   disabled={grantSubmitting}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition tabular-nums ${
                     grantAmount === a
-                      ? "bg-[#0A8F84] text-white border-[#0A8F84]"
+                      ? "bg-[#14b8a6] text-white border-[#14b8a6]"
                       : "bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100"
                   }`}
                   dir="ltr"
@@ -570,7 +570,7 @@ export default function AdminUsers() {
               onChange={(e) => setGrantReason(e.target.value)}
               rows={3}
               placeholder={t("au.reasonPh", "مكافأة بيتا، دعم، ترقية، إلخ...")}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-[#0A8F84] focus:outline-none focus:ring-2 focus:ring-[#0A8F84]/20 transition resize-none"
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-[#14b8a6] focus:outline-none focus:ring-2 focus:ring-[#14b8a6]/20 transition resize-none"
               disabled={grantSubmitting}
             />
 
@@ -585,7 +585,7 @@ export default function AdminUsers() {
               <button
                 onClick={handleGrant}
                 disabled={grantSubmitting}
-                className="flex-1 py-3 rounded-xl bg-[#0A8F84] hover:bg-[#064E49] text-white font-semibold shadow-lg shadow-[#0A8F84]/30 inline-flex items-center justify-center gap-2 transition disabled:opacity-50"
+                className="flex-1 py-3 rounded-xl bg-[#14b8a6] hover:bg-[#0f766e] text-white font-semibold shadow-lg shadow-[#14b8a6]/30 inline-flex items-center justify-center gap-2 transition disabled:opacity-50"
               >
                 {grantSubmitting ? (
                   <RefreshCw className="w-4 h-4 animate-spin" />
@@ -608,7 +608,7 @@ function PlanBadge({ plan }: { plan: string }) {
     label === "elite"
       ? "bg-purple-50 text-purple-700"
       : label === "pro"
-      ? "bg-teal-50 text-[#0A8F84]"
+      ? "bg-teal-50 text-[#14b8a6]"
       : label === "starter"
       ? "bg-blue-50 text-blue-700"
       : "bg-gray-100 text-gray-600";
@@ -631,7 +631,7 @@ function StatCard({
   tint: "teal" | "emerald" | "purple" | "amber";
 }) {
   const tintMap: Record<string, string> = {
-    teal: "bg-teal-50 text-[#0A8F84]",
+    teal: "bg-teal-50 text-[#14b8a6]",
     emerald: "bg-emerald-50 text-emerald-600",
     purple: "bg-purple-50 text-purple-700",
     amber: "bg-amber-50 text-amber-600",

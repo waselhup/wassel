@@ -17,7 +17,7 @@ import V4Footer from '@/components/landing/v4/V4Footer';
  * Brand assets preserved:
  *  - Uses existing WasselLogo SVG component
  *  - Uses existing Cairo (AR) + Inter (EN) fonts
- *  - Brand name "Wassel" / "وصّل" unchanged
+ *  - Brand name "Wassel" / "وصل" unchanged
  */
 export default function LandingPage() {
   const { i18n } = useTranslation();

@@ -34,7 +34,7 @@ export default function MyTickets() {
       <div style={{ maxWidth: 800, margin: '0 auto', padding: '0 4px' }}>
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} style={{ marginBottom: 24 }}>
           <h1 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 28, color: 'var(--wsl-ink)', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 40, height: 40, borderRadius: 12, background: 'linear-gradient(135deg, #0A8F84, #064E49)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: 40, height: 40, borderRadius: 12, background: 'linear-gradient(135deg, #14b8a6, #0f766e)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <TicketCheck size={20} color="#fff" />
             </div>
             {isAr ? 'ملاحظاتي وتذاكري' : 'My Feedback & Tickets'}
@@ -46,7 +46,7 @@ export default function MyTickets() {
 
         {loading ? (
           <div style={{ padding: 60, textAlign: 'center' }}>
-            <Loader2 size={32} style={{ color: '#0A8F84', animation: 'spin 1s linear infinite' }} />
+            <Loader2 size={32} style={{ color: '#14b8a6', animation: 'spin 1s linear infinite' }} />
           </div>
         ) : tickets.length === 0 ? (
           <div style={{ background: '#fff', borderRadius: 16, border: '2px dashed var(--wsl-border)', padding: '60px 24px', textAlign: 'center' }}>

@@ -66,7 +66,7 @@ export default function FeedbackFAB() {
         style={{
           position: 'fixed', bottom: 24, insetInlineEnd: 24, zIndex: 90,
           width: 56, height: 56, borderRadius: 16,
-          background: 'linear-gradient(135deg, #0A8F84, #064E49)',
+          background: 'linear-gradient(135deg, #14b8a6, #0f766e)',
           border: 'none', cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           boxShadow: '0 8px 24px rgba(10,143,132,0.35)',
@@ -96,7 +96,7 @@ export default function FeedbackFAB() {
                 <>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
                     <h3 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 20, color: 'var(--wsl-ink)', display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
-                      <MessageSquarePlus size={20} style={{ color: '#0A8F84' }} />
+                      <MessageSquarePlus size={20} style={{ color: '#14b8a6' }} />
                       {isAr ? 'إرسال ملاحظة' : 'Send Feedback'}
                     </h3>
                     <button onClick={() => setOpen(false)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: 4 }}>
@@ -112,7 +112,7 @@ export default function FeedbackFAB() {
                       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                         {categories.map(c => (
                           <button key={c.value} onClick={() => setForm(f => ({ ...f, category: c.value as any }))}
-                            style={{ padding: '6px 14px', borderRadius: 8, border: form.category === c.value ? '1.5px solid #0A8F84' : '1.5px solid #E5E7EB', background: form.category === c.value ? 'rgba(10,143,132,0.07)' : '#fff', color: form.category === c.value ? '#0A8F84' : '#6B7280', fontWeight: 800, fontSize: 12, cursor: 'pointer', fontFamily: 'Cairo, sans-serif' }}>
+                            style={{ padding: '6px 14px', borderRadius: 8, border: form.category === c.value ? '1.5px solid #14b8a6' : '1.5px solid #E5E7EB', background: form.category === c.value ? 'rgba(10,143,132,0.07)' : '#fff', color: form.category === c.value ? '#14b8a6' : '#6B7280', fontWeight: 800, fontSize: 12, cursor: 'pointer', fontFamily: 'Cairo, sans-serif' }}>
                             {c.label}
                           </button>
                         ))}
@@ -145,7 +145,7 @@ export default function FeedbackFAB() {
                       <div style={{ display: 'flex', gap: 6 }}>
                         {priorities.map(p => (
                           <button key={p.value} onClick={() => setForm(f => ({ ...f, priority: p.value as any }))}
-                            style={{ padding: '6px 12px', borderRadius: 8, border: form.priority === p.value ? '1.5px solid #0A8F84' : '1.5px solid #E5E7EB', background: form.priority === p.value ? 'rgba(10,143,132,0.07)' : '#fff', color: form.priority === p.value ? '#0A8F84' : '#6B7280', fontWeight: 800, fontSize: 11, cursor: 'pointer', fontFamily: 'Cairo, sans-serif' }}>
+                            style={{ padding: '6px 12px', borderRadius: 8, border: form.priority === p.value ? '1.5px solid #14b8a6' : '1.5px solid #E5E7EB', background: form.priority === p.value ? 'rgba(10,143,132,0.07)' : '#fff', color: form.priority === p.value ? '#14b8a6' : '#6B7280', fontWeight: 800, fontSize: 11, cursor: 'pointer', fontFamily: 'Cairo, sans-serif' }}>
                             {p.label}
                           </button>
                         ))}
@@ -159,7 +159,7 @@ export default function FeedbackFAB() {
                     )}
 
                     <button onClick={submit} disabled={loading}
-                      style={{ width: '100%', padding: '12px 0', borderRadius: 12, border: 'none', background: '#0A8F84', color: '#fff', fontWeight: 900, fontSize: 14, cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.6 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontFamily: 'Cairo, sans-serif' }}>
+                      style={{ width: '100%', padding: '12px 0', borderRadius: 12, border: 'none', background: '#14b8a6', color: '#fff', fontWeight: 900, fontSize: 14, cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.6 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontFamily: 'Cairo, sans-serif' }}>
                       {loading ? <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} /> : null}
                       {loading ? (isAr ? 'جاري الإرسال...' : 'Submitting...') : (isAr ? 'إرسال الملاحظة' : 'Submit Feedback')}
                     </button>

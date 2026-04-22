@@ -194,7 +194,7 @@ export default function Signup() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder={t("auth.name", "الاسم الكامل")}
-            className={`w-full h-14 ${isRTL ? "pe-12 ps-4" : "ps-12 pe-4"} rounded-xl border border-gray-200 bg-white focus:border-[#0A8F84] focus:ring-2 focus:ring-[#0A8F84]/20 outline-none transition`}
+            className={`w-full h-14 ${isRTL ? "pe-12 ps-4" : "ps-12 pe-4"} rounded-xl border border-gray-200 bg-white focus:border-[#14b8a6] focus:ring-2 focus:ring-[#14b8a6]/20 outline-none transition`}
           />
         </div>
 
@@ -206,7 +206,7 @@ export default function Signup() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder={t("auth.email", "البريد الإلكتروني")}
-            className={`w-full h-14 ${isRTL ? "pe-12 ps-4" : "ps-12 pe-4"} rounded-xl border border-gray-200 bg-white focus:border-[#0A8F84] focus:ring-2 focus:ring-[#0A8F84]/20 outline-none transition`}
+            className={`w-full h-14 ${isRTL ? "pe-12 ps-4" : "ps-12 pe-4"} rounded-xl border border-gray-200 bg-white focus:border-[#14b8a6] focus:ring-2 focus:ring-[#14b8a6]/20 outline-none transition`}
           />
           {email.includes("@") && email.includes(".") && (
             <Check className={`absolute top-1/2 -translate-y-1/2 ${isRTL ? "start-4" : "end-4"} w-5 h-5 text-green-500`} />
@@ -223,7 +223,7 @@ export default function Signup() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder={t("auth.password.placeholder", "كلمة المرور (8 أحرف أو أكثر)")}
-              className={`w-full h-14 ${isRTL ? "pe-12 ps-4" : "ps-12 pe-4"} rounded-xl border border-gray-200 bg-white focus:border-[#0A8F84] focus:ring-2 focus:ring-[#0A8F84]/20 outline-none transition`}
+              className={`w-full h-14 ${isRTL ? "pe-12 ps-4" : "ps-12 pe-4"} rounded-xl border border-gray-200 bg-white focus:border-[#14b8a6] focus:ring-2 focus:ring-[#14b8a6]/20 outline-none transition`}
             />
           </div>
           <div className="mt-2 flex items-center gap-2">
@@ -239,15 +239,15 @@ export default function Signup() {
 
         <div className="text-xs text-[#6b7280] leading-relaxed">
           {t("auth.terms", "بإنشاء الحساب فإنك توافق على")}{" "}
-          <a href="#" className="text-[#0A8F84] hover:underline">{t("auth.terms.link", "الشروط والأحكام")}</a>
+          <a href="#" className="text-[#14b8a6] hover:underline">{t("auth.terms.link", "الشروط والأحكام")}</a>
           {" "}{t("auth.and", "و")}{" "}
-          <a href="#" className="text-[#0A8F84] hover:underline">{t("auth.privacy.link", "سياسة الخصوصية")}</a>
+          <a href="#" className="text-[#14b8a6] hover:underline">{t("auth.privacy.link", "سياسة الخصوصية")}</a>
         </div>
 
         <button
           type="submit"
           disabled={loading}
-          className="w-full h-14 rounded-xl bg-[#0A8F84] text-white font-bold text-base shadow-lg shadow-[#0A8F84]/30 hover:bg-[#12B5A8] hover:shadow-xl transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+          className="w-full h-14 rounded-xl bg-[#14b8a6] text-white font-bold text-base shadow-lg shadow-[#14b8a6]/30 hover:bg-[#0d9488] hover:shadow-xl transition-all disabled:opacity-60 flex items-center justify-center gap-2"
         >
           {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
             <>
@@ -259,7 +259,7 @@ export default function Signup() {
 
         <div className="text-center text-sm text-[#6b7280]">
           {t("auth.haveAccount", "لديك حساب بالفعل؟")}{" "}
-          <Link href="/login" className="text-[#0A8F84] font-semibold hover:underline">
+          <Link href="/login" className="text-[#14b8a6] font-semibold hover:underline">
             {t("auth.login.link", "سجّل دخولك")}
           </Link>
         </div>

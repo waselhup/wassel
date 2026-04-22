@@ -1347,7 +1347,8 @@
       "government": "Government",
       "academic": "Academic",
       "entrepreneurship": "Entrepreneurship",
-      "real-estate": "Real Estate"
+      "real-estate": "Real Estate",
+      "other": "Other"
     },
     "language": {
       "label": "Report language",
@@ -1548,13 +1549,7 @@
       "card9_meta": "Final analysis · 3 pages"
     },
     "footer": {
-      "copyright": "© 2026 Wassel. All rights reserved. · Made with care in Dammam, Saudi Arabia",
-      "badge_forbes_1": "Forbes",
-      "badge_forbes_2": "Middle East Top 50 · 2026",
-      "badge_ph_1": "ProductHunt",
-      "badge_ph_2": "#2 Product of the Day",
-      "badge_g2_1": "G2",
-      "badge_g2_2": "2026 High Performer",
+      "copyright": "© 2026 Wassel. All rights reserved. · Made with care in Al-Ahsa, Saudi Arabia",
       "legal_terms": "Terms of Service",
       "legal_privacy": "Privacy Policy",
       "col_account": "Account",

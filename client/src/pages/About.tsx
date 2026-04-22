@@ -1,26 +1,117 @@
 import { useTranslation } from 'react-i18next';
 import { Link } from 'wouter';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { WasselLogo } from '../components/WasselLogo';
 
 export default function About() {
   const { i18n } = useTranslation();
   const isRTL = i18n.language === 'ar';
+  const font = isRTL ? 'Cairo, sans-serif' : 'Inter, sans-serif';
+
   return (
-    <div dir={isRTL ? 'rtl' : 'ltr'} className="min-h-screen py-12 px-6" style={{ background: '#fff', fontFamily: 'Cairo, sans-serif' }}>
-      <div className="max-w-3xl mx-auto text-center">
-        <Link href="/" className="inline-flex items-center gap-2 mb-8">
+    <div
+      dir={isRTL ? 'rtl' : 'ltr'}
+      style={{
+        minHeight: '100vh',
+        background: 'var(--bg)',
+        color: 'var(--text)',
+        fontFamily: font,
+      }}
+    >
+      <div
+        style={{
+          maxWidth: 720,
+          margin: '0 auto',
+          padding: '4rem 1.5rem 6rem',
+        }}
+      >
+        <Link
+          href="/"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 10,
+            marginBottom: '3rem',
+            textDecoration: 'none',
+            color: 'var(--text)',
+          }}
+        >
           <WasselLogo size={28} />
-          <span className="text-lg font-extrabold" style={{ color: 'var(--wsl-teal)' }}>{'\u0648\u0635\u0651\u0644'}</span>
+          <span style={{ fontWeight: 600, fontSize: '1.05rem', letterSpacing: '-0.02em' }}>
+            {isRTL ? 'وصل' : 'Wassel'}
+          </span>
         </Link>
-        <h1 className="text-3xl font-extrabold mb-6" style={{ color: 'var(--wsl-teal-dark)' }}>{'\u0645\u0646 \u0646\u062d\u0646'}</h1>
-        <p className="text-lg leading-8 mb-6" style={{ color: 'var(--wsl-ink-2)' }}>
-          {'\u0648\u0635\u0651\u0644 \u0645\u0646\u0635\u0629 \u0633\u0639\u0648\u062f\u064a\u0629 \u0645\u0628\u062a\u0643\u0631\u0629 \u0645\u062f\u0639\u0648\u0645\u0629 \u0628\u0627\u0644\u0630\u0643\u0627\u0621 \u0627\u0644\u0627\u0635\u0637\u0646\u0627\u0639\u064a\u060c \u0645\u0635\u0645\u0645\u0629 \u0644\u062a\u0633\u0631\u064a\u0639 \u0645\u0633\u064a\u0631\u062a\u0643 \u0627\u0644\u0645\u0647\u0646\u064a\u0629 \u0641\u064a \u0627\u0644\u0633\u0648\u0642 \u0627\u0644\u0633\u0639\u0648\u062f\u064a \u0648\u0627\u0644\u062e\u0644\u064a\u062c\u064a. \u0646\u0624\u0645\u0646 \u0628\u0623\u0646 \u0643\u0644 \u0645\u062d\u062a\u0631\u0641 \u0633\u0639\u0648\u062f\u064a \u064a\u0633\u062a\u062d\u0642 \u0623\u062f\u0648\u0627\u062a \u0630\u0643\u064a\u0629 \u062a\u0633\u0627\u0639\u062f\u0647 \u0639\u0644\u0649 \u0627\u0644\u062a\u0648\u0627\u0635\u0644 \u0628\u0641\u0639\u0627\u0644\u064a\u0629 \u0645\u0639 \u0635\u0646\u0627\u0639 \u0627\u0644\u0642\u0631\u0627\u0631.'}
-        </p>
-        <p className="text-base leading-8 mb-8" style={{ color: 'var(--wsl-ink-3)' }}>
-          {'\u062a\u0623\u0633\u0633\u062a \u0648\u0635\u0651\u0644 \u0641\u064a \u0627\u0644\u0623\u062d\u0633\u0627\u0621\u060c \u0627\u0644\u0645\u0646\u0637\u0642\u0629 \u0627\u0644\u0634\u0631\u0642\u064a\u0629\u060c \u0627\u0644\u0645\u0645\u0644\u0643\u0629 \u0627\u0644\u0639\u0631\u0628\u064a\u0629 \u0627\u0644\u0633\u0639\u0648\u062f\u064a\u0629.'}
-        </p>
-        <Link href="/" className="inline-flex px-6 py-3 rounded-xl text-white font-bold" style={{ background: 'var(--wsl-teal)' }}>
-          {'\u0627\u0644\u0631\u062c\u0648\u0639 \u0644\u0644\u0631\u0626\u064a\u0633\u064a\u0629'}
+
+        <h1
+          style={{
+            fontSize: 'clamp(2rem, 4vw, 2.6rem)',
+            fontWeight: 500,
+            letterSpacing: '-0.03em',
+            color: 'var(--text)',
+            marginBottom: '1.75rem',
+            lineHeight: 1.15,
+          }}
+        >
+          {isRTL ? 'من نحن' : 'About'}
+        </h1>
+
+        {isRTL ? (
+          <>
+            <p style={{ fontSize: '1.05rem', lineHeight: 1.7, color: 'var(--text-body)', marginBottom: '1.25rem' }}>
+              وصل منصة سعودية مدعومة بالذكاء الاصطناعي، مصمَّمة لمساعدة المحترفين في السوق السعودي
+              والخليجي على تطوير حضورهم المهني على LinkedIn — من تحليل البروفايل وصياغة السيرة الذاتية
+              إلى إنشاء المحتوى وإدارة حملات التواصل.
+            </p>
+            <p style={{ fontSize: '1.05rem', lineHeight: 1.7, color: 'var(--text-body)', marginBottom: '1.25rem' }}>
+              نؤمن بأن كل محترف سعودي يستحق أدوات ذكية تفهم لغته وسوقه وسياقه الثقافي.
+            </p>
+            <p style={{ fontSize: '0.95rem', lineHeight: 1.7, color: 'var(--text-dim)', marginBottom: '3rem' }}>
+              تأسست وصل في الأحساء، المنطقة الشرقية، المملكة العربية السعودية.
+            </p>
+          </>
+        ) : (
+          <>
+            <p style={{ fontSize: '1.05rem', lineHeight: 1.7, color: 'var(--text-body)', marginBottom: '1.25rem' }}>
+              Wassel is a Saudi AI-powered platform built to help professionals across the Saudi
+              and GCC markets grow their LinkedIn presence — from profile analysis and CV creation
+              to content generation and outreach campaigns.
+            </p>
+            <p style={{ fontSize: '1.05rem', lineHeight: 1.7, color: 'var(--text-body)', marginBottom: '1.25rem' }}>
+              We believe every Saudi professional deserves intelligent tools that understand their
+              language, market, and cultural context.
+            </p>
+            <p style={{ fontSize: '0.95rem', lineHeight: 1.7, color: 'var(--text-dim)', marginBottom: '3rem' }}>
+              Founded in Al-Ahsa, Eastern Province, Saudi Arabia.
+            </p>
+          </>
+        )}
+
+        <Link
+          href="/"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '0.6rem 1.1rem',
+            background: 'var(--brand)',
+            color: 'white',
+            borderRadius: 10,
+            fontSize: '0.9rem',
+            fontWeight: 600,
+            textDecoration: 'none',
+          }}
+        >
+          {isRTL ? (
+            <>
+              <ArrowRight size={16} style={{ transform: 'rotate(180deg)' }} />
+              الرجوع للرئيسية
+            </>
+          ) : (
+            <>
+              <ArrowLeft size={16} />
+              Back to home
+            </>
+          )}
         </Link>
       </div>
     </div>

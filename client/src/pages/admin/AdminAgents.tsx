@@ -328,7 +328,7 @@ export default function AdminAgents() {
                 style={{
                   padding: '4px 8px',
                   borderRadius: 8,
-                  background: '#0A8F84',
+                  background: '#14b8a6',
                   color: '#fff',
                   border: 'none',
                   fontSize: 11,
@@ -440,7 +440,7 @@ export default function AdminAgents() {
               style={{
                 padding: '11px 22px',
                 borderRadius: 12,
-                background: 'linear-gradient(135deg, #0A8F84, #0EA5E9)',
+                background: 'linear-gradient(135deg, #14b8a6, #0EA5E9)',
                 color: '#fff',
                 border: 'none',
                 fontWeight: 800,
@@ -496,7 +496,7 @@ export default function AdminAgents() {
                             maxWidth: '75%',
                             padding: '10px 14px',
                             borderRadius: 12,
-                            background: isUser ? '#0A8F84' : '#fff',
+                            background: isUser ? '#14b8a6' : '#fff',
                             color: isUser ? '#fff' : '#1F2937',
                             fontSize: 13,
                             lineHeight: 1.7,
@@ -564,7 +564,7 @@ export default function AdminAgents() {
                 style={{
                   padding: '10px 16px',
                   borderRadius: 10,
-                  background: sending || !input.trim() ? '#E5E7EB' : 'linear-gradient(135deg, #0A8F84, #0EA5E9)',
+                  background: sending || !input.trim() ? '#E5E7EB' : 'linear-gradient(135deg, #14b8a6, #0EA5E9)',
                   color: sending || !input.trim() ? '#9CA3AF' : '#fff',
                   border: 'none',
                   cursor: sending || !input.trim() ? 'not-allowed' : 'pointer',
@@ -600,7 +600,7 @@ export default function AdminAgents() {
             style={{
               padding: '4px 8px',
               borderRadius: 8,
-              background: '#0A8F84',
+              background: '#14b8a6',
               color: '#fff',
               border: 'none',
               fontSize: 11,
@@ -738,7 +738,7 @@ export default function AdminAgents() {
                   style={{
                     padding: '9px 18px',
                     borderRadius: 10,
-                    background: savingNote || !newNote.trim() ? '#E5E7EB' : '#0A8F84',
+                    background: savingNote || !newNote.trim() ? '#E5E7EB' : '#14b8a6',
                     color: savingNote || !newNote.trim() ? '#9CA3AF' : '#fff',
                     border: 'none',
                     fontWeight: 800,

@@ -96,7 +96,7 @@ export const UserAvatar: React.FC<Props> = ({
         style={{
           ...baseStyle,
           objectFit: 'cover',
-          background: '#0A8F84',
+          background: '#14b8a6',
         }}
       />
     );
@@ -108,7 +108,7 @@ export const UserAvatar: React.FC<Props> = ({
       aria-label={name || email || 'User'}
       style={{
         ...baseStyle,
-        background: 'linear-gradient(135deg, #0A8F84, #0EA5E9)',
+        background: 'linear-gradient(135deg, #14b8a6, #0EA5E9)',
         color: '#fff',
         fontFamily: 'Cairo, Inter, sans-serif',
         fontWeight: 800,

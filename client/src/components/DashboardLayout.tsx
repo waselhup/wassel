@@ -6,14 +6,28 @@ import { supabase } from '@/lib/supabase';
 import UserAvatar from '@/components/UserAvatar';
 import { WasselLogo } from './WasselLogo';
 import {
-  Home, BarChart2, FileText, Send, Coins, User,
-  LogOut, Globe, Menu, X, ChevronDown, Settings, TrendingUp, UserCheck, PenSquare, Shield, TicketCheck
+  Home, FileText, Send, Coins, User, LogOut, Globe, Menu,
+  ChevronDown, TrendingUp, UserCheck, PenSquare, Shield, TicketCheck, HelpCircle
 } from 'lucide-react';
 import FeedbackFAB from './FeedbackFAB';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
   pageTitle?: string;
+}
+
+interface NavItem {
+  href: string;
+  icon: any;
+  label: string;
+  comingSoon?: boolean;
+  badge?: number;
+}
+
+interface NavGroup {
+  key: string;
+  label: string;
+  items: NavItem[];
 }
 
 export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, pageTitle }) => {
@@ -25,6 +39,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, page
   const [tokenBalance, setTokenBalance] = useState<number | null>(null);
   const [userPlan, setUserPlan] = useState<string>('free');
   const isRTL = i18n.language === 'ar';
+  const font = isRTL ? 'Cairo, sans-serif' : 'Inter, sans-serif';
 
   useEffect(() => {
     if (!user?.id) return;
@@ -35,31 +50,42 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, page
           setUserPlan(data.plan ?? 'free');
         }
       });
-  }, [user?.id]);
+  }, [user?.id, location]);
 
   const planLabel: Record<string, string> = {
-    free: isRTL ? '\u0645\u062c\u0627\u0646\u064a' : 'Free',
-    starter: isRTL ? '\u0645\u0628\u062a\u062f\u0626' : 'Starter',
-    pro: isRTL ? '\u0627\u062d\u062a\u0631\u0627\u0641\u064a' : 'Pro',
-    elite: isRTL ? '\u0625\u0644\u064a\u062a' : 'Elite',
+    free: isRTL ? 'مجاني' : 'Free',
+    starter: isRTL ? 'مبتدئ' : 'Starter',
+    pro: isRTL ? 'احترافي' : 'Pro',
+    elite: isRTL ? 'إليت' : 'Elite',
   };
 
-  const nav: Array<{ href: string; icon: any; label: string; comingSoon?: boolean }> = [
-    { href: '/app', icon: Home, label: t('nav.home', '\u0627\u0644\u0631\u0626\u064a\u0633\u064a\u0629') },
-    { href: '/app/profile-analysis', icon: UserCheck, label: t('nav.profileAnalysis', 'تحليل البروفايل') },
-    { href: '/app/cv', icon: FileText, label: t('nav.cv', '\u0627\u0644\u0633\u064a\u0631\u0629') },
-    { href: '/app/posts', icon: PenSquare, label: t('nav.posts', '\u0627\u0644\u0645\u0646\u0634\u0648\u0631\u0627\u062a') },
-    { href: '/app/coming-soon?feature=campaigns', icon: Send, label: t('nav.campaigns', 'التواصل المهني'), comingSoon: true },
-    { href: '/app/analytics', icon: TrendingUp, label: t('nav.analytics', 'التحليلات') },
-    { href: '/app/tickets', icon: TicketCheck, label: t('nav.tickets', 'ملاحظاتي') },
-    { href: '/app/profile', icon: User, label: t('nav.profile', '\u0627\u0644\u0645\u0644\u0641') },
+  const overviewItems: NavItem[] = [
+    { href: '/app', icon: Home, label: t('nav.home', isRTL ? 'الرئيسية' : 'Dashboard') },
+    { href: '/app/profile-analysis', icon: UserCheck, label: t('nav.profileAnalysis', isRTL ? 'تحليل البروفايل' : 'Profile Analysis') },
   ];
 
-  // Add admin link if user is admin
+  const toolItems: NavItem[] = [
+    { href: '/app/cv', icon: FileText, label: t('nav.cv', isRTL ? 'السيرة الذاتية' : 'CV Tailor') },
+    { href: '/app/posts', icon: PenSquare, label: t('nav.posts', isRTL ? 'استوديو المنشورات' : 'Posts Studio') },
+    { href: '/app/coming-soon?feature=campaigns', icon: Send, label: t('nav.campaigns', isRTL ? 'الحملات' : 'Campaigns'), comingSoon: true },
+    { href: '/app/analytics', icon: TrendingUp, label: t('nav.analytics', isRTL ? 'التحليلات' : 'Analytics') },
+  ];
+
+  const accountItems: NavItem[] = [
+    { href: '/app/profile', icon: User, label: t('nav.profile', isRTL ? 'الإعدادات' : 'Settings') },
+    { href: '/app/tickets', icon: TicketCheck, label: t('nav.tickets', isRTL ? 'الدعم والمساعدة' : 'Help & Support') },
+  ];
+
   const ADMIN_EMAILS = ['waselhup@gmail.com', 'almodhih.1995@gmail.com', 'alhashimali649@gmail.com'];
   if (ADMIN_EMAILS.includes(user?.email || '')) {
-    nav.push({ href: '/app/admin', icon: Shield, label: t('nav.admin', '\u0644\u0648\u062d\u0629 \u0627\u0644\u0625\u062f\u0627\u0631\u0629') });
+    accountItems.push({ href: '/app/admin', icon: Shield, label: t('nav.admin', isRTL ? 'لوحة الإدارة' : 'Admin') });
   }
+
+  const groups: NavGroup[] = [
+    { key: 'overview', label: isRTL ? 'نظرة عامة' : 'Overview', items: overviewItems },
+    { key: 'tools', label: isRTL ? 'الأدوات' : 'Tools', items: toolItems },
+    { key: 'account', label: isRTL ? 'الحساب' : 'Account', items: accountItems },
+  ];
 
   const isActive = (href: string) => {
     const base = href.split('?')[0];
@@ -79,154 +105,487 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, page
     document.documentElement.dir = nl === 'ar' ? 'rtl' : 'ltr';
   };
 
-  const SidebarContent = () => (
-    <aside style={{
-      width: '240px', minWidth: '240px', height: '100vh',
-      background: 'var(--wsl-surf)', borderInlineEnd: '1px solid var(--wsl-border)',
-      display: 'flex', flexDirection: 'column', overflow: 'auto', flexShrink: 0,
-    }}>
-      {/* Logo */}
-      <div style={{ padding: '20px 16px 16px', borderBottom: '1px solid var(--wsl-border)', display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <WasselLogo size={38} />
-        <span style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: '16px', color: 'var(--wsl-teal)' }}>
-          {'\u0648\u0635\u0651\u0644'}
-        </span>
+  const NavLink: React.FC<{ item: NavItem }> = ({ item }) => {
+    const active = isActive(item.href);
+    const dim = item.comingSoon;
+    const Icon = item.icon;
+    return (
+      <Link
+        href={item.href}
+        onClick={() => setMobileOpen(false)}
+        style={{
+          position: 'relative',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.65rem',
+          padding: '0.55rem 0.75rem',
+          borderRadius: 8,
+          marginBottom: 2,
+          background: active ? 'var(--bg-off)' : 'transparent',
+          color: active ? 'var(--text)' : (dim ? 'var(--text-muted)' : 'var(--text-dim)'),
+          fontFamily: font,
+          fontWeight: active ? 500 : 400,
+          fontSize: '0.85rem',
+          textDecoration: 'none',
+          cursor: 'pointer',
+          opacity: dim ? 0.75 : 1,
+          transition: 'all 120ms ease',
+        }}
+        onMouseEnter={(e) => {
+          if (!active) {
+            e.currentTarget.style.background = 'var(--bg-off)';
+            e.currentTarget.style.color = 'var(--text)';
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (!active) {
+            e.currentTarget.style.background = 'transparent';
+            e.currentTarget.style.color = dim ? 'var(--text-muted)' : 'var(--text-dim)';
+          }
+        }}
+      >
+        {active && (
+          <span
+            style={{
+              position: 'absolute',
+              insetInlineStart: 0,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              width: 3,
+              height: 20,
+              background: 'var(--brand)',
+              borderRadius: isRTL ? '2px 0 0 2px' : '0 2px 2px 0',
+            }}
+          />
+        )}
+        <Icon size={16} strokeWidth={1.5} style={{ flexShrink: 0 }} />
+        <span style={{ flex: 1 }}>{item.label}</span>
+        {item.badge != null && (
+          <span
+            style={{
+              fontSize: '0.65rem',
+              fontWeight: 600,
+              padding: '1px 6px',
+              borderRadius: 999,
+              background: 'var(--brand)',
+              color: 'white',
+              minWidth: 18,
+              textAlign: 'center',
+            }}
+          >
+            {item.badge}
+          </span>
+        )}
+        {item.comingSoon && (
+          <span
+            style={{
+              fontSize: '0.6rem',
+              fontWeight: 600,
+              padding: '1px 6px',
+              borderRadius: 999,
+              background: 'var(--border-soft)',
+              color: 'var(--text-muted)',
+              fontFamily: font,
+            }}
+          >
+            {t('common.comingSoon', isRTL ? 'قريباً' : 'Soon')}
+          </span>
+        )}
+      </Link>
+    );
+  };
+
+  const SidebarContent: React.FC = () => (
+    <aside
+      style={{
+        width: 248,
+        minWidth: 248,
+        height: '100vh',
+        background: 'var(--bg)',
+        borderInlineEnd: '1px solid var(--border)',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'auto',
+        flexShrink: 0,
+        fontFamily: font,
+      }}
+    >
+      {/* Brand lockup */}
+      <div
+        style={{
+          padding: '1.15rem 1rem 1rem',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+        }}
+      >
+        <WasselLogo size={30} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 1, lineHeight: 1 }}>
+          <span style={{ fontWeight: 600, fontSize: '0.95rem', color: 'var(--text)', letterSpacing: '-0.02em' }}>
+            {isRTL ? 'وصل' : 'Wassel'}
+          </span>
+          <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 500, letterSpacing: 0.2 }}>
+            {planLabel[userPlan] || userPlan}
+          </span>
+        </div>
       </div>
 
-      {/* Nav */}
-      <nav style={{ flex: 1, padding: '12px 8px' }}>
-        {nav.map(item => {
-          const active = isActive(item.href);
-          const dim = item.comingSoon;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={() => setMobileOpen(false)}
+      {/* Groups */}
+      <nav style={{ flex: 1, padding: '0.5rem 0.65rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+        {groups.map((g) => (
+          <div key={g.key}>
+            <div
               style={{
-                display: 'flex', alignItems: 'center', gap: '10px',
-                padding: '9px 12px', borderRadius: '8px', marginBottom: '2px',
-                background: active ? 'var(--wsl-teal-bg)' : 'transparent',
-                color: active ? 'var(--wsl-ink)' : (dim ? 'var(--wsl-ink-4)' : 'var(--wsl-ink-3)'),
-                fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: '13px',
-                textDecoration: 'none', cursor: 'pointer',
-                borderInlineStart: active ? '2.5px solid var(--wsl-teal)' : '2.5px solid transparent',
-                opacity: dim ? 0.65 : 1,
-                transition: 'all 150ms ease',
+                padding: '0.4rem 0.75rem 0.35rem',
+                fontSize: '0.65rem',
+                letterSpacing: '0.1em',
+                textTransform: 'uppercase',
+                color: 'var(--text-muted)',
+                fontWeight: 600,
+                fontFamily: font,
               }}
             >
-              <item.icon size={16} />
-              <span>{item.label}</span>
-              {item.comingSoon && (
-                <span style={{
-                  marginInlineStart: 'auto',
-                  fontSize: '9px', fontWeight: 900,
-                  padding: '2px 6px', borderRadius: '999px',
-                  background: '#FEF3C7', color: '#B45309',
-                  fontFamily: 'Cairo, sans-serif',
-                  letterSpacing: 0,
-                }}>
-                  {t('common.comingSoon', 'قريباً')}
-                </span>
-              )}
-              {active && !item.comingSoon && <span style={{ marginInlineStart: 'auto', width: '4px', height: '4px', borderRadius: '50%', background: 'var(--wsl-teal)' }} />}
-            </Link>
-          );
-        })}
+              {g.label}
+            </div>
+            {g.items.map((item) => (
+              <NavLink key={item.href} item={item} />
+            ))}
+          </div>
+        ))}
       </nav>
 
-      {/* Token Balance */}
-      <div style={{ padding: '12px 16px', borderTop: '1px solid var(--wsl-border)', background: 'var(--wsl-surf-2)' }}>
-        <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--wsl-ink-3)', marginBottom: '4px', fontFamily: 'Cairo, sans-serif' }}>
-          {t('nav.tokens', '\u0627\u0644\u0631\u0635\u064a\u062f')}
+      {/* Tokens */}
+      <div
+        style={{
+          margin: '0.65rem',
+          padding: '0.75rem 0.85rem',
+          border: '1px solid var(--border)',
+          borderRadius: 10,
+          background: 'var(--bg-off)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+        }}
+      >
+        <div
+          style={{
+            width: 30,
+            height: 30,
+            borderRadius: 8,
+            background: 'var(--brand-bg)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+          }}
+        >
+          <Coins size={15} color="var(--brand-deep)" strokeWidth={1.6} />
         </div>
-        <div style={{ fontSize: '22px', fontWeight: 900, color: 'var(--wsl-teal)', fontFamily: 'Inter, sans-serif' }}>
-          {tokenBalance !== null ? tokenBalance : '...'}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', fontWeight: 600, letterSpacing: 0.6, textTransform: 'uppercase' }}>
+            {t('nav.tokens', isRTL ? 'الرصيد' : 'Tokens')}
+          </div>
+          <div style={{ fontSize: '1.05rem', fontWeight: 600, color: 'var(--text)', fontFamily: 'Inter, sans-serif', lineHeight: 1.1 }}>
+            {tokenBalance !== null ? tokenBalance.toLocaleString('en-US') : '…'}
+          </div>
         </div>
-        <div style={{ fontSize: '10px', color: 'var(--wsl-ink-4)', marginTop: '2px', fontFamily: 'Cairo, sans-serif' }}>
-          {planLabel[userPlan] || userPlan}
+      </div>
+
+      {/* User block */}
+      <div
+        style={{
+          padding: '0.75rem 0.85rem',
+          borderTop: '1px solid var(--border)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+        }}
+      >
+        <UserAvatar
+          avatarUrl={profile?.avatar_url}
+          name={profile?.full_name}
+          email={user?.email}
+          size="sm"
+        />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div
+            style={{
+              fontSize: '0.8rem',
+              fontWeight: 500,
+              color: 'var(--text)',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {profile?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || ''}
+          </div>
+          <div
+            style={{
+              fontSize: '0.65rem',
+              color: 'var(--text-muted)',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {user?.email}
+          </div>
         </div>
       </div>
 
       {/* Bottom actions */}
-      <div style={{ padding: '12px 8px', borderTop: '1px solid var(--wsl-border)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-        <button onClick={toggleLang} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', borderRadius: '8px', border: 'none', background: 'transparent', color: 'var(--wsl-ink-3)', fontWeight: 900, fontSize: '12px', cursor: 'pointer', width: '100%' }}>
-          <Globe size={14} />
+      <div
+        style={{
+          padding: '0.4rem 0.65rem 0.85rem',
+          display: 'flex',
+          gap: 4,
+        }}
+      >
+        <button
+          onClick={toggleLang}
+          style={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 6,
+            padding: '0.45rem 0.6rem',
+            borderRadius: 8,
+            border: '1px solid var(--border)',
+            background: 'white',
+            color: 'var(--text-body)',
+            fontWeight: 500,
+            fontSize: '0.75rem',
+            cursor: 'pointer',
+            fontFamily: font,
+          }}
+        >
+          <Globe size={13} strokeWidth={1.5} />
           {i18n.language === 'ar' ? 'EN' : 'AR'}
         </button>
-        <button onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', borderRadius: '8px', border: 'none', background: 'transparent', color: '#DC2626', fontWeight: 900, fontSize: '12px', cursor: 'pointer', width: '100%', fontFamily: 'Cairo, sans-serif' }}>
-          <LogOut size={14} />
-          {t('nav.logout', '\u062e\u0631\u0648\u062c')}
+        <button
+          onClick={handleLogout}
+          style={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 6,
+            padding: '0.45rem 0.6rem',
+            borderRadius: 8,
+            border: '1px solid var(--border)',
+            background: 'white',
+            color: 'var(--text-body)',
+            fontWeight: 500,
+            fontSize: '0.75rem',
+            cursor: 'pointer',
+            fontFamily: font,
+          }}
+        >
+          <LogOut size={13} strokeWidth={1.5} />
+          {t('nav.logout', isRTL ? 'خروج' : 'Logout')}
         </button>
       </div>
     </aside>
   );
 
   return (
-    <div style={{ display: 'flex', height: '100vh', background: 'var(--wsl-bg)', overflow: 'hidden' }}>
-      {/* Desktop sidebar - always visible */}
+    <div
+      style={{
+        display: 'flex',
+        height: '100vh',
+        background: 'var(--bg-off)',
+        overflow: 'hidden',
+        fontFamily: font,
+      }}
+    >
       <div className="hidden lg:flex" style={{ height: '100vh' }}>
         <SidebarContent />
       </div>
 
-      {/* Mobile overlay */}
       {mobileOpen && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex' }} className="lg:hidden">
-          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)' }} onClick={() => setMobileOpen(false)} />
+          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.35)' }} onClick={() => setMobileOpen(false)} />
           <div style={{ position: 'relative', zIndex: 51, height: '100vh' }}>
             <SidebarContent />
           </div>
         </div>
       )}
 
-      {/* Main content */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
-        {/* Header */}
-        <header style={{
-          background: 'rgba(244,247,251,0.94)', backdropFilter: 'blur(16px)',
-          borderBottom: '1px solid var(--wsl-border)', padding: '12px 20px',
-          display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0,
-          position: 'sticky', top: 0, zIndex: 40,
-        }}>
-          <button className="lg:hidden" onClick={() => setMobileOpen(!mobileOpen)} style={{ padding: '6px', borderRadius: '8px', border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--wsl-ink-2)' }}>
-            <Menu size={20} />
+        <header
+          style={{
+            background: 'rgba(255,255,255,0.88)',
+            backdropFilter: 'blur(14px)',
+            borderBottom: '1px solid var(--border)',
+            padding: '0.85rem 1.4rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 14,
+            flexShrink: 0,
+            position: 'sticky',
+            top: 0,
+            zIndex: 40,
+          }}
+        >
+          <button
+            className="lg:hidden"
+            onClick={() => setMobileOpen(!mobileOpen)}
+            style={{
+              padding: 6,
+              borderRadius: 8,
+              border: '1px solid var(--border)',
+              background: 'white',
+              cursor: 'pointer',
+              color: 'var(--text-body)',
+            }}
+          >
+            <Menu size={18} strokeWidth={1.5} />
           </button>
           {pageTitle && (
-            <h1 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: '20px', color: 'var(--wsl-ink)', letterSpacing: '-0.4px', margin: 0 }}>
+            <h1
+              style={{
+                fontFamily: font,
+                fontWeight: 500,
+                fontSize: '1.1rem',
+                color: 'var(--text)',
+                letterSpacing: '-0.02em',
+                margin: 0,
+              }}
+            >
               {pageTitle}
             </h1>
           )}
-          <div style={{ marginInlineStart: 'auto', display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', borderRadius: '8px', background: 'var(--wsl-teal-bg)', border: '1px solid var(--wsl-teal-border)' }}>
-              <Coins size={14} style={{ color: 'var(--wsl-teal)' }} />
-              <span style={{ fontWeight: 900, fontSize: '13px', color: 'var(--wsl-teal)', fontFamily: 'Inter, sans-serif' }}>
-                {tokenBalance !== null ? tokenBalance : '...'}
+          <div style={{ marginInlineStart: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '0.35rem 0.7rem',
+                borderRadius: 8,
+                background: 'white',
+                border: '1px solid var(--border)',
+              }}
+            >
+              <span
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: '50%',
+                  background: 'var(--brand)',
+                }}
+              />
+              <Coins size={13} strokeWidth={1.5} style={{ color: 'var(--text-dim)' }} />
+              <span
+                style={{
+                  fontWeight: 600,
+                  fontSize: '0.8rem',
+                  color: 'var(--text)',
+                  fontFamily: 'Inter, sans-serif',
+                }}
+              >
+                {tokenBalance !== null ? tokenBalance.toLocaleString('en-US') : '…'}
               </span>
             </div>
             <div style={{ position: 'relative' }}>
-              <button onClick={() => setUserMenuOpen(!userMenuOpen)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 10px', borderRadius: '8px', border: '1px solid var(--wsl-border)', background: 'var(--wsl-surf)', cursor: 'pointer' }}>
+              <button
+                onClick={() => setUserMenuOpen(!userMenuOpen)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '0.3rem 0.55rem 0.3rem 0.35rem',
+                  borderRadius: 8,
+                  border: '1px solid var(--border)',
+                  background: 'white',
+                  cursor: 'pointer',
+                  fontFamily: font,
+                }}
+              >
                 <UserAvatar
                   avatarUrl={profile?.avatar_url}
                   name={profile?.full_name}
                   email={user?.email}
                   size="sm"
                 />
-                <span style={{ fontWeight: 700, fontSize: '12px', color: 'var(--wsl-ink-2)', fontFamily: 'Cairo, sans-serif' }}>
+                <span style={{ fontWeight: 500, fontSize: '0.78rem', color: 'var(--text)' }}>
                   {profile?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || ''}
                 </span>
-                <ChevronDown size={12} style={{ color: 'var(--wsl-ink-3)' }} />
+                <ChevronDown size={12} style={{ color: 'var(--text-dim)' }} strokeWidth={1.5} />
               </button>
               {userMenuOpen && (
-                <div style={{ position: 'absolute', top: '100%', insetInlineEnd: 0, marginTop: '4px', width: '160px', background: 'var(--wsl-surf)', border: '1px solid var(--wsl-border)', borderRadius: '10px', boxShadow: '0 4px 20px rgba(0,0,0,0.08)', overflow: 'hidden', zIndex: 50 }}>
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: 'calc(100% + 6px)',
+                    insetInlineEnd: 0,
+                    width: 180,
+                    background: 'white',
+                    border: '1px solid var(--border)',
+                    borderRadius: 10,
+                    boxShadow: '0 4px 16px rgba(0,0,0,0.06)',
+                    overflow: 'hidden',
+                    zIndex: 50,
+                    fontFamily: font,
+                  }}
+                >
                   <Link
                     href="/app/profile"
                     onClick={() => setUserMenuOpen(false)}
-                    style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', color: 'var(--wsl-ink-2)', fontWeight: 700, fontSize: '12px', textDecoration: 'none', borderBottom: '1px solid var(--wsl-border)', fontFamily: 'Cairo, sans-serif' }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      padding: '0.6rem 0.85rem',
+                      color: 'var(--text-body)',
+                      fontWeight: 500,
+                      fontSize: '0.78rem',
+                      textDecoration: 'none',
+                      borderBottom: '1px solid var(--border-soft)',
+                    }}
                   >
-                    <User size={13} /> {t('nav.profile', '\u0627\u0644\u0645\u0644\u0641')}
+                    <User size={13} strokeWidth={1.5} /> {t('nav.profile', isRTL ? 'الملف' : 'Profile')}
                   </Link>
-                  <button onClick={() => { setUserMenuOpen(false); handleLogout(); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', color: '#DC2626', fontWeight: 700, fontSize: '12px', border: 'none', background: 'transparent', cursor: 'pointer', width: '100%', fontFamily: 'Cairo, sans-serif' }}>
-                    <LogOut size={13} /> {t('nav.logout', '\u062e\u0631\u0648\u062c')}
+                  <Link
+                    href="/app/tickets"
+                    onClick={() => setUserMenuOpen(false)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      padding: '0.6rem 0.85rem',
+                      color: 'var(--text-body)',
+                      fontWeight: 500,
+                      fontSize: '0.78rem',
+                      textDecoration: 'none',
+                      borderBottom: '1px solid var(--border-soft)',
+                    }}
+                  >
+                    <HelpCircle size={13} strokeWidth={1.5} /> {t('nav.help', isRTL ? 'الدعم' : 'Support')}
+                  </Link>
+                  <button
+                    onClick={() => {
+                      setUserMenuOpen(false);
+                      handleLogout();
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      padding: '0.6rem 0.85rem',
+                      color: '#b91c1c',
+                      fontWeight: 500,
+                      fontSize: '0.78rem',
+                      border: 'none',
+                      background: 'transparent',
+                      cursor: 'pointer',
+                      width: '100%',
+                      fontFamily: font,
+                    }}
+                  >
+                    <LogOut size={13} strokeWidth={1.5} /> {t('nav.logout', isRTL ? 'خروج' : 'Logout')}
                   </button>
                 </div>
               )}
@@ -234,8 +593,14 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, page
           </div>
         </header>
 
-        {/* Page content */}
-        <main style={{ flex: 1, overflow: 'auto', padding: '24px' }}>
+        <main
+          style={{
+            flex: 1,
+            overflow: 'auto',
+            padding: '1.75rem 2rem',
+            background: 'var(--bg-off)',
+          }}
+        >
           {children}
         </main>
         <FeedbackFAB />

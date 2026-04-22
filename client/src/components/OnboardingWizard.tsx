@@ -111,7 +111,7 @@ export const OnboardingWizard: React.FC<Props> = ({ onClose }) => {
       descAr: 'احصل على تقييم شامل من 100',
       descEn: 'Get a 100-point assessment',
       href: '/app/profile-analysis',
-      color: '#0A8F84',
+      color: '#14b8a6',
     },
     {
       key: 'cv',
@@ -217,7 +217,7 @@ export const OnboardingWizard: React.FC<Props> = ({ onClose }) => {
                   flex: 1,
                   height: 4,
                   borderRadius: 4,
-                  background: i <= step ? '#0A8F84' : '#E5E7EB',
+                  background: i <= step ? '#14b8a6' : '#E5E7EB',
                   transition: 'background 200ms',
                 }}
               />
@@ -250,7 +250,7 @@ export const OnboardingWizard: React.FC<Props> = ({ onClose }) => {
                   width: 72,
                   height: 72,
                   borderRadius: 20,
-                  background: 'linear-gradient(135deg, #0A8F84 0%, #0EA5E9 100%)',
+                  background: 'linear-gradient(135deg, #14b8a6 0%, #0EA5E9 100%)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -268,7 +268,7 @@ export const OnboardingWizard: React.FC<Props> = ({ onClose }) => {
                   letterSpacing: '-0.5px',
                 }}
               >
-                {isAr ? 'مرحباً بك في وصّل!' : 'Welcome to Wassel!'}
+                {isAr ? 'مرحباً بك في وصل!' : 'Welcome to Wassel!'}
               </h2>
               <p
                 style={{
@@ -279,7 +279,7 @@ export const OnboardingWizard: React.FC<Props> = ({ onClose }) => {
                 }}
               >
                 {isAr
-                  ? 'حصلت على 100 توكن هدية للبدء. خلال دقيقتين، سنرشدك لأهم أدوات وصّل لتحقق أقصى استفادة.'
+                  ? 'حصلت على 100 توكن هدية للبدء. خلال دقيقتين، سنرشدك لأهم أدوات وصل لتحقق أقصى استفادة.'
                   : "You got 100 free tokens to start. In 2 minutes, we'll show you Wassel's most powerful tools."}
               </p>
               <div
@@ -298,7 +298,7 @@ export const OnboardingWizard: React.FC<Props> = ({ onClose }) => {
                     width: 48,
                     height: 48,
                     borderRadius: 12,
-                    background: '#0A8F84',
+                    background: '#14b8a6',
                     color: '#fff',
                     display: 'flex',
                     alignItems: 'center',
@@ -505,7 +505,7 @@ export const OnboardingWizard: React.FC<Props> = ({ onClose }) => {
                     marginBottom: 6,
                   }}
                 >
-                  {isAr ? 'هدفك من وصّل' : 'Your goal with Wassel'}
+                  {isAr ? 'هدفك من وصل' : 'Your goal with Wassel'}
                 </label>
                 <textarea
                   value={goal}
@@ -685,7 +685,7 @@ export const OnboardingWizard: React.FC<Props> = ({ onClose }) => {
                   gap: 6,
                   padding: '11px 20px',
                   borderRadius: 12,
-                  background: 'linear-gradient(135deg, #0A8F84 0%, #0EA5E9 100%)',
+                  background: 'linear-gradient(135deg, #14b8a6 0%, #0EA5E9 100%)',
                   color: '#fff',
                   border: 'none',
                   fontWeight: 800,

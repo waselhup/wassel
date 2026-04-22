@@ -8,7 +8,7 @@ export default function V4Footer() {
   const fontFamily = isAr ? 'Cairo, sans-serif' : 'Inter, sans-serif';
 
   const linkStyle: React.CSSProperties = {
-    color: 'var(--v4-text-body)',
+    color: 'var(--text-body)',
     textDecoration: 'none',
     fontSize: '0.85rem',
     fontFamily,
@@ -18,47 +18,29 @@ export default function V4Footer() {
     <footer
       style={{
         padding: '4rem 2rem 2rem',
-        borderTop: '1px solid var(--v4-border)',
+        borderTop: '1px solid var(--border)',
         background: 'white',
         fontFamily,
       }}
     >
-      {/* Top: copyright + badges */}
+      {/* Top: copyright only (fake trust badges removed — honest branding) */}
       <div
         style={{
           maxWidth: 1100,
           margin: '0 auto',
           display: 'flex',
-          justifyContent: 'space-between',
+          justifyContent: 'flex-start',
           alignItems: 'center',
           paddingBottom: '3rem',
           flexWrap: 'wrap',
-          gap: '2rem',
+          gap: '1rem',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <WasselLogo size={28} />
-          <div style={{ fontSize: '0.8rem', color: 'var(--v4-text-dim)', fontFamily }}>
+          <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)', fontFamily }}>
             {t('landing_v4.footer.copyright')}
           </div>
-        </div>
-
-        <div style={{ display: 'flex', gap: '2.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-          {[
-            ['badge_forbes_1', 'badge_forbes_2'],
-            ['badge_ph_1', 'badge_ph_2'],
-            ['badge_g2_1', 'badge_g2_2'],
-          ].map(([a, b]) => (
-            <div
-              key={a}
-              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--v4-text-dim)' }}
-            >
-              <span style={{ fontWeight: 700, color: 'var(--v4-text)', fontSize: '0.85rem' }}>
-                {t(`landing_v4.footer.${a}`)}
-              </span>
-              <span style={{ lineHeight: 1.3 }}>{t(`landing_v4.footer.${b}`)}</span>
-            </div>
-          ))}
         </div>
       </div>
 
@@ -68,7 +50,7 @@ export default function V4Footer() {
           maxWidth: 1100,
           margin: '0 auto',
           paddingTop: '2rem',
-          borderTop: '1px solid var(--v4-border-soft)',
+          borderTop: '1px solid var(--border-soft)',
           display: 'grid',
           gridTemplateColumns: '1fr repeat(4, 1fr)',
           gap: '2rem',
@@ -84,12 +66,12 @@ export default function V4Footer() {
                 style={{
                   width: 28,
                   height: 28,
-                  border: '1px solid var(--v4-border)',
+                  border: '1px solid var(--border)',
                   borderRadius: '50%',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: 'var(--v4-text-body)',
+                  color: 'var(--text-body)',
                   textDecoration: 'none',
                   fontSize: '0.75rem',
                 }}
@@ -99,10 +81,10 @@ export default function V4Footer() {
             ))}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-            <Link href="/terms" style={{ ...linkStyle, fontSize: '0.8rem', color: 'var(--v4-text-dim)' }}>
+            <Link href="/terms" style={{ ...linkStyle, fontSize: '0.8rem', color: 'var(--text-dim)' }}>
               {t('landing_v4.footer.legal_terms')}
             </Link>
-            <Link href="/privacy" style={{ ...linkStyle, fontSize: '0.8rem', color: 'var(--v4-text-dim)' }}>
+            <Link href="/privacy" style={{ ...linkStyle, fontSize: '0.8rem', color: 'var(--text-dim)' }}>
               {t('landing_v4.footer.legal_privacy')}
             </Link>
           </div>
@@ -173,7 +155,7 @@ function FooterCol({
         style={{
           fontFamily,
           fontSize: '0.7rem',
-          color: 'var(--v4-text-muted)',
+          color: 'var(--text-muted)',
           textTransform: 'uppercase',
           letterSpacing: '0.08em',
           marginBottom: '0.9rem',
@@ -189,7 +171,7 @@ function FooterCol({
               <a
                 href={l.to}
                 style={{
-                  color: 'var(--v4-text-body)',
+                  color: 'var(--text-body)',
                   textDecoration: 'none',
                   fontSize: '0.85rem',
                   fontFamily,
@@ -201,7 +183,7 @@ function FooterCol({
               <Link
                 href={l.to}
                 style={{
-                  color: 'var(--v4-text-body)',
+                  color: 'var(--text-body)',
                   textDecoration: 'none',
                   fontSize: '0.85rem',
                   fontFamily,

@@ -185,7 +185,7 @@ export const AIFeedbackWidget: React.FC<Props> = ({ feature, outputId }) => {
                 style={{
                   padding: '7px 14px',
                   borderRadius: 8,
-                  background: '#0A8F84',
+                  background: '#14b8a6',
                   color: '#fff',
                   border: 'none',
                   fontWeight: 800,

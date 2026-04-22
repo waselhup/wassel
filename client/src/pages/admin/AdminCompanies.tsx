@@ -165,7 +165,7 @@ export default function AdminCompanies() {
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18, gap: 10, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Building2 size={20} color="#0A8F84" />
+          <Building2 size={20} color="#14b8a6" />
           <h2 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 18, color: 'var(--wsl-ink)', margin: 0 }}>
             {isAr ? 'دليل الشركات السعودية' : 'Saudi Companies Directory'}
           </h2>
@@ -178,7 +178,7 @@ export default function AdminCompanies() {
           style={{
             padding: '8px 16px',
             borderRadius: 10,
-            background: '#0A8F84',
+            background: '#14b8a6',
             color: '#fff',
             border: 'none',
             cursor: 'pointer',
@@ -227,7 +227,7 @@ export default function AdminCompanies() {
 
       {loading ? (
         <div style={{ padding: 60, textAlign: 'center' }}>
-          <Loader2 size={32} style={{ color: '#0A8F84', animation: 'spin 1s linear infinite' }} />
+          <Loader2 size={32} style={{ color: '#14b8a6', animation: 'spin 1s linear infinite' }} />
         </div>
       ) : (
         <div style={{ borderRadius: 14, background: '#fff', border: '1px solid #E5E7EB', overflow: 'hidden' }}>
@@ -378,7 +378,7 @@ export default function AdminCompanies() {
               </button>
               <button
                 onClick={handleAdd}
-                style={{ padding: '8px 14px', borderRadius: 10, background: '#0A8F84', color: '#fff', border: 'none', fontWeight: 800, fontSize: 12, cursor: 'pointer', fontFamily: 'Cairo, sans-serif' }}
+                style={{ padding: '8px 14px', borderRadius: 10, background: '#14b8a6', color: '#fff', border: 'none', fontWeight: 800, fontSize: 12, cursor: 'pointer', fontFamily: 'Cairo, sans-serif' }}
               >
                 {isAr ? 'إضافة' : 'Add'}
               </button>

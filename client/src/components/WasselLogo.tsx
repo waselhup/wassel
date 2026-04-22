@@ -6,9 +6,9 @@ interface WasselLogoProps {
 }
 
 export function WasselLogo({ size = 28, variant = 'default' }: WasselLogoProps) {
-  const ring = variant === 'inverted' ? '#FFFFFF' : '#0A8F84';
-  const letter = variant === 'teal-bg' ? '#0A8F84' : variant === 'inverted' ? '#0A8F84' : '#FFFFFF';
-  const coreFill = variant === 'teal-bg' ? '#FFFFFF' : '#0A8F84';
+  const ring = variant === 'inverted' ? '#FFFFFF' : '#14b8a6';
+  const letter = variant === 'teal-bg' ? '#14b8a6' : variant === 'inverted' ? '#14b8a6' : '#FFFFFF';
+  const coreFill = variant === 'teal-bg' ? '#FFFFFF' : '#14b8a6';
 
   return (
     <svg width={size} height={size} viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>

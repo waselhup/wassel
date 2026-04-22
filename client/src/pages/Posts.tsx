@@ -590,7 +590,7 @@ export default function Posts() {
             }}
           >
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-              <Wand2 size={16} color="#0A8F84" />
+              <Wand2 size={16} color="#14b8a6" />
               {showAdvanced ? t('posts.studio.advanced.collapse') : t('posts.studio.advanced.toggle')}
             </span>
             {showAdvanced ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
@@ -685,7 +685,7 @@ export default function Posts() {
                             type="checkbox"
                             checked={extras[k]}
                             onChange={(e) => setExtras({ ...extras, [k]: e.target.checked })}
-                            style={{ width: 15, height: 15, accentColor: '#0A8F84', cursor: 'pointer' }}
+                            style={{ width: 15, height: 15, accentColor: '#14b8a6', cursor: 'pointer' }}
                           />
                           {t(`posts.studio.advanced.extras.${k}`)}
                         </label>
@@ -710,9 +710,9 @@ export default function Posts() {
                           disabled={styleSamples.length === 0}
                           style={{
                             ...btnSmallStyle,
-                            background: useStyleSamples ? '#0A8F84' : '#fff',
+                            background: useStyleSamples ? '#14b8a6' : '#fff',
                             color: useStyleSamples ? '#fff' : '#134E4A',
-                            border: `1.5px solid ${useStyleSamples ? '#0A8F84' : '#CCFBF1'}`,
+                            border: `1.5px solid ${useStyleSamples ? '#14b8a6' : '#CCFBF1'}`,
                             opacity: styleSamples.length === 0 ? 0.5 : 1,
                             cursor: styleSamples.length === 0 ? 'not-allowed' : 'pointer',
                           }}
@@ -846,7 +846,7 @@ export default function Posts() {
             style={{
               marginTop: 14, width: '100%', padding: '14px 22px', borderRadius: 12, border: 'none',
               background: canGenerate
-                ? 'linear-gradient(135deg, #0A8F84 0%, #0ea5e9 100%)'
+                ? 'linear-gradient(135deg, #14b8a6 0%, #0ea5e9 100%)'
                 : 'var(--wsl-border, #E5E7EB)',
               color: canGenerate ? '#fff' : 'var(--wsl-ink-3)',
               cursor: canGenerate ? 'pointer' : 'not-allowed',
@@ -903,13 +903,13 @@ export default function Posts() {
                       }}
                     >
                       {v.id === 'safe' && <Shield size={13} color={active ? '#6B7280' : undefined} />}
-                      {v.id === 'balanced' && <Star size={13} color={active ? '#0A8F84' : undefined} fill={active ? '#0A8F84' : 'none'} />}
+                      {v.id === 'balanced' && <Star size={13} color={active ? '#14b8a6' : undefined} fill={active ? '#14b8a6' : 'none'} />}
                       {v.id === 'bold' && <Zap size={13} color={active ? '#F59E0B' : undefined} />}
                       {t(`posts.studio.variations.${v.id}`)}
                       {isBalanced && (
                         <span style={{
                           marginInlineStart: 4, padding: '1px 6px', borderRadius: 999,
-                          background: '#0A8F84', color: '#fff', fontSize: 9, fontWeight: 900,
+                          background: '#14b8a6', color: '#fff', fontSize: 9, fontWeight: 900,
                           fontFamily: 'Cairo, Inter, sans-serif',
                         }}>
                           ★
@@ -949,7 +949,7 @@ export default function Posts() {
                         : currentVariation.id === 'balanced' ? '#E0F7F5'
                         : '#FEF3C7',
                       color: currentVariation.id === 'safe' ? '#4B5563'
-                        : currentVariation.id === 'balanced' ? '#0A8F84'
+                        : currentVariation.id === 'balanced' ? '#14b8a6'
                         : '#92400E',
                       fontFamily: 'Cairo, Inter, sans-serif',
                     }}>
@@ -973,7 +973,7 @@ export default function Posts() {
                       {currentVariation.hashtags.map((h, i) => (
                         <span key={i} style={{
                           padding: '4px 10px', borderRadius: 999,
-                          background: 'rgba(10,143,132,0.08)', color: '#0A8F84',
+                          background: 'rgba(10,143,132,0.08)', color: '#14b8a6',
                           fontSize: 11, fontWeight: 800, fontFamily: 'Cairo, Inter, sans-serif',
                           display: 'inline-flex', alignItems: 'center', gap: 3,
                         }}>
@@ -1040,7 +1040,7 @@ export default function Posts() {
           {loadingPosts ? (
             <div style={{ padding: 40, textAlign: 'center' }}>
               <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }} style={{ display: 'inline-block' }}>
-                <Loader2 size={22} color="#0A8F84" />
+                <Loader2 size={22} color="#14b8a6" />
               </motion.div>
             </div>
           ) : posts.length === 0 ? (
@@ -1048,7 +1048,7 @@ export default function Posts() {
               background: '#fff', border: '2px dashed var(--wsl-border, #E5E7EB)',
               borderRadius: 16, padding: '40px 24px', textAlign: 'center',
             }}>
-              <FileText size={28} color="#0A8F84" />
+              <FileText size={28} color="#14b8a6" />
               <div style={{ fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 900, fontSize: 15, color: 'var(--wsl-ink)', marginTop: 10 }}>
                 {t('posts.studio.history.empty')}
               </div>
@@ -1156,7 +1156,7 @@ export default function Posts() {
                     disabled={newSampleText.trim().length < 50 || addingSample}
                     style={{
                       ...btnSmallStyle,
-                      background: '#0A8F84', color: '#fff', border: 'none',
+                      background: '#14b8a6', color: '#fff', border: 'none',
                       opacity: newSampleText.trim().length < 50 || addingSample ? 0.5 : 1,
                     }}
                   >
@@ -1305,8 +1305,8 @@ function pillStyle(active: boolean): React.CSSProperties {
   return {
     display: 'inline-flex', alignItems: 'center', gap: 6,
     padding: '7px 12px', borderRadius: 999,
-    border: `1.5px solid ${active ? '#0A8F84' : '#E5E7EB'}`,
-    background: active ? '#0A8F84' : '#fff',
+    border: `1.5px solid ${active ? '#14b8a6' : '#E5E7EB'}`,
+    background: active ? '#14b8a6' : '#fff',
     color: active ? '#fff' : 'var(--wsl-ink-2)',
     fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 800, fontSize: 12,
     cursor: 'pointer',
@@ -1327,8 +1327,8 @@ function segmentStyle(active: boolean): React.CSSProperties {
   return {
     flex: 1,
     padding: '9px 14px', borderRadius: 9,
-    border: `1.5px solid ${active ? '#0A8F84' : '#E5E7EB'}`,
-    background: active ? '#0A8F84' : '#fff',
+    border: `1.5px solid ${active ? '#14b8a6' : '#E5E7EB'}`,
+    background: active ? '#14b8a6' : '#fff',
     color: active ? '#fff' : 'var(--wsl-ink-2)',
     fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 800, fontSize: 13,
     cursor: 'pointer',

@@ -103,7 +103,7 @@ export default function DashboardHome() {
       href: "/app/cv", icon: FileText, color: "from-emerald-500 to-teal-600" },
     { key: "posts", title: t("home.actions.post.title", "أنشئ منشور احترافي"),
       desc: t("home.actions.post.desc", "منشورات LinkedIn ذكية بلهجة مناسبة"),
-      href: "/app/posts", icon: PenSquare, color: "from-[#0A8F84] to-[#0ea5e9]" },
+      href: "/app/posts", icon: PenSquare, color: "from-[#14b8a6] to-[#0ea5e9]" },
   ];
 
   const activity: ActivityItem[] = [
@@ -164,7 +164,7 @@ export default function DashboardHome() {
                         <h3 className="font-bold text-[var(--wsl-ink)] mb-1">{a.title}</h3>
                         <p className="text-sm text-gray-500 leading-relaxed">{a.desc}</p>
                       </div>
-                      <ArrowUpRight className="w-5 h-5 text-gray-400 group-hover:text-[#0A8F84] group-hover:rotate-45 transition-all shrink-0" />
+                      <ArrowUpRight className="w-5 h-5 text-gray-400 group-hover:text-[#14b8a6] group-hover:rotate-45 transition-all shrink-0" />
                     </div>
                   </a>
                 </Link>
@@ -206,7 +206,7 @@ export default function DashboardHome() {
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h3 className="font-bold text-[var(--wsl-ink)] flex items-center gap-2">
-                  <Activity className="w-5 h-5 text-[#0A8F84]" />
+                  <Activity className="w-5 h-5 text-[#14b8a6]" />
                   {t("home.chart.title", "نشاط آخر 7 أيام")}
                 </h3>
                 <p className="text-sm text-gray-500 mt-1">{t("home.chart.subtitle", "إجمالي الأنشطة المنفذة")}</p>
@@ -223,7 +223,7 @@ export default function DashboardHome() {
                   <motion.div
                     initial={{ height: 0 }} whileInView={{ height: `${(v / maxVal) * 100}%` }}
                     viewport={{ once: true }} transition={{ delay: i * 0.08, duration: 0.6, ease: "easeOut" }}
-                    className="w-full rounded-t-lg bg-gradient-to-t from-[#0A8F84] to-[#ff8f5e] min-h-[4px]"
+                    className="w-full rounded-t-lg bg-gradient-to-t from-[#14b8a6] to-[#ff8f5e] min-h-[4px]"
                   />
                   <span className="text-xs text-gray-400">{days[i]}</span>
                 </div>
@@ -237,7 +237,7 @@ export default function DashboardHome() {
             className="rounded-2xl bg-white border border-gray-100 shadow-sm p-6"
           >
             <h3 className="font-bold text-[var(--wsl-ink)] flex items-center gap-2 mb-5">
-              <Clock className="w-5 h-5 text-[#0A8F84]" />
+              <Clock className="w-5 h-5 text-[#14b8a6]" />
               {t("home.activity.title", "آخر النشاطات")}
             </h3>
             {activity.length === 0 ? (
@@ -268,7 +268,7 @@ export default function DashboardHome() {
           className="space-y-4"
         >
           <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-[#0A8F84]" />
+            <Sparkles className="w-5 h-5 text-[#14b8a6]" />
             <h2 className="text-xl font-bold text-[var(--wsl-ink)]">
               {t("home.videos.title", isAr ? "ابدأ من هنا" : "Start here")}
             </h2>
@@ -287,7 +287,7 @@ export default function DashboardHome() {
               duration={isAr ? "دقيقتان" : "2 min"}
             />
             <VideoPlaceholder
-              title={t("home.videos.tour", isAr ? "جولة كاملة في وصّل" : "Full tour of Wassel")}
+              title={t("home.videos.tour", isAr ? "جولة كاملة في وصل" : "Full tour of Wassel")}
               duration={isAr ? "5 دقائق" : "5 min"}
             />
           </div>

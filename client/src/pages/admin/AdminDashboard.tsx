@@ -212,14 +212,14 @@ export default function AdminDashboard() {
         </div>
 
         {loading ? (
-          <div style={{ padding: 60, textAlign: 'center' }}><Loader2 size={32} style={{ color: '#0A8F84', animation: 'spin 1s linear infinite' }} /></div>
+          <div style={{ padding: 60, textAlign: 'center' }}><Loader2 size={32} style={{ color: '#14b8a6', animation: 'spin 1s linear infinite' }} /></div>
         ) : (
           <>
             {tab === 'overview' && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: 12, marginBottom: 24 }}>
                   {[
-                    { label: isAr ? 'المستخدمين' : 'Users', value: stats?.totalUsers || 0, icon: Users, color: '#0A8F84' },
+                    { label: isAr ? 'المستخدمين' : 'Users', value: stats?.totalUsers || 0, icon: Users, color: '#14b8a6' },
                     { label: isAr ? 'الإيراد الشهري' : 'MRR', value: `${stats?.mrr || 0} SAR`, icon: Coins, color: '#D97706' },
                     { label: isAr ? 'مراجعات معلقة' : 'Pending', value: pendingReviews.length, icon: Star, color: '#DC2626' },
                     { label: isAr ? 'نشط' : 'Active', value: stats?.activeUsers || 0, icon: Activity, color: '#059669' },
@@ -287,7 +287,7 @@ export default function AdminDashboard() {
                 {/* System Status */}
                 <div style={{ background: '#fff', borderRadius: 14, border: '1px solid var(--wsl-border, #E5E7EB)', padding: 20, marginBottom: 20 }}>
                   <h3 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 16, color: 'var(--wsl-ink)', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <Activity size={16} style={{ color: '#0A8F84' }} /> {isAr ? 'حالة الخدمات' : 'Service Status'}
+                    <Activity size={16} style={{ color: '#14b8a6' }} /> {isAr ? 'حالة الخدمات' : 'Service Status'}
                   </h3>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 10 }}>
                     {Object.entries(systemStatus?.stats || {}).map(([service, data]: [string, any]) => {
@@ -352,7 +352,7 @@ export default function AdminDashboard() {
                           <td style={tdStyle}>
                             <span style={{ padding: '2px 8px', borderRadius: 999, background: u.plan === 'pro' ? '#D1FAE5' : '#F3F4F6', color: u.plan === 'pro' ? '#065F46' : '#6B7280', fontSize: 11, fontWeight: 800 }}>{u.plan || 'free'}</span>
                           </td>
-                          <td style={tdStyle}><span style={{ fontWeight: 900, color: '#0A8F84', fontFamily: 'Inter' }}>{u.token_balance || 0}</span></td>
+                          <td style={tdStyle}><span style={{ fontWeight: 900, color: '#14b8a6', fontFamily: 'Inter' }}>{u.token_balance || 0}</span></td>
                           <td style={tdStyle}>
                             {u.is_admin && <span style={{ padding: '2px 6px', borderRadius: 999, background: '#EDE9FE', color: '#7C3AED', fontSize: 10, fontWeight: 800, marginInlineEnd: 4 }}>Admin</span>}
                             {u.is_banned && <span style={{ padding: '2px 6px', borderRadius: 999, background: '#FEE2E2', color: '#DC2626', fontSize: 10, fontWeight: 800 }}>Banned</span>}
@@ -443,14 +443,14 @@ export default function AdminDashboard() {
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                 <div style={{ background: '#fff', borderRadius: 14, border: '1px solid var(--wsl-border)', padding: 20, marginBottom: 20 }}>
                   <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--wsl-ink-3)', fontFamily: 'Cairo, sans-serif', marginBottom: 6 }}>{isAr ? 'إجمالي التوكنز المشتراة' : 'Total Tokens Purchased'}</div>
-                  <div style={{ fontSize: 32, fontWeight: 900, color: '#0A8F84', fontFamily: 'Inter' }}>{(stats?.tokensPurchased || 0).toLocaleString('en-US')}</div>
+                  <div style={{ fontSize: 32, fontWeight: 900, color: '#14b8a6', fontFamily: 'Inter' }}>{(stats?.tokensPurchased || 0).toLocaleString('en-US')}</div>
                 </div>
                 <h3 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 16, marginBottom: 12 }}>{isAr ? 'أعلى المستخدمين' : 'Top Users by Balance'}</h3>
                 <div style={{ background: '#fff', borderRadius: 14, border: '1px solid var(--wsl-border)', overflow: 'hidden' }}>
                   {[...users].sort((a, b) => (b.token_balance || 0) - (a.token_balance || 0)).slice(0, 10).map((u, i) => (
                     <div key={u.id} style={{ padding: '12px 16px', borderBottom: i < 9 ? '1px solid var(--wsl-border)' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <span style={{ fontWeight: 800, fontSize: 13, fontFamily: 'Cairo, sans-serif' }}>{u.full_name || u.email} <span style={{ fontSize: 11, color: 'var(--wsl-ink-3)' }}>({u.plan || 'free'})</span></span>
-                      <span style={{ fontWeight: 900, fontSize: 16, color: '#0A8F84', fontFamily: 'Inter' }}>{(u.token_balance || 0).toLocaleString('en-US')}</span>
+                      <span style={{ fontWeight: 900, fontSize: 16, color: '#14b8a6', fontFamily: 'Inter' }}>{(u.token_balance || 0).toLocaleString('en-US')}</span>
                     </div>
                   ))}
                 </div>
@@ -462,7 +462,7 @@ export default function AdminDashboard() {
                 <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
                   {['all', 'open', 'in_progress', 'resolved', 'closed'].map(f => (
                     <button key={f} onClick={() => setTicketFilter(f)}
-                      style={{ padding: '6px 14px', borderRadius: 8, border: ticketFilter === f ? '1.5px solid #0A8F84' : '1.5px solid var(--wsl-border)', background: ticketFilter === f ? 'rgba(10,143,132,0.07)' : '#fff', color: ticketFilter === f ? '#0A8F84' : '#6B7280', fontWeight: 800, fontSize: 12, cursor: 'pointer', fontFamily: 'Cairo, sans-serif' }}>
+                      style={{ padding: '6px 14px', borderRadius: 8, border: ticketFilter === f ? '1.5px solid #14b8a6' : '1.5px solid var(--wsl-border)', background: ticketFilter === f ? 'rgba(10,143,132,0.07)' : '#fff', color: ticketFilter === f ? '#14b8a6' : '#6B7280', fontWeight: 800, fontSize: 12, cursor: 'pointer', fontFamily: 'Cairo, sans-serif' }}>
                       {f === 'all' ? (isAr ? 'الكل' : 'All') : f === 'open' ? (isAr ? 'مفتوحة' : 'Open') : f === 'in_progress' ? (isAr ? 'قيد المعالجة' : 'In Progress') : f === 'resolved' ? (isAr ? 'تم الحل' : 'Resolved') : (isAr ? 'مغلقة' : 'Closed')}
                     </button>
                   ))}
@@ -558,7 +558,7 @@ export default function AdminDashboard() {
                 <button onClick={() => setRespondModal(null)} style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid var(--wsl-border)', background: '#fff', cursor: 'pointer', fontFamily: 'Cairo, sans-serif', fontWeight: 800, fontSize: 13 }}>{isAr ? 'إلغاء' : 'Cancel'}</button>
                 <button onClick={async () => {
                   try { await trpc.feedback.respond({ id: respondModal.id, response: respondText, status: 'resolved' }); toast.push('success', isAr ? 'تم الرد' : 'Responded'); setRespondModal(null); loadData(); } catch (e: any) { toast.push('error', e?.message || 'Failed'); }
-                }} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#0A8F84', color: '#fff', cursor: 'pointer', fontFamily: 'Cairo, sans-serif', fontWeight: 800, fontSize: 13 }}>{isAr ? 'إرسال الرد' : 'Send Response'}</button>
+                }} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#14b8a6', color: '#fff', cursor: 'pointer', fontFamily: 'Cairo, sans-serif', fontWeight: 800, fontSize: 13 }}>{isAr ? 'إرسال الرد' : 'Send Response'}</button>
               </div>
             </motion.div>
           </div>
@@ -571,7 +571,7 @@ export default function AdminDashboard() {
             <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
               style={{ position: 'relative', background: '#fff', borderRadius: 16, padding: 24, width: '90%', maxWidth: 400, boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
               <h3 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 18, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Coins size={18} style={{ color: '#0A8F84' }} /> {isAr ? 'إضافة توكنز' : 'Add Tokens'}
+                <Coins size={18} style={{ color: '#14b8a6' }} /> {isAr ? 'إضافة توكنز' : 'Add Tokens'}
               </h3>
               <div style={{ fontSize: 13, color: 'var(--wsl-ink-3)', marginBottom: 16, fontFamily: 'Cairo, sans-serif' }}>{isAr ? 'إلى:' : 'To:'} <strong>{addTokensModal.name}</strong></div>
               <input type="number" value={tokenAmount} onChange={e => setTokenAmount(parseInt(e.target.value) || 0)}
@@ -580,7 +580,7 @@ export default function AdminDashboard() {
                 style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1.5px solid var(--wsl-border)', fontFamily: 'Cairo, Inter, sans-serif', fontSize: 13, outline: 'none', marginBottom: 16, boxSizing: 'border-box' }} />
               <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                 <button onClick={() => setAddTokensModal(null)} style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid var(--wsl-border)', background: '#fff', cursor: 'pointer', fontFamily: 'Cairo, sans-serif', fontWeight: 800, fontSize: 13 }}>{isAr ? 'إلغاء' : 'Cancel'}</button>
-                <button onClick={handleAddTokens} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#0A8F84', color: '#fff', cursor: 'pointer', fontFamily: 'Cairo, sans-serif', fontWeight: 800, fontSize: 13 }}>{isAr ? 'إضافة' : 'Add'}</button>
+                <button onClick={handleAddTokens} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#14b8a6', color: '#fff', cursor: 'pointer', fontFamily: 'Cairo, sans-serif', fontWeight: 800, fontSize: 13 }}>{isAr ? 'إضافة' : 'Add'}</button>
               </div>
             </motion.div>
           </div>

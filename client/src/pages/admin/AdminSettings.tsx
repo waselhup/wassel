@@ -49,7 +49,7 @@ export default function AdminSettings() {
           className="rounded-2xl bg-white border border-gray-100 shadow-sm p-6"
         >
           <div className="flex items-center gap-2 mb-5">
-            <Flag className="w-5 h-5 text-[#0A8F84]" />
+            <Flag className="w-5 h-5 text-[#14b8a6]" />
             <h3 className="font-bold text-[var(--wsl-ink)]">{t("as.flags", "الميزات المفعّلة (Feature Flags)")}</h3>
           </div>
           <div className="space-y-3">
@@ -60,7 +60,7 @@ export default function AdminSettings() {
                   <span className="text-sm font-semibold text-[var(--wsl-ink)]">{flagLabels[k]}</span>
                 </div>
                 <button onClick={() => setFlags({ ...flags, [k]: !flags[k] })}
-                  className={`relative w-11 h-6 rounded-full transition ${flags[k] ? "bg-[#0A8F84]" : "bg-gray-300"}`}>
+                  className={`relative w-11 h-6 rounded-full transition ${flags[k] ? "bg-[#14b8a6]" : "bg-gray-300"}`}>
                   <motion.span
                     animate={{ x: flags[k] ? 20 : 0 }}
                     className="absolute top-0.5 start-0.5 w-5 h-5 rounded-full bg-white shadow"
@@ -75,7 +75,7 @@ export default function AdminSettings() {
           className="rounded-2xl bg-white border border-gray-100 shadow-sm p-6"
         >
           <div className="flex items-center gap-2 mb-5">
-            <DollarSign className="w-5 h-5 text-[#0A8F84]" />
+            <DollarSign className="w-5 h-5 text-[#14b8a6]" />
             <h3 className="font-bold text-[var(--wsl-ink)]">{t("as.prices", "أسعار الباقات (SAR)")}</h3>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -84,7 +84,7 @@ export default function AdminSettings() {
                 <label className="block text-xs font-semibold text-gray-600 mb-1.5 capitalize">{k}</label>
                 <div className="relative">
                   <input type="number" value={prices[k]} onChange={(e) => setPrices({ ...prices, [k]: +e.target.value })}
-                    className="w-full px-4 py-3 pe-14 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-[#0A8F84] focus:outline-none focus:ring-2 focus:ring-[#0A8F84]/20 transition tabular-nums" />
+                    className="w-full px-4 py-3 pe-14 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-[#14b8a6] focus:outline-none focus:ring-2 focus:ring-[#14b8a6]/20 transition tabular-nums" />
                   <span className="absolute end-4 top-1/2 -translate-y-1/2 text-xs font-semibold text-gray-400">SAR</span>
                 </div>
               </div>
@@ -94,7 +94,7 @@ export default function AdminSettings() {
 
         <div className="flex justify-end">
           <button onClick={save}
-            className="px-6 py-3 rounded-xl bg-[#0A8F84] hover:bg-[#064E49] text-white font-semibold shadow-lg shadow-[#0A8F84]/30 inline-flex items-center gap-2 transition">
+            className="px-6 py-3 rounded-xl bg-[#14b8a6] hover:bg-[#0f766e] text-white font-semibold shadow-lg shadow-[#14b8a6]/30 inline-flex items-center gap-2 transition">
             <Save className="w-5 h-5" /> {saved ? t("as.saved", "تم الحفظ ✓") : t("as.save", "حفظ التغييرات")}
           </button>
         </div>

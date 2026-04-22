@@ -431,7 +431,7 @@ export const VideoPlaceholder: React.FC<VideoPlaceholderProps> = ({
                   <div style={{ fontSize: 20, fontWeight: 800 }}>{comingSoon}</div>
                   <div style={{ fontSize: 13, opacity: 0.6, maxWidth: 420 }}>
                     {isAr
-                      ? 'فريق وصّل يحضّر عرضاً احترافياً الآن. سيظهر هنا فور جاهزيته.'
+                      ? 'فريق وصل يحضّر عرضاً احترافياً الآن. سيظهر هنا فور جاهزيته.'
                       : 'The Wassel team is preparing a polished demo. It will appear here once ready.'}
                   </div>
                 </div>

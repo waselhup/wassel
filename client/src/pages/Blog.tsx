@@ -10,7 +10,7 @@ export default function Blog() {
       <div className="max-w-3xl mx-auto text-center">
         <Link href="/" className="inline-flex items-center gap-2 mb-8">
           <WasselLogo size={28} />
-          <span className="text-lg font-extrabold" style={{ color: 'var(--wsl-teal)' }}>{'\u0648\u0635\u0651\u0644'}</span>
+          <span className="text-lg font-extrabold" style={{ color: 'var(--wsl-teal)' }}>{'\u0648\u0635\u0644'}</span>
         </Link>
         <h1 className="text-3xl font-extrabold mb-6" style={{ color: 'var(--wsl-teal-dark)' }}>{'\u0627\u0644\u0645\u062f\u0648\u0646\u0629'}</h1>
         <p className="text-lg leading-8 mb-8" style={{ color: 'var(--wsl-ink-3)' }}>

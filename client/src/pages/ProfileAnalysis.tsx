@@ -11,7 +11,7 @@ import { trpcMutation, trpcQuery } from '../lib/trpc';
 import { validateAndNormalizeLinkedInUrl } from '../lib/linkedin-url-validator';
 
 type TargetGoal = 'job-search' | 'investment' | 'thought-leadership' | 'sales-b2b' | 'career-change' | 'internal-promotion';
-type Industry = 'oil-gas' | 'tech' | 'finance' | 'healthcare' | 'legal' | 'consulting' | 'government' | 'academic' | 'entrepreneurship' | 'real-estate';
+type Industry = 'oil-gas' | 'tech' | 'finance' | 'healthcare' | 'legal' | 'consulting' | 'government' | 'academic' | 'entrepreneurship' | 'real-estate' | 'other';
 type ReportLang = 'ar' | 'en';
 
 interface Dim { name: string; score: number; feedback: string }
@@ -56,7 +56,7 @@ const GOAL_ICONS: Record<TargetGoal, string> = {
   'internal-promotion': '👔',
 };
 
-const INDUSTRIES: Industry[] = ['oil-gas', 'tech', 'finance', 'healthcare', 'legal', 'consulting', 'government', 'academic', 'entrepreneurship', 'real-estate'];
+const INDUSTRIES: Industry[] = ['oil-gas', 'tech', 'finance', 'healthcare', 'legal', 'consulting', 'government', 'academic', 'entrepreneurship', 'real-estate', 'other'];
 
 interface ToastItem { id: number; type: 'success' | 'error' | 'info'; message: string }
 function useToast() {
@@ -94,7 +94,7 @@ function useToast() {
 }
 
 function gradientFor(score: number): string {
-  if (score >= 75) return 'linear-gradient(90deg, #0A8F84, #12B5A8)';
+  if (score >= 75) return 'linear-gradient(90deg, #14b8a6, #0d9488)';
   if (score >= 50) return 'linear-gradient(90deg, #C9922A, #F59E0B)';
   return 'linear-gradient(90deg, #DC2626, #F43F5E)';
 }
@@ -283,7 +283,7 @@ export default function ProfileAnalysis() {
       <div style={{ maxWidth: 1100, margin: '0 auto', padding: '24px 16px', fontFamily: 'Cairo, Inter, sans-serif' }}>
 
         <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} style={{ marginBottom: 24 }}>
-          <h1 style={{ fontSize: 32, fontWeight: 800, margin: 0, background: 'linear-gradient(90deg, #0A8F84, #12B5A8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+          <h1 style={{ fontSize: 32, fontWeight: 800, margin: 0, background: 'linear-gradient(90deg, #14b8a6, #0d9488)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
             {t('profileRadar.title')}
           </h1>
           <p style={{ color: '#64748b', marginTop: 6, fontSize: 15 }}>{t('profileRadar.subtitle')}</p>
@@ -298,7 +298,7 @@ export default function ProfileAnalysis() {
             </label>
             <div style={{ position: 'relative' }}>
               <button type="button" onClick={() => setShowHelper(s => !s)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#0A8F84', display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 600 }}>
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#14b8a6', display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 600 }}>
                 <Info size={16} />
               </button>
               {showHelper && (
@@ -315,7 +315,7 @@ export default function ProfileAnalysis() {
                     <li>{t('profileRadar.url.helperStep4')}</li>
                   </ol>
                   <a href="https://www.linkedin.com/in/me/" target="_blank" rel="noopener noreferrer"
-                    style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 12, color: '#0A8F84', fontWeight: 700, textDecoration: 'none' }}>
+                    style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 12, color: '#14b8a6', fontWeight: 700, textDecoration: 'none' }}>
                     {t('profileRadar.url.openLinkedIn')} <ExternalLink size={14} />
                   </a>
                 </div>
@@ -356,7 +356,7 @@ export default function ProfileAnalysis() {
                 <button key={g} onClick={() => setGoal(g)}
                   style={{
                     padding: '10px 16px', borderRadius: 999, fontSize: 13, fontWeight: 700, cursor: 'pointer',
-                    background: active ? 'linear-gradient(90deg, #0A8F84, #12B5A8)' : '#f8fafc',
+                    background: active ? 'linear-gradient(90deg, #14b8a6, #0d9488)' : '#f8fafc',
                     color: active ? 'white' : '#334155', border: `1px solid ${active ? 'transparent' : '#e5e7eb'}`,
                     display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.2s',
                   }}>
@@ -381,7 +381,7 @@ export default function ProfileAnalysis() {
                 <button key={ind} onClick={() => setIndustry(ind)}
                   style={{
                     padding: '8px 14px', borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                    background: active ? '#0A8F84' : '#f8fafc', color: active ? 'white' : '#334155',
+                    background: active ? '#14b8a6' : '#f8fafc', color: active ? 'white' : '#334155',
                     border: `1px solid ${active ? 'transparent' : '#e5e7eb'}`, transition: 'all 0.2s',
                   }}>
                   {t(`profileRadar.industry.${ind}`)}
@@ -404,7 +404,7 @@ export default function ProfileAnalysis() {
                 <button key={lang} onClick={() => setLanguage(lang)}
                   style={{
                     padding: '10px 20px', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer',
-                    background: active ? 'linear-gradient(90deg, #0A8F84, #12B5A8)' : '#f8fafc',
+                    background: active ? 'linear-gradient(90deg, #14b8a6, #0d9488)' : '#f8fafc',
                     color: active ? 'white' : '#334155', border: `1px solid ${active ? 'transparent' : '#e5e7eb'}`,
                     minWidth: 140,
                   }}>
@@ -489,7 +489,7 @@ export default function ProfileAnalysis() {
           onClick={handleGenerate}
           style={{
             width: '100%', padding: '16px 24px', borderRadius: 14, fontSize: 16, fontWeight: 800, cursor: canGenerate ? 'pointer' : 'not-allowed',
-            background: canGenerate ? 'linear-gradient(90deg, #0A8F84, #12B5A8)' : '#cbd5e1',
+            background: canGenerate ? 'linear-gradient(90deg, #14b8a6, #0d9488)' : '#cbd5e1',
             color: 'white', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
             boxShadow: canGenerate ? '0 8px 24px rgba(10, 143, 132, 0.3)' : 'none', marginBottom: 24,
           }}>
@@ -587,7 +587,7 @@ export default function ProfileAnalysis() {
                 <button onClick={() => handleExport('pdf')} disabled={exporting === 'pdf'}
                   style={{
                     flex: 1, minWidth: 180, padding: '12px 16px', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer',
-                    background: 'white', color: '#0A8F84', border: '2px solid #0A8F84',
+                    background: 'white', color: '#14b8a6', border: '2px solid #14b8a6',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                   }}>
                   <FileDown size={18} />
@@ -596,7 +596,7 @@ export default function ProfileAnalysis() {
                 <button onClick={() => handleExport('docx')} disabled={exporting === 'docx'}
                   style={{
                     flex: 1, minWidth: 180, padding: '12px 16px', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer',
-                    background: 'linear-gradient(90deg, #0A8F84, #12B5A8)', color: 'white', border: 'none',
+                    background: 'linear-gradient(90deg, #14b8a6, #0d9488)', color: 'white', border: 'none',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                   }}>
                   <FileText size={18} />
@@ -617,7 +617,7 @@ export default function ProfileAnalysis() {
                 <button onClick={handleCompare} disabled={comparing}
                   style={{
                     padding: '8px 14px', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'pointer',
-                    background: 'linear-gradient(90deg, #0A8F84, #12B5A8)', color: 'white', border: 'none',
+                    background: 'linear-gradient(90deg, #14b8a6, #0d9488)', color: 'white', border: 'none',
                     display: 'flex', alignItems: 'center', gap: 6,
                   }}>
                   <GitCompare size={14} />
@@ -637,7 +637,7 @@ export default function ProfileAnalysis() {
                       cursor: 'pointer',
                     }}
                     onClick={() => toggleSelect(h.id)}>
-                    <input type="checkbox" checked={selected} readOnly style={{ width: 18, height: 18, accentColor: '#0A8F84' }} />
+                    <input type="checkbox" checked={selected} readOnly style={{ width: 18, height: 18, accentColor: '#14b8a6' }} />
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: 13, fontWeight: 700, color: '#1f2937' }}>
                         {new Date(h.created_at).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
@@ -687,7 +687,7 @@ export default function ProfileAnalysis() {
                 </div>
                 <div style={{ textAlign: 'center', padding: 16, background: '#f0fdfa', borderRadius: 12 }}>
                   <div style={{ fontSize: 12, color: '#0f766e' }}>{t('profileRadar.comparison.after')}</div>
-                  <div style={{ fontSize: 36, fontWeight: 900, color: '#0A8F84' }}>{compareResult.newer.score}</div>
+                  <div style={{ fontSize: 36, fontWeight: 900, color: '#14b8a6' }}>{compareResult.newer.score}</div>
                   <div style={{ fontSize: 11, color: '#0f766e' }}>{new Date(compareResult.newer.date).toLocaleDateString()}</div>
                 </div>
               </div>

@@ -225,7 +225,7 @@ export default function Profile() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
               {editingName ? (
                 <input value={form.name} onChange={e => set('name', e.target.value)} onBlur={() => setEditingName(false)} autoFocus
-                  style={{ fontSize: 20, fontWeight: 900, fontFamily: 'Cairo, sans-serif', border: '1.5px solid #0A8F84', borderRadius: 8, padding: '4px 10px', outline: 'none', background: '#F0FDF9' }} />
+                  style={{ fontSize: 20, fontWeight: 900, fontFamily: 'Cairo, sans-serif', border: '1.5px solid #14b8a6', borderRadius: 8, padding: '4px 10px', outline: 'none', background: '#F0FDF9' }} />
               ) : (
                 <span style={{ fontSize: 20, fontWeight: 900, color: 'var(--wsl-ink)', fontFamily: 'Cairo, sans-serif' }}>{form.name || (isAr ? 'لم يُضف اسم' : 'No name')}</span>
               )}
@@ -240,14 +240,14 @@ export default function Profile() {
             <div style={{ fontSize: 11, color: 'var(--wsl-ink-3)', fontFamily: 'Cairo, sans-serif', marginBottom: 4 }}>{isAr ? 'اكتمال الملف' : 'Profile'}</div>
             <div style={{ fontSize: 28, fontWeight: 900, color: pct >= 80 ? '#059669' : pct >= 50 ? '#D97706' : '#DC2626', fontFamily: 'Inter' }}>{pct}%</div>
             <div style={{ height: 4, borderRadius: 999, background: '#E5E7EB', overflow: 'hidden', marginTop: 4 }}>
-              <motion.div initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.8 }} style={{ height: '100%', background: 'linear-gradient(90deg, #0A8F84, #0ea5e9)', borderRadius: 999 }} />
+              <motion.div initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.8 }} style={{ height: '100%', background: 'linear-gradient(90deg, #14b8a6, #0ea5e9)', borderRadius: 999 }} />
             </div>
           </div>
         </motion.div>
 
         {/* Tokens Card */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
-          style={{ background: 'linear-gradient(135deg, #0A8F84 0%, #0ea5e9 100%)', borderRadius: 16, padding: 24, marginBottom: 20, boxShadow: '0 8px 24px rgba(10,143,132,0.25)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+          style={{ background: 'linear-gradient(135deg, #14b8a6 0%, #0ea5e9 100%)', borderRadius: 16, padding: 24, marginBottom: 20, boxShadow: '0 8px 24px rgba(10,143,132,0.25)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
           <div>
             <div style={{ fontSize: 12, opacity: 0.8, fontFamily: 'Cairo, sans-serif', fontWeight: 700, marginBottom: 4 }}>{t('profile.tokensCard.title', 'رصيد التوكنز الحالي')}</div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
@@ -257,7 +257,7 @@ export default function Profile() {
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
             <Link href="/pricing"><a style={{ padding: '10px 18px', borderRadius: 10, background: 'rgba(255,255,255,0.2)', color: '#fff', fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 13, textDecoration: 'none', border: '1px solid rgba(255,255,255,0.3)' }}>{t('profile.tokensCard.buyMore', 'شراء توكنز')}</a></Link>
-            <Link href="/pricing"><a style={{ padding: '10px 18px', borderRadius: 10, background: '#fff', color: '#0A8F84', fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 13, textDecoration: 'none' }}>{t('profile.tokensCard.upgrade', 'ترقية الباقة')}</a></Link>
+            <Link href="/pricing"><a style={{ padding: '10px 18px', borderRadius: 10, background: '#fff', color: '#14b8a6', fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 13, textDecoration: 'none' }}>{t('profile.tokensCard.upgrade', 'ترقية الباقة')}</a></Link>
           </div>
         </motion.div>
 
@@ -284,7 +284,7 @@ export default function Profile() {
               <FieldIcon icon={Phone} label={t('pr.phone', 'رقم الجوال')}><input value={form.phone} onChange={e => set("phone", e.target.value)} placeholder="+966 5X XXX XXXX" className="wsl-input" dir="ltr" /></FieldIcon>
               <FieldIcon icon={MapPin} label={t('pr.city', 'المدينة')}>
                 <select value={form.city} onChange={e => set("city", e.target.value)} className="wsl-input">
-                  <option>الرياض</option><option>جدة</option><option>الدمام</option><option>مكة</option><option>المدينة</option><option>الأحساء</option>
+                  <option>الرياض</option><option>جدة</option><option>الأحساء</option><option>مكة</option><option>المدينة</option><option>الأحساء</option>
                 </select>
               </FieldIcon>
               <FieldIcon icon={Briefcase} label={t('pr.role', 'المسمى الوظيفي')}><input value={form.role} onChange={e => set("role", e.target.value)} placeholder={t('pr.rolePh', 'مدير تسويق رقمي')} className="wsl-input" /></FieldIcon>
@@ -300,7 +300,7 @@ export default function Profile() {
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20 }}>
               <button onClick={save} disabled={saving}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 22px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #0A8F84, #0ea5e9)', color: '#fff', fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 14, cursor: 'pointer', boxShadow: '0 4px 12px rgba(10,143,132,0.3)', opacity: saving ? 0.7 : 1 }}>
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 22px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #14b8a6, #0ea5e9)', color: '#fff', fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 14, cursor: 'pointer', boxShadow: '0 4px 12px rgba(10,143,132,0.3)', opacity: saving ? 0.7 : 1 }}>
                 {saving ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <Save size={16} />}
                 {saving ? (isAr ? 'جاري الحفظ...' : 'Saving...') : t('pr.save', 'حفظ')}
               </button>
@@ -334,7 +334,7 @@ export default function Profile() {
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20 }}>
               <button onClick={saveCareer} disabled={savingCareer}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 22px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #0A8F84, #0ea5e9)', color: '#fff', fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 14, cursor: 'pointer', boxShadow: '0 4px 12px rgba(10,143,132,0.3)', opacity: savingCareer ? 0.7 : 1 }}>
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 22px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #14b8a6, #0ea5e9)', color: '#fff', fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 14, cursor: 'pointer', boxShadow: '0 4px 12px rgba(10,143,132,0.3)', opacity: savingCareer ? 0.7 : 1 }}>
                 {savingCareer ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <Save size={16} />}
                 {savingCareer ? (isAr ? 'جاري الحفظ...' : 'Saving...') : t('pr.save', 'حفظ')}
               </button>
@@ -354,17 +354,17 @@ export default function Profile() {
               <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                 {(planFeatures[userPlan] || planFeatures.free).map((f, i) => (
                   <li key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', fontSize: 14, color: 'var(--wsl-ink-2)', fontFamily: 'Cairo, Inter, sans-serif' }}>
-                    <Check size={14} style={{ color: '#0A8F84' }} /> {f}
+                    <Check size={14} style={{ color: '#14b8a6' }} /> {f}
                   </li>
                 ))}
               </ul>
-              <Link href="/pricing"><a style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 20, padding: '10px 20px', borderRadius: 10, background: 'linear-gradient(135deg, #0A8F84, #0ea5e9)', color: '#fff', fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 13, textDecoration: 'none' }}>{isAr ? 'ترقية الباقة' : 'Upgrade Plan'}</a></Link>
+              <Link href="/pricing"><a style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 20, padding: '10px 20px', borderRadius: 10, background: 'linear-gradient(135deg, #14b8a6, #0ea5e9)', color: '#fff', fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 13, textDecoration: 'none' }}>{isAr ? 'ترقية الباقة' : 'Upgrade Plan'}</a></Link>
             </div>
             <div style={{ background: '#fff', borderRadius: 16, border: '1px solid var(--wsl-border)', padding: 24 }}>
               <h3 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 18, marginBottom: 12 }}>{isAr ? 'إحصائيات الاستخدام' : 'Usage Stats'}</h3>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 12 }}>
                 <div style={{ padding: 16, borderRadius: 12, background: '#F0FDF9', textAlign: 'center' }}>
-                  <div style={{ fontSize: 28, fontWeight: 900, color: '#0A8F84', fontFamily: 'Inter' }}>{tokenBalance}</div>
+                  <div style={{ fontSize: 28, fontWeight: 900, color: '#14b8a6', fontFamily: 'Inter' }}>{tokenBalance}</div>
                   <div style={{ fontSize: 12, color: 'var(--wsl-ink-3)', fontFamily: 'Cairo, sans-serif', fontWeight: 700 }}>{isAr ? 'توكنز متبقية' : 'Tokens Remaining'}</div>
                 </div>
               </div>
@@ -380,7 +380,7 @@ export default function Profile() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderRadius: 12, border: '1px solid var(--wsl-border)', background: '#F9FAFB' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <Bell size={18} style={{ color: '#0A8F84' }} />
+                  <Bell size={18} style={{ color: '#14b8a6' }} />
                   <div>
                     <div style={{ fontWeight: 800, fontSize: 14, fontFamily: 'Cairo, sans-serif' }}>{isAr ? 'إشعارات البريد' : 'Email Notifications'}</div>
                     <div style={{ fontSize: 12, color: 'var(--wsl-ink-3)' }}>{isAr ? 'تلقي تحديثات عبر البريد' : 'Receive updates via email'}</div>
@@ -388,14 +388,14 @@ export default function Profile() {
                 </div>
                 <label style={{ position: 'relative', width: 44, height: 24, cursor: 'pointer' }}>
                   <input type="checkbox" checked={emailNotif} onChange={e => setEmailNotif(e.target.checked)} style={{ opacity: 0, width: 0, height: 0 }} />
-                  <span style={{ position: 'absolute', inset: 0, borderRadius: 999, background: emailNotif ? '#0A8F84' : '#D1D5DB', transition: 'background 200ms' }}>
+                  <span style={{ position: 'absolute', inset: 0, borderRadius: 999, background: emailNotif ? '#14b8a6' : '#D1D5DB', transition: 'background 200ms' }}>
                     <span style={{ position: 'absolute', top: 2, left: emailNotif ? 22 : 2, width: 20, height: 20, borderRadius: '50%', background: '#fff', transition: 'left 200ms', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
                   </span>
                 </label>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderRadius: 12, border: '1px solid var(--wsl-border)', background: '#F9FAFB' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <MessageSquare size={18} style={{ color: '#0A8F84' }} />
+                  <MessageSquare size={18} style={{ color: '#14b8a6' }} />
                   <div>
                     <div style={{ fontWeight: 800, fontSize: 14, fontFamily: 'Cairo, sans-serif' }}>{isAr ? 'إشعارات تيليجرام' : 'Telegram Notifications'}</div>
                     <div style={{ fontSize: 12, color: 'var(--wsl-ink-3)' }}>{isAr ? 'تلقي تنبيهات عبر تيليجرام' : 'Receive alerts via Telegram'}</div>
@@ -403,24 +403,24 @@ export default function Profile() {
                 </div>
                 <label style={{ position: 'relative', width: 44, height: 24, cursor: 'pointer' }}>
                   <input type="checkbox" checked={telegramNotif} onChange={e => setTelegramNotif(e.target.checked)} style={{ opacity: 0, width: 0, height: 0 }} />
-                  <span style={{ position: 'absolute', inset: 0, borderRadius: 999, background: telegramNotif ? '#0A8F84' : '#D1D5DB', transition: 'background 200ms' }}>
+                  <span style={{ position: 'absolute', inset: 0, borderRadius: 999, background: telegramNotif ? '#14b8a6' : '#D1D5DB', transition: 'background 200ms' }}>
                     <span style={{ position: 'absolute', top: 2, left: telegramNotif ? 22 : 2, width: 20, height: 20, borderRadius: '50%', background: '#fff', transition: 'left 200ms', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
                   </span>
                 </label>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderRadius: 12, border: '1px solid var(--wsl-border)', background: '#F9FAFB' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <Globe size={18} style={{ color: '#0A8F84' }} />
+                  <Globe size={18} style={{ color: '#14b8a6' }} />
                   <div>
                     <div style={{ fontWeight: 800, fontSize: 14, fontFamily: 'Cairo, sans-serif' }}>{isAr ? 'اللغة' : 'Language'}</div>
                     <div style={{ fontSize: 12, color: 'var(--wsl-ink-3)' }}>{isAr ? 'العربية مفعّلة حالياً' : 'English is active'}</div>
                   </div>
                 </div>
-                <span style={{ fontWeight: 800, fontSize: 14, color: '#0A8F84' }}>{isAr ? 'العربية' : 'English'}</span>
+                <span style={{ fontWeight: 800, fontSize: 14, color: '#14b8a6' }}>{isAr ? 'العربية' : 'English'}</span>
               </div>
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20 }}>
-              <button onClick={saveSettings} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 22px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #0A8F84, #0ea5e9)', color: '#fff', fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 14, cursor: 'pointer' }}>
+              <button onClick={saveSettings} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 22px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #14b8a6, #0ea5e9)', color: '#fff', fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 14, cursor: 'pointer' }}>
                 <Save size={16} /> {isAr ? 'حفظ الإعدادات' : 'Save Settings'}
               </button>
             </div>
@@ -465,11 +465,11 @@ export default function Profile() {
                 ))}
               </div>
               <textarea value={reviewComment} onChange={e => setReviewComment(e.target.value)} rows={4}
-                placeholder={isAr ? 'شاركنا تجربتك مع وصّل...' : 'Share your experience with Wassel...'}
+                placeholder={isAr ? 'شاركنا تجربتك مع وصل...' : 'Share your experience with Wassel...'}
                 style={{ width: '100%', padding: '12px 14px', borderRadius: 10, border: '1.5px solid var(--wsl-border)', fontFamily: 'Cairo, Inter, sans-serif', fontSize: 14, lineHeight: 1.6, resize: 'none', outline: 'none', background: '#F9FAFB', boxSizing: 'border-box' }} />
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
                 <button onClick={submitReview} disabled={submittingReview || !reviewComment.trim()}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 10, border: 'none', background: !reviewComment.trim() ? '#E5E7EB' : 'linear-gradient(135deg, #0A8F84, #0ea5e9)', color: !reviewComment.trim() ? '#9CA3AF' : '#fff', fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 13, cursor: !reviewComment.trim() ? 'not-allowed' : 'pointer' }}>
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 10, border: 'none', background: !reviewComment.trim() ? '#E5E7EB' : 'linear-gradient(135deg, #14b8a6, #0ea5e9)', color: !reviewComment.trim() ? '#9CA3AF' : '#fff', fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 13, cursor: !reviewComment.trim() ? 'not-allowed' : 'pointer' }}>
                   {submittingReview ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <Star size={14} />}
                   {isAr ? 'إرسال المراجعة' : 'Submit Review'}
                 </button>
@@ -499,7 +499,7 @@ export default function Profile() {
           </motion.div>
         )}
       </div>
-      <style>{`.wsl-input { width: 100%; padding: 10px 14px; border-radius: 10px; border: 1.5px solid var(--wsl-border, #E5E7EB); background: #F9FAFB; font-family: Cairo, Inter, sans-serif; font-size: 13px; outline: none; transition: border-color 150ms; box-sizing: border-box; } .wsl-input:focus { border-color: #0A8F84; background: #fff; } @keyframes spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }`}</style>
+      <style>{`.wsl-input { width: 100%; padding: 10px 14px; border-radius: 10px; border: 1.5px solid var(--wsl-border, #E5E7EB); background: #F9FAFB; font-family: Cairo, Inter, sans-serif; font-size: 13px; outline: none; transition: border-color 150ms; box-sizing: border-box; } .wsl-input:focus { border-color: #14b8a6; background: #fff; } @keyframes spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }`}</style>
     </DashboardLayout>
   );
 }

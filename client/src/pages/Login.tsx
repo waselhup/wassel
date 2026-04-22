@@ -146,7 +146,7 @@ export default function Login() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder={t("auth.email", "البريد الإلكتروني")}
-            className={`w-full h-14 ${isRTL ? "pe-12 ps-4" : "ps-12 pe-4"} rounded-xl border border-gray-200 bg-white text-[#1f2937] placeholder:text-[#9ca3af] focus:border-[#0A8F84] focus:ring-2 focus:ring-[#0A8F84]/20 outline-none transition`}
+            className={`w-full h-14 ${isRTL ? "pe-12 ps-4" : "ps-12 pe-4"} rounded-xl border border-gray-200 bg-white text-[#1f2937] placeholder:text-[#9ca3af] focus:border-[#14b8a6] focus:ring-2 focus:ring-[#14b8a6]/20 outline-none transition`}
           />
         </div>
 
@@ -159,16 +159,16 @@ export default function Login() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder={t("auth.password", "كلمة المرور")}
-            className={`w-full h-14 ${isRTL ? "pe-12 ps-4" : "ps-12 pe-4"} rounded-xl border border-gray-200 bg-white text-[#1f2937] placeholder:text-[#9ca3af] focus:border-[#0A8F84] focus:ring-2 focus:ring-[#0A8F84]/20 outline-none transition`}
+            className={`w-full h-14 ${isRTL ? "pe-12 ps-4" : "ps-12 pe-4"} rounded-xl border border-gray-200 bg-white text-[#1f2937] placeholder:text-[#9ca3af] focus:border-[#14b8a6] focus:ring-2 focus:ring-[#14b8a6]/20 outline-none transition`}
           />
         </div>
 
         <div className="flex items-center justify-between text-sm">
           <label className="flex items-center gap-2 text-[#6b7280]">
-            <input type="checkbox" className="rounded border-gray-300 text-[#0A8F84] focus:ring-[#0A8F84]" />
+            <input type="checkbox" className="rounded border-gray-300 text-[#14b8a6] focus:ring-[#14b8a6]" />
             {t("auth.remember", "تذكّرني")}
           </label>
-          <Link href="/reset-password" className="text-[#0A8F84] font-semibold hover:underline">
+          <Link href="/reset-password" className="text-[#14b8a6] font-semibold hover:underline">
             {t("auth.forgot", "نسيت كلمة المرور؟")}
           </Link>
         </div>
@@ -176,7 +176,7 @@ export default function Login() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full h-14 rounded-xl bg-[#0A8F84] text-white font-bold text-base shadow-lg shadow-[#0A8F84]/30 hover:bg-[#12B5A8] hover:shadow-xl hover:shadow-[#0A8F84]/40 transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          className="w-full h-14 rounded-xl bg-[#14b8a6] text-white font-bold text-base shadow-lg shadow-[#14b8a6]/30 hover:bg-[#0d9488] hover:shadow-xl hover:shadow-[#14b8a6]/40 transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
           {loading ? (
             <Loader2 className="w-5 h-5 animate-spin" />
@@ -190,7 +190,7 @@ export default function Login() {
 
         <div className="text-center text-sm text-[#6b7280]">
           {t("auth.noAccount", "ليس لديك حساب؟")}{" "}
-          <Link href="/signup" className="text-[#0A8F84] font-semibold hover:underline">
+          <Link href="/signup" className="text-[#14b8a6] font-semibold hover:underline">
             {t("auth.signup.link", "أنشئ حساب مجاني")}
           </Link>
         </div>

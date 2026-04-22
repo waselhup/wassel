@@ -1,4 +1,4 @@
-# Wassel (وصّل) — Project Identity
+# Wassel (وصل) — Project Identity
 
 ## Live URLs
 - Production: https://wasselhub.com

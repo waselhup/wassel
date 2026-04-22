@@ -102,7 +102,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, pageTitle })
         <div className="p-6 pt-8 border-b border-[var(--border-subtle)]">
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-cairo font-bold text-[var(--accent-primary)]">
-              وصّل
+              وصل
             </h1>
             <span className="px-2 py-1 text-xs font-semibold bg-[var(--accent-primary)] text-white rounded">
               {t('admin.adminBadge')}

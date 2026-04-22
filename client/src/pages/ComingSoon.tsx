@@ -54,7 +54,7 @@ export default function ComingSoon() {
             width: 80,
             height: 80,
             borderRadius: 20,
-            background: 'linear-gradient(135deg, #0A8F84 0%, #0F766E 100%)',
+            background: 'linear-gradient(135deg, #14b8a6 0%, #0F766E 100%)',
             margin: '0 auto 24px',
             display: 'flex',
             alignItems: 'center',

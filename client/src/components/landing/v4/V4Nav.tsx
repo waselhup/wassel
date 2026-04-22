@@ -43,7 +43,7 @@ export default function V4Nav() {
         }}
       >
         <WasselLogo size={30} />
-        <span style={{ fontFamily }}>{isAr ? 'وصّل' : 'Wassel'}</span>
+        <span style={{ fontFamily }}>{isAr ? 'وصل' : 'Wassel'}</span>
       </Link>
 
       <div

@@ -15,7 +15,7 @@ export default function Onboarding() {
   const steps = [
     { key: "link", title: t("on.s1.title", "اربط ملفك على LinkedIn"), desc: t("on.s1.desc", "ألصق رابط ملفك الشخصي لنقوم بتحليله"), icon: Linkedin },
     { key: "role", title: t("on.s2.title", "ما دورك الحالي؟"), desc: t("on.s2.desc", "ساعدنا على تخصيص التجربة لك"), icon: User },
-    { key: "goal", title: t("on.s3.title", "ما هدفك من وصّل؟"), desc: t("on.s3.desc", "سنرشدك للميزة الأنسب"), icon: Target },
+    { key: "goal", title: t("on.s3.title", "ما هدفك من وصل؟"), desc: t("on.s3.desc", "سنرشدك للميزة الأنسب"), icon: Target },
   ];
 
   const goals = [
@@ -45,7 +45,7 @@ export default function Onboarding() {
           <div className="flex items-center justify-center gap-2 mb-8">
             {steps.map((_, i) => (
               <motion.div key={i}
-                animate={{ width: step === i ? 32 : 8, backgroundColor: step >= i ? "#0A8F84" : "#e5e7eb" }}
+                animate={{ width: step === i ? 32 : 8, backgroundColor: step >= i ? "#14b8a6" : "#e5e7eb" }}
                 className="h-2 rounded-full"
               />
             ))}
@@ -59,7 +59,7 @@ export default function Onboarding() {
               transition={{ duration: 0.3 }}
             >
               <div className="flex justify-center mb-5">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[var(--wsl-teal)] to-[var(--wsl-gold)] flex items-center justify-center shadow-xl shadow-[#0A8F84]/30">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[var(--wsl-teal)] to-[var(--wsl-gold)] flex items-center justify-center shadow-xl shadow-[#14b8a6]/30">
                   {(() => { const Icon = steps[step].icon; return <Icon className="w-8 h-8 text-white" />; })()}
                 </div>
               </div>
@@ -69,14 +69,14 @@ export default function Onboarding() {
               {step === 0 && (
                 <input value={data.linkedin} onChange={(e) => set("linkedin", e.target.value)}
                   placeholder="https://linkedin.com/in/your-profile"
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-[#0A8F84] focus:outline-none focus:ring-2 focus:ring-[#0A8F84]/20 transition text-center"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-[#14b8a6] focus:outline-none focus:ring-2 focus:ring-[#14b8a6]/20 transition text-center"
                 />
               )}
               {step === 1 && (
                 <div className="grid grid-cols-2 gap-3">
                   {roles.map((r) => (
                     <button key={r} onClick={() => set("role", r)}
-                      className={`p-4 rounded-xl border-2 text-sm font-semibold transition ${data.role === r ? "border-[#0A8F84] bg-teal-50 text-[#0A8F84]" : "border-gray-200 text-gray-700 hover:border-gray-300"}`}>
+                      className={`p-4 rounded-xl border-2 text-sm font-semibold transition ${data.role === r ? "border-[#14b8a6] bg-teal-50 text-[#14b8a6]" : "border-gray-200 text-gray-700 hover:border-gray-300"}`}>
                       {r}
                     </button>
                   ))}
@@ -86,7 +86,7 @@ export default function Onboarding() {
                 <div className="grid grid-cols-1 gap-3">
                   {goals.map((g) => (
                     <button key={g} onClick={() => set("goal", g)}
-                      className={`p-4 rounded-xl border-2 text-sm font-semibold transition text-start ${data.goal === g ? "border-[#0A8F84] bg-teal-50 text-[#0A8F84]" : "border-gray-200 text-gray-700 hover:border-gray-300"}`}>
+                      className={`p-4 rounded-xl border-2 text-sm font-semibold transition text-start ${data.goal === g ? "border-[#14b8a6] bg-teal-50 text-[#14b8a6]" : "border-gray-200 text-gray-700 hover:border-gray-300"}`}>
                       {g}
                     </button>
                   ))}
@@ -105,7 +105,7 @@ export default function Onboarding() {
               <ChevronRight className="w-4 h-4 rtl:rotate-180" /> {t("on.back", "رجوع")}
             </button>
             <button onClick={() => setStep(step + 1)}
-              className="px-6 py-3 rounded-xl bg-[#0A8F84] hover:bg-[#064E49] text-white font-semibold shadow-lg shadow-[#0A8F84]/30 flex items-center gap-2 transition">
+              className="px-6 py-3 rounded-xl bg-[#14b8a6] hover:bg-[#0f766e] text-white font-semibold shadow-lg shadow-[#14b8a6]/30 flex items-center gap-2 transition">
               {step === steps.length - 1 ? t("on.finish", "إنهاء") : t("on.next", "التالي")}
               <ChevronLeft className="w-4 h-4 rtl:rotate-180" />
             </button>
@@ -126,10 +126,10 @@ function Done({ onFinish }: { onFinish: () => void }) {
       >
         <CheckCircle2 className="w-10 h-10 text-emerald-600" />
       </motion.div>
-      <h2 className="text-2xl font-bold text-[var(--wsl-ink)] mb-2">{t("on.done.title", "مرحبًا بك في وصّل!")}</h2>
+      <h2 className="text-2xl font-bold text-[var(--wsl-ink)] mb-2">{t("on.done.title", "مرحبًا بك في وصل!")}</h2>
       <p className="text-gray-500 mb-6">{t("on.done.desc", "حسابك جاهز. لنبدأ رحلتك نحو الفرصة التالية")}</p>
       <button onClick={onFinish}
-        className="px-8 py-3 rounded-xl bg-[#0A8F84] hover:bg-[#064E49] text-white font-semibold shadow-lg shadow-[#0A8F84]/30 inline-flex items-center gap-2 transition">
+        className="px-8 py-3 rounded-xl bg-[#14b8a6] hover:bg-[#0f766e] text-white font-semibold shadow-lg shadow-[#14b8a6]/30 inline-flex items-center gap-2 transition">
         <WasselLogo size={44} /> {t("on.start", "ابدأ الآن")}
       </button>
     </motion.div>
@@ -138,7 +138,7 @@ function Done({ onFinish }: { onFinish: () => void }) {
 
 function Confetti() {
   const pieces = Array.from({ length: 24 });
-  const colors = ["#0A8F84", "#C9922A", "#064E49", "#10b981", "#12B5A8"];
+  const colors = ["#14b8a6", "#C9922A", "#0f766e", "#10b981", "#0d9488"];
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden">
       {pieces.map((_, i) => (

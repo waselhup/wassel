@@ -75,7 +75,7 @@ export default function Analytics() {
     key: string; icon: any; label: string; value: number | undefined;
     color: string; bg: string; framework?: string; suffix?: string;
   }> = [
-    { key: 'profile_analyses', icon: Sparkles, label: t('analytics.kpi.analyses'), value: k?.profile_analyses, color: '#0A8F84', bg: '#ECFDF5', framework: 'Harvard HBR' },
+    { key: 'profile_analyses', icon: Sparkles, label: t('analytics.kpi.analyses'), value: k?.profile_analyses, color: '#14b8a6', bg: '#ECFDF5', framework: 'Harvard HBR' },
     { key: 'cvs_generated', icon: FileText, label: t('analytics.kpi.cvs'), value: k?.cvs_generated, color: '#C9922A', bg: '#FEF3C7', framework: 'STAR · Stanford' },
     { key: 'posts_generated', icon: TrendingUp, label: t('analytics.kpi.posts'), value: k?.posts_generated, color: '#3B82F6', bg: '#DBEAFE', framework: 'Kellogg' },
   ];
@@ -117,7 +117,7 @@ export default function Analytics() {
                     borderRadius: 9,
                     border: 'none',
                     cursor: 'pointer',
-                    background: active ? 'linear-gradient(135deg, #0A8F84, #12B5A8)' : 'transparent',
+                    background: active ? 'linear-gradient(135deg, #14b8a6, #0d9488)' : 'transparent',
                     color: active ? '#fff' : 'var(--wsl-ink-3)',
                     fontFamily: 'Cairo, Inter, sans-serif',
                     fontWeight: 900,
@@ -229,7 +229,7 @@ export default function Analytics() {
                     labelFormatter={d => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                   />
                   <Legend wrapperStyle={{ fontFamily: 'Cairo, Inter, sans-serif', fontSize: 12 }} />
-                  <Line type="monotone" dataKey="analyses" stroke="#0A8F84" strokeWidth={2.5} dot={{ r: 2 }} name={t('analytics.kpi.analyses')} />
+                  <Line type="monotone" dataKey="analyses" stroke="#14b8a6" strokeWidth={2.5} dot={{ r: 2 }} name={t('analytics.kpi.analyses')} />
                   <Line type="monotone" dataKey="cvs" stroke="#C9922A" strokeWidth={2.5} dot={{ r: 2 }} name={t('analytics.kpi.cvs')} />
                   <Line type="monotone" dataKey="posts" stroke="#3B82F6" strokeWidth={2.5} dot={{ r: 2 }} name={t('analytics.kpi.posts')} />
                 </LineChart>

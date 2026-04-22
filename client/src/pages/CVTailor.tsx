@@ -329,10 +329,10 @@ export default function CVTailor() {
                 </span>
               </div>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                <span style={{ color: '#0A8F84', fontSize: 16, lineHeight: 1 }}>●</span>
+                <span style={{ color: '#14b8a6', fontSize: 16, lineHeight: 1 }}>●</span>
                 <span>
                   <strong>PDF (from Word)</strong> — {t('cv.upload.pdfWordDesc', isAr ? 'PDF مُنشأ من Word — دقة 85-90%' : 'PDF created from Word — 85-90% accuracy')}
-                  <span style={{ color: '#0A8F84', fontSize: 11, marginInlineStart: 6 }}>
+                  <span style={{ color: '#14b8a6', fontSize: 11, marginInlineStart: 6 }}>
                     {t('cv.upload.goodAccuracy', isAr ? '(جيد)' : '(Good)')}
                   </span>
                 </span>
@@ -362,12 +362,12 @@ export default function CVTailor() {
               borderRadius: 12, padding: 28, textAlign: 'center', cursor: 'pointer',
               background: '#F9FAFB', transition: 'all 180ms',
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#0A8F84'; e.currentTarget.style.background = 'rgba(10,143,132,0.03)'; }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#14b8a6'; e.currentTarget.style.background = 'rgba(10,143,132,0.03)'; }}
             onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#D1D5DB'; e.currentTarget.style.background = '#F9FAFB'; }}
           >
             {uploading ? (
               <>
-                <Loader2 size={28} style={{ color: '#0A8F84', animation: 'spin 1s linear infinite', margin: '0 auto 10px' }} />
+                <Loader2 size={28} style={{ color: '#14b8a6', animation: 'spin 1s linear infinite', margin: '0 auto 10px' }} />
                 <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--wsl-ink)', fontFamily: 'Cairo, Inter, sans-serif' }}>
                   {t('cv.upload.parsing', isAr ? 'نستخرج بياناتك...' : 'Parsing your CV...')}
                 </div>
@@ -377,7 +377,7 @@ export default function CVTailor() {
               </>
             ) : (
               <>
-                <Upload size={28} style={{ color: '#0A8F84', margin: '0 auto 10px' }} />
+                <Upload size={28} style={{ color: '#14b8a6', margin: '0 auto 10px' }} />
                 <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--wsl-ink)', fontFamily: 'Cairo, Inter, sans-serif' }}>
                   {t('cv.upload.hint', isAr ? 'اسحب وأفلِت أو انقر للتصفح' : 'Drag & drop or click to browse')}
                 </div>
@@ -418,8 +418,8 @@ export default function CVTailor() {
                 <button
                   onClick={() => { setParseError(null); setParseMethod('manual'); pushToast('ok', isAr ? 'يمكنك الآن ملء البيانات يدوياً' : 'You can now fill fields manually'); }}
                   style={{
-                    marginTop: 8, padding: '6px 12px', border: '1px solid #0A8F84',
-                    background: '#fff', color: '#0A8F84', borderRadius: 6,
+                    marginTop: 8, padding: '6px 12px', border: '1px solid #14b8a6',
+                    background: '#fff', color: '#14b8a6', borderRadius: 6,
                     fontWeight: 800, fontSize: 12, cursor: 'pointer', alignSelf: 'flex-start',
                     fontFamily: 'Cairo, Inter, sans-serif',
                   }}
@@ -640,9 +640,9 @@ export default function CVTailor() {
             <div style={{ display: 'flex', gap: 8 }}>
               {(['en', 'ar'] as Language[]).map((l) => (
                 <button key={l} onClick={() => setLanguage(l)} style={{
-                  padding: '8px 16px', borderRadius: 8, border: language === l ? '2px solid #0A8F84' : '1px solid var(--wsl-border)',
+                  padding: '8px 16px', borderRadius: 8, border: language === l ? '2px solid #14b8a6' : '1px solid var(--wsl-border)',
                   background: language === l ? 'rgba(10,143,132,0.08)' : '#fff',
-                  color: language === l ? '#0A8F84' : 'var(--wsl-ink-2)',
+                  color: language === l ? '#14b8a6' : 'var(--wsl-ink-2)',
                   fontWeight: 800, fontSize: 13, cursor: 'pointer',
                   fontFamily: 'Cairo, Inter, sans-serif',
                 }}>
@@ -719,7 +719,7 @@ export default function CVTailor() {
               width: '100%', padding: '14px 24px', borderRadius: 12, border: 'none',
               background: generating
                 ? 'var(--wsl-border, #E5E7EB)'
-                : 'linear-gradient(135deg, #0A8F84 0%, #0ea5e9 100%)',
+                : 'linear-gradient(135deg, #14b8a6 0%, #0ea5e9 100%)',
               color: generating ? 'var(--wsl-ink-3)' : '#fff',
               fontWeight: 900, fontSize: 15, cursor: generating ? 'not-allowed' : 'pointer',
               fontFamily: 'Cairo, Inter, sans-serif',
@@ -793,7 +793,7 @@ export default function CVTailor() {
               <div>
                 {t('cv.history.compareHint', isAr ? 'حدّد سيرتين من القائمة لمقارنتهما' : 'Select two CVs below to compare')}
                 {selectedForCompare.length > 0 && (
-                  <span style={{ marginInlineStart: 8, fontWeight: 800, color: '#0A8F84' }}>
+                  <span style={{ marginInlineStart: 8, fontWeight: 800, color: '#14b8a6' }}>
                     ({selectedForCompare.length}/2)
                   </span>
                 )}
@@ -804,7 +804,7 @@ export default function CVTailor() {
                   disabled={comparing}
                   style={{
                     padding: '6px 14px', borderRadius: 8, border: 'none',
-                    background: comparing ? '#E5E7EB' : 'linear-gradient(135deg, #0A8F84, #0ea5e9)',
+                    background: comparing ? '#E5E7EB' : 'linear-gradient(135deg, #14b8a6, #0ea5e9)',
                     color: comparing ? '#9CA3AF' : '#fff',
                     fontWeight: 900, fontSize: 12, cursor: comparing ? 'not-allowed' : 'pointer',
                     fontFamily: 'Cairo, Inter, sans-serif',
@@ -820,7 +820,7 @@ export default function CVTailor() {
 
           {historyLoading ? (
             <div style={{ padding: 40, textAlign: 'center' }}>
-              <Loader2 size={24} style={{ color: '#0A8F84', animation: 'spin 1s linear infinite' }} />
+              <Loader2 size={24} style={{ color: '#14b8a6', animation: 'spin 1s linear infinite' }} />
             </div>
           ) : history.length === 0 ? (
             <div style={{ padding: 40, textAlign: 'center', color: 'var(--wsl-ink-3)', fontFamily: 'Cairo, Inter, sans-serif' }}>
@@ -841,7 +841,7 @@ export default function CVTailor() {
                 return (
                   <div key={cv.id} style={{
                     padding: 14, borderRadius: 10,
-                    border: isSelected ? '2px solid #0A8F84' : '1px solid var(--wsl-border, #E5E7EB)',
+                    border: isSelected ? '2px solid #14b8a6' : '1px solid var(--wsl-border, #E5E7EB)',
                     background: isSelected ? 'rgba(10,143,132,0.04)' : '#fff',
                     display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap',
                   }}>
@@ -851,7 +851,7 @@ export default function CVTailor() {
                         checked={isSelected}
                         disabled={disabled}
                         onChange={() => toggleCompareSelection(cv.id)}
-                        style={{ width: 16, height: 16, cursor: disabled ? 'not-allowed' : 'pointer', accentColor: '#0A8F84' }}
+                        style={{ width: 16, height: 16, cursor: disabled ? 'not-allowed' : 'pointer', accentColor: '#14b8a6' }}
                       />
                     )}
                     <div style={{ flex: 1, minWidth: 200 }}>
@@ -957,7 +957,7 @@ function ATSScoreCard({ atsScore, isAr, t }: { atsScore: any; isAr: boolean; t: 
       fontFamily: 'Cairo, Inter, sans-serif',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-        <BarChart3 size={18} style={{ color: '#0A8F84' }} />
+        <BarChart3 size={18} style={{ color: '#14b8a6' }} />
         <div style={{ fontWeight: 900, fontSize: 15, color: 'var(--wsl-ink)' }}>
           {t('cv.ats.title', isAr ? 'درجة توافق ATS' : 'ATS Compatibility Score')}
         </div>
@@ -1029,7 +1029,7 @@ function ScoreBar({ label, score, max }: { label: string; score: number; max: nu
         <span style={{ fontWeight: 900, fontFamily: 'Cairo, Inter, sans-serif' }}>{score}/{max}</span>
       </div>
       <div style={{ height: 6, background: '#F3F4F6', borderRadius: 999, overflow: 'hidden' }}>
-        <div style={{ width: `${pct}%`, height: '100%', background: 'linear-gradient(90deg, #0A8F84, #0ea5e9)' }} />
+        <div style={{ width: `${pct}%`, height: '100%', background: 'linear-gradient(90deg, #14b8a6, #0ea5e9)' }} />
       </div>
     </div>
   );
@@ -1056,7 +1056,7 @@ function CompareModal({ data, isAr, t, onClose }: { data: any; isAr: boolean; t:
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <GitCompare size={20} style={{ color: '#0A8F84' }} />
+            <GitCompare size={20} style={{ color: '#14b8a6' }} />
             <h2 style={{ margin: 0, fontSize: 18, fontWeight: 900, color: 'var(--wsl-ink)' }}>
               {t('cv.compare.title', isAr ? 'مقارنة السيرتين' : 'CV Comparison')}
             </h2>
@@ -1162,7 +1162,7 @@ function Section({ title, subtitle, icon, children }: {
         {icon && (
           <div style={{
             width: 32, height: 32, borderRadius: 8,
-            background: 'rgba(10,143,132,0.08)', color: '#0A8F84',
+            background: 'rgba(10,143,132,0.08)', color: '#14b8a6',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
             {icon}
@@ -1276,7 +1276,7 @@ function TemplateCard({ selected, onClick, title, desc, tags, preview }: {
       onClick={onClick}
       style={{
         textAlign: 'start', padding: 16, borderRadius: 14, cursor: 'pointer',
-        border: selected ? '2px solid #0A8F84' : '2px solid var(--wsl-border, #E5E7EB)',
+        border: selected ? '2px solid #14b8a6' : '2px solid var(--wsl-border, #E5E7EB)',
         background: selected ? 'rgba(10,143,132,0.04)' : '#fff',
         transition: 'all 180ms',
         fontFamily: 'Cairo, Inter, sans-serif',
@@ -1295,7 +1295,7 @@ function TemplateCard({ selected, onClick, title, desc, tags, preview }: {
             {tags.map((tag) => (
               <span key={tag} style={{
                 fontSize: 10, fontWeight: 800, padding: '2px 8px', borderRadius: 999,
-                background: 'rgba(10,143,132,0.08)', color: '#0A8F84',
+                background: 'rgba(10,143,132,0.08)', color: '#14b8a6',
               }}>
                 {tag}
               </span>
@@ -1303,7 +1303,7 @@ function TemplateCard({ selected, onClick, title, desc, tags, preview }: {
           </div>
         </div>
         {selected && (
-          <CheckCircle2 size={18} style={{ color: '#0A8F84', flexShrink: 0 }} />
+          <CheckCircle2 size={18} style={{ color: '#14b8a6', flexShrink: 0 }} />
         )}
       </div>
     </button>
@@ -1373,7 +1373,7 @@ const subCardStyle: React.CSSProperties = {
 
 const addBtnStyle: React.CSSProperties = {
   padding: '6px 12px', borderRadius: 8, border: '1px solid rgba(10,143,132,0.3)',
-  background: 'rgba(10,143,132,0.08)', color: '#0A8F84', fontSize: 12, fontWeight: 800,
+  background: 'rgba(10,143,132,0.08)', color: '#14b8a6', fontSize: 12, fontWeight: 800,
   cursor: 'pointer', fontFamily: 'Cairo, Inter, sans-serif',
   display: 'inline-flex', alignItems: 'center', gap: 4,
 };
