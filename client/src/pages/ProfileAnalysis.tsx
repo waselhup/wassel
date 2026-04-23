@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import {
   Sparkles, Link as LinkIcon, AlertCircle, Check, X, Info,
-  FileDown, FileText, ChevronDown, ChevronUp, Trash2, GitCompare,
+  FileText, ChevronDown, ChevronUp, Trash2, GitCompare,
   Target, Building2, Globe, ExternalLink, Zap, TrendingUp, TrendingDown, Minus,
 } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
@@ -119,6 +119,8 @@ export default function ProfileAnalysis() {
   const [urlErrorSuggestion, setUrlErrorSuggestion] = useState<string | null>(null);
   const [goal, setGoal] = useState<TargetGoal | null>(null);
   const [industry, setIndustry] = useState<Industry | null>(null);
+  const [customIndustry, setCustomIndustry] = useState('');
+  const [customIndustryError, setCustomIndustryError] = useState<string | null>(null);
   const [language, setLanguage] = useState<ReportLang>(isRTL ? 'ar' : 'en');
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [targetRole, setTargetRole] = useState('');
@@ -135,7 +137,7 @@ export default function ProfileAnalysis() {
   const [comparing, setComparing] = useState(false);
   const [compareResult, setCompareResult] = useState<CompareResult | null>(null);
 
-  const [exporting, setExporting] = useState<'pdf' | 'docx' | null>(null);
+  const [exporting, setExporting] = useState<'docx' | null>(null);
 
   useEffect(() => {
     loadHistory();
@@ -181,10 +183,16 @@ export default function ProfileAnalysis() {
     return s;
   }, [url, urlError, goal, industry, language, targetRole, targetCompany]);
 
-  const canGenerate = !!url.trim() && !urlError && !!goal && !!industry && !loading;
+  const trimmedCustom = customIndustry.trim();
+  const customIndustryReady = industry !== 'other' || (trimmedCustom.length >= 2 && trimmedCustom.length <= 60);
+  const canGenerate = !!url.trim() && !urlError && !!goal && !!industry && customIndustryReady && !loading;
 
   async function handleGenerate() {
     if (!canGenerate) return;
+    if (industry === 'other' && trimmedCustom.length < 2) {
+      setCustomIndustryError(i18n.language === 'ar' ? 'اكتب مجالك أولاً' : 'Please enter your industry first');
+      return;
+    }
     setLoading(true);
     setAnalysis(null);
     setAnalysisId(null);
@@ -194,6 +202,7 @@ export default function ProfileAnalysis() {
         linkedinUrl: url,
         targetGoal: goal,
         industry,
+        customIndustryLabel: industry === 'other' ? trimmedCustom : undefined,
         targetRole: targetRole.trim() || undefined,
         targetCompany: targetCompany.trim() || undefined,
         reportLanguage: language,
@@ -209,13 +218,13 @@ export default function ProfileAnalysis() {
     }
   }
 
-  async function handleExport(format: 'pdf' | 'docx') {
+  async function handleExport() {
     if (!analysisId) return;
-    setExporting(format);
+    setExporting('docx');
     try {
       const res = await trpcMutation<{ filename: string; mimeType: string; base64: string }>('linkedin.exportReport', {
         analysisId,
-        format,
+        format: 'docx',
       });
       const bytes = atob(res.base64);
       const array = new Uint8Array(bytes.length);
@@ -382,7 +391,13 @@ export default function ProfileAnalysis() {
             {INDUSTRIES.map(ind => {
               const active = industry === ind;
               return (
-                <button key={ind} onClick={() => setIndustry(ind)}
+                <button key={ind} onClick={() => {
+                  setIndustry(ind);
+                  if (ind !== 'other') {
+                    setCustomIndustry('');
+                    setCustomIndustryError(null);
+                  }
+                }}
                   style={{
                     padding: '8px 14px', borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: 'pointer',
                     background: active ? '#14b8a6' : '#f8fafc', color: active ? 'white' : '#334155',
@@ -393,6 +408,42 @@ export default function ProfileAnalysis() {
               );
             })}
           </div>
+          {industry === 'other' && (
+            <div style={{ marginTop: 14 }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#334155', marginBottom: 6 }}>
+                {i18n.language === 'ar' ? 'ما هو مجالك؟' : 'What is your industry?'}
+              </label>
+              <input
+                type="text"
+                value={customIndustry}
+                onChange={(e) => {
+                  setCustomIndustry(e.target.value);
+                  if (customIndustryError) setCustomIndustryError(null);
+                }}
+                maxLength={60}
+                placeholder={i18n.language === 'ar' ? 'اكتب مجالك هنا...' : 'Enter your industry...'}
+                dir={i18n.language === 'ar' ? 'rtl' : 'ltr'}
+                style={{
+                  width: '100%',
+                  padding: '12px 14px',
+                  fontSize: 14,
+                  border: `1px solid ${customIndustryError ? '#fca5a5' : '#e5e7eb'}`,
+                  borderRadius: 10,
+                  outline: 'none',
+                  fontFamily: 'inherit',
+                  background: customIndustryError ? '#fef2f2' : 'white',
+                  transition: 'all 0.15s',
+                }}
+                onFocus={(e) => { if (!customIndustryError) e.currentTarget.style.borderColor = '#14b8a6'; }}
+                onBlur={(e) => { if (!customIndustryError) e.currentTarget.style.borderColor = '#e5e7eb'; }}
+              />
+              {customIndustryError && (
+                <div style={{ marginTop: 6, color: '#991b1b', fontSize: 12, fontWeight: 600 }}>
+                  {customIndustryError}
+                </div>
+              )}
+            </div>
+          )}
         </motion.div>
 
         {/* Language Selector */}
@@ -626,25 +677,16 @@ export default function ProfileAnalysis() {
                 </div>
               )}
 
-              {/* Export Buttons */}
+              {/* Export Button (DOCX only — Word handles Arabic glyphs natively) */}
               <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                <button onClick={() => handleExport('pdf')} disabled={exporting === 'pdf'}
+                <button onClick={() => handleExport()} disabled={exporting === 'docx'}
                   style={{
-                    flex: 1, minWidth: 180, padding: '12px 16px', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer',
-                    background: 'white', color: '#14b8a6', border: '2px solid #14b8a6',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                  }}>
-                  <FileDown size={18} />
-                  {exporting === 'pdf' ? '...' : t('profileRadar.result.exportPdf')}
-                </button>
-                <button onClick={() => handleExport('docx')} disabled={exporting === 'docx'}
-                  style={{
-                    flex: 1, minWidth: 180, padding: '12px 16px', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer',
+                    flex: 1, minWidth: 180, padding: '14px 16px', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer',
                     background: 'linear-gradient(90deg, #14b8a6, #0d9488)', color: 'white', border: 'none',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                   }}>
                   <FileText size={18} />
-                  {exporting === 'docx' ? '...' : t('profileRadar.result.exportDocx')}
+                  {exporting === 'docx' ? '...' : t('profileRadar.result.exportReport')}
                 </button>
               </div>
             </motion.div>

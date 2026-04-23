@@ -1391,7 +1391,7 @@
       "recommendations": "Recommendations",
       "topPriorities": "Top priorities",
       "vision2030": "Vision 2030 alignment",
-      "exportPdf": "Download PDF",
+      "exportReport": "Download Report (Word)",
       "exportDocx": "Download DOCX (+5 tokens)",
       "exportDocxFree": "Download DOCX (already paid)"
     },

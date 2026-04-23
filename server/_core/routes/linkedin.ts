@@ -5,7 +5,7 @@ import { logApiCall, mapAnthropicStatusToArabic, mapApifyStatusToArabic, classif
 import { callClaude, extractText, extractJson } from '../lib/claude-client';
 import { scrapeLinkedInProfileMulti, detectLanguage } from '../lib/linkedin-scraper';
 import { validateAndNormalizeLinkedInUrl } from '../lib/linkedin-url-validator';
-import { generateDocxReport, generatePdfReport } from '../lib/profile-report-generator';
+import { generateDocxReport } from '../lib/profile-report-generator';
 
 const TARGET_GOAL = z.enum([
   'job-search', 'investment', 'thought-leadership',
@@ -73,6 +73,10 @@ TASK
 Analyze the candidate's LinkedIn profile against:
 - target_goal: what the candidate wants from this profile
 - industry: the target market they want to be visible to (this informs ADVICE, not biography)
+  · Note: when input.industry_is_custom is true, "industry" is a free-text label
+    the user typed themselves. Treat it as a TARGET LENS exactly the same way —
+    do not assume the candidate already works in that industry. Do not invent
+    standards/regulations/companies for that label.
 - target_role / target_company: optional aim points
 
 Goal lenses (use these to frame advice, never to invent facts):
@@ -707,6 +711,8 @@ export const linkedinRouter = router({
       mediaType: z.string().optional(),
       targetGoal: TARGET_GOAL,
       industry: INDUSTRY,
+      // Free-text industry label, only used when industry === 'other'.
+      customIndustryLabel: z.string().trim().min(2).max(60).optional(),
       targetRole: z.string().max(200).optional(),
       targetCompany: z.string().max(200).optional(),
       reportLanguage: REPORT_LANGUAGE.default('ar'),
@@ -805,9 +811,17 @@ export const linkedinRouter = router({
         activity_count: (p.activity || []).length,
       } : null;
 
+      // Resolve effective industry label: when 'other', use the user-supplied
+      // string. The anti-hallucination rules in PROFILE_RADAR_SYSTEM still apply —
+      // this is a TARGET LENS, not a claim about the candidate's biography.
+      const effectiveIndustry = input.industry === 'other' && input.customIndustryLabel
+        ? input.customIndustryLabel
+        : input.industry;
+
       const userPayload = {
         target_goal: input.targetGoal,
-        industry: input.industry,
+        industry: effectiveIndustry,
+        industry_is_custom: input.industry === 'other',
         target_role: input.targetRole || null,
         target_company: input.targetCompany || null,
         report_language: lang,
@@ -886,6 +900,11 @@ export const linkedinRouter = router({
         }
       }
 
+      // Preserve the user-supplied custom industry label inside the saved payload.
+      if (input.industry === 'other' && input.customIndustryLabel) {
+        result.custom_industry_label = input.customIndustryLabel;
+      }
+
       const { data: saved, error: saveErr } = await ctx.supabase
         .from('profile_analyses')
         .insert({
@@ -924,9 +943,18 @@ export const linkedinRouter = router({
   exportReport: protectedProcedure
     .input(z.object({
       analysisId: z.string().uuid(),
+      // 'pdf' kept in schema only so old clients fail with a clear error.
+      // jsPDF cannot embed Arabic glyphs cleanly — DOCX is the only supported format.
       format: z.enum(['pdf', 'docx']),
     }))
     .mutation(async ({ input, ctx }) => {
+      if (input.format === 'pdf') {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'PDF export is no longer available. Please use DOCX.',
+        });
+      }
+
       const { data: analysis } = await ctx.supabase
         .from('profile_analyses')
         .select('*')
@@ -938,32 +966,30 @@ export const linkedinRouter = router({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'التحليل غير موجود' });
       }
 
-      if (input.format === 'docx') {
-        const DOCX_COST = 5;
-        if (!analysis.docx_generated) {
-          const { data: profile } = await ctx.supabase
-            .from('profiles')
-            .select('token_balance')
-            .eq('id', ctx.user.id)
-            .single();
+      const DOCX_COST = 5;
+      if (!analysis.docx_generated) {
+        const { data: profile } = await ctx.supabase
+          .from('profiles')
+          .select('token_balance')
+          .eq('id', ctx.user.id)
+          .single();
 
-          if (!profile || (profile.token_balance || 0) < DOCX_COST) {
-            throw new TRPCError({
-              code: 'FORBIDDEN',
-              message: `رصيد غير كافٍ — DOCX يحتاج ${DOCX_COST} توكن إضافية`,
-            });
-          }
-
-          await ctx.supabase
-            .from('profiles')
-            .update({ token_balance: (profile.token_balance || 0) - DOCX_COST })
-            .eq('id', ctx.user.id);
-
-          await ctx.supabase
-            .from('profile_analyses')
-            .update({ docx_generated: true })
-            .eq('id', input.analysisId);
+        if (!profile || (profile.token_balance || 0) < DOCX_COST) {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: `رصيد غير كافٍ — DOCX يحتاج ${DOCX_COST} توكن إضافية`,
+          });
         }
+
+        await ctx.supabase
+          .from('profiles')
+          .update({ token_balance: (profile.token_balance || 0) - DOCX_COST })
+          .eq('id', ctx.user.id);
+
+        await ctx.supabase
+          .from('profile_analyses')
+          .update({ docx_generated: true })
+          .eq('id', input.analysisId);
       }
 
       const userName = (analysis.profile_data as any)?.fullName
@@ -980,19 +1006,9 @@ export const linkedinRouter = router({
         analysisData: analysis.analysis_data as any,
       };
 
-      let buffer: Buffer;
-      let mimeType: string;
-      let filename: string;
-
-      if (input.format === 'pdf') {
-        buffer = generatePdfReport(reportOpts);
-        mimeType = 'application/pdf';
-        filename = `profile-analysis-${analysis.id.slice(0, 8)}.pdf`;
-      } else {
-        buffer = await generateDocxReport(reportOpts);
-        mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-        filename = `profile-analysis-${analysis.id.slice(0, 8)}.docx`;
-      }
+      const buffer = await generateDocxReport(reportOpts);
+      const mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      const filename = `profile-analysis-${analysis.id.slice(0, 8)}.docx`;
 
       return {
         filename,
