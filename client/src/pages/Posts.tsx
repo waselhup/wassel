@@ -23,8 +23,9 @@ type Tone =
   | 'analytical' | 'storytelling' | 'motivational' | 'sarcastic' | 'provocative';
 
 type Dialect =
-  | 'msa' | 'saudi-general' | 'saudi-hasawi'
-  | 'saudi-najdi' | 'saudi-hijazi' | 'english' | 'mixed';
+  | 'msa' | 'saudi-general'
+  | 'saudi-najdi' | 'saudi-hijazi' | 'saudi-southern'
+  | 'english' | 'mixed';
 
 type Audience =
   | 'entrepreneurs' | 'employees' | 'hr-recruiters'
@@ -91,8 +92,9 @@ const ALL_TONES: Tone[] = [
 ];
 
 const ALL_DIALECTS: Dialect[] = [
-  'msa', 'saudi-general', 'saudi-hasawi',
-  'saudi-najdi', 'saudi-hijazi', 'english', 'mixed',
+  'msa', 'saudi-general',
+  'saudi-najdi', 'saudi-hijazi', 'saudi-southern',
+  'english', 'mixed',
 ];
 
 const ALL_AUDIENCES: Audience[] = [
@@ -175,7 +177,7 @@ export default function Posts() {
   // Studio state
   const [topic, setTopic] = useState('');
   const [selectedTones, setSelectedTones] = useState<Tone[]>(['professional']);
-  const [dialect, setDialect] = useState<Dialect>('saudi-hasawi');
+  const [dialect, setDialect] = useState<Dialect>('msa');
   const [language, setLanguage] = useState<'ar' | 'en' | 'mixed'>('ar');
   const [audience, setAudience] = useState<Audience | ''>('');
   const [goal, setGoal] = useState<Goal | ''>('');
@@ -541,34 +543,13 @@ export default function Posts() {
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {ALL_DIALECTS.map((d) => {
                   const active = dialect === d;
-                  const isHasawi = d === 'saudi-hasawi';
                   return (
                     <button
                       key={d}
                       onClick={() => setDialect(d)}
-                      style={{
-                        ...pillStyle(active),
-                        ...(isHasawi ? {
-                          boxShadow: active
-                            ? '0 0 0 2px #F59E0B, 0 4px 12px rgba(245,158,11,0.25)'
-                            : '0 0 0 2px #FCD34D',
-                          background: active ? '#FEF3C7' : '#FFFBEB',
-                          color: '#92400E',
-                          border: `1.5px solid ${active ? '#F59E0B' : '#FDE68A'}`,
-                        } : {}),
-                      }}
+                      style={pillStyle(active)}
                     >
-                      {isHasawi && <Star size={12} fill="#F59E0B" color="#F59E0B" />}
                       {t(`posts.studio.dialect.${d}`)}
-                      {isHasawi && (
-                        <span style={{
-                          marginInlineStart: 4, padding: '2px 6px', borderRadius: 999,
-                          background: '#F59E0B', color: '#fff', fontSize: 9, fontWeight: 900,
-                          fontFamily: 'Cairo, Inter, sans-serif',
-                        }}>
-                          {t('posts.studio.dialect.saudi-hasawi-badge')}
-                        </span>
-                      )}
                     </button>
                   );
                 })}
@@ -833,7 +814,7 @@ export default function Posts() {
           {/* Summary chips */}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
             <DnaChip label={t('posts.studio.dna.tones')} value={selectedTones.map((x) => t(`posts.studio.tones.${x}`)).join(' + ')} />
-            <DnaChip label={t('posts.studio.dna.dialect')} value={t(`posts.studio.dialect.${dialect}`)} highlight={dialect === 'saudi-hasawi'} />
+            <DnaChip label={t('posts.studio.dna.dialect')} value={t(`posts.studio.dialect.${dialect}`)} />
             <DnaChip label={t('posts.studio.dna.length')} value={t(`posts.studio.advanced.length.${length}`)} />
             {audience && <DnaChip label={t('posts.studio.dna.audience')} value={t(`posts.studio.advanced.audience.${audience}`)} />}
             {goal && <DnaChip label={t('posts.studio.dna.goal')} value={t(`posts.studio.advanced.goal.${goal}`)} />}

@@ -87,7 +87,8 @@ export async function trpcMutation<T = any>(name: string, input: any = {}): Prom
 
 export const trpc = {
   token: {
-    balance: () => trpcQuery<{ balance: number }>('token.balance'),
+    balance: () => trpcQuery<{ balance: number; plan?: string; serverTimestamp?: string; profileUpdatedAt?: string | null }>('token.balance'),
+    getMyBalance: () => trpcQuery<{ balance: number; plan?: string; serverTimestamp?: string; profileUpdatedAt?: string | null }>('token.getMyBalance'),
     history: () => trpcQuery<any[]>('token.history'),
   },
   linkedin: {

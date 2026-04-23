@@ -4,6 +4,7 @@ import { TRPCError } from '@trpc/server';
 import { randomUUID } from 'crypto';
 import { sendCampaignEmail } from '../lib/email';
 import { callClaude, extractText, extractJson } from '../lib/claude-client';
+import { deductTokens, refundTokens, throwInsufficientTokensError } from '../lib/tokens';
 
 const ADMIN_EMAILS = ['waselhup@gmail.com', 'almodhih.1995@gmail.com', 'alhashimali649@gmail.com'];
 
@@ -16,8 +17,7 @@ const SYSTEM_CAMPAIGN = `You are a B2B outbound email strategist for the Saudi/G
 Frameworks: Cialdini 6 Principles, Meyer Culture Map (Saudi = high-context + relationship-first + hierarchical), Wharton 4 Quadrants, HubSpot 2024 benchmarks.
 Rules:
 - Personalize every email with the company name, industry, and city — never generic.
-- Government/semi-gov: reference the relevant Vision 2030 pillar (Thriving Economy / Vibrant Society / Ambitious Nation).
-- Private sector: cite one metric or case study.
+- Cite one relevant metric, case study, or sector trend.
 - Subject 8-12 words, hook in first line, Hook → Value → CTA structure, 120-180 word body.
 - Banned: "Hope you're well", "Allow me to introduce myself", "We are a leading company", any cliché.
 - Arabic = Modern Standard Arabic only (no Gulf dialect, no English mix). Western digits.
@@ -52,7 +52,7 @@ Return JSON keyed by company name. subject + body are required per company:
     "followUp2Day7": "<open-question day-7 message>",
     "followUp3Day14": "<polite break-up day-14 message>",
     "persuasion_principle_used": "<Cialdini principle(s)>",
-    "cultural_adaptation": "<Meyer / Vision 2030 note>"
+    "cultural_adaptation": "<Meyer Culture Map note — how cultural context shapes this message>"
   }
 }`;
 
@@ -169,22 +169,18 @@ export const campaignRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      try {
-        // Token cost: 10 tokens per recipient
-        const tokensNeeded = input.companyIds.length * 10;
+      // Token cost: 10 tokens per recipient
+      const tokensNeeded = input.companyIds.length * 10;
+      const FEATURE = 'campaign.create';
+      const lang = (input.language as 'ar' | 'en') || 'en';
+      let deducted = false;
 
-        const { data: profile, error: profileErr } = await ctx.supabase
-          .from('profiles')
-          .select('token_balance')
-          .eq('id', ctx.user.id)
-          .single();
-        if (profileErr) throw new TRPCError({ code: 'BAD_REQUEST', message: profileErr.message });
-        if (!profile || (profile.token_balance || 0) < tokensNeeded) {
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: `Insufficient tokens. Need ${tokensNeeded}, have ${profile?.token_balance || 0}`,
-          });
-        }
+      try {
+        // Atomic deduct BEFORE downstream work — row-locked, refund below on failure.
+        const deduct = await deductTokens(ctx.supabase, ctx.user.id, tokensNeeded, FEATURE);
+        if (!deduct.success) throwInsufficientTokensError(deduct, lang);
+        deducted = true;
+        console.log('[campaign.create] tokens deducted', deduct.balance_before, '→', deduct.balance_after);
 
         const { data: companies, error: cErr } = await ctx.supabase
           .from('saudi_companies')
@@ -291,14 +287,12 @@ export const campaignRouter = router({
         // Update campaign → ready
         await ctx.supabase.from('email_campaigns').update({ status: 'ready' }).eq('id', campaign.id);
 
-        // Deduct tokens
-        await ctx.supabase
-          .from('profiles')
-          .update({ token_balance: (profile.token_balance || 0) - tokensNeeded })
-          .eq('id', ctx.user.id);
+        // Token deduction already happened atomically up front — no second deduct.
 
-        return { ...campaign, status: 'ready' };
+        return { ...campaign, status: 'ready', tokensRemaining: deduct.balance_after };
       } catch (err: any) {
+        // Any downstream failure refunds tokens.
+        if (deducted) { await refundTokens(ctx.supabase, ctx.user.id, tokensNeeded, FEATURE); deducted = false; }
         if (err instanceof TRPCError) throw err;
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',

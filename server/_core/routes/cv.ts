@@ -3,6 +3,7 @@ import { TRPCError } from '@trpc/server';
 import { router, protectedProcedure } from '../trpc-init';
 import { callClaude, extractText, extractJson } from '../lib/claude-client';
 import { classifyClaudeError, sendClaudeOpsAlert } from '../lib/apiLogger';
+import { deductTokens, refundTokens, throwInsufficientTokensError } from '../lib/tokens';
 import {
   extractTextFromFile,
   extractCVFields,
@@ -164,24 +165,15 @@ export const cvRouter = router({
     }))
     .mutation(async ({ input, ctx }) => {
       const totalCost = TOKEN_COST + (input.includeCoverLetter ? COVER_LETTER_EXTRA_COST : 0);
+      const FEATURE = input.includeCoverLetter ? 'cv.generate+cover_letter' : 'cv.generate';
+      const lang = (input.language as 'ar' | 'en') || 'en';
+      let deducted = false;
 
-      // Token check
-      const { data: profile, error: profErr } = await ctx.supabase
-        .from('profiles')
-        .select('token_balance')
-        .eq('id', ctx.user.id)
-        .single();
-
-      if (profErr || !profile) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'User profile not found' });
-      }
-
-      if ((profile.token_balance || 0) < totalCost) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: `رصيد التوكن غير كافٍ. تحتاج ${totalCost} توكن.`,
-        });
-      }
+      // Atomic deduct BEFORE Claude — row-locked, refund on any downstream failure.
+      const deduct = await deductTokens(ctx.supabase, ctx.user.id, totalCost, FEATURE);
+      if (!deduct.success) throwInsufficientTokensError(deduct, lang);
+      deducted = true;
+      console.log('[cv.generate] tokens deducted', deduct.balance_before, '→', deduct.balance_after);
 
       // Build CV structure via Claude
       let cvData: CVData;
@@ -206,6 +198,7 @@ export const cvRouter = router({
         }
         cvData = normalizeCVData(parsed);
       } catch (err: any) {
+        if (deducted) { await refundTokens(ctx.supabase, ctx.user.id, totalCost, FEATURE); deducted = false; }
         const info = classifyClaudeError(
           err?.status ?? 0,
           err?.responseBody ?? err?.body ?? err?.message ?? ''
@@ -236,6 +229,7 @@ export const cvRouter = router({
           upsert: false,
         });
       if (docxErr) {
+        if (deducted) { await refundTokens(ctx.supabase, ctx.user.id, totalCost, FEATURE); deducted = false; }
         throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: `DOCX upload failed: ${docxErr.message}` });
       }
 
@@ -246,6 +240,7 @@ export const cvRouter = router({
           upsert: false,
         });
       if (pdfErr) {
+        if (deducted) { await refundTokens(ctx.supabase, ctx.user.id, totalCost, FEATURE); deducted = false; }
         throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: `PDF upload failed: ${pdfErr.message}` });
       }
 
@@ -329,6 +324,21 @@ export const cvRouter = router({
       const coverLetterGenerated = !!(coverLetterDocxPath && coverLetterPdfPath);
       const actualCost = TOKEN_COST + (coverLetterGenerated ? COVER_LETTER_EXTRA_COST : 0);
 
+      // If the user asked for a cover letter but we couldn't generate one,
+      // partial-refund the 5 extra tokens so they aren't charged for nothing.
+      let tokensRemaining = deduct.balance_after;
+      if (input.includeCoverLetter && !coverLetterGenerated) {
+        const refund = await refundTokens(
+          ctx.supabase,
+          ctx.user.id,
+          COVER_LETTER_EXTRA_COST,
+          'cv.generate.cover_letter_failed'
+        );
+        if (refund.success && typeof refund.balance_after === 'number') {
+          tokensRemaining = refund.balance_after;
+        }
+      }
+
       // Persist record
       const { data: saved, error: saveErr } = await ctx.supabase
         .from('generated_cvs')
@@ -354,14 +364,11 @@ export const cvRouter = router({
         .single();
 
       if (saveErr) {
+        if (deducted) { await refundTokens(ctx.supabase, ctx.user.id, actualCost, FEATURE); deducted = false; }
         throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: saveErr.message });
       }
 
-      // Deduct tokens
-      await ctx.supabase
-        .from('profiles')
-        .update({ token_balance: (profile.token_balance || 0) - actualCost })
-        .eq('id', ctx.user.id);
+      // Token deduction already happened atomically up front — no second deduct.
 
       return {
         id: saved.id,
@@ -373,7 +380,7 @@ export const cvRouter = router({
           ? { docxUrl: coverLetterDocxUrl, pdfUrl: coverLetterPdfUrl }
           : null,
         tokensUsed: actualCost,
-        tokensRemaining: (profile.token_balance || 0) - actualCost,
+        tokensRemaining,
       };
     }),
 

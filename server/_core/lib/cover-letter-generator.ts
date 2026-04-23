@@ -33,8 +33,7 @@ STRUCTURE (4 paragraphs):
    - Match JD keywords naturally.
 
 3. CULTURAL FIT (2-3 sentences):
-   - For Saudi companies: reference Vision 2030 alignment if relevant.
-   - Mention specific company initiatives/values when known.
+   - Mention specific company initiatives, values, or recent news when known.
    - Show research, not generic fluff.
 
 4. CLOSING (1-2 sentences):

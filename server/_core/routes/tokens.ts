@@ -1,17 +1,28 @@
 import { z } from 'zod';
 import { router, protectedProcedure } from '../trpc-init';
 import { TRPCError } from '@trpc/server';
+import { deductTokens, refundTokens, throwInsufficientTokensError } from '../lib/tokens';
 
 export const tokenRouter = router({
+  /**
+   * Authoritative fresh balance for the caller.
+   * Reads profiles directly via service role + ctx.user.id (already JWT-verified).
+   * Used by the UI to render a pre-flight live counter before any paid action.
+   */
   balance: protectedProcedure.query(async ({ ctx }) => {
     try {
       const { data: profile } = await ctx.supabase
         .from('profiles')
-        .select('token_balance')
+        .select('token_balance, plan, updated_at')
         .eq('id', ctx.user.id)
         .single();
 
-      return { balance: profile?.token_balance || 0 };
+      return {
+        balance: profile?.token_balance ?? 0,
+        plan: profile?.plan ?? 'free',
+        serverTimestamp: new Date().toISOString(),
+        profileUpdatedAt: profile?.updated_at ?? null,
+      };
     } catch (err) {
       throw new TRPCError({
         code: 'INTERNAL_SERVER_ERROR',
@@ -20,10 +31,29 @@ export const tokenRouter = router({
     }
   }),
 
+  /**
+   * Alias kept so callers that expect `{ balance }` keep working.
+   * Use `token.balance` for new code — returns richer metadata.
+   */
+  getMyBalance: protectedProcedure.query(async ({ ctx }) => {
+    const { data: profile } = await ctx.supabase
+      .from('profiles')
+      .select('token_balance, plan, updated_at')
+      .eq('id', ctx.user.id)
+      .single();
+    return {
+      balance: profile?.token_balance ?? 0,
+      plan: profile?.plan ?? 'free',
+      serverTimestamp: new Date().toISOString(),
+      profileUpdatedAt: profile?.updated_at ?? null,
+    };
+  }),
+
   history: protectedProcedure.query(async ({ ctx }) => {
     try {
       const { data } = await ctx.supabase
-        .from('token_transactions')        .select('*')
+        .from('token_transactions')
+        .select('*')
         .eq('user_id', ctx.user.id)
         .order('created_at', { ascending: false });
 
@@ -44,49 +74,14 @@ export const tokenRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      try {
-        // Check balance
-        const { data: profile } = await ctx.supabase
-          .from('profiles')
-          .select('token_balance')
-          .eq('id', ctx.user.id)
-          .single();
-
-        if (!profile || profile.token_balance < input.amount) {
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'Insufficient tokens',
-          });
-        }
-        // Deduct tokens
-        const { error: updateError } = await ctx.supabase
-          .from('profiles')
-          .update({ token_balance: (profile.token_balance || 0) - input.amount })
-          .eq('id', ctx.user.id);
-
-        if (updateError) throw updateError;
-
-        // Log transaction
-        const { error: transError } = await ctx.supabase
-          .from('token_transactions')
-          .insert([
-            {
-              user_id: ctx.user.id,
-              type: 'spend',
-              amount: -input.amount,
-              description: input.description,
-            },
-          ]);
-
-        if (transError) throw transError;
-
-        return { success: true };
-      } catch (err) {
-        if (err instanceof TRPCError) throw err;
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to spend tokens',
-        });
-      }
+      // Atomic deduct via the shared RPC — one statement, row-locked,
+      // audited into token_transactions.
+      const result = await deductTokens(ctx.supabase, ctx.user.id, input.amount, `spend:${input.description.slice(0, 60)}`);
+      if (!result.success) throwInsufficientTokensError(result, 'en');
+      return {
+        success: true,
+        balance_before: result.balance_before,
+        balance_after: result.balance_after,
+      };
     }),
 });
