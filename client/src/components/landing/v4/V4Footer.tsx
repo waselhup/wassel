@@ -117,7 +117,6 @@ export default function V4Footer() {
         <FooterCol
           title={t('landing_v4.footer.col_resources')}
           links={[
-            { to: '#final-cta', label: t('landing_v4.footer.resources_demo'), external: true },
             { to: '/blog', label: t('landing_v4.footer.resources_blog') },
             { to: '#', label: t('landing_v4.footer.resources_help'), external: true },
             { to: '#', label: t('landing_v4.footer.resources_templates'), external: true },

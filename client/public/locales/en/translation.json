@@ -1430,7 +1430,7 @@
     "nav": {
       "product": "Product",
       "pricing": "Pricing",
-      "book_demo": "Book a demo",
+      "about": "About",
       "blog": "Blog",
       "login": "Login",
       "free_trial": "Free Trial"
@@ -1438,7 +1438,8 @@
     "hero": {
       "title": "An Intelligent Career Platform for Professionals",
       "subtitle": "The central hub for your LinkedIn presence",
-      "cta_demo": "Book a demo"
+      "cta_primary": "Start Free",
+      "cta_signin": "Sign in"
     },
     "hub": {
       "title": "Intelligent Work Hub for Your Career",
@@ -1507,7 +1508,7 @@
       "desc": "Get started in minutes and watch it mold to your unique career needs.",
       "placeholder": "Enter your email (e.g. hello@wassel.sa)",
       "build": "Build",
-      "book_demo": "Book a demo"
+      "hint": "Free to start · 100 tokens included · Cancel anytime"
     },
     "floating": {
       "card1_name": "Ahmed Al-Hashim",
@@ -1562,7 +1563,6 @@
       "product_campaigns": "Campaigns",
       "product_pricing": "Pricing",
       "col_resources": "Resources",
-      "resources_demo": "Book a demo",
       "resources_blog": "Blog",
       "resources_help": "Help center",
       "resources_templates": "Templates",

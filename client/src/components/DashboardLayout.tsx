@@ -415,6 +415,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, page
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
         <header
+          className="dl-topbar"
           style={{
             background: 'rgba(255,255,255,0.88)',
             backdropFilter: 'blur(14px)',
@@ -594,6 +595,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, page
         </header>
 
         <main
+          className="dl-main"
           style={{
             flex: 1,
             overflow: 'auto',

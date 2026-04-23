@@ -14,97 +14,114 @@ const TARGET_GOAL = z.enum([
 
 const INDUSTRY = z.enum([
   'oil-gas', 'tech', 'finance', 'healthcare', 'legal',
-  'consulting', 'government', 'academic', 'entrepreneurship', 'real-estate',
+  'consulting', 'government', 'academic', 'entrepreneurship', 'real-estate', 'other',
 ]);
 
 const REPORT_LANGUAGE = z.enum(['ar', 'en']);
 
-const PROFILE_RADAR_SYSTEM = `You are an elite LinkedIn profile strategist specializing in the Saudi Arabian and GCC market. You have 10+ years of experience advising executives, founders, and job seekers in the Kingdom.
+// ── Profile Radar v4 — anti-hallucination system prompt ────────────────────
+//
+// v3 hallucinated heavily. Root cause: prompt told Claude to "always reference
+// the specific industry" + listed industry-specific buzzwords (Tadawul/SAMA/PCI-DSS).
+// Claude obediently invented those references when the actual profile was sparse.
+//
+// v4 binds every claim to evidence in the input data and refuses to invent
+// industries, geographies, certifications, or markets that are not in the
+// profile verbatim.
+const PROFILE_RADAR_SYSTEM = `You are a senior LinkedIn profile reviewer. You analyze profile data the user provides and produce strict, evidence-bound feedback.
 
-CRITICAL: Your analysis must change DRAMATICALLY based on:
-1. The user's target_goal (what they want FROM their profile)
-2. Their industry (benchmarks + vocabulary differ massively)
-3. Their target_role/target_company (if provided)
+═══════════════════════════════════════
+ANTI-HALLUCINATION RULES (NON-NEGOTIABLE)
+═══════════════════════════════════════
 
-Never give generic advice. Every insight must be actionable, specific, and tied to the target goal.
+1. EVIDENCE-BOUND CLAIMS
+   - You will receive structured profile data in JSON.
+   - Every observation, score, recommendation, or example you produce MUST be traceable to a specific value present in that input.
+   - If a fact is not in the input, you do not state it. Do not infer industries from job titles alone. Do not infer markets/countries from names. Do not infer certifications from roles.
 
-TARGET GOAL LENSES (analyze THROUGH this lens):
+2. NO INVENTED CONTEXT
+   - DO NOT mention any country, city, market, or geography unless it appears verbatim in the profile data (location, experience.location, education).
+   - DO NOT mention any company unless it appears in profile.experience[].company.
+   - DO NOT mention any standard, regulation, certification, or framework (e.g. PCI-DSS, SAMA CSF, ISO 27001, HIPAA, GDPR, PMP) unless it appears in profile.certifications[] or profile.skills[] or profile.summary.
+   - DO NOT mention any industry vertical (banking, fintech, oil & gas, etc.) as a fact about the candidate unless it is supported by their actual experience entries.
+   - The user-supplied "industry" is their TARGET market — it is the lens for advice ("here is what THIS market expects"), NOT a description of the candidate's current background. Only describe the candidate's background using their actual data.
 
-1. job-search: How recruiters scan this profile in 6 seconds
-   - Focus: ATS keywords, headline scannability, quick signals
-   - Metric: "recruiter appeal" not general quality
+3. SPARSE-DATA HANDLING
+   - The input includes profile_completeness (0-100). If completeness < 40, you MUST set "data_quality" to "insufficient" and produce a short verdict explaining what is missing. Do not score dimensions that have no underlying data.
+   - For each dimension where the corresponding source field is missing/empty, set score to null (not 0) and feedback to a short note like "no data — section is empty or private".
+   - Never invent a "sample" experience to score against. Never assume a default industry.
 
-2. investment: How VCs/investors assess founder credibility
-   - Focus: traction signals, storytelling, "why this founder, why now"
-   - Metric: "investor confidence"
+4. CONFIDENCE DECLARATION
+   - Output a top-level "confidence" field: "high" | "medium" | "low".
+     * high: completeness >= 70 AND >= 2 experience entries with descriptions
+     * medium: completeness 40-69 OR experience present but thin
+     * low: completeness < 40 OR fewer than 2 meaningful sections
+   - When confidence is low, recommendations focus on "fill these missing fields" — not on advanced positioning advice.
 
-3. thought-leadership: How peers perceive expertise + authority
-   - Focus: content consistency, unique POV, engagement patterns
-   - Metric: "thought leadership score"
+5. TRACEABILITY EXAMPLES
+   - GOOD: "Headline mentions 'Sales Lead' with no quantifiable result. Add a metric."
+     (traceable: profile.headline contains "Sales Lead")
+   - BAD: "As a fintech professional in Riyadh, you should reference SAMA CSF compliance."
+     (untraceable: invents "fintech", "Riyadh", and "SAMA CSF")
+   - BAD: "Your background in channel sales in Turkey suggests..."
+     (untraceable: invents geography and a narrative)
 
-4. sales-b2b: How prospects evaluate trust before responding
-   - Focus: social proof, specificity, connection potential
-   - Metric: "prospect trust signals"
+═══════════════════════════════════════
+TASK
+═══════════════════════════════════════
 
-5. career-change: Transferable skills visibility, pivot credibility
-   - Focus: bridging language, reframing past, learning signals
-   - Metric: "pivot readiness"
+Analyze the candidate's LinkedIn profile against:
+- target_goal: what the candidate wants from this profile
+- industry: the target market they want to be visible to (this informs ADVICE, not biography)
+- target_role / target_company: optional aim points
 
-6. internal-promotion: Visibility to senior leadership, cross-functional impact
-   - Focus: scope signals, business impact, leadership indicators
-   - Metric: "leadership readiness"
+Goal lenses (use these to frame advice, never to invent facts):
+- job-search → recruiter scannability, ATS keywords, quick credibility signals
+- investment → founder credibility, traction signals, story arc
+- thought-leadership → unique POV, content consistency, peer authority
+- sales-b2b → trust signals, social proof, response triggers
+- career-change → transferable skills visibility, pivot framing
+- internal-promotion → scope signals, business impact, leadership indicators
 
-INDUSTRY CONTEXTS:
-- oil-gas: Aramco/SABIC context, HSE standards, Vision 2030 energy transition
-- tech: SaaS metrics, technical depth, AI/ML positioning, open-source
-- finance: Tadawul, CMA regulations, banking, fintech, Saudi Central Bank
-- healthcare: MOH, SCFHS licensing, health sector transformation
-- legal: SJC, regulatory expertise, Saudi legal system
-- consulting: McKinsey/BCG frameworks, case approach
-- government: Vision 2030 alignment, ministerial context, PIF ecosystem
-- academic: KFUPM/KAUST/KSU context, research output
-- entrepreneurship: Saudi startup ecosystem, VC landscape, Monsha'at
-- real-estate: ROSHN, NHC, REDF, Saudi real estate transformation
+═══════════════════════════════════════
+OUTPUT
+═══════════════════════════════════════
 
-OUTPUT LANGUAGE: Respond ENTIRELY in the specified report_language:
-- 'ar': Formal Modern Standard Arabic (فصحى). No Gulf dialect. No English words except technical terms that have no Arabic equivalent.
-- 'en': Professional English.
+Return valid JSON ONLY. No markdown, no code fences. Start with { end with }. Use the report_language ('ar' = Modern Standard Arabic, 'en' = Professional English) for all human-readable strings. Western digits (0-9) only.
 
-TONE: Direct, specific, actionable. No filler. Use imperatives:
-- Arabic: "اكتب", "أضف", "احذف", "ابدأ", "تجنب"
-- English: "Write", "Add", "Remove", "Start", "Avoid"
-
-No "consider", "perhaps", "you might", "ربما", "قد".
-
-OUTPUT FORMAT (valid JSON only, no markdown fences):
+Schema:
 
 {
-  "overall_score": number (0-100),
-  "verdict": string (one paragraph summary in target language),
+  "overall_score": number (0-100, calibrated to actual data quality and goal fit),
+  "confidence": "high" | "medium" | "low",
+  "data_quality": "rich" | "adequate" | "thin" | "insufficient",
+  "data_completeness": number (0-100, copy from input),
+  "verdict": string (one paragraph in target language — describes what the data SHOWS, not what you imagine),
   "target_alignment": {
-    "goal_match_score": number (0-100, how well profile serves the stated goal),
-    "notes": string
+    "goal_match_score": number (0-100),
+    "notes": string (must reference actual profile content, not assumed background)
   },
   "dimensions": [
     {
-      "name": string (dimension name in target language),
-      "score": number (0-10),
-      "feedback": string (specific, actionable feedback in target language)
+      "name": string (in target language),
+      "score": number (0-10) | null (null when no data for this dimension),
+      "feedback": string (specific reference to what was found OR "no data — empty/private section")
     }
   ],
-  "recommendations": string[] (5-7 specific, prioritized actions),
-  "vision_2030_alignment": string (only if relevant to target_goal/industry),
-  "top_3_priorities": string[] (the 3 MOST impactful changes, ordered by impact)
+  "recommendations": string[] (5-7 actions; each action must reference an actual field to add/edit),
+  "top_3_priorities": string[] (3 most impactful changes, ordered by impact),
+  "vision_2030_alignment": string | null (only include if profile.summary, profile.experience.description, or profile.skills explicitly contain Vision 2030, NEOM, PIF, Aramco, SABIC, ROSHN, NHC, Monsha'at, KAUST, KFUPM, KSU, OR location includes Saudi Arabia / KSA / Riyadh / Jeddah / Dammam / Mecca / Medina. Otherwise return null.),
+  "evidence_used": string[] (2-5 short bullets quoting/paraphrasing the EXACT profile content you based your analysis on. This is your traceability proof.)
 }
 
-Always include 8 dimensions: Headline, Summary/About, Experience, Skills, Profile Photo, Activity/Posts, Recommendations, Vision 2030 / Industry Alignment.
+Always include exactly 8 dimensions in this order: Headline, Summary, Experience, Skills, Education, Certifications, Profile Photo, Recommendations.
 
-CRITICAL RULES:
-1. If target_goal = 'job-search' and industry = 'tech', focus on tech recruiter signals, GitHub links, live portfolios.
-2. If target_goal = 'investment' and industry = 'entrepreneurship', focus on founder signals, traction metrics, storytelling.
-3. Always reference the specific industry in recommendations.
-4. Scores must be calibrated: 8-10 = exceptional, 6-7 = strong, 4-5 = average, 1-3 = needs work.
-5. Recommendations must be SPECIFIC.`;
+═══════════════════════════════════════
+TONE
+═══════════════════════════════════════
+Direct imperatives. No "consider", "perhaps", "you might", "ربما", "قد".
+Arabic uses: "اكتب", "أضف", "احذف", "ابدأ", "تجنب".
+English uses: "Write", "Add", "Remove", "Start", "Avoid".`;
 
 const APIFY_TOKEN = process.env.APIFY_TOKEN || process.env.APIFY_API_TOKEN || '';
 
@@ -682,7 +699,7 @@ export const linkedinRouter = router({
       }
     }),
 
-  // ── PROFILE RADAR v3 ────────────────────────────────────────────────────
+  // ── PROFILE RADAR v4 — anti-hallucination ───────────────────────────────
   analyzeTargeted: protectedProcedure
     .input(z.object({
       linkedinUrl: z.string().optional(),
@@ -696,12 +713,13 @@ export const linkedinRouter = router({
     }))
     .mutation(async ({ input, ctx }) => {
       const TOKEN_COST = 25;
+      const lang = input.reportLanguage;
 
       let normalizedUrl = input.linkedinUrl;
       if (input.linkedinUrl) {
         const validation = validateAndNormalizeLinkedInUrl(input.linkedinUrl);
         if (!validation.valid) {
-          const msg = input.reportLanguage === 'ar'
+          const msg = lang === 'ar'
             ? `${validation.errorMessageAr}. ${validation.suggestion || ''}`
             : `${validation.errorMessageEn}. ${validation.suggestion || ''}`;
           throw new TRPCError({ code: 'BAD_REQUEST', message: msg.trim() });
@@ -718,64 +736,92 @@ export const linkedinRouter = router({
       if (!profile || (profile.token_balance || 0) < TOKEN_COST) {
         throw new TRPCError({
           code: 'FORBIDDEN',
-          message: input.reportLanguage === 'ar'
+          message: lang === 'ar'
             ? `رصيد التوكن غير كافٍ — تحتاج ${TOKEN_COST} توكن`
             : `Insufficient tokens - need ${TOKEN_COST} tokens`,
         });
       }
 
       let unifiedProfile: any = null;
-      let profileText = '';
+      let completeness = 0;
+      let missingSections: string[] = [];
       if (normalizedUrl) {
         try {
           const outcome = await scrapeLinkedInProfileMulti(normalizedUrl);
           unifiedProfile = outcome.profile;
-          const p = outcome.profile;
-          profileText = [
-            `Name: ${p.fullName || 'Unknown'}`,
-            `Headline: ${p.headline || ''}`,
-            `Location: ${p.location || ''}`,
-            `Summary: ${p.summary || 'None'}`,
-            '',
-            `Experience (${p.experience.length} positions):`,
-            ...p.experience.slice(0, 6).map((e: any) =>
-              `- ${e.title || ''} at ${e.company || ''} (${e.duration || ''})${e.description ? ` — ${String(e.description).slice(0, 250)}` : ''}`
-            ),
-            '',
-            `Education (${p.education.length}):`,
-            ...p.education.slice(0, 4).map((e: any) => `- ${e.degree || ''} ${e.field ? `in ${e.field}` : ''} from ${e.school || ''} ${e.year ? `(${e.year})` : ''}`),
-            '',
-            `Skills (${p.skills.length}): ${p.skills.slice(0, 25).join(', ')}`,
-            '',
-            `Certifications (${p.certifications.length}):`,
-            ...p.certifications.slice(0, 6).map((c: any) => `- ${c.name || ''}${c.issuer ? ` — ${c.issuer}` : ''}`),
-          ].join('\n').trim();
+          completeness = outcome.completeness;
+          missingSections = outcome.missingSections;
         } catch (e: any) {
           console.error('[RADAR] scrape failed:', e?.message);
           throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
-            message: input.reportLanguage === 'ar'
-              ? 'فشل قراءة البروفايل من LinkedIn — تأكد من أن البروفايل عام'
-              : 'Failed to read profile from LinkedIn - ensure profile is public',
+            message: lang === 'ar'
+              ? 'فشل قراءة البروفايل — تأكد من أن البروفايل عام ومكتمل'
+              : 'Failed to read profile — ensure the profile is public and has content',
           });
         }
       }
 
+      // ── Sparse-profile guard ──
+      // If completeness is extremely low (< 25%), refuse to analyze — we'd only hallucinate.
+      // Image-only flows skip this (no completeness info available).
+      if (unifiedProfile && !input.imageBase64 && completeness < 25) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: lang === 'ar'
+            ? `بيانات البروفايل غير كافية للتحليل (${completeness}%). الأقسام الناقصة: ${missingSections.join('، ')}. اجعل البروفايل عاماً وأضف محتوى أساسياً ثم حاول مرة أخرى.`
+            : `Profile data too sparse to analyze (${completeness}%). Missing: ${missingSections.join(', ')}. Make the profile public and add core content, then retry.`,
+        });
+      }
+
+      // ── Build structured payload for Claude ──
+      // We send actual fields, not a flat text blob — so Claude sees what's empty vs present.
+      const p = unifiedProfile;
+      const structuredProfile = p ? {
+        fullName: p.fullName || null,
+        headline: p.headline || null,
+        summary: p.summary || null,
+        location: p.location || null,
+        has_profile_picture: !!p.profilePicture,
+        experience: (p.experience || []).slice(0, 8).map((e: any) => ({
+          title: e.title || null,
+          company: e.company || null,
+          duration: e.duration || null,
+          location: e.location || null,
+          description: e.description ? String(e.description).slice(0, 400) : null,
+        })),
+        education: (p.education || []).slice(0, 5).map((e: any) => ({
+          school: e.school || null,
+          degree: e.degree || null,
+          field: e.field || null,
+          year: e.year || null,
+        })),
+        skills: (p.skills || []).slice(0, 30),
+        certifications: (p.certifications || []).slice(0, 10).map((c: any) => ({
+          name: c.name || null,
+          issuer: c.issuer || null,
+        })),
+        languages: (p.languages || []).map((l: any) => ({ name: l.name || null, proficiency: l.proficiency || null })),
+        activity_count: (p.activity || []).length,
+      } : null;
+
       const userPayload = {
-        profile: profileText || '(no profile data — analyze from screenshot if attached)',
         target_goal: input.targetGoal,
         industry: input.industry,
         target_role: input.targetRole || null,
         target_company: input.targetCompany || null,
-        report_language: input.reportLanguage,
+        report_language: lang,
+        profile_completeness: completeness,
+        missing_sections: missingSections,
+        profile_data: structuredProfile,
       };
 
       const userContent: any = input.imageBase64
         ? [
             { type: 'image', source: { type: 'base64', media_type: input.mediaType || 'image/png', data: input.imageBase64 } },
-            { type: 'text', text: JSON.stringify(userPayload) },
+            { type: 'text', text: JSON.stringify(userPayload, null, 2) },
           ]
-        : JSON.stringify(userPayload);
+        : JSON.stringify(userPayload, null, 2);
 
       let result: any;
       const _t0 = Date.now();
@@ -785,13 +831,14 @@ export const linkedinRouter = router({
           system: PROFILE_RADAR_SYSTEM,
           userContent,
           maxTokens: 6000,
+          temperature: 0.3, // lower temp = less invention
         });
         await logApiCall({ service: 'anthropic', endpoint: '/v1/messages:analyzeTargeted', statusCode: 200, responseTimeMs: Date.now() - _t0, userId: ctx.user?.id });
         const text = extractText(claudeRes);
         result = extractJson<any>(text);
         if (!result || typeof result.overall_score !== 'number') {
           console.error('[RADAR] JSON parse failed. Raw:', text.substring(0, 500));
-          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: input.reportLanguage === 'ar' ? 'فشل تحليل الرد' : 'Failed to parse analysis response' });
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: lang === 'ar' ? 'فشل تحليل الرد من الذكاء الاصطناعي' : 'Failed to parse analysis response' });
         }
       } catch (err: any) {
         if (err instanceof TRPCError) throw err;
@@ -804,6 +851,41 @@ export const linkedinRouter = router({
         throw new TRPCError({ code, message: info.userMessage });
       }
 
+      // ── Post-hoc response normalization ──
+      // Guarantee the shape the UI relies on even if Claude drifts.
+      if (!Array.isArray(result.dimensions)) result.dimensions = [];
+      if (!Array.isArray(result.recommendations)) result.recommendations = [];
+      if (!Array.isArray(result.top_3_priorities)) result.top_3_priorities = [];
+      if (typeof result.confidence !== 'string') {
+        result.confidence = completeness >= 70 ? 'high' : completeness >= 40 ? 'medium' : 'low';
+      }
+      if (typeof result.data_completeness !== 'number') {
+        result.data_completeness = completeness;
+      }
+
+      // Clamp vision_2030_alignment: only allow it if the profile actually contains KSA/Vision-2030 markers.
+      // If Claude wrote something but no markers exist, null it.
+      if (result.vision_2030_alignment) {
+        const hayEntries: string[] = [];
+        if (p) {
+          hayEntries.push(p.summary || '');
+          hayEntries.push(p.headline || '');
+          hayEntries.push(p.location || '');
+          for (const e of (p.experience || [])) {
+            hayEntries.push(e.description || '');
+            hayEntries.push(e.company || '');
+            hayEntries.push(e.location || '');
+          }
+          for (const s of (p.skills || [])) hayEntries.push(String(s));
+          for (const c of (p.certifications || [])) { hayEntries.push(c.name || ''); hayEntries.push(c.issuer || ''); }
+        }
+        const hay = hayEntries.join(' ').toLowerCase();
+        const hasKSA = /(saudi|ksa|riyadh|jeddah|dammam|mecca|makkah|medina|madinah|المملكة|الرياض|جدة|الدمام|السعودية|vision 2030|neom|pif|aramco|sabic|roshn|monsha'?at|kaust|kfupm|ksu|الرؤية ?2030)/i.test(hay);
+        if (!hasKSA) {
+          result.vision_2030_alignment = null;
+        }
+      }
+
       const { data: saved, error: saveErr } = await ctx.supabase
         .from('profile_analyses')
         .insert({
@@ -814,7 +896,7 @@ export const linkedinRouter = router({
           industry: input.industry,
           target_role: input.targetRole || null,
           target_company: input.targetCompany || null,
-          report_language: input.reportLanguage,
+          report_language: lang,
           profile_data: unifiedProfile,
           tokens_used: TOKEN_COST,
         })

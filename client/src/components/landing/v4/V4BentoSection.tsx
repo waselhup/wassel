@@ -15,7 +15,7 @@ export default function V4BentoSection() {
   const chips = ['chip_soc2', 'chip_gdpr', 'chip_privacy', 'chip_permissions', 'chip_controls', 'chip_sharing'];
 
   return (
-    <section style={{ position: 'relative', padding: '6rem 2rem', zIndex: 5, fontFamily }}>
+    <section className="v4-section-mobile" style={{ position: 'relative', padding: '6rem 2rem', zIndex: 5, fontFamily }}>
       <div style={{ maxWidth: 1000, margin: '0 auto' }}>
         <div
           className="v4-bento-grid"

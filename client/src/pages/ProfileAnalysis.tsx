@@ -14,15 +14,19 @@ type TargetGoal = 'job-search' | 'investment' | 'thought-leadership' | 'sales-b2
 type Industry = 'oil-gas' | 'tech' | 'finance' | 'healthcare' | 'legal' | 'consulting' | 'government' | 'academic' | 'entrepreneurship' | 'real-estate' | 'other';
 type ReportLang = 'ar' | 'en';
 
-interface Dim { name: string; score: number; feedback: string }
+interface Dim { name: string; score: number | null; feedback: string }
 interface Analysis {
   overall_score: number;
+  confidence?: 'high' | 'medium' | 'low';
+  data_quality?: 'rich' | 'adequate' | 'thin' | 'insufficient';
+  data_completeness?: number;
   verdict: string;
   dimensions?: Dim[];
   target_alignment?: { goal_match_score?: number; notes?: string };
   recommendations?: string[];
-  vision_2030_alignment?: string;
+  vision_2030_alignment?: string | null;
   top_3_priorities?: string[];
+  evidence_used?: string[];
 }
 
 interface HistoryItem {
@@ -427,7 +431,7 @@ export default function ProfileAnalysis() {
             {showAdvanced ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
           </button>
           {showAdvanced && (
-            <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div className="pra-advanced-grid" style={{ marginTop: 16, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <div>
                 <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#334155', marginBottom: 6 }}>
                   {t('profileRadar.advanced.targetRole')}
@@ -514,12 +518,41 @@ export default function ProfileAnalysis() {
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}
               style={{ background: 'white', borderRadius: 16, padding: 24, border: '1px solid #e5e7eb', marginBottom: 24 }}>
 
+              {/* Confidence banner — shown when low/medium confidence */}
+              {analysis.confidence && analysis.confidence !== 'high' && (
+                <div style={{
+                  marginBottom: 16,
+                  padding: '10px 14px',
+                  background: analysis.confidence === 'low' ? '#fef2f2' : '#fffbeb',
+                  border: `1px solid ${analysis.confidence === 'low' ? '#fecaca' : '#fde68a'}`,
+                  borderRadius: 10,
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 10,
+                  fontSize: 13,
+                }}>
+                  <AlertCircle size={18} style={{ color: analysis.confidence === 'low' ? '#dc2626' : '#d97706', flexShrink: 0, marginTop: 1 }} />
+                  <div>
+                    <div style={{ fontWeight: 700, color: analysis.confidence === 'low' ? '#991b1b' : '#92400e', marginBottom: 2 }}>
+                      {analysis.confidence === 'low'
+                        ? (i18n.language === 'ar' ? 'ثقة منخفضة في التحليل' : 'Low-confidence analysis')
+                        : (i18n.language === 'ar' ? 'ثقة متوسطة' : 'Medium confidence')}
+                    </div>
+                    <div style={{ color: analysis.confidence === 'low' ? '#7f1d1d' : '#78350f', lineHeight: 1.5 }}>
+                      {i18n.language === 'ar'
+                        ? `بيانات البروفايل ${typeof analysis.data_completeness === 'number' ? analysis.data_completeness : ''}% مكتملة — التوصيات أدناه قد تكون عامة. أكمل بروفايلك للحصول على تحليل أعمق.`
+                        : `Profile data ${typeof analysis.data_completeness === 'number' ? analysis.data_completeness + '%' : ''} complete — recommendations below may be generic. Complete your profile for deeper analysis.`}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Overall Score */}
               <div style={{ textAlign: 'center', marginBottom: 24 }}>
                 <div style={{ fontSize: 13, color: '#64748b', marginBottom: 6 }}>{t('profileRadar.result.score')}</div>
-                <div style={{ fontSize: 64, fontWeight: 900, lineHeight: 1, background: gradientFor(analysis.overall_score), WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                <div style={{ fontSize: 'clamp(48px, 12vw, 64px)', fontWeight: 900, lineHeight: 1, background: gradientFor(analysis.overall_score), WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                   {analysis.overall_score}
-                  <span style={{ fontSize: 24, color: '#94a3b8', WebkitTextFillColor: '#94a3b8' }}>/100</span>
+                  <span style={{ fontSize: 'clamp(18px, 5vw, 24px)', color: '#94a3b8', WebkitTextFillColor: '#94a3b8' }}>/100</span>
                 </div>
               </div>
 
@@ -546,18 +579,29 @@ export default function ProfileAnalysis() {
                 <div style={{ marginBottom: 24 }}>
                   <div style={{ fontSize: 14, fontWeight: 800, color: '#334155', marginBottom: 12 }}>{t('profileRadar.result.dimensions')}</div>
                   <div style={{ display: 'grid', gap: 12 }}>
-                    {analysis.dimensions.map((d, i) => (
-                      <div key={i} style={{ padding: 14, background: '#f8fafc', borderRadius: 10, border: '1px solid #e5e7eb' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                          <span style={{ fontWeight: 700, color: '#1f2937', fontSize: 14 }}>{d.name}</span>
-                          <span style={{ fontWeight: 800, color: scoreColor(d.score), fontSize: 14 }}>{d.score}/10</span>
+                    {analysis.dimensions.map((d, i) => {
+                      const noData = d.score === null || d.score === undefined;
+                      return (
+                        <div key={i} style={{ padding: 14, background: noData ? '#f8fafc' : '#f8fafc', borderRadius: 10, border: '1px solid #e5e7eb', opacity: noData ? 0.7 : 1 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                            <span style={{ fontWeight: 700, color: '#1f2937', fontSize: 14 }}>{d.name}</span>
+                            {noData ? (
+                              <span style={{ fontWeight: 700, color: '#94a3b8', fontSize: 12 }}>
+                                {i18n.language === 'ar' ? 'لا توجد بيانات' : 'No data'}
+                              </span>
+                            ) : (
+                              <span style={{ fontWeight: 800, color: scoreColor(d.score!), fontSize: 14 }}>{d.score}/10</span>
+                            )}
+                          </div>
+                          <div style={{ fontSize: 13, color: '#475569', lineHeight: 1.6 }}>{d.feedback}</div>
+                          {!noData && (
+                            <div style={{ height: 4, background: '#e2e8f0', borderRadius: 999, marginTop: 8, overflow: 'hidden' }}>
+                              <div style={{ width: `${d.score! * 10}%`, height: '100%', background: scoreColor(d.score!) }} />
+                            </div>
+                          )}
                         </div>
-                        <div style={{ fontSize: 13, color: '#475569', lineHeight: 1.6 }}>{d.feedback}</div>
-                        <div style={{ height: 4, background: '#e2e8f0', borderRadius: 999, marginTop: 8, overflow: 'hidden' }}>
-                          <div style={{ width: `${d.score * 10}%`, height: '100%', background: scoreColor(d.score) }} />
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}

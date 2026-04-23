@@ -14,7 +14,7 @@ export default function V4FitsSection() {
   ];
 
   return (
-    <section style={{ position: 'relative', padding: '6rem 2rem', zIndex: 5, fontFamily }}>
+    <section className="v4-section-mobile" style={{ position: 'relative', padding: '6rem 2rem', zIndex: 5, fontFamily }}>
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
         <div
           style={{
@@ -25,7 +25,7 @@ export default function V4FitsSection() {
             maxWidth: 1000,
             margin: '0 auto',
           }}
-          className="v4-fits-wrap"
+          className="v4-fits-wrap v4-fits-grid"
         >
           <div className="v4-fits-visual v4-reveal" style={{ position: 'relative', height: 260 }}>
             {stacks.map((s) => (

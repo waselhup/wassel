@@ -22,10 +22,10 @@ export default function V4FinalCTA() {
   return (
     <section
       id="final-cta"
-      className="v4-reveal"
+      className="v4-reveal v4-section-mobile"
       style={{
         textAlign: 'center',
-        padding: '6rem 2rem 4rem',
+        padding: '6rem 1.25rem 4rem',
         position: 'relative',
         fontFamily,
       }}
@@ -104,31 +104,9 @@ export default function V4FinalCTA() {
           </button>
         </form>
 
-        <a
-          href="mailto:hello@wasselhub.com?subject=Book%20a%20demo"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '0.4rem',
-            padding: '0.55rem 1.2rem',
-            background: 'white',
-            border: '1px solid var(--v4-border)',
-            borderRadius: 10,
-            color: 'var(--v4-text)',
-            fontFamily,
-            fontSize: '0.85rem',
-            fontWeight: 500,
-            cursor: 'pointer',
-            textDecoration: 'none',
-          }}
-        >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <rect x="3" y="4" width="18" height="18" rx="2" />
-            <line x1="16" y1="2" x2="16" y2="6" />
-            <line x1="8" y1="2" x2="8" y2="6" />
-          </svg>
-          {t('landing_v4.final_cta.book_demo')}
-        </a>
+        <p style={{ color: 'var(--v4-text-muted)', fontSize: '0.8rem', marginTop: '0.5rem', fontFamily }}>
+          {t('landing_v4.final_cta.hint')}
+        </p>
       </div>
     </section>
   );

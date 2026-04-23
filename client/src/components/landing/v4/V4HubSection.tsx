@@ -6,10 +6,10 @@ export default function V4HubSection() {
   const fontFamily = isAr ? 'Cairo, sans-serif' : 'Inter, sans-serif';
 
   return (
-    <section id="hub" style={{ position: 'relative', padding: '6rem 2rem', zIndex: 5, fontFamily }}>
+    <section id="hub" className="v4-section-mobile" style={{ position: 'relative', padding: '6rem 2rem', zIndex: 5, fontFamily }}>
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
         <div
-          className="v4-reveal"
+          className="v4-reveal v4-hub-grid"
           style={{
             display: 'grid',
             gridTemplateColumns: '1fr 1fr',

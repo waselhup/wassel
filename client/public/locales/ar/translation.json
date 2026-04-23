@@ -1424,7 +1424,7 @@
     "nav": {
       "product": "المنتج",
       "pricing": "الأسعار",
-      "book_demo": "احجز عرضاً",
+      "about": "من نحن",
       "blog": "المدونة",
       "login": "تسجيل الدخول",
       "free_trial": "تجربة مجانية"
@@ -1432,7 +1432,8 @@
     "hero": {
       "title": "منصة ذكية لتطوير مسارك المهني",
       "subtitle": "المركز الرئيسي لحضورك على LinkedIn",
-      "cta_demo": "احجز عرضاً توضيحياً"
+      "cta_primary": "ابدأ مجاناً",
+      "cta_signin": "تسجيل الدخول"
     },
     "hub": {
       "title": "مركز عمل ذكي لمسارك المهني",
@@ -1501,7 +1502,7 @@
       "desc": "ابدأ في دقائق وشاهده يتكيّف مع احتياجاتك المهنية الفريدة.",
       "placeholder": "أدخل بريدك الإلكتروني (مثل hello@wassel.sa)",
       "build": "ابدأ",
-      "book_demo": "احجز عرضاً"
+      "hint": "مجاني للبدء · 100 توكن هدية · إلغاء في أي وقت"
     },
     "floating": {
       "card1_name": "أحمد الهاشم",
@@ -1556,7 +1557,6 @@
       "product_campaigns": "الحملات",
       "product_pricing": "الأسعار",
       "col_resources": "المصادر",
-      "resources_demo": "احجز عرضاً",
       "resources_blog": "المدونة",
       "resources_help": "مركز المساعدة",
       "resources_templates": "القوالب",
