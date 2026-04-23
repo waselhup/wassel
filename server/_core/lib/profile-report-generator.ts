@@ -26,6 +26,21 @@ interface AnalysisDimension {
   feedback?: string;
 }
 
+// v6 — 8-section shape
+interface AnalysisSection {
+  key: string;
+  name_ar?: string;
+  name_en?: string;
+  score: number | null;
+  assessment?: string;
+  current?: string;
+  suggested?: string;
+  why?: string;
+  framework?: string;
+  framework_label?: string | null;
+  effort?: string;
+}
+
 interface TopPriority {
   rank?: number;
   action?: string;
@@ -41,6 +56,7 @@ interface AnalysisData {
   data_completeness?: number;
   verdict: string;
   dimensions?: AnalysisDimension[];
+  sections?: AnalysisSection[];
   target_alignment?: {
     goal_match_score?: number;
     notes?: string;
@@ -67,6 +83,16 @@ export interface ReportOptions {
 }
 
 const DIM_LABELS: Record<string, { en: string; ar: string }> = {
+  // v6 sections
+  headline: { en: 'Headline', ar: 'العنوان الرئيسي' },
+  about: { en: 'About', ar: 'نبذة عني' },
+  experience: { en: 'Experience', ar: 'الخبرات' },
+  skills: { en: 'Skills', ar: 'المهارات' },
+  education: { en: 'Education', ar: 'التعليم' },
+  recommendations: { en: 'Recommendations', ar: 'التوصيات' },
+  activity: { en: 'Activity', ar: 'النشاط' },
+  profile_completeness: { en: 'Profile Completeness', ar: 'اكتمال البروفايل' },
+  // v5 dimensions (legacy rows)
   stranger_legibility: { en: 'Stranger Legibility', ar: 'وضوح البروفايل للغرباء' },
   discoverability: { en: 'Discoverability', ar: 'قابلية الاكتشاف' },
   ats_readiness: { en: 'ATS-Readiness', ar: 'جاهزية ATS' },
@@ -244,9 +270,25 @@ export async function generateDocxReport(opts: ReportOptions): Promise<Buffer> {
     alignment: align,
   }));
 
-  for (const dim of analysisData.dimensions || []) {
-    const displayName = humanizeDimension(dim.name, language);
-    const val = scoreValue(dim.score);
+  // v6 — 8 sections. Fall back to legacy dimensions loop if the row is older.
+  const sectionsToRender: AnalysisSection[] = Array.isArray(analysisData.sections) && analysisData.sections.length
+    ? analysisData.sections
+    : (analysisData.dimensions || []).map((d): AnalysisSection => ({
+        key: d.name,
+        score: d.score,
+        framework: d.framework,
+        framework_label: d.framework_label,
+        assessment: d.observations?.[0]?.what || d.feedback,
+        current: d.recommendations?.[0]?.current,
+        suggested: d.recommendations?.[0]?.suggested,
+        why: d.observations?.[0]?.why || d.recommendations?.[0]?.rationale,
+      }));
+
+  for (const section of sectionsToRender) {
+    const displayName = language === 'ar'
+      ? (section.name_ar || humanizeDimension(section.key, 'ar'))
+      : (section.name_en || humanizeDimension(section.key, 'en'));
+    const val = scoreValue(section.score);
     const scoreText = val === null ? '—' : `${val}/100`;
     const color = val === null ? '64748b' : val >= 70 ? '16a34a' : val >= 50 ? 'ca8a04' : 'dc2626';
     children.push(new Paragraph({
@@ -256,56 +298,35 @@ export async function generateDocxReport(opts: ReportOptions): Promise<Buffer> {
       ],
       alignment: align,
     }));
-    if (dim.framework_label || dim.framework) {
+    if (section.framework_label || section.framework) {
       children.push(new Paragraph({
         children: [
           new TextRun({ text: `${L.framework}: `, italics: true }),
-          new TextRun({ text: dim.framework_label || dim.framework || '', italics: true }),
+          new TextRun({ text: section.framework_label || section.framework || '', italics: true }),
         ],
         alignment: align,
       }));
     }
-    if (Array.isArray(dim.observations) && dim.observations.length) {
-      for (const o of dim.observations) {
-        if (o.what) {
-          children.push(new Paragraph({
-            children: [
-              new TextRun({ text: '• ', bold: true }),
-              new TextRun({ text: o.what }),
-            ],
-            alignment: align,
-          }));
-        }
-        if (o.why) {
-          children.push(new Paragraph({ text: `  ${o.why}`, alignment: align }));
-        }
-        if (o.citation) {
-          children.push(new Paragraph({
-            children: [new TextRun({ text: `  ${o.citation}`, italics: true })],
-            alignment: align,
-          }));
-        }
-      }
-    } else if (dim.feedback) {
-      children.push(new Paragraph({ text: dim.feedback, alignment: align }));
+    if (section.assessment) {
+      children.push(new Paragraph({ text: section.assessment, alignment: align }));
     }
-    if (Array.isArray(dim.recommendations) && dim.recommendations.length) {
-      for (const r of dim.recommendations) {
-        if (r.current || r.suggested) {
-          if (r.current) children.push(new Paragraph({
-            children: [new TextRun({ text: `  ${L.current}: `, bold: true }), new TextRun({ text: r.current })],
-            alignment: align,
-          }));
-          if (r.suggested) children.push(new Paragraph({
-            children: [new TextRun({ text: `  ${L.suggested}: `, bold: true }), new TextRun({ text: r.suggested })],
-            alignment: align,
-          }));
-          if (r.rationale) children.push(new Paragraph({
-            children: [new TextRun({ text: `  ${L.rationale}: `, italics: true }), new TextRun({ text: r.rationale, italics: true })],
-            alignment: align,
-          }));
-        }
-      }
+    if (section.current) {
+      children.push(new Paragraph({
+        children: [new TextRun({ text: `${L.current}: `, bold: true }), new TextRun({ text: section.current })],
+        alignment: align,
+      }));
+    }
+    if (section.suggested) {
+      children.push(new Paragraph({
+        children: [new TextRun({ text: `${L.suggested}: `, bold: true }), new TextRun({ text: section.suggested })],
+        alignment: align,
+      }));
+    }
+    if (section.why) {
+      children.push(new Paragraph({
+        children: [new TextRun({ text: `${L.rationale}: `, italics: true }), new TextRun({ text: section.why, italics: true })],
+        alignment: align,
+      }));
     }
     children.push(new Paragraph({ text: '', alignment: align }));
   }
@@ -443,18 +464,29 @@ export function generatePdfReport(opts: ReportOptions): Buffer {
   y += lineHeight;
 
   pdf.setFontSize(11);
-  for (const dim of analysisData.dimensions || []) {
+  const pdfSections: Array<{ key: string; score: number | null; body: string }> = (
+    Array.isArray(analysisData.sections) && analysisData.sections.length
+      ? analysisData.sections.map((s) => ({
+          key: s.key,
+          score: typeof s.score === 'number' ? s.score : null,
+          body: [s.assessment, s.current ? `${L.current}: ${s.current}` : '', s.suggested ? `${L.suggested}: ${s.suggested}` : '', s.why ? `${L.rationale}: ${s.why}` : ''].filter(Boolean).join('\n'),
+        }))
+      : (analysisData.dimensions || []).map((d) => ({
+          key: d.name,
+          score: typeof d.score === 'number' ? d.score : null,
+          body: Array.isArray(d.observations) && d.observations.length
+            ? d.observations.map((o) => [o.what, o.why, o.citation].filter(Boolean).join(' — ')).join('\n')
+            : (d.feedback || ''),
+        }))
+  );
+  for (const item of pdfSections) {
     if (y > 270) { pdf.addPage(); y = 20; }
     pdf.setFont(undefined as any, 'bold');
-    const displayName = humanizeDimension(dim.name, language);
-    const val = typeof dim.score === 'number' ? dim.score : null;
-    pdf.text(`${displayName}: ${val === null ? '—' : `${val}/100`}`, marginLeft, y, { align });
+    const displayName = humanizeDimension(item.key, language);
+    pdf.text(`${displayName}: ${item.score === null ? '—' : `${item.score}/100`}`, marginLeft, y, { align });
     pdf.setFont(undefined as any, 'normal');
     y += lineHeight;
-    const body = Array.isArray(dim.observations) && dim.observations.length
-      ? dim.observations.map((o) => [o.what, o.why, o.citation].filter(Boolean).join(' — ')).join('\n')
-      : (dim.feedback || '');
-    const feedbackLines = pdf.splitTextToSize(body, 170);
+    const feedbackLines = pdf.splitTextToSize(item.body, 170);
     for (const line of feedbackLines) {
       pdf.text(line, marginLeft, y, { align });
       y += lineHeight;

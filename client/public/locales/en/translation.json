@@ -1422,6 +1422,44 @@
       "social_proof": "Social Proof",
       "narrative_coherence": "Narrative Coherence"
     },
+    "sections": {
+      "names": {
+        "headline": "Headline",
+        "about": "About",
+        "experience": "Experience",
+        "skills": "Skills",
+        "education": "Education",
+        "recommendations": "Recommendations",
+        "activity": "Activity",
+        "profile_completeness": "Profile Completeness"
+      },
+      "labels": {
+        "current": "Current",
+        "suggested": "Suggested",
+        "why": "Why",
+        "assessment": "Assessment",
+        "sectionByTitle": "Section by Section",
+        "topPriorities": "Top Priorities This Week"
+      },
+      "empty": {
+        "message": "This section is not filled on LinkedIn",
+        "cta": "Open section on LinkedIn"
+      },
+      "error": {
+        "notFoundTitle": "We couldn't find this profile",
+        "notFoundHelp": "Check the URL and make sure the profile is public and not private.",
+        "insufficientTitle": "Not enough profile content",
+        "insufficientHelp": "Add more content to your profile and try again.",
+        "requested": "Requested profile:",
+        "noTokensCharged": "No tokens were charged",
+        "balance": "Balance"
+      }
+    },
+    "effort": {
+      "quick": "Quick · 5 min",
+      "moderate": "Moderate · 30 min",
+      "deep": "Deep · 2+ hours"
+    },
     "confidence": {
       "high": "High Confidence",
       "medium": "Medium Confidence",
