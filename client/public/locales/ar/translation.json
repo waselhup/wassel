@@ -1416,6 +1416,44 @@
       "social_proof": "الإثبات الاجتماعي",
       "narrative_coherence": "ترابط السرد"
     },
+    "sections": {
+      "names": {
+        "headline": "العنوان الرئيسي",
+        "about": "نبذة عني",
+        "experience": "الخبرات",
+        "skills": "المهارات",
+        "education": "التعليم",
+        "recommendations": "التوصيات",
+        "activity": "النشاط",
+        "profile_completeness": "اكتمال البروفايل"
+      },
+      "labels": {
+        "current": "الحالي",
+        "suggested": "المقترح",
+        "why": "السبب",
+        "assessment": "التقييم",
+        "sectionByTitle": "القسم حسب القسم",
+        "topPriorities": "أولويات هذا الأسبوع"
+      },
+      "empty": {
+        "message": "هذا القسم غير مُعبّأ على LinkedIn",
+        "cta": "افتح القسم على LinkedIn"
+      },
+      "error": {
+        "notFoundTitle": "لم نعثر على هذا البروفايل",
+        "notFoundHelp": "تأكد من الرابط وأن البروفايل عام وليس خاصاً.",
+        "insufficientTitle": "بيانات البروفايل غير كافية",
+        "insufficientHelp": "أضف المزيد من المحتوى إلى بروفايلك ثم جرّب مرة أخرى.",
+        "requested": "الرابط المطلوب:",
+        "noTokensCharged": "لم يتم خصم أي نقاط",
+        "balance": "الرصيد"
+      }
+    },
+    "effort": {
+      "quick": "سريع · 5 دقائق",
+      "moderate": "متوسط · 30 دقيقة",
+      "deep": "عميق · ساعتان+"
+    },
     "confidence": {
       "high": "ثقة عالية",
       "medium": "ثقة متوسطة",

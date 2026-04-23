@@ -5,7 +5,7 @@ import {
   Sparkles, Link as LinkIcon, AlertCircle, Check, X, Info,
   FileText, ChevronDown, ChevronUp, Trash2, GitCompare,
   Target, Building2, Globe, ExternalLink, Zap, TrendingUp, TrendingDown, Minus,
-  BookOpen, Quote,
+  BookOpen,
 } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
 import { trpcMutation, trpcQuery, trpc } from '../lib/trpc';
@@ -15,8 +15,24 @@ type TargetGoal = 'job-search' | 'investment' | 'thought-leadership' | 'sales-b2
 type Industry = 'oil-gas' | 'tech' | 'finance' | 'healthcare' | 'legal' | 'consulting' | 'government' | 'academic' | 'entrepreneurship' | 'real-estate' | 'other';
 type ReportLang = 'ar' | 'en';
 type FrameworkId = 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
-type DimensionName = 'stranger_legibility' | 'discoverability' | 'ats_readiness' | 'skills_architecture' | 'social_proof' | 'narrative_coherence';
+type SectionKey = 'headline' | 'about' | 'experience' | 'skills' | 'education' | 'recommendations' | 'activity' | 'profile_completeness';
 
+// v6 — 8 sections
+interface Section {
+  key: SectionKey | string;
+  name_ar?: string;
+  name_en?: string;
+  score: number | null;
+  assessment?: string;
+  current?: string;
+  suggested?: string;
+  why?: string;
+  framework?: FrameworkId | null;
+  framework_label?: string | null;
+  effort?: 'quick' | 'moderate' | 'deep';
+}
+
+// v5 legacy (kept so historical rows still render)
 interface Observation {
   what: string;
   why?: string;
@@ -30,20 +46,22 @@ interface Recommendation {
   effort?: 'quick' | 'moderate' | 'deep';
 }
 interface Dim {
-  name: DimensionName | string;
+  name: string;
   score: number | null;
   framework?: FrameworkId;
   framework_label?: string | null;
   observations?: Observation[];
   recommendations?: Recommendation[];
-  // legacy
   feedback?: string;
 }
 interface TopPriority {
   rank?: number;
   action: string;
-  dimension?: DimensionName | string;
-  framework?: FrameworkId;
+  // v6
+  section_key?: SectionKey | string | null;
+  // v5 legacy
+  dimension?: string;
+  framework?: FrameworkId | null;
   framework_label?: string | null;
   expected_impact?: string;
 }
@@ -58,12 +76,51 @@ interface Analysis {
   data_completeness?: number;
   verdict: string;
   target_alignment?: { goal_match_score?: number; notes?: string };
+  // v6
+  sections?: Section[];
+  // v5 legacy
   dimensions?: Dim[];
   top_priorities?: TopPriority[];
   evidence_bundle?: EvidenceBundle;
   // legacy fields
   recommendations?: string[];
   top_3_priorities?: string[];
+}
+
+const EFFORT_LABEL: Record<'quick' | 'moderate' | 'deep', { ar: string; en: string }> = {
+  quick:    { ar: 'سريع · 5 دقائق',   en: 'Quick · 5 min' },
+  moderate: { ar: 'متوسط · 30 دقيقة', en: 'Moderate · 30 min' },
+  deep:     { ar: 'عميق · ساعتان+',   en: 'Deep · 2+ hours' },
+};
+
+const SECTION_EDIT_PATH: Record<SectionKey, string> = {
+  headline: 'intro',
+  about: 'about',
+  experience: 'experience',
+  skills: 'skills',
+  education: 'education',
+  recommendations: 'recommendations',
+  activity: 'recent-activity',
+  profile_completeness: '',
+};
+
+function scoreColor(score: number | null): { bg: string; fg: string; border: string } {
+  if (score === null || score === undefined) return { bg: '#f1f5f9', fg: '#64748b', border: '#cbd5e1' };
+  if (score >= 71) return { bg: '#dcfce7', fg: '#166534', border: '#86efac' };
+  if (score >= 41) return { bg: '#fef3c7', fg: '#92400e', border: '#fcd34d' };
+  return { bg: '#fee2e2', fg: '#991b1b', border: '#fca5a5' };
+}
+
+function frameworkPillColor(fw: FrameworkId | null | undefined): string {
+  switch (fw) {
+    case 'A': return '#2563eb';
+    case 'B': return '#9333ea';
+    case 'C': return '#059669';
+    case 'D': return '#ea580c';
+    case 'E': return '#db2777';
+    case 'F': return '#0891b2';
+    default:  return '#64748b';
+  }
 }
 
 interface HistoryItem {
@@ -146,18 +203,6 @@ function scoreColor100(s: number): string {
   return '#dc2626';
 }
 
-function effortColor(e: string | undefined): { bg: string; fg: string } {
-  if (e === 'quick') return { bg: '#dcfce7', fg: '#166534' };
-  if (e === 'deep') return { bg: '#fee2e2', fg: '#991b1b' };
-  return { bg: '#fef3c7', fg: '#92400e' };
-}
-
-function impactColor(i: string | undefined): { bg: string; fg: string } {
-  if (i === 'high') return { bg: '#fee2e2', fg: '#991b1b' };
-  if (i === 'low') return { bg: '#e0e7ff', fg: '#3730a3' };
-  return { bg: '#fef3c7', fg: '#92400e' };
-}
-
 const FRAMEWORK_BADGE: Record<string, { bg: string; fg: string }> = {
   A: { bg: '#eef2ff', fg: '#3730a3' },
   B: { bg: '#ecfdf5', fg: '#065f46' },
@@ -189,6 +234,13 @@ export default function ProfileAnalysis() {
   const [loadingMsgIdx, setLoadingMsgIdx] = useState(0);
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [analysisId, setAnalysisId] = useState<string | null>(null);
+  // Inline error — shown above the form. Distinct codes get friendly copy.
+  const [analysisError, setAnalysisError] = useState<{
+    kind: 'not_found' | 'insufficient_data' | 'generic';
+    message: string;
+    requestedSlug?: string | null;
+    completeness?: number | null;
+  } | null>(null);
 
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -269,6 +321,7 @@ export default function ProfileAnalysis() {
     setAnalysis(null);
     setAnalysisId(null);
     setCompareResult(null);
+    setAnalysisError(null);
     try {
       const res = await trpcMutation<{ id: string; analysis: Analysis; linkedinUrl: string; tokensUsed: number }>('linkedin.analyzeTargeted', {
         linkedinUrl: url,
@@ -288,7 +341,20 @@ export default function ProfileAnalysis() {
       // Refresh balance so the user sees the authoritative value on any error,
       // especially "insufficient tokens" — prevents false positives.
       refreshBalance();
-      push('error', e?.message || (i18n.language === 'ar' ? 'فشل التحليل' : 'Analysis failed'));
+      // Distinguish NOT_FOUND and BAD_REQUEST/insufficient_data so the UI can
+      // show a specific inline error instead of a toast.
+      const code: string = e?.data?.code || e?.code || '';
+      const msg: string = e?.message || (i18n.language === 'ar' ? 'فشل التحليل' : 'Analysis failed');
+      const slugMatch = msg.match(/\(([a-z0-9-]{2,})\)/i);
+      const completenessMatch = msg.match(/\((\d{1,3})%\)/);
+      if (code === 'NOT_FOUND') {
+        setAnalysisError({ kind: 'not_found', message: msg, requestedSlug: slugMatch ? slugMatch[1] : null });
+      } else if (code === 'BAD_REQUEST' && completenessMatch) {
+        setAnalysisError({ kind: 'insufficient_data', message: msg, completeness: parseInt(completenessMatch[1], 10) });
+      } else {
+        setAnalysisError({ kind: 'generic', message: msg });
+        push('error', msg);
+      }
     } finally {
       setLoading(false);
     }
@@ -640,6 +706,54 @@ export default function ProfileAnalysis() {
           );
         })()}
 
+        {/* Inline analysis error — shown above the Generate button so the user
+            sees it even without scrolling. No tokens are charged for errors
+            that happen before deduction (invalid URL, not found, insufficient data). */}
+        {analysisError && (
+          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
+            style={{
+              marginBottom: 16, padding: 16,
+              background: analysisError.kind === 'not_found' ? '#fef2f2' : analysisError.kind === 'insufficient_data' ? '#fffbeb' : '#fef2f2',
+              border: `1px solid ${analysisError.kind === 'not_found' ? '#fca5a5' : analysisError.kind === 'insufficient_data' ? '#fcd34d' : '#fca5a5'}`,
+              borderRadius: 12,
+            }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 6 }}>
+              <AlertCircle size={20} style={{
+                color: analysisError.kind === 'not_found' ? '#dc2626' : analysisError.kind === 'insufficient_data' ? '#d97706' : '#dc2626',
+                flexShrink: 0, marginTop: 2,
+              }} />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 800, color: analysisError.kind === 'insufficient_data' ? '#92400e' : '#991b1b', marginBottom: 4 }}>
+                  {analysisError.kind === 'not_found'
+                    ? (i18n.language === 'ar' ? 'لم نعثر على هذا البروفايل' : 'We couldn\'t find this profile')
+                    : analysisError.kind === 'insufficient_data'
+                    ? (i18n.language === 'ar' ? 'بيانات البروفايل غير كافية' : 'Not enough profile content')
+                    : (i18n.language === 'ar' ? 'فشل التحليل' : 'Analysis failed')}
+                </div>
+                <div style={{ fontSize: 13, color: analysisError.kind === 'insufficient_data' ? '#78350f' : '#7f1d1d', lineHeight: 1.55 }}>
+                  {analysisError.message}
+                </div>
+                {analysisError.kind === 'not_found' && analysisError.requestedSlug && (
+                  <div style={{ fontSize: 12, color: '#64748b', marginTop: 6 }}>
+                    {i18n.language === 'ar' ? 'الرابط المطلوب:' : 'Requested profile:'} <code style={{ background: '#fff', padding: '2px 6px', borderRadius: 4, border: '1px solid #e5e7eb' }}>linkedin.com/in/{analysisError.requestedSlug}</code>
+                  </div>
+                )}
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 10, padding: '4px 10px', borderRadius: 999, background: '#ecfdf5', border: '1px solid #86efac', fontSize: 11, fontWeight: 700, color: '#166534' }}>
+                  <Check size={12} />
+                  {i18n.language === 'ar' ? 'لم يتم خصم أي نقاط' : 'No tokens were charged'}
+                  {typeof liveBalance === 'number' && (
+                    <span style={{ color: '#0f766e' }}>· {liveBalance}</span>
+                  )}
+                </div>
+              </div>
+              <button onClick={() => setAnalysisError(null)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', padding: 4 }}>
+                <X size={16} />
+              </button>
+            </div>
+          </motion.div>
+        )}
+
         {/* Generate Button */}
         <motion.button
           whileHover={canGenerate ? { scale: 1.01 } : {}}
@@ -788,114 +902,137 @@ export default function ProfileAnalysis() {
                 );
               })()}
 
-              {/* Dimensions — framework badges, observations, recommendations */}
-              {analysis.dimensions && analysis.dimensions.length > 0 && (
-                <div style={{ marginBottom: 24 }}>
-                  <div style={{ fontSize: 14, fontWeight: 800, color: '#334155', marginBottom: 12 }}>{t('profileRadar.result.dimensions')}</div>
-                  <div style={{ display: 'grid', gap: 12 }}>
-                    {analysis.dimensions.map((d, i) => {
-                      const noData = d.score === null || d.score === undefined;
-                      const displayName = t(`profileRadar.dimensions_map.${d.name}`, { defaultValue: String(d.name) });
-                      const fwBadge = d.framework ? FRAMEWORK_BADGE[d.framework] : null;
-                      return (
-                        <div key={i} style={{ padding: 14, background: '#f8fafc', borderRadius: 10, border: '1px solid #e5e7eb', opacity: noData ? 0.75 : 1 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                              <span style={{ fontWeight: 700, color: '#1f2937', fontSize: 14 }}>{displayName}</span>
-                              {d.framework && fwBadge && (
+              {/* Sections (v6) — 8 classic LinkedIn sections */}
+              {(() => {
+                // v6 uses `sections`; legacy rows use `dimensions`. Normalize.
+                const sectionsData: Section[] = Array.isArray(analysis.sections) && analysis.sections.length
+                  ? analysis.sections
+                  : (Array.isArray(analysis.dimensions)
+                    ? analysis.dimensions.map<Section>((d) => ({
+                        key: d.name,
+                        score: d.score,
+                        framework: d.framework,
+                        framework_label: d.framework_label,
+                        assessment: d.observations?.[0]?.what || d.feedback,
+                        current: d.recommendations?.[0]?.current,
+                        suggested: d.recommendations?.[0]?.suggested,
+                        why: d.observations?.[0]?.why || d.recommendations?.[0]?.rationale,
+                      }))
+                    : []);
+                if (sectionsData.length === 0) return null;
+
+                const slug = (() => {
+                  const m = String((analysis as any)?.linkedinUrl || url || '').match(/linkedin\.com\/in\/([^/?#]+)/i);
+                  return m ? m[1] : '';
+                })();
+
+                return (
+                  <div style={{ marginBottom: 24 }}>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: '#334155', marginBottom: 12 }}>
+                      {i18n.language === 'ar' ? 'القسم حسب القسم' : 'Section by Section'}
+                    </div>
+                    <div style={{ display: 'grid', gap: 12 }}>
+                      {sectionsData.map((s, i) => {
+                        const noData = s.score === null || s.score === undefined;
+                        const displayName = i18n.language === 'ar'
+                          ? (s.name_ar || t(`profileRadar.sections.names.${s.key}`, { defaultValue: String(s.key) }))
+                          : (s.name_en || t(`profileRadar.sections.names.${s.key}`, { defaultValue: String(s.key) }));
+                        const colors = scoreColor(s.score);
+                        const fwColor = frameworkPillColor(s.framework as FrameworkId);
+                        const effortKey = (s.effort && ['quick','moderate','deep'].includes(s.effort)) ? s.effort as 'quick'|'moderate'|'deep' : 'moderate';
+                        const effortText = i18n.language === 'ar' ? EFFORT_LABEL[effortKey].ar : EFFORT_LABEL[effortKey].en;
+                        const editPath = SECTION_EDIT_PATH[s.key as SectionKey] || '';
+                        const editUrl = slug && editPath ? `https://www.linkedin.com/in/${slug}/edit/${editPath}/` : null;
+
+                        return (
+                          <div key={i} style={{ padding: 14, background: '#f8fafc', borderRadius: 10, border: '1px solid #e5e7eb', opacity: noData ? 0.85 : 1 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10, flexWrap: 'wrap' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                                <span style={{ fontWeight: 700, color: '#1f2937', fontSize: 15 }}>{displayName}</span>
+                                {s.framework && (
+                                  <span style={{
+                                    padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 800,
+                                    background: fwColor + '20', color: fwColor, border: `1px solid ${fwColor}40`,
+                                  }}>
+                                    {s.framework}
+                                  </span>
+                                )}
                                 <span style={{
-                                  padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 800,
-                                  background: fwBadge.bg, color: fwBadge.fg,
+                                  padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700,
+                                  background: '#e0e7ff', color: '#3730a3',
                                 }}>
-                                  {d.framework} · {d.framework_label || t(`profileRadar.frameworks.${d.framework}`)}
+                                  {effortText}
                                 </span>
-                              )}
-                            </div>
-                            {noData ? (
-                              <span style={{ fontWeight: 700, color: '#94a3b8', fontSize: 12 }}>
-                                {t('profileRadar.result.evidenceMissing')}
+                              </div>
+                              <span style={{
+                                padding: '4px 10px', borderRadius: 999, fontSize: 14, fontWeight: 800,
+                                background: colors.bg, color: colors.fg, border: `1px solid ${colors.border}`,
+                                minWidth: 60, textAlign: 'center',
+                              }}>
+                                {noData ? '—' : `${s.score}/100`}
                               </span>
-                            ) : (
-                              <span style={{ fontWeight: 800, color: scoreColor100(d.score!), fontSize: 14 }}>{d.score}/100</span>
+                            </div>
+
+                            {noData && editUrl && (
+                              <div style={{ marginBottom: 8, padding: 10, background: '#fff', borderRadius: 8, border: '1px dashed #cbd5e1', fontSize: 12, color: '#64748b' }}>
+                                <div style={{ marginBottom: 6 }}>
+                                  {i18n.language === 'ar' ? 'هذا القسم غير مُعبّأ على LinkedIn' : 'This section is not filled on LinkedIn'}
+                                </div>
+                                <a href={editUrl} target="_blank" rel="noopener noreferrer"
+                                  style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: '#0f766e', fontWeight: 700, textDecoration: 'none', fontSize: 12 }}>
+                                  {i18n.language === 'ar' ? 'افتح القسم على LinkedIn' : 'Open section on LinkedIn'}
+                                  <ExternalLink size={12} />
+                                </a>
+                              </div>
+                            )}
+
+                            {s.assessment && (
+                              <div style={{ fontSize: 13, color: '#475569', lineHeight: 1.6, marginBottom: 10 }}>{s.assessment}</div>
+                            )}
+
+                            {(s.current || s.suggested) && (
+                              <div style={{ display: 'grid', gap: 8, marginBottom: 8 }}>
+                                {s.current && (
+                                  <div style={{ background: '#fff', borderRadius: 8, padding: 10, border: '1px solid #e2e8f0' }}>
+                                    <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                                      {i18n.language === 'ar' ? 'الحالي' : 'Current'}
+                                    </div>
+                                    <div style={{ fontSize: 13, color: '#334155', lineHeight: 1.5, fontFamily: 'ui-monospace, SFMono-Regular, monospace', whiteSpace: 'pre-wrap' }}>
+                                      {s.current}
+                                    </div>
+                                    <button onClick={() => { navigator.clipboard?.writeText(s.current || ''); push('success', i18n.language === 'ar' ? 'تم النسخ' : 'Copied'); }}
+                                      style={{ marginTop: 6, padding: '4px 10px', fontSize: 11, fontWeight: 700, border: '1px solid #cbd5e1', background: '#fff', color: '#475569', borderRadius: 6, cursor: 'pointer' }}>
+                                      {i18n.language === 'ar' ? 'نسخ' : 'Copy'}
+                                    </button>
+                                  </div>
+                                )}
+                                {s.suggested && (
+                                  <div style={{ background: '#f0fdfa', borderRadius: 8, padding: 10, border: '1px solid #99f6e4' }}>
+                                    <div style={{ fontSize: 11, fontWeight: 700, color: '#0f766e', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                                      {i18n.language === 'ar' ? 'المقترح' : 'Suggested'}
+                                    </div>
+                                    <div style={{ fontSize: 13, color: '#0f766e', lineHeight: 1.5, fontWeight: 600, fontFamily: 'ui-monospace, SFMono-Regular, monospace', whiteSpace: 'pre-wrap' }}>
+                                      {s.suggested}
+                                    </div>
+                                    <button onClick={() => { navigator.clipboard?.writeText(s.suggested || ''); push('success', i18n.language === 'ar' ? 'تم النسخ' : 'Copied'); }}
+                                      style={{ marginTop: 6, padding: '4px 10px', fontSize: 11, fontWeight: 700, border: 'none', background: '#14b8a6', color: '#fff', borderRadius: 6, cursor: 'pointer' }}>
+                                      {i18n.language === 'ar' ? 'نسخ' : 'Copy'}
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {s.why && (
+                              <div style={{ fontSize: 12, color: '#64748b', fontStyle: 'italic', lineHeight: 1.5 }}>{s.why}</div>
                             )}
                           </div>
-
-                          {!noData && (
-                            <div style={{ height: 4, background: '#e2e8f0', borderRadius: 999, marginBottom: 10, overflow: 'hidden' }}>
-                              <div style={{ width: `${Math.min(100, d.score!)}%`, height: '100%', background: scoreColor100(d.score!) }} />
-                            </div>
-                          )}
-
-                          {/* Observations (new schema) */}
-                          {Array.isArray(d.observations) && d.observations.length > 0 ? (
-                            <div style={{ display: 'grid', gap: 8, marginBottom: 8 }}>
-                              {d.observations.map((o, oi) => {
-                                const ic = impactColor(o.impact);
-                                return (
-                                  <div key={oi} style={{ background: 'white', borderRadius: 8, padding: 10, border: '1px solid #e2e8f0' }}>
-                                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                                      <Quote size={14} style={{ color: '#64748b', flexShrink: 0, marginTop: 2 }} />
-                                      <div style={{ flex: 1 }}>
-                                        <div style={{ fontSize: 13, fontWeight: 700, color: '#1f2937', lineHeight: 1.55 }}>{o.what}</div>
-                                        {o.why && <div style={{ fontSize: 12, color: '#475569', marginTop: 4, lineHeight: 1.5 }}>{o.why}</div>}
-                                        {o.citation && (
-                                          <div style={{ fontSize: 11, color: '#64748b', marginTop: 4, fontStyle: 'italic' }}>{o.citation}</div>
-                                        )}
-                                        {o.impact && (
-                                          <div style={{ display: 'inline-block', marginTop: 6, padding: '2px 6px', borderRadius: 4, background: ic.bg, color: ic.fg, fontSize: 10, fontWeight: 700 }}>
-                                            {t(`profileRadar.result.impact.${o.impact}`, { defaultValue: o.impact })}
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          ) : d.feedback ? (
-                            // Legacy feedback field
-                            <div style={{ fontSize: 13, color: '#475569', lineHeight: 1.6, marginBottom: 8 }}>{d.feedback}</div>
-                          ) : null}
-
-                          {/* Recommendations (before/after) */}
-                          {Array.isArray(d.recommendations) && d.recommendations.length > 0 && (
-                            <div style={{ display: 'grid', gap: 8 }}>
-                              {d.recommendations.map((r, ri) => {
-                                const ec = effortColor(r.effort);
-                                return (
-                                  <div key={ri} style={{ background: '#f0fdfa', borderRadius: 8, padding: 10, border: '1px solid #99f6e4' }}>
-                                    {r.current && (
-                                      <div style={{ fontSize: 12, color: '#334155', marginBottom: 4 }}>
-                                        <span style={{ fontWeight: 700 }}>{t('profileRadar.result.current')}:</span>{' '}
-                                        <span style={{ color: '#64748b', textDecoration: 'line-through' }}>{r.current}</span>
-                                      </div>
-                                    )}
-                                    {r.suggested && (
-                                      <div style={{ fontSize: 13, color: '#0f766e', fontWeight: 700, lineHeight: 1.5 }}>
-                                        <span>{t('profileRadar.result.suggested')}:</span> {r.suggested}
-                                      </div>
-                                    )}
-                                    {r.rationale && (
-                                      <div style={{ fontSize: 11, color: '#475569', marginTop: 4, lineHeight: 1.5 }}>
-                                        <span style={{ fontWeight: 700 }}>{t('profileRadar.result.rationale')}:</span> {r.rationale}
-                                      </div>
-                                    )}
-                                    {r.effort && (
-                                      <div style={{ display: 'inline-block', marginTop: 6, padding: '2px 6px', borderRadius: 4, background: ec.bg, color: ec.fg, fontSize: 10, fontWeight: 700 }}>
-                                        {t(`profileRadar.result.effort.${r.effort}`, { defaultValue: r.effort })}
-                                      </div>
-                                    )}
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
               {/* Legacy flat recommendations (historical rows) */}
               {analysis.recommendations && analysis.recommendations.length > 0 && (

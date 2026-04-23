@@ -3,7 +3,7 @@ import { router, protectedProcedure } from '../trpc-init';
 import { TRPCError } from '@trpc/server';
 import { logApiCall, mapAnthropicStatusToArabic, mapApifyStatusToArabic, classifyClaudeError, sendClaudeOpsAlert } from '../lib/apiLogger';
 import { callClaude, extractText, extractJson } from '../lib/claude-client';
-import { scrapeLinkedInProfileMulti, detectLanguage } from '../lib/linkedin-scraper';
+import { scrapeLinkedInProfileMulti, detectLanguage, extractSlugFromUrl, extractSlugFromProfile, slugsMatch } from '../lib/linkedin-scraper';
 import { validateAndNormalizeLinkedInUrl } from '../lib/linkedin-url-validator';
 import { generateDocxReport } from '../lib/profile-report-generator';
 import { deductTokens, refundTokens, throwInsufficientTokensError } from '../lib/tokens';
@@ -21,15 +21,82 @@ const INDUSTRY = z.enum([
 
 const REPORT_LANGUAGE = z.enum(['ar', 'en']);
 
-const DIMENSION_NAMES = [
-  'stranger_legibility',
-  'discoverability',
-  'ats_readiness',
-  'skills_architecture',
-  'social_proof',
-  'narrative_coherence',
+// ── 8-section schema (v6) ──────────────────────────────────────────
+// Replaces the 6 abstract dimensions with the 8 classic LinkedIn sections
+// the user already knows. The 6 research frameworks A-F still underlie
+// the scoring — each section cites a primary framework.
+const SECTION_KEYS = [
+  'headline',
+  'about',
+  'experience',
+  'skills',
+  'education',
+  'recommendations',
+  'activity',
+  'profile_completeness',
 ] as const;
-type DimensionName = (typeof DIMENSION_NAMES)[number];
+type SectionKey = (typeof SECTION_KEYS)[number];
+
+const SECTION_NAMES: Record<SectionKey, { ar: string; en: string }> = {
+  headline: { ar: 'العنوان الرئيسي', en: 'Headline' },
+  about: { ar: 'نبذة عني', en: 'About' },
+  experience: { ar: 'الخبرات', en: 'Experience' },
+  skills: { ar: 'المهارات', en: 'Skills' },
+  education: { ar: 'التعليم', en: 'Education' },
+  recommendations: { ar: 'التوصيات', en: 'Recommendations' },
+  activity: { ar: 'النشاط', en: 'Activity' },
+  profile_completeness: { ar: 'اكتمال البروفايل', en: 'Profile Completeness' },
+};
+
+// Weight table by target goal — used to compute overall_score server-side.
+type TargetGoalKey =
+  | 'job-search' | 'investment' | 'thought-leadership'
+  | 'sales-b2b' | 'career-change' | 'internal-promotion';
+
+const SECTION_WEIGHTS: Record<TargetGoalKey, Record<SectionKey, number>> = {
+  'job-search': {
+    headline: 0.20, about: 0.15, experience: 0.20, skills: 0.15,
+    education: 0.05, recommendations: 0.10, activity: 0.05, profile_completeness: 0.10,
+  },
+  'thought-leadership': {
+    headline: 0.15, about: 0.15, experience: 0.10, skills: 0.10,
+    education: 0.05, recommendations: 0.10, activity: 0.25, profile_completeness: 0.10,
+  },
+  'investment': {
+    headline: 0.15, about: 0.20, experience: 0.15, skills: 0.10,
+    education: 0.05, recommendations: 0.15, activity: 0.10, profile_completeness: 0.10,
+  },
+  'sales-b2b': {
+    headline: 0.20, about: 0.15, experience: 0.10, skills: 0.10,
+    education: 0.05, recommendations: 0.10, activity: 0.20, profile_completeness: 0.10,
+  },
+  'career-change': {
+    headline: 0.20, about: 0.25, experience: 0.15, skills: 0.15,
+    education: 0.05, recommendations: 0.05, activity: 0.05, profile_completeness: 0.10,
+  },
+  'internal-promotion': {
+    headline: 0.15, about: 0.15, experience: 0.20, skills: 0.15,
+    education: 0.05, recommendations: 0.15, activity: 0.05, profile_completeness: 0.10,
+  },
+};
+
+function computeOverallFromSections(sections: any[], goal: TargetGoalKey): number {
+  const weights = SECTION_WEIGHTS[goal] || SECTION_WEIGHTS['job-search'];
+  let totalWeight = 0;
+  let weightedSum = 0;
+  for (const s of sections) {
+    const key = (s?.key || '') as SectionKey;
+    const w = weights[key];
+    if (!w) continue;
+    // Null score = section absent → don't let it drag the overall down to 0,
+    // but don't reward it either. Skip it and renormalize.
+    if (s.score === null || typeof s.score !== 'number') continue;
+    weightedSum += (s.score as number) * w;
+    totalWeight += w;
+  }
+  if (totalWeight === 0) return 0;
+  return Math.round(weightedSum / totalWeight);
+}
 
 const FRAMEWORK_LABELS: Record<'A' | 'B' | 'C' | 'D' | 'E' | 'F', { en: string; ar: string }> = {
   A: { en: 'MIT/Harvard Weak Ties Research', ar: 'دراسة MIT/Harvard عن الروابط الضعيفة' },
@@ -102,38 +169,24 @@ F. Self-Strength Opening Research (ResearchGate social sciences)
    scroll-retention.
 
 ═══════════════════════════════════════
-SCORING DIMENSIONS (each ties to a specific framework)
+SECTIONS TO SCORE (in this exact order)
 ═══════════════════════════════════════
 
-1. stranger_legibility (Frameworks A, F)
-   Would a stranger in the user's target industry understand this profile
-   in under 30 seconds? Sub-metrics: headline clarity, about-section
-   opening, jargon ratio.
+Surface output as the 8 classic LinkedIn sections the user already sees on
+their profile. Each section is scored /100 with a concrete rewrite.
 
-2. discoverability (Framework B)
-   Does the profile hit LinkedIn's algorithmic thresholds? Sub-metrics:
-   skills count (≥5), photo presence, custom URL, location specificity,
-   open-to-work status, banner image presence.
+1. headline   — primary framework F (self-strength) + A (stranger legibility)
+2. about      — primary framework F + C
+3. experience — primary framework C (ATS)
+4. skills     — primary framework D (skills-based) + B (≥5 threshold)
+5. education  — primary framework B + D
+6. recommendations — primary framework E (PwC MENA)
+7. activity   — primary framework B + E
+8. profile_completeness — primary framework B (Economic Graph thresholds)
 
-3. ats_readiness (Framework C)
-   Would an ATS parser score this profile highly? Sub-metrics: action
-   verbs, quantified outcomes, keyword match rate, inverse-pyramid
-   structure.
-
-4. skills_architecture (Framework D)
-   Are skills specific enough to signal expertise to a 2026 skills-based
-   employer? Sub-metrics: micro-skill specificity, stack coherence,
-   market-demand alignment.
-
-5. social_proof (Framework E)
-   Does the profile carry trust signals weighted heavily in GCC hiring?
-   Sub-metrics: recommendation count, recommendation recency, endorsement
-   distribution, bilingual presence.
-
-6. narrative_coherence (Frameworks A, F)
-   Does the profile tell a consistent story from headline → about →
-   experience → skills? Sub-metrics: thematic consistency, target-role
-   alignment, gap explanations.
+Pick the SINGLE best-fit framework letter for the "framework" field on each
+section. If a section is empty on the profile, set score=null and explain
+in assessment.
 
 ═══════════════════════════════════════
 ANTI-HALLUCINATION RULES (NON-NEGOTIABLE)
@@ -227,35 +280,25 @@ Schema:
     "notes": string (references actual profile content, not assumed background)
   },
 
-  "dimensions": [
+  "sections": [
     {
-      "name": "stranger_legibility" | "discoverability" | "ats_readiness" | "skills_architecture" | "social_proof" | "narrative_coherence",
-      "score": number (0-100) | null,
+      "key": "headline" | "about" | "experience" | "skills" | "education" | "recommendations" | "activity" | "profile_completeness",
+      "score": number (0-100) | null,        // null ONLY if the section on LinkedIn is truly empty
+      "assessment": string (1-2 sentences in target language — quote the profile text, explain what works/doesn't),
+      "current": string (the exact current text from profile, or "Empty" if absent — in original profile language),
+      "suggested": string (a concrete rewrite ready to paste into LinkedIn — in original profile language or the user's chosen target language),
+      "why": string (1 sentence citing the framework — in target language),
       "framework": "A" | "B" | "C" | "D" | "E" | "F",
-      "observations": [
-        {
-          "what": string (exact or paraphrased profile quote, in target language),
-          "why": string (how the cited framework interprets this, in target language),
-          "citation": string (specific stat or finding from the framework, in target language),
-          "impact": "high" | "medium" | "low"
-        }
-      ],
-      "recommendations": [
-        {
-          "current": string (what they have now, in target language or original profile language),
-          "suggested": string (exact rewrite, in target language or original profile language),
-          "rationale": string (which framework and why, in target language),
-          "effort": "quick" | "moderate" | "deep"
-        }
-      ]
+      "effort": "quick" | "moderate" | "deep"
     }
+    // ...repeat for each of the 8 sections in the exact order above
   ],
 
   "top_priorities": [
     {
       "rank": 1 | 2 | 3,
       "action": string (in target language),
-      "dimension": "stranger_legibility" | "discoverability" | "ats_readiness" | "skills_architecture" | "social_proof" | "narrative_coherence",
+      "section_key": "headline" | "about" | "experience" | "skills" | "education" | "recommendations" | "activity" | "profile_completeness",
       "framework": "A" | "B" | "C" | "D" | "E" | "F",
       "expected_impact": string (in target language — e.g. "Could 2-3x profile visibility per Framework B")
     }
@@ -268,12 +311,24 @@ Schema:
   }
 }
 
+SECTION-TO-FRAMEWORK GUIDE (use as PRIMARY framework per section):
+- headline → F (self-strength opening) + A (stranger legibility). Target: < 220 chars, problem-solved framing.
+- about → F + C. First 2 sentences answer problem/for whom/outcome. No third-person pronouns.
+- experience → C (ATS). Action verbs, quantified outcomes, inverse pyramid per bullet.
+- skills → D (skills-based orgs 2026) + B (≥5 skills for 27× visibility). Micro-skill specificity.
+- education → B + D. Completeness, degree relevance to target industry.
+- recommendations → E (PwC MENA). Count, recency, diversity (manager / peer / client).
+- activity → B + E. Posting frequency, engagement, bilingual presence, topical coherence with target.
+- profile_completeness → B (Economic Graph). Photo (21× views), banner, custom URL (15% more visits), Open-to-Work (3.5× InMails), location, certifications filled.
+
 RULES ON EMISSIONS:
-- Always include exactly 6 dimensions in the exact order above.
-- Each dimension MUST cite exactly ONE primary framework in "framework".
+- Always include exactly 8 sections in the exact order above (headline, about, experience, skills, education, recommendations, activity, profile_completeness).
+- Each section MUST cite exactly ONE primary framework in "framework".
+- If a section on the profile is empty, set score=null, current="Empty", assessment explains it's absent.
 - frameworks_referenced in evidence_bundle must match what you actually used.
-- Recommendations MUST always reference actual fields to add or edit.
+- Suggested rewrites MUST be concrete copy-pastable text, not generic advice.
 - top_priorities: ALWAYS exactly 3 items, ordered by impact (rank 1 = highest).
+- overall_score: you may emit this but the SERVER will recompute from weighted sections.
 
 ═══════════════════════════════════════
 TONE
@@ -553,11 +608,27 @@ export const linkedinRouter = router({
           analysis = cached.result;
         } else {
           console.log('[LINKEDIN] Cache MISS, calling Apify + Claude');
-          // Atomic deduct BEFORE downstream work; refund on failure.
+          // Scrape + verify identity BEFORE deducting — no tokens should be
+          // charged for a profile the actor can't fetch or a slug mismatch.
+          const profileData = await scrapeLinkedInProfile(input.profileUrl);
+          const requestedSlug = extractSlugFromUrl(input.profileUrl);
+          const returnedSlug = (() => {
+            const s = profileData?.publicIdentifier || profileData?.vanityName;
+            if (typeof s === 'string' && s.length > 0) return s.toLowerCase();
+            const u = profileData?.linkedinUrl || profileData?.profileUrl || profileData?.url || '';
+            return extractSlugFromUrl(u);
+          })();
+          if (requestedSlug && !slugsMatch(requestedSlug, returnedSlug)) {
+            console.error('[LINKEDIN] slug mismatch — rejecting', { requestedSlug, returnedSlug, fullName: profileData?.fullName });
+            throw new TRPCError({
+              code: 'NOT_FOUND',
+              message: `We couldn't find the profile (${requestedSlug}). Check the URL and make sure the profile is public. No tokens were charged.`,
+            });
+          }
+          // Atomic deduct AFTER scrape + identity verification.
           const deduct = await deductTokens(ctx.supabase, ctx.user.id, COST, FEATURE);
           if (!deduct.success) throwInsufficientTokensError(deduct, 'en');
           console.log('[LINKEDIN] tokens deducted', deduct.balance_before, '→', deduct.balance_after);
-          const profileData = await scrapeLinkedInProfile(input.profileUrl);
           const { name, profileText } = buildProfileText(profileData);
           console.log('[LINKEDIN] Profile scraped:', name);
 
@@ -852,9 +923,9 @@ export const linkedinRouter = router({
       let deducted = false;
       let stage = 'init';
       // Stages that happen AFTER a successful atomic deduct — those must refund.
+      // NOTE: identity verification + completeness guard now run BEFORE
+      // deduction, so they are intentionally NOT in this set.
       const REFUNDABLE_STAGES = new Set([
-        'scraping_profile',
-        'sparse_guard',
         'building_payload',
         'calling_claude',
         'parsing_claude_response',
@@ -863,7 +934,7 @@ export const linkedinRouter = router({
       ]);
 
       try {
-        // ── STAGE: validate URL ────────────────────────────────────────────
+        // ── STAGE 1: validate URL format ───────────────────────────────────
         stage = 'validating_url';
         let normalizedUrl = input.linkedinUrl;
         if (input.linkedinUrl) {
@@ -877,7 +948,96 @@ export const linkedinRouter = router({
           normalizedUrl = validation.normalizedUrl;
         }
 
-        // ── STAGE: atomic token deduction ──────────────────────────────────
+        // Extract the slug of what the user ASKED for. This is compared
+        // against what the actor RETURNS — catches search-actor silent wrong
+        // matches (see linkedin-scraper.ts header).
+        const requestedSlug = normalizedUrl ? extractSlugFromUrl(normalizedUrl) : '';
+        if (normalizedUrl && !requestedSlug) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: lang === 'ar'
+              ? 'رابط LinkedIn غير صالح. تأكد من أنه بصيغة https://linkedin.com/in/username'
+              : 'Invalid LinkedIn URL. Use the format https://linkedin.com/in/username',
+          });
+        }
+
+        // ── STAGE 2: scrape LinkedIn profile (BEFORE deducting) ────────────
+        // Ordering matters: no tokens are charged for a non-existent profile
+        // or a profile the actor fails to fetch. Scrape first, verify identity,
+        // then deduct.
+        stage = 'scraping_profile';
+        let unifiedProfile: any = null;
+        let completeness = 0;
+        let missingSections: string[] = [];
+        let returnedSlug = '';
+        if (normalizedUrl) {
+          try {
+            const outcome = await scrapeLinkedInProfileMulti(normalizedUrl);
+            unifiedProfile = outcome.profile;
+            completeness = outcome.completeness;
+            missingSections = outcome.missingSections;
+            returnedSlug = outcome.returnedSlug;
+            console.log('[RADAR stage=scraping_profile ok]', {
+              source: outcome.source,
+              completeness,
+              missing: missingSections.length,
+              requestedSlug: outcome.requestedSlug,
+              returnedSlug: outcome.returnedSlug,
+              identityMatch: outcome.identityMatch,
+            });
+          } catch (e: any) {
+            const kind = (e as any)?.kind;
+            console.error('[RADAR stage=scraping_profile fail]', { kind, message: e?.message });
+            if (kind === 'URL_MISMATCH') {
+              throw new TRPCError({
+                code: 'NOT_FOUND',
+                message: lang === 'ar'
+                  ? `لم نتمكن من العثور على بروفايل (${requestedSlug}). تأكد من الرابط وأن البروفايل عام وليس خاصاً. لم يتم خصم أي نقاط.`
+                  : `We couldn't find the profile (${requestedSlug}). Check the URL and make sure the profile is public. No tokens were charged.`,
+              });
+            }
+            throw new TRPCError({
+              code: 'NOT_FOUND',
+              message: lang === 'ar'
+                ? `لم نتمكن من قراءة البروفايل (${requestedSlug || 'الرابط'}). تأكد من أن البروفايل عام. لم يتم خصم أي نقاط.`
+                : `Failed to read profile (${requestedSlug || 'the URL'}) — ensure it's public. No tokens were charged.`,
+            });
+          }
+        }
+
+        // ── STAGE 3: verify identity (BEFORE deducting) ────────────────────
+        // Layer-2 defence on top of what linkedin-scraper already does internally.
+        // Even if somehow a slug mismatch leaked through, this second check
+        // will stop it from ever reaching the paid Claude call.
+        stage = 'verifying_identity';
+        if (unifiedProfile && requestedSlug) {
+          const verifySlug = returnedSlug || extractSlugFromProfile(unifiedProfile);
+          if (!slugsMatch(requestedSlug, verifySlug)) {
+            console.error('[RADAR stage=verifying_identity fail]', {
+              requested: requestedSlug, returned: verifySlug, fullName: unifiedProfile.fullName,
+            });
+            throw new TRPCError({
+              code: 'NOT_FOUND',
+              message: lang === 'ar'
+                ? `لم نتمكن من العثور على بروفايل (${requestedSlug}). تأكد من الرابط. لم يتم خصم أي نقاط.`
+                : `We couldn't find the profile (${requestedSlug}). Check the URL. No tokens were charged.`,
+            });
+          }
+        }
+
+        // ── STAGE 4: completeness guard (BEFORE deducting) ─────────────────
+        stage = 'checking_data_completeness';
+        if (unifiedProfile && !input.imageBase64 && completeness < 25) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: lang === 'ar'
+              ? `هذا البروفايل يحتاج إلى بيانات أكثر (${completeness}%). الأقسام الناقصة: ${missingSections.join('، ')}. أضف المزيد من المحتوى ثم جرّب مرة أخرى. لم يتم خصم أي نقاط.`
+              : `This profile needs more content (${completeness}%). Missing: ${missingSections.join(', ')}. Add more content and retry. No tokens were charged.`,
+          });
+        }
+
+        // ── STAGE 5: atomic token deduction ────────────────────────────────
+        // We only deduct once we know the profile is real AND has enough data.
         stage = 'deducting_tokens';
         const deduct = await deductTokens(ctx.supabase, ctx.user.id, TOKEN_COST, FEATURE);
         if (!deduct.success) throwInsufficientTokensError(deduct, lang);
@@ -886,43 +1046,7 @@ export const linkedinRouter = router({
           userId: ctx.user.id, before: deduct.balance_before, after: deduct.balance_after,
         });
 
-        // ── STAGE: scrape LinkedIn profile ─────────────────────────────────
-        stage = 'scraping_profile';
-        let unifiedProfile: any = null;
-        let completeness = 0;
-        let missingSections: string[] = [];
-        if (normalizedUrl) {
-          try {
-            const outcome = await scrapeLinkedInProfileMulti(normalizedUrl);
-            unifiedProfile = outcome.profile;
-            completeness = outcome.completeness;
-            missingSections = outcome.missingSections;
-            console.log('[RADAR stage=scraping_profile ok]', {
-              source: outcome.source, completeness, missing: missingSections.length,
-            });
-          } catch (e: any) {
-            console.error('[RADAR stage=scraping_profile fail]', e?.message);
-            throw new TRPCError({
-              code: 'INTERNAL_SERVER_ERROR',
-              message: lang === 'ar'
-                ? 'فشل قراءة البروفايل — تأكد من أن البروفايل عام ومكتمل'
-                : 'Failed to read profile — ensure the profile is public and has content',
-            });
-          }
-        }
-
-        // ── STAGE: sparse-profile guard ────────────────────────────────────
-        stage = 'sparse_guard';
-        if (unifiedProfile && !input.imageBase64 && completeness < 25) {
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: lang === 'ar'
-              ? `بيانات البروفايل غير كافية للتحليل (${completeness}%). الأقسام الناقصة: ${missingSections.join('، ')}. اجعل البروفايل عاماً وأضف محتوى أساسياً ثم حاول مرة أخرى.`
-              : `Profile data too sparse to analyze (${completeness}%). Missing: ${missingSections.join(', ')}. Make the profile public and add core content, then retry.`,
-          });
-        }
-
-        // ── STAGE: build Claude payload ────────────────────────────────────
+        // ── STAGE 6: build Claude payload ──────────────────────────────────
         stage = 'building_payload';
         // Defensive normalization — Apify responses occasionally return null
         // for array fields; `.slice` on null would 500 the handler.
@@ -1034,10 +1158,11 @@ export const linkedinRouter = router({
         // Fall back to the shared safeJsonParse if extractJson returns null.
         let result: any = extractJson<any>(text);
         if (!result) result = safeJsonParse<any>(text);
-        if (!result || typeof result.overall_score !== 'number') {
+        if (!result || !Array.isArray(result.sections)) {
           console.error('[RADAR stage=parsing_claude_response fail]', {
             stop_reason: claudeRes?.stop_reason,
             output_tokens: claudeRes?.usage?.output_tokens,
+            hasSections: Array.isArray(result?.sections),
             rawHead: typeof text === 'string' ? text.substring(0, 300) : typeof text,
             rawTail: typeof text === 'string' ? text.substring(Math.max(0, text.length - 300)) : '',
           });
@@ -1052,7 +1177,7 @@ export const linkedinRouter = router({
         // All post-hoc shape-guarantees the UI relies on. Never throws — every
         // field is defensively coerced. Loosened (not strict) because Claude
         // drift on optional fields must not 500 the user.
-        if (!Array.isArray(result.dimensions)) result.dimensions = [];
+        if (!Array.isArray(result.sections)) result.sections = [];
         if (!Array.isArray(result.top_priorities)) result.top_priorities = [];
         if (typeof result.confidence !== 'string') {
           result.confidence = completeness >= 70 ? 'high' : completeness >= 40 ? 'medium' : 'low';
@@ -1062,20 +1187,51 @@ export const linkedinRouter = router({
         }
         if (typeof result.verdict !== 'string') result.verdict = '';
 
-        result.dimensions = result.dimensions.map((d: any) => {
-          const fw = (d?.framework || '').toUpperCase();
+        // Ensure every one of the 8 sections is present in the correct order.
+        // Claude occasionally drops a section — we backfill with a null-scored
+        // stub so the UI can still render all 8 cards.
+        const claudeSectionsByKey: Record<string, any> = {};
+        for (const s of result.sections) {
+          if (s && typeof s.key === 'string') claudeSectionsByKey[s.key] = s;
+        }
+        const orderedSections = SECTION_KEYS.map((key) => {
+          const s = claudeSectionsByKey[key] || {};
+          const fw = ((s.framework as string) || '').toUpperCase();
           const labels = FRAMEWORK_LABELS[fw as 'A' | 'B' | 'C' | 'D' | 'E' | 'F'];
+          const score = (typeof s.score === 'number' && s.score >= 0 && s.score <= 100) ? s.score : null;
           return {
-            ...d,
+            key,
+            name_ar: SECTION_NAMES[key].ar,
+            name_en: SECTION_NAMES[key].en,
+            score,
+            assessment: typeof s.assessment === 'string' ? s.assessment : '',
+            current: typeof s.current === 'string' ? s.current : (score === null ? (lang === 'ar' ? 'فارغ' : 'Empty') : ''),
+            suggested: typeof s.suggested === 'string' ? s.suggested : '',
+            why: typeof s.why === 'string' ? s.why : '',
+            framework: (['A','B','C','D','E','F'].includes(fw) ? fw : null) as 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | null,
             framework_label: labels ? (lang === 'ar' ? labels.ar : labels.en) : null,
+            effort: ['quick','moderate','deep'].includes(s.effort) ? s.effort : 'moderate',
           };
         });
-        result.top_priorities = result.top_priorities.map((pr: any) => {
+        result.sections = orderedSections;
+
+        // Compute overall_score SERVER-SIDE from the weighted section table.
+        // Trusting Claude's arithmetic drifts (saw 47 vs 58 for same input).
+        result.overall_score = computeOverallFromSections(orderedSections, input.targetGoal);
+
+        // Top priorities — keep max 3, attach framework_label + validate section_key
+        result.top_priorities = result.top_priorities.slice(0, 3).map((pr: any, idx: number) => {
           const fw = (pr?.framework || '').toUpperCase();
           const labels = FRAMEWORK_LABELS[fw as 'A' | 'B' | 'C' | 'D' | 'E' | 'F'];
+          const sectionKey = pr?.section_key || pr?.dimension || null;
+          const validSectionKey = SECTION_KEYS.includes(sectionKey as SectionKey) ? sectionKey : null;
           return {
-            ...pr,
+            rank: typeof pr.rank === 'number' ? pr.rank : idx + 1,
+            action: typeof pr.action === 'string' ? pr.action : '',
+            section_key: validSectionKey,
+            framework: (['A','B','C','D','E','F'].includes(fw) ? fw : null),
             framework_label: labels ? (lang === 'ar' ? labels.ar : labels.en) : null,
+            expected_impact: typeof pr.expected_impact === 'string' ? pr.expected_impact : '',
           };
         });
 
@@ -1274,13 +1430,23 @@ export const linkedinRouter = router({
       const olderData = older.analysis_data as any;
       const newerData = newer.analysis_data as any;
 
-      const dimensionChanges = (olderData?.dimensions || []).map((oldDim: any) => {
-        const newDim = (newerData?.dimensions || []).find((d: any) => d.name === oldDim.name);
-        const oldScore = typeof oldDim.score === 'number' ? oldDim.score : 0;
-        const newScore = newDim && typeof newDim.score === 'number' ? newDim.score : oldScore;
+      // Support both v5 (dimensions) and v6 (sections) rows during migration window.
+      const olderItems: any[] = Array.isArray(olderData?.sections)
+        ? olderData.sections
+        : (Array.isArray(olderData?.dimensions) ? olderData.dimensions : []);
+      const newerItems: any[] = Array.isArray(newerData?.sections)
+        ? newerData.sections
+        : (Array.isArray(newerData?.dimensions) ? newerData.dimensions : []);
+      const keyOf = (item: any) => item.key || item.name;
+
+      const dimensionChanges = olderItems.map((oldItem: any) => {
+        const key = keyOf(oldItem);
+        const newItem = newerItems.find((d: any) => keyOf(d) === key);
+        const oldScore = typeof oldItem.score === 'number' ? oldItem.score : 0;
+        const newScore = newItem && typeof newItem.score === 'number' ? newItem.score : oldScore;
         const delta = newScore - oldScore;
         return {
-          name: oldDim.name,
+          name: key,
           before: oldScore,
           after: newScore,
           delta,
