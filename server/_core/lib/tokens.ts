@@ -137,18 +137,21 @@ export function throwInsufficientTokensError(
         : 'Token operation error. Please contact support.';
   }
 
+  // tRPC v10 expects `cause` to be an Error instance — passing a plain object
+  // triggers a 500 during response serialization. We attach the diagnostic
+  // payload onto an Error subclass so the UI can read it from err.data.cause.
+  const causeErr = new Error(`INSUFFICIENT_TOKENS: balance=${balance} required=${required} feature=${fail.feature}`);
+  (causeErr as any).kind = 'INSUFFICIENT_TOKENS';
+  (causeErr as any).reason = fail.reason;
+  (causeErr as any).balance = balance;
+  (causeErr as any).required = required;
+  (causeErr as any).feature = fail.feature;
+  (causeErr as any).serverTimestamp = new Date().toISOString();
+
   throw new TRPCError({
     code: 'FORBIDDEN',
     message,
-    cause: {
-      // Structured payload the UI can read from err.data.cause
-      kind: 'INSUFFICIENT_TOKENS',
-      reason: fail.reason,
-      balance,
-      required,
-      feature: fail.feature,
-      serverTimestamp: new Date().toISOString(),
-    } as any,
+    cause: causeErr,
   });
 }
 

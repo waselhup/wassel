@@ -7,6 +7,7 @@ import { scrapeLinkedInProfileMulti, detectLanguage } from '../lib/linkedin-scra
 import { validateAndNormalizeLinkedInUrl } from '../lib/linkedin-url-validator';
 import { generateDocxReport } from '../lib/profile-report-generator';
 import { deductTokens, refundTokens, throwInsufficientTokensError } from '../lib/tokens';
+import { safeJsonParse } from '../lib/safe-json';
 
 const TARGET_GOAL = z.enum([
   'job-search', 'investment', 'thought-leadership',
@@ -847,237 +848,289 @@ export const linkedinRouter = router({
       const TOKEN_COST = 25;
       const FEATURE = 'linkedin.analyzeTargeted';
       const lang = input.reportLanguage;
+      const startedAt = Date.now();
       let deducted = false;
+      let stage = 'init';
+      // Stages that happen AFTER a successful atomic deduct — those must refund.
+      const REFUNDABLE_STAGES = new Set([
+        'scraping_profile',
+        'sparse_guard',
+        'building_payload',
+        'calling_claude',
+        'parsing_claude_response',
+        'normalizing_response',
+        'persisting_to_db',
+      ]);
 
-      let normalizedUrl = input.linkedinUrl;
-      if (input.linkedinUrl) {
-        const validation = validateAndNormalizeLinkedInUrl(input.linkedinUrl);
-        if (!validation.valid) {
-          const msg = lang === 'ar'
-            ? `${validation.errorMessageAr}. ${validation.suggestion || ''}`
-            : `${validation.errorMessageEn}. ${validation.suggestion || ''}`;
-          throw new TRPCError({ code: 'BAD_REQUEST', message: msg.trim() });
+      try {
+        // ── STAGE: validate URL ────────────────────────────────────────────
+        stage = 'validating_url';
+        let normalizedUrl = input.linkedinUrl;
+        if (input.linkedinUrl) {
+          const validation = validateAndNormalizeLinkedInUrl(input.linkedinUrl);
+          if (!validation.valid) {
+            const msg = lang === 'ar'
+              ? `${validation.errorMessageAr}. ${validation.suggestion || ''}`
+              : `${validation.errorMessageEn}. ${validation.suggestion || ''}`;
+            throw new TRPCError({ code: 'BAD_REQUEST', message: msg.trim() });
+          }
+          normalizedUrl = validation.normalizedUrl;
         }
-        normalizedUrl = validation.normalizedUrl;
-      }
 
-      // Atomic deduct — row-locked RPC. Returns structured failure payload with
-      // actual balance + required so the UI never shows a false-positive
-      // "insufficient tokens" without proof.
-      const deduct = await deductTokens(ctx.supabase, ctx.user.id, TOKEN_COST, FEATURE);
-      if (!deduct.success) throwInsufficientTokensError(deduct, lang);
-      deducted = true;
-      console.log('[RADAR] tokens deducted', deduct.balance_before, '→', deduct.balance_after);
+        // ── STAGE: atomic token deduction ──────────────────────────────────
+        stage = 'deducting_tokens';
+        const deduct = await deductTokens(ctx.supabase, ctx.user.id, TOKEN_COST, FEATURE);
+        if (!deduct.success) throwInsufficientTokensError(deduct, lang);
+        deducted = true;
+        console.log('[RADAR stage=deducting_tokens ok]', {
+          userId: ctx.user.id, before: deduct.balance_before, after: deduct.balance_after,
+        });
 
-      let unifiedProfile: any = null;
-      let completeness = 0;
-      let missingSections: string[] = [];
-      if (normalizedUrl) {
-        try {
-          const outcome = await scrapeLinkedInProfileMulti(normalizedUrl);
-          unifiedProfile = outcome.profile;
-          completeness = outcome.completeness;
-          missingSections = outcome.missingSections;
-        } catch (e: any) {
-          console.error('[RADAR] scrape failed:', e?.message);
-          // Refund — scrape failed, user paid for nothing.
-          if (deducted) { await refundTokens(ctx.supabase, ctx.user.id, TOKEN_COST, FEATURE); deducted = false; }
+        // ── STAGE: scrape LinkedIn profile ─────────────────────────────────
+        stage = 'scraping_profile';
+        let unifiedProfile: any = null;
+        let completeness = 0;
+        let missingSections: string[] = [];
+        if (normalizedUrl) {
+          try {
+            const outcome = await scrapeLinkedInProfileMulti(normalizedUrl);
+            unifiedProfile = outcome.profile;
+            completeness = outcome.completeness;
+            missingSections = outcome.missingSections;
+            console.log('[RADAR stage=scraping_profile ok]', {
+              source: outcome.source, completeness, missing: missingSections.length,
+            });
+          } catch (e: any) {
+            console.error('[RADAR stage=scraping_profile fail]', e?.message);
+            throw new TRPCError({
+              code: 'INTERNAL_SERVER_ERROR',
+              message: lang === 'ar'
+                ? 'فشل قراءة البروفايل — تأكد من أن البروفايل عام ومكتمل'
+                : 'Failed to read profile — ensure the profile is public and has content',
+            });
+          }
+        }
+
+        // ── STAGE: sparse-profile guard ────────────────────────────────────
+        stage = 'sparse_guard';
+        if (unifiedProfile && !input.imageBase64 && completeness < 25) {
           throw new TRPCError({
-            code: 'INTERNAL_SERVER_ERROR',
+            code: 'BAD_REQUEST',
             message: lang === 'ar'
-              ? 'فشل قراءة البروفايل — تأكد من أن البروفايل عام ومكتمل'
-              : 'Failed to read profile — ensure the profile is public and has content',
+              ? `بيانات البروفايل غير كافية للتحليل (${completeness}%). الأقسام الناقصة: ${missingSections.join('، ')}. اجعل البروفايل عاماً وأضف محتوى أساسياً ثم حاول مرة أخرى.`
+              : `Profile data too sparse to analyze (${completeness}%). Missing: ${missingSections.join(', ')}. Make the profile public and add core content, then retry.`,
           });
         }
-      }
 
-      // ── Sparse-profile guard ──
-      // If completeness is extremely low (< 25%), refuse to analyze — we'd only hallucinate.
-      // Image-only flows skip this (no completeness info available).
-      if (unifiedProfile && !input.imageBase64 && completeness < 25) {
-        if (deducted) { await refundTokens(ctx.supabase, ctx.user.id, TOKEN_COST, FEATURE); deducted = false; }
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: lang === 'ar'
-            ? `بيانات البروفايل غير كافية للتحليل (${completeness}%). الأقسام الناقصة: ${missingSections.join('، ')}. اجعل البروفايل عاماً وأضف محتوى أساسياً ثم حاول مرة أخرى.`
-            : `Profile data too sparse to analyze (${completeness}%). Missing: ${missingSections.join(', ')}. Make the profile public and add core content, then retry.`,
-        });
-      }
+        // ── STAGE: build Claude payload ────────────────────────────────────
+        stage = 'building_payload';
+        // Defensive normalization — Apify responses occasionally return null
+        // for array fields; `.slice` on null would 500 the handler.
+        const asArray = (v: any): any[] => (Array.isArray(v) ? v : []);
+        const p = unifiedProfile;
+        const structuredProfile = p ? {
+          fullName: p.fullName || null,
+          headline: p.headline || null,
+          summary: p.summary || null,
+          location: p.location || null,
+          has_profile_picture: !!p.profilePicture,
+          experience: asArray(p.experience).slice(0, 8).map((e: any) => ({
+            title: e?.title || null,
+            company: e?.company || null,
+            duration: e?.duration || null,
+            location: e?.location || null,
+            description: e?.description ? String(e.description).slice(0, 400) : null,
+          })),
+          education: asArray(p.education).slice(0, 5).map((e: any) => ({
+            school: e?.school || null,
+            degree: e?.degree || null,
+            field: e?.field || null,
+            year: e?.year || null,
+          })),
+          skills: asArray(p.skills).slice(0, 30),
+          certifications: asArray(p.certifications).slice(0, 10).map((c: any) => ({
+            name: c?.name || null,
+            issuer: c?.issuer || null,
+          })),
+          languages: asArray(p.languages).map((l: any) => ({ name: l?.name || null, proficiency: l?.proficiency || null })),
+          activity_count: asArray(p.activity).length,
+        } : null;
 
-      // ── Build structured payload for Claude ──
-      // We send actual fields, not a flat text blob — so Claude sees what's empty vs present.
-      const p = unifiedProfile;
-      const structuredProfile = p ? {
-        fullName: p.fullName || null,
-        headline: p.headline || null,
-        summary: p.summary || null,
-        location: p.location || null,
-        has_profile_picture: !!p.profilePicture,
-        experience: (p.experience || []).slice(0, 8).map((e: any) => ({
-          title: e.title || null,
-          company: e.company || null,
-          duration: e.duration || null,
-          location: e.location || null,
-          description: e.description ? String(e.description).slice(0, 400) : null,
-        })),
-        education: (p.education || []).slice(0, 5).map((e: any) => ({
-          school: e.school || null,
-          degree: e.degree || null,
-          field: e.field || null,
-          year: e.year || null,
-        })),
-        skills: (p.skills || []).slice(0, 30),
-        certifications: (p.certifications || []).slice(0, 10).map((c: any) => ({
-          name: c.name || null,
-          issuer: c.issuer || null,
-        })),
-        languages: (p.languages || []).map((l: any) => ({ name: l.name || null, proficiency: l.proficiency || null })),
-        activity_count: (p.activity || []).length,
-      } : null;
+        const effectiveIndustry = input.industry === 'other' && input.customIndustryLabel
+          ? input.customIndustryLabel
+          : input.industry;
 
-      // Resolve effective industry label: when 'other', use the user-supplied
-      // string. The anti-hallucination rules in PROFILE_RADAR_SYSTEM still apply —
-      // this is a TARGET LENS, not a claim about the candidate's biography.
-      const effectiveIndustry = input.industry === 'other' && input.customIndustryLabel
-        ? input.customIndustryLabel
-        : input.industry;
-
-      const userPayload = {
-        target_goal: input.targetGoal,
-        industry: effectiveIndustry,
-        industry_is_custom: input.industry === 'other',
-        target_role: input.targetRole || null,
-        target_company: input.targetCompany || null,
-        report_language: lang,
-        profile_completeness: completeness,
-        missing_sections: missingSections,
-        profile_data: structuredProfile,
-      };
-
-      const userContent: any = input.imageBase64
-        ? [
-            { type: 'image', source: { type: 'base64', media_type: input.mediaType || 'image/png', data: input.imageBase64 } },
-            { type: 'text', text: JSON.stringify(userPayload, null, 2) },
-          ]
-        : JSON.stringify(userPayload, null, 2);
-
-      let result: any;
-      const _t0 = Date.now();
-      try {
-        const claudeRes = await callClaude({
-          task: 'profile_analysis',
-          system: PROFILE_RADAR_SYSTEM,
-          userContent,
-          maxTokens: 7000,
-          temperature: 0.3, // lower temp = less invention
-        });
-        await logApiCall({ service: 'anthropic', endpoint: '/v1/messages:analyzeTargeted', statusCode: 200, responseTimeMs: Date.now() - _t0, userId: ctx.user?.id });
-        const text = extractText(claudeRes);
-        result = extractJson<any>(text);
-        if (!result || typeof result.overall_score !== 'number') {
-          console.error('[RADAR] JSON parse failed. Raw:', text.substring(0, 500));
-          if (deducted) { await refundTokens(ctx.supabase, ctx.user.id, TOKEN_COST, FEATURE); deducted = false; }
-          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: lang === 'ar' ? 'فشل تحليل الرد من الذكاء الاصطناعي' : 'Failed to parse analysis response' });
-        }
-      } catch (err: any) {
-        // Claude call failed — refund.
-        if (deducted) { await refundTokens(ctx.supabase, ctx.user.id, TOKEN_COST, FEATURE); deducted = false; }
-        if (err instanceof TRPCError) throw err;
-        const status = err?.status || 500;
-        const body = err?.responseBody || err?.body || err?.message || '';
-        const info = classifyClaudeError(status, body);
-        await logApiCall({ service: 'anthropic', endpoint: '/v1/messages:analyzeTargeted', statusCode: status, responseTimeMs: Date.now() - _t0, errorMsg: info.devDetail, userId: ctx.user?.id });
-        if (info.alertOps) void sendClaudeOpsAlert(info, '/v1/messages:analyzeTargeted');
-        const code = status === 429 ? 'TOO_MANY_REQUESTS' : (status === 401 || status === 403) ? 'UNAUTHORIZED' : 'INTERNAL_SERVER_ERROR';
-        throw new TRPCError({ code, message: info.userMessage });
-      }
-
-      // ── Post-hoc normalization: guarantee the shape the UI relies on ──
-      if (!Array.isArray(result.dimensions)) result.dimensions = [];
-      if (!Array.isArray(result.top_priorities)) result.top_priorities = [];
-      if (typeof result.confidence !== 'string') {
-        result.confidence = completeness >= 70 ? 'high' : completeness >= 40 ? 'medium' : 'low';
-      }
-      if (typeof result.data_completeness !== 'number') {
-        result.data_completeness = completeness;
-      }
-
-      // Attach human-readable framework labels for each dimension
-      result.dimensions = result.dimensions.map((d: any) => {
-        const fw = (d.framework || '').toUpperCase();
-        const labels = FRAMEWORK_LABELS[fw as 'A' | 'B' | 'C' | 'D' | 'E' | 'F'];
-        return {
-          ...d,
-          framework_label: labels ? (lang === 'ar' ? labels.ar : labels.en) : null,
-        };
-      });
-      result.top_priorities = result.top_priorities.map((p: any) => {
-        const fw = (p.framework || '').toUpperCase();
-        const labels = FRAMEWORK_LABELS[fw as 'A' | 'B' | 'C' | 'D' | 'E' | 'F'];
-        return {
-          ...p,
-          framework_label: labels ? (lang === 'ar' ? labels.ar : labels.en) : null,
-        };
-      });
-
-      // Ensure evidence_bundle shape
-      if (!result.evidence_bundle || typeof result.evidence_bundle !== 'object') {
-        result.evidence_bundle = {
-          profile_quotes_used: [],
-          frameworks_referenced: [],
-          missing_data_flags: missingSections,
-        };
-      }
-      if (!Array.isArray(result.evidence_bundle.profile_quotes_used)) {
-        result.evidence_bundle.profile_quotes_used = [];
-      }
-      if (!Array.isArray(result.evidence_bundle.frameworks_referenced)) {
-        result.evidence_bundle.frameworks_referenced = [];
-      }
-      if (!Array.isArray(result.evidence_bundle.missing_data_flags)) {
-        result.evidence_bundle.missing_data_flags = missingSections;
-      }
-
-      // Preserve the user-supplied custom industry label inside the saved payload.
-      if (input.industry === 'other' && input.customIndustryLabel) {
-        result.custom_industry_label = input.customIndustryLabel;
-      }
-
-      const { data: saved, error: saveErr } = await ctx.supabase
-        .from('profile_analyses')
-        .insert({
-          user_id: ctx.user.id,
-          linkedin_url: normalizedUrl || null,
-          analysis_data: result,
+        const userPayload = {
           target_goal: input.targetGoal,
-          industry: input.industry,
+          industry: effectiveIndustry,
+          industry_is_custom: input.industry === 'other',
           target_role: input.targetRole || null,
           target_company: input.targetCompany || null,
           report_language: lang,
-          profile_data: unifiedProfile,
-          tokens_used: TOKEN_COST,
-        })
-        .select()
-        .single();
+          profile_completeness: completeness,
+          missing_sections: missingSections,
+          profile_data: structuredProfile,
+        };
 
-      if (saveErr) {
-        console.error('[RADAR] save error:', saveErr);
-        // Save failed after Claude succeeded. Refund — user has nothing persisted.
-        if (deducted) { await refundTokens(ctx.supabase, ctx.user.id, TOKEN_COST, FEATURE); deducted = false; }
-        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: saveErr.message });
+        const userContent: any = input.imageBase64
+          ? [
+              { type: 'image', source: { type: 'base64', media_type: input.mediaType || 'image/png', data: input.imageBase64 } },
+              { type: 'text', text: JSON.stringify(userPayload, null, 2) },
+            ]
+          : JSON.stringify(userPayload, null, 2);
+
+        // ── STAGE: call Claude ─────────────────────────────────────────────
+        stage = 'calling_claude';
+        const _t0 = Date.now();
+        let claudeRes: any;
+        try {
+          claudeRes = await callClaude({
+            task: 'profile_analysis',
+            system: PROFILE_RADAR_SYSTEM,
+            userContent,
+            maxTokens: 7000,
+            temperature: 0.3,
+          });
+          await logApiCall({ service: 'anthropic', endpoint: '/v1/messages:analyzeTargeted', statusCode: 200, responseTimeMs: Date.now() - _t0, userId: ctx.user?.id });
+          console.log('[RADAR stage=calling_claude ok]', { durationMs: Date.now() - _t0 });
+        } catch (err: any) {
+          const status = err?.status || 500;
+          const body = err?.responseBody || err?.body || err?.message || '';
+          const info = classifyClaudeError(status, body);
+          await logApiCall({ service: 'anthropic', endpoint: '/v1/messages:analyzeTargeted', statusCode: status, responseTimeMs: Date.now() - _t0, errorMsg: info.devDetail, userId: ctx.user?.id });
+          if (info.alertOps) void sendClaudeOpsAlert(info, '/v1/messages:analyzeTargeted');
+          const code = status === 429 ? 'TOO_MANY_REQUESTS' : (status === 401 || status === 403) ? 'UNAUTHORIZED' : 'INTERNAL_SERVER_ERROR';
+          throw new TRPCError({ code, message: info.userMessage });
+        }
+
+        // ── STAGE: parse Claude response ───────────────────────────────────
+        stage = 'parsing_claude_response';
+        const text = extractText(claudeRes);
+        // Try the custom extractor first (already handles fences/balanced braces).
+        // Fall back to the shared safeJsonParse if extractJson returns null.
+        let result: any = extractJson<any>(text);
+        if (!result) result = safeJsonParse<any>(text);
+        if (!result || typeof result.overall_score !== 'number') {
+          console.error('[RADAR stage=parsing_claude_response fail] raw:', typeof text === 'string' ? text.substring(0, 500) : typeof text);
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: lang === 'ar' ? 'فشل تحليل الرد من الذكاء الاصطناعي' : 'Failed to parse analysis response',
+          });
+        }
+
+        // ── STAGE: normalize response shape ────────────────────────────────
+        stage = 'normalizing_response';
+        // All post-hoc shape-guarantees the UI relies on. Never throws — every
+        // field is defensively coerced. Loosened (not strict) because Claude
+        // drift on optional fields must not 500 the user.
+        if (!Array.isArray(result.dimensions)) result.dimensions = [];
+        if (!Array.isArray(result.top_priorities)) result.top_priorities = [];
+        if (typeof result.confidence !== 'string') {
+          result.confidence = completeness >= 70 ? 'high' : completeness >= 40 ? 'medium' : 'low';
+        }
+        if (typeof result.data_completeness !== 'number') {
+          result.data_completeness = completeness;
+        }
+        if (typeof result.verdict !== 'string') result.verdict = '';
+
+        result.dimensions = result.dimensions.map((d: any) => {
+          const fw = (d?.framework || '').toUpperCase();
+          const labels = FRAMEWORK_LABELS[fw as 'A' | 'B' | 'C' | 'D' | 'E' | 'F'];
+          return {
+            ...d,
+            framework_label: labels ? (lang === 'ar' ? labels.ar : labels.en) : null,
+          };
+        });
+        result.top_priorities = result.top_priorities.map((pr: any) => {
+          const fw = (pr?.framework || '').toUpperCase();
+          const labels = FRAMEWORK_LABELS[fw as 'A' | 'B' | 'C' | 'D' | 'E' | 'F'];
+          return {
+            ...pr,
+            framework_label: labels ? (lang === 'ar' ? labels.ar : labels.en) : null,
+          };
+        });
+
+        if (!result.evidence_bundle || typeof result.evidence_bundle !== 'object') {
+          result.evidence_bundle = {
+            profile_quotes_used: [],
+            frameworks_referenced: [],
+            missing_data_flags: missingSections,
+          };
+        }
+        if (!Array.isArray(result.evidence_bundle.profile_quotes_used)) result.evidence_bundle.profile_quotes_used = [];
+        if (!Array.isArray(result.evidence_bundle.frameworks_referenced)) result.evidence_bundle.frameworks_referenced = [];
+        if (!Array.isArray(result.evidence_bundle.missing_data_flags)) result.evidence_bundle.missing_data_flags = missingSections;
+
+        if (input.industry === 'other' && input.customIndustryLabel) {
+          result.custom_industry_label = input.customIndustryLabel;
+        }
+
+        // ── STAGE: persist to DB ───────────────────────────────────────────
+        stage = 'persisting_to_db';
+        const { data: saved, error: saveErr } = await ctx.supabase
+          .from('profile_analyses')
+          .insert({
+            user_id: ctx.user.id,
+            linkedin_url: normalizedUrl || null,
+            analysis_data: result,
+            target_goal: input.targetGoal,
+            industry: input.industry,
+            target_role: input.targetRole || null,
+            target_company: input.targetCompany || null,
+            report_language: lang,
+            profile_data: unifiedProfile,
+            tokens_used: TOKEN_COST,
+          })
+          .select()
+          .single();
+
+        if (saveErr) {
+          console.error('[RADAR stage=persisting_to_db fail]', saveErr);
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: saveErr.message });
+        }
+
+        // ── SUCCESS ────────────────────────────────────────────────────────
+        console.log('[RADAR stage=success]', {
+          userId: ctx.user.id,
+          totalMs: Date.now() - startedAt,
+          tokensRemaining: deduct.balance_after,
+        });
+        return {
+          id: saved.id,
+          analysis: result,
+          linkedinUrl: normalizedUrl,
+          tokensUsed: TOKEN_COST,
+          tokensRemaining: deduct.balance_after,
+        };
+      } catch (err: any) {
+        // Refund if the failure happened after the deduction but before success.
+        if (deducted && REFUNDABLE_STAGES.has(stage)) {
+          await refundTokens(ctx.supabase, ctx.user.id, TOKEN_COST, `${FEATURE}.refund:${stage}`).catch((e) => {
+            console.error('[RADAR refund-on-error failed]', e?.message);
+          });
+        }
+        console.error('[RADAR stage=' + stage + ' error]', {
+          userId: ctx.user?.id,
+          stage,
+          totalMs: Date.now() - startedAt,
+          message: err?.message,
+          code: err?.code,
+        });
+        if (err instanceof TRPCError) throw err;
+
+        // Attach stage diagnostic to the TRPCError cause so the UI / support
+        // can see exactly where it failed.
+        const causeErr = new Error(`analyzeTargeted failed at stage=${stage}: ${err?.message || 'unknown'}`);
+        (causeErr as any).stage = stage;
+        (causeErr as any).kind = 'ANALYSIS_FAILURE';
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: lang === 'ar'
+            ? `فشل التحليل (المرحلة: ${stage}). ${err?.message ? err.message : ''}`.trim()
+            : `Analysis failed at stage: ${stage}. ${err?.message ? err.message : ''}`.trim(),
+          cause: causeErr,
+        });
       }
-
-      // Token deduction already happened atomically before Claude — no second
-      // deduction here. Note `deduct.balance_after` for observability.
-      console.log('[RADAR] success, tokens_remaining=', deduct.balance_after);
-
-      return {
-        id: saved.id,
-        analysis: result,
-        linkedinUrl: normalizedUrl,
-        tokensUsed: TOKEN_COST,
-        tokensRemaining: deduct.balance_after,
-      };
     }),
 
   exportReport: protectedProcedure

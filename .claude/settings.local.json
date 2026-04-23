@@ -170,7 +170,10 @@
       "Bash(curl -s -m 15 https://wasselhub.com/locales/en/translation.json)",
       "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); pr=d.get\\('profileRadar',{}\\); print\\('frameworks:', list\\(pr.get\\('frameworks',{}\\).keys\\(\\)\\)\\); print\\('dimensions_map:', list\\(pr.get\\('dimensions_map',{}\\).keys\\(\\)\\)\\); print\\('confidence keys:', list\\(pr.get\\('confidence',{}\\).keys\\(\\)\\)\\); print\\('methodology keys:', list\\(pr.get\\('methodology',{}\\).keys\\(\\)\\)\\)\")",
       "Bash(curl -s -m 15 https://wasselhub.com/locales/ar/translation.json)",
-      "Bash(echo \"exit=$?\")"
+      "Bash(echo \"exit=$?\")",
+      "Bash(curl -s -m 15 -o /tmp/g.json -w \"status=%{http_code}\\\\n\" \"https://wasselhub.com/api/trpc/token.getMyBalance\")",
+      "Bash(curl -s -m 15 -o /tmp/a.json -w \"status=%{http_code}\\\\n\" -X POST \"https://wasselhub.com/api/trpc/linkedin.analyzeTargeted\" -H \"Content-Type: application/json\" -d '{\"linkedinUrl\":\"https://linkedin.com/in/x\",\"targetGoal\":\"job-search\",\"industry\":\"tech\",\"reportLanguage\":\"en\"}')",
+      "Bash(grep -nA 20 \"export function extractJson\\\\|export function extractText\" server/_core/lib/claude-client.ts)"
     ]
   },
   "enableAllProjectMcpServers": true,

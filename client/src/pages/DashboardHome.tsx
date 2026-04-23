@@ -71,15 +71,27 @@ export default function DashboardHome() {
   const [counts, setCounts] = useState({ tokens: 0, analyses: 0, cvs: 0, posts: 0 });
   useEffect(() => {
     (async () => {
-      const [bal, lh, ch] = await Promise.allSettled([
-        trpc.token.balance(),
-        trpc.linkedin.history(),
-        trpc.cv.history(),
+      // Wrap each call in try/catch-style callbacks so a missing binding can't
+      // crash the whole dashboard. Promise.allSettled only catches rejected
+      // promises — if `trpc.cv.history` is undefined, calling `()` on it throws
+      // synchronously BEFORE a promise is ever created.
+      const safe = <T,>(fn: () => Promise<T>): Promise<T | null> => {
+        try {
+          return fn().catch((e) => { console.error('[dashboard fetch]', e); return null; });
+        } catch (e) {
+          console.error('[dashboard fetch sync]', e);
+          return Promise.resolve(null);
+        }
+      };
+      const [bal, lh, ch] = await Promise.all([
+        safe(() => trpc.token.balance()),
+        safe(() => trpc.linkedin.history()),
+        safe(() => trpc.cv.list()),
       ]);
       setCounts({
-        tokens: bal.status === "fulfilled" ? (bal.value?.balance ?? 0) : 0,
-        analyses: lh.status === "fulfilled" && Array.isArray(lh.value) ? lh.value.length : 0,
-        cvs: ch.status === "fulfilled" && Array.isArray(ch.value) ? ch.value.length : 0,
+        tokens: (bal as any)?.balance ?? 0,
+        analyses: Array.isArray(lh) ? lh.length : 0,
+        cvs: Array.isArray(ch) ? ch.length : 0,
         posts: 0,
       });
     })();
