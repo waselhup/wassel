@@ -173,7 +173,11 @@
       "Bash(echo \"exit=$?\")",
       "Bash(curl -s -m 15 -o /tmp/g.json -w \"status=%{http_code}\\\\n\" \"https://wasselhub.com/api/trpc/token.getMyBalance\")",
       "Bash(curl -s -m 15 -o /tmp/a.json -w \"status=%{http_code}\\\\n\" -X POST \"https://wasselhub.com/api/trpc/linkedin.analyzeTargeted\" -H \"Content-Type: application/json\" -d '{\"linkedinUrl\":\"https://linkedin.com/in/x\",\"targetGoal\":\"job-search\",\"industry\":\"tech\",\"reportLanguage\":\"en\"}')",
-      "Bash(grep -nA 20 \"export function extractJson\\\\|export function extractText\" server/_core/lib/claude-client.ts)"
+      "Bash(grep -nA 20 \"export function extractJson\\\\|export function extractText\" server/_core/lib/claude-client.ts)",
+      "Bash(echo \"---push branch exit=$?\")",
+      "mcp__89a08a43-3fbe-4aef-bad5-05effd677f91__get_logs",
+      "Bash(echo \"esbuild exit=$?\")",
+      "Bash(echo \"commit exit=$?\")"
     ]
   },
   "enableAllProjectMcpServers": true,
