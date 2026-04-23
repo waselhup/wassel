@@ -3,6 +3,7 @@ import { TRPCError } from '@trpc/server';
 import { router, protectedProcedure } from '../trpc-init';
 import { callClaude, extractText, extractJson } from '../lib/claude-client';
 import { classifyClaudeError, sendClaudeOpsAlert } from '../lib/apiLogger';
+import { deductTokens, refundTokens, throwInsufficientTokensError } from '../lib/tokens';
 
 // ===== Enums =====
 const TONE = z.enum([
@@ -180,19 +181,14 @@ export const postsRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const TOKEN_COST = 30;
+      const FEATURE = 'posts.generate';
+      let deducted = false;
 
-      const { data: profile } = await ctx.supabase
-        .from('profiles')
-        .select('token_balance')
-        .eq('id', ctx.user.id)
-        .single();
-
-      if (!profile || (profile.token_balance || 0) < TOKEN_COST) {
-        throw new TRPCError({
-          code: 'FORBIDDEN',
-          message: 'رصيد التوكن غير كافٍ — تحتاج 30 توكن على الأقل',
-        });
-      }
+      // Atomic deduct BEFORE downstream work — row-locked, race-safe.
+      const deduct = await deductTokens(ctx.supabase, ctx.user.id, TOKEN_COST, FEATURE);
+      if (!deduct.success) throwInsufficientTokensError(deduct, 'ar');
+      deducted = true;
+      console.log('[posts.generate] tokens deducted', deduct.balance_before, '→', deduct.balance_after);
 
       let userStyle: any = null;
       if (input.useStyleSamples) {
@@ -217,6 +213,7 @@ export const postsRouter = router({
           const { extractFromURL } = await import('../lib/inspiration-extractor');
           inspiration = await extractFromURL(input.inspirationUrl);
         } catch (err: any) {
+          if (deducted) { await refundTokens(ctx.supabase, ctx.user.id, TOKEN_COST, FEATURE); deducted = false; }
           throw new TRPCError({
             code: 'BAD_REQUEST',
             message: `فشل استخراج المحتوى: ${err.message}`,
@@ -257,6 +254,8 @@ export const postsRouter = router({
           throw new Error('Invalid JSON shape from Claude');
         }
       } catch (err: any) {
+        // Claude failed → refund so user can retry without being double-charged.
+        if (deducted) { await refundTokens(ctx.supabase, ctx.user.id, TOKEN_COST, FEATURE); deducted = false; }
         const status = err?.status ?? 0;
         const body = err?.responseBody ?? err?.body ?? err?.message ?? '';
         const info = classifyClaudeError(status, body);
@@ -307,17 +306,14 @@ export const postsRouter = router({
 
       if (saveErr) {
         console.error('[posts.generate] save error:', saveErr);
+        if (deducted) { await refundTokens(ctx.supabase, ctx.user.id, TOKEN_COST, FEATURE); deducted = false; }
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
           message: saveErr.message,
         });
       }
 
-      // Deduct tokens
-      await ctx.supabase
-        .from('profiles')
-        .update({ token_balance: (profile.token_balance || 0) - TOKEN_COST })
-        .eq('id', ctx.user.id);
+      // Deduction already happened atomically before Claude — no second deduct here.
 
       return {
         id: saved.id,
@@ -325,6 +321,7 @@ export const postsRouter = router({
         variations: result.variations,
         tips: Array.isArray(result.tips) ? result.tips : [],
         tokensUsed: TOKEN_COST,
+        tokensRemaining: deduct.balance_after,
       };
     }),
 

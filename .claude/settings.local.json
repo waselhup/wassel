@@ -160,7 +160,17 @@
       "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('client/public/locales/ar/translation.json','utf8'\\)\\); JSON.parse\\(require\\('fs'\\).readFileSync\\('client/public/locales/en/translation.json','utf8'\\)\\); console.log\\('both JSON valid'\\);\")",
       "Bash(node -e \"const en = require\\('./client/public/locales/en/translation.json'\\); const ar = require\\('./client/public/locales/ar/translation.json'\\); console.log\\('EN keys:', Object.keys\\(en\\).length, '| AR keys:', Object.keys\\(ar\\).length\\); console.log\\('EN profileRadar.frameworks.A:', en.profileRadar.frameworks.A\\); console.log\\('AR profileRadar.frameworks.A:', ar.profileRadar.frameworks.A\\); console.log\\('EN profileRadar.result.vision2030:', en.profileRadar.result.vision2030 || '\\(removed\\)'\\); console.log\\('AR profileRadar.result.vision2030:', ar.profileRadar.result.vision2030 || '\\(removed\\)'\\); console.log\\('EN posts hasawi badge:', en.posts?.studio?.dialect?.['saudi-hasawi-badge'] || '\\(removed\\)'\\); console.log\\('AR posts southern:', ar.posts?.studio?.dialect?.['saudi-southern']\\);\")",
       "Bash(node -e \"const en = require\\('./client/public/locales/en/translation.json'\\); const ar = require\\('./client/public/locales/ar/translation.json'\\); const enKeys = new Set\\(Object.keys\\(en\\)\\); const arKeys = new Set\\(Object.keys\\(ar\\)\\); const enOnly = [...enKeys].filter\\(k => !arKeys.has\\(k\\)\\); const arOnly = [...arKeys].filter\\(k => !enKeys.has\\(k\\)\\); console.log\\('EN-only:', enOnly\\); console.log\\('AR-only:', arOnly\\);\")",
-      "Bash(node -e \"try { const { execSync } = require\\('child_process'\\); const out = execSync\\('npm ls @napi-rs/canvas 2>&1 || pnpm why @napi-rs/canvas 2>&1', { encoding: 'utf8' }\\); console.log\\(out.slice\\(0, 2000\\)\\); } catch\\(e\\) { console.log\\(e.stdout || e.message\\); }\")"
+      "Bash(node -e \"try { const { execSync } = require\\('child_process'\\); const out = execSync\\('npm ls @napi-rs/canvas 2>&1 || pnpm why @napi-rs/canvas 2>&1', { encoding: 'utf8' }\\); console.log\\(out.slice\\(0, 2000\\)\\); } catch\\(e\\) { console.log\\(e.stdout || e.message\\); }\")",
+      "Bash(export VERCEL_TOKEN=vcp_7FfzSQ0DubMJTD63JYgUCOYC9CZoGsnLbrinmsE8iy0hjW4ah73Kwcd2)",
+      "Bash(export VERCEL_ORG_ID=team_2tP8mn672ZnaOchbse2uKBT7)",
+      "Bash(export VERCEL_PROJECT_ID=prj_msTtD1ckLs0lyMtFrtPBhhfRPdUz)",
+      "Bash(curl -s -m 15 https://wasselhub.com)",
+      "Bash(curl -s -m 15 -o /dev/null -w \"status=%{http_code} size=%{size_download}\\\\n\" https://wasselhub.com/app/profile-analysis)",
+      "Bash(curl -s -m 15 -o /dev/null -w \"status=%{http_code}\\\\n\" \"https://wasselhub.com/api/trpc/linkedin.listAnalyses?batch=1&input=%7B%220%22%3A%7B%7D%7D\")",
+      "Bash(curl -s -m 15 https://wasselhub.com/locales/en/translation.json)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); pr=d.get\\('profileRadar',{}\\); print\\('frameworks:', list\\(pr.get\\('frameworks',{}\\).keys\\(\\)\\)\\); print\\('dimensions_map:', list\\(pr.get\\('dimensions_map',{}\\).keys\\(\\)\\)\\); print\\('confidence keys:', list\\(pr.get\\('confidence',{}\\).keys\\(\\)\\)\\); print\\('methodology keys:', list\\(pr.get\\('methodology',{}\\).keys\\(\\)\\)\\)\")",
+      "Bash(curl -s -m 15 https://wasselhub.com/locales/ar/translation.json)",
+      "Bash(echo \"exit=$?\")"
     ]
   },
   "enableAllProjectMcpServers": true,

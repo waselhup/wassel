@@ -6,6 +6,7 @@ import { callClaude, extractText, extractJson } from '../lib/claude-client';
 import { scrapeLinkedInProfileMulti, detectLanguage } from '../lib/linkedin-scraper';
 import { validateAndNormalizeLinkedInUrl } from '../lib/linkedin-url-validator';
 import { generateDocxReport } from '../lib/profile-report-generator';
+import { deductTokens, refundTokens, throwInsufficientTokensError } from '../lib/tokens';
 
 const TARGET_GOAL = z.enum([
   'job-search', 'investment', 'thought-leadership',
@@ -531,25 +532,12 @@ export const linkedinRouter = router({
   analyze: protectedProcedure
     .input(z.object({ profileUrl: z.string() }))
     .mutation(async ({ input, ctx }) => {
+      const FEATURE = 'linkedin.analyze';
+      const COST = 5;
       try {
         console.log('[LINKEDIN] Analyze request for:', input.profileUrl);
 
-        const { data: profile } = await ctx.supabase
-          .from('profiles')
-          .select('token_balance')
-          .eq('id', ctx.user.id)
-          .single();
-
-        console.log('[LINKEDIN] User token balance:', profile?.token_balance);
-
-        if (!profile || profile.token_balance < 5) {
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'Insufficient tokens. Need 5 tokens for analysis.',
-          });
-        }
-
-        // Check 24h cache first
+        // Check 24h cache BEFORE deducting — cache hits are free.
         const cacheKey = `linkedin:${normalizeLiUrl(input.profileUrl)}`;
         const { data: cached } = await ctx.supabase
           .from('ai_cache')
@@ -564,6 +552,10 @@ export const linkedinRouter = router({
           analysis = cached.result;
         } else {
           console.log('[LINKEDIN] Cache MISS, calling Apify + Claude');
+          // Atomic deduct BEFORE downstream work; refund on failure.
+          const deduct = await deductTokens(ctx.supabase, ctx.user.id, COST, FEATURE);
+          if (!deduct.success) throwInsufficientTokensError(deduct, 'en');
+          console.log('[LINKEDIN] tokens deducted', deduct.balance_before, '→', deduct.balance_after);
           const profileData = await scrapeLinkedInProfile(input.profileUrl);
           const { name, profileText } = buildProfileText(profileData);
           console.log('[LINKEDIN] Profile scraped:', name);
@@ -582,6 +574,8 @@ export const linkedinRouter = router({
               maxTokens: 3000,
             });
           } catch (err: any) {
+            // Refund — the downstream call never produced value.
+            await refundTokens(ctx.supabase, ctx.user.id, COST, FEATURE);
             const status = err?.status || 500;
             const body = err?.responseBody || err?.body || err?.message || '';
             const info = classifyClaudeError(status, body);
@@ -596,6 +590,7 @@ export const linkedinRouter = router({
           analysis = extractJson<any>(text);
           if (!analysis) {
             console.error('[CLAUDE] Failed to parse JSON response:', text.substring(0, 500));
+            await refundTokens(ctx.supabase, ctx.user.id, COST, FEATURE);
             throw new Error('Failed to parse Claude analysis response');
           }
 
@@ -611,16 +606,6 @@ export const linkedinRouter = router({
         }
 
         console.log('[LINKEDIN] Analysis score:', analysis?.score);
-
-        const { error: updateError } = await ctx.supabase
-          .from('profiles')
-          .update({ token_balance: (profile.token_balance || 0) - 5 })
-          .eq('id', ctx.user.id);
-
-        if (updateError) {
-          console.error('[LINKEDIN] Token deduction error:', updateError);
-          throw updateError;
-        }
 
         // Save to linkedin_analyses table (individual columns)
         const { error: insertError } = await ctx.supabase
@@ -680,26 +665,15 @@ export const linkedinRouter = router({
       mediaType: z.string().default('image/png'),
     }))
     .mutation(async ({ input, ctx }) => {
+      const FEATURE = 'linkedin.analyzeDeep';
+      const COST = 25;
+      let deducted = false;
       try {
         console.log('[DEEP] analyzeDeep request, hasUrl:', !!input.linkedinUrl, 'hasImage:', !!input.imageBase64);
 
-        // Check tokens (25 required)
-        const { data: profile } = await ctx.supabase
-          .from('profiles')
-          .select('token_balance')
-          .eq('id', ctx.user.id)
-          .single();
-
-        if (!profile || profile.token_balance < 25) {
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'رصيدك غير كافٍ. تحتاج 25 توكن للتحليل العميق.',
-          });
-        }
-
         const cacheKey = 'analyzeDeep:' + (input.linkedinUrl ? normalizeLiUrl(input.linkedinUrl) : ctx.user.id);
 
-        // Check cache
+        // Check cache BEFORE deducting — cache hits are free.
         const { data: cached } = await ctx.supabase
           .from('ai_cache')
           .select('result')
@@ -715,6 +689,12 @@ export const linkedinRouter = router({
           console.log('[DEEP] Cache has error result, ignoring and re-analyzing');
           await ctx.supabase.from('ai_cache').delete().eq('cache_key', cacheKey);
         }
+
+        // Atomic deduct BEFORE downstream work. Refund on any failure below.
+        const deduct = await deductTokens(ctx.supabase, ctx.user.id, COST, FEATURE);
+        if (!deduct.success) throwInsufficientTokensError(deduct, 'ar');
+        deducted = true;
+        console.log('[DEEP] tokens deducted', deduct.balance_before, '→', deduct.balance_after);
 
         // Build profile text via multi-actor scraper (or skip for image flow)
         let profileText = '';
@@ -786,6 +766,8 @@ export const linkedinRouter = router({
             maxTokens: 8000,
           });
         } catch (err: any) {
+          // Refund — Claude call failed, user should not pay.
+          if (deducted) { await refundTokens(ctx.supabase, ctx.user.id, COST, FEATURE); deducted = false; }
           const status = err?.status || 500;
           const body = err?.responseBody || err?.body || err?.message || '';
           const info = classifyClaudeError(status, body);
@@ -804,6 +786,7 @@ export const linkedinRouter = router({
         const result = extractJson<any>(text);
         if (!result) {
           console.error('[DEEP] All JSON parse attempts failed. Raw:', text.substring(0, 500));
+          if (deducted) { await refundTokens(ctx.supabase, ctx.user.id, COST, FEATURE); deducted = false; }
           return { error: 'فشل تحليل الرد من الذكاء الاصطناعي', rawPreview: text.substring(0, 200) };
         }
         console.log('[DEEP] Parsed OK, has score:', !!result.score);
@@ -832,15 +815,11 @@ export const linkedinRouter = router({
           expires_at: expires,
         }, { onConflict: 'cache_key' });
 
-        // Deduct 25 tokens
-        await ctx.supabase
-          .from('profiles')
-          .update({ token_balance: (profile.token_balance || 0) - 25 })
-          .eq('id', ctx.user.id);
-
         console.log('[DEEP] Success, score:', result.score, 'tokens:', tokensUsed);
         return result;
       } catch (err: any) {
+        // Defensive refund — if we deducted but hit an unknown exception path, roll back.
+        if (deducted) { await refundTokens(ctx.supabase, ctx.user.id, COST, FEATURE); }
         console.error('[DEEP] Error:', err?.message || err);
         if (err instanceof TRPCError) throw err;
         throw new TRPCError({
@@ -866,7 +845,9 @@ export const linkedinRouter = router({
     }))
     .mutation(async ({ input, ctx }) => {
       const TOKEN_COST = 25;
+      const FEATURE = 'linkedin.analyzeTargeted';
       const lang = input.reportLanguage;
+      let deducted = false;
 
       let normalizedUrl = input.linkedinUrl;
       if (input.linkedinUrl) {
@@ -880,20 +861,13 @@ export const linkedinRouter = router({
         normalizedUrl = validation.normalizedUrl;
       }
 
-      const { data: profile } = await ctx.supabase
-        .from('profiles')
-        .select('token_balance')
-        .eq('id', ctx.user.id)
-        .single();
-
-      if (!profile || (profile.token_balance || 0) < TOKEN_COST) {
-        throw new TRPCError({
-          code: 'FORBIDDEN',
-          message: lang === 'ar'
-            ? `رصيد التوكن غير كافٍ — تحتاج ${TOKEN_COST} توكن`
-            : `Insufficient tokens - need ${TOKEN_COST} tokens`,
-        });
-      }
+      // Atomic deduct — row-locked RPC. Returns structured failure payload with
+      // actual balance + required so the UI never shows a false-positive
+      // "insufficient tokens" without proof.
+      const deduct = await deductTokens(ctx.supabase, ctx.user.id, TOKEN_COST, FEATURE);
+      if (!deduct.success) throwInsufficientTokensError(deduct, lang);
+      deducted = true;
+      console.log('[RADAR] tokens deducted', deduct.balance_before, '→', deduct.balance_after);
 
       let unifiedProfile: any = null;
       let completeness = 0;
@@ -906,6 +880,8 @@ export const linkedinRouter = router({
           missingSections = outcome.missingSections;
         } catch (e: any) {
           console.error('[RADAR] scrape failed:', e?.message);
+          // Refund — scrape failed, user paid for nothing.
+          if (deducted) { await refundTokens(ctx.supabase, ctx.user.id, TOKEN_COST, FEATURE); deducted = false; }
           throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
             message: lang === 'ar'
@@ -919,6 +895,7 @@ export const linkedinRouter = router({
       // If completeness is extremely low (< 25%), refuse to analyze — we'd only hallucinate.
       // Image-only flows skip this (no completeness info available).
       if (unifiedProfile && !input.imageBase64 && completeness < 25) {
+        if (deducted) { await refundTokens(ctx.supabase, ctx.user.id, TOKEN_COST, FEATURE); deducted = false; }
         throw new TRPCError({
           code: 'BAD_REQUEST',
           message: lang === 'ar'
@@ -999,9 +976,12 @@ export const linkedinRouter = router({
         result = extractJson<any>(text);
         if (!result || typeof result.overall_score !== 'number') {
           console.error('[RADAR] JSON parse failed. Raw:', text.substring(0, 500));
+          if (deducted) { await refundTokens(ctx.supabase, ctx.user.id, TOKEN_COST, FEATURE); deducted = false; }
           throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: lang === 'ar' ? 'فشل تحليل الرد من الذكاء الاصطناعي' : 'Failed to parse analysis response' });
         }
       } catch (err: any) {
+        // Claude call failed — refund.
+        if (deducted) { await refundTokens(ctx.supabase, ctx.user.id, TOKEN_COST, FEATURE); deducted = false; }
         if (err instanceof TRPCError) throw err;
         const status = err?.status || 500;
         const body = err?.responseBody || err?.body || err?.message || '';
@@ -1082,19 +1062,21 @@ export const linkedinRouter = router({
 
       if (saveErr) {
         console.error('[RADAR] save error:', saveErr);
+        // Save failed after Claude succeeded. Refund — user has nothing persisted.
+        if (deducted) { await refundTokens(ctx.supabase, ctx.user.id, TOKEN_COST, FEATURE); deducted = false; }
         throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: saveErr.message });
       }
 
-      await ctx.supabase
-        .from('profiles')
-        .update({ token_balance: (profile.token_balance || 0) - TOKEN_COST })
-        .eq('id', ctx.user.id);
+      // Token deduction already happened atomically before Claude — no second
+      // deduction here. Note `deduct.balance_after` for observability.
+      console.log('[RADAR] success, tokens_remaining=', deduct.balance_after);
 
       return {
         id: saved.id,
         analysis: result,
         linkedinUrl: normalizedUrl,
         tokensUsed: TOKEN_COST,
+        tokensRemaining: deduct.balance_after,
       };
     }),
 
@@ -1125,24 +1107,13 @@ export const linkedinRouter = router({
       }
 
       const DOCX_COST = 5;
+      const DOCX_FEATURE = 'linkedin.exportReport.docx';
+      const lang = (analysis.report_language as 'ar' | 'en') || 'ar';
       if (!analysis.docx_generated) {
-        const { data: profile } = await ctx.supabase
-          .from('profiles')
-          .select('token_balance')
-          .eq('id', ctx.user.id)
-          .single();
-
-        if (!profile || (profile.token_balance || 0) < DOCX_COST) {
-          throw new TRPCError({
-            code: 'FORBIDDEN',
-            message: `رصيد غير كافٍ — DOCX يحتاج ${DOCX_COST} توكن إضافية`,
-          });
-        }
-
-        await ctx.supabase
-          .from('profiles')
-          .update({ token_balance: (profile.token_balance || 0) - DOCX_COST })
-          .eq('id', ctx.user.id);
+        // Atomic deduct. Marks docx_generated only after deduct succeeds, so
+        // any subsequent failure lets the user retry without double-charge.
+        const deduct = await deductTokens(ctx.supabase, ctx.user.id, DOCX_COST, DOCX_FEATURE);
+        if (!deduct.success) throwInsufficientTokensError(deduct, lang);
 
         await ctx.supabase
           .from('profile_analyses')

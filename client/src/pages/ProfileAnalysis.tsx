@@ -8,7 +8,7 @@ import {
   BookOpen, Quote,
 } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
-import { trpcMutation, trpcQuery } from '../lib/trpc';
+import { trpcMutation, trpcQuery, trpc } from '../lib/trpc';
 import { validateAndNormalizeLinkedInUrl } from '../lib/linkedin-url-validator';
 
 type TargetGoal = 'job-search' | 'investment' | 'thought-leadership' | 'sales-b2b' | 'career-change' | 'internal-promotion';
@@ -197,10 +197,23 @@ export default function ProfileAnalysis() {
 
   const [exporting, setExporting] = useState<'docx' | null>(null);
   const [showMethodology, setShowMethodology] = useState(false);
+  const [liveBalance, setLiveBalance] = useState<number | null>(null);
+  const [balanceStamp, setBalanceStamp] = useState<string | null>(null);
 
   useEffect(() => {
     loadHistory();
+    refreshBalance();
   }, []);
+
+  async function refreshBalance() {
+    try {
+      const b = await trpc.token.getMyBalance();
+      setLiveBalance(typeof b?.balance === 'number' ? b.balance : null);
+      setBalanceStamp(b?.serverTimestamp || null);
+    } catch (e: any) {
+      console.error('[balance]', e);
+    }
+  }
 
   useEffect(() => {
     if (!loading) return;
@@ -270,7 +283,11 @@ export default function ProfileAnalysis() {
       setAnalysisId(res.id);
       push('success', i18n.language === 'ar' ? 'تم التحليل' : 'Analysis complete');
       loadHistory();
+      refreshBalance();
     } catch (e: any) {
+      // Refresh balance so the user sees the authoritative value on any error,
+      // especially "insufficient tokens" — prevents false positives.
+      refreshBalance();
       push('error', e?.message || (i18n.language === 'ar' ? 'فشل التحليل' : 'Analysis failed'));
     } finally {
       setLoading(false);
@@ -594,6 +611,34 @@ export default function ProfileAnalysis() {
             </div>
           </motion.div>
         )}
+
+        {/* Live balance badge — authoritative server-side value. Refreshed
+            on mount and after every generate attempt so the user can trust it. */}
+        {liveBalance !== null && (() => {
+          const cost = 25;
+          const enough = liveBalance >= cost;
+          return (
+            <div style={{
+              marginBottom: 10, padding: '10px 14px',
+              background: enough ? '#ecfdf5' : '#fef2f2',
+              border: `1px solid ${enough ? '#a7f3d0' : '#fecaca'}`,
+              borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, fontSize: 13,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Zap size={16} style={{ color: enough ? '#065f46' : '#991b1b' }} />
+                <span style={{ color: enough ? '#065f46' : '#991b1b', fontWeight: 700 }}>
+                  {i18n.language === 'ar'
+                    ? `رصيدك: ${liveBalance} توكن • التحليل يحتاج ${cost}`
+                    : `Your balance: ${liveBalance} tokens • Analysis needs ${cost}`}
+                </span>
+              </div>
+              <button onClick={refreshBalance} title={balanceStamp || ''}
+                style={{ background: 'transparent', border: 'none', color: enough ? '#065f46' : '#991b1b', cursor: 'pointer', fontSize: 12, fontWeight: 700 }}>
+                {i18n.language === 'ar' ? 'تحديث' : 'Refresh'}
+              </button>
+            </div>
+          );
+        })()}
 
         {/* Generate Button */}
         <motion.button
