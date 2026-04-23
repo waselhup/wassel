@@ -988,11 +988,19 @@ export const linkedinRouter = router({
             task: 'profile_analysis',
             system: PROFILE_RADAR_SYSTEM,
             userContent,
-            maxTokens: 7000,
+            // Full evidence-based Arabic report with 6 dimensions × observations +
+            // recommendations + top_priorities + evidence_bundle routinely hits
+            // 8-10k output tokens. 7000 was truncating responses mid-JSON → parse
+            // failure → 500. Bumping to 16000 leaves ~2x headroom.
+            maxTokens: 16000,
             temperature: 0.3,
           });
           await logApiCall({ service: 'anthropic', endpoint: '/v1/messages:analyzeTargeted', statusCode: 200, responseTimeMs: Date.now() - _t0, userId: ctx.user?.id });
-          console.log('[RADAR stage=calling_claude ok]', { durationMs: Date.now() - _t0 });
+          console.log('[RADAR stage=calling_claude ok]', {
+            durationMs: Date.now() - _t0,
+            stop_reason: claudeRes?.stop_reason,
+            output_tokens: claudeRes?.usage?.output_tokens,
+          });
         } catch (err: any) {
           const status = err?.status || 500;
           const body = err?.responseBody || err?.body || err?.message || '';
@@ -1006,12 +1014,33 @@ export const linkedinRouter = router({
         // ── STAGE: parse Claude response ───────────────────────────────────
         stage = 'parsing_claude_response';
         const text = extractText(claudeRes);
+        // Guard against truncation BEFORE attempting parse — mid-JSON cutoff
+        // is the cause of most parse failures here. A truncated response
+        // deserves a distinct error + log so we notice if maxTokens needs bumping
+        // again.
+        if (claudeRes?.stop_reason === 'max_tokens') {
+          console.error('[RADAR stage=parsing_claude_response truncated]', {
+            output_tokens: claudeRes?.usage?.output_tokens,
+            textLen: typeof text === 'string' ? text.length : 0,
+          });
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: lang === 'ar'
+              ? 'انقطع تحليل الذكاء الاصطناعي قبل اكتماله — الرجاء المحاولة مرة أخرى'
+              : 'AI analysis was cut off before completion — please retry',
+          });
+        }
         // Try the custom extractor first (already handles fences/balanced braces).
         // Fall back to the shared safeJsonParse if extractJson returns null.
         let result: any = extractJson<any>(text);
         if (!result) result = safeJsonParse<any>(text);
         if (!result || typeof result.overall_score !== 'number') {
-          console.error('[RADAR stage=parsing_claude_response fail] raw:', typeof text === 'string' ? text.substring(0, 500) : typeof text);
+          console.error('[RADAR stage=parsing_claude_response fail]', {
+            stop_reason: claudeRes?.stop_reason,
+            output_tokens: claudeRes?.usage?.output_tokens,
+            rawHead: typeof text === 'string' ? text.substring(0, 300) : typeof text,
+            rawTail: typeof text === 'string' ? text.substring(Math.max(0, text.length - 300)) : '',
+          });
           throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
             message: lang === 'ar' ? 'فشل تحليل الرد من الذكاء الاصطناعي' : 'Failed to parse analysis response',
