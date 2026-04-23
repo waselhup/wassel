@@ -920,10 +920,9 @@
         "hint": "اختر لهجة جمهورك",
         "msa": "فصحى",
         "saudi-general": "سعودي عام",
-        "saudi-hasawi": "حساوي",
-        "saudi-hasawi-badge": "لهجة وصل",
         "saudi-najdi": "نجدي",
         "saudi-hijazi": "حجازي",
+        "saudi-southern": "جنوبي",
         "english": "إنجليزي",
         "mixed": "مزيج"
       },
@@ -1150,7 +1149,7 @@
         "draft": "مسودّة"
       }
     },
-    "academicNote": "التحليلات مبنية على إطار Career Capital من LBS، وإطار Cialdini للإقناع، ومعايير McKinsey MENA 2024 مع مواءمة رؤية 2030"
+    "academicNote": "التحليلات مبنية على إطار Career Capital من LBS، وإطار Cialdini للإقناع، ومعايير McKinsey MENA 2024، ومنهجية ATS من Harvard Business School"
   },
   "home": {
     "activity": {
@@ -1250,12 +1249,6 @@
       "title": "رؤى أكاديمية",
       "finding": "الاكتشاف",
       "application": "التطبيق"
-    },
-    "vision2030": {
-      "title": "مواءمة رؤية 2030",
-      "thriving_economy": "اقتصاد مزدهر",
-      "vibrant_society": "مجتمع حيوي",
-      "ambitious_nation": "وطن طموح"
     },
     "beforeAfter": {
       "title": "قبل / بعد",
@@ -1384,10 +1377,56 @@
       "dimensions": "الأبعاد التفصيلية",
       "recommendations": "التوصيات",
       "topPriorities": "أولويات عليا",
-      "vision2030": "توافق مع رؤية 2030",
+      "current": "الحالي",
+      "suggested": "المقترح",
+      "rationale": "المبرر",
+      "expectedImpact": "الأثر المتوقع",
+      "evidenceTitle": "أدلة الاستناد",
+      "evidenceQuotes": "اقتباسات من البروفايل",
+      "evidenceFrameworks": "الأطر البحثية المستخدمة",
+      "evidenceMissing": "بيانات غير كافية",
+      "noObservations": "لا توجد ملاحظات لهذا البعد",
+      "effort": {
+        "quick": "سريع",
+        "moderate": "متوسط",
+        "deep": "عميق"
+      },
+      "impact": {
+        "high": "أثر عالٍ",
+        "medium": "أثر متوسط",
+        "low": "أثر منخفض"
+      },
       "exportReport": "تحميل التقرير (Word)",
       "exportDocx": "تحميل DOCX (+5 توكن)",
       "exportDocxFree": "تحميل DOCX (مدفوع مسبقاً)"
+    },
+    "frameworks": {
+      "A": "دراسة MIT/Harvard عن الروابط الضعيفة",
+      "B": "الرسم البياني الاقتصادي لـ LinkedIn",
+      "C": "منهجية ATS من Harvard Business School",
+      "D": "تقرير Deloitte للمنظمات القائمة على المهارات",
+      "E": "استبيان PwC للقوى العاملة في الشرق الأوسط",
+      "F": "بحث افتتاحية القوة الذاتية"
+    },
+    "dimensions_map": {
+      "stranger_legibility": "وضوح البروفايل للغرباء",
+      "discoverability": "قابلية الاكتشاف",
+      "ats_readiness": "جاهزية ATS",
+      "skills_architecture": "هيكلية المهارات",
+      "social_proof": "الإثبات الاجتماعي",
+      "narrative_coherence": "ترابط السرد"
+    },
+    "confidence": {
+      "high": "ثقة عالية",
+      "medium": "ثقة متوسطة",
+      "low": "ثقة منخفضة",
+      "dataCompleteness": "اكتمال البيانات"
+    },
+    "methodology": {
+      "title": "منهجية التحليل",
+      "subtitle": "مبني على 6 أطر بحثية علمية",
+      "viewDetails": "عرض المنهجية",
+      "closeDetails": "إغلاق"
     },
     "history": {
       "title": "تحليلاتي السابقة",
@@ -1536,9 +1575,9 @@
       "card7_label": "رادار البروفايل",
       "card7_title": "كثافة البحث عن عمل",
       "card7_meta": "3 بروفايلات مشابهة",
-      "card8_badge": "ميزة جديدة",
-      "card8_title": "أُضيفت اللهجة الحساوية!",
-      "card8_body": "نولّد الآن منشورات باللهجة الحساوية الأصيلة — حصرياً في وصل.",
+      "card8_badge": "جديد",
+      "card8_title": "تحليل قائم على الأدلة",
+      "card8_body": "كل ملاحظة مرفقة باستشهاد من أحد 6 أطر بحثية — من أبحاث MIT إلى منهجية ATS من Harvard.",
       "card9_title": "تقرير البروفايل",
       "card9_meta": "التحليل النهائي · 3 صفحات"
     },

@@ -123,7 +123,7 @@ Pushed to master at 2026-04-11. Vercel auto-deploys.
 
 6. **Mock data in admin pages is deceptive** — AdminUsers.tsx uses hardcoded users array; wire to real admin.listUsers tRPC before claiming admin panel "works".
 
-7. **Don't mention Apify, Waalaxy, or LinkedIn automation in UI** — Wassel is a legal/compliant Saudi career platform aligned with Vision 2030. The word is "اكتشاف" (discovery), never "scraping".
+7. **Don't mention Apify, Waalaxy, or LinkedIn automation in UI** — Wassel is a legal/compliant career platform for professionals in the Saudi/GCC market and the broader region. The word is "اكتشاف" (discovery), never "scraping".
 
 8. **Plan Mode first for non-trivial tasks** — no writing code before plan is approved.
 

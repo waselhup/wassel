@@ -273,7 +273,7 @@ export default function Analytics() {
           fontFamily: 'Cairo, sans-serif',
           lineHeight: 1.6,
         }}>
-          📚 {t('analytics.academicNote', 'التحليلات مبنية على إطار Career Capital من LBS، وإطار Cialdini للإقناع، ومعايير McKinsey MENA 2024 مع مواءمة رؤية 2030')}
+          📚 {t('analytics.academicNote', 'التحليلات مبنية على إطار Career Capital من LBS، وإطار Cialdini للإقناع، ومعايير McKinsey MENA 2024، ومنهجية ATS من Harvard Business School')}
         </div>
       </div>
     </DashboardLayout>

@@ -21,9 +21,9 @@ const TONE = z.enum([
 const DIALECT = z.enum([
   'msa',
   'saudi-general',
-  'saudi-hasawi',
   'saudi-najdi',
   'saudi-hijazi',
+  'saudi-southern',
   'english',
   'mixed',
 ]);
@@ -60,16 +60,15 @@ Your task: Generate 3 variations of a LinkedIn post based on user's preferences:
 DIALECT RULES (SACRED — must be authentic):
 - msa (فصحى): Formal Modern Standard Arabic, no colloquialisms
 - saudi-general: Neutral Saudi Arabic, widely understood
-- saudi-hasawi (حساوي): Al-Ahsa/Hofuf specific — IMPORTANT BRAND DIALECT
-  * Phrases: "شخبارك يالغالي", "ويش علوم", "عاد", "حي الله"
-  * Tone: warm, community-oriented, uses "يا الغالي", "يا بعدي"
-  * Known for: agricultural references, heritage pride, hospitable tone
 - saudi-najdi (نجدي): Riyadh style
   * Phrases: "كيف الحال", "وش رايك", "ابد"
   * Tone: sharp, decisive, business-like
 - saudi-hijazi (حجازي): Jeddah/Makkah style
-  * Phrases: "ازيك", "عاوز", "مزة"
+  * Phrases: "ازيك", "عاوز"
   * Tone: softer melodic flow, cosmopolitan, diverse
+- saudi-southern (جنوبي): Abha/Jazan/Asir style
+  * Phrases: "كيف حالك", "وشلونك", "يا طيب"
+  * Tone: warm, measured, community-oriented
 - english: Native English, LinkedIn-optimized
 - mixed: Arabic primary, English technical terms welcomed
 

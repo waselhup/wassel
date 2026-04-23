@@ -374,9 +374,9 @@ export async function sendAnalysisReportEmail(input: AnalysisEmailInput): Promis
       ${verdictHtml}
       <p style="font-size:13px;color:#374151;line-height:1.8;">يحتوي تقريرك الكامل على:</p>
       <ul style="font-size:13px;line-height:1.9;color:#374151;padding-inline-start:20px;margin:8px 0 18px;">
-        <li>تحليل 8 أبعاد بالتفصيل</li>
-        <li>3 رؤى أكاديمية من Harvard و LBS و McKinsey</li>
-        <li>مواءمة رؤية 2030</li>
+        <li>تحليل 6 أبعاد بالتفصيل</li>
+        <li>رؤى مبنية على 6 أطر بحثية من Harvard وMIT وDeloitte وPwC</li>
+        <li>ذكر الاستشهادات من كل إطار بحثي</li>
         <li>${input.quickWinsCount || 0} تعديل فوري قابل للتنفيذ</li>
       </ul>
       <div style="text-align:center;margin-top:22px;">${btn(`${APP_URL}/app/profile-analysis`, 'افتح التقرير في وصّل')}</div>
@@ -391,9 +391,9 @@ export async function sendAnalysisReportEmail(input: AnalysisEmailInput): Promis
       ${verdictHtml}
       <p style="font-size:13px;color:#374151;line-height:1.8;">Your full report includes:</p>
       <ul style="font-size:13px;line-height:1.9;color:#374151;padding-inline-start:20px;margin:8px 0 18px;">
-        <li>8-dimension detailed breakdown</li>
-        <li>3 academic insights from Harvard, LBS, McKinsey</li>
-        <li>Vision 2030 alignment</li>
+        <li>6-dimension detailed breakdown</li>
+        <li>Insights grounded in 6 research frameworks from Harvard, MIT, Deloitte, PwC</li>
+        <li>Citations from every framework referenced</li>
         <li>${input.quickWinsCount || 0} immediate actionable items</li>
       </ul>
       <div style="text-align:center;margin-top:22px;">${btn(`${APP_URL}/app/profile-analysis`, 'Open Report in Wassel')}</div>

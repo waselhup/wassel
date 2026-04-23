@@ -698,8 +698,8 @@ export default function AdminAgents() {
                 onChange={(e) => setNewNote(e.target.value)}
                 placeholder={
                   isAr
-                    ? 'مثال: اذكر دائماً مواءمة رؤية 2030'
-                    : 'Example: Always mention Vision 2030 alignment'
+                    ? 'مثال: احرص على الاستشهاد بالأطر البحثية لكل توصية'
+                    : 'Example: Always cite research frameworks for every recommendation'
                 }
                 rows={4}
                 style={{

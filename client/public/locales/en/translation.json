@@ -926,10 +926,9 @@
         "hint": "Pick your audience's dialect",
         "msa": "Modern Standard",
         "saudi-general": "Saudi General",
-        "saudi-hasawi": "Hasawi",
-        "saudi-hasawi-badge": "Wassel dialect",
         "saudi-najdi": "Najdi",
         "saudi-hijazi": "Hijazi",
+        "saudi-southern": "Southern",
         "english": "English",
         "mixed": "Mixed"
       },
@@ -1156,7 +1155,7 @@
         "draft": "Draft"
       }
     },
-    "academicNote": "Built on LBS Career Capital framework, Cialdini's persuasion principles, and McKinsey MENA 2024 benchmarks — aligned with Vision 2030"
+    "academicNote": "Built on LBS Career Capital framework, Cialdini's persuasion principles, McKinsey MENA 2024 benchmarks, and Harvard Business School ATS methodology"
   },
   "home": {
     "activity": {
@@ -1256,12 +1255,6 @@
       "title": "Academic Insights",
       "finding": "Finding",
       "application": "Application"
-    },
-    "vision2030": {
-      "title": "Vision 2030 Alignment",
-      "thriving_economy": "Thriving Economy",
-      "vibrant_society": "Vibrant Society",
-      "ambitious_nation": "Ambitious Nation"
     },
     "beforeAfter": {
       "title": "Before / After",
@@ -1390,10 +1383,56 @@
       "dimensions": "Detailed dimensions",
       "recommendations": "Recommendations",
       "topPriorities": "Top priorities",
-      "vision2030": "Vision 2030 alignment",
+      "current": "Current",
+      "suggested": "Suggested",
+      "rationale": "Rationale",
+      "expectedImpact": "Expected impact",
+      "evidenceTitle": "Evidence bundle",
+      "evidenceQuotes": "Profile quotes used",
+      "evidenceFrameworks": "Frameworks referenced",
+      "evidenceMissing": "Insufficient data",
+      "noObservations": "No observations for this dimension",
+      "effort": {
+        "quick": "Quick",
+        "moderate": "Moderate",
+        "deep": "Deep"
+      },
+      "impact": {
+        "high": "High impact",
+        "medium": "Medium impact",
+        "low": "Low impact"
+      },
       "exportReport": "Download Report (Word)",
       "exportDocx": "Download DOCX (+5 tokens)",
       "exportDocxFree": "Download DOCX (already paid)"
+    },
+    "frameworks": {
+      "A": "MIT/Harvard Weak Ties Research",
+      "B": "LinkedIn Economic Graph",
+      "C": "Harvard Business School ATS Methodology",
+      "D": "Deloitte Skills-Based Organizations",
+      "E": "PwC Middle East Workforce Survey",
+      "F": "Self-Strength Opening Research"
+    },
+    "dimensions_map": {
+      "stranger_legibility": "Stranger Legibility",
+      "discoverability": "Discoverability",
+      "ats_readiness": "ATS-Readiness",
+      "skills_architecture": "Skills Architecture",
+      "social_proof": "Social Proof",
+      "narrative_coherence": "Narrative Coherence"
+    },
+    "confidence": {
+      "high": "High Confidence",
+      "medium": "Medium Confidence",
+      "low": "Low Confidence",
+      "dataCompleteness": "Data completeness"
+    },
+    "methodology": {
+      "title": "Analysis Methodology",
+      "subtitle": "Based on 6 research frameworks",
+      "viewDetails": "View methodology",
+      "closeDetails": "Close"
     },
     "history": {
       "title": "My previous analyses",
@@ -1542,9 +1581,9 @@
       "card7_label": "Profile Radar",
       "card7_title": "Job-Search Intensity",
       "card7_meta": "3 similar profiles",
-      "card8_badge": "New feature",
-      "card8_title": "Hasawi dialect added!",
-      "card8_body": "Now generating posts in the authentic Hasawi dialect — a Wassel exclusive.",
+      "card8_badge": "New",
+      "card8_title": "Evidence-based analysis",
+      "card8_body": "Every observation now cites one of 6 research frameworks — from MIT weak-ties to Harvard's ATS methodology.",
       "card9_title": "Profile Report",
       "card9_meta": "Final analysis · 3 pages"
     },

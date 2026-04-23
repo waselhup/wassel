@@ -5,6 +5,7 @@ import {
   Sparkles, Link as LinkIcon, AlertCircle, Check, X, Info,
   FileText, ChevronDown, ChevronUp, Trash2, GitCompare,
   Target, Building2, Globe, ExternalLink, Zap, TrendingUp, TrendingDown, Minus,
+  BookOpen, Quote,
 } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
 import { trpcMutation, trpcQuery } from '../lib/trpc';
@@ -13,20 +14,56 @@ import { validateAndNormalizeLinkedInUrl } from '../lib/linkedin-url-validator';
 type TargetGoal = 'job-search' | 'investment' | 'thought-leadership' | 'sales-b2b' | 'career-change' | 'internal-promotion';
 type Industry = 'oil-gas' | 'tech' | 'finance' | 'healthcare' | 'legal' | 'consulting' | 'government' | 'academic' | 'entrepreneurship' | 'real-estate' | 'other';
 type ReportLang = 'ar' | 'en';
+type FrameworkId = 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
+type DimensionName = 'stranger_legibility' | 'discoverability' | 'ats_readiness' | 'skills_architecture' | 'social_proof' | 'narrative_coherence';
 
-interface Dim { name: string; score: number | null; feedback: string }
+interface Observation {
+  what: string;
+  why?: string;
+  citation?: string;
+  impact?: 'high' | 'medium' | 'low';
+}
+interface Recommendation {
+  current?: string;
+  suggested?: string;
+  rationale?: string;
+  effort?: 'quick' | 'moderate' | 'deep';
+}
+interface Dim {
+  name: DimensionName | string;
+  score: number | null;
+  framework?: FrameworkId;
+  framework_label?: string | null;
+  observations?: Observation[];
+  recommendations?: Recommendation[];
+  // legacy
+  feedback?: string;
+}
+interface TopPriority {
+  rank?: number;
+  action: string;
+  dimension?: DimensionName | string;
+  framework?: FrameworkId;
+  framework_label?: string | null;
+  expected_impact?: string;
+}
+interface EvidenceBundle {
+  profile_quotes_used?: string[];
+  frameworks_referenced?: string[];
+  missing_data_flags?: string[];
+}
 interface Analysis {
   overall_score: number;
   confidence?: 'high' | 'medium' | 'low';
-  data_quality?: 'rich' | 'adequate' | 'thin' | 'insufficient';
   data_completeness?: number;
   verdict: string;
-  dimensions?: Dim[];
   target_alignment?: { goal_match_score?: number; notes?: string };
+  dimensions?: Dim[];
+  top_priorities?: TopPriority[];
+  evidence_bundle?: EvidenceBundle;
+  // legacy fields
   recommendations?: string[];
-  vision_2030_alignment?: string | null;
   top_3_priorities?: string[];
-  evidence_used?: string[];
 }
 
 interface HistoryItem {
@@ -103,11 +140,32 @@ function gradientFor(score: number): string {
   return 'linear-gradient(90deg, #DC2626, #F43F5E)';
 }
 
-function scoreColor(s: number): string {
-  if (s >= 7) return '#16a34a';
-  if (s >= 5) return '#ca8a04';
+function scoreColor100(s: number): string {
+  if (s >= 70) return '#16a34a';
+  if (s >= 50) return '#ca8a04';
   return '#dc2626';
 }
+
+function effortColor(e: string | undefined): { bg: string; fg: string } {
+  if (e === 'quick') return { bg: '#dcfce7', fg: '#166534' };
+  if (e === 'deep') return { bg: '#fee2e2', fg: '#991b1b' };
+  return { bg: '#fef3c7', fg: '#92400e' };
+}
+
+function impactColor(i: string | undefined): { bg: string; fg: string } {
+  if (i === 'high') return { bg: '#fee2e2', fg: '#991b1b' };
+  if (i === 'low') return { bg: '#e0e7ff', fg: '#3730a3' };
+  return { bg: '#fef3c7', fg: '#92400e' };
+}
+
+const FRAMEWORK_BADGE: Record<string, { bg: string; fg: string }> = {
+  A: { bg: '#eef2ff', fg: '#3730a3' },
+  B: { bg: '#ecfdf5', fg: '#065f46' },
+  C: { bg: '#fef3c7', fg: '#92400e' },
+  D: { bg: '#f5f3ff', fg: '#5b21b6' },
+  E: { bg: '#fce7f3', fg: '#9f1239' },
+  F: { bg: '#e0f2fe', fg: '#075985' },
+};
 
 export default function ProfileAnalysis() {
   const { t, i18n } = useTranslation();
@@ -138,6 +196,7 @@ export default function ProfileAnalysis() {
   const [compareResult, setCompareResult] = useState<CompareResult | null>(null);
 
   const [exporting, setExporting] = useState<'docx' | null>(null);
+  const [showMethodology, setShowMethodology] = useState(false);
 
   useEffect(() => {
     loadHistory();
@@ -613,41 +672,177 @@ export default function ProfileAnalysis() {
                 <div style={{ fontSize: 15, lineHeight: 1.7, color: '#1f2937' }}>{analysis.verdict}</div>
               </div>
 
-              {/* Top 3 Priorities */}
-              {analysis.top_3_priorities && analysis.top_3_priorities.length > 0 && (
-                <div style={{ marginBottom: 24, padding: 16, background: 'linear-gradient(135deg, #fef3c7, #fde68a)', borderRadius: 12, border: '1px solid #fbbf24' }}>
-                  <div style={{ fontSize: 14, fontWeight: 800, color: '#78350f', marginBottom: 10 }}>🎯 {t('profileRadar.result.topPriorities')}</div>
-                  <ol style={{ paddingInlineStart: 20, margin: 0 }}>
-                    {analysis.top_3_priorities.map((p, i) => (
-                      <li key={i} style={{ fontSize: 14, color: '#78350f', marginBottom: 8, lineHeight: 1.6 }}>{p}</li>
-                    ))}
-                  </ol>
+              {/* Methodology panel — builds trust by making methodology transparent */}
+              <div style={{
+                marginBottom: 20, padding: '10px 14px', background: '#f8fafc',
+                border: '1px solid #e2e8f0', borderRadius: 10,
+                display: 'flex', alignItems: 'center', gap: 10, fontSize: 12,
+              }}>
+                <BookOpen size={16} style={{ color: '#0f766e', flexShrink: 0 }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 700, color: '#0f766e' }}>{t('profileRadar.methodology.title')}</div>
+                  <div style={{ color: '#475569', marginTop: 2 }}>{t('profileRadar.methodology.subtitle')}</div>
+                </div>
+                <button onClick={() => setShowMethodology(s => !s)}
+                  style={{ background: 'none', border: '1px solid #cbd5e1', cursor: 'pointer', color: '#0f766e', borderRadius: 8, padding: '6px 10px', fontSize: 12, fontWeight: 700 }}>
+                  {showMethodology ? t('profileRadar.methodology.closeDetails') : t('profileRadar.methodology.viewDetails')}
+                </button>
+              </div>
+              {showMethodology && (
+                <div style={{ marginBottom: 20, padding: 14, background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 10, fontSize: 13 }}>
+                  {(['A','B','C','D','E','F'] as FrameworkId[]).map(fw => (
+                    <div key={fw} style={{ display: 'flex', gap: 10, marginBottom: 6 }}>
+                      <span style={{
+                        fontWeight: 900,
+                        padding: '2px 8px', borderRadius: 6,
+                        background: FRAMEWORK_BADGE[fw].bg, color: FRAMEWORK_BADGE[fw].fg,
+                        minWidth: 24, textAlign: 'center',
+                      }}>{fw}</span>
+                      <span style={{ color: '#334155' }}>{t(`profileRadar.frameworks.${fw}`)}</span>
+                    </div>
+                  ))}
                 </div>
               )}
 
-              {/* Dimensions */}
+              {/* Top Priorities — now objects with framework + expected impact */}
+              {(() => {
+                const priorities = analysis.top_priorities && analysis.top_priorities.length
+                  ? analysis.top_priorities
+                  : (analysis.top_3_priorities || []).map((p, idx) => ({ rank: idx + 1, action: p } as TopPriority));
+                if (!priorities.length) return null;
+                return (
+                  <div style={{ marginBottom: 24, padding: 16, background: 'linear-gradient(135deg, #fef3c7, #fde68a)', borderRadius: 12, border: '1px solid #fbbf24' }}>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: '#78350f', marginBottom: 10 }}>🎯 {t('profileRadar.result.topPriorities')}</div>
+                    <div style={{ display: 'grid', gap: 10 }}>
+                      {priorities.map((p, i) => (
+                        <div key={i} style={{ background: 'rgba(255,255,255,0.65)', borderRadius: 10, padding: 12, border: '1px solid #fde68a' }}>
+                          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                            <span style={{ fontWeight: 900, fontSize: 18, color: '#78350f', minWidth: 24 }}>{p.rank || i + 1}</span>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontSize: 14, fontWeight: 700, color: '#78350f', lineHeight: 1.55 }}>{p.action}</div>
+                              {(p.framework || p.framework_label) && (
+                                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 6, padding: '3px 8px',
+                                    background: FRAMEWORK_BADGE[(p.framework || 'A') as FrameworkId]?.bg || '#fff',
+                                    color: FRAMEWORK_BADGE[(p.framework || 'A') as FrameworkId]?.fg || '#78350f',
+                                    borderRadius: 6, fontSize: 11, fontWeight: 700 }}>
+                                  {p.framework && <span>{p.framework}</span>}
+                                  <span>{p.framework_label || (p.framework ? t(`profileRadar.frameworks.${p.framework}`) : '')}</span>
+                                </div>
+                              )}
+                              {p.expected_impact && (
+                                <div style={{ fontSize: 12, color: '#92400e', marginTop: 6, lineHeight: 1.5 }}>
+                                  <span style={{ fontWeight: 700 }}>{t('profileRadar.result.expectedImpact')}:</span> {p.expected_impact}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Dimensions — framework badges, observations, recommendations */}
               {analysis.dimensions && analysis.dimensions.length > 0 && (
                 <div style={{ marginBottom: 24 }}>
                   <div style={{ fontSize: 14, fontWeight: 800, color: '#334155', marginBottom: 12 }}>{t('profileRadar.result.dimensions')}</div>
                   <div style={{ display: 'grid', gap: 12 }}>
                     {analysis.dimensions.map((d, i) => {
                       const noData = d.score === null || d.score === undefined;
+                      const displayName = t(`profileRadar.dimensions_map.${d.name}`, { defaultValue: String(d.name) });
+                      const fwBadge = d.framework ? FRAMEWORK_BADGE[d.framework] : null;
                       return (
-                        <div key={i} style={{ padding: 14, background: noData ? '#f8fafc' : '#f8fafc', borderRadius: 10, border: '1px solid #e5e7eb', opacity: noData ? 0.7 : 1 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                            <span style={{ fontWeight: 700, color: '#1f2937', fontSize: 14 }}>{d.name}</span>
+                        <div key={i} style={{ padding: 14, background: '#f8fafc', borderRadius: 10, border: '1px solid #e5e7eb', opacity: noData ? 0.75 : 1 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                              <span style={{ fontWeight: 700, color: '#1f2937', fontSize: 14 }}>{displayName}</span>
+                              {d.framework && fwBadge && (
+                                <span style={{
+                                  padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 800,
+                                  background: fwBadge.bg, color: fwBadge.fg,
+                                }}>
+                                  {d.framework} · {d.framework_label || t(`profileRadar.frameworks.${d.framework}`)}
+                                </span>
+                              )}
+                            </div>
                             {noData ? (
                               <span style={{ fontWeight: 700, color: '#94a3b8', fontSize: 12 }}>
-                                {i18n.language === 'ar' ? 'لا توجد بيانات' : 'No data'}
+                                {t('profileRadar.result.evidenceMissing')}
                               </span>
                             ) : (
-                              <span style={{ fontWeight: 800, color: scoreColor(d.score!), fontSize: 14 }}>{d.score}/10</span>
+                              <span style={{ fontWeight: 800, color: scoreColor100(d.score!), fontSize: 14 }}>{d.score}/100</span>
                             )}
                           </div>
-                          <div style={{ fontSize: 13, color: '#475569', lineHeight: 1.6 }}>{d.feedback}</div>
+
                           {!noData && (
-                            <div style={{ height: 4, background: '#e2e8f0', borderRadius: 999, marginTop: 8, overflow: 'hidden' }}>
-                              <div style={{ width: `${d.score! * 10}%`, height: '100%', background: scoreColor(d.score!) }} />
+                            <div style={{ height: 4, background: '#e2e8f0', borderRadius: 999, marginBottom: 10, overflow: 'hidden' }}>
+                              <div style={{ width: `${Math.min(100, d.score!)}%`, height: '100%', background: scoreColor100(d.score!) }} />
+                            </div>
+                          )}
+
+                          {/* Observations (new schema) */}
+                          {Array.isArray(d.observations) && d.observations.length > 0 ? (
+                            <div style={{ display: 'grid', gap: 8, marginBottom: 8 }}>
+                              {d.observations.map((o, oi) => {
+                                const ic = impactColor(o.impact);
+                                return (
+                                  <div key={oi} style={{ background: 'white', borderRadius: 8, padding: 10, border: '1px solid #e2e8f0' }}>
+                                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                                      <Quote size={14} style={{ color: '#64748b', flexShrink: 0, marginTop: 2 }} />
+                                      <div style={{ flex: 1 }}>
+                                        <div style={{ fontSize: 13, fontWeight: 700, color: '#1f2937', lineHeight: 1.55 }}>{o.what}</div>
+                                        {o.why && <div style={{ fontSize: 12, color: '#475569', marginTop: 4, lineHeight: 1.5 }}>{o.why}</div>}
+                                        {o.citation && (
+                                          <div style={{ fontSize: 11, color: '#64748b', marginTop: 4, fontStyle: 'italic' }}>{o.citation}</div>
+                                        )}
+                                        {o.impact && (
+                                          <div style={{ display: 'inline-block', marginTop: 6, padding: '2px 6px', borderRadius: 4, background: ic.bg, color: ic.fg, fontSize: 10, fontWeight: 700 }}>
+                                            {t(`profileRadar.result.impact.${o.impact}`, { defaultValue: o.impact })}
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ) : d.feedback ? (
+                            // Legacy feedback field
+                            <div style={{ fontSize: 13, color: '#475569', lineHeight: 1.6, marginBottom: 8 }}>{d.feedback}</div>
+                          ) : null}
+
+                          {/* Recommendations (before/after) */}
+                          {Array.isArray(d.recommendations) && d.recommendations.length > 0 && (
+                            <div style={{ display: 'grid', gap: 8 }}>
+                              {d.recommendations.map((r, ri) => {
+                                const ec = effortColor(r.effort);
+                                return (
+                                  <div key={ri} style={{ background: '#f0fdfa', borderRadius: 8, padding: 10, border: '1px solid #99f6e4' }}>
+                                    {r.current && (
+                                      <div style={{ fontSize: 12, color: '#334155', marginBottom: 4 }}>
+                                        <span style={{ fontWeight: 700 }}>{t('profileRadar.result.current')}:</span>{' '}
+                                        <span style={{ color: '#64748b', textDecoration: 'line-through' }}>{r.current}</span>
+                                      </div>
+                                    )}
+                                    {r.suggested && (
+                                      <div style={{ fontSize: 13, color: '#0f766e', fontWeight: 700, lineHeight: 1.5 }}>
+                                        <span>{t('profileRadar.result.suggested')}:</span> {r.suggested}
+                                      </div>
+                                    )}
+                                    {r.rationale && (
+                                      <div style={{ fontSize: 11, color: '#475569', marginTop: 4, lineHeight: 1.5 }}>
+                                        <span style={{ fontWeight: 700 }}>{t('profileRadar.result.rationale')}:</span> {r.rationale}
+                                      </div>
+                                    )}
+                                    {r.effort && (
+                                      <div style={{ display: 'inline-block', marginTop: 6, padding: '2px 6px', borderRadius: 4, background: ec.bg, color: ec.fg, fontSize: 10, fontWeight: 700 }}>
+                                        {t(`profileRadar.result.effort.${r.effort}`, { defaultValue: r.effort })}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
                             </div>
                           )}
                         </div>
@@ -657,7 +852,7 @@ export default function ProfileAnalysis() {
                 </div>
               )}
 
-              {/* Recommendations */}
+              {/* Legacy flat recommendations (historical rows) */}
               {analysis.recommendations && analysis.recommendations.length > 0 && (
                 <div style={{ marginBottom: 24 }}>
                   <div style={{ fontSize: 14, fontWeight: 800, color: '#334155', marginBottom: 12 }}>{t('profileRadar.result.recommendations')}</div>
@@ -669,11 +864,37 @@ export default function ProfileAnalysis() {
                 </div>
               )}
 
-              {/* Vision 2030 */}
-              {analysis.vision_2030_alignment && (
-                <div style={{ marginBottom: 24, padding: 16, background: '#f0fdfa', borderRadius: 12, border: '1px solid #99f6e4' }}>
-                  <div style={{ fontSize: 14, fontWeight: 800, color: '#0f766e', marginBottom: 8 }}>🇸🇦 {t('profileRadar.result.vision2030')}</div>
-                  <div style={{ fontSize: 14, color: '#0f766e', lineHeight: 1.6 }}>{analysis.vision_2030_alignment}</div>
+              {/* Evidence bundle footer */}
+              {analysis.evidence_bundle && (
+                <div style={{ marginBottom: 24, padding: 14, background: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: 10, fontSize: 12 }}>
+                  <div style={{ fontWeight: 800, color: '#334155', marginBottom: 8 }}>📎 {t('profileRadar.result.evidenceTitle')}</div>
+                  {Array.isArray(analysis.evidence_bundle.frameworks_referenced) && analysis.evidence_bundle.frameworks_referenced.length > 0 && (
+                    <div style={{ marginBottom: 6 }}>
+                      <span style={{ fontWeight: 700, color: '#475569' }}>{t('profileRadar.result.evidenceFrameworks')}:</span>{' '}
+                      <span style={{ color: '#334155' }}>
+                        {analysis.evidence_bundle.frameworks_referenced.map(fw => {
+                          const key = String(fw).toUpperCase() as FrameworkId;
+                          return FRAMEWORK_BADGE[key] ? `${key} (${t(`profileRadar.frameworks.${key}`)})` : String(fw);
+                        }).join(' · ')}
+                      </span>
+                    </div>
+                  )}
+                  {Array.isArray(analysis.evidence_bundle.profile_quotes_used) && analysis.evidence_bundle.profile_quotes_used.length > 0 && (
+                    <div style={{ marginBottom: 6 }}>
+                      <div style={{ fontWeight: 700, color: '#475569', marginBottom: 4 }}>{t('profileRadar.result.evidenceQuotes')}:</div>
+                      <ul style={{ margin: 0, paddingInlineStart: 18, color: '#475569' }}>
+                        {analysis.evidence_bundle.profile_quotes_used.slice(0, 8).map((q, i) => (
+                          <li key={i} style={{ fontStyle: 'italic', marginBottom: 2 }}>{q}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {Array.isArray(analysis.evidence_bundle.missing_data_flags) && analysis.evidence_bundle.missing_data_flags.length > 0 && (
+                    <div>
+                      <span style={{ fontWeight: 700, color: '#92400e' }}>{t('profileRadar.result.evidenceMissing')}:</span>{' '}
+                      <span style={{ color: '#78350f' }}>{analysis.evidence_bundle.missing_data_flags.join(' · ')}</span>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -728,7 +949,7 @@ export default function ProfileAnalysis() {
                       <div style={{ fontSize: 13, fontWeight: 700, color: '#1f2937' }}>
                         {new Date(h.created_at).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
                         {' — '}
-                        <span style={{ color: scoreColor(h.overall_score / 10) }}>{h.overall_score}/100</span>
+                        <span style={{ color: scoreColor100(h.overall_score) }}>{h.overall_score}/100</span>
                       </div>
                       <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>
                         {t(`profileRadar.goal.${h.target_goal}`)} · {t(`profileRadar.industry.${h.industry}`)} · {h.language.toUpperCase()}
@@ -798,16 +1019,22 @@ export default function ProfileAnalysis() {
 
               <div style={{ fontSize: 14, fontWeight: 700, color: '#334155', marginBottom: 10 }}>{t('profileRadar.comparison.dimensionsTable')}</div>
               <div style={{ display: 'grid', gap: 6 }}>
-                {compareResult.dimensionChanges.map((c, i) => (
-                  <div key={i} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 8, alignItems: 'center', padding: '8px 12px', background: '#f8fafc', borderRadius: 8, fontSize: 13 }}>
-                    <div style={{ fontWeight: 600 }}>{c.name}</div>
-                    <div style={{ textAlign: 'center', color: '#64748b' }}>{c.before}/10</div>
-                    <div style={{ textAlign: 'center', fontWeight: 700, color: scoreColor(c.after) }}>{c.after}/10</div>
-                    <div style={{ textAlign: 'center', fontWeight: 700, color: c.delta > 0 ? '#16a34a' : c.delta < 0 ? '#dc2626' : '#64748b' }}>
-                      {c.delta > 0 ? '+' : ''}{c.delta}
+                {compareResult.dimensionChanges.map((c, i) => {
+                  const displayName = t(`profileRadar.dimensions_map.${c.name}`, { defaultValue: String(c.name) });
+                  // After P0-A, new schema uses 0-100; legacy rows may use 0-10.
+                  const scale = c.after > 10 || c.before > 10 ? 100 : 10;
+                  const colorFn = scale === 100 ? scoreColor100 : (s: number) => scoreColor100(s * 10);
+                  return (
+                    <div key={i} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 8, alignItems: 'center', padding: '8px 12px', background: '#f8fafc', borderRadius: 8, fontSize: 13 }}>
+                      <div style={{ fontWeight: 600 }}>{displayName}</div>
+                      <div style={{ textAlign: 'center', color: '#64748b' }}>{c.before}/{scale}</div>
+                      <div style={{ textAlign: 'center', fontWeight: 700, color: colorFn(c.after) }}>{c.after}/{scale}</div>
+                      <div style={{ textAlign: 'center', fontWeight: 700, color: c.delta > 0 ? '#16a34a' : c.delta < 0 ? '#dc2626' : '#64748b' }}>
+                        {c.delta > 0 ? '+' : ''}{c.delta}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </motion.div>
           )}
