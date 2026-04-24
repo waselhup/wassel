@@ -9,7 +9,6 @@ import {
   extractSlugFromUrl,
   extractSlugFromProfile,
   slugsMatch,
-  computeCompleteness,
   type UnifiedProfile,
   type ScrapeOutcome,
 } from '../lib/linkedin-scraper';
@@ -131,13 +130,21 @@ function normalize(raw: any): UnifiedProfile {
     }
   }
 
-  // position from Bright Data often already contains "Title at Company"; use it
-  // as-is. Fall back to composing from current_company if missing.
-  const headline = raw.position
-    || raw.headline
-    || [currentCompany.title, currentCompany.name].filter(Boolean).join(' at ')
-    || currentCompany.name
-    || '';
+  // Bright Data inconsistency: `position` is sometimes the full
+  // "Title at Company" string, sometimes absent, sometimes just a title.
+  // `current_company.title` + `.name` is more reliable. Build the best
+  // headline we can from whichever fields are present.
+  const ccTitle = currentCompany.title;
+  const ccName = currentCompany.name || raw.current_company_name;
+  const composed = [ccTitle, ccName].filter(Boolean).join(' at ');
+  let headline = raw.headline || '';
+  if (!headline) {
+    if (raw.position && raw.position.toLowerCase().includes(' at ')) {
+      headline = raw.position;
+    } else {
+      headline = composed || raw.position || ccName || '';
+    }
+  }
 
   return {
     slug,
@@ -224,19 +231,28 @@ export async function scrapeLinkedInProfileBrightData(url: string): Promise<Scra
     throw err;
   }
 
-  const completeness = computeCompleteness(profile);
+  const completeness = computeCompletenessBD(profile);
+  const missingSections = getMissingSectionsBD(profile);
   attempts.push(`bright-data: ${completeness}%`);
   console.log('[BRIGHT_DATA] success', {
     slug: returnedSlug,
     fullName: profile.fullName,
+    headline: profile.headline,
+    summaryLen: profile.summary.length,
+    experienceCount: profile.experience.length,
+    educationCount: profile.education.length,
+    certCount: profile.certifications.length,
+    langCount: profile.languages.length,
+    activityCount: profile.activity.length,
     completeness,
+    missing: missingSections,
   });
 
   return {
     profile,
     completeness,
     source: 'bright-data',
-    missingSections: getMissingSections(profile),
+    missingSections,
     attempts,
     requestedSlug,
     returnedSlug,
@@ -244,14 +260,45 @@ export async function scrapeLinkedInProfileBrightData(url: string): Promise<Scra
   };
 }
 
-function getMissingSections(p: UnifiedProfile): string[] {
+// Bright Data-specific completeness scorer.
+//
+// Why it differs from linkedin-scraper.ts: Bright Data's default LinkedIn
+// people-profiles dataset does NOT return a skills array, and some profiles
+// omit experience/certifications/languages entirely. The Apify-era scorer
+// penalized every missing skill hard, which caused a false-negative 20%
+// score for legitimate profiles. This scorer treats skills as bonus-only
+// and uses lower thresholds on summary/headline.
+function computeCompletenessBD(p: UnifiedProfile): number {
+  let score = 0;
+  // Identity (always present for a resolved profile)
+  if (p.fullName) score += 10;
+  // Headline — composed from current_company when missing, so threshold 5
+  if (p.headline && p.headline.length > 5) score += 15;
+  // Summary — Bright Data `about` length varies widely, accept from 50 chars
+  if (p.summary && p.summary.length > 50) score += 20;
+  if (p.summary && p.summary.length > 200) score += 5;
+  // Experience — big signal when present but many profiles hide it
+  if (p.experience.length > 0) score += 20;
+  if (p.experience[0]?.description && p.experience[0].description.length > 50) score += 5;
+  // Education
+  if (p.education.length > 0) score += 10;
+  // Certifications / languages — bonus
+  if (p.certifications.length > 0) score += 5;
+  if (p.languages.length > 0) score += 5;
+  // Activity (Bright Data reliably returns this)
+  if (p.activity.length > 0) score += 5;
+  // Skills — bonus-only. Bright Data's default dataset doesn't return this.
+  if (p.skills.length >= 3) score += 5;
+  return Math.min(score, 100);
+}
+
+function getMissingSectionsBD(p: UnifiedProfile): string[] {
   const missing: string[] = [];
-  if (!p.headline || p.headline.length < 15) missing.push('headline');
-  if (!p.summary || p.summary.length < 100) missing.push('summary');
-  if (p.experience.length === 0) missing.push('experience');
-  if (p.skills.length < 3) missing.push('skills');
+  if (!p.headline || p.headline.length < 5) missing.push('headline');
+  if (!p.summary || p.summary.length < 50) missing.push('summary');
+  if (p.experience.length === 0 && p.education.length === 0 && p.activity.length === 0) {
+    missing.push('experience_or_activity');
+  }
   if (p.education.length === 0) missing.push('education');
-  if (p.certifications.length === 0) missing.push('certifications');
-  if (p.languages.length === 0) missing.push('languages');
   return missing;
 }
