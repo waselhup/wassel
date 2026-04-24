@@ -4,6 +4,7 @@ import { TRPCError } from '@trpc/server';
 import { logApiCall, mapAnthropicStatusToArabic, mapApifyStatusToArabic, classifyClaudeError, sendClaudeOpsAlert } from '../lib/apiLogger';
 import { callClaude, extractText, extractJson } from '../lib/claude-client';
 import { scrapeLinkedInProfileMulti, detectLanguage, extractSlugFromUrl, extractSlugFromProfile, slugsMatch } from '../lib/linkedin-scraper';
+import { scrapeLinkedInProfileBrightData, BrightDataProfileNotFoundError } from '../services/bright-data';
 import { validateAndNormalizeLinkedInUrl } from '../lib/linkedin-url-validator';
 import { generateDocxReport } from '../lib/profile-report-generator';
 import { deductTokens, refundTokens, throwInsufficientTokensError } from '../lib/tokens';
@@ -972,7 +973,9 @@ export const linkedinRouter = router({
         let returnedSlug = '';
         if (normalizedUrl) {
           try {
-            const outcome = await scrapeLinkedInProfileMulti(normalizedUrl);
+            // Bright Data direct-URL scraper — replaces the Apify search-actor path
+            // that was returning nearest-match profiles. See docs/brightdata-integration-notes.md.
+            const outcome = await scrapeLinkedInProfileBrightData(normalizedUrl);
             unifiedProfile = outcome.profile;
             completeness = outcome.completeness;
             missingSections = outcome.missingSections;
@@ -987,7 +990,8 @@ export const linkedinRouter = router({
             });
           } catch (e: any) {
             const kind = (e as any)?.kind;
-            console.error('[RADAR stage=scraping_profile fail]', { kind, message: e?.message });
+            const isNotFound = e instanceof BrightDataProfileNotFoundError;
+            console.error('[RADAR stage=scraping_profile fail]', { kind, notFound: isNotFound, message: e?.message });
             if (kind === 'URL_MISMATCH') {
               throw new TRPCError({
                 code: 'NOT_FOUND',
