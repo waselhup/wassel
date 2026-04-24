@@ -50,6 +50,19 @@ export interface UnifiedProfile {
   recommendations: Array<{ from: string; text: string }>;
   languages: Array<{ name: string; proficiency?: string }>;
   activity: Array<{ title: string; date?: string }>;
+  // ─── Additive extensions (LinkdAPI-era) ─────────────────────────────
+  // All optional — Bright Data normalizer leaves them undefined, which the
+  // consumer handles as "don't emit feedback about this signal". Do NOT
+  // make these required or the BD path breaks.
+  honorsAndAwards?: Array<{ title: string; issuer?: string; issuedOn?: string }>;
+  industry?: { name: string };
+  flags?: {
+    isOpenToWork?: boolean;
+    isPremium?: boolean;
+    isCreator?: boolean;
+    isInfluencer?: boolean;
+    isHiring?: boolean;
+  };
   raw: any;                      // Keep full original for debugging
 }
 

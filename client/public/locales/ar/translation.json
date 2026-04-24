@@ -1408,6 +1408,24 @@
       "E": "استبيان PwC للقوى العاملة في الشرق الأوسط",
       "F": "بحث افتتاحية القوة الذاتية"
     },
+    "completeness": {
+      "perfect": "تحليل شامل",
+      "good": "تحليل جيد",
+      "partial": "بيانات محدودة"
+    },
+    "flags": {
+      "openToWork": "مفتوح للفرص",
+      "hiring": "يبحث عن موظفين",
+      "premium": "Premium",
+      "creator": "صانع محتوى"
+    },
+    "extras": {
+      "topSkills": "أبرز المهارات",
+      "certifications": "الشهادات المهنية",
+      "languages": "اللغات",
+      "honors": "الجوائز والتكريمات",
+      "uploadCvPrompt": "ارفع سيرتك الذاتية لتحليل أعمق"
+    },
     "dimensions_map": {
       "stranger_legibility": "وضوح البروفايل للغرباء",
       "discoverability": "قابلية الاكتشاف",

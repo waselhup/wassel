@@ -87,6 +87,24 @@ interface Analysis {
   top_3_priorities?: string[];
 }
 
+// Lightweight summary of the unifiedProfile — surfaced so the UI can render
+// the new side-panel sections (honors, certs, langs, top skills, flags).
+// Server-populated only when LinkdAPI returns data; BD profiles will have
+// honors/flags empty or missing.
+interface ProfileSummary {
+  top_skills?: string[];
+  certifications?: Array<{ name: string; issuer?: string }>;
+  languages?: Array<{ name: string; proficiency?: string }>;
+  honors_and_awards?: Array<{ title: string; issuer?: string; issued_on?: string }>;
+  flags?: {
+    isOpenToWork?: boolean;
+    isPremium?: boolean;
+    isCreator?: boolean;
+    isInfluencer?: boolean;
+    isHiring?: boolean;
+  } | null;
+}
+
 const EFFORT_LABEL: Record<'quick' | 'moderate' | 'deep', { ar: string; en: string }> = {
   quick:    { ar: 'سريع · 5 دقائق',   en: 'Quick · 5 min' },
   moderate: { ar: 'متوسط · 30 دقيقة', en: 'Moderate · 30 min' },
@@ -234,6 +252,7 @@ export default function ProfileAnalysis() {
   const [loadingMsgIdx, setLoadingMsgIdx] = useState(0);
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [analysisId, setAnalysisId] = useState<string | null>(null);
+  const [profileSummary, setProfileSummary] = useState<ProfileSummary | null>(null);
   // Inline error — shown above the form. Distinct codes get friendly copy.
   const [analysisError, setAnalysisError] = useState<{
     kind: 'not_found' | 'insufficient_data' | 'generic';
@@ -320,6 +339,7 @@ export default function ProfileAnalysis() {
     setLoading(true);
     setAnalysis(null);
     setAnalysisId(null);
+    setProfileSummary(null);
     setCompareResult(null);
     setAnalysisError(null);
     try {
@@ -334,6 +354,7 @@ export default function ProfileAnalysis() {
       });
       setAnalysis(res.analysis);
       setAnalysisId(res.id);
+      setProfileSummary((res as any).profileSummary || null);
       push('success', i18n.language === 'ar' ? 'تم التحليل' : 'Analysis complete');
       loadHistory();
       refreshBalance();
@@ -825,11 +846,141 @@ export default function ProfileAnalysis() {
                 </div>
               </div>
 
+              {/* Completeness badge + profile flags — LinkdAPI-era
+                   signals. Only shown when we have meaningful data. */}
+              {(() => {
+                const dc = typeof analysis.data_completeness === 'number' ? analysis.data_completeness : null;
+                const flags = profileSummary?.flags || null;
+                const showAnyFlag = !!flags && (flags.isOpenToWork || flags.isHiring || flags.isPremium);
+                if (dc === null && !showAnyFlag) return null;
+                const tier = dc === null ? null : (dc >= 80 ? 'perfect' : dc >= 50 ? 'good' : 'partial');
+                const tierColors: Record<string, { bg: string; fg: string; border: string }> = {
+                  perfect: { bg: '#dcfce7', fg: '#166534', border: '#86efac' },
+                  good:    { bg: '#fef3c7', fg: '#92400e', border: '#fcd34d' },
+                  partial: { bg: '#fee2e2', fg: '#991b1b', border: '#fca5a5' },
+                };
+                return (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
+                    {tier && (
+                      <span style={{
+                        padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 700,
+                        background: tierColors[tier].bg, color: tierColors[tier].fg,
+                        border: `1px solid ${tierColors[tier].border}`,
+                      }}>
+                        {t(`profileRadar.completeness.${tier}`)} · {dc}%
+                      </span>
+                    )}
+                    {flags?.isOpenToWork && (
+                      <span style={{ padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 700,
+                        background: '#dcfce7', color: '#166534', border: '1px solid #86efac' }}>
+                        {t('profileRadar.flags.openToWork')}
+                      </span>
+                    )}
+                    {flags?.isHiring && (
+                      <span style={{ padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 700,
+                        background: '#dbeafe', color: '#1e40af', border: '1px solid #93c5fd' }}>
+                        {t('profileRadar.flags.hiring')}
+                      </span>
+                    )}
+                    {flags?.isPremium && (
+                      <span style={{ padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 700,
+                        background: '#fef3c7', color: '#92400e', border: '1px solid #fcd34d' }}>
+                        {t('profileRadar.flags.premium')}
+                      </span>
+                    )}
+                    {flags?.isCreator && (
+                      <span style={{ padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 700,
+                        background: '#ede9fe', color: '#5b21b6', border: '1px solid #c4b5fd' }}>
+                        {t('profileRadar.flags.creator')}
+                      </span>
+                    )}
+                  </div>
+                );
+              })()}
+
               {/* Verdict */}
               <div style={{ marginBottom: 24 }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: '#334155', marginBottom: 8 }}>{t('profileRadar.result.verdict')}</div>
                 <div style={{ fontSize: 15, lineHeight: 1.7, color: '#1f2937' }}>{analysis.verdict}</div>
               </div>
+
+              {/* Profile extras: top skills, certifications, languages, honors.
+                   Render each only when populated (no empty sections). */}
+              {(() => {
+                if (!profileSummary) return null;
+                const skills = profileSummary.top_skills || [];
+                const certs = profileSummary.certifications || [];
+                const langs = profileSummary.languages || [];
+                const honors = profileSummary.honors_and_awards || [];
+                const anyContent = skills.length || certs.length || langs.length || honors.length;
+                if (!anyContent) return null;
+                return (
+                  <div style={{ marginBottom: 24, display: 'grid', gap: 12,
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))' }}>
+                    {skills.length > 0 && (
+                      <div style={{ padding: 14, borderRadius: 12, background: '#f0fdfa', border: '1px solid #99f6e4' }}>
+                        <div style={{ fontSize: 12, fontWeight: 800, color: '#0f766e', marginBottom: 8 }}>
+                          💡 {t('profileRadar.extras.topSkills')}
+                        </div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                          {skills.slice(0, 8).map((s, i) => (
+                            <span key={i} style={{ fontSize: 12, padding: '3px 8px', background: '#fff',
+                                border: '1px solid #99f6e4', borderRadius: 999, color: '#134e4a', fontWeight: 600 }}>
+                              {s}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {certs.length > 0 && (
+                      <div style={{ padding: 14, borderRadius: 12, background: '#eff6ff', border: '1px solid #bfdbfe' }}>
+                        <div style={{ fontSize: 12, fontWeight: 800, color: '#1e40af', marginBottom: 8 }}>
+                          🎓 {t('profileRadar.extras.certifications')}
+                        </div>
+                        <div style={{ display: 'grid', gap: 4 }}>
+                          {certs.map((c, i) => (
+                            <div key={i} style={{ fontSize: 13, color: '#1e3a8a', lineHeight: 1.5 }}>
+                              <span style={{ fontWeight: 700 }}>{c.name}</span>
+                              {c.issuer ? <span style={{ color: '#64748b' }}> — {c.issuer}</span> : null}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {langs.length > 0 && (
+                      <div style={{ padding: 14, borderRadius: 12, background: '#fdf4ff', border: '1px solid #f0abfc' }}>
+                        <div style={{ fontSize: 12, fontWeight: 800, color: '#86198f', marginBottom: 8 }}>
+                          🌍 {t('profileRadar.extras.languages')}
+                        </div>
+                        <div style={{ display: 'grid', gap: 4 }}>
+                          {langs.map((l, i) => (
+                            <div key={i} style={{ fontSize: 13, color: '#701a75', lineHeight: 1.5 }}>
+                              <span style={{ fontWeight: 700 }}>{l.name}</span>
+                              {l.proficiency ? <span style={{ color: '#86198f', opacity: 0.7 }}> · {l.proficiency.replace(/_/g, ' ').toLowerCase()}</span> : null}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {honors.length > 0 && (
+                      <div style={{ padding: 14, borderRadius: 12, background: '#fffbeb', border: '1px solid #fde68a' }}>
+                        <div style={{ fontSize: 12, fontWeight: 800, color: '#92400e', marginBottom: 8 }}>
+                          🏆 {t('profileRadar.extras.honors')}
+                        </div>
+                        <div style={{ display: 'grid', gap: 4 }}>
+                          {honors.map((h, i) => (
+                            <div key={i} style={{ fontSize: 13, color: '#78350f', lineHeight: 1.5 }}>
+                              <span style={{ fontWeight: 700 }}>{h.title}</span>
+                              {h.issuer ? <span style={{ color: '#64748b' }}> — {h.issuer}</span> : null}
+                              {h.issued_on ? <span style={{ color: '#a16207', opacity: 0.7 }}> · {h.issued_on}</span> : null}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* Methodology panel — builds trust by making methodology transparent */}
               <div style={{
