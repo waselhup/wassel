@@ -1414,6 +1414,24 @@
       "E": "PwC Middle East Workforce Survey",
       "F": "Self-Strength Opening Research"
     },
+    "completeness": {
+      "perfect": "Complete analysis",
+      "good": "Good analysis",
+      "partial": "Limited data"
+    },
+    "flags": {
+      "openToWork": "Open to Work",
+      "hiring": "Hiring",
+      "premium": "Premium",
+      "creator": "Creator"
+    },
+    "extras": {
+      "topSkills": "Top Skills",
+      "certifications": "Certifications",
+      "languages": "Languages",
+      "honors": "Honors & Awards",
+      "uploadCvPrompt": "Upload your CV for a deeper analysis"
+    },
     "dimensions_map": {
       "stranger_legibility": "Stranger Legibility",
       "discoverability": "Discoverability",

@@ -5,6 +5,8 @@ import { logApiCall, mapAnthropicStatusToArabic, mapApifyStatusToArabic, classif
 import { callClaude, extractText, extractJson } from '../lib/claude-client';
 import { scrapeLinkedInProfileMulti, detectLanguage, extractSlugFromUrl, extractSlugFromProfile, slugsMatch } from '../lib/linkedin-scraper';
 import { scrapeLinkedInProfileBrightData, BrightDataProfileNotFoundError } from '../services/bright-data';
+import { scrapeLinkedInProfileHybrid } from '../services/profile-scraper';
+import { LinkdApiProfileNotFoundError } from '../services/linkdapi';
 import { validateAndNormalizeLinkedInUrl } from '../lib/linkedin-url-validator';
 import { generateDocxReport } from '../lib/profile-report-generator';
 import { deductTokens, refundTokens, throwInsufficientTokensError } from '../lib/tokens';
@@ -321,6 +323,43 @@ SECTION-TO-FRAMEWORK GUIDE (use as PRIMARY framework per section):
 - recommendations → E (PwC MENA). Count, recency, diversity (manager / peer / client).
 - activity → B + E. Posting frequency, engagement, bilingual presence, topical coherence with target.
 - profile_completeness → B (Economic Graph). Photo (21× views), banner, custom URL (15% more visits), Open-to-Work (3.5× InMails), location, certifications filled.
+
+═══════════════════════════════════════
+EXTENDED INPUT FIELDS (may be absent)
+═══════════════════════════════════════
+The structured profile payload may include these richer fields. Use them
+when present; do NOT comment on them when absent (they're not always
+available, and absence ≠ signal).
+
+- profile_data.honors_and_awards[] — recognition entries {title, issuer, issued_on}.
+  When present, weave into the "about" or "experience" assessment as a
+  credibility signal per framework E (social proof weighs heavier in GCC).
+  Never invent awards not in this list.
+
+- profile_data.industry — LinkedIn's declared industry for the candidate
+  (e.g., "Chemicals", "Information Technology"). Use this to validate that
+  the target_goal + industry input are coherent with the candidate's actual
+  sector. Do NOT contradict or override the user's input.
+
+- profile_data.flags — binary LinkedIn signals. Only comment when the
+  corresponding flag is present (true/false); say nothing when the flags
+  object itself is null (data not available for this profile):
+  · flags.is_open_to_work = true → Framework B says 3.5× more recruiter
+    InMails. Cite this in profile_completeness.
+  · flags.is_open_to_work = false + target_goal="job-search" → recommend
+    enabling it in top_priorities (quick win).
+  · flags.is_hiring = true → adjust tone toward recruiter-visible
+    credibility signals (they review candidate profiles).
+  · flags.is_creator = true → activity section gets the "creator" lens
+    (posting cadence, audience growth) per framework B.
+  · flags.is_premium — do NOT coach about it, observational only.
+
+- profile_data.has_banner_image / has_profile_picture / custom_url — use
+  for profile_completeness scoring per framework B's stated thresholds.
+
+- profile_data.certifications[] — when populated with real names (e.g.,
+  "CMA", "PMP", "AWS Certified"), cite those specific credentials in the
+  education or profile_completeness sections. Do NOT invent credentials.
 
 RULES ON EMISSIONS:
 - Always include exactly 8 sections in the exact order above (headline, about, experience, skills, education, recommendations, activity, profile_completeness).
@@ -973,9 +1012,10 @@ export const linkedinRouter = router({
         let returnedSlug = '';
         if (normalizedUrl) {
           try {
-            // Bright Data direct-URL scraper — replaces the Apify search-actor path
-            // that was returning nearest-match profiles. See docs/brightdata-integration-notes.md.
-            const outcome = await scrapeLinkedInProfileBrightData(normalizedUrl);
+            // Hybrid scraper: LinkdAPI primary, Bright Data fallback on transport
+            // errors. NOT_FOUND / URL_MISMATCH short-circuit without BD fallback.
+            // See server/_core/services/profile-scraper.ts for the strategy rationale.
+            const outcome = await scrapeLinkedInProfileHybrid(normalizedUrl);
             unifiedProfile = outcome.profile;
             completeness = outcome.completeness;
             missingSections = outcome.missingSections;
@@ -990,7 +1030,9 @@ export const linkedinRouter = router({
             });
           } catch (e: any) {
             const kind = (e as any)?.kind;
-            const isNotFound = e instanceof BrightDataProfileNotFoundError;
+            const isNotFound =
+              e instanceof LinkdApiProfileNotFoundError ||
+              e instanceof BrightDataProfileNotFoundError;
             console.error('[RADAR stage=scraping_profile fail]', { kind, notFound: isNotFound, message: e?.message });
             if (kind === 'URL_MISMATCH') {
               throw new TRPCError({
@@ -1062,6 +1104,8 @@ export const linkedinRouter = router({
           summary: p.summary || null,
           location: p.location || null,
           has_profile_picture: !!p.profilePicture,
+          has_banner_image: !!p.bannerImage,
+          custom_url: !!p.customUrl,
           experience: asArray(p.experience).slice(0, 8).map((e: any) => ({
             title: e?.title || null,
             company: e?.company || null,
@@ -1081,6 +1125,23 @@ export const linkedinRouter = router({
             issuer: c?.issuer || null,
           })),
           languages: asArray(p.languages).map((l: any) => ({ name: l?.name || null, proficiency: l?.proficiency || null })),
+          // LinkdAPI additions — all optional, undefined on Bright Data profiles.
+          honors_and_awards: asArray(p.honorsAndAwards).slice(0, 5).map((h: any) => ({
+            title: h?.title || null,
+            issuer: h?.issuer || null,
+            issued_on: h?.issuedOn || null,
+          })),
+          industry: p.industry?.name || null,
+          // Only emit flags when we actually have data (LinkdAPI provides them;
+          // Bright Data leaves the object undefined). Keeps Claude from
+          // commenting on missing signals we don't actually know.
+          flags: p.flags ? {
+            is_open_to_work: p.flags.isOpenToWork,
+            is_premium: p.flags.isPremium,
+            is_creator: p.flags.isCreator,
+            is_influencer: p.flags.isInfluencer,
+            is_hiring: p.flags.isHiring,
+          } : null,
           activity_count: asArray(p.activity).length,
         } : null;
 
@@ -1284,12 +1345,34 @@ export const linkedinRouter = router({
           totalMs: Date.now() - startedAt,
           tokensRemaining: deduct.balance_after,
         });
+        // Lightweight profile summary for the UI's new side-panel sections.
+        // We don't ship the full unifiedProfile — just the fields the sections
+        // actually render (honors/certs/langs/top-skills/flags).
+        const profileSummary = unifiedProfile ? {
+          top_skills: Array.isArray(unifiedProfile.skills) ? unifiedProfile.skills.slice(0, 10) : [],
+          certifications: Array.isArray(unifiedProfile.certifications)
+            ? unifiedProfile.certifications.slice(0, 6).map((c: any) => ({ name: c?.name || '', issuer: c?.issuer || '' }))
+            : [],
+          languages: Array.isArray(unifiedProfile.languages)
+            ? unifiedProfile.languages.map((l: any) => ({ name: l?.name || '', proficiency: l?.proficiency || '' }))
+            : [],
+          honors_and_awards: Array.isArray(unifiedProfile.honorsAndAwards)
+            ? unifiedProfile.honorsAndAwards.slice(0, 5).map((h: any) => ({
+                title: h?.title || '',
+                issuer: h?.issuer || '',
+                issued_on: h?.issuedOn || '',
+              }))
+            : [],
+          flags: unifiedProfile.flags || null,
+        } : null;
+
         return {
           id: saved.id,
           analysis: result,
           linkedinUrl: normalizedUrl,
           tokensUsed: TOKEN_COST,
           tokensRemaining: deduct.balance_after,
+          profileSummary,
         };
       } catch (err: any) {
         // Refund if the failure happened after the deduction but before success.
