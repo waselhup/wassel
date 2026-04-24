@@ -5,11 +5,17 @@ import {
   Sparkles, Link as LinkIcon, AlertCircle, Check, X, Info,
   FileText, ChevronDown, ChevronUp, Trash2, GitCompare,
   Target, Building2, Globe, ExternalLink, Zap, TrendingUp, TrendingDown, Minus,
-  BookOpen,
+  Type, Briefcase, Award, GraduationCap, Users, CheckCircle2,
+  UserCircle, List as ListIcon,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
 import { trpcMutation, trpcQuery, trpc } from '../lib/trpc';
 import { validateAndNormalizeLinkedInUrl } from '../lib/linkedin-url-validator';
+import {
+  ScoreRing, SectionList, SectionDetailPanel, ProfilePreviewCard,
+  deriveStatus, type SectionView,
+} from '../components/profile-analysis';
 
 type TargetGoal = 'job-search' | 'investment' | 'thought-leadership' | 'sales-b2b' | 'career-change' | 'internal-promotion';
 type Industry = 'oil-gas' | 'tech' | 'finance' | 'healthcare' | 'legal' | 'consulting' | 'government' | 'academic' | 'entrepreneurship' | 'real-estate' | 'other';
@@ -103,12 +109,42 @@ interface ProfileSummary {
     isInfluencer?: boolean;
     isHiring?: boolean;
   } | null;
+  // Additive fields from Commit #1 (feat/api). Pre-Commit #1 server rows
+  // don't send these, so every property is optional and the UI falls back
+  // to '' / [] before rendering.
+  fullName?: string;
+  headline?: string;
+  about?: string;
+  location?: string;
+  profilePicture?: string;
+  bannerImage?: string;
+  industry?: string;
+  experience?: Array<{
+    title?: string;
+    company?: string;
+    location?: string;
+    startDate?: string;
+    endDate?: string;
+    description?: string;
+  }>;
+  education?: Array<{
+    school?: string;
+    degree?: string;
+    field?: string;
+    startYear?: string;
+    endYear?: string;
+  }>;
 }
 
-const EFFORT_LABEL: Record<'quick' | 'moderate' | 'deep', { ar: string; en: string }> = {
-  quick:    { ar: 'سريع · 5 دقائق',   en: 'Quick · 5 min' },
-  moderate: { ar: 'متوسط · 30 دقيقة', en: 'Moderate · 30 min' },
-  deep:     { ar: 'عميق · ساعتان+',   en: 'Deep · 2+ hours' },
+const SECTION_ICON: Record<string, LucideIcon> = {
+  headline: Type,
+  about: Info,
+  experience: Briefcase,
+  skills: Award,
+  education: GraduationCap,
+  recommendations: Users,
+  activity: TrendingUp,
+  profile_completeness: CheckCircle2,
 };
 
 const SECTION_EDIT_PATH: Record<SectionKey, string> = {
@@ -121,25 +157,6 @@ const SECTION_EDIT_PATH: Record<SectionKey, string> = {
   activity: 'recent-activity',
   profile_completeness: '',
 };
-
-function scoreColor(score: number | null): { bg: string; fg: string; border: string } {
-  if (score === null || score === undefined) return { bg: '#f1f5f9', fg: '#64748b', border: '#cbd5e1' };
-  if (score >= 71) return { bg: '#dcfce7', fg: '#166534', border: '#86efac' };
-  if (score >= 41) return { bg: '#fef3c7', fg: '#92400e', border: '#fcd34d' };
-  return { bg: '#fee2e2', fg: '#991b1b', border: '#fca5a5' };
-}
-
-function frameworkPillColor(fw: FrameworkId | null | undefined): string {
-  switch (fw) {
-    case 'A': return '#2563eb';
-    case 'B': return '#9333ea';
-    case 'C': return '#059669';
-    case 'D': return '#ea580c';
-    case 'E': return '#db2777';
-    case 'F': return '#0891b2';
-    default:  return '#64748b';
-  }
-}
 
 interface HistoryItem {
   id: string;
@@ -209,26 +226,11 @@ function useToast() {
   return { push, View };
 }
 
-function gradientFor(score: number): string {
-  if (score >= 75) return 'linear-gradient(90deg, #14b8a6, #0d9488)';
-  if (score >= 50) return 'linear-gradient(90deg, #C9922A, #F59E0B)';
-  return 'linear-gradient(90deg, #DC2626, #F43F5E)';
-}
-
 function scoreColor100(s: number): string {
   if (s >= 70) return '#16a34a';
   if (s >= 50) return '#ca8a04';
   return '#dc2626';
 }
-
-const FRAMEWORK_BADGE: Record<string, { bg: string; fg: string }> = {
-  A: { bg: '#eef2ff', fg: '#3730a3' },
-  B: { bg: '#ecfdf5', fg: '#065f46' },
-  C: { bg: '#fef3c7', fg: '#92400e' },
-  D: { bg: '#f5f3ff', fg: '#5b21b6' },
-  E: { bg: '#fce7f3', fg: '#9f1239' },
-  F: { bg: '#e0f2fe', fg: '#075985' },
-};
 
 export default function ProfileAnalysis() {
   const { t, i18n } = useTranslation();
@@ -267,9 +269,24 @@ export default function ProfileAnalysis() {
   const [compareResult, setCompareResult] = useState<CompareResult | null>(null);
 
   const [exporting, setExporting] = useState<'docx' | null>(null);
-  const [showMethodology, setShowMethodology] = useState(false);
   const [liveBalance, setLiveBalance] = useState<number | null>(null);
   const [balanceStamp, setBalanceStamp] = useState<string | null>(null);
+
+  // Split-view state. selectedSectionKey === null → list view (rail shows
+  // score + list). When set, the rail shows the detail panel for that key
+  // and the list is hidden until the user hits Back or Esc.
+  const [selectedSectionKey, setSelectedSectionKey] = useState<string | null>(null);
+  // Tracks whether the mobile bottom sheet is open. Desktop ignores this.
+  const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
+  // Tracks viewport so we can switch between split view and bottom sheet
+  // without server-side rendering assumptions.
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 640);
+
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 640);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   useEffect(() => {
     loadHistory();
@@ -355,6 +372,8 @@ export default function ProfileAnalysis() {
       setAnalysis(res.analysis);
       setAnalysisId(res.id);
       setProfileSummary((res as any).profileSummary || null);
+      setSelectedSectionKey(null);
+      setMobileSheetOpen(false);
       push('success', i18n.language === 'ar' ? 'تم التحليل' : 'Analysis complete');
       loadHistory();
       refreshBalance();
@@ -456,7 +475,7 @@ export default function ProfileAnalysis() {
   return (
     <DashboardLayout>
       <Toasts />
-      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '24px 16px', fontFamily: 'Cairo, Inter, sans-serif' }}>
+      <div style={{ maxWidth: analysis ? 1280 : 1100, margin: '0 auto', padding: '24px 16px', fontFamily: 'Cairo, Inter, sans-serif', transition: 'max-width 300ms ease' }}>
 
         <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} style={{ marginBottom: 24 }}>
           <h1 style={{ fontSize: 32, fontWeight: 800, margin: 0, background: 'linear-gradient(90deg, #14b8a6, #0d9488)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
@@ -802,449 +821,355 @@ export default function ProfileAnalysis() {
           )}
         </motion.button>
 
-        {/* Result */}
+        {/* === PROFILE ANALYSIS SPLIT VIEW RESULT (v1) === */}
         <AnimatePresence>
-          {analysis && (
-            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}
-              style={{ background: 'white', borderRadius: 16, padding: 24, border: '1px solid #e5e7eb', marginBottom: 24 }}>
+          {analysis && profileSummary && (() => {
+            const sections = Array.isArray(analysis.sections) ? analysis.sections : [];
+            const profile = {
+              fullName: profileSummary.fullName || '',
+              headline: profileSummary.headline || '',
+              about: profileSummary.about || '',
+              location: profileSummary.location || '',
+              profilePicture: profileSummary.profilePicture || '',
+              bannerImage: profileSummary.bannerImage || '',
+              industry: profileSummary.industry || '',
+              experience: (profileSummary.experience || []).map((e) => ({
+                title: e.title || '',
+                company: e.company || '',
+                location: e.location || '',
+                startDate: e.startDate || '',
+                endDate: e.endDate || '',
+                description: e.description || '',
+              })),
+              education: (profileSummary.education || []).map((ed) => ({
+                school: ed.school || '',
+                degree: ed.degree || '',
+                field: ed.field || '',
+                startYear: ed.startYear || '',
+                endYear: ed.endYear || '',
+              })),
+              top_skills: profileSummary.top_skills || [],
+              certifications: profileSummary.certifications || [],
+              languages: profileSummary.languages || [],
+              honors_and_awards: profileSummary.honors_and_awards || [],
+              flags: profileSummary.flags || null,
+            };
 
-              {/* Confidence banner — shown when low/medium confidence */}
-              {analysis.confidence && analysis.confidence !== 'high' && (
-                <div style={{
-                  marginBottom: 16,
-                  padding: '10px 14px',
-                  background: analysis.confidence === 'low' ? '#fef2f2' : '#fffbeb',
-                  border: `1px solid ${analysis.confidence === 'low' ? '#fecaca' : '#fde68a'}`,
-                  borderRadius: 10,
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: 10,
-                  fontSize: 13,
-                }}>
-                  <AlertCircle size={18} style={{ color: analysis.confidence === 'low' ? '#dc2626' : '#d97706', flexShrink: 0, marginTop: 1 }} />
-                  <div>
-                    <div style={{ fontWeight: 700, color: analysis.confidence === 'low' ? '#991b1b' : '#92400e', marginBottom: 2 }}>
-                      {analysis.confidence === 'low'
-                        ? (i18n.language === 'ar' ? 'ثقة منخفضة في التحليل' : 'Low-confidence analysis')
-                        : (i18n.language === 'ar' ? 'ثقة متوسطة' : 'Medium confidence')}
-                    </div>
-                    <div style={{ color: analysis.confidence === 'low' ? '#7f1d1d' : '#78350f', lineHeight: 1.5 }}>
-                      {i18n.language === 'ar'
-                        ? `بيانات البروفايل ${typeof analysis.data_completeness === 'number' ? analysis.data_completeness : ''}% مكتملة — التوصيات أدناه قد تكون عامة. أكمل بروفايلك للحصول على تحليل أعمق.`
-                        : `Profile data ${typeof analysis.data_completeness === 'number' ? analysis.data_completeness + '%' : ''} complete — recommendations below may be generic. Complete your profile for deeper analysis.`}
-                    </div>
-                  </div>
+            const slug = (() => {
+              const m = String(url || '').match(/linkedin\.com\/in\/([^/?#]+)/i);
+              return m ? m[1] : '';
+            })();
+            const editPathFor = (key: string) => SECTION_EDIT_PATH[key as SectionKey] || '';
+
+            const sectionViews: SectionView[] = sections.map((s) => {
+              const key = String(s.key);
+              const name = i18n.language === 'ar'
+                ? (s.name_ar || t(`profileRadar.sections.names.${key}`, { defaultValue: key }))
+                : (s.name_en || t(`profileRadar.sections.names.${key}`, { defaultValue: key }));
+              const description = t(`profileAnalysis.sectionDescriptions.${key}`, { defaultValue: '' });
+              const checklist: string[] = [];
+              if (s.current) checklist.push(t('profileAnalysis.checklistCurrent'));
+              if (s.suggested) checklist.push(t('profileAnalysis.checklistSuggested'));
+              if (s.framework) checklist.push(t('profileAnalysis.checklistFramework', { fw: s.framework }));
+              const editUrl = (s.score === null || s.score === undefined) && slug && editPathFor(key)
+                ? `https://www.linkedin.com/in/${slug}/edit/${editPathFor(key)}/`
+                : undefined;
+              return {
+                key,
+                name,
+                icon: SECTION_ICON[key] || UserCircle,
+                score: typeof s.score === 'number' ? s.score : null,
+                status: deriveStatus(typeof s.score === 'number' ? s.score : null),
+                framework: s.framework || undefined,
+                frameworkLabel: s.framework_label || undefined,
+                effort: s.effort,
+                description: description || (i18n.language === 'ar'
+                  ? 'قسم مهم في بروفايلك — راجع الملاحظات أدناه.'
+                  : 'An important section of your profile — review the notes below.'),
+                verdict: s.assessment,
+                currentText: s.current,
+                suggestedText: s.suggested,
+                why: s.why,
+                checklist: checklist.length ? checklist : undefined,
+                editUrl,
+              };
+            });
+
+            const activeIndex = selectedSectionKey === null
+              ? null
+              : Math.max(0, sectionViews.findIndex((v) => v.key === selectedSectionKey));
+            const activeSection = activeIndex !== null && activeIndex >= 0 ? sectionViews[activeIndex] : null;
+
+            const goPrev = () => {
+              if (activeIndex === null || sectionViews.length === 0) return;
+              const next = (activeIndex - 1 + sectionViews.length) % sectionViews.length;
+              setSelectedSectionKey(sectionViews[next].key);
+            };
+            const goNext = () => {
+              if (activeIndex === null || sectionViews.length === 0) return;
+              const next = (activeIndex + 1) % sectionViews.length;
+              setSelectedSectionKey(sectionViews[next].key);
+            };
+            const back = () => {
+              setSelectedSectionKey(null);
+              setMobileSheetOpen(false);
+            };
+            const onSelectIndex = (index: number) => {
+              setSelectedSectionKey(sectionViews[index].key);
+            };
+
+            const copyToClipboard = (text: string) => {
+              navigator.clipboard?.writeText(text);
+              push('success', t('profileAnalysis.copied'));
+            };
+
+            const detailLabels = {
+              backToList: t('profileAnalysis.backToList'),
+              prev: t('profileAnalysis.prev'),
+              next: t('profileAnalysis.next'),
+              sectionCounter: t('profileAnalysis.sectionCounter', { current: (activeIndex ?? 0) + 1, total: sectionViews.length }),
+              lookingGood: t('profileAnalysis.lookingGood'),
+              needsImprovement: t('profileAnalysis.needsImprovement'),
+              opportunity: t('profileAnalysis.opportunity'),
+              noFeedback: t('profileAnalysis.noFeedback'),
+              openOnLinkedIn: t('profileAnalysis.openOnLinkedIn'),
+              currentLabel: t('profileAnalysis.currentLabel'),
+              suggestedLabel: t('profileAnalysis.suggestedLabel'),
+              checklist: t('profileAnalysis.checklist'),
+              moreInfo: t('profileAnalysis.moreInfo'),
+              copy: t('profileAnalysis.copy'),
+              copied: t('profileAnalysis.copied'),
+            };
+
+            const previewLabels = {
+              verdictTitle: t('profileAnalysis.verdictTitle'),
+              aboutTitle: t('profileAnalysis.aboutTitle'),
+              experienceTitle: t('profileAnalysis.experienceTitle'),
+              educationTitle: t('profileAnalysis.educationTitle'),
+              topSkillsTitle: t('profileAnalysis.topSkillsTitle'),
+              certificationsTitle: t('profileAnalysis.certificationsTitle'),
+              languagesTitle: t('profileAnalysis.languagesTitle'),
+              honorsTitle: t('profileAnalysis.honorsTitle'),
+              flagOpenToWork: t('profileRadar.flags.openToWork'),
+              flagHiring: t('profileRadar.flags.hiring'),
+              flagPremium: t('profileRadar.flags.premium'),
+              flagCreator: t('profileRadar.flags.creator'),
+            };
+
+            const detailEl = activeSection ? (
+              <SectionDetailPanel
+                section={activeSection}
+                index={activeIndex ?? 0}
+                total={sectionViews.length}
+                isRTL={isRTL}
+                labels={detailLabels}
+                onBack={back}
+                onPrev={goPrev}
+                onNext={goNext}
+                onCopy={copyToClipboard}
+              />
+            ) : null;
+
+            const listEl = (
+              <SectionList
+                sections={sectionViews}
+                activeIndex={activeIndex}
+                isRTL={isRTL}
+                onSelect={onSelectIndex}
+              />
+            );
+
+            return (
+              <motion.div
+                key="split-view-result"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -12 }}
+                style={{ marginBottom: 24 }}
+              >
+                {/* Export button — floated above the split view so it's
+                    reachable without scrolling through the whole preview. */}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+                  <button onClick={() => handleExport()} disabled={exporting === 'docx'}
+                    style={{
+                      padding: '10px 16px', borderRadius: 10, fontSize: 13, fontWeight: 700,
+                      cursor: exporting === 'docx' ? 'wait' : 'pointer',
+                      background: 'linear-gradient(90deg, #14b8a6, #0d9488)',
+                      color: 'white', border: 'none',
+                      display: 'flex', alignItems: 'center', gap: 8,
+                    }}>
+                    <FileText size={16} />
+                    {exporting === 'docx' ? '...' : t('profileRadar.result.exportReport')}
+                  </button>
                 </div>
-              )}
 
-              {/* Overall Score */}
-              <div style={{ textAlign: 'center', marginBottom: 24 }}>
-                <div style={{ fontSize: 13, color: '#64748b', marginBottom: 6 }}>{t('profileRadar.result.score')}</div>
-                <div style={{ fontSize: 'clamp(48px, 12vw, 64px)', fontWeight: 900, lineHeight: 1, background: gradientFor(analysis.overall_score), WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                  {analysis.overall_score}
-                  <span style={{ fontSize: 'clamp(18px, 5vw, 24px)', color: '#94a3b8', WebkitTextFillColor: '#94a3b8' }}>/100</span>
-                </div>
-              </div>
-
-              {/* Completeness badge + profile flags — LinkdAPI-era
-                   signals. Only shown when we have meaningful data. */}
-              {(() => {
-                const dc = typeof analysis.data_completeness === 'number' ? analysis.data_completeness : null;
-                const flags = profileSummary?.flags || null;
-                const showAnyFlag = !!flags && (flags.isOpenToWork || flags.isHiring || flags.isPremium);
-                if (dc === null && !showAnyFlag) return null;
-                const tier = dc === null ? null : (dc >= 80 ? 'perfect' : dc >= 50 ? 'good' : 'partial');
-                const tierColors: Record<string, { bg: string; fg: string; border: string }> = {
-                  perfect: { bg: '#dcfce7', fg: '#166534', border: '#86efac' },
-                  good:    { bg: '#fef3c7', fg: '#92400e', border: '#fcd34d' },
-                  partial: { bg: '#fee2e2', fg: '#991b1b', border: '#fca5a5' },
-                };
-                return (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
-                    {tier && (
-                      <span style={{
-                        padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 700,
-                        background: tierColors[tier].bg, color: tierColors[tier].fg,
-                        border: `1px solid ${tierColors[tier].border}`,
-                      }}>
-                        {t(`profileRadar.completeness.${tier}`)} · {dc}%
-                      </span>
-                    )}
-                    {flags?.isOpenToWork && (
-                      <span style={{ padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 700,
-                        background: '#dcfce7', color: '#166534', border: '1px solid #86efac' }}>
-                        {t('profileRadar.flags.openToWork')}
-                      </span>
-                    )}
-                    {flags?.isHiring && (
-                      <span style={{ padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 700,
-                        background: '#dbeafe', color: '#1e40af', border: '1px solid #93c5fd' }}>
-                        {t('profileRadar.flags.hiring')}
-                      </span>
-                    )}
-                    {flags?.isPremium && (
-                      <span style={{ padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 700,
-                        background: '#fef3c7', color: '#92400e', border: '1px solid #fcd34d' }}>
-                        {t('profileRadar.flags.premium')}
-                      </span>
-                    )}
-                    {flags?.isCreator && (
-                      <span style={{ padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 700,
-                        background: '#ede9fe', color: '#5b21b6', border: '1px solid #c4b5fd' }}>
-                        {t('profileRadar.flags.creator')}
-                      </span>
-                    )}
-                  </div>
-                );
-              })()}
-
-              {/* Verdict */}
-              <div style={{ marginBottom: 24 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: '#334155', marginBottom: 8 }}>{t('profileRadar.result.verdict')}</div>
-                <div style={{ fontSize: 15, lineHeight: 1.7, color: '#1f2937' }}>{analysis.verdict}</div>
-              </div>
-
-              {/* Profile extras: top skills, certifications, languages, honors.
-                   Render each only when populated (no empty sections). */}
-              {(() => {
-                if (!profileSummary) return null;
-                const skills = profileSummary.top_skills || [];
-                const certs = profileSummary.certifications || [];
-                const langs = profileSummary.languages || [];
-                const honors = profileSummary.honors_and_awards || [];
-                const anyContent = skills.length || certs.length || langs.length || honors.length;
-                if (!anyContent) return null;
-                return (
-                  <div style={{ marginBottom: 24, display: 'grid', gap: 12,
-                      gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))' }}>
-                    {skills.length > 0 && (
-                      <div style={{ padding: 14, borderRadius: 12, background: '#f0fdfa', border: '1px solid #99f6e4' }}>
-                        <div style={{ fontSize: 12, fontWeight: 800, color: '#0f766e', marginBottom: 8 }}>
-                          💡 {t('profileRadar.extras.topSkills')}
-                        </div>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                          {skills.slice(0, 8).map((s, i) => (
-                            <span key={i} style={{ fontSize: 12, padding: '3px 8px', background: '#fff',
-                                border: '1px solid #99f6e4', borderRadius: 999, color: '#134e4a', fontWeight: 600 }}>
-                              {s}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {certs.length > 0 && (
-                      <div style={{ padding: 14, borderRadius: 12, background: '#eff6ff', border: '1px solid #bfdbfe' }}>
-                        <div style={{ fontSize: 12, fontWeight: 800, color: '#1e40af', marginBottom: 8 }}>
-                          🎓 {t('profileRadar.extras.certifications')}
-                        </div>
-                        <div style={{ display: 'grid', gap: 4 }}>
-                          {certs.map((c, i) => (
-                            <div key={i} style={{ fontSize: 13, color: '#1e3a8a', lineHeight: 1.5 }}>
-                              <span style={{ fontWeight: 700 }}>{c.name}</span>
-                              {c.issuer ? <span style={{ color: '#64748b' }}> — {c.issuer}</span> : null}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {langs.length > 0 && (
-                      <div style={{ padding: 14, borderRadius: 12, background: '#fdf4ff', border: '1px solid #f0abfc' }}>
-                        <div style={{ fontSize: 12, fontWeight: 800, color: '#86198f', marginBottom: 8 }}>
-                          🌍 {t('profileRadar.extras.languages')}
-                        </div>
-                        <div style={{ display: 'grid', gap: 4 }}>
-                          {langs.map((l, i) => (
-                            <div key={i} style={{ fontSize: 13, color: '#701a75', lineHeight: 1.5 }}>
-                              <span style={{ fontWeight: 700 }}>{l.name}</span>
-                              {l.proficiency ? <span style={{ color: '#86198f', opacity: 0.7 }}> · {l.proficiency.replace(/_/g, ' ').toLowerCase()}</span> : null}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {honors.length > 0 && (
-                      <div style={{ padding: 14, borderRadius: 12, background: '#fffbeb', border: '1px solid #fde68a' }}>
-                        <div style={{ fontSize: 12, fontWeight: 800, color: '#92400e', marginBottom: 8 }}>
-                          🏆 {t('profileRadar.extras.honors')}
-                        </div>
-                        <div style={{ display: 'grid', gap: 4 }}>
-                          {honors.map((h, i) => (
-                            <div key={i} style={{ fontSize: 13, color: '#78350f', lineHeight: 1.5 }}>
-                              <span style={{ fontWeight: 700 }}>{h.title}</span>
-                              {h.issuer ? <span style={{ color: '#64748b' }}> — {h.issuer}</span> : null}
-                              {h.issued_on ? <span style={{ color: '#a16207', opacity: 0.7 }}> · {h.issued_on}</span> : null}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })()}
-
-              {/* Methodology panel — builds trust by making methodology transparent */}
-              <div style={{
-                marginBottom: 20, padding: '10px 14px', background: '#f8fafc',
-                border: '1px solid #e2e8f0', borderRadius: 10,
-                display: 'flex', alignItems: 'center', gap: 10, fontSize: 12,
-              }}>
-                <BookOpen size={16} style={{ color: '#0f766e', flexShrink: 0 }} />
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 700, color: '#0f766e' }}>{t('profileRadar.methodology.title')}</div>
-                  <div style={{ color: '#475569', marginTop: 2 }}>{t('profileRadar.methodology.subtitle')}</div>
-                </div>
-                <button onClick={() => setShowMethodology(s => !s)}
-                  style={{ background: 'none', border: '1px solid #cbd5e1', cursor: 'pointer', color: '#0f766e', borderRadius: 8, padding: '6px 10px', fontSize: 12, fontWeight: 700 }}>
-                  {showMethodology ? t('profileRadar.methodology.closeDetails') : t('profileRadar.methodology.viewDetails')}
-                </button>
-              </div>
-              {showMethodology && (
-                <div style={{ marginBottom: 20, padding: 14, background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 10, fontSize: 13 }}>
-                  {(['A','B','C','D','E','F'] as FrameworkId[]).map(fw => (
-                    <div key={fw} style={{ display: 'flex', gap: 10, marginBottom: 6 }}>
-                      <span style={{
-                        fontWeight: 900,
-                        padding: '2px 8px', borderRadius: 6,
-                        background: FRAMEWORK_BADGE[fw].bg, color: FRAMEWORK_BADGE[fw].fg,
-                        minWidth: 24, textAlign: 'center',
-                      }}>{fw}</span>
-                      <span style={{ color: '#334155' }}>{t(`profileRadar.frameworks.${fw}`)}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Top Priorities — now objects with framework + expected impact */}
-              {(() => {
-                const priorities = analysis.top_priorities && analysis.top_priorities.length
-                  ? analysis.top_priorities
-                  : (analysis.top_3_priorities || []).map((p, idx) => ({ rank: idx + 1, action: p } as TopPriority));
-                if (!priorities.length) return null;
-                return (
-                  <div style={{ marginBottom: 24, padding: 16, background: 'linear-gradient(135deg, #fef3c7, #fde68a)', borderRadius: 12, border: '1px solid #fbbf24' }}>
-                    <div style={{ fontSize: 14, fontWeight: 800, color: '#78350f', marginBottom: 10 }}>🎯 {t('profileRadar.result.topPriorities')}</div>
-                    <div style={{ display: 'grid', gap: 10 }}>
-                      {priorities.map((p, i) => (
-                        <div key={i} style={{ background: 'rgba(255,255,255,0.65)', borderRadius: 10, padding: 12, border: '1px solid #fde68a' }}>
-                          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                            <span style={{ fontWeight: 900, fontSize: 18, color: '#78350f', minWidth: 24 }}>{p.rank || i + 1}</span>
-                            <div style={{ flex: 1 }}>
-                              <div style={{ fontSize: 14, fontWeight: 700, color: '#78350f', lineHeight: 1.55 }}>{p.action}</div>
-                              {(p.framework || p.framework_label) && (
-                                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 6, padding: '3px 8px',
-                                    background: FRAMEWORK_BADGE[(p.framework || 'A') as FrameworkId]?.bg || '#fff',
-                                    color: FRAMEWORK_BADGE[(p.framework || 'A') as FrameworkId]?.fg || '#78350f',
-                                    borderRadius: 6, fontSize: 11, fontWeight: 700 }}>
-                                  {p.framework && <span>{p.framework}</span>}
-                                  <span>{p.framework_label || (p.framework ? t(`profileRadar.frameworks.${p.framework}`) : '')}</span>
-                                </div>
-                              )}
-                              {p.expected_impact && (
-                                <div style={{ fontSize: 12, color: '#92400e', marginTop: 6, lineHeight: 1.5 }}>
-                                  <span style={{ fontWeight: 700 }}>{t('profileRadar.result.expectedImpact')}:</span> {p.expected_impact}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {/* Sections (v6) — 8 classic LinkedIn sections */}
-              {(() => {
-                // v6 uses `sections`; legacy rows use `dimensions`. Normalize.
-                const sectionsData: Section[] = Array.isArray(analysis.sections) && analysis.sections.length
-                  ? analysis.sections
-                  : (Array.isArray(analysis.dimensions)
-                    ? analysis.dimensions.map<Section>((d) => ({
-                        key: d.name,
-                        score: d.score,
-                        framework: d.framework,
-                        framework_label: d.framework_label,
-                        assessment: d.observations?.[0]?.what || d.feedback,
-                        current: d.recommendations?.[0]?.current,
-                        suggested: d.recommendations?.[0]?.suggested,
-                        why: d.observations?.[0]?.why || d.recommendations?.[0]?.rationale,
-                      }))
-                    : []);
-                if (sectionsData.length === 0) return null;
-
-                const slug = (() => {
-                  const m = String((analysis as any)?.linkedinUrl || url || '').match(/linkedin\.com\/in\/([^/?#]+)/i);
-                  return m ? m[1] : '';
-                })();
-
-                return (
-                  <div style={{ marginBottom: 24 }}>
-                    <div style={{ fontSize: 14, fontWeight: 800, color: '#334155', marginBottom: 12 }}>
-                      {i18n.language === 'ar' ? 'القسم حسب القسم' : 'Section by Section'}
-                    </div>
-                    <div style={{ display: 'grid', gap: 12 }}>
-                      {sectionsData.map((s, i) => {
-                        const noData = s.score === null || s.score === undefined;
-                        const displayName = i18n.language === 'ar'
-                          ? (s.name_ar || t(`profileRadar.sections.names.${s.key}`, { defaultValue: String(s.key) }))
-                          : (s.name_en || t(`profileRadar.sections.names.${s.key}`, { defaultValue: String(s.key) }));
-                        const colors = scoreColor(s.score);
-                        const fwColor = frameworkPillColor(s.framework as FrameworkId);
-                        const effortKey = (s.effort && ['quick','moderate','deep'].includes(s.effort)) ? s.effort as 'quick'|'moderate'|'deep' : 'moderate';
-                        const effortText = i18n.language === 'ar' ? EFFORT_LABEL[effortKey].ar : EFFORT_LABEL[effortKey].en;
-                        const editPath = SECTION_EDIT_PATH[s.key as SectionKey] || '';
-                        const editUrl = slug && editPath ? `https://www.linkedin.com/in/${slug}/edit/${editPath}/` : null;
-
-                        return (
-                          <div key={i} style={{ padding: 14, background: '#f8fafc', borderRadius: 10, border: '1px solid #e5e7eb', opacity: noData ? 0.85 : 1 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10, flexWrap: 'wrap' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                                <span style={{ fontWeight: 700, color: '#1f2937', fontSize: 15 }}>{displayName}</span>
-                                {s.framework && (
-                                  <span style={{
-                                    padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 800,
-                                    background: fwColor + '20', color: fwColor, border: `1px solid ${fwColor}40`,
-                                  }}>
-                                    {s.framework}
-                                  </span>
-                                )}
-                                <span style={{
-                                  padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700,
-                                  background: '#e0e7ff', color: '#3730a3',
-                                }}>
-                                  {effortText}
-                                </span>
-                              </div>
-                              <span style={{
-                                padding: '4px 10px', borderRadius: 999, fontSize: 14, fontWeight: 800,
-                                background: colors.bg, color: colors.fg, border: `1px solid ${colors.border}`,
-                                minWidth: 60, textAlign: 'center',
-                              }}>
-                                {noData ? '—' : `${s.score}/100`}
-                              </span>
-                            </div>
-
-                            {noData && editUrl && (
-                              <div style={{ marginBottom: 8, padding: 10, background: '#fff', borderRadius: 8, border: '1px dashed #cbd5e1', fontSize: 12, color: '#64748b' }}>
-                                <div style={{ marginBottom: 6 }}>
-                                  {i18n.language === 'ar' ? 'هذا القسم غير مُعبّأ على LinkedIn' : 'This section is not filled on LinkedIn'}
-                                </div>
-                                <a href={editUrl} target="_blank" rel="noopener noreferrer"
-                                  style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: '#0f766e', fontWeight: 700, textDecoration: 'none', fontSize: 12 }}>
-                                  {i18n.language === 'ar' ? 'افتح القسم على LinkedIn' : 'Open section on LinkedIn'}
-                                  <ExternalLink size={12} />
-                                </a>
-                              </div>
-                            )}
-
-                            {s.assessment && (
-                              <div style={{ fontSize: 13, color: '#475569', lineHeight: 1.6, marginBottom: 10 }}>{s.assessment}</div>
-                            )}
-
-                            {(s.current || s.suggested) && (
-                              <div style={{ display: 'grid', gap: 8, marginBottom: 8 }}>
-                                {s.current && (
-                                  <div style={{ background: '#fff', borderRadius: 8, padding: 10, border: '1px solid #e2e8f0' }}>
-                                    <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                                      {i18n.language === 'ar' ? 'الحالي' : 'Current'}
-                                    </div>
-                                    <div style={{ fontSize: 13, color: '#334155', lineHeight: 1.5, fontFamily: 'ui-monospace, SFMono-Regular, monospace', whiteSpace: 'pre-wrap' }}>
-                                      {s.current}
-                                    </div>
-                                    <button onClick={() => { navigator.clipboard?.writeText(s.current || ''); push('success', i18n.language === 'ar' ? 'تم النسخ' : 'Copied'); }}
-                                      style={{ marginTop: 6, padding: '4px 10px', fontSize: 11, fontWeight: 700, border: '1px solid #cbd5e1', background: '#fff', color: '#475569', borderRadius: 6, cursor: 'pointer' }}>
-                                      {i18n.language === 'ar' ? 'نسخ' : 'Copy'}
-                                    </button>
-                                  </div>
-                                )}
-                                {s.suggested && (
-                                  <div style={{ background: '#f0fdfa', borderRadius: 8, padding: 10, border: '1px solid #99f6e4' }}>
-                                    <div style={{ fontSize: 11, fontWeight: 700, color: '#0f766e', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                                      {i18n.language === 'ar' ? 'المقترح' : 'Suggested'}
-                                    </div>
-                                    <div style={{ fontSize: 13, color: '#0f766e', lineHeight: 1.5, fontWeight: 600, fontFamily: 'ui-monospace, SFMono-Regular, monospace', whiteSpace: 'pre-wrap' }}>
-                                      {s.suggested}
-                                    </div>
-                                    <button onClick={() => { navigator.clipboard?.writeText(s.suggested || ''); push('success', i18n.language === 'ar' ? 'تم النسخ' : 'Copied'); }}
-                                      style={{ marginTop: 6, padding: '4px 10px', fontSize: 11, fontWeight: 700, border: 'none', background: '#14b8a6', color: '#fff', borderRadius: 6, cursor: 'pointer' }}>
-                                      {i18n.language === 'ar' ? 'نسخ' : 'Copy'}
-                                    </button>
-                                  </div>
-                                )}
-                              </div>
-                            )}
-
-                            {s.why && (
-                              <div style={{ fontSize: 12, color: '#64748b', fontStyle: 'italic', lineHeight: 1.5 }}>{s.why}</div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {/* Legacy flat recommendations (historical rows) */}
-              {analysis.recommendations && analysis.recommendations.length > 0 && (
-                <div style={{ marginBottom: 24 }}>
-                  <div style={{ fontSize: 14, fontWeight: 800, color: '#334155', marginBottom: 12 }}>{t('profileRadar.result.recommendations')}</div>
-                  <ul style={{ paddingInlineStart: 20, margin: 0 }}>
-                    {analysis.recommendations.map((r, i) => (
-                      <li key={i} style={{ fontSize: 14, color: '#1f2937', marginBottom: 8, lineHeight: 1.6 }}>{r}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {/* Evidence bundle footer */}
-              {analysis.evidence_bundle && (
-                <div style={{ marginBottom: 24, padding: 14, background: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: 10, fontSize: 12 }}>
-                  <div style={{ fontWeight: 800, color: '#334155', marginBottom: 8 }}>📎 {t('profileRadar.result.evidenceTitle')}</div>
-                  {Array.isArray(analysis.evidence_bundle.frameworks_referenced) && analysis.evidence_bundle.frameworks_referenced.length > 0 && (
-                    <div style={{ marginBottom: 6 }}>
-                      <span style={{ fontWeight: 700, color: '#475569' }}>{t('profileRadar.result.evidenceFrameworks')}:</span>{' '}
-                      <span style={{ color: '#334155' }}>
-                        {analysis.evidence_bundle.frameworks_referenced.map(fw => {
-                          const key = String(fw).toUpperCase() as FrameworkId;
-                          return FRAMEWORK_BADGE[key] ? `${key} (${t(`profileRadar.frameworks.${key}`)})` : String(fw);
-                        }).join(' · ')}
-                      </span>
-                    </div>
-                  )}
-                  {Array.isArray(analysis.evidence_bundle.profile_quotes_used) && analysis.evidence_bundle.profile_quotes_used.length > 0 && (
-                    <div style={{ marginBottom: 6 }}>
-                      <div style={{ fontWeight: 700, color: '#475569', marginBottom: 4 }}>{t('profileRadar.result.evidenceQuotes')}:</div>
-                      <ul style={{ margin: 0, paddingInlineStart: 18, color: '#475569' }}>
-                        {analysis.evidence_bundle.profile_quotes_used.slice(0, 8).map((q, i) => (
-                          <li key={i} style={{ fontStyle: 'italic', marginBottom: 2 }}>{q}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  {Array.isArray(analysis.evidence_bundle.missing_data_flags) && analysis.evidence_bundle.missing_data_flags.length > 0 && (
-                    <div>
-                      <span style={{ fontWeight: 700, color: '#92400e' }}>{t('profileRadar.result.evidenceMissing')}:</span>{' '}
-                      <span style={{ color: '#78350f' }}>{analysis.evidence_bundle.missing_data_flags.join(' · ')}</span>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Export Button (DOCX only — Word handles Arabic glyphs natively) */}
-              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                <button onClick={() => handleExport()} disabled={exporting === 'docx'}
+                {/* DESKTOP SPLIT VIEW. On tablet (~640-1024px), the rail
+                    drops below the main via a media query applied on the
+                    wrapping class. On mobile (<640px) the rail is hidden
+                    and replaced by a FAB + bottom sheet. */}
+                <div
+                  className="pra-split"
                   style={{
-                    flex: 1, minWidth: 180, padding: '14px 16px', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer',
-                    background: 'linear-gradient(90deg, #14b8a6, #0d9488)', color: 'white', border: 'none',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                  }}>
-                  <FileText size={18} />
-                  {exporting === 'docx' ? '...' : t('profileRadar.result.exportReport')}
-                </button>
-              </div>
-            </motion.div>
-          )}
+                    display: 'grid',
+                    gridTemplateColumns: isMobile ? '1fr' : '1fr 380px',
+                    gap: 24,
+                    alignItems: 'start',
+                  }}
+                >
+                  {/* MAIN COLUMN: profile preview. */}
+                  <div style={{ minWidth: 0 }}>
+                    <ProfilePreviewCard
+                      profile={profile}
+                      verdict={analysis.verdict}
+                      isRTL={isRTL}
+                      labels={previewLabels}
+                    />
+                  </div>
+
+                  {/* RIGHT RAIL: score + list OR detail. Hidden on mobile. */}
+                  {!isMobile && (
+                    <aside
+                      style={{
+                        position: 'sticky',
+                        top: 16,
+                        maxHeight: 'calc(100vh - 32px)',
+                        overflowY: 'auto',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 16,
+                      }}
+                    >
+                      {selectedSectionKey === null && (
+                        <div
+                          style={{
+                            background: '#ffffff',
+                            border: '1px solid #e5e7eb',
+                            borderRadius: 16,
+                            padding: 20,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: 8,
+                          }}
+                          aria-label={`Wassel Score: ${analysis.overall_score} out of 100`}
+                        >
+                          <ScoreRing score={analysis.overall_score} size={128} label={t('profileAnalysis.wasselScore')} />
+                        </div>
+                      )}
+
+                      <AnimatePresence mode="wait" initial={false}>
+                        {selectedSectionKey === null ? (
+                          <motion.div
+                            key="list"
+                            initial={{ opacity: 0, x: isRTL ? -16 : 16 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: isRTL ? 16 : -16 }}
+                            transition={{ duration: 0.25 }}
+                          >
+                            {listEl}
+                          </motion.div>
+                        ) : (
+                          <motion.div
+                            key="detail"
+                            initial={{ opacity: 0, x: isRTL ? 16 : -16 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: isRTL ? -16 : 16 }}
+                            transition={{ duration: 0.25 }}
+                          >
+                            {detailEl}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </aside>
+                  )}
+                </div>
+
+                {/* MOBILE: FAB + bottom sheet (below 640px only). */}
+                {isMobile && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setMobileSheetOpen(true)}
+                      style={{
+                        position: 'fixed',
+                        insetInlineEnd: 16,
+                        bottom: 16,
+                        zIndex: 40,
+                        padding: '14px 22px',
+                        borderRadius: 999,
+                        border: 'none',
+                        background: 'linear-gradient(90deg, #14b8a6, #0d9488)',
+                        color: '#fff',
+                        fontWeight: 800,
+                        fontSize: 14,
+                        fontFamily: 'inherit',
+                        boxShadow: '0 12px 30px rgba(14, 165, 149, 0.35)',
+                        display: 'flex', alignItems: 'center', gap: 8,
+                      }}
+                    >
+                      <ListIcon size={16} />
+                      {t('profileAnalysis.wasselScore')} · {analysis.overall_score}
+                    </button>
+
+                    <AnimatePresence>
+                      {mobileSheetOpen && (
+                        <>
+                          <motion.div
+                            key="sheet-backdrop"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 0.55 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setMobileSheetOpen(false)}
+                            style={{
+                              position: 'fixed', inset: 0, background: '#0f172a', zIndex: 50,
+                            }}
+                          />
+                          <motion.div
+                            key="sheet"
+                            initial={{ y: '100%' }}
+                            animate={{ y: 0 }}
+                            exit={{ y: '100%' }}
+                            transition={{ type: 'tween', duration: 0.3 }}
+                            style={{
+                              position: 'fixed',
+                              left: 0, right: 0, bottom: 0,
+                              zIndex: 51,
+                              background: '#f8fafc',
+                              borderTopLeftRadius: 20,
+                              borderTopRightRadius: 20,
+                              maxHeight: '85vh',
+                              overflowY: 'auto',
+                              padding: 16,
+                              boxShadow: '0 -20px 40px rgba(0,0,0,0.15)',
+                            }}
+                          >
+                            <div style={{
+                              width: 40, height: 4, background: '#cbd5e1',
+                              borderRadius: 999, margin: '0 auto 12px',
+                            }} />
+                            {selectedSectionKey === null ? (
+                              <>
+                                <div style={{
+                                  background: '#ffffff', border: '1px solid #e5e7eb',
+                                  borderRadius: 16, padding: 16, marginBottom: 14,
+                                  display: 'flex', justifyContent: 'center',
+                                }}>
+                                  <ScoreRing score={analysis.overall_score} size={96} label={t('profileAnalysis.wasselScore')} />
+                                </div>
+                                {listEl}
+                              </>
+                            ) : (
+                              detailEl
+                            )}
+                          </motion.div>
+                        </>
+                      )}
+                    </AnimatePresence>
+                  </>
+                )}
+              </motion.div>
+            );
+          })()}
         </AnimatePresence>
 
         {/* History */}
