@@ -1345,10 +1345,13 @@ export const linkedinRouter = router({
           totalMs: Date.now() - startedAt,
           tokensRemaining: deduct.balance_after,
         });
-        // Lightweight profile summary for the UI's new side-panel sections.
-        // We don't ship the full unifiedProfile — just the fields the sections
-        // actually render (honors/certs/langs/top-skills/flags).
+        // Lightweight profile summary for the UI's side-panel sections +
+        // the split-view main column (name/headline/about/experience/education).
+        // We don't ship the full unifiedProfile — just the structured fields
+        // the UI actually renders. Empty fields default to '' or [] so the
+        // client doesn't need to null-check on every use.
         const profileSummary = unifiedProfile ? {
+          // ── original fields (unchanged — do not reorder or alter) ──
           top_skills: Array.isArray(unifiedProfile.skills) ? unifiedProfile.skills.slice(0, 10) : [],
           certifications: Array.isArray(unifiedProfile.certifications)
             ? unifiedProfile.certifications.slice(0, 6).map((c: any) => ({ name: c?.name || '', issuer: c?.issuer || '' }))
@@ -1364,6 +1367,39 @@ export const linkedinRouter = router({
               }))
             : [],
           flags: unifiedProfile.flags || null,
+          // ── additive fields for the split-view main column (Option B) ──
+          // All values default to '' or [] — never null/undefined — so the
+          // client can render without guards. No AI output is touched; these
+          // are pass-throughs from the LinkdAPI/BD scraper output.
+          fullName: typeof unifiedProfile.fullName === 'string' ? unifiedProfile.fullName : '',
+          headline: typeof unifiedProfile.headline === 'string' ? unifiedProfile.headline : '',
+          about: typeof unifiedProfile.summary === 'string' ? unifiedProfile.summary : '',
+          location: typeof unifiedProfile.location === 'string' ? unifiedProfile.location : '',
+          profilePicture: typeof unifiedProfile.profilePicture === 'string' ? unifiedProfile.profilePicture : '',
+          bannerImage: typeof unifiedProfile.bannerImage === 'string' ? unifiedProfile.bannerImage : '',
+          industry: typeof unifiedProfile.industry === 'string' ? unifiedProfile.industry : '',
+          experience: Array.isArray(unifiedProfile.experience)
+            ? unifiedProfile.experience.map((e: any) => ({
+                title: typeof e?.title === 'string' ? e.title : '',
+                company: typeof e?.company === 'string' ? e.company : '',
+                location: typeof e?.location === 'string' ? e.location : '',
+                startDate: typeof e?.startDate === 'string' ? e.startDate : '',
+                endDate: typeof e?.endDate === 'string' ? e.endDate : '',
+                description: typeof e?.description === 'string' ? e.description : '',
+              }))
+            : [],
+          education: Array.isArray(unifiedProfile.education)
+            ? unifiedProfile.education.map((ed: any) => ({
+                school: typeof ed?.school === 'string' ? ed.school : '',
+                degree: typeof ed?.degree === 'string' ? ed.degree : '',
+                field: typeof ed?.field === 'string' ? ed.field : '',
+                startYear: typeof ed?.startYear === 'string' ? ed.startYear
+                  : (typeof ed?.start_year === 'string' ? ed.start_year : ''),
+                endYear: typeof ed?.endYear === 'string' ? ed.endYear
+                  : (typeof ed?.end_year === 'string' ? ed.end_year
+                  : (typeof ed?.year === 'string' ? ed.year : '')),
+              }))
+            : [],
         } : null;
 
         return {
