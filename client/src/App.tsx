@@ -1,9 +1,22 @@
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useEffect } from 'react';
 import { useRoute, useLocation } from 'wouter';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import * as Sentry from '@sentry/react';
 import V2Routes from './app/v2-routes';
+
+/**
+ * Replace the current URL with `to` and render nothing. Used to retire
+ * legacy public pages that have v2 equivalents while preserving inbound
+ * links and bookmarks.
+ */
+function Redirect({ to }: { to: string }) {
+  const [, navigate] = useLocation();
+  useEffect(() => {
+    navigate(to, { replace: true });
+  }, [to, navigate]);
+  return null;
+}
 
 // Loading fallback
 const PageLoader = () => (
@@ -14,10 +27,9 @@ const PageLoader = () => (
   </div>
 );
 
-// Eagerly loaded pages (needed immediately)
-import LandingPage from './pages/LandingPage';
-import Login from './pages/Login';
-import Signup from './pages/Signup';
+// Eagerly loaded pages (needed immediately).
+// Note: LandingPage, Login, Signup were retired in favor of /v2 — their
+// legacy paths now redirect (see PUBLIC redirects below).
 import ResetPassword from './pages/ResetPassword';
 
 // Lazy loaded pages (loaded on demand)
@@ -38,7 +50,7 @@ const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'));
 const AdminSettings = lazy(() => import('./pages/admin/AdminSettings'));
 
 // New Pages
-const Pricing = lazy(() => import('./pages/Pricing'));
+// Pricing retired in favor of /v2/pricing — legacy /pricing redirects.
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 const TermsOfService = lazy(() => import('./pages/TermsOfService'));
 const Analytics = lazy(() => import('./pages/Analytics'));
@@ -54,8 +66,18 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { user, loading } = useAuth();
-  const [, navigate] = useLocation();
   const { t } = useTranslation();
+
+  // Defer navigate() to an effect so we don't update one router during the
+  // render of another. Unauthenticated users land on /v2/login (the v1
+  // /login route already redirects there).
+  useEffect(() => {
+    if (!loading && !user) {
+      // Use the browser to avoid coupling to wouter's setLocation during render.
+      window.history.replaceState({}, '', '/v2/login');
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    }
+  }, [loading, user]);
 
   if (loading) {
     return (
@@ -68,10 +90,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     );
   }
 
-  if (!user) {
-    navigate('/login');
-    return null;
-  }
+  if (!user) return null;
 
   return <>{children}</>;
 };
@@ -117,12 +136,16 @@ const AppRoutes: React.FC = () => {
 
   if (matchV2) return <V2Routes />;
 
-  if (match) return <LandingPage />;
-  if (matchLogin) return <Login />;
-  if (matchSignup) return <Signup />;
+  // Public routes that have a v2 equivalent → redirect (preserve bookmarks).
+  // /reset-password and /about, /blog, /privacy, /terms keep their legacy v1
+  // pages until the corresponding v2 versions land in Phase G.
+  if (match)        return <Redirect to="/v2" />;
+  if (matchLogin)   return <Redirect to="/v2/login" />;
+  if (matchSignup)  return <Redirect to="/v2/signup" />;
+  if (matchPricing) return <Redirect to="/v2/pricing" />;
+
   if (matchReset) return <ResetPassword />;
 
-  if (matchPricing) return <Pricing />;
   if (matchPrivacy) return <PrivacyPolicy />;
   if (matchTerms) return <TermsOfService />;
   if (matchAbout) return <About />;
@@ -232,7 +255,8 @@ const AppRoutes: React.FC = () => {
       </ProtectedRoute>
     );
 
-  return <LandingPage />;
+  // Unknown path → land users on v2 home (matches the new default).
+  return <Redirect to="/v2" />;
 };
 
 const App: React.FC = () => {

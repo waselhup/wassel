@@ -8,6 +8,7 @@ import Eyebrow from '@/components/v2/Eyebrow';
 import LiveDot from '@/components/v2/LiveDot';
 import NumDisplay from '@/components/v2/NumDisplay';
 import RadarSweep from '@/components/v2/RadarSweep';
+import { useIsDesktop } from '@/components/v2/ResponsiveShell';
 import { useJobs } from '@/lib/v2/jobs';
 
 interface Finding {
@@ -51,15 +52,10 @@ const KIND_ICON: Record<Finding['kind'], string> = {
 
 function RadarLoading() {
   const [location, navigate] = useLocation();
-  // i18n prep — namespace v2.radar.loading.*. Translations TBD.
-  // TODO(i18n): findings stream copy comes from analyzer output.
-  // Aliased to `tr` — `t` is already used for the elapsed-seconds variable.
   const { t: tr } = useTranslation();
   const { jobs, addJob } = useJobs();
+  const isDesktop = useIsDesktop();
 
-  // Read ?jobId= from the URL. If RadarInput started a job and forwarded its
-  // id, we read live progress from that job. If the user lands here directly
-  // (deep link, refresh), we create a fresh job so the loading state is real.
   const incomingJobId = useMemo(() => {
     if (typeof window === 'undefined') return null;
     const params = new URLSearchParams(window.location.search);
@@ -81,12 +77,9 @@ function RadarLoading() {
   const jobId = incomingJobId ?? ensuredJobIdRef.current;
   const job = jobs.find((j) => j.id === jobId);
 
-  // Drive the seconds counter and findings off the job's progress.
   const progress = job?.progress ?? 0;
   const t = progress * TOTAL;
 
-  // Auto-redirect when the job completes (matches the old 7.5s behaviour but
-  // now bound to the job, not a separate timer).
   const redirectedRef = useRef(false);
   useEffect(() => {
     if (redirectedRef.current) return;
@@ -94,8 +87,6 @@ function RadarLoading() {
       redirectedRef.current = true;
       navigate(`/v2/analyze/result/${MOCK_RESULT_ID}`);
     } else if (job?.status === 'failed') {
-      // The toast (fired by V2Routes) already reports the failure;
-      // bring the user back to the input screen so they can retry.
       redirectedRef.current = true;
       navigate('/v2/analyze');
     }
@@ -103,6 +94,9 @@ function RadarLoading() {
 
   const visible = FINDINGS.filter((f) => t >= f.t);
   const idx = visible.length;
+
+  // RadarSweep size: 260 on mobile, 480 on desktop. Read once per render.
+  const sweepSize = isDesktop ? 480 : 260;
 
   return (
     <Phone>
@@ -131,56 +125,66 @@ function RadarLoading() {
         }
       />
 
-      <div className="flex-1 px-[22px] pb-8 pt-6 overflow-y-auto">
-        <div className="mb-5 text-center">
-          <h1 className="font-ar text-[26px] font-bold text-v2-ink">
-            {tr('v2.radar.loading.heading', 'نحلّل بروفايلك الآن…')}
-          </h1>
-          <div className="mt-2 inline-flex items-baseline gap-1 text-v2-dim">
-            <NumDisplay className="text-[14px] font-medium text-v2-ink-2">{t.toFixed(1)}</NumDisplay>
-            <span className="text-[13px]">/</span>
-            <span className="font-ar text-[13px]">
-              <NumDisplay>7.5</NumDisplay> ثانية
-            </span>
+      {/* Mobile: single column, scrolling. Desktop: 50/50 split with subtle radial bg. */}
+      <div className="flex-1 px-[22px] pb-8 pt-6 overflow-y-auto lg:px-0 lg:pb-0 lg:pt-0 lg:overflow-visible
+        lg:relative lg:grid lg:grid-cols-2 lg:gap-12 lg:items-start lg:py-10
+        lg:before:absolute lg:before:inset-0 lg:before:-z-10 lg:before:rounded-v2-xl
+        lg:before:bg-[radial-gradient(circle_at_70%_30%,var(--teal-50)_0%,transparent_60%)]"
+      >
+
+        {/* SWEEP column — start side (RTL: right) on lg */}
+        <div className="lg:order-1 lg:flex lg:flex-col lg:items-center lg:justify-center lg:py-8">
+          <div className="mb-5 text-center lg:mb-8">
+            <h1 className="font-ar font-bold text-v2-ink text-[26px] lg:text-[32px]">
+              {tr('v2.radar.loading.heading', 'نحلّل بروفايلك الآن…')}
+            </h1>
+            <div className="mt-2 inline-flex items-baseline gap-1 text-v2-dim lg:mt-3">
+              <NumDisplay className="text-[14px] font-medium text-v2-ink-2 lg:text-[16px]">{t.toFixed(1)}</NumDisplay>
+              <span className="text-[13px]">/</span>
+              <span className="font-ar text-[13px] lg:text-[14px]">
+                <NumDisplay>7.5</NumDisplay> ثانية
+              </span>
+            </div>
+          </div>
+
+          <div className="mx-auto mb-6 flex justify-center lg:mb-8">
+            <RadarSweep duration={TOTAL} litCount={Math.min(6, idx)} size={sweepSize} loop />
+          </div>
+
+          <div className="w-full lg:max-w-[420px]">
+            <div className="relative h-1 w-full overflow-hidden rounded-full bg-v2-line">
+              <div
+                className="absolute inset-y-0 start-0 bg-teal-500"
+                style={{ width: `${progress * 100}%`, transition: 'width 80ms linear' }}
+              />
+            </div>
+            <div className="mt-2 flex items-center justify-between">
+              <Eyebrow>
+                <NumDisplay>{idx}</NumDisplay> / <NumDisplay>9</NumDisplay>
+              </Eyebrow>
+              <Eyebrow className="text-teal-700">
+                {idx >= 9 ? 'مكتمل' : 'دقّة'}
+              </Eyebrow>
+            </div>
           </div>
         </div>
 
-        <div className="mx-auto mb-6 flex justify-center">
-          <RadarSweep duration={TOTAL} litCount={Math.min(6, idx)} size={260} loop />
-        </div>
-
-        <div className="mb-6">
-          <div className="relative h-1 w-full overflow-hidden rounded-full bg-v2-line">
-            <div
-              className="absolute inset-y-0 start-0 bg-teal-500"
-              style={{ width: `${progress * 100}%`, transition: 'width 80ms linear' }}
-            />
-          </div>
-          <div className="mt-2 flex items-center justify-between">
+        {/* FINDINGS column — end side (RTL: left) on lg, drawer-like panel */}
+        <div className="lg:order-2 lg:rounded-v2-xl lg:border lg:border-v2-line lg:bg-v2-surface lg:p-7 lg:shadow-card">
+          <div className="mb-3 flex items-baseline justify-between lg:mb-5">
+            <h2 className="font-ar font-semibold text-v2-ink text-[17px] lg:text-[19px]">يكتشف الآن</h2>
             <Eyebrow>
               <NumDisplay>{idx}</NumDisplay> / <NumDisplay>9</NumDisplay>
             </Eyebrow>
-            <Eyebrow className="text-teal-700">
-              {idx >= 9 ? 'مكتمل' : 'دقّة'}
-            </Eyebrow>
-          </div>
-        </div>
-
-        <div>
-          <div className="mb-3 flex items-baseline justify-between">
-            <h2 className="font-ar text-[17px] font-semibold text-v2-ink">يكتشف الآن</h2>
-            <Eyebrow>
-              <NumDisplay>{idx}</NumDisplay> / <NumDisplay>9</NumDisplay>
-            </Eyebrow>
           </div>
 
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 lg:gap-3">
             {[...visible].reverse().map((f, i) => (
               <div
                 key={f.t}
                 className={`flex items-center gap-3 px-3.5 py-3 rounded-v2-md border ${KIND_BG[f.kind]} ${
                   i === 0 ? 'v2-finding-in' : ''
-                }`}
+                } lg:px-4 lg:py-3.5`}
               >
                 <span
                   className={`flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full text-white font-mono text-[12px] font-semibold leading-none ${KIND_DOT[f.kind]}`}
@@ -188,35 +192,36 @@ function RadarLoading() {
                 >
                   {KIND_ICON[f.kind]}
                 </span>
-                <span className={`flex-1 font-ar text-[13px] text-v2-ink-2 ${f.kind === 'final' ? 'font-semibold' : 'font-medium'}`}>
+                <span className={`flex-1 font-ar text-v2-ink-2 text-[13px] lg:text-[14px] ${f.kind === 'final' ? 'font-semibold' : 'font-medium'}`}>
                   {f.text}
                 </span>
               </div>
             ))}
 
             {idx < 9 && (
-              <div className="flex items-center gap-3 rounded-v2-md border border-dashed border-v2-line bg-v2-surface px-3.5 py-3">
+              <div className="flex items-center gap-3 rounded-v2-md border border-dashed border-v2-line bg-v2-surface px-3.5 py-3 lg:px-4 lg:py-3.5">
                 <span className="h-[22px] w-[22px] shrink-0 rounded-full bg-v2-canvas-2" aria-hidden="true" />
                 <span className="v2-shimmer h-2 flex-1 rounded-full" />
               </div>
             )}
           </div>
-        </div>
 
-        <div className="mt-6 flex items-center justify-between border-t border-v2-line pt-4">
-          <Eyebrow>wassel · radar v3</Eyebrow>
-          <NumDisplay className="text-[12px] text-v2-dim">25 توكن</NumDisplay>
-        </div>
+          <div className="mt-6 flex items-center justify-between border-t border-v2-line pt-4 lg:mt-8">
+            <Eyebrow>wassel · radar v3</Eyebrow>
+            <NumDisplay className="text-[12px] text-v2-dim">25 توكن</NumDisplay>
+          </div>
 
-        <div className="mt-6">
-          <Button
-            variant="secondary"
-            size="md"
-            fullWidth
-            onClick={() => navigate('/v2/home')}
-          >
-            متابعة في الخلفية
-          </Button>
+          <div className="mt-6 lg:mt-6">
+            <Button
+              variant="secondary"
+              size="md"
+              fullWidth
+              onClick={() => navigate('/v2/home')}
+              className="lg:!h-12 lg:!text-[15px]"
+            >
+              متابعة في الخلفية
+            </Button>
+          </div>
         </div>
       </div>
 

@@ -1,5 +1,6 @@
 import type { HTMLAttributes, ReactNode } from 'react';
 import { cn } from '@/lib/utils';
+import { useIsDesktop } from '@/components/v2/ResponsiveShell';
 
 export interface PhoneProps extends HTMLAttributes<HTMLDivElement> {
   children?: ReactNode;
@@ -13,6 +14,11 @@ export interface PhoneProps extends HTMLAttributes<HTMLDivElement> {
  * Phone — dev/preview wrapper that frames a screen at 390×844.
  * In production (showChrome={false}, the default), it renders as a plain full-bleed
  * column so screens look native on real devices.
+ *
+ * On desktop (≥1024px) the wrapper becomes a passthrough fragment so an outer
+ * <DesktopShell> can supply the chrome instead of duplicating column/canvas
+ * styles. This keeps existing pages working unchanged when wrapped by
+ * <ResponsiveShell>.
  */
 function Phone({
   className,
@@ -21,6 +27,19 @@ function Phone({
   showStatusBar = false,
   ...rest
 }: PhoneProps) {
+  const isDesktop = useIsDesktop();
+
+  // Desktop passthrough: when chrome isn't requested, defer to whatever the
+  // outer DesktopShell renders. We keep a simple wrapper div so HTMLAttributes
+  // (className, id, etc.) still apply.
+  if (isDesktop && !showChrome) {
+    return (
+      <div className={cn('contents', className)} {...rest}>
+        {children}
+      </div>
+    );
+  }
+
   if (!showChrome) {
     return (
       <div

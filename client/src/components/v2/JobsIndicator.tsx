@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { useJobs } from '@/lib/v2/jobs';
 import JobsCenter from '@/components/v2/JobsCenter';
+import DesktopJobsCenter from '@/components/v2/DesktopJobsCenter';
+import { useIsDesktop } from '@/components/v2/ResponsiveShell';
 
 export interface JobsIndicatorProps {
   className?: string;
@@ -9,13 +11,17 @@ export interface JobsIndicatorProps {
 
 /**
  * Bell-style icon for the Topbar end slot. Shows a teal badge with the count
- * of active jobs; tap opens the JobsCenter sheet.
+ * of active jobs; tap opens the JobsCenter — bottom-sheet on mobile, side
+ * drawer on desktop.
  */
 function JobsIndicator({ className }: JobsIndicatorProps) {
   const { active } = useJobs();
   const [open, setOpen] = useState(false);
+  const isDesktop = useIsDesktop();
   const count = active.length;
   const hasActive = count > 0;
+
+  const Center = isDesktop ? DesktopJobsCenter : JobsCenter;
 
   return (
     <>
@@ -49,7 +55,7 @@ function JobsIndicator({ className }: JobsIndicatorProps) {
           </span>
         )}
       </button>
-      <JobsCenter open={open} onClose={() => setOpen(false)} />
+      <Center open={open} onClose={() => setOpen(false)} />
     </>
   );
 }
