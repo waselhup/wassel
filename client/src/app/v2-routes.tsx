@@ -5,6 +5,7 @@ import { ToastProvider, useToast } from '@/lib/v2/toast';
 import type { Job } from '@/lib/v2/jobs';
 import ErrorBoundary from '@/components/v2/ErrorBoundary';
 import PageTransition from '@/components/v2/PageTransition';
+import ResponsiveShell from '@/components/v2/ResponsiveShell';
 import Skeleton from '@/components/v2/Skeleton';
 
 // Lazy-load v2 pages so they don't bloat the main bundle.
@@ -51,6 +52,10 @@ function SkipLink() {
 /**
  * Wraps the protected v2 surface with jobs/toast providers and bridges them:
  * when a job settles, fire a toast.
+ *
+ * On desktop (≥1024px) ResponsiveShell renders the DesktopShell (sidebar +
+ * topbar). On mobile it's a passthrough so each page's own <Phone>+<Topbar>
+ * +<BottomNav> chrome continues to work unchanged.
  */
 function ProtectedShell({ children }: { children: ReactNode }) {
   return (
@@ -58,9 +63,11 @@ function ProtectedShell({ children }: { children: ReactNode }) {
       <ToastProvider>
         <JobsProviderWithToast>
           <SkipLink />
-          <main id="v2-main" className="min-h-[100dvh]">
-            <PageTransition>{children}</PageTransition>
-          </main>
+          <ResponsiveShell withSidebar showAccountCluster showPulse>
+            <main id="v2-main" className="min-h-[100dvh] lg:min-h-0">
+              <PageTransition>{children}</PageTransition>
+            </main>
+          </ResponsiveShell>
         </JobsProviderWithToast>
       </ToastProvider>
     </ErrorBoundary>
@@ -69,15 +76,18 @@ function ProtectedShell({ children }: { children: ReactNode }) {
 
 /**
  * Public-page shell: no jobs/toast providers, but still gets ErrorBoundary,
- * skip link, and PageTransition.
+ * skip link, and PageTransition. On desktop renders DesktopShell without the
+ * sidebar or jobs/account cluster (Landing/Auth/Pricing don't need them).
  */
 function PublicShell({ children }: { children: ReactNode }) {
   return (
     <ErrorBoundary>
       <SkipLink />
-      <main id="v2-main" className="min-h-[100dvh]">
-        <PageTransition>{children}</PageTransition>
-      </main>
+      <ResponsiveShell withSidebar={false} showAccountCluster={false} showPulse={false}>
+        <main id="v2-main" className="min-h-[100dvh] lg:min-h-0">
+          <PageTransition>{children}</PageTransition>
+        </main>
+      </ResponsiveShell>
     </ErrorBoundary>
   );
 }

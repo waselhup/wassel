@@ -55,6 +55,8 @@ function Topbar({
   return (
     <div
       className={cn(
+        // Hidden on desktop — DesktopTopbar takes over there (logo, nav, jobs, account).
+        'lg:hidden',
         'z-10 border-b border-v2-line',
         bgClasses[bg],
         sticky ? 'sticky top-0' : 'relative',

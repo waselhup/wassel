@@ -94,6 +94,8 @@ function BottomNav({
   return (
     <nav
       className={cn(
+        // Hidden on desktop — the DesktopShell sidebar covers navigation there.
+        'lg:hidden',
         'absolute inset-x-0 bottom-0 z-20 border-t border-v2-line bg-v2-surface',
         className,
       )}
