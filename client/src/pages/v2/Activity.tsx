@@ -4,11 +4,14 @@ import { useTranslation } from 'react-i18next';
 import Phone from '@/components/v2/Phone';
 import Topbar from '@/components/v2/Topbar';
 import BottomNav from '@/components/v2/BottomNav';
+import Card from '@/components/v2/Card';
+import Button from '@/components/v2/Button';
 import Eyebrow from '@/components/v2/Eyebrow';
 import NumDisplay from '@/components/v2/NumDisplay';
 import Pill from '@/components/v2/Pill';
 import EmptyState from '@/components/v2/EmptyState';
 import Skeleton, { useInitialLoading } from '@/components/v2/Skeleton';
+import { useIsDesktop } from '@/components/v2/ResponsiveShell';
 
 type FilterId = 'all' | 'analysis' | 'post' | 'billing';
 type ItemKind = Exclude<FilterId, 'all'>;
@@ -60,6 +63,12 @@ const FILTERS: { id: FilterId; label: string }[] = [
   { id: 'post',     label: 'منشورات' },
   { id: 'billing',  label: 'مدفوعات' },
 ];
+
+const KIND_LABEL: Record<ItemKind, string> = {
+  analysis: 'تحليل',
+  post:     'منشور',
+  billing:  'فاتورة',
+};
 
 const ICONS: Record<IconName, ReactElement> = {
   radar: (
@@ -116,15 +125,41 @@ const KIND_BG: Record<ItemKind, string> = {
 
 const PULL_THRESHOLD = 80;
 
+/** mini sparkline-like chart showing weekly activity counts */
+function WeeklyChart({ counts }: { counts: number[] }) {
+  const max = Math.max(1, ...counts);
+  const w = 200, h = 56, gap = 4;
+  const barW = (w - gap * (counts.length - 1)) / counts.length;
+  return (
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} aria-hidden="true" className="block w-full">
+      {counts.map((c, i) => {
+        const bh = (c / max) * (h - 4);
+        const x = i * (barW + gap);
+        const y = h - bh;
+        return (
+          <rect
+            key={i}
+            x={x}
+            y={y}
+            width={barW}
+            height={bh || 1}
+            rx="2"
+            fill={i === counts.length - 1 ? 'var(--teal-600)' : 'var(--teal-300)'}
+            opacity={i === counts.length - 1 ? 1 : 0.7}
+          />
+        );
+      })}
+    </svg>
+  );
+}
+
 function Activity() {
   const [, navigate] = useLocation();
-  // i18n prep — namespace v2.activity.*. Translations TBD; AR inline.
-  // TODO(i18n): item titles/descriptions come from API events.
   const { t } = useTranslation();
+  const isDesktop = useIsDesktop();
   const loading = useInitialLoading(800);
   const [filter, setFilter] = useState<FilterId>('all');
 
-  // Pull-to-refresh — visual only.
   const [pull, setPull] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const startY = useRef<number | null>(null);
@@ -140,17 +175,21 @@ function Activity() {
   }, [refreshing]);
 
   const onTouchStart = (e: React.TouchEvent) => {
+    // Pull-to-refresh is mobile-only.
+    if (isDesktop) return;
     const el = scrollerRef.current;
     if (!el || el.scrollTop > 0 || refreshing) return;
     startY.current = e.touches[0]?.clientY ?? null;
   };
   const onTouchMove = (e: React.TouchEvent) => {
+    if (isDesktop) return;
     if (startY.current == null) return;
     const delta = (e.touches[0]?.clientY ?? 0) - startY.current;
     if (delta <= 0) { setPull(0); return; }
     setPull(Math.min(delta * 0.5, PULL_THRESHOLD * 1.4));
   };
   const onTouchEnd = () => {
+    if (isDesktop) return;
     if (startY.current == null) return;
     if (pull >= PULL_THRESHOLD) {
       setRefreshing(true);
@@ -166,6 +205,104 @@ function Activity() {
   })).filter((g) => g.items.length > 0);
 
   const totalCount = filtered.reduce((sum, g) => sum + g.items.length, 0);
+  // For the desktop sidebar — fixed mock counts mirroring GROUPS.
+  const weeklyCounts = [3, 5, 2, 4, 6, 3, 8]; // last 7 days, today = last item
+  const todayCount = GROUPS[0]?.items.length ?? 0;
+
+  const filterSummary = FILTERS.filter((f) => f.id !== 'all').map((f) => {
+    const count = GROUPS.flatMap((g) => g.items).filter((it) => it.kind === f.id).length;
+    return { ...f, count };
+  });
+
+  const ListContent = (
+    <>
+      {loading ? (
+        <div className="flex flex-col gap-4 pt-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="flex items-start gap-3 border-b border-v2-line pb-4">
+              <Skeleton variant="card" className="!h-9 !w-9 !rounded-v2-sm" />
+              <div className="flex-1">
+                <Skeleton variant="text" lines={2} />
+              </div>
+              <Skeleton variant="text" width={36} />
+            </div>
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
+        <EmptyState
+          variant="search"
+          title="لا يوجد نشاط"
+          description="لم نجد عناصر تطابق هذا الفلتر. جرّب فلتراً آخر."
+        />
+      ) : (
+        <>
+          <div className="pt-4 pb-2 flex items-center gap-2 text-v2-mute lg:pt-2">
+            <span className="font-ar text-[11px]">عرض</span>
+            <NumDisplay className="text-[11px]">{totalCount}</NumDisplay>
+            <span className="font-ar text-[11px]">عنصر</span>
+          </div>
+
+          {filtered.map((g) => (
+            <div key={g.label}>
+              <div className="flex items-center gap-2 pb-2.5 pt-5">
+                <Eyebrow>{g.label}</Eyebrow>
+                <div className="h-px flex-1 bg-v2-line" />
+                <NumDisplay className="text-[10px] text-v2-mute">{g.items.length}</NumDisplay>
+              </div>
+
+              {g.items.map((it) => (
+                <div
+                  key={it.id}
+                  className="grid grid-cols-[36px_1fr_auto] items-start gap-3 border-b border-v2-line py-3.5
+                    lg:grid-cols-[44px_minmax(0,1fr)_100px_120px_80px] lg:items-center lg:gap-4 lg:py-4"
+                >
+                  <div
+                    className={`flex h-9 w-9 items-center justify-center rounded-v2-sm border border-v2-line ${KIND_BG[it.kind]} lg:h-11 lg:w-11`}
+                    aria-hidden="true"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                      {ICONS[it.icon]}
+                    </svg>
+                  </div>
+
+                  {/* Mobile: title+desc stacked. Desktop: split into Type / Description columns. */}
+                  <div className="min-w-0 lg:hidden">
+                    <div className="font-ar text-[14px] font-medium text-v2-ink">{it.title}</div>
+                    <div className="mt-0.5 font-ar text-[12px] text-v2-dim">{it.description}</div>
+                  </div>
+                  <div className="hidden lg:block lg:min-w-0">
+                    <div className="font-ar text-[14px] font-semibold text-v2-ink truncate">{it.title}</div>
+                    <div className="mt-0.5 font-ar text-[12px] text-v2-dim truncate">{it.description}</div>
+                  </div>
+
+                  {/* Desktop "Type" column — kind label as pill */}
+                  <span className="hidden lg:inline-flex">
+                    <span className={`rounded-full border px-2 py-0.5 font-ar text-[11px] font-semibold ${
+                      it.kind === 'analysis' ? 'border-teal-100 bg-teal-50 text-teal-700' :
+                      it.kind === 'billing'  ? 'border-v2-indigo/30 bg-v2-indigo-50 text-v2-indigo' :
+                                               'border-v2-line bg-v2-canvas-2 text-v2-body'
+                    }`}>
+                      {KIND_LABEL[it.kind]}
+                    </span>
+                  </span>
+
+                  {/* Desktop "Status" column — completed/info dot */}
+                  <span className="hidden lg:flex lg:items-center lg:gap-2 lg:justify-end">
+                    <span className="block h-2 w-2 rounded-full bg-teal-500" aria-hidden="true" />
+                    <span className="font-ar text-[12px] text-v2-body">مكتمل</span>
+                  </span>
+
+                  <NumDisplay className="whitespace-nowrap text-[11px] text-v2-mute lg:text-end lg:text-[12px]">
+                    {it.time}
+                  </NumDisplay>
+                </div>
+              ))}
+            </div>
+          ))}
+        </>
+      )}
+    </>
+  );
 
   return (
     <Phone>
@@ -185,7 +322,8 @@ function Activity() {
         }
       />
 
-      <div className="sticky top-[52px] z-[5] flex gap-1.5 overflow-x-auto border-b border-v2-line bg-v2-canvas px-[22px] py-3">
+      {/* Filters — pill row on mobile (sticky), absolute on desktop within list column */}
+      <div className="sticky top-[52px] z-[5] flex gap-1.5 overflow-x-auto border-b border-v2-line bg-v2-canvas px-[22px] py-3 lg:static lg:top-auto lg:z-auto lg:border-b-0 lg:bg-transparent lg:px-0 lg:py-0 lg:mb-3 lg:gap-2">
         {FILTERS.map((f) => (
           <Pill
             key={f.id}
@@ -200,9 +338,9 @@ function Activity() {
         ))}
       </div>
 
-      {/* Pull-to-refresh indicator */}
+      {/* Pull-to-refresh indicator — mobile only */}
       <div
-        className="flex items-center justify-center overflow-hidden text-teal-600"
+        className="flex items-center justify-center overflow-hidden text-teal-600 lg:hidden"
         style={{ height: pull, transition: refreshing ? 'height 200ms var(--ease-out)' : undefined }}
         aria-hidden={!refreshing}
       >
@@ -222,73 +360,72 @@ function Activity() {
         )}
       </div>
 
-      <div
+      {/* Mobile: single scroller. Desktop: 70/30 split (10-col grid). */}
+      <div className="flex-1 overflow-y-auto px-[22px] pb-[110px] lg:overflow-visible lg:px-0 lg:pb-0 lg:grid lg:grid-cols-10 lg:gap-8 lg:pt-2"
         ref={scrollerRef}
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
-        className="flex-1 overflow-y-auto px-[22px] pb-[110px]"
       >
-        {loading ? (
-          <div className="flex flex-col gap-4 pt-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="flex items-start gap-3 border-b border-v2-line pb-4">
-                <Skeleton variant="card" className="!h-9 !w-9 !rounded-v2-sm" />
-                <div className="flex-1">
-                  <Skeleton variant="text" lines={2} />
-                </div>
-                <Skeleton variant="text" width={36} />
+        {/* List column — col-span-7 (70%) */}
+        <div className="lg:col-span-7 lg:min-w-0">
+          {ListContent}
+        </div>
+
+        {/* Stats sidebar — col-span-3 (30%), sticky */}
+        <aside className="hidden lg:col-span-3 lg:block" aria-label="إحصاءات النشاط">
+          <div className="sticky top-[88px] flex flex-col gap-4">
+            {/* This week */}
+            <Card padding="lg" radius="lg" elevated>
+              <Eyebrow className="!text-teal-700">نشاط هذا الأسبوع</Eyebrow>
+              <div className="mt-2 flex items-baseline gap-2">
+                <NumDisplay className="text-[36px] font-bold leading-none text-v2-ink">
+                  {weeklyCounts.reduce((a, b) => a + b, 0)}
+                </NumDisplay>
+                <span className="font-ar text-[12px] text-v2-dim">حدث</span>
               </div>
-            ))}
-          </div>
-        ) : filtered.length === 0 ? (
-          <EmptyState
-            variant="search"
-            title="لا يوجد نشاط"
-            description="لم نجد عناصر تطابق هذا الفلتر. جرّب فلتراً آخر."
-          />
-        ) : (
-          <>
-            <div className="pt-4 pb-2 flex items-center gap-2 text-v2-mute">
-              <span className="font-ar text-[11px]">عرض</span>
-              <NumDisplay className="text-[11px]">{totalCount}</NumDisplay>
-              <span className="font-ar text-[11px]">عنصر</span>
-            </div>
+              <div className="mt-3">
+                <WeeklyChart counts={weeklyCounts} />
+              </div>
+              <div className="mt-2 flex items-center justify-between">
+                <Eyebrow>اليوم</Eyebrow>
+                <NumDisplay className="text-[12px] font-semibold text-teal-700">{todayCount}</NumDisplay>
+              </div>
+            </Card>
 
-            {filtered.map((g) => (
-              <div key={g.label}>
-                <div className="flex items-center gap-2 pb-2.5 pt-5">
-                  <Eyebrow>{g.label}</Eyebrow>
-                  <div className="h-px flex-1 bg-v2-line" />
-                  <NumDisplay className="text-[10px] text-v2-mute">{g.items.length}</NumDisplay>
-                </div>
-
-                {g.items.map((it) => (
-                  <div
-                    key={it.id}
-                    className="grid grid-cols-[36px_1fr_auto] items-start gap-3 border-b border-v2-line py-3.5"
-                  >
-                    <div
-                      className={`flex h-9 w-9 items-center justify-center rounded-v2-sm border border-v2-line ${KIND_BG[it.kind]}`}
-                      aria-hidden="true"
-                    >
-                      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                        {ICONS[it.icon]}
-                      </svg>
-                    </div>
-                    <div className="min-w-0">
-                      <div className="font-ar text-[14px] font-medium text-v2-ink">{it.title}</div>
-                      <div className="mt-0.5 font-ar text-[12px] text-v2-dim">{it.description}</div>
-                    </div>
-                    <NumDisplay className="whitespace-nowrap text-[11px] text-v2-mute">
-                      {it.time}
-                    </NumDisplay>
-                  </div>
+            {/* Filter summary */}
+            <Card padding="lg" radius="lg">
+              <Eyebrow className="mb-3 block">حسب النوع</Eyebrow>
+              <ul className="m-0 list-none p-0 flex flex-col gap-2.5">
+                {filterSummary.map((f) => (
+                  <li key={f.id} className="flex items-center justify-between font-ar text-[13px]">
+                    <span className="text-v2-body">{f.label}</span>
+                    <NumDisplay className="text-[13px] font-semibold text-v2-ink">{f.count}</NumDisplay>
+                  </li>
                 ))}
+              </ul>
+            </Card>
+
+            {/* Quick actions */}
+            <Card padding="md" radius="lg">
+              <Eyebrow className="mb-3 block">إجراءات</Eyebrow>
+              <div className="flex flex-col gap-2">
+                <Button variant="secondary" size="sm" fullWidth>
+                  تصدير CSV
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  fullWidth
+                  onClick={() => setFilter('all')}
+                  disabled={filter === 'all'}
+                >
+                  إعادة تعيين الفلتر
+                </Button>
               </div>
-            ))}
-          </>
-        )}
+            </Card>
+          </div>
+        </aside>
       </div>
 
       <BottomNav
