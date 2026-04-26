@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useLocation, useRoute } from 'wouter';
+import { useTranslation } from 'react-i18next';
 import Phone from '@/components/v2/Phone';
 import Topbar from '@/components/v2/Topbar';
 import BottomNav from '@/components/v2/BottomNav';
@@ -7,6 +8,7 @@ import Card from '@/components/v2/Card';
 import Button from '@/components/v2/Button';
 import Eyebrow from '@/components/v2/Eyebrow';
 import NumDisplay from '@/components/v2/NumDisplay';
+import Skeleton, { useInitialLoading } from '@/components/v2/Skeleton';
 
 type Tab = 'summary' | 'sections' | 'recs' | 'rivals';
 
@@ -156,7 +158,10 @@ function RadialChart({ scores }: { scores: number[] }) {
 function RadarResult() {
   const [, navigate] = useLocation();
   const [, params] = useRoute<{ id: string }>('/v2/analyze/result/:id');
+  // i18n prep — namespace v2.radar.result.*. TODO(i18n): section labels from API.
+  const { t: _t } = useTranslation();
   const [tab, setTab] = useState<Tab>('summary');
+  const loading = useInitialLoading(800);
 
   const id = params?.id ?? 'mock-001';
   const sectionScores = SECTIONS.slice(0, 6).map((s) => s.score);
@@ -190,6 +195,20 @@ function RadarResult() {
       />
 
       <div className="flex-1 overflow-y-auto pb-[110px]">
+        {loading ? (
+          <div className="px-[22px] pt-6">
+            <Skeleton variant="text" width={140} className="mb-4" />
+            <div className="mb-5 flex items-center gap-5">
+              <Skeleton variant="avatar" className="!h-[120px] !w-[120px]" />
+              <div className="flex-1">
+                <Skeleton variant="text" lines={3} />
+              </div>
+            </div>
+            <Skeleton variant="card" className="mb-3" />
+            <Skeleton variant="card" />
+          </div>
+        ) : (
+        <>
         <div className="border-b border-v2-line bg-v2-canvas px-[22px] pt-6 pb-5">
           <Eyebrow className="mb-3 block">
             VS · <span className="font-en">SENIOR PM</span> · <span className="font-en">ARAMCO DIGITAL</span>
@@ -226,15 +245,17 @@ function RadarResult() {
           </div>
         </div>
 
-        <div className="sticky top-[52px] z-[5] flex gap-6 border-b border-v2-line bg-v2-canvas px-[22px] pt-3.5 overflow-x-auto">
+        <div role="tablist" aria-label="أقسام النتيجة" className="sticky top-[52px] z-[5] flex gap-6 border-b border-v2-line bg-v2-canvas px-[22px] pt-3.5 overflow-x-auto">
           {tabs.map((tb) => {
             const active = tab === tb.id;
             return (
               <button
                 key={tb.id}
                 type="button"
+                role="tab"
+                aria-selected={active}
                 onClick={() => setTab(tb.id)}
-                className={`shrink-0 -mb-px border-b-2 px-0 py-2.5 font-ar text-[13px] cursor-pointer transition-colors duration-200 ease-out ${
+                className={`shrink-0 -mb-px border-b-2 px-0 py-2.5 font-ar text-[13px] cursor-pointer transition-colors duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/30 ${
                   active
                     ? 'border-teal-600 text-v2-ink font-semibold'
                     : 'border-transparent text-v2-dim hover:text-v2-body'
@@ -421,6 +442,8 @@ function RadarResult() {
               ))}
             </div>
           </div>
+        )}
+        </>
         )}
       </div>
 

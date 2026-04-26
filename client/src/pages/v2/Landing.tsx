@@ -1,4 +1,5 @@
 import { useLocation } from 'wouter';
+import { useTranslation } from 'react-i18next';
 import Phone from '@/components/v2/Phone';
 import Topbar from '@/components/v2/Topbar';
 import Button from '@/components/v2/Button';
@@ -38,6 +39,9 @@ const BrandMark = () => (
 
 function Landing() {
   const [, navigate] = useLocation();
+  // i18n prep: keys live under namespace "v2.landing.*". Translations TBD —
+  // we pass the AR text as the inline default so the build never breaks.
+  const { t } = useTranslation();
 
   return (
     <Phone>
@@ -52,7 +56,7 @@ function Landing() {
             size="sm"
             onClick={() => navigate('/v2/login')}
           >
-            دخول
+            {t('v2.landing.signIn', 'دخول')}
           </Button>
         }
       />
@@ -79,7 +83,7 @@ function Landing() {
               fullWidth
               onClick={() => navigate('/v2/signup')}
             >
-              ابدأ مجاناً
+              {t('v2.landing.startFree', 'ابدأ مجاناً')}
             </Button>
             <Button
               variant="secondary"
@@ -87,7 +91,7 @@ function Landing() {
               fullWidth
               onClick={() => navigate('/v2/login')}
             >
-              تسجيل الدخول
+              {t('v2.landing.login', 'تسجيل الدخول')}
             </Button>
           </div>
           <p className="mt-2.5 text-center font-ar text-[13px] text-v2-dim">

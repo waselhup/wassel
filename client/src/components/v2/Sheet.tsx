@@ -49,6 +49,22 @@ function Sheet({
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
 
+  // On open, move focus into the sheet so screen-reader users land in the
+  // dialog and Tab cycles within it. We focus the first interactive element
+  // we can find; otherwise fall back to the dialog container itself.
+  useEffect(() => {
+    if (!open) return;
+    const id = window.setTimeout(() => {
+      const node = sheetRef.current;
+      if (!node) return;
+      const firstFocusable = node.querySelector<HTMLElement>(
+        'button:not([disabled]), [href], input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])',
+      );
+      (firstFocusable ?? node).focus({ preventScroll: true });
+    }, 50);
+    return () => window.clearTimeout(id);
+  }, [open]);
+
   const settle = useCallback((deltaPx: number) => {
     const vh = window.innerHeight || 1;
     const currentTop = (1 - snap / 100) * vh;
@@ -97,7 +113,9 @@ function Sheet({
         ref={sheetRef}
         role="dialog"
         aria-modal="true"
+        tabIndex={-1}
         className={cn(
+          'focus-visible:outline-none',
           'absolute inset-x-0 bottom-0 flex flex-col bg-v2-surface',
           'rounded-t-v2-xl border-t border-v2-line shadow-lift',
           'transition-[height,transform] duration-300 ease-ios',

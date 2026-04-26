@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState, type ReactElement } from 'react';
 import { useLocation } from 'wouter';
+import { useTranslation } from 'react-i18next';
 import Phone from '@/components/v2/Phone';
 import Topbar from '@/components/v2/Topbar';
 import BottomNav from '@/components/v2/BottomNav';
 import Eyebrow from '@/components/v2/Eyebrow';
 import NumDisplay from '@/components/v2/NumDisplay';
 import Pill from '@/components/v2/Pill';
+import EmptyState from '@/components/v2/EmptyState';
+import Skeleton, { useInitialLoading } from '@/components/v2/Skeleton';
 
 type FilterId = 'all' | 'analysis' | 'post' | 'billing';
 type ItemKind = Exclude<FilterId, 'all'>;
@@ -115,6 +118,10 @@ const PULL_THRESHOLD = 80;
 
 function Activity() {
   const [, navigate] = useLocation();
+  // i18n prep — namespace v2.activity.*. Translations TBD; AR inline.
+  // TODO(i18n): item titles/descriptions come from API events.
+  const { t } = useTranslation();
+  const loading = useInitialLoading(800);
   const [filter, setFilter] = useState<FilterId>('all');
 
   // Pull-to-refresh — visual only.
@@ -163,7 +170,7 @@ function Activity() {
   return (
     <Phone>
       <Topbar
-        title="النشاط"
+        title={t('v2.activity.title', 'النشاط')}
         bg="canvas"
         trailing={
           <button
@@ -222,11 +229,24 @@ function Activity() {
         onTouchEnd={onTouchEnd}
         className="flex-1 overflow-y-auto px-[22px] pb-[110px]"
       >
-        {filtered.length === 0 ? (
-          <div className="px-5 py-16 text-center">
-            <div className="font-ar text-[14px] font-semibold text-v2-body">لا يوجد نشاط</div>
-            <div className="mt-1 font-ar text-[12px] text-v2-dim">جرّب فلتر آخر</div>
+        {loading ? (
+          <div className="flex flex-col gap-4 pt-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="flex items-start gap-3 border-b border-v2-line pb-4">
+                <Skeleton variant="card" className="!h-9 !w-9 !rounded-v2-sm" />
+                <div className="flex-1">
+                  <Skeleton variant="text" lines={2} />
+                </div>
+                <Skeleton variant="text" width={36} />
+              </div>
+            ))}
           </div>
+        ) : filtered.length === 0 ? (
+          <EmptyState
+            variant="search"
+            title="لا يوجد نشاط"
+            description="لم نجد عناصر تطابق هذا الفلتر. جرّب فلتراً آخر."
+          />
         ) : (
           <>
             <div className="pt-4 pb-2 flex items-center gap-2 text-v2-mute">

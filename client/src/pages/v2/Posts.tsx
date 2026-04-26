@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useLocation } from 'wouter';
+import { useTranslation } from 'react-i18next';
 import Phone from '@/components/v2/Phone';
 import Topbar from '@/components/v2/Topbar';
 import BottomNav from '@/components/v2/BottomNav';
@@ -8,6 +9,8 @@ import Eyebrow from '@/components/v2/Eyebrow';
 import NumDisplay from '@/components/v2/NumDisplay';
 import Pill from '@/components/v2/Pill';
 import Sheet from '@/components/v2/Sheet';
+import EmptyState from '@/components/v2/EmptyState';
+import Skeleton, { useInitialLoading } from '@/components/v2/Skeleton';
 import { useJobs } from '@/lib/v2/jobs';
 
 type Tab = 'drafts' | 'published' | 'templates';
@@ -103,7 +106,11 @@ function PostRow({ post }: { post: Post }) {
 
 function Posts() {
   const [, navigate] = useLocation();
+  // i18n prep — namespace v2.posts.*. Translations TBD; AR inline.
+  // TODO(i18n): tab labels, status pills, template names from real API.
+  const { t } = useTranslation();
   const { addJob } = useJobs();
+  const loading = useInitialLoading(800);
   const [tab, setTab] = useState<Tab>('drafts');
   const [composerOpen, setComposerOpen] = useState(false);
   const [topic, setTopic] = useState('عن القيادة في عصر AI');
@@ -136,7 +143,7 @@ function Posts() {
       <Topbar
         back
         onBack={() => navigate('/v2/home')}
-        title="الاستوديو"
+        title={t('v2.posts.title', 'الاستوديو')}
         bg="canvas"
         trailing={
           <Button
@@ -151,15 +158,17 @@ function Posts() {
       />
 
       <div className="border-b border-v2-line">
-        <div className="flex gap-1 px-[22px] pt-3.5 -mb-px">
+        <div role="tablist" aria-label="مرشحات الاستوديو" className="flex gap-1 px-[22px] pt-3.5 -mb-px">
           {tabs.map((tb) => {
             const active = tab === tb.id;
             return (
               <button
                 key={tb.id}
                 type="button"
+                role="tab"
+                aria-selected={active}
                 onClick={() => setTab(tb.id)}
-                className={`flex items-center gap-1.5 border-b-2 px-3.5 py-2.5 font-ar text-[13px] cursor-pointer transition-colors duration-200 ease-out ${
+                className={`flex items-center gap-1.5 border-b-2 px-3.5 py-2.5 font-ar text-[13px] cursor-pointer transition-colors duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/30 ${
                   active
                     ? 'border-teal-700 text-v2-ink font-semibold'
                     : 'border-transparent text-v2-dim hover:text-v2-body font-medium'
@@ -178,10 +187,27 @@ function Posts() {
       </div>
 
       <div className="flex-1 px-[22px] pb-[110px] pt-2">
+        {loading ? (
+          <div className="flex flex-col gap-4 pt-4">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="border-b border-v2-line pb-4">
+                <Skeleton variant="text" lines={2} />
+                <div className="mt-3 flex gap-3">
+                  <Skeleton variant="text" width={60} />
+                  <Skeleton variant="text" width={80} />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <>
         {tab === 'drafts' && (
           <>
             {DRAFTS.length === 0 ? (
-              <EmptyState message="لا توجد مسودات" hint="ابدأ بمنشور جديد من زر الأعلى" />
+              <EmptyState
+                title="لا توجد مسودات بعد"
+                description="ابدأ بمنشور جديد من زر الأعلى أو من أحد القوالب الجاهزة."
+              />
             ) : (
               DRAFTS.map((p) => <PostRow key={p.id} post={p} />)
             )}
@@ -191,7 +217,10 @@ function Posts() {
         {tab === 'published' && (
           <>
             {PUBLISHED.length === 0 ? (
-              <EmptyState message="لا توجد منشورات بعد" hint="عند نشر مسوداتك، ستظهر هنا" />
+              <EmptyState
+                title="لا توجد منشورات بعد"
+                description="عند نشر مسوداتك، ستظهر هنا."
+              />
             ) : (
               PUBLISHED.map((p) => <PostRow key={p.id} post={p} />)
             )}
@@ -220,6 +249,8 @@ function Posts() {
               </button>
             ))}
           </div>
+        )}
+          </>
         )}
       </div>
 
@@ -309,15 +340,6 @@ function Posts() {
         onFabClick={() => setComposerOpen(true)}
       />
     </Phone>
-  );
-}
-
-function EmptyState({ message, hint }: { message: string; hint: string }) {
-  return (
-    <div className="px-5 py-16 text-center">
-      <div className="font-ar text-[14px] font-semibold text-v2-body">{message}</div>
-      <div className="mt-1 font-ar text-[12px] text-v2-dim">{hint}</div>
-    </div>
   );
 }
 

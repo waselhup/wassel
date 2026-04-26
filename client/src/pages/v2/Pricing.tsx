@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useLocation } from 'wouter';
+import { useTranslation } from 'react-i18next';
 import Phone from '@/components/v2/Phone';
 import Topbar from '@/components/v2/Topbar';
 import Button from '@/components/v2/Button';
@@ -98,6 +99,8 @@ const CheckIcon = ({ primary }: { primary?: boolean }) => (
 
 function Pricing() {
   const [, navigate] = useLocation();
+  // i18n prep — namespace v2.pricing.*. Translations TBD; AR text inline.
+  const { t } = useTranslation();
   const [cycle, setCycle] = useState<Cycle>('monthly');
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
@@ -106,7 +109,7 @@ function Pricing() {
       <Topbar
         back
         onBack={() => navigate('/v2')}
-        title="الباقات"
+        title={t('v2.pricing.title', 'الباقات')}
         bg="canvas"
         showPulse={false}
         showJobsIndicator={false}
@@ -116,7 +119,7 @@ function Pricing() {
         <section className="mb-6">
           <Eyebrow className="mb-2 block !text-teal-700">PRICING</Eyebrow>
           <h1 className="font-ar text-[26px] font-bold leading-tight text-v2-ink">
-            اختر الباقة المناسبة.
+            {t('v2.pricing.heading', 'اختر الباقة المناسبة.')}
           </h1>
           <p className="mt-2 font-ar text-[14px] leading-relaxed text-v2-body">
             ابدأ مجاناً، ارقَ متى احتجت، الغِ متى شئت.

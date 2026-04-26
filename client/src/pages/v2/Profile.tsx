@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { useLocation } from 'wouter';
+import { useTranslation } from 'react-i18next';
 import Phone from '@/components/v2/Phone';
 import Topbar from '@/components/v2/Topbar';
 import BottomNav from '@/components/v2/BottomNav';
@@ -62,6 +63,9 @@ function StatCell({ label, value, end = false }: { label: string; value: ReactNo
 
 function Profile() {
   const [, navigate] = useLocation();
+  // i18n prep — namespace v2.profile.*. Translations TBD; AR inline.
+  // TODO(i18n): notification settings + security row labels from API.
+  const { t } = useTranslation();
   const [tab, setTab] = useState<Tab>('profile');
 
   // form state
@@ -83,7 +87,7 @@ function Profile() {
   return (
     <Phone>
       <Topbar
-        title="حسابي"
+        title={t('v2.profile.title', 'حسابي')}
         bg="canvas"
         trailing={
           <button

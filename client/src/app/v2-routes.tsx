@@ -3,6 +3,9 @@ import { useRoute } from 'wouter';
 import { JobsProvider } from '@/lib/v2/jobs';
 import { ToastProvider, useToast } from '@/lib/v2/toast';
 import type { Job } from '@/lib/v2/jobs';
+import ErrorBoundary from '@/components/v2/ErrorBoundary';
+import PageTransition from '@/components/v2/PageTransition';
+import Skeleton from '@/components/v2/Skeleton';
 
 // Lazy-load v2 pages so they don't bloat the main bundle.
 const Landing = lazy(() => import('@/pages/v2/Landing'));
@@ -17,30 +20,71 @@ const Profile = lazy(() => import('@/pages/v2/Profile'));
 const Activity = lazy(() => import('@/pages/v2/Activity'));
 
 function V2Loader() {
+  // Skeleton-shaped fallback that resembles the page chrome — feels less
+  // like a hard interruption than a centered spinner while the chunk loads.
   return (
-    <div className="flex min-h-[100dvh] w-full items-center justify-center bg-v2-canvas">
-      <div className="h-8 w-8 animate-spin rounded-full border-4 border-v2-line border-t-teal-500" />
+    <div className="flex min-h-[100dvh] w-full flex-col bg-v2-canvas">
+      <div className="h-[52px] border-b border-v2-line" />
+      <div className="flex-1 px-[22px] pt-6">
+        <Skeleton variant="text" lines={2} className="mb-6" />
+        <Skeleton variant="card" className="mb-4" />
+        <Skeleton variant="card" />
+      </div>
     </div>
   );
 }
 
 /**
- * Wraps the protected v2 surface (Home + Radar + Posts + Profile + Activity)
- * with the jobs/toast providers, and bridges them: when a job settles, fire
- * a toast. Public pages (Landing/Auth/Pricing) deliberately render outside
- * this shell so their Topbar can opt out of pulse + jobs UI.
+ * Skip-to-content link rendered at the very top. Hidden until focused.
  */
-function ProtectedShell({ children }: { children: ReactNode }) {
+function SkipLink() {
   return (
-    <ToastProvider>
-      <JobsProviderWithToast>{children}</JobsProviderWithToast>
-    </ToastProvider>
+    <a
+      href="#v2-main"
+      className="absolute start-4 top-2 z-[100] -translate-y-12 rounded-v2-md bg-v2-ink px-3 py-2 font-ar text-[13px] font-semibold text-white shadow-lift transition-transform duration-200 ease-out focus:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/50"
+    >
+      تخطٍ إلى المحتوى الرئيسي
+    </a>
   );
 }
 
 /**
- * Splits the provider chain so the toast hook is available when JobsProvider
- * boots — onJobSettled needs useToast(), which only resolves under <ToastProvider>.
+ * Wraps the protected v2 surface with jobs/toast providers and bridges them:
+ * when a job settles, fire a toast.
+ */
+function ProtectedShell({ children }: { children: ReactNode }) {
+  return (
+    <ErrorBoundary>
+      <ToastProvider>
+        <JobsProviderWithToast>
+          <SkipLink />
+          <main id="v2-main" className="min-h-[100dvh]">
+            <PageTransition>{children}</PageTransition>
+          </main>
+        </JobsProviderWithToast>
+      </ToastProvider>
+    </ErrorBoundary>
+  );
+}
+
+/**
+ * Public-page shell: no jobs/toast providers, but still gets ErrorBoundary,
+ * skip link, and PageTransition.
+ */
+function PublicShell({ children }: { children: ReactNode }) {
+  return (
+    <ErrorBoundary>
+      <SkipLink />
+      <main id="v2-main" className="min-h-[100dvh]">
+        <PageTransition>{children}</PageTransition>
+      </main>
+    </ErrorBoundary>
+  );
+}
+
+/**
+ * Bridges JobsProvider and ToastProvider — onJobSettled needs useToast(),
+ * which only resolves under <ToastProvider>.
  */
 function JobsProviderWithToast({ children }: { children: ReactNode }) {
   const { showToast } = useToast();
@@ -53,7 +97,13 @@ function JobsProviderWithToast({ children }: { children: ReactNode }) {
             message: 'اكتملت المهمة',
             description: job.title,
             ...(job.resultUrl
-              ? { onAction: () => { window.history.pushState(null, '', job.resultUrl!); window.dispatchEvent(new PopStateEvent('popstate')); }, actionLabel: 'عرض النتيجة' }
+              ? {
+                  onAction: () => {
+                    window.history.pushState(null, '', job.resultUrl!);
+                    window.dispatchEvent(new PopStateEvent('popstate'));
+                  },
+                  actionLabel: 'عرض النتيجة',
+                }
               : {}),
           });
         } else if (job.status === 'failed') {
@@ -83,19 +133,15 @@ function V2Routes(): ReactElement | null {
   const [matchProfile] = useRoute('/v2/me');
   const [matchActivity] = useRoute('/v2/activity');
 
-  // Public pages — no jobs/toast providers; their Topbars pass showPulse=false
-  // and showJobsIndicator=false (see the page files).
   if (matchLanding) {
-    return <Suspense fallback={<V2Loader />}><Landing /></Suspense>;
+    return <PublicShell><Suspense fallback={<V2Loader />}><Landing /></Suspense></PublicShell>;
   }
   if (matchLogin || matchSignup) {
-    return <Suspense fallback={<V2Loader />}><Auth /></Suspense>;
+    return <PublicShell><Suspense fallback={<V2Loader />}><Auth /></Suspense></PublicShell>;
   }
   if (matchPricing) {
-    return <Suspense fallback={<V2Loader />}><Pricing /></Suspense>;
+    return <PublicShell><Suspense fallback={<V2Loader />}><Pricing /></Suspense></PublicShell>;
   }
-
-  // Protected pages — wrapped in providers so they share one job pool.
   if (matchHome) {
     return <ProtectedShell><Suspense fallback={<V2Loader />}><Home /></Suspense></ProtectedShell>;
   }

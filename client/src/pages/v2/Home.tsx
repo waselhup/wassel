@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react';
 import { useLocation } from 'wouter';
+import { useTranslation } from 'react-i18next';
 import Phone from '@/components/v2/Phone';
 import Topbar from '@/components/v2/Topbar';
 import BottomNav from '@/components/v2/BottomNav';
@@ -7,6 +8,7 @@ import Card from '@/components/v2/Card';
 import Eyebrow from '@/components/v2/Eyebrow';
 import NumDisplay from '@/components/v2/NumDisplay';
 import Button from '@/components/v2/Button';
+import Skeleton, { useInitialLoading } from '@/components/v2/Skeleton';
 
 interface QuickAction {
   id: string;
@@ -50,6 +52,10 @@ const ChevronStart = (
 
 function Home() {
   const [, navigate] = useLocation();
+  // i18n prep — namespace v2.home.*. Translations TBD; AR inline.
+  // TODO(i18n): wrap mock data labels (NBA/recent kinds) once they come from API.
+  const { t } = useTranslation();
+  const loading = useInitialLoading(800);
 
   const balance = 240;
   const total = 300;
@@ -107,10 +113,16 @@ function Home() {
             <NumDisplay>14:32</NumDisplay> · الأربعاء
           </Eyebrow>
           <h1 className="font-ar text-[28px] font-bold leading-tight text-v2-ink">
-            مساء الخير، محمد.
+            {t('v2.home.greeting', 'مساء الخير، محمد.')}
           </h1>
         </div>
 
+        {loading ? (
+          <Card padding="lg" radius="lg" elevated className="mb-6">
+            <Skeleton variant="text" width={100} className="mb-3" />
+            <Skeleton variant="text" lines={2} />
+          </Card>
+        ) : (
         <Card padding="lg" radius="lg" elevated className="mb-6">
           <div className="flex items-start justify-between mb-1">
             <Eyebrow>TOKEN BALANCE</Eyebrow>
@@ -142,6 +154,7 @@ function Home() {
             <Eyebrow>RENEWS · <NumDisplay>JAN 1</NumDisplay></Eyebrow>
           </div>
         </Card>
+        )}
 
         <div className="mb-6">
           <h2 className="mb-3 font-ar text-[17px] font-semibold text-v2-ink">إجراءات سريعة</h2>
@@ -200,7 +213,21 @@ function Home() {
             </button>
           </div>
           <div className="flex flex-col">
-            {recent.map((item, i) => (
+            {loading
+              ? Array.from({ length: 3 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className={`grid grid-cols-[60px_1fr_12px] items-center gap-3 px-1 py-3.5 border-b border-v2-line ${i === 0 ? 'border-t' : ''}`}
+                  >
+                    <Skeleton variant="text" width={50} />
+                    <div className="flex flex-col gap-1.5">
+                      <Skeleton variant="text" width="80%" />
+                      <Skeleton variant="text" width="50%" />
+                    </div>
+                    <Skeleton variant="text" width={12} />
+                  </div>
+                ))
+              : recent.map((item, i) => (
               <div
                 key={item.id}
                 className={`grid grid-cols-[60px_1fr_12px] items-center gap-3 px-1 py-3.5
@@ -224,7 +251,7 @@ function Home() {
             fullWidth
             onClick={() => navigate('/v2/analyze')}
           >
-            ابدأ تحليلاً جديداً
+            {t('v2.home.startAnalysis', 'ابدأ تحليلاً جديداً')}
           </Button>
         </div>
       </div>

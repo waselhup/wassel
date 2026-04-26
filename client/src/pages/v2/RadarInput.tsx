@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useLocation } from 'wouter';
+import { useTranslation } from 'react-i18next';
 import Phone from '@/components/v2/Phone';
 import Topbar from '@/components/v2/Topbar';
 import BottomNav from '@/components/v2/BottomNav';
@@ -42,6 +43,9 @@ const BALANCE = 240;
 
 function RadarInput() {
   const [, navigate] = useLocation();
+  // i18n prep — namespace v2.radar.input.*. Translations TBD; AR inline.
+  // TODO(i18n): goal/industry option labels and step copy.
+  const { t } = useTranslation();
   const { addJob } = useJobs();
   const [step, setStep] = useState<Step>(1);
   const [role, setRole] = useState('Senior Product Manager');
@@ -82,7 +86,7 @@ function RadarInput() {
         back
         onBack={back}
         eyebrow={<>STEP <NumDisplay>{`0${step} / 03`}</NumDisplay></>}
-        title="إعداد الرادار"
+        title={t('v2.radar.input.title', 'إعداد الرادار')}
         trailing={
           <button
             type="button"

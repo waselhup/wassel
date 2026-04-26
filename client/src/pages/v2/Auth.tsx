@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useRoute } from 'wouter';
+import { useTranslation } from 'react-i18next';
 import Phone from '@/components/v2/Phone';
 import Topbar from '@/components/v2/Topbar';
 import Button from '@/components/v2/Button';
@@ -29,6 +30,8 @@ function Auth() {
   const [, navigate] = useLocation();
   const [matchSignup] = useRoute('/v2/signup');
   const [tab, setTab] = useState<Tab>(matchSignup ? 'signup' : 'login');
+  // i18n prep — namespace v2.auth.*. Translations TBD; AR text is inline default.
+  const { t } = useTranslation();
 
   // Sync tab with route when the user uses browser back/forward.
   useEffect(() => {
@@ -58,7 +61,7 @@ function Auth() {
       <Topbar
         back
         onBack={() => navigate('/v2')}
-        title={isSignup ? 'إنشاء حساب' : 'تسجيل الدخول'}
+        title={isSignup ? t('v2.auth.signupTitle', 'إنشاء حساب') : t('v2.auth.loginTitle', 'تسجيل الدخول')}
         bg="canvas"
         showPulse={false}
         showJobsIndicator={false}
@@ -68,7 +71,7 @@ function Auth() {
         <BrandMark />
 
         <h1 className="font-ar text-[26px] font-bold leading-tight text-v2-ink">
-          {isSignup ? 'ابدأ معنا.' : 'مرحباً بعودتك.'}
+          {isSignup ? t('v2.auth.signupHeading', 'ابدأ معنا.') : t('v2.auth.loginHeading', 'مرحباً بعودتك.')}
         </h1>
         <p className="mt-2 mb-6 font-ar text-[13px] leading-relaxed text-v2-body">
           {isSignup
@@ -161,7 +164,7 @@ function Auth() {
             disabled={isSignup && !agree}
             className="mt-2"
           >
-            {isSignup ? 'أنشئ حساب' : 'تسجيل الدخول'}
+            {isSignup ? t('v2.auth.submitSignup', 'أنشئ حساب') : t('v2.auth.submitLogin', 'تسجيل الدخول')}
           </Button>
         </form>
 

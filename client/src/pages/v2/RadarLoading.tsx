@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useLocation } from 'wouter';
+import { useTranslation } from 'react-i18next';
 import Phone from '@/components/v2/Phone';
 import Topbar from '@/components/v2/Topbar';
 import Button from '@/components/v2/Button';
@@ -50,6 +51,10 @@ const KIND_ICON: Record<Finding['kind'], string> = {
 
 function RadarLoading() {
   const [location, navigate] = useLocation();
+  // i18n prep — namespace v2.radar.loading.*. Translations TBD.
+  // TODO(i18n): findings stream copy comes from analyzer output.
+  // Aliased to `tr` — `t` is already used for the elapsed-seconds variable.
+  const { t: tr } = useTranslation();
   const { jobs, addJob } = useJobs();
 
   // Read ?jobId= from the URL. If RadarInput started a job and forwarded its
@@ -128,7 +133,9 @@ function RadarLoading() {
 
       <div className="flex-1 px-[22px] pb-8 pt-6 overflow-y-auto">
         <div className="mb-5 text-center">
-          <h1 className="font-ar text-[26px] font-bold text-v2-ink">نحلّل بروفايلك الآن…</h1>
+          <h1 className="font-ar text-[26px] font-bold text-v2-ink">
+            {tr('v2.radar.loading.heading', 'نحلّل بروفايلك الآن…')}
+          </h1>
           <div className="mt-2 inline-flex items-baseline gap-1 text-v2-dim">
             <NumDisplay className="text-[14px] font-medium text-v2-ink-2">{t.toFixed(1)}</NumDisplay>
             <span className="text-[13px]">/</span>
