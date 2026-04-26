@@ -52,8 +52,6 @@ const ChevronStart = (
 
 function Home() {
   const [, navigate] = useLocation();
-  // i18n prep — namespace v2.home.*. Translations TBD; AR inline.
-  // TODO(i18n): wrap mock data labels (NBA/recent kinds) once they come from API.
   const { t } = useTranslation();
   const loading = useInitialLoading(800);
 
@@ -74,6 +72,147 @@ function Home() {
     { id: 'r3', kind: 'EDIT',  title: 'تحسين العنوان المهني',    meta: 'قبل أسبوع' },
   ];
 
+  const TokenCard = (
+    loading ? (
+      <Card padding="lg" radius="lg" elevated className="h-full">
+        <Skeleton variant="text" width={100} className="mb-3" />
+        <Skeleton variant="text" lines={2} />
+      </Card>
+    ) : (
+      <Card padding="lg" radius="lg" elevated className="h-full">
+        <div className="flex items-start justify-between mb-1">
+          <Eyebrow>TOKEN BALANCE</Eyebrow>
+          <button
+            type="button"
+            onClick={() => navigate('/v2/pricing')}
+            className="font-ar text-[12px] font-semibold text-teal-700 hover:text-teal-600 cursor-pointer"
+          >
+            شحن +
+          </button>
+        </div>
+        <div className="mt-2 flex items-baseline gap-2">
+          <NumDisplay className="text-[36px] font-bold text-v2-ink leading-none">
+            {balance}
+          </NumDisplay>
+          <span className="font-ar text-[13px] text-v2-dim">توكن</span>
+          <span className="ms-auto font-ar text-[12px] text-v2-dim">
+            من <NumDisplay>{total}</NumDisplay>
+          </span>
+        </div>
+        <div className="mt-3 h-[3px] w-full rounded-full bg-v2-line">
+          <div
+            className="h-full rounded-full bg-teal-500"
+            style={{ width: `${100 - usedPct}%` }}
+          />
+        </div>
+        <div className="mt-2 flex items-center justify-between">
+          <Eyebrow>USED · <NumDisplay>{used}</NumDisplay></Eyebrow>
+          <Eyebrow>RENEWS · <NumDisplay>JAN 1</NumDisplay></Eyebrow>
+        </div>
+      </Card>
+    )
+  );
+
+  const TipCard = (
+    <Card padding="md" radius="lg" className="h-full bg-teal-50 border-teal-100">
+      <div className="flex items-start gap-3">
+        <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-teal-100 text-teal-700">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+            <path d="M7 1 L8.5 5 L13 5.5 L9.5 8.5 L10.5 13 L7 10.5 L3.5 13 L4.5 8.5 L1 5.5 L5.5 5 Z"
+              stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
+          </svg>
+        </span>
+        <div className="flex-1">
+          <Eyebrow className="text-teal-700">TIP · TODAY</Eyebrow>
+          <p className="mt-1 font-ar text-[14px] leading-relaxed text-v2-ink-2">
+            المنشورات يومَي الثلاثاء والأربعاء صباحاً تحقق ظهوراً أعلى بـ <span className="font-semibold text-teal-700">3x</span> في السوق السعودي.
+          </p>
+        </div>
+      </div>
+    </Card>
+  );
+
+  const ActionsBlock = (
+    <div>
+      <h2 className="mb-3 font-ar text-[17px] font-semibold text-v2-ink lg:mb-4 lg:text-[19px]">
+        إجراءات سريعة
+      </h2>
+      {/* Mobile: stacked rows, Desktop: 3-card horizontal grid */}
+      <div className="flex flex-col lg:grid lg:grid-cols-3 lg:gap-4">
+        {actions.map((action, i) => (
+          <button
+            key={action.id}
+            type="button"
+            onClick={() => navigate(action.href)}
+            className={`grid grid-cols-[36px_1fr_auto_12px] items-center gap-3 px-1 py-4 text-start cursor-pointer
+              border-b border-v2-line ${i === 0 ? 'border-t' : ''}
+              hover:bg-v2-canvas-2 transition-colors duration-200 ease-out
+              lg:flex lg:flex-col lg:items-start lg:gap-3 lg:rounded-v2-lg lg:border lg:border-v2-line lg:bg-v2-surface lg:px-5 lg:py-5 lg:hover:shadow-card
+              lg:[border-bottom-width:1px] lg:[border-top-width:1px]
+              `}
+          >
+            <span className="flex h-9 w-9 items-center justify-center rounded-v2-md bg-v2-canvas-2 text-v2-ink lg:h-11 lg:w-11">
+              {action.icon}
+            </span>
+            <span className="font-ar lg:flex lg:w-full lg:flex-col">
+              <span className="block text-[14px] font-semibold text-v2-ink lg:text-[15px]">{action.title}</span>
+              <span className="block text-[12px] text-v2-dim lg:mt-0.5 lg:text-[13px]">{action.description}</span>
+            </span>
+            <NumDisplay className="text-[12px] text-v2-body lg:mt-1 lg:text-[12px] lg:font-semibold lg:text-teal-700">
+              {action.cost} توكن
+            </NumDisplay>
+            <span className="text-v2-mute lg:hidden">{ChevronStart}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
+  const RecentBlock = (
+    <div>
+      <div className="mb-3 flex items-baseline justify-between lg:mb-4">
+        <h2 className="font-ar text-[17px] font-semibold text-v2-ink lg:text-[19px]">آخر النشاط</h2>
+        <button
+          type="button"
+          onClick={() => navigate('/v2/activity')}
+          className="font-ar text-[12px] font-semibold text-teal-700 hover:text-teal-600 cursor-pointer"
+        >
+          السجل ←
+        </button>
+      </div>
+      <div className="flex flex-col">
+        {loading
+          ? Array.from({ length: 3 }).map((_, i) => (
+              <div
+                key={i}
+                className={`grid grid-cols-[60px_1fr_12px] items-center gap-3 px-1 py-3.5 border-b border-v2-line ${i === 0 ? 'border-t' : ''}`}
+              >
+                <Skeleton variant="text" width={50} />
+                <div className="flex flex-col gap-1.5">
+                  <Skeleton variant="text" width="80%" />
+                  <Skeleton variant="text" width="50%" />
+                </div>
+                <Skeleton variant="text" width={12} />
+              </div>
+            ))
+          : recent.map((item, i) => (
+            <div
+              key={item.id}
+              className={`grid grid-cols-[60px_1fr_12px] items-center gap-3 px-1 py-3.5
+                border-b border-v2-line ${i === 0 ? 'border-t' : ''}`}
+            >
+              <Eyebrow>{item.kind}</Eyebrow>
+              <div className="font-ar">
+                <span className="block text-[14px] font-medium text-v2-ink">{item.title}</span>
+                <span className="block text-[12px] text-v2-dim">{item.meta}</span>
+              </div>
+              <span className="text-v2-mute">{ChevronStart}</span>
+            </div>
+          ))}
+      </div>
+    </div>
+  );
+
   return (
     <Phone>
       <Topbar
@@ -90,9 +229,6 @@ function Home() {
           </span>
         }
         trailing={
-          // The JobsIndicator (auto-injected by Topbar when showJobsIndicator=true,
-          // which is the default) replaces the previous standalone bell — no need
-          // to render our own here.
           <button
             type="button"
             aria-label="بحث"
@@ -106,150 +242,56 @@ function Home() {
         }
       />
 
-      <div className="flex-1 px-[22px] pb-[110px]">
+      {/* Mobile: vertical stack with bottom-nav padding.
+          Desktop: 12-col grid dashboard, no extra padding (DesktopShell owns it). */}
+      <div className="flex-1 px-[22px] pb-[110px] lg:px-0 lg:pb-0">
 
-        <div className="mt-5 mb-6">
+        {/* Greeting — full width on both. Bigger on lg. */}
+        <div className="mt-5 mb-6 lg:mt-2 lg:mb-8">
           <Eyebrow className="mb-1.5 block">
             <NumDisplay>14:32</NumDisplay> · الأربعاء
           </Eyebrow>
-          <h1 className="font-ar text-[28px] font-bold leading-tight text-v2-ink">
+          <h1 className="font-ar font-bold leading-tight text-v2-ink text-[28px] lg:text-[36px]">
             {t('v2.home.greeting', 'مساء الخير، محمد.')}
           </h1>
         </div>
 
-        {loading ? (
-          <Card padding="lg" radius="lg" elevated className="mb-6">
-            <Skeleton variant="text" width={100} className="mb-3" />
-            <Skeleton variant="text" lines={2} />
-          </Card>
-        ) : (
-        <Card padding="lg" radius="lg" elevated className="mb-6">
-          <div className="flex items-start justify-between mb-1">
-            <Eyebrow>TOKEN BALANCE</Eyebrow>
-            <button
-              type="button"
-              onClick={() => navigate('/v2/home')}
-              className="font-ar text-[12px] font-semibold text-teal-700 hover:text-teal-600 cursor-pointer"
-            >
-              شحن +
-            </button>
-          </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <NumDisplay className="text-[36px] font-bold text-v2-ink leading-none">
-              {balance}
-            </NumDisplay>
-            <span className="font-ar text-[13px] text-v2-dim">توكن</span>
-            <span className="ms-auto font-ar text-[12px] text-v2-dim">
-              من <NumDisplay>{total}</NumDisplay>
-            </span>
-          </div>
-          <div className="mt-3 h-[3px] w-full rounded-full bg-v2-line">
-            <div
-              className="h-full rounded-full bg-teal-500"
-              style={{ width: `${100 - usedPct}%` }}
-            />
-          </div>
-          <div className="mt-2 flex items-center justify-between">
-            <Eyebrow>USED · <NumDisplay>{used}</NumDisplay></Eyebrow>
-            <Eyebrow>RENEWS · <NumDisplay>JAN 1</NumDisplay></Eyebrow>
-          </div>
-        </Card>
-        )}
+        {/* Mobile flow: TokenCard → Actions → Tip → Recent → CTA. */}
+        {/* Desktop: 12-col grid, two rows of (8/4). */}
+        <div className="lg:grid lg:grid-cols-12 lg:gap-6">
 
-        <div className="mb-6">
-          <h2 className="mb-3 font-ar text-[17px] font-semibold text-v2-ink">إجراءات سريعة</h2>
-          <div className="flex flex-col">
-            {actions.map((action, i) => (
-              <button
-                key={action.id}
-                type="button"
-                onClick={() => navigate(action.href)}
-                className={`grid grid-cols-[36px_1fr_auto_12px] items-center gap-3 px-1 py-4 text-start cursor-pointer
-                  border-b border-v2-line ${i === 0 ? 'border-t' : ''}
-                  hover:bg-v2-canvas-2 transition-colors duration-200 ease-out`}
-              >
-                <span className="flex h-9 w-9 items-center justify-center rounded-v2-md bg-v2-canvas-2 text-v2-ink">
-                  {action.icon}
-                </span>
-                <span className="font-ar">
-                  <span className="block text-[14px] font-semibold text-v2-ink">{action.title}</span>
-                  <span className="block text-[12px] text-v2-dim">{action.description}</span>
-                </span>
-                <NumDisplay className="text-[12px] text-v2-body">
-                  {action.cost} توكن
-                </NumDisplay>
-                <span className="text-v2-mute">{ChevronStart}</span>
-              </button>
-            ))}
+          {/* Row 1, mobile: TokenCard. Desktop: TokenCard col-span-4 (right in RTL).
+              On mobile the visual order matches the original page so we render
+              it before Actions; on desktop the grid places it on the start side
+              (right in RTL) thanks to col-start. */}
+          <div className="mb-6 lg:order-2 lg:col-span-4 lg:mb-0">
+            {TokenCard}
+          </div>
+
+          {/* Row 1: Actions — mobile under TokenCard, desktop col-span-8 */}
+          <div className="mb-6 lg:order-1 lg:col-span-8 lg:mb-0">
+            {ActionsBlock}
+          </div>
+
+          {/* Row 2: Recent activity (col-span-8) */}
+          <div className="mb-0 lg:order-3 lg:col-span-8 lg:mt-2">
+            {RecentBlock}
+          </div>
+
+          {/* Row 2: Tip card (col-span-4) */}
+          <div className="mb-6 lg:order-4 lg:col-span-4 lg:mb-0 lg:mt-2">
+            {TipCard}
           </div>
         </div>
 
-        <Card padding="md" radius="lg" className="mb-6 bg-teal-50 border-teal-100">
-          <div className="flex items-start gap-3">
-            <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-teal-100 text-teal-700">
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                <path d="M7 1 L8.5 5 L13 5.5 L9.5 8.5 L10.5 13 L7 10.5 L3.5 13 L4.5 8.5 L1 5.5 L5.5 5 Z"
-                  stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
-              </svg>
-            </span>
-            <div className="flex-1">
-              <Eyebrow className="text-teal-700">TIP · TODAY</Eyebrow>
-              <p className="mt-1 font-ar text-[14px] leading-relaxed text-v2-ink-2">
-                المنشورات يومَي الثلاثاء والأربعاء صباحاً تحقق ظهوراً أعلى بـ <span className="font-semibold text-teal-700">3x</span> في السوق السعودي.
-              </p>
-            </div>
-          </div>
-        </Card>
-
-        <div>
-          <div className="mb-3 flex items-baseline justify-between">
-            <h2 className="font-ar text-[17px] font-semibold text-v2-ink">آخر النشاط</h2>
-            <button
-              type="button"
-              onClick={() => navigate('/v2/home')}
-              className="font-ar text-[12px] font-semibold text-teal-700 hover:text-teal-600 cursor-pointer"
-            >
-              السجل ←
-            </button>
-          </div>
-          <div className="flex flex-col">
-            {loading
-              ? Array.from({ length: 3 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className={`grid grid-cols-[60px_1fr_12px] items-center gap-3 px-1 py-3.5 border-b border-v2-line ${i === 0 ? 'border-t' : ''}`}
-                  >
-                    <Skeleton variant="text" width={50} />
-                    <div className="flex flex-col gap-1.5">
-                      <Skeleton variant="text" width="80%" />
-                      <Skeleton variant="text" width="50%" />
-                    </div>
-                    <Skeleton variant="text" width={12} />
-                  </div>
-                ))
-              : recent.map((item, i) => (
-              <div
-                key={item.id}
-                className={`grid grid-cols-[60px_1fr_12px] items-center gap-3 px-1 py-3.5
-                  border-b border-v2-line ${i === 0 ? 'border-t' : ''}`}
-              >
-                <Eyebrow>{item.kind}</Eyebrow>
-                <div className="font-ar">
-                  <span className="block text-[14px] font-medium text-v2-ink">{item.title}</span>
-                  <span className="block text-[12px] text-v2-dim">{item.meta}</span>
-                </div>
-                <span className="text-v2-mute">{ChevronStart}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="mt-8 mb-2">
+        {/* Primary CTA — full-width on mobile, centered max-w on desktop */}
+        <div className="mt-8 mb-2 lg:mt-12 lg:mb-0 lg:flex lg:justify-center">
           <Button
             variant="primary"
             size="lg"
             fullWidth
             onClick={() => navigate('/v2/analyze')}
+            className="lg:w-auto lg:px-10"
           >
             {t('v2.home.startAnalysis', 'ابدأ تحليلاً جديداً')}
           </Button>
