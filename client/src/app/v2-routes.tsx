@@ -2,6 +2,9 @@ import { lazy, Suspense, type ReactElement } from 'react';
 import { useRoute } from 'wouter';
 
 // Lazy-load v2 pages so they don't bloat the main bundle.
+const Landing = lazy(() => import('@/pages/v2/Landing'));
+const Auth = lazy(() => import('@/pages/v2/Auth'));
+const Pricing = lazy(() => import('@/pages/v2/Pricing'));
 const Home = lazy(() => import('@/pages/v2/Home'));
 const RadarInput = lazy(() => import('@/pages/v2/RadarInput'));
 const RadarLoading = lazy(() => import('@/pages/v2/RadarLoading'));
@@ -29,6 +32,10 @@ function V2Loader() {
  * default `<LandingPage />` behaviour for unknown URLs.
  */
 function V2Routes(): ReactElement | null {
+  const [matchLanding] = useRoute('/v2');
+  const [matchLogin] = useRoute('/v2/login');
+  const [matchSignup] = useRoute('/v2/signup');
+  const [matchPricing] = useRoute('/v2/pricing');
   const [matchHome] = useRoute('/v2/home');
   const [matchInput] = useRoute('/v2/analyze');
   const [matchLoading] = useRoute('/v2/analyze/loading');
@@ -36,9 +43,29 @@ function V2Routes(): ReactElement | null {
   const [matchPosts] = useRoute('/v2/posts');
   const [matchProfile] = useRoute('/v2/me');
   const [matchActivity] = useRoute('/v2/activity');
-  const [matchIndex] = useRoute('/v2');
 
-  if (matchIndex || matchHome) {
+  if (matchLanding) {
+    return (
+      <Suspense fallback={<V2Loader />}>
+        <Landing />
+      </Suspense>
+    );
+  }
+  if (matchLogin || matchSignup) {
+    return (
+      <Suspense fallback={<V2Loader />}>
+        <Auth />
+      </Suspense>
+    );
+  }
+  if (matchPricing) {
+    return (
+      <Suspense fallback={<V2Loader />}>
+        <Pricing />
+      </Suspense>
+    );
+  }
+  if (matchHome) {
     return (
       <Suspense fallback={<V2Loader />}>
         <Home />
