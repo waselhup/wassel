@@ -1,5 +1,8 @@
-import { lazy, Suspense, type ReactElement } from 'react';
+import { lazy, Suspense, type ReactElement, type ReactNode } from 'react';
 import { useRoute } from 'wouter';
+import { JobsProvider } from '@/lib/v2/jobs';
+import { ToastProvider, useToast } from '@/lib/v2/toast';
+import type { Job } from '@/lib/v2/jobs';
 
 // Lazy-load v2 pages so they don't bloat the main bundle.
 const Landing = lazy(() => import('@/pages/v2/Landing'));
@@ -22,15 +25,51 @@ function V2Loader() {
 }
 
 /**
- * V2Routes — owns every URL under `/v2/*`.
- *
- * The legacy router in App.tsx delegates to this component when the path starts
- * with `/v2`, so v2 pages live in their own subtree without touching anything
- * the existing app already does.
- *
- * Returns `null` if no v2 path matched, letting the parent fall through to its
- * default `<LandingPage />` behaviour for unknown URLs.
+ * Wraps the protected v2 surface (Home + Radar + Posts + Profile + Activity)
+ * with the jobs/toast providers, and bridges them: when a job settles, fire
+ * a toast. Public pages (Landing/Auth/Pricing) deliberately render outside
+ * this shell so their Topbar can opt out of pulse + jobs UI.
  */
+function ProtectedShell({ children }: { children: ReactNode }) {
+  return (
+    <ToastProvider>
+      <JobsProviderWithToast>{children}</JobsProviderWithToast>
+    </ToastProvider>
+  );
+}
+
+/**
+ * Splits the provider chain so the toast hook is available when JobsProvider
+ * boots — onJobSettled needs useToast(), which only resolves under <ToastProvider>.
+ */
+function JobsProviderWithToast({ children }: { children: ReactNode }) {
+  const { showToast } = useToast();
+  return (
+    <JobsProvider
+      onJobSettled={(job: Job) => {
+        if (job.status === 'completed') {
+          showToast({
+            tone: 'success',
+            message: 'اكتملت المهمة',
+            description: job.title,
+            ...(job.resultUrl
+              ? { onAction: () => { window.history.pushState(null, '', job.resultUrl!); window.dispatchEvent(new PopStateEvent('popstate')); }, actionLabel: 'عرض النتيجة' }
+              : {}),
+          });
+        } else if (job.status === 'failed') {
+          showToast({
+            tone: 'error',
+            message: 'فشلت المهمة',
+            description: job.error ?? job.title,
+          });
+        }
+      }}
+    >
+      {children}
+    </JobsProvider>
+  );
+}
+
 function V2Routes(): ReactElement | null {
   const [matchLanding] = useRoute('/v2');
   const [matchLogin] = useRoute('/v2/login');
@@ -44,75 +83,39 @@ function V2Routes(): ReactElement | null {
   const [matchProfile] = useRoute('/v2/me');
   const [matchActivity] = useRoute('/v2/activity');
 
+  // Public pages — no jobs/toast providers; their Topbars pass showPulse=false
+  // and showJobsIndicator=false (see the page files).
   if (matchLanding) {
-    return (
-      <Suspense fallback={<V2Loader />}>
-        <Landing />
-      </Suspense>
-    );
+    return <Suspense fallback={<V2Loader />}><Landing /></Suspense>;
   }
   if (matchLogin || matchSignup) {
-    return (
-      <Suspense fallback={<V2Loader />}>
-        <Auth />
-      </Suspense>
-    );
+    return <Suspense fallback={<V2Loader />}><Auth /></Suspense>;
   }
   if (matchPricing) {
-    return (
-      <Suspense fallback={<V2Loader />}>
-        <Pricing />
-      </Suspense>
-    );
+    return <Suspense fallback={<V2Loader />}><Pricing /></Suspense>;
   }
+
+  // Protected pages — wrapped in providers so they share one job pool.
   if (matchHome) {
-    return (
-      <Suspense fallback={<V2Loader />}>
-        <Home />
-      </Suspense>
-    );
+    return <ProtectedShell><Suspense fallback={<V2Loader />}><Home /></Suspense></ProtectedShell>;
   }
   if (matchInput) {
-    return (
-      <Suspense fallback={<V2Loader />}>
-        <RadarInput />
-      </Suspense>
-    );
+    return <ProtectedShell><Suspense fallback={<V2Loader />}><RadarInput /></Suspense></ProtectedShell>;
   }
   if (matchLoading) {
-    return (
-      <Suspense fallback={<V2Loader />}>
-        <RadarLoading />
-      </Suspense>
-    );
+    return <ProtectedShell><Suspense fallback={<V2Loader />}><RadarLoading /></Suspense></ProtectedShell>;
   }
   if (matchResult) {
-    return (
-      <Suspense fallback={<V2Loader />}>
-        <RadarResult />
-      </Suspense>
-    );
+    return <ProtectedShell><Suspense fallback={<V2Loader />}><RadarResult /></Suspense></ProtectedShell>;
   }
   if (matchPosts) {
-    return (
-      <Suspense fallback={<V2Loader />}>
-        <Posts />
-      </Suspense>
-    );
+    return <ProtectedShell><Suspense fallback={<V2Loader />}><Posts /></Suspense></ProtectedShell>;
   }
   if (matchProfile) {
-    return (
-      <Suspense fallback={<V2Loader />}>
-        <Profile />
-      </Suspense>
-    );
+    return <ProtectedShell><Suspense fallback={<V2Loader />}><Profile /></Suspense></ProtectedShell>;
   }
   if (matchActivity) {
-    return (
-      <Suspense fallback={<V2Loader />}>
-        <Activity />
-      </Suspense>
-    );
+    return <ProtectedShell><Suspense fallback={<V2Loader />}><Activity /></Suspense></ProtectedShell>;
   }
 
   return null;

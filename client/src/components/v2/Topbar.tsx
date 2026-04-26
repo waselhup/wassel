@@ -1,5 +1,7 @@
 import type { HTMLAttributes, ReactNode } from 'react';
 import { cn } from '@/lib/utils';
+import PulseBar from '@/components/v2/PulseBar';
+import JobsIndicator from '@/components/v2/JobsIndicator';
 
 export interface TopbarProps extends Omit<HTMLAttributes<HTMLDivElement>, 'title'> {
   /** main heading rendered in the center column */
@@ -18,6 +20,16 @@ export interface TopbarProps extends Omit<HTMLAttributes<HTMLDivElement>, 'title
   sticky?: boolean;
   /** background color override (defaults to canvas) */
   bg?: 'canvas' | 'surface' | 'transparent';
+  /**
+   * Render the 2px PulseBar under the topbar. Defaults to true. Pages that don't
+   * subscribe to JobsProvider (e.g. Landing/Auth/Pricing) should pass false.
+   */
+  showPulse?: boolean;
+  /**
+   * Render JobsIndicator alongside `trailing` in the end slot. Defaults to true.
+   * Pages outside JobsProvider should pass false.
+   */
+  showJobsIndicator?: boolean;
 }
 
 const bgClasses = {
@@ -36,6 +48,8 @@ function Topbar({
   trailing,
   sticky = true,
   bg = 'canvas',
+  showPulse = true,
+  showJobsIndicator = true,
   ...rest
 }: TopbarProps) {
   return (
@@ -82,8 +96,12 @@ function Topbar({
             </div>
           )}
         </div>
-        <div className="flex min-w-[64px] items-center justify-end gap-1.5">{trailing}</div>
+        <div className="flex min-w-[64px] items-center justify-end gap-1.5">
+          {trailing}
+          {showJobsIndicator && <JobsIndicator />}
+        </div>
       </div>
+      {showPulse && <PulseBar />}
     </div>
   );
 }

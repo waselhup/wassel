@@ -108,6 +108,8 @@ function Pricing() {
         onBack={() => navigate('/v2')}
         title="الباقات"
         bg="canvas"
+        showPulse={false}
+        showJobsIndicator={false}
       />
 
       <div className="flex-1 px-[22px] pb-12 pt-5">

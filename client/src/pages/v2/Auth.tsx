@@ -60,6 +60,8 @@ function Auth() {
         onBack={() => navigate('/v2')}
         title={isSignup ? 'إنشاء حساب' : 'تسجيل الدخول'}
         bg="canvas"
+        showPulse={false}
+        showJobsIndicator={false}
       />
 
       <div className="flex-1 px-[22px] pb-10">

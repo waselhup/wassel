@@ -10,6 +10,7 @@ import Card from '@/components/v2/Card';
 import Eyebrow from '@/components/v2/Eyebrow';
 import LiveDot from '@/components/v2/LiveDot';
 import NumDisplay from '@/components/v2/NumDisplay';
+import { useJobs } from '@/lib/v2/jobs';
 
 type Step = 1 | 2 | 3;
 
@@ -41,6 +42,7 @@ const BALANCE = 240;
 
 function RadarInput() {
   const [, navigate] = useLocation();
+  const { addJob } = useJobs();
   const [step, setStep] = useState<Step>(1);
   const [role, setRole] = useState('Senior Product Manager');
   const [company, setCompany] = useState('Aramco Digital');
@@ -55,8 +57,19 @@ function RadarInput() {
   const toggleIndustry = toggle(industries, setIndustries);
 
   const next = () => {
-    if (step < 3) setStep((step + 1) as Step);
-    else navigate('/v2/analyze/loading');
+    if (step < 3) {
+      setStep((step + 1) as Step);
+      return;
+    }
+    // Step 3 → kick off the analysis job and pass its id to RadarLoading
+    // via the URL so the loading screen can subscribe to its progress.
+    const job = addJob({
+      type: 'analysis',
+      title: `تحليل البروفايل · ${role}`,
+      durationMs: 7500,
+      resultUrl: `/v2/analyze/result/mock-001`,
+    });
+    navigate(`/v2/analyze/loading?jobId=${encodeURIComponent(job.id)}`);
   };
   const back = () => {
     if (step > 1) setStep((step - 1) as Step);

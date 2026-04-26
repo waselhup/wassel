@@ -5,7 +5,6 @@ import Topbar from '@/components/v2/Topbar';
 import BottomNav from '@/components/v2/BottomNav';
 import Card from '@/components/v2/Card';
 import Eyebrow from '@/components/v2/Eyebrow';
-import LiveDot from '@/components/v2/LiveDot';
 import NumDisplay from '@/components/v2/NumDisplay';
 import Button from '@/components/v2/Button';
 
@@ -85,16 +84,18 @@ function Home() {
           </span>
         }
         trailing={
+          // The JobsIndicator (auto-injected by Topbar when showJobsIndicator=true,
+          // which is the default) replaces the previous standalone bell — no need
+          // to render our own here.
           <button
             type="button"
-            aria-label="الإشعارات"
+            aria-label="بحث"
             className="relative flex h-9 w-9 items-center justify-center rounded-v2-pill text-v2-ink hover:bg-v2-canvas-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/30"
           >
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-              <path d="M3 7 a6 6 0 0112 0 v4 l1.5 2 H1.5 L3 11 Z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
-              <path d="M7 15 a2 2 0 004 0" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+              <circle cx="8" cy="8" r="5" stroke="currentColor" strokeWidth="1.4" />
+              <path d="M12 12 L15 15" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
             </svg>
-            <LiveDot className="absolute right-2 top-2" />
           </button>
         }
       />

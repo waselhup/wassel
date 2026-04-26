@@ -44,6 +44,8 @@ function Landing() {
       <Topbar
         bg="canvas"
         leading={<BrandMark />}
+        showPulse={false}
+        showJobsIndicator={false}
         trailing={
           <Button
             variant="secondary"

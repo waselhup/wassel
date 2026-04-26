@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useLocation } from 'wouter';
 import Phone from '@/components/v2/Phone';
 import Topbar from '@/components/v2/Topbar';
@@ -7,6 +7,7 @@ import Eyebrow from '@/components/v2/Eyebrow';
 import LiveDot from '@/components/v2/LiveDot';
 import NumDisplay from '@/components/v2/NumDisplay';
 import RadarSweep from '@/components/v2/RadarSweep';
+import { useJobs } from '@/lib/v2/jobs';
 
 interface Finding {
   t: number;
@@ -48,35 +49,55 @@ const KIND_ICON: Record<Finding['kind'], string> = {
 };
 
 function RadarLoading() {
-  const [, navigate] = useLocation();
-  const [t, setT] = useState(0);
-  const startedAt = useRef<number | null>(null);
-  const cancelled = useRef(false);
+  const [location, navigate] = useLocation();
+  const { jobs, addJob } = useJobs();
 
+  // Read ?jobId= from the URL. If RadarInput started a job and forwarded its
+  // id, we read live progress from that job. If the user lands here directly
+  // (deep link, refresh), we create a fresh job so the loading state is real.
+  const incomingJobId = useMemo(() => {
+    if (typeof window === 'undefined') return null;
+    const params = new URLSearchParams(window.location.search);
+    return params.get('jobId');
+  }, [location]);
+
+  const ensuredJobIdRef = useRef<string | null>(null);
   useEffect(() => {
-    let raf = 0;
-    const loop = (now: number) => {
-      if (cancelled.current) return;
-      if (startedAt.current === null) startedAt.current = now;
-      const elapsed = (now - startedAt.current) / 1000;
-      if (elapsed >= TOTAL) {
-        setT(TOTAL);
-        navigate(`/v2/analyze/result/${MOCK_RESULT_ID}`);
-        return;
-      }
-      setT(elapsed);
-      raf = requestAnimationFrame(loop);
-    };
-    raf = requestAnimationFrame(loop);
-    return () => {
-      cancelled.current = true;
-      cancelAnimationFrame(raf);
-    };
-  }, [navigate]);
+    if (incomingJobId || ensuredJobIdRef.current) return;
+    const job = addJob({
+      type: 'analysis',
+      title: 'تحليل البروفايل',
+      durationMs: TOTAL * 1000,
+      resultUrl: `/v2/analyze/result/${MOCK_RESULT_ID}`,
+    });
+    ensuredJobIdRef.current = job.id;
+  }, [incomingJobId, addJob]);
+
+  const jobId = incomingJobId ?? ensuredJobIdRef.current;
+  const job = jobs.find((j) => j.id === jobId);
+
+  // Drive the seconds counter and findings off the job's progress.
+  const progress = job?.progress ?? 0;
+  const t = progress * TOTAL;
+
+  // Auto-redirect when the job completes (matches the old 7.5s behaviour but
+  // now bound to the job, not a separate timer).
+  const redirectedRef = useRef(false);
+  useEffect(() => {
+    if (redirectedRef.current) return;
+    if (job?.status === 'completed') {
+      redirectedRef.current = true;
+      navigate(`/v2/analyze/result/${MOCK_RESULT_ID}`);
+    } else if (job?.status === 'failed') {
+      // The toast (fired by V2Routes) already reports the failure;
+      // bring the user back to the input screen so they can retry.
+      redirectedRef.current = true;
+      navigate('/v2/analyze');
+    }
+  }, [job, navigate]);
 
   const visible = FINDINGS.filter((f) => t >= f.t);
   const idx = visible.length;
-  const progress = Math.min(t / TOTAL, 1);
 
   return (
     <Phone>

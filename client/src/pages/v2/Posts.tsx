@@ -8,6 +8,7 @@ import Eyebrow from '@/components/v2/Eyebrow';
 import NumDisplay from '@/components/v2/NumDisplay';
 import Pill from '@/components/v2/Pill';
 import Sheet from '@/components/v2/Sheet';
+import { useJobs } from '@/lib/v2/jobs';
 
 type Tab = 'drafts' | 'published' | 'templates';
 type Status = 'مسودة' | 'جاهز للنشر' | 'منشور';
@@ -102,11 +103,21 @@ function PostRow({ post }: { post: Post }) {
 
 function Posts() {
   const [, navigate] = useLocation();
+  const { addJob } = useJobs();
   const [tab, setTab] = useState<Tab>('drafts');
   const [composerOpen, setComposerOpen] = useState(false);
   const [topic, setTopic] = useState('عن القيادة في عصر AI');
   const [content, setContent] = useState('');
   const [tone, setTone] = useState<Tone>('professional');
+
+  const generate = () => {
+    addJob({
+      type: 'post-generation',
+      title: topic.trim() || 'منشور جديد',
+      durationMs: 5000,
+    });
+    setComposerOpen(false);
+  };
 
   const counts = {
     drafts:    DRAFTS.length,
@@ -279,7 +290,7 @@ function Posts() {
                 <path d="M7 1 L8.5 5 L13 6.5 L8.5 8 L7 13 L5.5 8 L1 6.5 L5.5 5 Z" fill="currentColor" />
               </svg>
             }
-            onClick={() => setComposerOpen(false)}
+            onClick={generate}
           >
             ولّد بالذكاء الاصطناعي
           </Button>
