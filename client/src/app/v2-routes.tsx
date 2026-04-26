@@ -6,6 +6,9 @@ const Home = lazy(() => import('@/pages/v2/Home'));
 const RadarInput = lazy(() => import('@/pages/v2/RadarInput'));
 const RadarLoading = lazy(() => import('@/pages/v2/RadarLoading'));
 const RadarResult = lazy(() => import('@/pages/v2/RadarResult'));
+const Posts = lazy(() => import('@/pages/v2/Posts'));
+const Profile = lazy(() => import('@/pages/v2/Profile'));
+const Activity = lazy(() => import('@/pages/v2/Activity'));
 
 function V2Loader() {
   return (
@@ -30,6 +33,9 @@ function V2Routes(): ReactElement | null {
   const [matchInput] = useRoute('/v2/analyze');
   const [matchLoading] = useRoute('/v2/analyze/loading');
   const [matchResult] = useRoute('/v2/analyze/result/:id');
+  const [matchPosts] = useRoute('/v2/posts');
+  const [matchProfile] = useRoute('/v2/me');
+  const [matchActivity] = useRoute('/v2/activity');
   const [matchIndex] = useRoute('/v2');
 
   if (matchIndex || matchHome) {
@@ -57,6 +63,27 @@ function V2Routes(): ReactElement | null {
     return (
       <Suspense fallback={<V2Loader />}>
         <RadarResult />
+      </Suspense>
+    );
+  }
+  if (matchPosts) {
+    return (
+      <Suspense fallback={<V2Loader />}>
+        <Posts />
+      </Suspense>
+    );
+  }
+  if (matchProfile) {
+    return (
+      <Suspense fallback={<V2Loader />}>
+        <Profile />
+      </Suspense>
+    );
+  }
+  if (matchActivity) {
+    return (
+      <Suspense fallback={<V2Loader />}>
+        <Activity />
       </Suspense>
     );
   }

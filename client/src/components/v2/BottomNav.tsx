@@ -1,7 +1,7 @@
 import type { HTMLAttributes, ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
-export type BottomNavItemId = 'home' | 'analyze' | 'tools' | 'profile';
+export type BottomNavItemId = 'home' | 'analyze' | 'tools' | 'profile' | 'posts' | 'activity';
 
 export interface BottomNavItem {
   id: BottomNavItemId;
