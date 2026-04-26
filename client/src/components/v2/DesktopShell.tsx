@@ -1,6 +1,6 @@
 import type { HTMLAttributes, ReactNode } from 'react';
 import { cn } from '@/lib/utils';
-import DesktopTopbar from '@/components/v2/DesktopTopbar';
+import DesktopTopbar, { type DesktopNavLink } from '@/components/v2/DesktopTopbar';
 import DesktopSidebar from '@/components/v2/DesktopSidebar';
 
 export interface DesktopShellProps extends HTMLAttributes<HTMLDivElement> {
@@ -14,6 +14,8 @@ export interface DesktopShellProps extends HTMLAttributes<HTMLDivElement> {
   showAccountCluster?: boolean;
   /** Forwarded to DesktopTopbar — render the PulseBar under the topbar. */
   showPulse?: boolean;
+  /** Override default topbar nav links (use for public pages). */
+  navLinks?: DesktopNavLink[];
 }
 
 /**
@@ -37,6 +39,7 @@ function DesktopShell({
   withSidebar = true,
   showAccountCluster = true,
   showPulse = true,
+  navLinks,
   ...rest
 }: DesktopShellProps) {
   return (
@@ -50,6 +53,7 @@ function DesktopShell({
       <DesktopTopbar
         showAccountCluster={showAccountCluster}
         showPulse={showPulse}
+        {...(navLinks ? { navLinks } : {})}
       />
 
       {withSidebar ? (

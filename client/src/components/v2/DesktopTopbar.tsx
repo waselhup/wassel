@@ -9,6 +9,8 @@ export interface DesktopNavLink {
   id: string;
   label: string;
   href: string;
+  /** render this link as a primary-styled CTA button instead of a text link */
+  cta?: boolean;
 }
 
 export interface DesktopTopbarProps extends HTMLAttributes<HTMLElement> {
@@ -68,9 +70,9 @@ function DesktopTopbar({
             <span className="font-ar text-[17px] font-bold text-v2-ink">وصّل</span>
           </button>
 
-          {navLinks.length > 0 && (
+          {navLinks.some((l) => !l.cta) && (
             <nav className="flex items-center gap-1" aria-label="التنقل الرئيسي">
-              {navLinks.map((link) => {
+              {navLinks.filter((l) => !l.cta).map((link) => {
                 const isActive = location === link.href || location.startsWith(`${link.href}/`);
                 return (
                   <button
@@ -95,14 +97,34 @@ function DesktopTopbar({
           )}
         </div>
 
-        {/* End (RTL: left) — JobsIndicator + UserMenu, or custom trailing */}
+        {/* End (RTL: left) — CTAs from navLinks, then JobsIndicator + UserMenu, or custom trailing */}
         <div className="flex items-center gap-2">
-          {trailing ?? (showAccountCluster && (
+          {trailing ?? (
             <>
-              <JobsIndicator />
-              <UserMenu />
+              {navLinks.filter((l) => l.cta).map((link) => (
+                <button
+                  key={link.id}
+                  type="button"
+                  onClick={() => navigate(link.href)}
+                  className={cn(
+                    'inline-flex items-center justify-center h-9 px-4 rounded-v2-sm cursor-pointer',
+                    'bg-teal-600 text-white font-ar text-[14px] font-semibold border border-teal-600',
+                    'shadow-card transition-colors duration-200 ease-out',
+                    'hover:bg-teal-700 active:bg-teal-700',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/30',
+                  )}
+                >
+                  {link.label}
+                </button>
+              ))}
+              {showAccountCluster && (
+                <>
+                  <JobsIndicator />
+                  <UserMenu />
+                </>
+              )}
             </>
-          ))}
+          )}
         </div>
       </div>
       {showPulse && <PulseBar />}

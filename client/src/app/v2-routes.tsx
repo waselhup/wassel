@@ -77,13 +77,26 @@ function ProtectedShell({ children }: { children: ReactNode }) {
 /**
  * Public-page shell: no jobs/toast providers, but still gets ErrorBoundary,
  * skip link, and PageTransition. On desktop renders DesktopShell without the
- * sidebar or jobs/account cluster (Landing/Auth/Pricing don't need them).
+ * sidebar or jobs/account cluster (Landing/Auth/Pricing don't need them) and
+ * with public-marketing nav links instead of app nav.
  */
+const PUBLIC_NAV_LINKS = [
+  { id: 'home',    label: 'الرئيسية',     href: '/v2' },
+  { id: 'pricing', label: 'الأسعار',      href: '/v2/pricing' },
+  { id: 'login',   label: 'تسجيل دخول',    href: '/v2/login' },
+  { id: 'signup',  label: 'إنشاء حساب',    href: '/v2/signup', cta: true },
+];
+
 function PublicShell({ children }: { children: ReactNode }) {
   return (
     <ErrorBoundary>
       <SkipLink />
-      <ResponsiveShell withSidebar={false} showAccountCluster={false} showPulse={false}>
+      <ResponsiveShell
+        withSidebar={false}
+        showAccountCluster={false}
+        showPulse={false}
+        navLinks={PUBLIC_NAV_LINKS}
+      >
         <main id="v2-main" className="min-h-[100dvh] lg:min-h-0">
           <PageTransition>{children}</PageTransition>
         </main>
