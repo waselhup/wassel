@@ -1,0 +1,156 @@
+/* Wassel · v4 — exact tokens from WasselHub design system v1
+   Teal · warm canvas · hairlines · subtle shadows */
+
+:root {
+  /* Brand — TEAL (signature) */
+  --teal-50:  #f0fdfa;
+  --teal-100: #ccfbf1;
+  --teal-300: #5eead4;
+  --teal-500: #14b8a6;
+  --teal-600: #0d9488;
+  --teal-700: #0f766e;
+  --teal-900: #134e4a;
+
+  /* Neutrals — warm */
+  --ink:      #0a0a0a;
+  --ink-2:    #18181b;
+  --body:     #3f3f46;
+  --dim:      #71717a;
+  --mute:     #a1a1aa;
+  --line:     #e7e5e4;
+  --line-2:   #eeece8;
+  --surface:  #ffffff;
+  --canvas:   #faf9f6;
+  --canvas-2: #f5f3ee;
+
+  /* Accents — sparing */
+  --amber:     #c2751a;
+  --amber-50:  #fdf6ec;
+  --rose:      #b91c1c;
+  --rose-50:   #fef2f2;
+  --indigo:    #4338ca;
+  --indigo-50: #eef2ff;
+
+  /* Radii — 6/10/14/20 */
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-xl: 20px;
+  --r-pill: 999px;
+
+  /* Shadows — subtle only */
+  --shadow-card: 0 1px 0 rgba(16,24,40,.04), 0 1px 2px rgba(16,24,40,.05);
+  --shadow-lift: 0 1px 0 rgba(16,24,40,.04), 0 8px 24px -8px rgba(16,24,40,.10);
+
+  /* Type */
+  --font-ar: 'Cairo', 'Inter', system-ui, sans-serif;
+  --font-en: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-ios: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; font-family: var(--font-ar); color: var(--ink); }
+
+/* Type scale per design-system.jsx */
+.t-display  { font-size: 34px; line-height: 1.15; font-weight: 700; letter-spacing: -0.01em; }
+.t-h1       { font-size: 28px; line-height: 1.2;  font-weight: 700; letter-spacing: -0.01em; }
+.t-h2       { font-size: 22px; line-height: 1.2;  font-weight: 600; letter-spacing: -0.005em; }
+.t-h3       { font-size: 17px; line-height: 1.3;  font-weight: 600; }
+.t-body     { font-size: 14px; line-height: 1.7;  font-weight: 400; }
+.t-small    { font-size: 13px; line-height: 1.5;  font-weight: 400; }
+.t-caption  {
+  font-family: var(--font-en);
+  font-size: 10.5px; line-height: 1.3; font-weight: 500;
+  text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--dim);
+}
+
+/* Tabular numerals — exactly as spec */
+.num {
+  font-family: var(--font-en);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+.mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.en { font-family: var(--font-en); direction: ltr; unicode-bidi: isolate; }
+
+/* Phone shell — hairline */
+.phone4 {
+  width: 390px;
+  height: 844px;
+  background: var(--canvas);
+  border-radius: 52px;
+  position: relative;
+  overflow: hidden;
+  box-shadow:
+    0 0 0 1px #1c1c1e,
+    0 0 0 10px #0a0a0a,
+    0 24px 48px -16px rgba(10,10,10,.20);
+  font-family: var(--font-ar);
+}
+.phone4::before {
+  content: "";
+  position: absolute;
+  top: 10px; left: 50%;
+  transform: translateX(-50%);
+  width: 122px; height: 34px;
+  background: #000;
+  border-radius: 22px;
+  z-index: 100;
+}
+.phone4-status {
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 50px;
+  display: flex; align-items: flex-end; justify-content: space-between;
+  padding: 0 28px 6px;
+  font-family: var(--font-en);
+  font-size: 14.5px; font-weight: 600;
+  color: var(--ink); z-index: 50; pointer-events: none;
+  letter-spacing: -0.01em;
+}
+.phone4-status .right { display: flex; gap: 6px; align-items: center; }
+.phone4-screen {
+  position: absolute;
+  top: 50px; left: 0; right: 0; bottom: 0;
+  overflow-y: auto;
+  background: var(--canvas);
+}
+.phone4-screen::-webkit-scrollbar { display: none; }
+.phone4-screen { scrollbar-width: none; }
+.phone4-home {
+  position: absolute; bottom: 7px; left: 50%; transform: translateX(-50%);
+  width: 132px; height: 5px;
+  background: var(--ink); opacity: .25;
+  border-radius: 3px;
+  z-index: 60; pointer-events: none;
+}
+
+/* Common building blocks */
+.hairline { border-top: 1px solid var(--line); }
+.hairline-b { border-bottom: 1px solid var(--line); }
+
+.eyebrow {
+  font-family: var(--font-en);
+  font-size: 10.5px; font-weight: 500;
+  text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--dim);
+}
+
+.live-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--teal-500);
+  box-shadow: 0 0 0 0 rgba(20,184,166,.6);
+  animation: live-pulse 2s ease-in-out infinite;
+}
+@keyframes live-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(20,184,166,.6); }
+  50%      { box-shadow: 0 0 0 6px rgba(20,184,166,0); }
+}

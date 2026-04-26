@@ -3,6 +3,7 @@ import { useRoute, useLocation } from 'wouter';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import * as Sentry from '@sentry/react';
+import V2Routes from './app/v2-routes';
 
 // Loading fallback
 const PageLoader = () => (
@@ -76,6 +77,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
 };
 
 const AppRoutes: React.FC = () => {
+  // v2 redesign — owns everything under /v2/*. We check the location prefix
+  // directly because wouter wildcards (`:rest*`) only match a single segment.
+  const [location] = useLocation();
+  const matchV2 = location === '/v2' || location.startsWith('/v2/');
+
   const [match] = useRoute('/');
   const [matchAppHome] = useRoute('/app');
   const [matchAppSetup] = useRoute('/app/setup');
@@ -108,6 +114,8 @@ const AppRoutes: React.FC = () => {
   const [matchAppPosts] = useRoute('/app/posts');
   const [matchAppTickets] = useRoute('/app/tickets');
   const [matchAppAdmin] = useRoute('/app/admin');
+
+  if (matchV2) return <V2Routes />;
 
   if (match) return <LandingPage />;
   if (matchLogin) return <Login />;
