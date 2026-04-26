@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useLocation } from 'wouter';
 import { useTranslation } from 'react-i18next';
 import Phone from '@/components/v2/Phone';
@@ -11,6 +11,36 @@ import NumDisplay from '@/components/v2/NumDisplay';
 import Input from '@/components/v2/Input';
 import Pill from '@/components/v2/Pill';
 import Toggle from '@/components/v2/Toggle';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
+
+const PLAN_LABELS: Record<string, string> = {
+  free: 'مجاني',
+  starter: 'بداية',
+  pro: 'برو',
+  elite: 'إيليت',
+};
+
+function initialOf(name: string | null | undefined, fallback: string): string {
+  const trimmed = (name ?? '').trim();
+  if (!trimmed) return fallback;
+  return Array.from(trimmed)[0]!;
+}
+
+function linkedinHandleFrom(url: string | null | undefined): string {
+  if (!url) return '';
+  const m = url.match(/linkedin\.com\/in\/([^/?#]+)/i);
+  if (m && m[1]) return m[1];
+  return url;
+}
+
+function memberSinceLabel(createdAt: string | null | undefined): string {
+  if (!createdAt) return '';
+  const d = new Date(createdAt);
+  if (Number.isNaN(d.getTime())) return '';
+  const months = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+  return `عضو منذ ${months[d.getMonth()]} ${d.getFullYear()}`;
+}
 
 type Tab = 'profile' | 'plan' | 'notif' | 'security';
 
@@ -116,20 +146,68 @@ function SecurityCardRow({ row, twoFA, setTwoFA }: { row: SecurityRow; twoFA: bo
 function Profile() {
   const [, navigate] = useLocation();
   const { t } = useTranslation();
+  const { user, profile, signOut, refreshProfile } = useAuth();
   const [tab, setTab] = useState<Tab>('profile');
 
-  const [name, setName] = useState('محمد العتيبي');
-  const [email, setEmail] = useState('m.alotaibi@gmail.com');
-  const [linkedin, setLinkedin] = useState('mohammed-otaibi');
-  const [bio, setBio] = useState('Senior Product Manager — Aramco Digital. أكتب عن المنتجات والقيادة في السوق السعودي.');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [linkedin, setLinkedin] = useState('');
+  const [bio, setBio] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [saveMsg, setSaveMsg] = useState<{ tone: 'ok' | 'err'; text: string } | null>(null);
 
+  // Sync form state from profile when it loads / changes.
+  useEffect(() => {
+    setName(profile?.full_name ?? '');
+    setEmail(profile?.email ?? user?.email ?? '');
+    setLinkedin(linkedinHandleFrom(profile?.linkedin_url));
+    setBio(profile?.title ?? '');
+  }, [profile, user?.email]);
+
+  const planLabel = PLAN_LABELS[profile?.plan ?? 'free'] ?? 'مجاني';
+  const memberSince = useMemo(() => memberSinceLabel(profile?.created_at), [profile?.created_at]);
+  const avatarInitial = initialOf(profile?.full_name ?? user?.email, '?');
+
+  // mock device-level prefs (not yet persisted) — clearly local-only
   const [notif, setNotif] = useState<Record<string, boolean>>({
     analyses: true, weekly: true, scheduled: true, product: false, promotions: false,
   });
   const setNotifKey = (id: string) => (next: boolean) =>
     setNotif((prev) => ({ ...prev, [id]: next }));
 
-  const [twoFA, setTwoFA] = useState(true);
+  const [twoFA, setTwoFA] = useState(false);
+
+  const handleSave = async () => {
+    if (!user?.id || saving) return;
+    setSaving(true);
+    setSaveMsg(null);
+    try {
+      const linkedinUrl = linkedin.trim()
+        ? (linkedin.startsWith('http') ? linkedin.trim() : `https://linkedin.com/in/${linkedin.trim()}`)
+        : null;
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          full_name: name.trim() || null,
+          linkedin_url: linkedinUrl,
+          title: bio.trim() || null,
+        })
+        .eq('id', user.id);
+      if (error) throw error;
+      await refreshProfile();
+      setSaveMsg({ tone: 'ok', text: 'تم حفظ التغييرات.' });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'فشل حفظ التغييرات.';
+      setSaveMsg({ tone: 'err', text: msg });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/v2', { replace: true });
+  };
 
   return (
     <Phone>
@@ -154,29 +232,41 @@ function Profile() {
       {/* HEADER BAND — full-width on desktop with subtle teal-50 wash */}
       <div className="border-b border-v2-line px-[22px] py-5 lg:rounded-v2-lg lg:border lg:bg-gradient-to-br lg:from-teal-50 lg:to-v2-canvas-2 lg:px-8 lg:py-7">
         <div className="mb-4 flex items-center gap-3.5 lg:mb-6 lg:gap-5">
-          <div
-            className="flex h-14 w-14 items-center justify-center rounded-full font-ar text-[22px] font-bold text-white lg:h-20 lg:w-20 lg:text-[32px]"
-            style={{ background: 'linear-gradient(135deg, var(--teal-300), var(--teal-700))' }}
-            aria-hidden="true"
-          >
-            م
-          </div>
+          {profile?.avatar_url ? (
+            <img
+              src={profile.avatar_url}
+              alt={name || 'avatar'}
+              className="h-14 w-14 rounded-full object-cover lg:h-20 lg:w-20"
+            />
+          ) : (
+            <div
+              className="flex h-14 w-14 items-center justify-center rounded-full font-ar text-[22px] font-bold text-white lg:h-20 lg:w-20 lg:text-[32px]"
+              style={{ background: 'linear-gradient(135deg, var(--teal-300), var(--teal-700))' }}
+              aria-hidden="true"
+            >
+              {avatarInitial}
+            </div>
+          )}
           <div className="flex-1 min-w-0">
-            <div className="font-ar text-[16px] font-semibold text-v2-ink lg:text-[22px] lg:font-bold">{name}</div>
+            <div className="font-ar text-[16px] font-semibold text-v2-ink lg:text-[22px] lg:font-bold">
+              {name || email || '—'}
+            </div>
             <div className="mt-0.5 font-en text-[12px] text-v2-dim lg:text-[14px]">{email}</div>
             <div className="mt-1.5 flex items-center gap-1.5 lg:mt-2.5">
               <span className="rounded-full bg-teal-50 px-2 py-0.5 font-ar text-[10px] font-semibold text-teal-700 lg:bg-v2-surface lg:px-2.5 lg:py-1 lg:text-[11px]">
-                برو
+                {planLabel}
               </span>
-              <span className="font-ar text-[11px] text-v2-dim lg:text-[12px]">عضو منذ يناير 2025</span>
+              {memberSince && (
+                <span className="font-ar text-[11px] text-v2-dim lg:text-[12px]">{memberSince}</span>
+              )}
             </div>
           </div>
         </div>
 
         <div className="grid grid-cols-3 border-t border-v2-line pt-3.5 lg:grid-cols-3 lg:border-t-0 lg:pt-0 lg:gap-12">
-          <StatCell label="التحليلات" value="12" />
-          <StatCell label="المنشورات" value="38" />
-          <StatCell label="درجة البروفايل" value="74" end />
+          <StatCell label="التحليلات" value={profile?.cvs_generated ?? 0} />
+          <StatCell label="المنشورات" value={profile?.campaigns_sent ?? 0} />
+          <StatCell label="درجة البروفايل" value={profile?.linkedin_score ?? 0} end />
         </div>
       </div>
 
@@ -228,7 +318,14 @@ function Profile() {
           {tab === 'profile' && (
             <div className="flex flex-col gap-3.5 lg:gap-5 lg:max-w-[640px]">
               <Input label="الاسم الكامل" value={name} onChange={(e) => setName(e.target.value)} />
-              <Input label="البريد الإلكتروني" dir="ltr" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+              <Input
+                label="البريد الإلكتروني"
+                dir="ltr"
+                type="email"
+                value={email}
+                readOnly
+                disabled
+              />
               <Input
                 label="رابط لينكد إن"
                 dir="ltr"
@@ -238,7 +335,7 @@ function Profile() {
               />
               <div>
                 <label htmlFor="bio" className="mb-1.5 block font-ar text-[12px] font-medium text-v2-body">
-                  نبذة قصيرة
+                  المسمى الوظيفي
                 </label>
                 <textarea
                   id="bio"
@@ -248,8 +345,27 @@ function Profile() {
                   className="w-full resize-none rounded-v2-md border border-v2-line bg-v2-surface px-3.5 py-3 font-ar text-[14px] leading-relaxed text-v2-ink outline-none placeholder:text-v2-mute focus:border-teal-500 focus:ring-2 focus:ring-teal-500/30 lg:min-h-[120px]"
                 />
               </div>
-              <Button variant="primary" size="lg" fullWidth className="mt-2 lg:w-auto lg:self-start lg:px-8">
-                حفظ التغييرات
+              {saveMsg && (
+                <div
+                  role={saveMsg.tone === 'err' ? 'alert' : 'status'}
+                  className={`rounded-v2-md px-3.5 py-2.5 font-ar text-[13px] ${
+                    saveMsg.tone === 'ok'
+                      ? 'border border-teal-200 bg-teal-50 text-teal-700'
+                      : 'border border-v2-rose/30 bg-v2-rose-50 text-v2-rose'
+                  }`}
+                >
+                  {saveMsg.text}
+                </div>
+              )}
+              <Button
+                variant="primary"
+                size="lg"
+                fullWidth
+                onClick={handleSave}
+                disabled={saving}
+                className="mt-2 lg:w-auto lg:self-start lg:px-8"
+              >
+                {saving ? 'جارٍ الحفظ…' : 'حفظ التغييرات'}
               </Button>
             </div>
           )}
@@ -443,6 +559,17 @@ function Profile() {
                     </Card>
                   );
                 })}
+              </div>
+
+              <div className="mt-6 lg:max-w-[320px]">
+                <Button
+                  variant="secondary"
+                  size="lg"
+                  fullWidth
+                  onClick={handleSignOut}
+                >
+                  تسجيل الخروج
+                </Button>
               </div>
             </>
           )}

@@ -9,6 +9,30 @@ import Eyebrow from '@/components/v2/Eyebrow';
 import NumDisplay from '@/components/v2/NumDisplay';
 import Button from '@/components/v2/Button';
 import Skeleton, { useInitialLoading } from '@/components/v2/Skeleton';
+import { useAuth } from '@/contexts/AuthContext';
+
+const PLAN_QUOTAS: Record<string, number> = {
+  free: 100,
+  starter: 500,
+  pro: 2000,
+  elite: 10000,
+};
+
+function firstNameOf(profile: { full_name: string | null } | null, user: { email?: string | null } | null): string {
+  const full = profile?.full_name?.trim();
+  if (full) return full.split(/\s+/)[0]!;
+  const email = user?.email ?? '';
+  const local = email.split('@')[0];
+  return local || 'صديقي';
+}
+
+function greetingFor(date: Date): string {
+  const h = date.getHours();
+  if (h < 5) return 'مساء الخير';
+  if (h < 12) return 'صباح الخير';
+  if (h < 18) return 'مرحباً';
+  return 'مساء الخير';
+}
 
 interface QuickAction {
   id: string;
@@ -53,12 +77,19 @@ const ChevronStart = (
 function Home() {
   const [, navigate] = useLocation();
   const { t } = useTranslation();
-  const loading = useInitialLoading(800);
+  const initialLoading = useInitialLoading(800);
+  const { user, profile, loading: authLoading } = useAuth();
 
-  const balance = 240;
-  const total = 300;
-  const used = total - balance;
-  const usedPct = Math.round((used / total) * 100);
+  // Wait for auth + skeleton timer so the page doesn't flash hardcoded content.
+  const loading = initialLoading || authLoading;
+
+  const balance = profile?.token_balance ?? 0;
+  const planKey = profile?.plan ?? 'free';
+  const total = PLAN_QUOTAS[planKey] ?? PLAN_QUOTAS.free;
+  const used = Math.max(0, total - balance);
+  const usedPct = total > 0 ? Math.min(100, Math.round((used / total) * 100)) : 0;
+  const firstName = firstNameOf(profile, user);
+  const greeting = `${greetingFor(new Date())}، ${firstName}.`;
 
   const actions: QuickAction[] = [
     { id: 'analyze', title: 'تحليل البروفايل', description: 'رادار شامل مقابل دور هدف', cost: 25, href: '/v2/analyze', icon: RadarIcon },
@@ -251,9 +282,13 @@ function Home() {
           <Eyebrow className="mb-1.5 block">
             <NumDisplay>14:32</NumDisplay> · الأربعاء
           </Eyebrow>
-          <h1 className="font-ar font-bold leading-tight text-v2-ink text-[28px] lg:text-[36px]">
-            {t('v2.home.greeting', 'مساء الخير، محمد.')}
-          </h1>
+          {loading ? (
+            <Skeleton variant="text" width="60%" className="h-[36px] lg:h-[44px]" />
+          ) : (
+            <h1 className="font-ar font-bold leading-tight text-v2-ink text-[28px] lg:text-[36px]">
+              {greeting}
+            </h1>
+          )}
         </div>
 
         {/* Mobile flow: TokenCard → Actions → Tip → Recent → CTA. */}

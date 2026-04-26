@@ -7,6 +7,8 @@ import Button from '@/components/v2/Button';
 import Input from '@/components/v2/Input';
 import Eyebrow from '@/components/v2/Eyebrow';
 import NumDisplay from '@/components/v2/NumDisplay';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
 
 type Tab = 'login' | 'signup';
 
@@ -106,10 +108,18 @@ function Auth() {
   const [matchSignup] = useRoute('/v2/signup');
   const [tab, setTab] = useState<Tab>(matchSignup ? 'signup' : 'login');
   const { t } = useTranslation();
+  const { signIn, signUp, user, loading: authLoading } = useAuth();
 
   useEffect(() => {
     setTab(matchSignup ? 'signup' : 'login');
   }, [matchSignup]);
+
+  // If already authenticated, skip past the auth screen.
+  useEffect(() => {
+    if (!authLoading && user) {
+      navigate('/v2/home', { replace: true });
+    }
+  }, [authLoading, user, navigate]);
 
   const switchTab = (next: Tab) => {
     setTab(next);
@@ -120,10 +130,76 @@ function Auth() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [agree, setAgree] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [oauthLoading, setOauthLoading] = useState(false);
+  const [info, setInfo] = useState<string | null>(null);
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    navigate('/v2/home');
+    if (submitting || oauthLoading) return;
+    setError(null);
+    setInfo(null);
+    setSubmitting(true);
+    try {
+      if (isSignup) {
+        if (!agree) {
+          setError('يرجى الموافقة على الشروط والخصوصية للمتابعة.');
+          return;
+        }
+        const { error: signUpError } = await signUp(email, password, name);
+        if (signUpError) {
+          setError(signUpError.message || 'فشل إنشاء الحساب. حاول مجدداً.');
+          return;
+        }
+        // Supabase may require email confirmation; if so user/session won't be set yet.
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          navigate('/v2/home', { replace: true });
+        } else {
+          setInfo('تم إنشاء الحساب. تحقق من بريدك لتفعيل الحساب ثم سجّل الدخول.');
+          setTab('login');
+          navigate('/v2/login', { replace: true });
+        }
+      } else {
+        const { error: signInError } = await signIn(email, password);
+        if (signInError) {
+          setError(signInError.message || 'فشل تسجيل الدخول. تأكد من البيانات.');
+          return;
+        }
+        navigate('/v2/home', { replace: true });
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'حدث خطأ غير متوقع.';
+      setError(msg);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleLinkedIn = async () => {
+    if (submitting || oauthLoading) return;
+    setError(null);
+    setInfo(null);
+    setOauthLoading(true);
+    try {
+      const { error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider: 'linkedin_oidc',
+        options: {
+          redirectTo: `${window.location.origin}/v2/home`,
+          scopes: 'openid profile email',
+        },
+      });
+      if (oauthError) {
+        setError(oauthError.message || 'فشل تسجيل الدخول عبر LinkedIn.');
+        setOauthLoading(false);
+      }
+      // On success the browser is redirected away; no further action.
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'فشل تسجيل الدخول عبر LinkedIn.';
+      setError(msg);
+      setOauthLoading(false);
+    }
   };
 
   const isSignup = tab === 'signup';
@@ -182,14 +258,32 @@ function Auth() {
               })}
             </div>
 
+            {error && (
+              <div
+                role="alert"
+                className="mb-4 rounded-v2-md border border-v2-rose/30 bg-v2-rose-50 px-3.5 py-2.5 font-ar text-[13px] text-v2-rose"
+              >
+                {error}
+              </div>
+            )}
+            {info && !error && (
+              <div
+                role="status"
+                className="mb-4 rounded-v2-md border border-teal-200 bg-teal-50 px-3.5 py-2.5 font-ar text-[13px] text-teal-700"
+              >
+                {info}
+              </div>
+            )}
+
             <form onSubmit={submit} className="flex flex-col gap-3.5 lg:gap-4">
               {isSignup && (
                 <Input
                   label="الاسم الكامل"
-                  placeholder="محمد العتيبي"
+                  placeholder="اسمك الكامل"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
+                  disabled={submitting || oauthLoading}
                 />
               )}
               <Input
@@ -200,6 +294,7 @@ function Auth() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                disabled={submitting || oauthLoading}
               />
               <Input
                 label="كلمة المرور"
@@ -209,12 +304,15 @@ function Auth() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                minLength={isSignup ? 8 : 6}
+                disabled={submitting || oauthLoading}
               />
 
               {!isSignup && (
                 <div className="-mt-1 text-start">
                   <button
                     type="button"
+                    onClick={() => navigate('/reset-password')}
                     className="font-ar text-[12px] font-semibold text-teal-700 hover:text-teal-600 cursor-pointer"
                   >
                     نسيت كلمة المرور؟
@@ -244,10 +342,12 @@ function Auth() {
                 variant="primary"
                 size="lg"
                 fullWidth
-                disabled={isSignup && !agree}
+                disabled={(isSignup && !agree) || submitting || oauthLoading}
                 className="mt-2"
               >
-                {isSignup ? t('v2.auth.submitSignup', 'أنشئ حساب') : t('v2.auth.submitLogin', 'تسجيل الدخول')}
+                {submitting
+                  ? (isSignup ? 'جارٍ الإنشاء…' : 'جارٍ الدخول…')
+                  : (isSignup ? t('v2.auth.submitSignup', 'أنشئ حساب') : t('v2.auth.submitLogin', 'تسجيل الدخول'))}
               </Button>
             </form>
 
@@ -259,11 +359,12 @@ function Auth() {
 
             <button
               type="button"
-              onClick={() => navigate('/v2/home')}
-              className="flex w-full items-center justify-center gap-2.5 rounded-v2-md bg-[#0A66C2] px-4 py-3.5 font-ar text-[14px] font-semibold text-white cursor-pointer transition-opacity duration-200 ease-out hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A66C2]/40"
+              onClick={handleLinkedIn}
+              disabled={submitting || oauthLoading}
+              className="flex w-full items-center justify-center gap-2.5 rounded-v2-md bg-[#0A66C2] px-4 py-3.5 font-ar text-[14px] font-semibold text-white cursor-pointer transition-opacity duration-200 ease-out hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A66C2]/40 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {LinkedInIcon}
-              المتابعة عبر LinkedIn
+              {oauthLoading ? 'جارٍ التحويل…' : 'المتابعة عبر LinkedIn'}
             </button>
 
             <p className="mt-6 text-center font-ar text-[12px] text-v2-dim">

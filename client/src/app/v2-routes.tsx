@@ -1,5 +1,5 @@
-import { lazy, Suspense, type ReactElement, type ReactNode } from 'react';
-import { useRoute } from 'wouter';
+import { lazy, Suspense, useEffect, type ReactElement, type ReactNode } from 'react';
+import { useLocation, useRoute } from 'wouter';
 import { JobsProvider } from '@/lib/v2/jobs';
 import { ToastProvider, useToast } from '@/lib/v2/toast';
 import type { Job } from '@/lib/v2/jobs';
@@ -7,6 +7,7 @@ import ErrorBoundary from '@/components/v2/ErrorBoundary';
 import PageTransition from '@/components/v2/PageTransition';
 import ResponsiveShell from '@/components/v2/ResponsiveShell';
 import Skeleton from '@/components/v2/Skeleton';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Lazy-load v2 pages so they don't bloat the main bundle.
 const Landing = lazy(() => import('@/pages/v2/Landing'));
@@ -57,6 +58,25 @@ function SkipLink() {
  * topbar). On mobile it's a passthrough so each page's own <Phone>+<Topbar>
  * +<BottomNav> chrome continues to work unchanged.
  */
+function AuthGate({ children }: { children: ReactNode }) {
+  const { user, loading } = useAuth();
+  const [, navigate] = useLocation();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate('/v2/login', { replace: true });
+    }
+  }, [loading, user, navigate]);
+
+  if (loading) {
+    return <V2Loader />;
+  }
+
+  if (!user) return null;
+
+  return <>{children}</>;
+}
+
 function ProtectedShell({ children }: { children: ReactNode }) {
   return (
     <ErrorBoundary>
@@ -65,7 +85,9 @@ function ProtectedShell({ children }: { children: ReactNode }) {
           <SkipLink />
           <ResponsiveShell withSidebar showAccountCluster showPulse>
             <main id="v2-main" className="min-h-[100dvh] lg:min-h-0">
-              <PageTransition>{children}</PageTransition>
+              <PageTransition>
+                <AuthGate>{children}</AuthGate>
+              </PageTransition>
             </main>
           </ResponsiveShell>
         </JobsProviderWithToast>
