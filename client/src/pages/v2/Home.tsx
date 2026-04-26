@@ -1,4 +1,4 @@
-import type { ReactElement } from 'react';
+import { useEffect, useState, type ReactElement } from 'react';
 import { useLocation } from 'wouter';
 import { useTranslation } from 'react-i18next';
 import Phone from '@/components/v2/Phone';
@@ -10,6 +10,7 @@ import NumDisplay from '@/components/v2/NumDisplay';
 import Button from '@/components/v2/Button';
 import Skeleton, { useInitialLoading } from '@/components/v2/Skeleton';
 import { useAuth } from '@/contexts/AuthContext';
+import { useRecentActivity, relativeLabel, type ActivityKind } from '@/lib/v2/useRecentActivity';
 
 const PLAN_QUOTAS: Record<string, number> = {
   free: 100,
@@ -43,12 +44,24 @@ interface QuickAction {
   icon: ReactElement;
 }
 
-interface RecentItem {
-  id: string;
-  kind: string;
-  title: string;
-  meta: string;
+const KIND_EYEBROW: Record<ActivityKind, string> = {
+  analysis: 'RADAR',
+  cv: 'CV',
+  campaign: 'CAMPAIGN',
+  post: 'POST',
+  billing: 'BILL',
+};
+
+function useNow(intervalMs = 30_000): Date {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(new Date()), intervalMs);
+    return () => window.clearInterval(id);
+  }, [intervalMs]);
+  return now;
 }
+
+const WEEKDAY_AR = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 
 const RadarIcon = (
   <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
@@ -83,13 +96,20 @@ function Home() {
   // Wait for auth + skeleton timer so the page doesn't flash hardcoded content.
   const loading = initialLoading || authLoading;
 
+  const now = useNow();
+  const { entries: activityEntries, loading: activityLoading } = useRecentActivity();
+  const recentActivity = activityEntries.slice(0, 3);
+
   const balance = profile?.token_balance ?? 0;
   const planKey = profile?.plan ?? 'free';
   const total = PLAN_QUOTAS[planKey] ?? PLAN_QUOTAS.free;
   const used = Math.max(0, total - balance);
   const usedPct = total > 0 ? Math.min(100, Math.round((used / total) * 100)) : 0;
   const firstName = firstNameOf(profile, user);
-  const greeting = `${greetingFor(new Date())}، ${firstName}.`;
+  const greeting = `${greetingFor(now)}، ${firstName}.`;
+  const clockHH = String(now.getHours()).padStart(2, '0');
+  const clockMM = String(now.getMinutes()).padStart(2, '0');
+  const weekday = WEEKDAY_AR[now.getDay()];
 
   const actions: QuickAction[] = [
     { id: 'analyze', title: 'تحليل البروفايل', description: 'رادار شامل مقابل دور هدف', cost: 25, href: '/v2/analyze', icon: RadarIcon },
@@ -97,11 +117,6 @@ function Home() {
     { id: 'cv',      title: 'منشئ السيرة',      description: 'CV احترافي مخصّص',         cost: 40, href: '/v2/home', icon: CvIcon  },
   ];
 
-  const recent: RecentItem[] = [
-    { id: 'r1', kind: 'RADAR', title: 'تحليل البروفايل · 88/100', meta: 'أمس · 14:32' },
-    { id: 'r2', kind: 'POST',  title: 'منشور · القيادة في الفرق', meta: 'قبل 3 أيام' },
-    { id: 'r3', kind: 'EDIT',  title: 'تحسين العنوان المهني',    meta: 'قبل أسبوع' },
-  ];
 
   const TokenCard = (
     loading ? (
@@ -212,34 +227,49 @@ function Home() {
         </button>
       </div>
       <div className="flex flex-col">
-        {loading
-          ? Array.from({ length: 3 }).map((_, i) => (
-              <div
-                key={i}
-                className={`grid grid-cols-[60px_1fr_12px] items-center gap-3 px-1 py-3.5 border-b border-v2-line ${i === 0 ? 'border-t' : ''}`}
-              >
-                <Skeleton variant="text" width={50} />
-                <div className="flex flex-col gap-1.5">
-                  <Skeleton variant="text" width="80%" />
-                  <Skeleton variant="text" width="50%" />
-                </div>
-                <Skeleton variant="text" width={12} />
+        {loading || activityLoading ? (
+          Array.from({ length: 3 }).map((_, i) => (
+            <div
+              key={i}
+              className={`grid grid-cols-[60px_1fr_12px] items-center gap-3 px-1 py-3.5 border-b border-v2-line ${i === 0 ? 'border-t' : ''}`}
+            >
+              <Skeleton variant="text" width={50} />
+              <div className="flex flex-col gap-1.5">
+                <Skeleton variant="text" width="80%" />
+                <Skeleton variant="text" width="50%" />
               </div>
-            ))
-          : recent.map((item, i) => (
+              <Skeleton variant="text" width={12} />
+            </div>
+          ))
+        ) : recentActivity.length === 0 ? (
+          <div className="border-y border-v2-line px-1 py-8 text-center">
+            <p className="font-ar text-[14px] text-v2-dim">لا توجد أنشطة حديثة بعد.</p>
+            <button
+              type="button"
+              onClick={() => navigate('/v2/analyze')}
+              className="mt-2 font-ar text-[12px] font-semibold text-teal-700 hover:text-teal-600 cursor-pointer"
+            >
+              ابدأ بأول تحليل ←
+            </button>
+          </div>
+        ) : (
+          recentActivity.map((item, i) => (
             <div
               key={item.id}
               className={`grid grid-cols-[60px_1fr_12px] items-center gap-3 px-1 py-3.5
                 border-b border-v2-line ${i === 0 ? 'border-t' : ''}`}
             >
-              <Eyebrow>{item.kind}</Eyebrow>
+              <Eyebrow>{KIND_EYEBROW[item.kind]}</Eyebrow>
               <div className="font-ar">
                 <span className="block text-[14px] font-medium text-v2-ink">{item.title}</span>
-                <span className="block text-[12px] text-v2-dim">{item.meta}</span>
+                <span className="block text-[12px] text-v2-dim">
+                  {item.description ? `${item.description} · ` : ''}{relativeLabel(item.timestamp, now.getTime())}
+                </span>
               </div>
               <span className="text-v2-mute">{ChevronStart}</span>
             </div>
-          ))}
+          ))
+        )}
       </div>
     </div>
   );
@@ -280,7 +310,7 @@ function Home() {
         {/* Greeting — full width on both. Bigger on lg. */}
         <div className="mt-5 mb-6 lg:mt-2 lg:mb-8">
           <Eyebrow className="mb-1.5 block">
-            <NumDisplay>14:32</NumDisplay> · الأربعاء
+            <NumDisplay>{clockHH}:{clockMM}</NumDisplay> · {weekday}
           </Eyebrow>
           {loading ? (
             <Skeleton variant="text" width="60%" className="h-[36px] lg:h-[44px]" />

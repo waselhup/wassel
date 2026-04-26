@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactElement } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import { useLocation } from 'wouter';
 import { useTranslation } from 'react-i18next';
 import Phone from '@/components/v2/Phone';
@@ -10,64 +10,41 @@ import Eyebrow from '@/components/v2/Eyebrow';
 import NumDisplay from '@/components/v2/NumDisplay';
 import Pill from '@/components/v2/Pill';
 import EmptyState from '@/components/v2/EmptyState';
-import Skeleton, { useInitialLoading } from '@/components/v2/Skeleton';
+import Skeleton from '@/components/v2/Skeleton';
 import { useIsDesktop } from '@/components/v2/ResponsiveShell';
+import {
+  useRecentActivity,
+  groupByPeriod,
+  relativeLabel,
+  dailyCounts,
+  type ActivityKind,
+} from '@/lib/v2/useRecentActivity';
 
-type FilterId = 'all' | 'analysis' | 'post' | 'billing';
-type ItemKind = Exclude<FilterId, 'all'>;
+type FilterId = 'all' | ActivityKind;
 type IconName = 'radar' | 'send' | 'edit' | 'token' | 'sync' | 'card' | 'clock' | 'trophy';
-
-interface ActivityItem {
-  id: string;
-  kind: ItemKind;
-  title: string;
-  description: string;
-  time: string;
-  icon: IconName;
-}
-
-interface ActivityGroup {
-  label: string;
-  items: ActivityItem[];
-}
-
-const GROUPS: ActivityGroup[] = [
-  {
-    label: 'اليوم',
-    items: [
-      { id: 'a1', kind: 'analysis', title: 'اكتمل تحليل البروفايل',     description: 'الدرجة: 88/100 · 3 توصيات جديدة',       time: '14:32', icon: 'radar' },
-      { id: 'a2', kind: 'post',     title: 'تم نشر منشور',              description: '"القيادة في عصر AI" · 42 تفاعل',        time: '11:20', icon: 'send' },
-      { id: 'a3', kind: 'post',     title: 'منشور بحاجة مراجعة',        description: '"دروس من 5 سنوات"',                      time: '09:45', icon: 'edit' },
-    ],
-  },
-  {
-    label: 'أمس',
-    items: [
-      { id: 'a4', kind: 'billing',  title: 'تم خصم 20 توكن',            description: 'صياغة منشور · "كيف غيّرت 3 عادات"',     time: '16:10', icon: 'token' },
-      { id: 'a5', kind: 'analysis', title: 'تم رفع البروفايل من LinkedIn', description: 'تحديث تلقائي · أسبوعي',                time: '06:00', icon: 'sync' },
-    ],
-  },
-  {
-    label: 'هذا الأسبوع',
-    items: [
-      { id: 'a6', kind: 'billing',  title: 'تجديد الباقة · برو',         description: '99 ر.س · فيزا تنتهي 4242',              time: 'الإثنين', icon: 'card' },
-      { id: 'a7', kind: 'post',     title: 'منشور قابل للجدولة',         description: 'اقتراح: نشر يوم الثلاثاء 9 صباحاً',     time: 'الأحد',    icon: 'clock' },
-      { id: 'a8', kind: 'analysis', title: 'إنجاز جديد',                 description: 'وصلت 10 تحليلات هذا الشهر',             time: 'الأحد',    icon: 'trophy' },
-    ],
-  },
-];
 
 const FILTERS: { id: FilterId; label: string }[] = [
   { id: 'all',      label: 'الكل' },
   { id: 'analysis', label: 'تحليلات' },
+  { id: 'cv',       label: 'سير ذاتية' },
   { id: 'post',     label: 'منشورات' },
-  { id: 'billing',  label: 'مدفوعات' },
+  { id: 'campaign', label: 'حملات' },
 ];
 
-const KIND_LABEL: Record<ItemKind, string> = {
+const KIND_LABEL: Record<ActivityKind, string> = {
   analysis: 'تحليل',
+  cv:       'سيرة',
   post:     'منشور',
+  campaign: 'حملة',
   billing:  'فاتورة',
+};
+
+const KIND_ICON: Record<ActivityKind, IconName> = {
+  analysis: 'radar',
+  cv:       'edit',
+  post:     'send',
+  campaign: 'trophy',
+  billing:  'card',
 };
 
 const ICONS: Record<IconName, ReactElement> = {
@@ -117,9 +94,11 @@ const ICONS: Record<IconName, ReactElement> = {
   ),
 };
 
-const KIND_BG: Record<ItemKind, string> = {
+const KIND_BG: Record<ActivityKind, string> = {
   analysis: 'bg-teal-50 text-teal-700',
+  cv:       'bg-v2-canvas-2 text-v2-body',
   post:     'bg-v2-canvas-2 text-v2-body',
+  campaign: 'bg-v2-canvas-2 text-v2-body',
   billing:  'bg-v2-indigo-50 text-v2-indigo',
 };
 
@@ -157,7 +136,7 @@ function Activity() {
   const [, navigate] = useLocation();
   const { t } = useTranslation();
   const isDesktop = useIsDesktop();
-  const loading = useInitialLoading(800);
+  const { entries, loading, refetch } = useRecentActivity();
   const [filter, setFilter] = useState<FilterId>('all');
 
   const [pull, setPull] = useState(0);
@@ -167,12 +146,13 @@ function Activity() {
 
   useEffect(() => {
     if (!refreshing) return;
+    refetch();
     const id = window.setTimeout(() => {
       setRefreshing(false);
       setPull(0);
     }, 900);
     return () => window.clearTimeout(id);
-  }, [refreshing]);
+  }, [refreshing, refetch]);
 
   const onTouchStart = (e: React.TouchEvent) => {
     // Pull-to-refresh is mobile-only.
@@ -199,18 +179,18 @@ function Activity() {
     startY.current = null;
   };
 
-  const filtered: ActivityGroup[] = GROUPS.map((g) => ({
-    ...g,
-    items: g.items.filter((it) => filter === 'all' || it.kind === filter),
-  })).filter((g) => g.items.length > 0);
+  const filteredEntries = useMemo(
+    () => entries.filter((it) => filter === 'all' || it.kind === filter),
+    [entries, filter],
+  );
+  const filtered = useMemo(() => groupByPeriod(filteredEntries), [filteredEntries]);
 
   const totalCount = filtered.reduce((sum, g) => sum + g.items.length, 0);
-  // For the desktop sidebar — fixed mock counts mirroring GROUPS.
-  const weeklyCounts = [3, 5, 2, 4, 6, 3, 8]; // last 7 days, today = last item
-  const todayCount = GROUPS[0]?.items.length ?? 0;
+  const weeklyCounts = useMemo(() => dailyCounts(entries, 7), [entries]);
+  const todayCount = filtered.find((g) => g.label === 'اليوم')?.items.length ?? 0;
 
   const filterSummary = FILTERS.filter((f) => f.id !== 'all').map((f) => {
-    const count = GROUPS.flatMap((g) => g.items).filter((it) => it.kind === f.id).length;
+    const count = entries.filter((it) => it.kind === f.id).length;
     return { ...f, count };
   });
 
@@ -229,11 +209,19 @@ function Activity() {
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <EmptyState
-          variant="search"
-          title="لا يوجد نشاط"
-          description="لم نجد عناصر تطابق هذا الفلتر. جرّب فلتراً آخر."
-        />
+        entries.length === 0 ? (
+          <EmptyState
+            variant="search"
+            title="لا توجد أنشطة بعد"
+            description="ستظهر هنا تحليلاتك ومنشوراتك وحملاتك بمجرد البدء."
+          />
+        ) : (
+          <EmptyState
+            variant="search"
+            title="لا يوجد نشاط"
+            description="لم نجد عناصر تطابق هذا الفلتر. جرّب فلتراً آخر."
+          />
+        )
       ) : (
         <>
           <div className="pt-4 pb-2 flex items-center gap-2 text-v2-mute lg:pt-2">
@@ -261,7 +249,7 @@ function Activity() {
                     aria-hidden="true"
                   >
                     <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                      {ICONS[it.icon]}
+                      {ICONS[KIND_ICON[it.kind]]}
                     </svg>
                   </div>
 
@@ -293,7 +281,7 @@ function Activity() {
                   </span>
 
                   <NumDisplay className="whitespace-nowrap text-[11px] text-v2-mute lg:text-end lg:text-[12px]">
-                    {it.time}
+                    {relativeLabel(it.timestamp)}
                   </NumDisplay>
                 </div>
               ))}

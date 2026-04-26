@@ -3,6 +3,7 @@ import { useLocation } from 'wouter';
 import { cn } from '@/lib/utils';
 import NumDisplay from '@/components/v2/NumDisplay';
 import Eyebrow from '@/components/v2/Eyebrow';
+import { useAuth } from '@/contexts/AuthContext';
 
 export interface DesktopSidebarItem {
   id: string;
@@ -16,19 +17,45 @@ export interface DesktopSidebarProps extends HTMLAttributes<HTMLElement> {
   items?: DesktopSidebarItem[];
   /** show the token balance widget. Defaults to true. */
   showTokenWidget?: boolean;
-  /** token balance to render in the widget */
+  /** token balance to render in the widget. If omitted, read from profile. */
   balance?: number;
-  /** total token allowance */
+  /** total token allowance. If omitted, derive from plan. */
   total?: number;
-  /** user shortcut at the bottom — name */
+  /** user shortcut at the bottom — name. If omitted, read from profile. */
   userName?: string;
-  /** user shortcut — plan label */
+  /** user shortcut — plan label. If omitted, derive from profile.plan. */
   userPlan?: string;
+}
+
+const PLAN_QUOTAS: Record<string, number> = {
+  free: 100,
+  starter: 500,
+  pro: 2000,
+  elite: 10000,
+};
+
+const PLAN_LABELS: Record<string, string> = {
+  free: 'الخطة المجانية',
+  starter: 'خطة البداية',
+  pro: 'الخطة الاحترافية',
+  elite: 'خطة إيليت',
+};
+
+function firstNameOf(full: string | null | undefined, email: string | null | undefined): string {
+  const trimmed = (full ?? '').trim();
+  if (trimmed) return trimmed.split(/\s+/)[0]!;
+  const local = (email ?? '').split('@')[0];
+  return local || '';
 }
 
 const HomeIcon = (
   <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
     <path d="M3 8 L10 3 L17 8 V16 H3 Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
+  </svg>
+);
+const ShieldIcon = (
+  <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+    <path d="M10 2 L17 5 V10 c0 4 -3 6 -7 8 c-4 -2 -7 -4 -7 -8 V5 Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
   </svg>
 );
 const RadarIcon = (
@@ -58,18 +85,32 @@ const defaultItems: DesktopSidebarItem[] = [
 
 function DesktopSidebar({
   className,
-  items = defaultItems,
+  items: itemsProp,
   showTokenWidget = true,
-  balance = 240,
-  total = 300,
-  userName = 'محمد',
-  userPlan = 'الخطة الاحترافية',
+  balance: balanceProp,
+  total: totalProp,
+  userName: userNameProp,
+  userPlan: userPlanProp,
   ...rest
 }: DesktopSidebarProps) {
   const [location, navigate] = useLocation();
+  const { user, profile } = useAuth();
+
+  const planKey = profile?.plan ?? 'free';
+  const balance = balanceProp ?? profile?.token_balance ?? 0;
+  const total = totalProp ?? PLAN_QUOTAS[planKey] ?? PLAN_QUOTAS.free;
+  const userName = userNameProp ?? firstNameOf(profile?.full_name, profile?.email ?? user?.email);
+  const userPlan = userPlanProp ?? PLAN_LABELS[planKey] ?? PLAN_LABELS.free;
+  const avatarUrl = profile?.avatar_url ?? null;
+
+  const items: DesktopSidebarItem[] = itemsProp ?? (
+    profile?.is_admin
+      ? [...defaultItems, { id: 'admin', label: 'الإدارة', href: '/admin', icon: ShieldIcon }]
+      : defaultItems
+  );
 
   const used = Math.max(0, total - balance);
-  const usedPct = total > 0 ? Math.round((used / total) * 100) : 0;
+  const usedPct = total > 0 ? Math.min(100, Math.round((used / total) * 100)) : 0;
 
   return (
     <aside
@@ -175,14 +216,23 @@ function DesktopSidebar({
         )}
         aria-label={`الحساب — ${userName}`}
       >
-        <span
-          aria-hidden="true"
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-teal-600 font-ar text-[13px] font-bold text-white"
-        >
-          {userName.trim().charAt(0) || '?'}
-        </span>
+        {avatarUrl ? (
+          <img
+            src={avatarUrl}
+            alt=""
+            className="h-8 w-8 shrink-0 rounded-full object-cover"
+            aria-hidden="true"
+          />
+        ) : (
+          <span
+            aria-hidden="true"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-teal-600 font-ar text-[13px] font-bold text-white"
+          >
+            {userName.trim().charAt(0) || '?'}
+          </span>
+        )}
         <span className="min-w-0 flex-1 font-ar">
-          <span className="block truncate text-[13px] font-semibold text-v2-ink">{userName}</span>
+          <span className="block truncate text-[13px] font-semibold text-v2-ink">{userName || 'الحساب'}</span>
           <span className="block truncate text-[11px] text-v2-dim">{userPlan}</span>
         </span>
       </button>

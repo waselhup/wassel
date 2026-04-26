@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import PulseBar from '@/components/v2/PulseBar';
 import JobsIndicator from '@/components/v2/JobsIndicator';
 import UserMenu from '@/components/v2/UserMenu';
+import { useAuth } from '@/contexts/AuthContext';
 
 export interface DesktopNavLink {
   id: string;
@@ -41,13 +42,19 @@ const Logo = (
 
 function DesktopTopbar({
   className,
-  navLinks = defaultNavLinks,
+  navLinks: navLinksProp,
   showAccountCluster = true,
   showPulse = true,
   trailing,
   ...rest
 }: DesktopTopbarProps) {
   const [location, navigate] = useLocation();
+  const { profile } = useAuth();
+  const navLinks = navLinksProp ?? (
+    showAccountCluster && profile?.is_admin
+      ? [...defaultNavLinks, { id: 'admin', label: 'الإدارة', href: '/admin' }]
+      : defaultNavLinks
+  );
 
   return (
     <header
