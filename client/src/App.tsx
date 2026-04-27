@@ -45,10 +45,13 @@ const ComingSoon = lazy(() => import('./pages/ComingSoon'));
 
 // New Pages
 // Pricing retired in favor of /v2/pricing — legacy /pricing redirects.
-const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
-const TermsOfService = lazy(() => import('./pages/TermsOfService'));
+// Privacy/Terms retired in favor of v2/public versions for consistent V2 chrome.
+const PrivacyV2 = lazy(() => import('./pages/v2/public/Privacy'));
+const TermsV2   = lazy(() => import('./pages/v2/public/Terms'));
+const RefundV2  = lazy(() => import('./pages/v2/public/Refund'));
+const ContactV2 = lazy(() => import('./pages/v2/public/Contact'));
+const AboutV2   = lazy(() => import('./pages/v2/public/About'));
 const Analytics = lazy(() => import('./pages/Analytics'));
-const About = lazy(() => import('./pages/About'));
 const Blog = lazy(() => import('./pages/Blog'));
 const Posts = lazy(() => import('./pages/Posts'));
 const MyTickets = lazy(() => import('./pages/MyTickets'));
@@ -120,6 +123,8 @@ const AppRoutes: React.FC = () => {
   const [matchPrivacy] = useRoute('/privacy');
   const [matchTerms] = useRoute('/terms');
   const [matchAbout] = useRoute('/about');
+  const [matchRefund] = useRoute('/refund');
+  const [matchContact] = useRoute('/contact');
   const [matchBlog] = useRoute('/blog');
   const [matchAppAnalytics] = useRoute('/app/analytics');
   const [matchAppProfileAnalysis] = useRoute('/app/profile-analysis');
@@ -150,9 +155,12 @@ const AppRoutes: React.FC = () => {
 
   if (matchReset) return <ResetPassword />;
 
-  if (matchPrivacy) return <PrivacyPolicy />;
-  if (matchTerms) return <TermsOfService />;
-  if (matchAbout) return <About />;
+  // Public V2-styled legal & marketing pages.
+  if (matchPrivacy) return <PrivacyV2 />;
+  if (matchTerms)   return <TermsV2 />;
+  if (matchAbout)   return <AboutV2 />;
+  if (matchRefund)  return <RefundV2 />;
+  if (matchContact) return <ContactV2 />;
   if (matchBlog) return <Blog />;
 
   // Protected app routes

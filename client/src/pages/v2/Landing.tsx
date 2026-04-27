@@ -5,6 +5,8 @@ import Topbar from '@/components/v2/Topbar';
 import Button from '@/components/v2/Button';
 import Eyebrow from '@/components/v2/Eyebrow';
 import NumDisplay from '@/components/v2/NumDisplay';
+import SpinningLogo from '@/components/v2/SpinningLogo';
+import PublicFooter from '@/components/v2/PublicFooter';
 
 interface Feature {
   num: string;
@@ -18,47 +20,6 @@ const FEATURES: Feature[] = [
   { num: '03', title: 'سيرة ذكية',   description: 'CV مخصّص يستخرج تلقائياً من بروفايلك ومُعدَّل لكل وظيفة.' },
 ];
 
-const FOOTER_LINKS = [
-  { label: 'من نحن',   href: '/v2' },
-  { label: 'الشروط',  href: '/v2' },
-  { label: 'الخصوصية', href: '/v2' },
-];
-
-const FOOTER_COLUMNS: { eyebrow: string; links: { label: string; href: string }[] }[] = [
-  {
-    eyebrow: 'المنتج',
-    links: [
-      { label: 'الرادار',         href: '/v2/analyze' },
-      { label: 'الاستوديو',       href: '/v2/posts' },
-      { label: 'منشئ السيرة',     href: '/v2/home' },
-      { label: 'الأسعار',         href: '/v2/pricing' },
-    ],
-  },
-  {
-    eyebrow: 'الشركة',
-    links: [
-      { label: 'من نحن',          href: '/v2' },
-      { label: 'تواصل معنا',      href: '/v2' },
-      { label: 'وظائف',           href: '/v2' },
-    ],
-  },
-  {
-    eyebrow: 'الموارد',
-    links: [
-      { label: 'المدوّنة',         href: '/v2' },
-      { label: 'الأسئلة الشائعة',  href: '/v2/pricing' },
-      { label: 'دليل الاستخدام',   href: '/v2' },
-    ],
-  },
-  {
-    eyebrow: 'القانوني',
-    links: [
-      { label: 'الشروط',          href: '/v2' },
-      { label: 'الخصوصية',         href: '/v2' },
-    ],
-  },
-];
-
 const BrandMark = () => (
   <span className="flex items-center gap-2 px-2 py-1">
     <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
@@ -70,7 +31,8 @@ const BrandMark = () => (
   </span>
 );
 
-/** Decorative concentric-rings illustration used in the desktop hero. */
+/** Decorative concentric-rings illustration used in the desktop hero,
+ * with the V2 SpinningLogo centered on top of it for added motion. */
 function HeroVisual() {
   return (
     <div
@@ -86,7 +48,6 @@ function HeroVisual() {
           <circle cx="200" cy="200" r="60"  strokeWidth="1" />
         </g>
         <g fill="var(--teal-500)">
-          <circle cx="200" cy="200" r="6" />
           <circle cx="320" cy="160" r="4" opacity="0.85" />
           <circle cx="80"  cy="240" r="3" opacity="0.7" />
           <circle cx="260" cy="320" r="3.5" opacity="0.75" />
@@ -99,6 +60,9 @@ function HeroVisual() {
           <line x1="200" y1="200" x2="120" y2="100" />
         </g>
       </svg>
+      <div className="absolute inset-0 flex items-center justify-center">
+        <SpinningLogo size="xl" speed="slow" />
+      </div>
     </div>
   );
 }
@@ -228,55 +192,7 @@ function Landing() {
           </button>
         </section>
 
-        {/* FOOTER — single row on mobile, 4-column on desktop */}
-        <footer className="flex items-center justify-between border-t border-v2-line pt-5 lg:hidden">
-          <Eyebrow>© WASSEL · <NumDisplay>2025</NumDisplay></Eyebrow>
-          <div className="flex gap-3.5 font-ar text-[11px] text-v2-dim">
-            {FOOTER_LINKS.map((l) => (
-              <button
-                key={l.label}
-                type="button"
-                onClick={() => navigate(l.href)}
-                className="hover:text-v2-body cursor-pointer transition-colors duration-200 ease-out"
-              >
-                {l.label}
-              </button>
-            ))}
-          </div>
-        </footer>
-
-        <footer className="hidden border-t border-v2-line lg:block lg:pt-16 lg:pb-10">
-          <div className="grid grid-cols-[1.5fr_1fr_1fr_1fr_1fr] gap-10">
-            <div>
-              <BrandMark />
-              <p className="mt-3 max-w-[280px] font-ar text-[13px] leading-relaxed text-v2-dim">
-                منصّة الذكاء الاصطناعي لتطوير البروفايل المهني — مصمَّمة للسوق السعودي والخليجي.
-              </p>
-            </div>
-            {FOOTER_COLUMNS.map((col) => (
-              <div key={col.eyebrow}>
-                <Eyebrow className="mb-3 block">{col.eyebrow}</Eyebrow>
-                <ul className="m-0 flex list-none flex-col gap-2 p-0">
-                  {col.links.map((l) => (
-                    <li key={l.label}>
-                      <button
-                        type="button"
-                        onClick={() => navigate(l.href)}
-                        className="font-ar text-[13px] text-v2-body hover:text-teal-700 cursor-pointer transition-colors duration-200 ease-out"
-                      >
-                        {l.label}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-          <div className="mt-12 flex items-center justify-between border-t border-v2-line pt-6">
-            <Eyebrow>© WASSEL · <NumDisplay>2025</NumDisplay></Eyebrow>
-            <span className="font-ar text-[12px] text-v2-dim">صُمم في الرياض.</span>
-          </div>
-        </footer>
+        <PublicFooter />
       </div>
     </Phone>
   );
