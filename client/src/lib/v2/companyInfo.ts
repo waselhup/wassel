@@ -18,14 +18,16 @@ export interface CompanyLegalInfo {
   vatNumber: string | null;
   /** Customer support phone — null until provisioned */
   phone: string | null;
-  /** General support email */
+  /** General support email — single inbox until per-team aliases are set up */
   email: string;
-  /** Refund-specific email */
+  /** Refund-specific inbox (today routes to the general inbox) */
   refundEmail: string;
-  /** Privacy / data-protection email */
+  /** Privacy / data-protection inbox (today routes to the general inbox) */
   privacyEmail: string;
   /** City of operations */
   city: string;
+  /** Region / administrative area, AR */
+  regionAr: string;
   /** Country */
   country: string;
   /** ISO 3166-1 alpha-2 */
@@ -34,9 +36,13 @@ export interface CompanyLegalInfo {
   businessHoursAr: string;
   /** Business hours, EN */
   businessHoursEn: string;
-  /** Timezone label, e.g. "GMT+3 (Riyadh)" */
+  /** Timezone label — keep generic since AST is observed across the kingdom */
   timezone: string;
 }
+
+// Single-inbox alias today; carved out so we can split per-team later
+// without touching every page.
+const PRIMARY_EMAIL = 'waselhup@gmail.com';
 
 export const COMPANY_LEGAL_INFO: CompanyLegalInfo = {
   brandAr: 'وصّل',
@@ -44,15 +50,16 @@ export const COMPANY_LEGAL_INFO: CompanyLegalInfo = {
   commercialRegistration: '7052843203',
   vatNumber: null,
   phone: null,
-  email: 'support@wasselhub.com',
-  refundEmail: 'support@wasselhub.com',
-  privacyEmail: 'support@wasselhub.com',
-  city: 'الرياض',
+  email: PRIMARY_EMAIL,
+  refundEmail: PRIMARY_EMAIL,
+  privacyEmail: PRIMARY_EMAIL,
+  city: 'الأحساء',
+  regionAr: 'المنطقة الشرقية',
   country: 'المملكة العربية السعودية',
   countryCode: 'SA',
   businessHoursAr: 'الأحد – الخميس، 9:00 ص – 6:00 م',
   businessHoursEn: 'Sunday – Thursday, 9:00 AM – 6:00 PM',
-  timezone: 'GMT+3 (Riyadh)',
+  timezone: 'GMT+3 · توقيت السعودية',
 };
 
 export const COMPLIANCE_AR = {

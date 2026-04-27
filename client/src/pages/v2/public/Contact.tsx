@@ -123,7 +123,7 @@ export default function Contact() {
                 )}
                 <li>
                   <span className="text-v2-dim">الموقع · </span>
-                  <span className="text-v2-ink">{COMPANY_LEGAL_INFO.city}، {COMPANY_LEGAL_INFO.country}</span>
+                  <span className="text-v2-ink">{COMPANY_LEGAL_INFO.city}، {COMPANY_LEGAL_INFO.regionAr}، {COMPANY_LEGAL_INFO.country}</span>
                 </li>
               </ul>
             </Card>

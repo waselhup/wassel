@@ -107,7 +107,7 @@ export default function PublicFooter() {
               <div>
                 <span className="text-v2-mute">الموقع · </span>
                 <span className="text-v2-body">
-                  {COMPANY_LEGAL_INFO.city}، {COMPANY_LEGAL_INFO.country}
+                  {COMPANY_LEGAL_INFO.city}، {COMPANY_LEGAL_INFO.regionAr}، {COMPANY_LEGAL_INFO.country}
                 </span>
               </div>
             </div>
@@ -135,7 +135,7 @@ export default function PublicFooter() {
 
         <div className="mt-12 flex items-center justify-between border-t border-v2-line pt-6">
           <Eyebrow>© WASSEL · <NumDisplay>{COPYRIGHT_YEAR}</NumDisplay></Eyebrow>
-          <span className="font-ar text-[12px] text-v2-dim">صُمم في الرياض.</span>
+          <span className="font-ar text-[12px] text-v2-dim">صُمم في الأحساء.</span>
         </div>
       </footer>
     </>
