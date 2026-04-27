@@ -113,8 +113,8 @@ function Home() {
 
   const actions: QuickAction[] = [
     { id: 'analyze', title: 'تحليل البروفايل', description: 'رادار شامل مقابل دور هدف', cost: 25, href: '/v2/analyze', icon: RadarIcon },
-    { id: 'post',    title: 'صياغة منشور',     description: 'AI · بصوتك أنت',           cost: 20, href: '/v2/home', icon: PostIcon },
-    { id: 'cv',      title: 'منشئ السيرة',      description: 'CV احترافي مخصّص',         cost: 40, href: '/v2/home', icon: CvIcon  },
+    { id: 'post',    title: 'صياغة منشور',     description: 'AI · بصوتك أنت',           cost: 20, href: '/v2/posts', icon: PostIcon },
+    { id: 'cv',      title: 'منشئ السيرة',      description: 'CV احترافي مخصّص',         cost: 40, href: '/v2/cvs',  icon: CvIcon  },
   ];
 
 
@@ -368,8 +368,8 @@ function Home() {
         items={[
           { id: 'home',    label: 'الرئيسية', icon: <span /> , onSelect: () => navigate('/v2/home') },
           { id: 'analyze', label: 'الرادار',  icon: <span /> , onSelect: () => navigate('/v2/analyze') },
-          { id: 'tools',   label: 'الأدوات',  icon: <span /> , onSelect: () => navigate('/v2/home') },
-          { id: 'profile', label: 'حسابي',    icon: <span /> , onSelect: () => navigate('/v2/home') },
+          { id: 'tools',   label: 'الأدوات',  icon: <span /> , onSelect: () => navigate('/v2/cvs') },
+          { id: 'profile', label: 'حسابي',    icon: <span /> , onSelect: () => navigate('/v2/me') },
         ]}
         fabIcon="plus"
         onFabClick={() => navigate('/v2/analyze')}

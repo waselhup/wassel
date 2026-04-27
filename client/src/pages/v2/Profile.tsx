@@ -75,9 +75,9 @@ const NOTIF_GROUPS: { id: NotificationSetting['group']; label: string }[] = [
 ];
 
 const SECURITY: SecurityRow[] = [
-  { id: 'password',  title: 'تغيير كلمة المرور', description: 'آخر تغيير قبل 3 أشهر',           kind: 'link',   group: 'access' },
-  { id: '2fa',       title: 'المصادقة الثنائية',  description: 'مفعّلة · رسالة نصية',           kind: 'toggle', group: 'access' },
-  { id: 'sessions',  title: 'الجلسات النشطة',     description: '2 أجهزة · iPhone, Mac',           kind: 'link',   group: 'sessions' },
+  { id: 'password',  title: 'تغيير كلمة المرور', description: 'تحديث كلمة مرور الحساب',         kind: 'link',   group: 'access' },
+  { id: '2fa',       title: 'المصادقة الثنائية',  description: 'حماية إضافية عند تسجيل الدخول', kind: 'toggle', group: 'access' },
+  { id: 'sessions',  title: 'الجلسات النشطة',     description: 'إدارة الأجهزة المسجَّل عليها',   kind: 'link',   group: 'sessions' },
   { id: 'delete',    title: 'حذف الحساب',         description: 'حذف نهائي للحساب والبيانات',  kind: 'link',   group: 'danger', danger: true },
 ];
 
@@ -370,21 +370,25 @@ function Profile() {
             </div>
           )}
 
-          {tab === 'plan' && (
+          {tab === 'plan' && (() => {
+            const planQuotas: Record<string, number> = { free: 100, starter: 500, pro: 2000, elite: 10000 };
+            const planPrices: Record<string, string> = { free: 'مجاني', starter: '49 ر.س / شهر', pro: '99 ر.س / شهر', elite: '299 ر.س / شهر' };
+            const planKey = profile?.plan ?? 'free';
+            const balance = profile?.token_balance ?? 0;
+            const quota = planQuotas[planKey] ?? planQuotas.free;
+            const usedTokens = Math.max(0, quota - balance);
+            const usedPct = quota > 0 ? Math.min(100, Math.round((usedTokens / quota) * 100)) : 0;
+            return (
             <div className="lg:grid lg:grid-cols-2 lg:gap-5">
               {/* Current plan card */}
               <div>
                 <Card padding="lg" radius="md" className="mb-4 border-0 bg-v2-ink text-white lg:mb-0 lg:h-full">
                   <Eyebrow className="!text-teal-300">الباقة الحالية</Eyebrow>
                   <div className="mt-2 flex items-baseline justify-between">
-                    <h2 className="font-ar text-[22px] font-bold">برو</h2>
-                    <NumDisplay className="text-[14px] opacity-70">99 ر.س / شهر</NumDisplay>
+                    <h2 className="font-ar text-[22px] font-bold">{planLabel}</h2>
+                    <NumDisplay className="text-[14px] opacity-70">{planPrices[planKey] ?? '—'}</NumDisplay>
                   </div>
                   <div className="my-3 h-px bg-white/10" />
-                  <div className="flex items-center justify-between font-ar text-[12px]">
-                    <span className="opacity-70">التجديد القادم</span>
-                    <NumDisplay>1 فبراير 2025</NumDisplay>
-                  </div>
 
                   {/* Usage strip — moved into the card on desktop too */}
                   <div className="mt-5 border-t border-white/10 pt-4">
@@ -392,11 +396,11 @@ function Profile() {
                     <div className="mb-1.5 flex items-baseline justify-between">
                       <span className="font-ar text-[13px] opacity-80">التوكن المستخدم</span>
                       <NumDisplay className="text-[12px] font-semibold">
-                        1,760 / 2,000
+                        {usedTokens} / {quota}
                       </NumDisplay>
                     </div>
                     <div className="h-1 rounded-full bg-white/10">
-                      <div className="h-full rounded-full bg-teal-400" style={{ width: '88%' }} />
+                      <div className="h-full rounded-full bg-teal-400" style={{ width: `${usedPct}%` }} />
                     </div>
                   </div>
                 </Card>
@@ -405,28 +409,13 @@ function Profile() {
               {/* Upgrade options panel — desktop only mirrors actions, mobile keeps under usage */}
               <div className="hidden lg:block">
                 <Card padding="lg" radius="md" elevated className="h-full">
-                  <Eyebrow className="!text-teal-700">الترقية إلى أعمال</Eyebrow>
+                  <Eyebrow className="!text-teal-700">قارن الباقات</Eyebrow>
                   <p className="mt-2 font-ar text-[13px] leading-relaxed text-v2-body">
-                    حسابات متعددة، إدارة فريق، تقارير شهرية، ومدير حساب مخصّص.
+                    اختر الباقة المناسبة لك. التوكن يتجدد شهرياً ويُستخدم في تحليل البروفايل، صياغة المنشورات، وتوليد السيرة الذاتية.
                   </p>
-                  <ul className="mt-3 m-0 list-none p-0 flex flex-col gap-1.5">
-                    {[
-                      'حتى 5 حسابات',
-                      '10,000 توكن شهرياً',
-                      'تقارير الفريق',
-                      'دعم بأولوية',
-                    ].map((line) => (
-                      <li key={line} className="flex items-start gap-2 font-ar text-[13px] text-v2-body">
-                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true" className="mt-1 shrink-0">
-                          <path d="M2 6 L5 9 L10 3" stroke="var(--teal-700)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                        <span>{line}</span>
-                      </li>
-                    ))}
-                  </ul>
                   <div className="mt-4 flex flex-col gap-2">
-                    <Button variant="primary" size="md" fullWidth>
-                      الترقية إلى أعمال
+                    <Button variant="primary" size="md" fullWidth onClick={() => navigate('/v2/pricing')}>
+                      عرض الباقات
                     </Button>
                     <Button variant="secondary" size="md" fullWidth>
                       إدارة الفواتير
@@ -442,17 +431,17 @@ function Profile() {
                   <div className="mb-1.5 flex items-baseline justify-between">
                     <span className="font-ar text-[13px] text-v2-body">التوكن المستخدم</span>
                     <NumDisplay className="text-[12px] font-semibold text-v2-ink">
-                      1,760 / 2,000
+                      {usedTokens} / {quota}
                     </NumDisplay>
                   </div>
                   <div className="h-1 rounded-full bg-v2-line">
-                    <div className="h-full rounded-full bg-teal-500" style={{ width: '88%' }} />
+                    <div className="h-full rounded-full bg-teal-500" style={{ width: `${usedPct}%` }} />
                   </div>
                 </div>
 
                 <div className="flex flex-col gap-2.5">
-                  <Button variant="primary" size="md" fullWidth>
-                    الترقية إلى أعمال
+                  <Button variant="primary" size="md" fullWidth onClick={() => navigate('/v2/pricing')}>
+                    الترقية
                   </Button>
                   <Button variant="secondary" size="md" fullWidth>
                     إدارة الفواتير
@@ -460,7 +449,8 @@ function Profile() {
                 </div>
               </div>
             </div>
-          )}
+            );
+          })()}
 
           {tab === 'notif' && (
             // Mobile: flat list. Desktop: grouped by category in a card.

@@ -14,9 +14,6 @@ const Landing = lazy(() => import('@/pages/v2/Landing'));
 const Auth = lazy(() => import('@/pages/v2/Auth'));
 const Pricing = lazy(() => import('@/pages/v2/Pricing'));
 const Home = lazy(() => import('@/pages/v2/Home'));
-const RadarInput = lazy(() => import('@/pages/v2/RadarInput'));
-const RadarLoading = lazy(() => import('@/pages/v2/RadarLoading'));
-const RadarResult = lazy(() => import('@/pages/v2/RadarResult'));
 const Posts = lazy(() => import('@/pages/v2/Posts'));
 const Profile = lazy(() => import('@/pages/v2/Profile'));
 const Activity = lazy(() => import('@/pages/v2/Activity'));
@@ -165,6 +162,14 @@ function JobsProviderWithToast({ children }: { children: ReactNode }) {
   );
 }
 
+function RedirectTo({ to }: { to: string }) {
+  const [, navigate] = useLocation();
+  useEffect(() => {
+    navigate(to, { replace: true });
+  }, [to, navigate]);
+  return null;
+}
+
 function V2Routes(): ReactElement | null {
   const [matchLanding] = useRoute('/v2');
   const [matchLogin] = useRoute('/v2/login');
@@ -174,6 +179,7 @@ function V2Routes(): ReactElement | null {
   const [matchInput] = useRoute('/v2/analyze');
   const [matchLoading] = useRoute('/v2/analyze/loading');
   const [matchResult] = useRoute('/v2/analyze/result/:id');
+  const [matchCvs] = useRoute('/v2/cvs');
   const [matchPosts] = useRoute('/v2/posts');
   const [matchProfile] = useRoute('/v2/me');
   const [matchActivity] = useRoute('/v2/activity');
@@ -190,14 +196,14 @@ function V2Routes(): ReactElement | null {
   if (matchHome) {
     return <ProtectedShell><Suspense fallback={<V2Loader />}><Home /></Suspense></ProtectedShell>;
   }
-  if (matchInput) {
-    return <ProtectedShell><Suspense fallback={<V2Loader />}><RadarInput /></Suspense></ProtectedShell>;
+  // /v2/analyze and its sub-routes route to the real LinkedIn analysis page
+  // (Apify scrape + Claude analysis) instead of the mock V2 Radar pages.
+  if (matchInput || matchLoading || matchResult) {
+    return <RedirectTo to="/app/profile-analysis" />;
   }
-  if (matchLoading) {
-    return <ProtectedShell><Suspense fallback={<V2Loader />}><RadarLoading /></Suspense></ProtectedShell>;
-  }
-  if (matchResult) {
-    return <ProtectedShell><Suspense fallback={<V2Loader />}><RadarResult /></Suspense></ProtectedShell>;
+  // /v2/cvs routes to the real CV Tailor page (form + Claude generation).
+  if (matchCvs) {
+    return <RedirectTo to="/app/cv" />;
   }
   if (matchPosts) {
     return <ProtectedShell><Suspense fallback={<V2Loader />}><Posts /></Suspense></ProtectedShell>;

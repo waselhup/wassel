@@ -75,10 +75,17 @@ const ActivityIcon = (
     <path d="M3 11 L7 11 L9 5 L12 16 L14 9 L17 9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
+const CvIcon = (
+  <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+    <rect x="4" y="2" width="12" height="16" rx="1.5" stroke="currentColor" strokeWidth="1.4" />
+    <path d="M7 7 H13 M7 10 H13 M7 13 H10" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+  </svg>
+);
 
 const defaultItems: DesktopSidebarItem[] = [
   { id: 'home',     label: 'الرئيسية', href: '/v2/home',     icon: HomeIcon },
   { id: 'analyze',  label: 'الرادار',   href: '/v2/analyze',  icon: RadarIcon },
+  { id: 'cv',       label: 'السيرة',    href: '/v2/cvs',      icon: CvIcon },
   { id: 'posts',    label: 'المنشورات', href: '/v2/posts',    icon: PostsIcon },
   { id: 'activity', label: 'النشاط',   href: '/v2/activity', icon: ActivityIcon },
 ];

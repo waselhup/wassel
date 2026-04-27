@@ -18,8 +18,6 @@ const FEATURES: Feature[] = [
   { num: '03', title: 'سيرة ذكية',   description: 'CV مخصّص يستخرج تلقائياً من بروفايلك ومُعدَّل لكل وظيفة.' },
 ];
 
-const SOCIAL_PROOF = ['ARAMCO', 'STC', 'SABIC', 'NEOM', 'KFUPM'];
-
 const FOOTER_LINKS = [
   { label: 'من نحن',   href: '/v2' },
   { label: 'الشروط',  href: '/v2' },
@@ -172,21 +170,6 @@ function Landing() {
             <div className="hidden lg:order-2 lg:block">
               <HeroVisual />
             </div>
-          </div>
-        </section>
-
-        {/* TRUSTED BY */}
-        <section className="mb-10 border-y border-v2-line py-5 lg:mb-0 lg:border-x-0 lg:py-12">
-          <Eyebrow className="mb-3.5 block text-center lg:mb-6">موثوق به من</Eyebrow>
-          <div className="grid grid-cols-5 items-center gap-2.5 lg:gap-10">
-            {SOCIAL_PROOF.map((name) => (
-              <div
-                key={name}
-                className="text-center font-en font-bold tracking-[0.08em] text-v2-mute text-[11px] lg:text-[14px]"
-              >
-                {name}
-              </div>
-            ))}
           </div>
         </section>
 
