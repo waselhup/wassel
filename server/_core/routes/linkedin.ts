@@ -8,7 +8,7 @@ import { scrapeLinkedInProfileBrightData, BrightDataProfileNotFoundError } from 
 import { scrapeLinkedInProfileHybrid } from '../services/profile-scraper';
 import { LinkdApiProfileNotFoundError } from '../services/linkdapi';
 import { validateAndNormalizeLinkedInUrl } from '../lib/linkedin-url-validator';
-import { generateDocxReport } from '../lib/profile-report-generator';
+import { generateDocxReport, generatePdfReport } from '../lib/profile-report-generator';
 import { deductTokens, refundTokens, throwInsufficientTokensError } from '../lib/tokens';
 import { safeJsonParse } from '../lib/safe-json';
 
@@ -1444,18 +1444,11 @@ export const linkedinRouter = router({
   exportReport: protectedProcedure
     .input(z.object({
       analysisId: z.string().uuid(),
-      // 'pdf' kept in schema only so old clients fail with a clear error.
-      // jsPDF cannot embed Arabic glyphs cleanly — DOCX is the only supported format.
+      // PDF reactivated: HTML→Chromium renderer handles Arabic shaping
+      // correctly (jsPDF could not). DOCX path unchanged.
       format: z.enum(['pdf', 'docx']),
     }))
     .mutation(async ({ input, ctx }) => {
-      if (input.format === 'pdf') {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'PDF export is no longer available. Please use DOCX.',
-        });
-      }
-
       const { data: analysis } = await ctx.supabase
         .from('profile_analyses')
         .select('*')
@@ -1467,27 +1460,13 @@ export const linkedinRouter = router({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'التحليل غير موجود' });
       }
 
-      const DOCX_COST = 5;
-      const DOCX_FEATURE = 'linkedin.exportReport.docx';
       const lang = (analysis.report_language as 'ar' | 'en') || 'ar';
-      if (!analysis.docx_generated) {
-        // Atomic deduct. Marks docx_generated only after deduct succeeds, so
-        // any subsequent failure lets the user retry without double-charge.
-        const deduct = await deductTokens(ctx.supabase, ctx.user.id, DOCX_COST, DOCX_FEATURE);
-        if (!deduct.success) throwInsufficientTokensError(deduct, lang);
-
-        await ctx.supabase
-          .from('profile_analyses')
-          .update({ docx_generated: true })
-          .eq('id', input.analysisId);
-      }
-
       const userName = (analysis.profile_data as any)?.fullName
                     || (analysis.profile_data as any)?.name
                     || undefined;
 
       const reportOpts = {
-        language: analysis.report_language as 'ar' | 'en',
+        language: lang,
         userName,
         targetGoal: analysis.target_goal,
         industry: analysis.industry,
@@ -1496,13 +1475,35 @@ export const linkedinRouter = router({
         analysisData: analysis.analysis_data as any,
       };
 
-      const buffer = await generateDocxReport(reportOpts);
-      const mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-      const filename = `profile-analysis-${analysis.id.slice(0, 8)}.docx`;
+      if (input.format === 'docx') {
+        const DOCX_COST = 5;
+        const DOCX_FEATURE = 'linkedin.exportReport.docx';
+        if (!analysis.docx_generated) {
+          // Atomic deduct. Marks docx_generated only after deduct succeeds,
+          // so any subsequent failure lets the user retry without double-charge.
+          const deduct = await deductTokens(ctx.supabase, ctx.user.id, DOCX_COST, DOCX_FEATURE);
+          if (!deduct.success) throwInsufficientTokensError(deduct, lang);
+          await ctx.supabase
+            .from('profile_analyses')
+            .update({ docx_generated: true })
+            .eq('id', input.analysisId);
+        }
 
+        const buffer = await generateDocxReport(reportOpts);
+        return {
+          filename: `profile-analysis-${analysis.id.slice(0, 8)}.docx`,
+          mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          base64: buffer.toString('base64'),
+        };
+      }
+
+      // PDF path. Tokens not yet billed for PDF (existing UX charged only
+      // for DOCX) — keep that until product decides to price PDF
+      // separately. PDF can still be regenerated on demand.
+      const buffer = await generatePdfReport(reportOpts);
       return {
-        filename,
-        mimeType,
+        filename: `profile-analysis-${analysis.id.slice(0, 8)}.pdf`,
+        mimeType: 'application/pdf',
         base64: buffer.toString('base64'),
       };
     }),

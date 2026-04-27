@@ -64,7 +64,7 @@ export default function AnalysisResults() {
   const [data, setData] = useState<StoredAnalysisResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [missing, setMissing] = useState(false);
-  const [exporting, setExporting] = useState(false);
+  const [exportingFmt, setExportingFmt] = useState<'docx' | 'pdf' | null>(null);
   const [selectedSectionKey, setSelectedSectionKey] = useState<string | null>(null);
 
   useEffect(() => {
@@ -183,13 +183,13 @@ export default function AnalysisResults() {
     navigator.clipboard?.writeText(text);
   }
 
-  async function handleExport() {
+  async function handleExport(format: 'docx' | 'pdf') {
     if (!data) return;
-    setExporting(true);
+    setExportingFmt(format);
     try {
       const res = await trpcMutation<{ filename: string; mimeType: string; base64: string }>(
         'linkedin.exportReport',
-        { analysisId: data.id, format: 'docx' },
+        { analysisId: data.id, format },
       );
       const bytes = atob(res.base64);
       const array = new Uint8Array(bytes.length);
@@ -205,7 +205,7 @@ export default function AnalysisResults() {
       // Swallow — V1 has its own toast system; in V2 we surface failures
       // through the BottomNav toast bus when wired in a follow-up.
     } finally {
-      setExporting(false);
+      setExportingFmt(null);
     }
   }
 
@@ -269,10 +269,26 @@ export default function AnalysisResults() {
           </button>
         }
         trailing={
-          <Button variant="secondary" size="sm" onClick={handleExport} disabled={exporting}>
-            <FileText size={14} />
-            {exporting ? '…' : (isAr ? 'تصدير DOCX' : 'Export DOCX')}
-          </Button>
+          <div className="flex items-center gap-1.5">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => handleExport('pdf')}
+              disabled={exportingFmt !== null}
+            >
+              <FileText size={14} />
+              {exportingFmt === 'pdf' ? '…' : 'PDF'}
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => handleExport('docx')}
+              disabled={exportingFmt !== null}
+            >
+              <FileText size={14} />
+              {exportingFmt === 'docx' ? '…' : 'DOCX'}
+            </Button>
+          </div>
         }
       />
 
