@@ -20,8 +20,14 @@ const Activity = lazy(() => import('@/pages/v2/Activity'));
 // V2-wrapped versions of the real V1 feature pages — they reuse the working
 // tRPC/business logic but render inside the V2 ProtectedShell chrome.
 const CVBuilder = lazy(() => import('@/pages/v2/CVBuilder'));
-const ProfileAnalysisV2 = lazy(() => import('@/pages/v2/ProfileAnalysis'));
 const AdminPanel = lazy(() => import('@/pages/v2/AdminPanel'));
+
+// 3-stage profile analysis flow: Input → Loading → Result. State bridges
+// stages via sessionStorage (see lib/v2/analysisSession.ts). Stage 1 lives
+// at /v2/analyze; the V1 single-page page is no longer routed.
+const ProfileInput = lazy(() => import('@/pages/v2/analysis/ProfileInput'));
+const AnalysisLoading = lazy(() => import('@/pages/v2/analysis/AnalysisLoading'));
+const AnalysisResults = lazy(() => import('@/pages/v2/analysis/AnalysisResults'));
 
 function V2Loader() {
   // Skeleton-shaped fallback that resembles the page chrome — feels less
@@ -194,11 +200,16 @@ function V2Routes(): ReactElement | null {
   if (matchHome) {
     return <ProtectedShell><Suspense fallback={<V2Loader />}><Home /></Suspense></ProtectedShell>;
   }
-  // /v2/analyze (and its loading/result sub-routes) renders the real
-  // LinkedIn analysis page — Apify scrape + Claude analysis + history +
-  // compare — inside the V2 ProtectedShell chrome. No more V1 design leaks.
-  if (matchAnalyze || matchAnalyzeLoading || matchAnalyzeResult) {
-    return <ProtectedShell><Suspense fallback={<V2Loader />}><ProfileAnalysisV2 /></Suspense></ProtectedShell>;
+  // 3-stage analysis flow — each route renders a dedicated V2 page so the
+  // user gets a focused screen per stage instead of the V1 single-page mash.
+  if (matchAnalyze) {
+    return <ProtectedShell><Suspense fallback={<V2Loader />}><ProfileInput /></Suspense></ProtectedShell>;
+  }
+  if (matchAnalyzeLoading) {
+    return <ProtectedShell><Suspense fallback={<V2Loader />}><AnalysisLoading /></Suspense></ProtectedShell>;
+  }
+  if (matchAnalyzeResult) {
+    return <ProtectedShell><Suspense fallback={<V2Loader />}><AnalysisResults /></Suspense></ProtectedShell>;
   }
   // /v2/cvs renders the real CV Tailor page (form + Claude generation +
   // DOCX/PDF export) inside the V2 ProtectedShell chrome.
