@@ -55,8 +55,19 @@ export default function SectionListItem({ section, active, isRTL, onClick }: Pro
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 14, fontWeight: 700, lineHeight: 1.3,
-            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {section.name}
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{section.name}</span>
+          {section.isPerfect && (
+            <span style={{
+              fontSize: 9, fontWeight: 800, letterSpacing: 0.4,
+              color: active ? '#022c22' : '#065f46',
+              background: active ? '#5eead4' : '#a7f3d0',
+              padding: '1px 6px', borderRadius: 999, flexShrink: 0,
+            }}>
+              {isRTL ? 'مثالي' : 'PERFECT'}
+            </span>
+          )}
         </div>
         {typeof section.score === 'number' && (
           <div style={{ fontSize: 11, fontWeight: 600,

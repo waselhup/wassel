@@ -26,6 +26,8 @@ interface Props {
     moreInfo: string;
     copy: string;
     copied: string;
+    perfectBadge: string;
+    perfectMessage: string;
   };
   onBack: () => void;
   onPrev: () => void;
@@ -95,7 +97,8 @@ export default function SectionDetailPanel({
   const hasSuggested = !!section.suggestedText;
   const hasWhy = !!section.why;
   const hasChecklist = !!(section.checklist && section.checklist.length);
-  const hasAnyBody = hasVerdict || hasCurrent || hasSuggested || hasWhy;
+  const isPerfect = !!section.isPerfect;
+  const hasAnyBody = hasVerdict || hasCurrent || hasSuggested || hasWhy || isPerfect;
 
   const counter = labels.sectionCounter
     .replace('{current}', String(index + 1))
@@ -168,9 +171,18 @@ export default function SectionDetailPanel({
           padding: 12, background: meta.bg, border: `1px solid ${meta.border}`,
           borderRadius: 10, display: 'flex', flexDirection: 'column', gap: 6,
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
             <StatusIcon size={16} color={meta.fg} />
             <span style={{ fontSize: 13, fontWeight: 800, color: meta.fg }}>{meta.label}</span>
+            {isPerfect && (
+              <span style={{
+                fontSize: 10, fontWeight: 800, letterSpacing: 0.5,
+                color: '#022c22', background: '#5eead4',
+                padding: '2px 8px', borderRadius: 999,
+              }}>
+                {labels.perfectBadge}
+              </span>
+            )}
             {typeof section.score === 'number' && (
               <span style={{
                 marginInlineStart: 'auto',
@@ -208,7 +220,17 @@ export default function SectionDetailPanel({
           </div>
         )}
 
-        {hasSuggested && (
+        {isPerfect ? (
+          <div style={{
+            background: '#ecfdf5', border: '1px solid #6ee7b7', borderRadius: 10,
+            padding: 14, display: 'flex', alignItems: 'flex-start', gap: 10,
+          }}>
+            <CheckCircle2 size={18} color="#047857" style={{ flexShrink: 0, marginTop: 1 }} />
+            <div style={{ fontSize: 13, color: '#065f46', lineHeight: 1.55, fontWeight: 600 }}>
+              {labels.perfectMessage}
+            </div>
+          </div>
+        ) : hasSuggested ? (
           <div style={{ background: '#f0fdfa', border: '1px solid #99f6e4', borderRadius: 10, padding: 12 }}>
             <div style={{
               fontSize: 11, fontWeight: 800, color: '#0f766e',
@@ -226,7 +248,7 @@ export default function SectionDetailPanel({
                 borderRadius: 6, cursor: 'pointer', fontFamily: 'inherit',
               }}>{labels.copy}</button>
           </div>
-        )}
+        ) : null}
 
         {/* Checklist — only if there's at least one item */}
         {hasChecklist && (

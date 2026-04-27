@@ -11,6 +11,7 @@ import { validateAndNormalizeLinkedInUrl } from '../lib/linkedin-url-validator';
 import { generateDocxReport, generatePdfReport } from '../lib/profile-report-generator';
 import { deductTokens, refundTokens, throwInsufficientTokensError } from '../lib/tokens';
 import { safeJsonParse } from '../lib/safe-json';
+import { detectProfileLanguage, type ProfileLang } from '../lib/languageDetector';
 
 const TARGET_GOAL = z.enum([
   'job-search', 'investment', 'thought-leadership',
@@ -266,8 +267,28 @@ OUTPUT
 ═══════════════════════════════════════
 
 Return valid JSON ONLY. No markdown, no code fences. Start with { end with }.
-Use report_language ('ar' = Modern Standard Arabic, 'en' = Professional
-English) for all human-readable strings. Western digits (0-9) only.
+
+LANGUAGE RULES (TWO SEPARATE LANGUAGES — DO NOT COLLAPSE):
+- report_language ('ar' = Modern Standard Arabic, 'en' = Professional
+  English) governs ALL ANALYTICAL NARRATIVE: verdict, assessment, why,
+  top_priorities[].action, top_priorities[].expected_impact, target_alignment.notes.
+- suggestions_language (also 'ar' or 'en') governs PASTE-READY COPY ONLY:
+  sections[].current and sections[].suggested. These rewrites must be in
+  the language the candidate's actual LinkedIn profile is written in, so
+  they can paste them directly into LinkedIn. Honor it even when it
+  differs from report_language — an English report on an Arabic profile
+  must still produce Arabic rewrites.
+- "current" must echo the candidate's text verbatim (do not translate it).
+  If the section is empty, set "current" to "Empty" / "فارغ" matching
+  suggestions_language.
+
+Western digits (0-9) only — never Eastern Arabic numerals (٠-٩).
+
+PERFECT-SECTION RULE:
+If a section already meets all framework criteria, score it >= 95 and set
+"suggested" to an empty string "". Do NOT invent nitpicks for sections
+that don't need rewriting. The UI will render a "perfect" badge instead
+of a rewrite block.
 
 Schema:
 
@@ -287,10 +308,10 @@ Schema:
     {
       "key": "headline" | "about" | "experience" | "skills" | "education" | "recommendations" | "activity" | "profile_completeness",
       "score": number (0-100) | null,        // null ONLY if the section on LinkedIn is truly empty
-      "assessment": string (1-2 sentences in target language — quote the profile text, explain what works/doesn't),
-      "current": string (the exact current text from profile, or "Empty" if absent — in original profile language),
-      "suggested": string (a concrete rewrite ready to paste into LinkedIn — in original profile language or the user's chosen target language),
-      "why": string (1 sentence citing the framework — in target language),
+      "assessment": string (1-2 sentences in report_language — quote the profile text, explain what works/doesn't),
+      "current": string (the exact current text from the profile in suggestions_language — never translated; "Empty"/"فارغ" if absent),
+      "suggested": string (a concrete LinkedIn-ready rewrite in suggestions_language; empty string "" when score >= 95),
+      "why": string (1 sentence citing the framework — in report_language),
       "framework": "A" | "B" | "C" | "D" | "E" | "F",
       "effort": "quick" | "moderate" | "deep"
     }
@@ -1149,6 +1170,20 @@ export const linkedinRouter = router({
           ? input.customIndustryLabel
           : input.industry;
 
+        // Detect the language of the candidate's actual profile copy. Suggestions
+        // (paste-ready rewrites of headline/about/experience) must come back in
+        // this language so the candidate can drop them straight into LinkedIn,
+        // even if they asked for an English narrative report on an Arabic
+        // profile. Falls back to the report language when there's no scraped
+        // text to sample (image-only analyses).
+        const suggestionsLanguage: ProfileLang = unifiedProfile
+          ? detectProfileLanguage({
+              headline: unifiedProfile.headline,
+              summary: unifiedProfile.summary,
+              experience: unifiedProfile.experience,
+            })
+          : lang;
+
         const userPayload = {
           target_goal: input.targetGoal,
           industry: effectiveIndustry,
@@ -1156,6 +1191,7 @@ export const linkedinRouter = router({
           target_role: input.targetRole || null,
           target_company: input.targetCompany || null,
           report_language: lang,
+          suggestions_language: suggestionsLanguage,
           profile_completeness: completeness,
           missing_sections: missingSections,
           profile_data: structuredProfile,
@@ -1264,14 +1300,21 @@ export const linkedinRouter = router({
           const fw = ((s.framework as string) || '').toUpperCase();
           const labels = FRAMEWORK_LABELS[fw as 'A' | 'B' | 'C' | 'D' | 'E' | 'F'];
           const score = (typeof s.score === 'number' && s.score >= 0 && s.score <= 100) ? s.score : null;
+          // Sections scoring >= 95 are "perfect" — the UI hides the rewrite
+          // block and shows a perfect badge instead. We also force-clear
+          // any nitpick `suggested` text the model leaked despite the
+          // PERFECT-SECTION RULE, so the badge can stand on its own.
+          const isPerfect = typeof score === 'number' && score >= 95;
+          const rawSuggested = typeof s.suggested === 'string' ? s.suggested : '';
           return {
             key,
             name_ar: SECTION_NAMES[key].ar,
             name_en: SECTION_NAMES[key].en,
             score,
+            is_perfect: isPerfect,
             assessment: typeof s.assessment === 'string' ? s.assessment : '',
-            current: typeof s.current === 'string' ? s.current : (score === null ? (lang === 'ar' ? 'فارغ' : 'Empty') : ''),
-            suggested: typeof s.suggested === 'string' ? s.suggested : '',
+            current: typeof s.current === 'string' ? s.current : (score === null ? (suggestionsLanguage === 'ar' ? 'فارغ' : 'Empty') : ''),
+            suggested: isPerfect ? '' : rawSuggested,
             why: typeof s.why === 'string' ? s.why : '',
             framework: (['A','B','C','D','E','F'].includes(fw) ? fw : null) as 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | null,
             framework_label: labels ? (lang === 'ar' ? labels.ar : labels.en) : null,
@@ -1279,6 +1322,13 @@ export const linkedinRouter = router({
           };
         });
         result.sections = orderedSections;
+        // Surface language settings on the response so the UI can show
+        // "Report: AR · Suggestions: EN" without re-deriving them.
+        result.language_settings = {
+          report_language: lang,
+          suggestions_language: suggestionsLanguage,
+          profile_language_detected: suggestionsLanguage,
+        };
 
         // Compute overall_score SERVER-SIDE from the weighted section table.
         // Trusting Claude's arithmetic drifts (saw 47 vs 58 for same input).

@@ -100,6 +100,7 @@ export default function AnalysisResults() {
       icon: SECTION_ICON[key] || UserCircle,
       score: typeof s.score === 'number' ? s.score : null,
       status: deriveStatus(typeof s.score === 'number' ? s.score : null),
+      isPerfect: !!s.is_perfect,
       framework: s.framework || undefined,
       frameworkLabel: s.framework_label || undefined,
       effort: s.effort,
@@ -112,6 +113,13 @@ export default function AnalysisResults() {
       why: s.why,
     };
   }), [sections, isAr]);
+
+  const languageSettings = useMemo(() => {
+    const ls = data?.analysis?.language_settings || {};
+    const reportLang: 'ar' | 'en' = ls.report_language === 'en' ? 'en' : 'ar';
+    const suggestionsLang: 'ar' | 'en' = ls.suggestions_language === 'en' ? 'en' : 'ar';
+    return { reportLang, suggestionsLang, mismatch: reportLang !== suggestionsLang };
+  }, [data]);
 
   const profile = useMemo(() => {
     const ps = data?.profileSummary || {};
@@ -162,6 +170,10 @@ export default function AnalysisResults() {
     moreInfo: isAr ? 'تفاصيل' : 'More info',
     copy: isAr ? 'نسخ' : 'Copy',
     copied: isAr ? 'تم النسخ' : 'Copied',
+    perfectBadge: isAr ? 'مثالي' : 'PERFECT',
+    perfectMessage: isAr
+      ? 'هذا القسم مكتمل ولا يحتاج إلى تعديل. حافظ عليه كما هو.'
+      : 'This section already meets the bar — no rewrite needed. Leave it as-is.',
   }), [isAr, activeIndex, sectionViews.length]);
 
   const previewLabels = useMemo(() => ({
@@ -300,6 +312,14 @@ export default function AnalysisResults() {
             {isAr ? 'تحليلك جاهز.' : 'Your analysis is ready.'}
           </h1>
         </div>
+
+        {languageSettings.mismatch && (
+          <div className="mt-3 rounded-v2-md border border-teal-200 bg-teal-50 px-3 py-2 font-ar text-[12px] text-teal-800">
+            {isAr
+              ? `التقرير ${languageSettings.reportLang === 'ar' ? 'بالعربية' : 'بالإنجليزية'} · الاقتراحات الجاهزة للنسخ ${languageSettings.suggestionsLang === 'ar' ? 'بالعربية' : 'بالإنجليزية'} (تطابقاً مع لغة بروفايلك على لينكد إن).`
+              : `Report in ${languageSettings.reportLang === 'ar' ? 'Arabic' : 'English'} · Paste-ready suggestions in ${languageSettings.suggestionsLang === 'ar' ? 'Arabic' : 'English'} (matching your LinkedIn profile language).`}
+          </div>
+        )}
 
         <div className="mt-5 lg:grid lg:grid-cols-12 lg:gap-6">
           {/* Score ring + verdict */}

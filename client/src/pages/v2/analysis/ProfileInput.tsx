@@ -237,6 +237,11 @@ export default function ProfileInput() {
                 );
               })}
             </div>
+            <p className="mt-2 font-ar text-[11px] leading-relaxed text-v2-dim">
+              {isAr
+                ? 'الاقتراحات الجاهزة للنسخ ستكون دائماً بنفس لغة بروفايلك على لينكد إن.'
+                : 'Paste-ready rewrites always match your LinkedIn profile language.'}
+            </p>
           </Card>
 
           <Card padding="lg" radius="lg">

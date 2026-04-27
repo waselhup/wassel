@@ -939,6 +939,10 @@ export default function ProfileAnalysis() {
               moreInfo: t('profileAnalysis.moreInfo'),
               copy: t('profileAnalysis.copy'),
               copied: t('profileAnalysis.copied'),
+              perfectBadge: isRTL ? 'مثالي' : 'PERFECT',
+              perfectMessage: isRTL
+                ? 'هذا القسم مكتمل ولا يحتاج إلى تعديل. حافظ عليه كما هو.'
+                : 'This section already meets the bar — no rewrite needed. Leave it as-is.',
             };
 
             const previewLabels = {

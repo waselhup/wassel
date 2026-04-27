@@ -8,6 +8,7 @@ export interface SectionView {
   icon: LucideIcon;
   score: number | null;
   status: SectionStatus;
+  isPerfect?: boolean;
   framework?: string;
   frameworkLabel?: string;
   effort?: 'quick' | 'moderate' | 'deep';
