@@ -32,22 +32,16 @@ const PageLoader = () => (
 // legacy paths now redirect (see PUBLIC redirects below).
 import ResetPassword from './pages/ResetPassword';
 
-// Lazy loaded pages (loaded on demand)
+// Lazy loaded pages (loaded on demand). CVTailor / ProfileAnalysis / Admin*
+// are imported by their V2 wrappers in client/src/pages/v2/, not here, so
+// the legacy /app/cv, /app/profile-analysis and /admin* paths only redirect
+// rather than render the V1 chrome.
 const DashboardHome = lazy(() => import('./pages/DashboardHome'));
 const Onboarding = lazy(() => import('./pages/Onboarding'));
 const Profile = lazy(() => import('./pages/Profile'));
 const Tokens = lazy(() => import('./pages/Tokens'));
 const Payment = lazy(() => import('./pages/Payment'));
-const CVTailor = lazy(() => import('./pages/CVTailor'));
-const CampaignList = lazy(() => import('./pages/CampaignList'));
-const CampaignNew = lazy(() => import('./pages/CampaignNew'));
-const CampaignReport = lazy(() => import('./pages/CampaignReport'));
 const ComingSoon = lazy(() => import('./pages/ComingSoon'));
-
-// Admin Pages
-const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
-const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'));
-const AdminSettings = lazy(() => import('./pages/admin/AdminSettings'));
 
 // New Pages
 // Pricing retired in favor of /v2/pricing — legacy /pricing redirects.
@@ -56,7 +50,6 @@ const TermsOfService = lazy(() => import('./pages/TermsOfService'));
 const Analytics = lazy(() => import('./pages/Analytics'));
 const About = lazy(() => import('./pages/About'));
 const Blog = lazy(() => import('./pages/Blog'));
-const ProfileAnalysis = lazy(() => import('./pages/ProfileAnalysis'));
 const Posts = lazy(() => import('./pages/Posts'));
 const MyTickets = lazy(() => import('./pages/MyTickets'));
 
@@ -144,6 +137,17 @@ const AppRoutes: React.FC = () => {
   if (matchSignup)  return <Redirect to="/v2/signup" />;
   if (matchPricing) return <Redirect to="/v2/pricing" />;
 
+  // Legacy /app/cv, /app/profile-analysis, /admin*, /app/admin routes are
+  // now V2-only. Anyone landing on a legacy path is bounced into V2 so they
+  // never see the old chrome. Other /app/* pages (DashboardHome, Profile,
+  // etc.) keep working until they get full V2 equivalents.
+  if (matchAppCv)              return <Redirect to="/v2/cvs" />;
+  if (matchAppProfileAnalysis) return <Redirect to="/v2/analyze" />;
+  if (matchAdminHome)          return <Redirect to="/v2/admin" />;
+  if (matchAdminUsers)         return <Redirect to="/v2/admin" />;
+  if (matchAdminSettings)      return <Redirect to="/v2/admin" />;
+  if (matchAppAdmin)           return <Redirect to="/v2/admin" />;
+
   if (matchReset) return <ResetPassword />;
 
   if (matchPrivacy) return <PrivacyPolicy />;
@@ -183,16 +187,10 @@ const AppRoutes: React.FC = () => {
       </ProtectedRoute>
     );
   if (matchAppLinkedin) {
-    // Redirect old /app/linkedin to /app/profile-analysis
-    window.location.replace('/app/profile-analysis');
-    return null;
+    // Legacy /app/linkedin → V2 analyze (kept as a redirect for any
+    // outstanding bookmarks).
+    return <Redirect to="/v2/analyze" />;
   }
-  if (matchAppCv)
-    return (
-      <ProtectedRoute>
-        <CVTailor />
-      </ProtectedRoute>
-    );
   if (matchAppComingSoon)
     return (
       <ProtectedRoute>
@@ -204,12 +202,6 @@ const AppRoutes: React.FC = () => {
     return null;
   }
 
-  if (matchAppProfileAnalysis)
-    return (
-      <ProtectedRoute>
-        <ProfileAnalysis />
-      </ProtectedRoute>
-    );
   if (matchAppPosts)
     return (
       <ProtectedRoute>
@@ -226,32 +218,6 @@ const AppRoutes: React.FC = () => {
     return (
       <ProtectedRoute>
         <MyTickets />
-      </ProtectedRoute>
-    );
-  if (matchAppAdmin)
-    return (
-      <ProtectedRoute>
-        <AdminDashboard />
-      </ProtectedRoute>
-    );
-
-  // Admin Routes (legacy /admin paths)
-  if (matchAdminHome)
-    return (
-      <ProtectedRoute>
-        <AdminDashboard />
-      </ProtectedRoute>
-    );
-  if (matchAdminUsers)
-    return (
-      <ProtectedRoute>
-        <AdminUsers />
-      </ProtectedRoute>
-    );
-  if (matchAdminSettings)
-    return (
-      <ProtectedRoute>
-        <AdminSettings />
       </ProtectedRoute>
     );
 

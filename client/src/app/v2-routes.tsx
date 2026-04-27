@@ -17,6 +17,11 @@ const Home = lazy(() => import('@/pages/v2/Home'));
 const Posts = lazy(() => import('@/pages/v2/Posts'));
 const Profile = lazy(() => import('@/pages/v2/Profile'));
 const Activity = lazy(() => import('@/pages/v2/Activity'));
+// V2-wrapped versions of the real V1 feature pages — they reuse the working
+// tRPC/business logic but render inside the V2 ProtectedShell chrome.
+const CVBuilder = lazy(() => import('@/pages/v2/CVBuilder'));
+const ProfileAnalysisV2 = lazy(() => import('@/pages/v2/ProfileAnalysis'));
+const AdminPanel = lazy(() => import('@/pages/v2/AdminPanel'));
 
 function V2Loader() {
   // Skeleton-shaped fallback that resembles the page chrome — feels less
@@ -162,27 +167,20 @@ function JobsProviderWithToast({ children }: { children: ReactNode }) {
   );
 }
 
-function RedirectTo({ to }: { to: string }) {
-  const [, navigate] = useLocation();
-  useEffect(() => {
-    navigate(to, { replace: true });
-  }, [to, navigate]);
-  return null;
-}
-
 function V2Routes(): ReactElement | null {
   const [matchLanding] = useRoute('/v2');
   const [matchLogin] = useRoute('/v2/login');
   const [matchSignup] = useRoute('/v2/signup');
   const [matchPricing] = useRoute('/v2/pricing');
   const [matchHome] = useRoute('/v2/home');
-  const [matchInput] = useRoute('/v2/analyze');
-  const [matchLoading] = useRoute('/v2/analyze/loading');
-  const [matchResult] = useRoute('/v2/analyze/result/:id');
+  const [matchAnalyze] = useRoute('/v2/analyze');
+  const [matchAnalyzeLoading] = useRoute('/v2/analyze/loading');
+  const [matchAnalyzeResult] = useRoute('/v2/analyze/result/:id');
   const [matchCvs] = useRoute('/v2/cvs');
   const [matchPosts] = useRoute('/v2/posts');
   const [matchProfile] = useRoute('/v2/me');
   const [matchActivity] = useRoute('/v2/activity');
+  const [matchAdmin] = useRoute('/v2/admin');
 
   if (matchLanding) {
     return <PublicShell><Suspense fallback={<V2Loader />}><Landing /></Suspense></PublicShell>;
@@ -196,14 +194,16 @@ function V2Routes(): ReactElement | null {
   if (matchHome) {
     return <ProtectedShell><Suspense fallback={<V2Loader />}><Home /></Suspense></ProtectedShell>;
   }
-  // /v2/analyze and its sub-routes route to the real LinkedIn analysis page
-  // (Apify scrape + Claude analysis) instead of the mock V2 Radar pages.
-  if (matchInput || matchLoading || matchResult) {
-    return <RedirectTo to="/app/profile-analysis" />;
+  // /v2/analyze (and its loading/result sub-routes) renders the real
+  // LinkedIn analysis page — Apify scrape + Claude analysis + history +
+  // compare — inside the V2 ProtectedShell chrome. No more V1 design leaks.
+  if (matchAnalyze || matchAnalyzeLoading || matchAnalyzeResult) {
+    return <ProtectedShell><Suspense fallback={<V2Loader />}><ProfileAnalysisV2 /></Suspense></ProtectedShell>;
   }
-  // /v2/cvs routes to the real CV Tailor page (form + Claude generation).
+  // /v2/cvs renders the real CV Tailor page (form + Claude generation +
+  // DOCX/PDF export) inside the V2 ProtectedShell chrome.
   if (matchCvs) {
-    return <RedirectTo to="/app/cv" />;
+    return <ProtectedShell><Suspense fallback={<V2Loader />}><CVBuilder /></Suspense></ProtectedShell>;
   }
   if (matchPosts) {
     return <ProtectedShell><Suspense fallback={<V2Loader />}><Posts /></Suspense></ProtectedShell>;
@@ -213,6 +213,9 @@ function V2Routes(): ReactElement | null {
   }
   if (matchActivity) {
     return <ProtectedShell><Suspense fallback={<V2Loader />}><Activity /></Suspense></ProtectedShell>;
+  }
+  if (matchAdmin) {
+    return <ProtectedShell><Suspense fallback={<V2Loader />}><AdminPanel /></Suspense></ProtectedShell>;
   }
 
   return null;

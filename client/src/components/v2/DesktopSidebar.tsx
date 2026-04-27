@@ -112,7 +112,7 @@ function DesktopSidebar({
 
   const items: DesktopSidebarItem[] = itemsProp ?? (
     profile?.is_admin
-      ? [...defaultItems, { id: 'admin', label: 'الإدارة', href: '/admin', icon: ShieldIcon }]
+      ? [...defaultItems, { id: 'admin', label: 'الإدارة', href: '/v2/admin', icon: ShieldIcon }]
       : defaultItems
   );
 

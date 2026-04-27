@@ -10,6 +10,7 @@ import {
   ChevronDown, TrendingUp, UserCheck, PenSquare, Shield, TicketCheck, HelpCircle
 } from 'lucide-react';
 import FeedbackFAB from './FeedbackFAB';
+import { useIsEmbeddedShell } from '@/contexts/EmbeddedShellContext';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -40,6 +41,11 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, page
   const [userPlan, setUserPlan] = useState<string>('free');
   const isRTL = i18n.language === 'ar';
   const font = isRTL ? 'Cairo, sans-serif' : 'Inter, sans-serif';
+  // When this layout is rendered inside the V2 ProtectedShell (which already
+  // provides the sidebar, topbar, and account cluster), we skip the V1 chrome
+  // and render only the page body — preserving every page's tRPC/business
+  // logic without duplicating navigation.
+  const embedded = useIsEmbeddedShell();
 
   useEffect(() => {
     if (!user?.id) return;
@@ -389,6 +395,17 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, page
       </div>
     </aside>
   );
+
+  if (embedded) {
+    // V2 ProtectedShell owns the sidebar/topbar; render only the page body
+    // and the feedback FAB so the V2 chrome stays consistent.
+    return (
+      <div style={{ fontFamily: font, padding: '1.25rem 1.25rem 2rem' }}>
+        {children}
+        <FeedbackFAB />
+      </div>
+    );
+  }
 
   return (
     <div
