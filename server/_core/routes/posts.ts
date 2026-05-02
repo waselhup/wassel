@@ -254,6 +254,7 @@ export const postsRouter = router({
           throw new Error('Invalid JSON shape from Claude');
         }
       } catch (err: any) {
+        console.error('[posts.generate] Claude call failed:', err?.status, err?.message || err);
         // Claude failed → refund so user can retry without being double-charged.
         if (deducted) { await refundTokens(ctx.supabase, ctx.user.id, TOKEN_COST, FEATURE); deducted = false; }
         const status = err?.status ?? 0;
@@ -263,7 +264,7 @@ export const postsRouter = router({
           void sendClaudeOpsAlert(info, '/api/trpc/posts.generate');
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
-          message: info.userMessage || 'فشل التوليد — حاول مرة أخرى',
+          message: info.userMessage || 'فشل التوليد — حاول ��رة أخرى',
         });
       }
 

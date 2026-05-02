@@ -24,6 +24,7 @@
     "profile": "Profile",
     "setup": "Account Setup",
     "posts": "Posts",
+    "studio": "Studio",
     "profileAnalysis": "Profile Analysis",
     "career": "Career Profile",
     "analytics": "Analytics",
@@ -1029,7 +1030,13 @@
         "loading5": "Daring a bold version...",
         "loading6": "Reviewing flow and rhythm...",
         "loading7": "Adding final touches...",
-        "error": "Generation failed — please try again"
+        "error": "Generation failed — please try again",
+        "errorApiKey": "Generation service is not configured. Contact support.",
+        "errorTimeout": "Response timed out — please try again",
+        "errorCredits": "Service temporarily unavailable (API credits). We're on it.",
+        "errorRateLimit": "Rate limit reached. Try again in a minute.",
+        "errorInvalidResponse": "Invalid response — please try again",
+        "success": "Post generated successfully"
       },
       "variations": {
         "safe": "Safe",

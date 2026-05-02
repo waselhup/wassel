@@ -366,10 +366,10 @@ function Home() {
       <BottomNav
         active="home"
         items={[
-          { id: 'home',    label: 'الرئيسية', icon: <span /> , onSelect: () => navigate('/v2/home') },
-          { id: 'analyze', label: 'الرادار',  icon: <span /> , onSelect: () => navigate('/v2/analyze') },
-          { id: 'tools',   label: 'الأدوات',  icon: <span /> , onSelect: () => navigate('/v2/cvs') },
-          { id: 'profile', label: 'حسابي',    icon: <span /> , onSelect: () => navigate('/v2/me') },
+          { id: 'home',    label: 'الرئيسية',  icon: <span /> , onSelect: () => navigate('/v2/home') },
+          { id: 'analyze', label: 'الرادار',   icon: <span /> , onSelect: () => navigate('/v2/analyze') },
+          { id: 'posts',   label: 'الاستوديو', icon: <span /> , onSelect: () => navigate('/v2/posts') },
+          { id: 'profile', label: 'حسابي',     icon: <span /> , onSelect: () => navigate('/v2/me') },
         ]}
         fabIcon="plus"
         onFabClick={() => navigate('/v2/analyze')}

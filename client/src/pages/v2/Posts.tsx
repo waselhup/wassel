@@ -14,10 +14,19 @@ import EmptyState from '@/components/v2/EmptyState';
 import Skeleton, { useInitialLoading } from '@/components/v2/Skeleton';
 import { useIsDesktop } from '@/components/v2/ResponsiveShell';
 import { useJobs } from '@/lib/v2/jobs';
+import { useToast } from '@/lib/v2/toast';
+import { trpc } from '@/lib/trpc';
 
 type Tab = 'drafts' | 'published' | 'templates';
 type Status = 'مسودة' | 'جاهز للنشر' | 'منشور';
-type Tone = 'professional' | 'casual' | 'inspiring' | 'analytical';
+type Tone = 'professional' | 'friendly' | 'motivational' | 'analytical';
+
+const TONE_MAP: Record<Tone, string> = {
+  professional: 'professional',
+  friendly: 'friendly',
+  motivational: 'motivational',
+  analytical: 'analytical',
+};
 
 interface Post {
   id: string;
@@ -50,13 +59,12 @@ const TEMPLATES: Template[] = [
 
 const TONES: { id: Tone; label: string }[] = [
   { id: 'professional', label: 'مهنية' },
-  { id: 'casual',       label: 'ودودة' },
-  { id: 'inspiring',    label: 'ملهمة' },
+  { id: 'friendly',     label: 'ودودة' },
+  { id: 'motivational', label: 'ملهمة' },
   { id: 'analytical',   label: 'تحليلية' },
 ];
 
-const COMPOSE_COST = 20;
-const BALANCE = 240;
+const COMPOSE_COST = 30;
 
 function StatusPill({ status }: { status: Status }) {
   const tone =
@@ -106,11 +114,12 @@ interface ComposerProps {
   tone: Tone;
   setTone: (t: Tone) => void;
   onGenerate: () => void;
+  generating?: boolean;
   /** desktop variant uses a larger textarea + tighter spacing inside a card */
   desktop?: boolean;
 }
 
-function Composer({ topic, setTopic, content, setContent, tone, setTone, onGenerate, desktop = false }: ComposerProps) {
+function Composer({ topic, setTopic, content, setContent, tone, setTone, onGenerate, generating = false, desktop = false }: ComposerProps) {
   const taMin = desktop ? 'min-h-[260px]' : 'min-h-[180px]';
 
   return (
@@ -158,26 +167,27 @@ function Composer({ topic, setTopic, content, setContent, tone, setTone, onGener
             <NumDisplay>{COMPOSE_COST}</NumDisplay> توكن · ≈ <NumDisplay>150</NumDisplay> كلمة
           </p>
         </div>
-        <div className="text-end">
-          <Eyebrow>الرصيد</Eyebrow>
-          <p className="mt-0.5 font-ar text-[14px] font-semibold text-teal-700">
-            <NumDisplay>{BALANCE}</NumDisplay> توكن
-          </p>
-        </div>
       </div>
 
       <Button
         variant="primary"
         size="lg"
         fullWidth
+        disabled={generating}
         leadingIcon={
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-            <path d="M7 1 L8.5 5 L13 6.5 L8.5 8 L7 13 L5.5 8 L1 6.5 L5.5 5 Z" fill="currentColor" />
-          </svg>
+          generating ? (
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true" className="animate-spin">
+              <circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1.5" strokeDasharray="28" strokeDashoffset="10" />
+            </svg>
+          ) : (
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <path d="M7 1 L8.5 5 L13 6.5 L8.5 8 L7 13 L5.5 8 L1 6.5 L5.5 5 Z" fill="currentColor" />
+            </svg>
+          )
         }
         onClick={onGenerate}
       >
-        ولّد بالذكاء الاصطناعي
+        {generating ? 'جارٍ التوليد...' : 'ولّد بالذكاء الاصطناعي'}
       </Button>
     </div>
   );
@@ -187,6 +197,7 @@ function Posts() {
   const [, navigate] = useLocation();
   const { t } = useTranslation();
   const { addJob } = useJobs();
+  const { showToast } = useToast();
   const isDesktop = useIsDesktop();
   const loading = useInitialLoading(800);
   const [tab, setTab] = useState<Tab>('drafts');
@@ -194,14 +205,43 @@ function Posts() {
   const [topic, setTopic] = useState('عن القيادة في عصر AI');
   const [content, setContent] = useState('');
   const [tone, setTone] = useState<Tone>('professional');
+  const [generating, setGenerating] = useState(false);
 
-  const generate = () => {
+  const generate = async () => {
+    const trimmed = topic.trim();
+    const fullTopic = content.trim() ? `${trimmed}\n\n${content.trim()}` : trimmed;
+    if (fullTopic.length < 10) {
+      showToast({ message: 'الموضوع قصير جداً — 10 أحرف على الأقل', tone: 'error' });
+      return;
+    }
+    setGenerating(true);
+    setComposerOpen(false);
+
     addJob({
       type: 'post-generation',
-      title: topic.trim() || 'منشور جديد',
-      durationMs: 5000,
+      title: trimmed || 'منشور جديد',
+      durationMs: 12000,
     });
-    setComposerOpen(false);
+
+    try {
+      await trpc.posts.generate({
+        topic: fullTopic,
+        tones: [TONE_MAP[tone]],
+        dialect: 'saudi-general',
+        length: 'medium',
+        extras: { hashtags: true, emojis: false },
+      });
+      showToast({ message: 'تم توليد المنشور بنجاح ✨', tone: 'success' });
+    } catch (err: any) {
+      console.error('[v2/posts] generate failed:', err);
+      showToast({
+        message: err?.message || 'فشل التوليد — حاول مرة أخرى',
+        tone: 'error',
+        duration: 6000,
+      });
+    } finally {
+      setGenerating(false);
+    }
   };
 
   // On desktop the composer is "always visible" in its column — no toggle.
@@ -363,6 +403,7 @@ function Posts() {
                 tone={tone}
                 setTone={setTone}
                 onGenerate={generate}
+                generating={generating}
                 desktop
               />
             </Card>
@@ -385,6 +426,7 @@ function Posts() {
           tone={tone}
           setTone={setTone}
           onGenerate={generate}
+          generating={generating}
         />
       </Sheet>
 
