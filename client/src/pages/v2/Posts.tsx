@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useLocation } from 'wouter';
 import { useTranslation } from 'react-i18next';
 import Phone from '@/components/v2/Phone';
@@ -16,6 +16,7 @@ import { useIsDesktop } from '@/components/v2/ResponsiveShell';
 import { useJobs } from '@/lib/v2/jobs';
 import { useToast } from '@/lib/v2/toast';
 import { trpc } from '@/lib/trpc';
+import { useAuth } from '@/contexts/AuthContext';
 
 type Tab = 'drafts' | 'published' | 'templates';
 type Status = 'مسودة' | 'جاهز للنشر' | 'منشور';
@@ -28,14 +29,39 @@ const TONE_MAP: Record<Tone, string> = {
   analytical: 'analytical',
 };
 
-interface Post {
+const TONE_LABEL_AR: Record<string, string> = {
+  professional: 'مهنية',
+  friendly: 'ودودة',
+  motivational: 'ملهمة',
+  analytical: 'تحليلية',
+  humorous: 'فكاهي',
+  humble: 'متواضع',
+  bold: 'جريء',
+  storytelling: 'قصصي',
+  sarcastic: 'ساخر',
+  provocative: 'صادم',
+};
+
+interface ServerPost {
   id: string;
-  title: string;
+  user_id: string;
+  topic: string | null;
+  content: string | null;
+  tones: string[] | null;
+  status: 'draft' | 'scheduled' | 'posted';
+  created_at: string;
+  hashtags?: string[] | null;
+}
+
+interface UiPost {
+  id: string;
+  topic: string;
+  content: string;
   preview: string;
   status: Status;
   date: string;
   words: number;
-  engagement?: number;
+  tones: string[];
 }
 
 interface Template {
@@ -44,10 +70,6 @@ interface Template {
   description: string;
   cost: number;
 }
-
-const DRAFTS: Post[] = [];
-
-const PUBLISHED: Post[] = [];
 
 const TEMPLATES: Template[] = [
   { id: 't1', title: 'منشور رأي', description: 'مقدمة جذابة + 3 نقاط + خاتمة', cost: 15 },
@@ -66,6 +88,42 @@ const TONES: { id: Tone; label: string }[] = [
 
 const COMPOSE_COST = 30;
 
+function statusFromServer(s: 'draft' | 'scheduled' | 'posted'): Status {
+  if (s === 'posted') return 'منشور';
+  if (s === 'scheduled') return 'جاهز للنشر';
+  return 'مسودة';
+}
+
+function relativeArDate(iso: string): string {
+  const created = new Date(iso).getTime();
+  if (Number.isNaN(created)) return '';
+  const diffMs = Date.now() - created;
+  const diffMin = Math.floor(diffMs / 60_000);
+  if (diffMin < 1) return 'الآن';
+  if (diffMin < 60) return `قبل ${diffMin} د`;
+  const diffH = Math.floor(diffMin / 60);
+  if (diffH < 24) return `قبل ${diffH} س`;
+  const diffD = Math.floor(diffH / 24);
+  if (diffD < 7) return `قبل ${diffD} ي`;
+  return new Date(iso).toLocaleDateString('ar-SA', { month: 'short', day: 'numeric' });
+}
+
+function toUiPost(p: ServerPost): UiPost {
+  const content = p.content || '';
+  const topic = (p.topic || content.slice(0, 60) || 'منشور').trim();
+  const preview = content.replace(/\s+/g, ' ').trim().slice(0, 200);
+  return {
+    id: p.id,
+    topic,
+    content,
+    preview: preview || '—',
+    status: statusFromServer(p.status),
+    date: relativeArDate(p.created_at),
+    words: content ? content.trim().split(/\s+/).length : 0,
+    tones: Array.isArray(p.tones) ? p.tones : [],
+  };
+}
+
 function StatusPill({ status }: { status: Status }) {
   const tone =
     status === 'جاهز للنشر' ? 'bg-teal-50 text-teal-700 border-teal-100' :
@@ -78,29 +136,65 @@ function StatusPill({ status }: { status: Status }) {
   );
 }
 
-function PostRow({ post }: { post: Post }) {
+interface PostRowProps {
+  post: UiPost;
+  onPublish: (p: UiPost) => void;
+  onDelete: (p: UiPost) => void;
+  onCopy: (p: UiPost) => void;
+}
+
+function PostRow({ post, onPublish, onDelete, onCopy }: PostRowProps) {
   return (
     <div className="border-b border-v2-line py-4 lg:rounded-v2-lg lg:border lg:bg-v2-surface lg:p-5 lg:hover:shadow-card lg:transition-shadow lg:duration-200 lg:ease-out">
       <div className="mb-1.5 flex items-start justify-between gap-2.5">
-        <div className="flex-1 font-ar text-[14px] font-semibold text-v2-ink lg:text-[15px]">{post.title}</div>
+        <div className="flex-1 font-ar text-[14px] font-semibold text-v2-ink lg:text-[15px]">
+          {post.topic}
+        </div>
         <StatusPill status={post.status} />
       </div>
       <p className="mb-2.5 line-clamp-2 font-ar text-[13px] leading-relaxed text-v2-body lg:line-clamp-3">
         {post.preview}
       </p>
+      <div className="mb-2.5 flex flex-wrap items-center gap-1.5">
+        {post.tones.slice(0, 3).map((tn) => (
+          <span
+            key={tn}
+            className="rounded-full border border-v2-line bg-v2-canvas-2 px-2 py-0.5 font-ar text-[10px] font-medium text-v2-body"
+          >
+            {TONE_LABEL_AR[tn] || tn}
+          </span>
+        ))}
+      </div>
       <div className="flex items-center gap-3.5 text-[11px] text-v2-dim">
         <NumDisplay>{post.words}</NumDisplay>
         <span className="font-ar">كلمة</span>
         <span>·</span>
         <span className="font-ar">{post.date}</span>
-        {post.engagement != null && (
-          <>
-            <span>·</span>
-            <span className="font-ar">
-              <NumDisplay>{post.engagement}</NumDisplay> تفاعل
-            </span>
-          </>
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {post.status !== 'منشور' && (
+          <button
+            type="button"
+            onClick={() => onPublish(post)}
+            className="rounded-v2-md border border-teal-600 bg-teal-600 px-3 py-1.5 font-ar text-[12px] font-semibold text-white hover:bg-teal-700 cursor-pointer transition-colors"
+          >
+            نشر على LinkedIn
+          </button>
         )}
+        <button
+          type="button"
+          onClick={() => onCopy(post)}
+          className="rounded-v2-md border border-v2-line bg-v2-surface px-3 py-1.5 font-ar text-[12px] font-medium text-v2-ink hover:bg-v2-canvas-2 cursor-pointer transition-colors"
+        >
+          نسخ
+        </button>
+        <button
+          type="button"
+          onClick={() => onDelete(post)}
+          className="rounded-v2-md border border-v2-line bg-v2-surface px-3 py-1.5 font-ar text-[12px] font-medium text-red-600 hover:bg-red-50 cursor-pointer transition-colors"
+        >
+          حذف
+        </button>
       </div>
     </div>
   );
@@ -198,14 +292,44 @@ function Posts() {
   const { t } = useTranslation();
   const { addJob } = useJobs();
   const { showToast } = useToast();
+  const { refreshProfile } = useAuth();
   const isDesktop = useIsDesktop();
-  const loading = useInitialLoading(800);
+  const initialLoading = useInitialLoading(800);
   const [tab, setTab] = useState<Tab>('drafts');
   const [composerOpen, setComposerOpen] = useState(false);
-  const [topic, setTopic] = useState('عن القيادة في عصر AI');
+  const [topic, setTopic] = useState('');
   const [content, setContent] = useState('');
   const [tone, setTone] = useState<Tone>('professional');
   const [generating, setGenerating] = useState(false);
+
+  // Real posts from the server.
+  const [posts, setPosts] = useState<ServerPost[]>([]);
+  const [postsLoading, setPostsLoading] = useState(true);
+  const [highlightId, setHighlightId] = useState<string | null>(null);
+
+  async function loadPosts() {
+    try {
+      const data = await trpc.posts.list();
+      setPosts(Array.isArray(data) ? (data as ServerPost[]) : []);
+    } catch (e: any) {
+      console.error('[v2/posts] list failed:', e?.message || e);
+    } finally {
+      setPostsLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadPosts();
+  }, []);
+
+  const drafts = useMemo<UiPost[]>(
+    () => posts.filter((p) => p.status === 'draft' || p.status === 'scheduled').map(toUiPost),
+    [posts]
+  );
+  const published = useMemo<UiPost[]>(
+    () => posts.filter((p) => p.status === 'posted').map(toUiPost),
+    [posts]
+  );
 
   const generate = async () => {
     const trimmed = topic.trim();
@@ -214,42 +338,91 @@ function Posts() {
       showToast({ message: 'الموضوع قصير جداً — 10 أحرف على الأقل', tone: 'error' });
       return;
     }
+    console.log('[v2/posts] generate STARTING', { topic: trimmed.slice(0, 60), tone });
     setGenerating(true);
     setComposerOpen(false);
 
     addJob({
       type: 'post-generation',
       title: trimmed || 'منشور جديد',
-      durationMs: 12000,
+      durationMs: 15000,
     });
 
     try {
-      await trpc.posts.generate({
+      const result = await trpc.posts.generate({
         topic: fullTopic,
         tones: [TONE_MAP[tone]],
         dialect: 'saudi-general',
         length: 'medium',
         extras: { hashtags: true, emojis: false },
       });
-      showToast({ message: 'تم توليد المنشور بنجاح ✨', tone: 'success' });
-    } catch (err: any) {
-      console.error('[v2/posts] generate failed:', err);
+      console.log('[v2/posts] generate SUCCESS', { id: result?.id, tokensRemaining: (result as any)?.tokensRemaining });
+
+      // Refresh the drafts list AND the token balance — both must update.
+      await loadPosts();
+      try { await refreshProfile(); } catch {}
+
+      setTab('drafts');
+      if (result?.id) setHighlightId(result.id);
       showToast({
-        message: err?.message || 'فشل التوليد — حاول مرة أخرى',
-        tone: 'error',
-        duration: 6000,
+        message: t('posts.studio.generate.success', 'تم توليد المنشور بنجاح ✨'),
+        tone: 'success',
       });
+      // Clear inputs so the user is ready for the next one.
+      setContent('');
+    } catch (err: any) {
+      console.error('[v2/posts] generate ERROR', err);
+      // Pull a sensible message: tRPC errors expose .message; classifyClaudeError already returns Arabic.
+      const code = (err as any)?.data?.code;
+      let message: string = err?.message || 'فشل التوليد — حاول مرة أخرى';
+      if (code === 'UNAUTHORIZED') {
+        message = 'انتهت الجلسة — سجّل دخول من جديد';
+      }
+      showToast({ message, tone: 'error', duration: 7000 });
     } finally {
+      console.log('[v2/posts] generate SETTLED');
       setGenerating(false);
     }
   };
+
+  async function publishVariation(p: UiPost) {
+    const url = `https://www.linkedin.com/feed/?shareActive=true&text=${encodeURIComponent(p.content)}`;
+    try {
+      await trpc.posts.update({ id: p.id, patch: { status: 'posted' } });
+      await loadPosts();
+    } catch (e: any) {
+      console.error('[v2/posts] publish update failed:', e?.message);
+    }
+    window.open(url, '_blank');
+  }
+
+  async function deletePost(p: UiPost) {
+    if (!confirm('حذف هذا المنشور؟')) return;
+    try {
+      await trpc.posts.delete({ id: p.id });
+      setPosts((cur) => cur.filter((x) => x.id !== p.id));
+      showToast({ message: 'تم الحذف', tone: 'success' });
+    } catch (e: any) {
+      showToast({ message: e?.message || 'فشل الحذف', tone: 'error' });
+    }
+  }
+
+  function copyPost(p: UiPost) {
+    const text = p.content.trim();
+    try {
+      navigator.clipboard.writeText(text);
+      showToast({ message: 'تم النسخ', tone: 'success' });
+    } catch {
+      showToast({ message: 'تعذر النسخ — انسخ يدوياً', tone: 'error' });
+    }
+  }
 
   // On desktop the composer is "always visible" in its column — no toggle.
   const desktopComposerVisible = isDesktop;
 
   const counts = {
-    drafts:    DRAFTS.length,
-    published: PUBLISHED.length,
+    drafts:    drafts.length,
+    published: published.length,
     templates: TEMPLATES.length,
   };
 
@@ -259,9 +432,11 @@ function Posts() {
     { id: 'templates', label: 'قوالب',   count: counts.templates },
   ];
 
+  const showSkeleton = initialLoading || postsLoading;
+
   const ListBlock: ReactNode = (
     <>
-      {loading ? (
+      {showSkeleton ? (
         <div className="flex flex-col gap-4 pt-4 lg:pt-2">
           {Array.from({ length: 3 }).map((_, i) => (
             <div key={i} className="border-b border-v2-line pb-4 lg:rounded-v2-lg lg:border lg:p-5">
@@ -276,27 +451,36 @@ function Posts() {
       ) : (
         <>
           {tab === 'drafts' && (
-            DRAFTS.length === 0 ? (
+            drafts.length === 0 ? (
               <EmptyState
                 title="لا توجد مسودات بعد"
                 description="ابدأ بمنشور جديد من زر الأعلى أو من أحد القوالب الجاهزة."
               />
             ) : (
               <div className="flex flex-col lg:grid lg:grid-cols-2 lg:gap-4 lg:pt-2">
-                {DRAFTS.map((p) => <PostRow key={p.id} post={p} />)}
+                {drafts.map((p) => (
+                  <div
+                    key={p.id}
+                    className={p.id === highlightId ? 'rounded-v2-lg ring-2 ring-teal-400 transition-all duration-700' : ''}
+                  >
+                    <PostRow post={p} onPublish={publishVariation} onDelete={deletePost} onCopy={copyPost} />
+                  </div>
+                ))}
               </div>
             )
           )}
 
           {tab === 'published' && (
-            PUBLISHED.length === 0 ? (
+            published.length === 0 ? (
               <EmptyState
                 title="لا توجد منشورات بعد"
                 description="عند نشر مسوداتك، ستظهر هنا."
               />
             ) : (
               <div className="flex flex-col lg:grid lg:grid-cols-2 lg:gap-4 lg:pt-2">
-                {PUBLISHED.map((p) => <PostRow key={p.id} post={p} />)}
+                {published.map((p) => (
+                  <PostRow key={p.id} post={p} onPublish={publishVariation} onDelete={deletePost} onCopy={copyPost} />
+                ))}
               </div>
             )
           )}
@@ -307,7 +491,10 @@ function Posts() {
                 <button
                   key={tp.id}
                   type="button"
-                  onClick={() => setComposerOpen(true)}
+                  onClick={() => {
+                    setTopic(tp.title);
+                    setComposerOpen(true);
+                  }}
                   className="grid grid-cols-[1fr_auto_12px] items-center gap-3 border-b border-v2-line py-4 text-start hover:bg-v2-canvas-2 transition-colors duration-200 ease-out cursor-pointer
                     lg:flex lg:flex-col lg:items-start lg:gap-2 lg:rounded-v2-lg lg:border lg:bg-v2-surface lg:p-5 lg:hover:shadow-card lg:[grid-template-columns:none]"
                 >
