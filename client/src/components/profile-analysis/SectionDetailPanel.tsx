@@ -107,7 +107,7 @@ export default function SectionDetailPanel({
       border: '1px solid #e5e7eb',
       borderRadius: 16,
       overflow: 'hidden',
-      fontFamily: 'Cairo, Inter, sans-serif',
+      fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
       display: 'flex',
       flexDirection: 'column',
     }}>

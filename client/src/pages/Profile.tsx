@@ -24,7 +24,7 @@ function useToast() {
       <AnimatePresence>
         {toasts.map(t => (
           <motion.div key={t.id} initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: 40 }}
-            style={{ padding: '12px 18px', borderRadius: 12, minWidth: 260, background: t.type === 'success' ? '#ECFDF5' : '#FEF2F2', color: t.type === 'success' ? '#065F46' : '#991B1B', border: `1px solid ${t.type === 'success' ? '#A7F3D0' : '#FECACA'}`, boxShadow: '0 8px 24px rgba(0,0,0,0.08)', fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 700, fontSize: 13, display: 'flex', alignItems: 'center', gap: 10 }}>
+            style={{ padding: '12px 18px', borderRadius: 12, minWidth: 260, background: t.type === 'success' ? '#ECFDF5' : '#FEF2F2', color: t.type === 'success' ? '#065F46' : '#991B1B', border: `1px solid ${t.type === 'success' ? '#A7F3D0' : '#FECACA'}`, boxShadow: '0 8px 24px rgba(0,0,0,0.08)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 700, fontSize: 13, display: 'flex', alignItems: 'center', gap: 10 }}>
             {t.type === 'success' ? <Check size={16} /> : <X size={16} />} {t.message}
           </motion.div>
         ))}
@@ -225,20 +225,20 @@ export default function Profile() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
               {editingName ? (
                 <input value={form.name} onChange={e => set('name', e.target.value)} onBlur={() => setEditingName(false)} autoFocus
-                  style={{ fontSize: 20, fontWeight: 900, fontFamily: 'Cairo, sans-serif', border: '1.5px solid #14b8a6', borderRadius: 8, padding: '4px 10px', outline: 'none', background: '#F0FDF9' }} />
+                  style={{ fontSize: 20, fontWeight: 900, fontFamily: '"Thmanyah Sans", system-ui, sans-serif', border: '1.5px solid #14b8a6', borderRadius: 8, padding: '4px 10px', outline: 'none', background: '#F0FDF9' }} />
               ) : (
-                <span style={{ fontSize: 20, fontWeight: 900, color: 'var(--wsl-ink)', fontFamily: 'Cairo, sans-serif' }}>{form.name || (isAr ? 'لم يُضف اسم' : 'No name')}</span>
+                <span style={{ fontSize: 20, fontWeight: 900, color: 'var(--wsl-ink)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>{form.name || (isAr ? 'لم يُضف اسم' : 'No name')}</span>
               )}
               <button onClick={() => setEditingName(!editingName)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF' }}><Edit2 size={14} /></button>
             </div>
-            <div style={{ fontSize: 13, color: 'var(--wsl-ink-3)', fontFamily: 'Inter', direction: 'ltr' }}>{form.email}</div>
+            <div style={{ fontSize: 13, color: 'var(--wsl-ink-3)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', direction: 'ltr' }}>{form.email}</div>
             <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 10px', borderRadius: 999, background: providerColor + '15', color: providerColor, fontSize: 11, fontWeight: 800 }}>{providerLabel}</span>
             </div>
           </div>
           <div style={{ minWidth: 120, textAlign: 'center' }}>
-            <div style={{ fontSize: 11, color: 'var(--wsl-ink-3)', fontFamily: 'Cairo, sans-serif', marginBottom: 4 }}>{isAr ? 'اكتمال الملف' : 'Profile'}</div>
-            <div style={{ fontSize: 28, fontWeight: 900, color: pct >= 80 ? '#059669' : pct >= 50 ? '#D97706' : '#DC2626', fontFamily: 'Inter' }}>{pct}%</div>
+            <div style={{ fontSize: 11, color: 'var(--wsl-ink-3)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', marginBottom: 4 }}>{isAr ? 'اكتمال الملف' : 'Profile'}</div>
+            <div style={{ fontSize: 28, fontWeight: 900, color: pct >= 80 ? '#059669' : pct >= 50 ? '#D97706' : '#DC2626', fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>{pct}%</div>
             <div style={{ height: 4, borderRadius: 999, background: '#E5E7EB', overflow: 'hidden', marginTop: 4 }}>
               <motion.div initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.8 }} style={{ height: '100%', background: 'linear-gradient(90deg, #14b8a6, #0ea5e9)', borderRadius: 999 }} />
             </div>
@@ -249,15 +249,15 @@ export default function Profile() {
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
           style={{ background: 'linear-gradient(135deg, #14b8a6 0%, #0ea5e9 100%)', borderRadius: 16, padding: 24, marginBottom: 20, boxShadow: '0 8px 24px rgba(10,143,132,0.25)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
           <div>
-            <div style={{ fontSize: 12, opacity: 0.8, fontFamily: 'Cairo, sans-serif', fontWeight: 700, marginBottom: 4 }}>{t('profile.tokensCard.title', 'رصيد التوكنز الحالي')}</div>
+            <div style={{ fontSize: 12, opacity: 0.8, fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 700, marginBottom: 4 }}>{t('profile.tokensCard.title', 'رصيد التوكنز الحالي')}</div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-              <span style={{ fontSize: 48, fontWeight: 900, fontFamily: 'Inter' }}>{tokenBalance.toLocaleString('en-US')}</span>
-              <span style={{ fontSize: 16, opacity: 0.8, fontFamily: 'Cairo, sans-serif' }}>{t('profile.tokensCard.balance', 'توكن')}</span>
+              <span style={{ fontSize: 48, fontWeight: 900, fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>{tokenBalance.toLocaleString('en-US')}</span>
+              <span style={{ fontSize: 16, opacity: 0.8, fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>{t('profile.tokensCard.balance', 'توكن')}</span>
             </div>
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
-            <Link href="/pricing"><a style={{ padding: '10px 18px', borderRadius: 10, background: 'rgba(255,255,255,0.2)', color: '#fff', fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 13, textDecoration: 'none', border: '1px solid rgba(255,255,255,0.3)' }}>{t('profile.tokensCard.buyMore', 'شراء توكنز')}</a></Link>
-            <Link href="/pricing"><a style={{ padding: '10px 18px', borderRadius: 10, background: '#fff', color: '#14b8a6', fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 13, textDecoration: 'none' }}>{t('profile.tokensCard.upgrade', 'ترقية الباقة')}</a></Link>
+            <Link href="/pricing"><a style={{ padding: '10px 18px', borderRadius: 10, background: 'rgba(255,255,255,0.2)', color: '#fff', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 13, textDecoration: 'none', border: '1px solid rgba(255,255,255,0.3)' }}>{t('profile.tokensCard.buyMore', 'شراء توكنز')}</a></Link>
+            <Link href="/pricing"><a style={{ padding: '10px 18px', borderRadius: 10, background: '#fff', color: '#14b8a6', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 13, textDecoration: 'none' }}>{t('profile.tokensCard.upgrade', 'ترقية الباقة')}</a></Link>
           </div>
         </motion.div>
 
@@ -267,7 +267,7 @@ export default function Profile() {
             const active = tab === tb.id;
             return (
               <button key={tb.id} onClick={() => setTab(tb.id)}
-                style={{ flex: 1, minWidth: 100, padding: '9px 12px', borderRadius: 9, border: 'none', cursor: 'pointer', background: active ? '#fff' : 'transparent', color: active ? 'var(--wsl-ink)' : 'var(--wsl-ink-3)', fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 900, fontSize: 12, boxShadow: active ? '0 2px 6px rgba(0,0,0,0.06)' : 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, transition: 'all 150ms ease', whiteSpace: 'nowrap' }}>
+                style={{ flex: 1, minWidth: 100, padding: '9px 12px', borderRadius: 9, border: 'none', cursor: 'pointer', background: active ? '#fff' : 'transparent', color: active ? 'var(--wsl-ink)' : 'var(--wsl-ink-3)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 12, boxShadow: active ? '0 2px 6px rgba(0,0,0,0.06)' : 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, transition: 'all 150ms ease', whiteSpace: 'nowrap' }}>
                 <tb.icon size={13} /> {tb.label}
               </button>
             );
@@ -295,12 +295,12 @@ export default function Profile() {
               <FieldIcon icon={MessageSquare} label={t('pr.telegram', 'Telegram Chat ID')}><input value={form.telegram_chat_id} onChange={e => set("telegram_chat_id", e.target.value)} placeholder="123456789" className="wsl-input" dir="ltr" /></FieldIcon>
             </div>
             <div style={{ marginTop: 16 }}>
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 800, color: 'var(--wsl-ink-2)', marginBottom: 6, fontFamily: 'Cairo, sans-serif' }}>{t('pr.bio', 'نبذة عنك')}</label>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 800, color: 'var(--wsl-ink-2)', marginBottom: 6, fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>{t('pr.bio', 'نبذة عنك')}</label>
               <textarea value={form.bio} onChange={e => set("bio", e.target.value)} rows={4} placeholder={t('pr.bioPh', 'اكتب نبذة قصيرة...')} className="wsl-input" style={{ resize: 'none', width: '100%' }} />
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20 }}>
               <button onClick={save} disabled={saving}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 22px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #14b8a6, #0ea5e9)', color: '#fff', fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 14, cursor: 'pointer', boxShadow: '0 4px 12px rgba(10,143,132,0.3)', opacity: saving ? 0.7 : 1 }}>
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 22px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #14b8a6, #0ea5e9)', color: '#fff', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 14, cursor: 'pointer', boxShadow: '0 4px 12px rgba(10,143,132,0.3)', opacity: saving ? 0.7 : 1 }}>
                 {saving ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <Save size={16} />}
                 {saving ? (isAr ? 'جاري الحفظ...' : 'Saving...') : t('pr.save', 'حفظ')}
               </button>
@@ -312,7 +312,7 @@ export default function Profile() {
         {tab === 'career' && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
             style={{ background: '#fff', borderRadius: 16, border: '1px solid var(--wsl-border)', padding: 24 }}>
-            <div style={{ marginBottom: 20, padding: '14px 18px', borderRadius: 12, background: '#F0FDF9', border: '1px solid #A7F3D0', fontSize: 12, color: '#065F46', fontFamily: 'Cairo, sans-serif', fontWeight: 700, lineHeight: 1.7 }}>
+            <div style={{ marginBottom: 20, padding: '14px 18px', borderRadius: 12, background: '#F0FDF9', border: '1px solid #A7F3D0', fontSize: 12, color: '#065F46', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 700, lineHeight: 1.7 }}>
               {isAr
                 ? 'هذه المعلومات تساعد الذكاء الاصطناعي في تخصيص المحتوى لك — سيتم استخدامها في تحليل البروفايل والسيرة الذاتية والمنشورات والتواصل المهني.'
                 : 'This info helps the AI personalize everything it creates for you — profile analysis, CV, posts, and outreach.'}
@@ -329,12 +329,12 @@ export default function Profile() {
               </FieldIcon>
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 800, color: 'var(--wsl-ink-2)', marginBottom: 6, fontFamily: 'Cairo, sans-serif' }}>{t('pr.careerGoals', 'أهدافك المهنية')}</label>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 800, color: 'var(--wsl-ink-2)', marginBottom: 6, fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>{t('pr.careerGoals', 'أهدافك المهنية')}</label>
               <textarea value={career.career_goals} onChange={e => setC('career_goals', e.target.value)} rows={5} placeholder={t('pr.careerGoalsPh', 'ما الذي تسعى له خلال 12 شهراً؟ نوع الفرص التي تبحث عنها؟')} className="wsl-input" style={{ resize: 'none', width: '100%' }} />
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20 }}>
               <button onClick={saveCareer} disabled={savingCareer}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 22px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #14b8a6, #0ea5e9)', color: '#fff', fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 14, cursor: 'pointer', boxShadow: '0 4px 12px rgba(10,143,132,0.3)', opacity: savingCareer ? 0.7 : 1 }}>
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 22px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #14b8a6, #0ea5e9)', color: '#fff', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 14, cursor: 'pointer', boxShadow: '0 4px 12px rgba(10,143,132,0.3)', opacity: savingCareer ? 0.7 : 1 }}>
                 {savingCareer ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <Save size={16} />}
                 {savingCareer ? (isAr ? 'جاري الحفظ...' : 'Saving...') : t('pr.save', 'حفظ')}
               </button>
@@ -346,26 +346,26 @@ export default function Profile() {
         {tab === 'subscription' && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div style={{ background: '#fff', borderRadius: 16, border: '1px solid var(--wsl-border)', padding: 24 }}>
-              <h3 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 18, marginBottom: 16 }}>{isAr ? 'باقتك الحالية' : 'Current Plan'}</h3>
+              <h3 style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 18, marginBottom: 16 }}>{isAr ? 'باقتك الحالية' : 'Current Plan'}</h3>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-                <span style={{ padding: '6px 16px', borderRadius: 999, background: userPlan === 'pro' ? '#D1FAE5' : userPlan === 'starter' ? '#FEF3C7' : '#F3F4F6', color: userPlan === 'pro' ? '#065F46' : userPlan === 'starter' ? '#92400E' : '#6B7280', fontWeight: 900, fontSize: 16, fontFamily: 'Cairo, sans-serif', textTransform: 'capitalize' }}>{userPlan}</span>
+                <span style={{ padding: '6px 16px', borderRadius: 999, background: userPlan === 'pro' ? '#D1FAE5' : userPlan === 'starter' ? '#FEF3C7' : '#F3F4F6', color: userPlan === 'pro' ? '#065F46' : userPlan === 'starter' ? '#92400E' : '#6B7280', fontWeight: 900, fontSize: 16, fontFamily: '"Thmanyah Sans", system-ui, sans-serif', textTransform: 'capitalize' }}>{userPlan}</span>
               </div>
-              <h4 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 800, fontSize: 14, color: 'var(--wsl-ink-2)', marginBottom: 10 }}>{isAr ? 'مميزات باقتك:' : 'Your plan features:'}</h4>
+              <h4 style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 800, fontSize: 14, color: 'var(--wsl-ink-2)', marginBottom: 10 }}>{isAr ? 'مميزات باقتك:' : 'Your plan features:'}</h4>
               <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                 {(planFeatures[userPlan] || planFeatures.free).map((f, i) => (
-                  <li key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', fontSize: 14, color: 'var(--wsl-ink-2)', fontFamily: 'Cairo, Inter, sans-serif' }}>
+                  <li key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', fontSize: 14, color: 'var(--wsl-ink-2)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
                     <Check size={14} style={{ color: '#14b8a6' }} /> {f}
                   </li>
                 ))}
               </ul>
-              <Link href="/pricing"><a style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 20, padding: '10px 20px', borderRadius: 10, background: 'linear-gradient(135deg, #14b8a6, #0ea5e9)', color: '#fff', fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 13, textDecoration: 'none' }}>{isAr ? 'ترقية الباقة' : 'Upgrade Plan'}</a></Link>
+              <Link href="/pricing"><a style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 20, padding: '10px 20px', borderRadius: 10, background: 'linear-gradient(135deg, #14b8a6, #0ea5e9)', color: '#fff', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 13, textDecoration: 'none' }}>{isAr ? 'ترقية الباقة' : 'Upgrade Plan'}</a></Link>
             </div>
             <div style={{ background: '#fff', borderRadius: 16, border: '1px solid var(--wsl-border)', padding: 24 }}>
-              <h3 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 18, marginBottom: 12 }}>{isAr ? 'إحصائيات الاستخدام' : 'Usage Stats'}</h3>
+              <h3 style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 18, marginBottom: 12 }}>{isAr ? 'إحصائيات الاستخدام' : 'Usage Stats'}</h3>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 12 }}>
                 <div style={{ padding: 16, borderRadius: 12, background: '#F0FDF9', textAlign: 'center' }}>
-                  <div style={{ fontSize: 28, fontWeight: 900, color: '#14b8a6', fontFamily: 'Inter' }}>{tokenBalance}</div>
-                  <div style={{ fontSize: 12, color: 'var(--wsl-ink-3)', fontFamily: 'Cairo, sans-serif', fontWeight: 700 }}>{isAr ? 'توكنز متبقية' : 'Tokens Remaining'}</div>
+                  <div style={{ fontSize: 28, fontWeight: 900, color: '#14b8a6', fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>{tokenBalance}</div>
+                  <div style={{ fontSize: 12, color: 'var(--wsl-ink-3)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 700 }}>{isAr ? 'توكنز متبقية' : 'Tokens Remaining'}</div>
                 </div>
               </div>
             </div>
@@ -376,13 +376,13 @@ export default function Profile() {
         {tab === 'settings' && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
             style={{ background: '#fff', borderRadius: 16, border: '1px solid var(--wsl-border)', padding: 24 }}>
-            <h3 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 18, marginBottom: 20 }}>{isAr ? 'الإعدادات' : 'Settings'}</h3>
+            <h3 style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 18, marginBottom: 20 }}>{isAr ? 'الإعدادات' : 'Settings'}</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderRadius: 12, border: '1px solid var(--wsl-border)', background: '#F9FAFB' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <Bell size={18} style={{ color: '#14b8a6' }} />
                   <div>
-                    <div style={{ fontWeight: 800, fontSize: 14, fontFamily: 'Cairo, sans-serif' }}>{isAr ? 'إشعارات البريد' : 'Email Notifications'}</div>
+                    <div style={{ fontWeight: 800, fontSize: 14, fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>{isAr ? 'إشعارات البريد' : 'Email Notifications'}</div>
                     <div style={{ fontSize: 12, color: 'var(--wsl-ink-3)' }}>{isAr ? 'تلقي تحديثات عبر البريد' : 'Receive updates via email'}</div>
                   </div>
                 </div>
@@ -397,7 +397,7 @@ export default function Profile() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <MessageSquare size={18} style={{ color: '#14b8a6' }} />
                   <div>
-                    <div style={{ fontWeight: 800, fontSize: 14, fontFamily: 'Cairo, sans-serif' }}>{isAr ? 'إشعارات تيليجرام' : 'Telegram Notifications'}</div>
+                    <div style={{ fontWeight: 800, fontSize: 14, fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>{isAr ? 'إشعارات تيليجرام' : 'Telegram Notifications'}</div>
                     <div style={{ fontSize: 12, color: 'var(--wsl-ink-3)' }}>{isAr ? 'تلقي تنبيهات عبر تيليجرام' : 'Receive alerts via Telegram'}</div>
                   </div>
                 </div>
@@ -412,7 +412,7 @@ export default function Profile() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <Globe size={18} style={{ color: '#14b8a6' }} />
                   <div>
-                    <div style={{ fontWeight: 800, fontSize: 14, fontFamily: 'Cairo, sans-serif' }}>{isAr ? 'اللغة' : 'Language'}</div>
+                    <div style={{ fontWeight: 800, fontSize: 14, fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>{isAr ? 'اللغة' : 'Language'}</div>
                     <div style={{ fontSize: 12, color: 'var(--wsl-ink-3)' }}>{isAr ? 'العربية مفعّلة حالياً' : 'English is active'}</div>
                   </div>
                 </div>
@@ -420,7 +420,7 @@ export default function Profile() {
               </div>
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20 }}>
-              <button onClick={saveSettings} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 22px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #14b8a6, #0ea5e9)', color: '#fff', fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 14, cursor: 'pointer' }}>
+              <button onClick={saveSettings} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 22px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #14b8a6, #0ea5e9)', color: '#fff', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 14, cursor: 'pointer' }}>
                 <Save size={16} /> {isAr ? 'حفظ الإعدادات' : 'Save Settings'}
               </button>
             </div>
@@ -431,17 +431,17 @@ export default function Profile() {
         {tab === 'security' && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
             style={{ background: '#fff', borderRadius: 16, border: '1px solid var(--wsl-border)', padding: 24 }}>
-            <h3 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 18, marginBottom: 16 }}>{isAr ? 'الأمان' : 'Security'}</h3>
+            <h3 style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 18, marginBottom: 16 }}>{isAr ? 'الأمان' : 'Security'}</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <div style={{ padding: 16, borderRadius: 12, border: '1px solid var(--wsl-border)', background: '#F9FAFB' }}>
-                <div style={{ fontWeight: 800, fontSize: 14, fontFamily: 'Cairo, sans-serif', marginBottom: 4 }}>{isAr ? 'طريقة تسجيل الدخول' : 'Login Method'}</div>
+                <div style={{ fontWeight: 800, fontSize: 14, fontFamily: '"Thmanyah Sans", system-ui, sans-serif', marginBottom: 4 }}>{isAr ? 'طريقة تسجيل الدخول' : 'Login Method'}</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--wsl-ink-2)' }}>
                   <span style={{ padding: '2px 8px', borderRadius: 999, background: providerColor + '15', color: providerColor, fontSize: 11, fontWeight: 800 }}>{providerLabel}</span>
                   {form.email}
                 </div>
               </div>
               <div style={{ padding: 16, borderRadius: 12, border: '1px solid var(--wsl-border)', background: '#F9FAFB' }}>
-                <div style={{ fontWeight: 800, fontSize: 14, fontFamily: 'Cairo, sans-serif', marginBottom: 4 }}>{isAr ? 'آخر تسجيل دخول' : 'Last Login'}</div>
+                <div style={{ fontWeight: 800, fontSize: 14, fontFamily: '"Thmanyah Sans", system-ui, sans-serif', marginBottom: 4 }}>{isAr ? 'آخر تسجيل دخول' : 'Last Login'}</div>
                 <div style={{ fontSize: 13, color: 'var(--wsl-ink-3)' }}>{user?.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleString() : '-'}</div>
               </div>
             </div>
@@ -453,7 +453,7 @@ export default function Profile() {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {/* Submit review */}
             <div style={{ background: '#fff', borderRadius: 16, border: '1px solid var(--wsl-border)', padding: 24 }}>
-              <h3 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 18, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <h3 style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 18, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Star size={18} style={{ color: '#D97706' }} />
                 {isAr ? 'اكتب مراجعة' : 'Write a Review'}
               </h3>
@@ -466,10 +466,10 @@ export default function Profile() {
               </div>
               <textarea value={reviewComment} onChange={e => setReviewComment(e.target.value)} rows={4}
                 placeholder={isAr ? 'شاركنا تجربتك مع وصل...' : 'Share your experience with Wassel...'}
-                style={{ width: '100%', padding: '12px 14px', borderRadius: 10, border: '1.5px solid var(--wsl-border)', fontFamily: 'Cairo, Inter, sans-serif', fontSize: 14, lineHeight: 1.6, resize: 'none', outline: 'none', background: '#F9FAFB', boxSizing: 'border-box' }} />
+                style={{ width: '100%', padding: '12px 14px', borderRadius: 10, border: '1.5px solid var(--wsl-border)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontSize: 14, lineHeight: 1.6, resize: 'none', outline: 'none', background: '#F9FAFB', boxSizing: 'border-box' }} />
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
                 <button onClick={submitReview} disabled={submittingReview || !reviewComment.trim()}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 10, border: 'none', background: !reviewComment.trim() ? '#E5E7EB' : 'linear-gradient(135deg, #14b8a6, #0ea5e9)', color: !reviewComment.trim() ? '#9CA3AF' : '#fff', fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 13, cursor: !reviewComment.trim() ? 'not-allowed' : 'pointer' }}>
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 10, border: 'none', background: !reviewComment.trim() ? '#E5E7EB' : 'linear-gradient(135deg, #14b8a6, #0ea5e9)', color: !reviewComment.trim() ? '#9CA3AF' : '#fff', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 13, cursor: !reviewComment.trim() ? 'not-allowed' : 'pointer' }}>
                   {submittingReview ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <Star size={14} />}
                   {isAr ? 'إرسال المراجعة' : 'Submit Review'}
                 </button>
@@ -479,7 +479,7 @@ export default function Profile() {
             {/* My Reviews */}
             {myReviews.length > 0 && (
               <div style={{ background: '#fff', borderRadius: 16, border: '1px solid var(--wsl-border)', padding: 24 }}>
-                <h3 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 16, marginBottom: 16 }}>{isAr ? 'مراجعاتي' : 'My Reviews'}</h3>
+                <h3 style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 16, marginBottom: 16 }}>{isAr ? 'مراجعاتي' : 'My Reviews'}</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   {myReviews.map(r => (
                     <div key={r.id} style={{ padding: 16, borderRadius: 12, border: '1px solid var(--wsl-border)', background: '#F9FAFB' }}>
@@ -489,7 +489,7 @@ export default function Profile() {
                         </div>
                         {statusBadge(r.status)}
                       </div>
-                      <p style={{ fontSize: 14, color: 'var(--wsl-ink-2)', lineHeight: 1.7, fontFamily: 'Cairo, Inter, sans-serif', margin: 0 }}>{r.comment}</p>
+                      <p style={{ fontSize: 14, color: 'var(--wsl-ink-2)', lineHeight: 1.7, fontFamily: '"Thmanyah Sans", system-ui, sans-serif', margin: 0 }}>{r.comment}</p>
                       <div style={{ fontSize: 11, color: 'var(--wsl-ink-3)', marginTop: 8 }}>{new Date(r.created_at).toLocaleDateString()}</div>
                     </div>
                   ))}
@@ -499,7 +499,7 @@ export default function Profile() {
           </motion.div>
         )}
       </div>
-      <style>{`.wsl-input { width: 100%; padding: 10px 14px; border-radius: 10px; border: 1.5px solid var(--wsl-border, #E5E7EB); background: #F9FAFB; font-family: Cairo, Inter, sans-serif; font-size: 13px; outline: none; transition: border-color 150ms; box-sizing: border-box; } .wsl-input:focus { border-color: #14b8a6; background: #fff; } @keyframes spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }`}</style>
+      <style>{`.wsl-input { width: 100%; padding: 10px 14px; border-radius: 10px; border: 1.5px solid var(--wsl-border, #E5E7EB); background: #F9FAFB; font-family: "Thmanyah Sans", system-ui, sans-serif; font-size: 13px; outline: none; transition: border-color 150ms; box-sizing: border-box; } .wsl-input:focus { border-color: #14b8a6; background: #fff; } @keyframes spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }`}</style>
     </DashboardLayout>
   );
 }
@@ -507,7 +507,7 @@ export default function Profile() {
 function FieldIcon({ icon: Icon, label, children }: { icon: any; label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label style={{ display: 'flex', fontSize: 12, fontWeight: 800, color: 'var(--wsl-ink-2)', marginBottom: 6, fontFamily: 'Cairo, sans-serif', alignItems: 'center', gap: 4 }}>
+      <label style={{ display: 'flex', fontSize: 12, fontWeight: 800, color: 'var(--wsl-ink-2)', marginBottom: 6, fontFamily: '"Thmanyah Sans", system-ui, sans-serif', alignItems: 'center', gap: 4 }}>
         <Icon size={12} style={{ color: '#9CA3AF' }} /> {label}
       </label>
       {children}

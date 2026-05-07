@@ -7,7 +7,7 @@ import TeamCard from '../components/about/TeamCard';
 export default function About() {
   const { t, i18n } = useTranslation();
   const isRTL = i18n.language === 'ar';
-  const font = isRTL ? 'Cairo, sans-serif' : 'Inter, sans-serif';
+  const font = '"Thmanyah Sans", system-ui, sans-serif';
 
   const eyebrowStyle: React.CSSProperties = {
     display: 'inline-block',

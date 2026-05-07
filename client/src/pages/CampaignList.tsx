@@ -25,7 +25,7 @@ function useToast() {
       <AnimatePresence>
         {toasts.map(t => (
           <motion.div key={t.id} initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: 40 }}
-            style={{ padding: '12px 18px', borderRadius: 12, minWidth: 260, background: t.type === 'success' ? '#ECFDF5' : '#FEF2F2', color: t.type === 'success' ? '#065F46' : '#991B1B', border: `1px solid ${t.type === 'success' ? '#A7F3D0' : '#FECACA'}`, boxShadow: '0 8px 24px rgba(0,0,0,0.08)', fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 700, fontSize: 13, display: 'flex', alignItems: 'center', gap: 10 }}>
+            style={{ padding: '12px 18px', borderRadius: 12, minWidth: 260, background: t.type === 'success' ? '#ECFDF5' : '#FEF2F2', color: t.type === 'success' ? '#065F46' : '#991B1B', border: `1px solid ${t.type === 'success' ? '#A7F3D0' : '#FECACA'}`, boxShadow: '0 8px 24px rgba(0,0,0,0.08)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 700, fontSize: 13, display: 'flex', alignItems: 'center', gap: 10 }}>
             {t.type === 'success' ? <Check size={16} /> : <X size={16} />}{t.message}
           </motion.div>
         ))}
@@ -95,15 +95,15 @@ export default function CampaignList() {
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
           style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 20, marginBottom: 24, flexWrap: 'wrap' }}>
           <div>
-            <h1 style={{ fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 900, fontSize: 30, color: 'var(--wsl-ink)', letterSpacing: '-0.5px', margin: 0 }}>
+            <h1 style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 30, color: 'var(--wsl-ink)', letterSpacing: '-0.5px', margin: 0 }}>
               {t('camp.title', 'الحملات')}
             </h1>
-            <p style={{ marginTop: 6, color: 'var(--wsl-ink-3)', fontFamily: 'Cairo, Inter, sans-serif', fontSize: 14 }}>
+            <p style={{ marginTop: 6, color: 'var(--wsl-ink-3)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontSize: 14 }}>
               {t('camp.subtitle', 'أدر حملاتك البريدية والتواصل مع العملاء')}
             </p>
           </div>
           <Link href="/app/campaigns/new">
-            <a style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 20px', borderRadius: 12, background: 'linear-gradient(135deg, #14b8a6 0%, #0ea5e9 100%)', color: '#fff', textDecoration: 'none', fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 900, fontSize: 14, boxShadow: '0 6px 16px rgba(10,143,132,0.25)' }}>
+            <a style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 20px', borderRadius: 12, background: 'linear-gradient(135deg, #14b8a6 0%, #0ea5e9 100%)', color: '#fff', textDecoration: 'none', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 14, boxShadow: '0 6px 16px rgba(10,143,132,0.25)' }}>
               <Plus size={16} /> {t('camp.new', 'حملة جديدة')}
             </a>
           </Link>
@@ -116,9 +116,9 @@ export default function CampaignList() {
             const count = counts[tb.id];
             return (
               <button key={tb.id} onClick={() => setTab(tb.id)}
-                style={{ flex: 1, minWidth: 80, padding: '9px 12px', borderRadius: 9, border: 'none', cursor: 'pointer', background: active ? '#fff' : 'transparent', color: active ? 'var(--wsl-ink)' : 'var(--wsl-ink-3)', fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 900, fontSize: 13, boxShadow: active ? '0 2px 6px rgba(0,0,0,0.06)' : 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, transition: 'all 150ms ease' }}>
+                style={{ flex: 1, minWidth: 80, padding: '9px 12px', borderRadius: 9, border: 'none', cursor: 'pointer', background: active ? '#fff' : 'transparent', color: active ? 'var(--wsl-ink)' : 'var(--wsl-ink-3)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 13, boxShadow: active ? '0 2px 6px rgba(0,0,0,0.06)' : 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, transition: 'all 150ms ease' }}>
                 {isAr ? tb.labelAr : tb.labelEn}
-                <span style={{ padding: '1px 7px', borderRadius: 999, fontSize: 11, fontWeight: 900, background: active ? 'var(--wsl-teal-bg, #E0F7F5)' : 'rgba(0,0,0,0.06)', color: active ? 'var(--wsl-teal, #14b8a6)' : 'var(--wsl-ink-3)', fontFamily: 'Inter' }}>
+                <span style={{ padding: '1px 7px', borderRadius: 999, fontSize: 11, fontWeight: 900, background: active ? 'var(--wsl-teal-bg, #E0F7F5)' : 'rgba(0,0,0,0.06)', color: active ? 'var(--wsl-teal, #14b8a6)' : 'var(--wsl-ink-3)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
                   {count}
                 </span>
               </button>
@@ -145,14 +145,14 @@ export default function CampaignList() {
             <div style={{ width: 72, height: 72, borderRadius: 20, margin: '0 auto 18px', background: 'linear-gradient(135deg, rgba(10,143,132,0.1), rgba(14,165,233,0.1))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Send size={32} color="#14b8a6" />
             </div>
-            <div style={{ fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 900, fontSize: 18, color: 'var(--wsl-ink)', marginBottom: 6 }}>
+            <div style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 18, color: 'var(--wsl-ink)', marginBottom: 6 }}>
               {t('camp.empty', 'لا توجد حملات بعد')}
             </div>
-            <div style={{ fontFamily: 'Cairo, Inter, sans-serif', fontSize: 13, color: 'var(--wsl-ink-3)', marginBottom: 20 }}>
+            <div style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontSize: 13, color: 'var(--wsl-ink-3)', marginBottom: 20 }}>
               {t('camp.emptyDesc', 'أنشئ أول حملة بريدية للتواصل مع العملاء')}
             </div>
             <Link href="/app/campaigns/new">
-              <a style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 18px', borderRadius: 10, background: 'linear-gradient(135deg, #14b8a6, #0ea5e9)', color: '#fff', textDecoration: 'none', fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 900, fontSize: 13 }}>
+              <a style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 18px', borderRadius: 10, background: 'linear-gradient(135deg, #14b8a6, #0ea5e9)', color: '#fff', textDecoration: 'none', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 13 }}>
                 <Plus size={14} /> {t('camp.new', 'حملة جديدة')}
               </a>
             </Link>
@@ -167,10 +167,10 @@ export default function CampaignList() {
                   <Link href={`/app/campaigns/${c.id}`}>
                     <a style={{ display: 'block', textDecoration: 'none', background: '#fff', borderRadius: 14, padding: 18, border: '1px solid var(--wsl-border, #E5E7EB)', boxShadow: '0 1px 3px rgba(0,0,0,0.04)', transition: 'box-shadow 200ms' }}>
                       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
-                        <div style={{ fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 900, fontSize: 15, color: 'var(--wsl-ink)', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <div style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 15, color: 'var(--wsl-ink)', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {c.campaign_name}
                         </div>
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 10px', borderRadius: 999, background: s.bg, color: s.color, fontSize: 11, fontWeight: 800, fontFamily: 'Cairo, Inter, sans-serif', flexShrink: 0, marginInlineStart: 8 }}>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 10px', borderRadius: 999, background: s.bg, color: s.color, fontSize: 11, fontWeight: 800, fontFamily: '"Thmanyah Sans", system-ui, sans-serif', flexShrink: 0, marginInlineStart: 8 }}>
                           {isAr ? s.labelAr : s.labelEn}
                         </span>
                       </div>
@@ -178,12 +178,12 @@ export default function CampaignList() {
                         {[{ icon: Mail, val: c.emails_sent || 0, label: t('camp.sent', 'مُرسل') }, { icon: Users, val: c.opens_count || 0, label: t('camp.opens', 'فتح') }, { icon: TrendingUp, val: c.replies_count || 0, label: t('camp.replies', 'رد') }].map(({ icon: Icon, val, label }) => (
                           <div key={label} style={{ textAlign: 'center' }}>
                             <Icon size={14} style={{ color: '#9CA3AF', margin: '0 auto 4px' }} />
-                            <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--wsl-ink)', fontFamily: 'Inter' }}>{val}</div>
-                            <div style={{ fontSize: 11, color: 'var(--wsl-ink-3)', fontFamily: 'Cairo, sans-serif', fontWeight: 700 }}>{label}</div>
+                            <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--wsl-ink)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>{val}</div>
+                            <div style={{ fontSize: 11, color: 'var(--wsl-ink-3)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 700 }}>{label}</div>
                           </div>
                         ))}
                       </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--wsl-ink-3)', fontFamily: 'Cairo, Inter, sans-serif' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--wsl-ink-3)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
                         <span>{(c.completed_at || c.created_at) ? new Date(c.completed_at || c.created_at).toLocaleDateString(isAr ? 'ar-SA' : 'en-US') : ''}</span>
                         <span style={{ color: '#14b8a6', fontWeight: 800 }}>{openRate}% {t('camp.openRate', 'فتح')}</span>
                       </div>

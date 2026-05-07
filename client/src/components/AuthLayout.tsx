@@ -9,7 +9,7 @@ interface Props { children: ReactNode; title: string; subtitle: string }
 export default function AuthLayout({ children, title, subtitle }: Props) {
   const { i18n } = useTranslation();
   const isRTL = i18n.language === "ar";
-  const font = isRTL ? "Cairo, sans-serif" : "Inter, sans-serif";
+  const font = '"Thmanyah Sans", system-ui, sans-serif';
 
   return (
     <div

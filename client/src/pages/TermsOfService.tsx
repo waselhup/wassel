@@ -18,7 +18,7 @@ export default function TermsOfService() {
   const { i18n } = useTranslation();
   const isRTL = i18n.language === 'ar';
   return (
-    <div dir={isRTL ? 'rtl' : 'ltr'} className="min-h-screen py-12 px-6" style={{ background: '#fff', fontFamily: 'Cairo, sans-serif' }}>
+    <div dir={isRTL ? 'rtl' : 'ltr'} className="min-h-screen py-12 px-6" style={{ background: '#fff', fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
       <div className="max-w-3xl mx-auto">
         <Link href="/" className="flex items-center gap-2 mb-8">
           <WasselLogo size={28} />

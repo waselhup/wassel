@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 export default function V4BentoSection() {
   const { t, i18n } = useTranslation();
   const isAr = i18n.language === 'ar';
-  const fontFamily = isAr ? 'Cairo, sans-serif' : 'Inter, sans-serif';
+  const fontFamily = '"Thmanyah Sans", system-ui, sans-serif';
 
   const services = [
     { key: 'profile', icon: '🎯' },

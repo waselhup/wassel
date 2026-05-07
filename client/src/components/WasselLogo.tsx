@@ -34,7 +34,7 @@ export function WasselLogo({ size = 28, variant = 'default' }: WasselLogoProps) 
       </circle>
       <circle cx="60" cy="60" r="18" fill={coreFill} opacity={0.08} />
       <circle cx="60" cy="60" r="13.5" fill={coreFill} />
-      <text x="60" y="65.5" textAnchor="middle" fontFamily="Cairo, sans-serif" fontWeight="900" fontSize="16" fill={letter}>{'\u0648'}</text>
+      <text x="60" y="65.5" textAnchor="middle" fontFamily='"Thmanyah Sans", system-ui, sans-serif' fontWeight="900" fontSize="16" fill={letter}>{'\u0648'}</text>
     </svg>
   );
 }

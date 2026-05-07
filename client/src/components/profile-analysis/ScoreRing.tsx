@@ -55,7 +55,7 @@ export default function ScoreRing({ score, size = 112, label }: ScoreRingProps) 
         </svg>
         <div style={{
           position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, Cairo, sans-serif',
+          alignItems: 'center', justifyContent: 'center', fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
         }}>
           <div style={{ fontSize: size * 0.28, fontWeight: 900, color, lineHeight: 1 }}>{animated}</div>
           <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600, marginTop: 2 }}>/ 100</div>

@@ -110,7 +110,7 @@ export const UserAvatar: React.FC<Props> = ({
         ...baseStyle,
         background: 'linear-gradient(135deg, #14b8a6, #0EA5E9)',
         color: '#fff',
-        fontFamily: 'Cairo, Inter, sans-serif',
+        fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
         fontWeight: 800,
         fontSize: dim.font,
         letterSpacing: 0.3,

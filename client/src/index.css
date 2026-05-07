@@ -5,6 +5,43 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Thmanyah Sans — bilingual Arabic+Latin typeface */
+@font-face {
+  font-family: 'Thmanyah Sans';
+  src: url('/fonts/thmanyah/thmanyahsans-Light.woff2') format('woff2');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Thmanyah Sans';
+  src: url('/fonts/thmanyah/thmanyahsans-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Thmanyah Sans';
+  src: url('/fonts/thmanyah/thmanyahsans-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Thmanyah Sans';
+  src: url('/fonts/thmanyah/thmanyahsans-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Thmanyah Sans';
+  src: url('/fonts/thmanyah/thmanyahsans-Black.woff2') format('woff2');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* ============================================
    Wassel v4 — Global Design Tokens
    Light surfaces, Wassel teal brand, thin 500 heads.
@@ -107,13 +144,13 @@ body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Thmanyah Sans', system-ui, sans-serif;
 }
 
 html[dir="rtl"] body {
   direction: rtl;
   text-align: right;
-  font-family: 'Cairo', sans-serif;
+  font-family: 'Thmanyah Sans', system-ui, sans-serif;
 }
 html[dir="ltr"] body {
   direction: ltr;
@@ -135,7 +172,7 @@ html[dir="rtl"] h3,
 html[dir="rtl"] h4,
 html[dir="rtl"] h5,
 html[dir="rtl"] h6 {
-  font-family: 'Cairo', sans-serif;
+  font-family: 'Thmanyah Sans', system-ui, sans-serif;
 }
 
 p {

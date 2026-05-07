@@ -67,14 +67,14 @@ const config: Config = {
         },
       },
       fontFamily: {
-        cairo: ['Cairo', 'sans-serif'],
-        inter: ['Inter', 'sans-serif'],
-        sans: ['Inter', 'Cairo', 'sans-serif'],
-        arabic: ['Cairo', 'sans-serif'],
+        cairo: ['"Thmanyah Sans"', 'Cairo', 'sans-serif'],
+        inter: ['"Thmanyah Sans"', 'Inter', 'sans-serif'],
+        sans: ['"Thmanyah Sans"', 'system-ui', 'sans-serif'],
+        arabic: ['"Thmanyah Sans"', 'system-ui', 'sans-serif'],
 
         // v2 — exact stacks from tokens.css
-        ar:   ['Cairo', 'Inter', 'system-ui', 'sans-serif'],
-        en:   ['Inter', 'system-ui', 'sans-serif'],
+        ar:   ['"Thmanyah Sans"', 'system-ui', 'sans-serif'],
+        en:   ['"Thmanyah Sans"', 'system-ui', 'sans-serif'],
         mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
       },
       borderRadius: {

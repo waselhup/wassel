@@ -157,7 +157,7 @@ export const OnboardingWizard: React.FC<Props> = ({ onClose }) => {
         justifyContent: 'center',
         padding: 16,
         zIndex: 9999,
-        fontFamily: 'Cairo, Inter, sans-serif',
+        fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
       }}
     >
       <motion.div

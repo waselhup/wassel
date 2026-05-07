@@ -97,10 +97,10 @@ export default function Analytics() {
         {/* Header + Filter */}
         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 16, marginBottom: 24 }}>
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-            <h1 style={{ fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 900, fontSize: 30, color: 'var(--wsl-ink)', letterSpacing: '-0.5px', margin: 0 }}>
+            <h1 style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 30, color: 'var(--wsl-ink)', letterSpacing: '-0.5px', margin: 0 }}>
               {t('analytics.title', 'لوحة التحليلات')}
             </h1>
-            <p style={{ marginTop: 6, color: 'var(--wsl-ink-3)', fontFamily: 'Cairo, Inter, sans-serif', fontSize: 14 }}>
+            <p style={{ marginTop: 6, color: 'var(--wsl-ink-3)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontSize: 14 }}>
               {t('analytics.subtitle', 'تتبّع أداءك المهني بمعايير أكاديمية')}
             </p>
           </motion.div>
@@ -119,7 +119,7 @@ export default function Analytics() {
                     cursor: 'pointer',
                     background: active ? 'linear-gradient(135deg, #14b8a6, #0d9488)' : 'transparent',
                     color: active ? '#fff' : 'var(--wsl-ink-3)',
-                    fontFamily: 'Cairo, Inter, sans-serif',
+                    fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
                     fontWeight: 900,
                     fontSize: 12.5,
                     transition: 'all 150ms ease',
@@ -148,14 +148,14 @@ export default function Analytics() {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <Coins size={16} style={{ color: '#B45309' }} />
-              <span style={{ fontSize: 13, color: '#92400E', fontFamily: 'Cairo, sans-serif', fontWeight: 800 }}>
+              <span style={{ fontSize: 13, color: '#92400E', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 800 }}>
                 {t('analytics.tokens.balance', 'رصيد التوكنات')}
               </span>
             </div>
-            <div style={{ fontSize: 38, fontWeight: 900, color: '#92400E', fontFamily: 'Inter', marginTop: 4, lineHeight: 1 }}>
+            <div style={{ fontSize: 38, fontWeight: 900, color: '#92400E', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', marginTop: 4, lineHeight: 1 }}>
               {(overview?.tokens?.balance ?? 0).toLocaleString('en-US')}
             </div>
-            <div style={{ fontSize: 11, color: '#B45309', fontFamily: 'Cairo, sans-serif', marginTop: 6 }}>
+            <div style={{ fontSize: 11, color: '#B45309', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', marginTop: 6 }}>
               {t('analytics.tokens.usedTotal', { n: (overview?.tokens?.used_total ?? 0).toLocaleString('en-US') })}
             </div>
           </div>
@@ -174,10 +174,10 @@ export default function Analytics() {
                 <div style={{ width: 38, height: 38, borderRadius: 10, background: c.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 10 }}>
                   <Icon size={18} style={{ color: c.color }} />
                 </div>
-                <div style={{ fontSize: 11, color: 'var(--wsl-ink-3)', fontFamily: 'Cairo, sans-serif', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.4 }}>
+                <div style={{ fontSize: 11, color: 'var(--wsl-ink-3)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.4 }}>
                   {c.label}
                 </div>
-                <div style={{ fontSize: 30, fontWeight: 900, color: 'var(--wsl-ink)', fontFamily: 'Inter', marginTop: 4, lineHeight: 1 }}>
+                <div style={{ fontSize: 30, fontWeight: 900, color: 'var(--wsl-ink)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', marginTop: 4, lineHeight: 1 }}>
                   {loadingOv ? (
                     <span style={{ display: 'inline-block', width: 50, height: 26, background: '#F3F4F6', borderRadius: 6 }} />
                   ) : (
@@ -188,7 +188,7 @@ export default function Analytics() {
                   )}
                 </div>
                 {c.framework && (
-                  <div style={{ fontSize: 9.5, color: 'var(--wsl-ink-4, #94A3B8)', marginTop: 8, fontFamily: 'Inter', letterSpacing: 0.3 }}>
+                  <div style={{ fontSize: 9.5, color: 'var(--wsl-ink-4, #94A3B8)', marginTop: 8, fontFamily: '"Thmanyah Sans", system-ui, sans-serif', letterSpacing: 0.3 }}>
                     📚 {c.framework}
                   </div>
                 )}
@@ -200,16 +200,16 @@ export default function Analytics() {
         {/* Activity Timeline */}
         <div style={{ ...cardBase, padding: 22, marginBottom: 20 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-            <h2 style={{ fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 900, fontSize: 16, color: 'var(--wsl-ink)', margin: 0 }}>
+            <h2 style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 16, color: 'var(--wsl-ink)', margin: 0 }}>
               {t('analytics.activity.title', 'نشاطك خلال الفترة')}
             </h2>
-            <span style={{ fontSize: 11, color: 'var(--wsl-ink-3)', fontFamily: 'Cairo, sans-serif' }}>
+            <span style={{ fontSize: 11, color: 'var(--wsl-ink-3)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
               {t('analytics.activity.last30', 'آخر 30 يوماً')}
             </span>
           </div>
           <div style={{ height: 280 }}>
             {loadingTs ? (
-              <div style={{ width: '100%', height: '100%', background: '#F3F4F6', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--wsl-ink-3)', fontFamily: 'Cairo, sans-serif', fontSize: 13 }}>
+              <div style={{ width: '100%', height: '100%', background: '#F3F4F6', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--wsl-ink-3)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontSize: 13 }}>
                 {isRTL ? '...جاري التحميل' : 'Loading...'}
               </div>
             ) : (
@@ -225,10 +225,10 @@ export default function Analytics() {
                   />
                   <YAxis stroke="#64748B" fontSize={10} allowDecimals={false} orientation={isRTL ? 'right' : 'left'} />
                   <Tooltip
-                    contentStyle={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 12, boxShadow: '0 4px 14px rgba(0,0,0,0.08)', fontFamily: 'Cairo, Inter, sans-serif', fontSize: 12 }}
+                    contentStyle={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 12, boxShadow: '0 4px 14px rgba(0,0,0,0.08)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontSize: 12 }}
                     labelFormatter={d => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                   />
-                  <Legend wrapperStyle={{ fontFamily: 'Cairo, Inter, sans-serif', fontSize: 12 }} />
+                  <Legend wrapperStyle={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontSize: 12 }} />
                   <Line type="monotone" dataKey="analyses" stroke="#14b8a6" strokeWidth={2.5} dot={{ r: 2 }} name={t('analytics.kpi.analyses')} />
                   <Line type="monotone" dataKey="cvs" stroke="#C9922A" strokeWidth={2.5} dot={{ r: 2 }} name={t('analytics.kpi.cvs')} />
                   <Line type="monotone" dataKey="posts" stroke="#3B82F6" strokeWidth={2.5} dot={{ r: 2 }} name={t('analytics.kpi.posts')} />
@@ -240,12 +240,12 @@ export default function Analytics() {
 
         {/* Tokens Breakdown */}
         <div style={{ ...cardBase, padding: 22, marginBottom: 20 }}>
-          <h2 style={{ fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 900, fontSize: 16, color: 'var(--wsl-ink)', margin: '0 0 14px' }}>
+          <h2 style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 16, color: 'var(--wsl-ink)', margin: '0 0 14px' }}>
             {t('analytics.tokens.breakdown', 'استهلاك التوكنات حسب الميزة')}
           </h2>
           <div style={{ height: 260 }}>
             {tokensBd.length === 0 ? (
-              <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--wsl-ink-3)', fontFamily: 'Cairo, sans-serif', fontSize: 13 }}>
+              <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--wsl-ink-3)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontSize: 13 }}>
                 {t('analytics.empty.tokens', 'لا توجد معاملات في هذه الفترة')}
               </div>
             ) : (
@@ -254,7 +254,7 @@ export default function Analytics() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
                   <XAxis dataKey="feature" stroke="#64748B" fontSize={10} reversed={isRTL} />
                   <YAxis stroke="#64748B" fontSize={10} allowDecimals={false} orientation={isRTL ? 'right' : 'left'} />
-                  <Tooltip contentStyle={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 12, fontFamily: 'Cairo, Inter, sans-serif', fontSize: 12 }} />
+                  <Tooltip contentStyle={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 12, fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontSize: 12 }} />
                   <Bar dataKey="total" fill="#C9922A" radius={[8, 8, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -270,7 +270,7 @@ export default function Analytics() {
           padding: 16,
           fontSize: 13,
           color: '#065F46',
-          fontFamily: 'Cairo, sans-serif',
+          fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
           lineHeight: 1.6,
         }}>
           📚 {t('analytics.academicNote', 'التحليلات مبنية على إطار Career Capital من LBS، وإطار Cialdini للإقناع، ومعايير McKinsey MENA 2024، ومنهجية ATS من Harvard Business School')}

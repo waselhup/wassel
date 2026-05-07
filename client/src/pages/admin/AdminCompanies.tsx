@@ -149,7 +149,7 @@ export default function AdminCompanies() {
               background: t.type === 'success' ? '#ECFDF5' : '#FEF2F2',
               color: t.type === 'success' ? '#065F46' : '#991B1B',
               border: `1px solid ${t.type === 'success' ? '#A7F3D0' : '#FECACA'}`,
-              fontFamily: 'Cairo, Inter, sans-serif',
+              fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
               fontWeight: 700,
               fontSize: 13,
               display: 'flex',
@@ -166,7 +166,7 @@ export default function AdminCompanies() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18, gap: 10, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <Building2 size={20} color="#14b8a6" />
-          <h2 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 18, color: 'var(--wsl-ink)', margin: 0 }}>
+          <h2 style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 18, color: 'var(--wsl-ink)', margin: 0 }}>
             {isAr ? 'دليل الشركات السعودية' : 'Saudi Companies Directory'}
           </h2>
           <span style={{ padding: '3px 10px', borderRadius: 999, background: '#F3F4F6', fontSize: 11, fontWeight: 800, color: '#6B7280' }}>
@@ -182,7 +182,7 @@ export default function AdminCompanies() {
             color: '#fff',
             border: 'none',
             cursor: 'pointer',
-            fontFamily: 'Cairo, sans-serif',
+            fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
             fontWeight: 800,
             fontSize: 12,
             display: 'inline-flex',
@@ -207,14 +207,14 @@ export default function AdminCompanies() {
               borderRadius: 10,
               border: '1px solid #E5E7EB',
               fontSize: 13,
-              fontFamily: 'Cairo, sans-serif',
+              fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
             }}
           />
         </div>
         <select
           value={filterIndustry}
           onChange={(e) => setFilterIndustry(e.target.value)}
-          style={{ padding: '10px 14px', borderRadius: 10, border: '1px solid #E5E7EB', fontSize: 13, fontFamily: 'Cairo, sans-serif' }}
+          style={{ padding: '10px 14px', borderRadius: 10, border: '1px solid #E5E7EB', fontSize: 13, fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}
         >
           <option value="">{isAr ? 'كل الصناعات' : 'All industries'}</option>
           {industries.map((ind) => (
@@ -242,7 +242,7 @@ export default function AdminCompanies() {
                     style={{
                       padding: '10px 14px',
                       textAlign: 'start',
-                      fontFamily: 'Cairo, sans-serif',
+                      fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
                       fontWeight: 900,
                       fontSize: 11,
                       color: '#6B7280',
@@ -258,7 +258,7 @@ export default function AdminCompanies() {
             <tbody>
               {filtered.map((c) => (
                 <tr key={c.id} style={{ borderBottom: '1px solid #F3F4F6' }}>
-                  <td style={{ padding: '12px 14px', fontFamily: 'Cairo, sans-serif', fontSize: 13 }}>
+                  <td style={{ padding: '12px 14px', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontSize: 13 }}>
                     <div style={{ fontWeight: 800, color: 'var(--wsl-ink)' }}>{c.name}</div>
                     {c.name_ar && <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 2 }}>{c.name_ar}</div>}
                   </td>
@@ -347,7 +347,7 @@ export default function AdminCompanies() {
         <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)' }} onClick={() => setAddOpen(false)} />
           <div style={{ position: 'relative', background: '#fff', borderRadius: 14, padding: 24, width: '94vw', maxWidth: 460 }}>
-            <h3 style={{ margin: '0 0 16px', fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 17 }}>
+            <h3 style={{ margin: '0 0 16px', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 17 }}>
               {isAr ? 'إضافة شركة جديدة' : 'Add new company'}
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -359,7 +359,7 @@ export default function AdminCompanies() {
               <select
                 value={form.size}
                 onChange={(e) => setForm({ ...form, size: e.target.value as any })}
-                style={{ padding: '10px 14px', borderRadius: 10, border: '1px solid #E5E7EB', fontSize: 13, fontFamily: 'Cairo, sans-serif' }}
+                style={{ padding: '10px 14px', borderRadius: 10, border: '1px solid #E5E7EB', fontSize: 13, fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}
               >
                 <option value="startup">Startup</option>
                 <option value="small">Small</option>
@@ -372,13 +372,13 @@ export default function AdminCompanies() {
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
               <button
                 onClick={() => setAddOpen(false)}
-                style={{ padding: '8px 14px', borderRadius: 10, border: '1px solid #E5E7EB', background: '#fff', fontWeight: 800, fontSize: 12, cursor: 'pointer', fontFamily: 'Cairo, sans-serif' }}
+                style={{ padding: '8px 14px', borderRadius: 10, border: '1px solid #E5E7EB', background: '#fff', fontWeight: 800, fontSize: 12, cursor: 'pointer', fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}
               >
                 {isAr ? 'إلغاء' : 'Cancel'}
               </button>
               <button
                 onClick={handleAdd}
-                style={{ padding: '8px 14px', borderRadius: 10, background: '#14b8a6', color: '#fff', border: 'none', fontWeight: 800, fontSize: 12, cursor: 'pointer', fontFamily: 'Cairo, sans-serif' }}
+                style={{ padding: '8px 14px', borderRadius: 10, background: '#14b8a6', color: '#fff', border: 'none', fontWeight: 800, fontSize: 12, cursor: 'pointer', fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}
               >
                 {isAr ? 'إضافة' : 'Add'}
               </button>
@@ -402,7 +402,7 @@ function Input({ value, onChange, placeholder }: { value: string; onChange: (v: 
         borderRadius: 10,
         border: '1px solid #E5E7EB',
         fontSize: 13,
-        fontFamily: 'Cairo, sans-serif',
+        fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
       }}
     />
   );

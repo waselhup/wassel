@@ -251,7 +251,7 @@ export default function AdminAgents() {
         gap: 16,
         height: 'calc(100vh - 280px)',
         minHeight: 500,
-        fontFamily: 'Cairo, Inter, sans-serif',
+        fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
       }}
     >
       {/* LEFT — agents list */}

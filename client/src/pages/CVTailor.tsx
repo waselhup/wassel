@@ -275,7 +275,7 @@ export default function CVTailor() {
                 color: t.kind === 'ok' ? '#065F46' : '#991B1B',
                 border: `1px solid ${t.kind === 'ok' ? '#A7F3D0' : '#FECACA'}`,
                 padding: '10px 14px', borderRadius: 10, fontSize: 13,
-                fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 700,
+                fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 700,
                 boxShadow: '0 6px 18px rgba(0,0,0,0.08)', minWidth: 240,
                 display: 'flex', alignItems: 'center', gap: 8,
               }}
@@ -291,14 +291,14 @@ export default function CVTailor() {
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
           style={{ marginBottom: 24 }}>
           <h1 style={{
-            fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 900, fontSize: 28,
+            fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 28,
             color: 'var(--wsl-ink)', letterSpacing: '-0.5px', margin: 0,
           }}>
             {t('cv.title', isAr ? 'تخصيص السيرة الذاتية' : 'CV Tailor')}
           </h1>
           <p style={{
             marginTop: 6, color: 'var(--wsl-ink-3)',
-            fontFamily: 'Cairo, Inter, sans-serif', fontSize: 14,
+            fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontSize: 14,
           }}>
             {t('cv.subtitle', isAr
               ? 'سيرة بفورمات MIT و Harvard — محسّنة لاجتياز أنظمة ATS'
@@ -313,7 +313,7 @@ export default function CVTailor() {
           {/* Upload Helper Card — v3 */}
           <div style={{
             background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: 10,
-            padding: 14, marginBottom: 14, fontFamily: 'Cairo, Inter, sans-serif',
+            padding: 14, marginBottom: 14, fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
           }}>
             <div style={{ fontWeight: 900, fontSize: 13, color: '#1E3A8A', marginBottom: 8 }}>
               {t('cv.upload.supportedFormats', isAr ? 'الصيغ المدعومة' : 'Supported formats')}
@@ -368,7 +368,7 @@ export default function CVTailor() {
             {uploading ? (
               <>
                 <Loader2 size={28} style={{ color: '#14b8a6', animation: 'spin 1s linear infinite', margin: '0 auto 10px' }} />
-                <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--wsl-ink)', fontFamily: 'Cairo, Inter, sans-serif' }}>
+                <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--wsl-ink)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
                   {t('cv.upload.parsing', isAr ? 'نستخرج بياناتك...' : 'Parsing your CV...')}
                 </div>
                 <div style={{ fontSize: 12, color: 'var(--wsl-ink-3)', marginTop: 4 }}>
@@ -378,10 +378,10 @@ export default function CVTailor() {
             ) : (
               <>
                 <Upload size={28} style={{ color: '#14b8a6', margin: '0 auto 10px' }} />
-                <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--wsl-ink)', fontFamily: 'Cairo, Inter, sans-serif' }}>
+                <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--wsl-ink)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
                   {t('cv.upload.hint', isAr ? 'اسحب وأفلِت أو انقر للتصفح' : 'Drag & drop or click to browse')}
                 </div>
-                <div style={{ fontSize: 12, color: 'var(--wsl-ink-3)', marginTop: 4, fontFamily: 'Cairo, Inter, sans-serif' }}>
+                <div style={{ fontSize: 12, color: 'var(--wsl-ink-3)', marginTop: 4, fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
                   {t('cv.upload.formats', isAr ? 'PDF، DOCX، TXT — حتى 5MB' : 'PDF, DOCX, TXT — up to 5MB')}
                 </div>
               </>
@@ -403,7 +403,7 @@ export default function CVTailor() {
             <div style={{
               marginTop: 14, padding: 14, borderRadius: 10,
               background: '#FEF2F2', border: '1px solid #FECACA',
-              fontFamily: 'Cairo, Inter, sans-serif',
+              fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                 <AlertTriangle size={16} style={{ color: '#B91C1C' }} />
@@ -421,7 +421,7 @@ export default function CVTailor() {
                     marginTop: 8, padding: '6px 12px', border: '1px solid #14b8a6',
                     background: '#fff', color: '#14b8a6', borderRadius: 6,
                     fontWeight: 800, fontSize: 12, cursor: 'pointer', alignSelf: 'flex-start',
-                    fontFamily: 'Cairo, Inter, sans-serif',
+                    fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
                   }}
                 >
                   {t('cv.errors.fillManually', isAr ? 'املأ البيانات يدوياً' : 'Fill manually')} →
@@ -477,7 +477,7 @@ export default function CVTailor() {
               placeholder="SolidWorks, AutoCAD, MATLAB..."
             />
             {form.skills.length > 0 && (
-              <div style={{ fontSize: 11, color: 'var(--wsl-ink-3)', marginTop: 4, fontFamily: 'Cairo, Inter, sans-serif' }}>
+              <div style={{ fontSize: 11, color: 'var(--wsl-ink-3)', marginTop: 4, fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
                 {form.skills.length} {isAr ? 'مهارة' : 'skills'}
               </div>
             )}
@@ -622,7 +622,7 @@ export default function CVTailor() {
             <label style={labelStyle}>
               {t('cv.form.jobDescription', isAr ? 'الوصف الوظيفي' : 'Job Description')}
             </label>
-            <div style={{ fontSize: 11, color: 'var(--wsl-ink-3)', marginBottom: 4, fontFamily: 'Cairo, Inter, sans-serif' }}>
+            <div style={{ fontSize: 11, color: 'var(--wsl-ink-3)', marginBottom: 4, fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
               {t('cv.form.jobDescriptionHint', isAr
                 ? 'الصق وصف الوظيفة — سنستخلص الكلمات المفتاحية للـ ATS'
                 : 'Paste the JD — we extract keywords for ATS tailoring')}
@@ -644,7 +644,7 @@ export default function CVTailor() {
                   background: language === l ? 'rgba(10,143,132,0.08)' : '#fff',
                   color: language === l ? '#14b8a6' : 'var(--wsl-ink-2)',
                   fontWeight: 800, fontSize: 13, cursor: 'pointer',
-                  fontFamily: 'Cairo, Inter, sans-serif',
+                  fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
                 }}>
                   {l === 'en' ? 'English' : 'العربية'}
                 </button>
@@ -690,7 +690,7 @@ export default function CVTailor() {
           <label style={{
             display: 'flex', alignItems: 'flex-start', gap: 10, padding: 12,
             background: '#FFFBEB', border: '1px solid #FCD34D', borderRadius: 10,
-            marginBottom: 12, cursor: 'pointer', fontFamily: 'Cairo, Inter, sans-serif',
+            marginBottom: 12, cursor: 'pointer', fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
           }}>
             <input
               type="checkbox"
@@ -722,7 +722,7 @@ export default function CVTailor() {
                 : 'linear-gradient(135deg, #14b8a6 0%, #0ea5e9 100%)',
               color: generating ? 'var(--wsl-ink-3)' : '#fff',
               fontWeight: 900, fontSize: 15, cursor: generating ? 'not-allowed' : 'pointer',
-              fontFamily: 'Cairo, Inter, sans-serif',
+              fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
               boxShadow: generating ? 'none' : '0 6px 18px rgba(10,143,132,0.3)',
               transition: 'all 180ms',
@@ -753,7 +753,7 @@ export default function CVTailor() {
                 <div style={{
                   padding: 14, borderRadius: 10,
                   background: '#FFFBEB', border: '1px solid #FCD34D',
-                  fontFamily: 'Cairo, Inter, sans-serif',
+                  fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                     <Mail size={16} style={{ color: '#D97706' }} />
@@ -787,7 +787,7 @@ export default function CVTailor() {
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               marginBottom: 10, padding: '8px 12px', borderRadius: 8,
-              background: '#F3F4F6', fontFamily: 'Cairo, Inter, sans-serif', fontSize: 12,
+              background: '#F3F4F6', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontSize: 12,
               color: 'var(--wsl-ink-2)', gap: 10, flexWrap: 'wrap',
             }}>
               <div>
@@ -807,7 +807,7 @@ export default function CVTailor() {
                     background: comparing ? '#E5E7EB' : 'linear-gradient(135deg, #14b8a6, #0ea5e9)',
                     color: comparing ? '#9CA3AF' : '#fff',
                     fontWeight: 900, fontSize: 12, cursor: comparing ? 'not-allowed' : 'pointer',
-                    fontFamily: 'Cairo, Inter, sans-serif',
+                    fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
                     display: 'inline-flex', alignItems: 'center', gap: 6,
                   }}
                 >
@@ -823,7 +823,7 @@ export default function CVTailor() {
               <Loader2 size={24} style={{ color: '#14b8a6', animation: 'spin 1s linear infinite' }} />
             </div>
           ) : history.length === 0 ? (
-            <div style={{ padding: 40, textAlign: 'center', color: 'var(--wsl-ink-3)', fontFamily: 'Cairo, Inter, sans-serif' }}>
+            <div style={{ padding: 40, textAlign: 'center', color: 'var(--wsl-ink-3)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
               <FileText size={32} style={{ opacity: 0.3, margin: '0 auto 12px', display: 'block' }} />
               <div style={{ fontWeight: 900, fontSize: 15 }}>
                 {t('cv.history.emptyTitle', isAr ? 'لم تُنشئ أي سيرة بعد' : 'No CVs generated yet')}
@@ -855,7 +855,7 @@ export default function CVTailor() {
                       />
                     )}
                     <div style={{ flex: 1, minWidth: 200 }}>
-                      <div style={{ fontWeight: 900, fontSize: 14, color: 'var(--wsl-ink)', fontFamily: 'Cairo, Inter, sans-serif', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                      <div style={{ fontWeight: 900, fontSize: 14, color: 'var(--wsl-ink)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                         {cv.target_role}
                         {typeof atsOverall === 'number' && atsOverall > 0 && (
                           <span style={{
@@ -877,7 +877,7 @@ export default function CVTailor() {
                           </span>
                         )}
                       </div>
-                      <div style={{ fontSize: 12, color: 'var(--wsl-ink-3)', marginTop: 2, fontFamily: 'Cairo, Inter, sans-serif' }}>
+                      <div style={{ fontSize: 12, color: 'var(--wsl-ink-3)', marginTop: 2, fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
                         {cv.target_company || t('cv.history.noCompany', isAr ? 'بدون شركة محددة' : 'No specific company')}
                         {' · '}
                         <span style={{ textTransform: 'capitalize' }}>{cv.template.replace('-', ' ')}</span>
@@ -954,7 +954,7 @@ function ATSScoreCard({ atsScore, isAr, t }: { atsScore: any; isAr: boolean; t: 
     <div style={{
       padding: 18, borderRadius: 12, background: '#fff',
       border: '1px solid var(--wsl-border, #E5E7EB)',
-      fontFamily: 'Cairo, Inter, sans-serif',
+      fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
         <BarChart3 size={18} style={{ color: '#14b8a6' }} />
@@ -1025,8 +1025,8 @@ function ScoreBar({ label, score, max }: { label: string; score: number; max: nu
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4, color: 'var(--wsl-ink-2)' }}>
-        <span style={{ fontWeight: 800, fontFamily: 'Cairo, Inter, sans-serif' }}>{label}</span>
-        <span style={{ fontWeight: 900, fontFamily: 'Cairo, Inter, sans-serif' }}>{score}/{max}</span>
+        <span style={{ fontWeight: 800, fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>{label}</span>
+        <span style={{ fontWeight: 900, fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>{score}/{max}</span>
       </div>
       <div style={{ height: 6, background: '#F3F4F6', borderRadius: 999, overflow: 'hidden' }}>
         <div style={{ width: `${pct}%`, height: '100%', background: 'linear-gradient(90deg, #14b8a6, #0ea5e9)' }} />
@@ -1050,7 +1050,7 @@ function CompareModal({ data, isAr, t, onClose }: { data: any; isAr: boolean; t:
         style={{
           background: '#fff', borderRadius: 14, maxWidth: 920, width: '100%',
           maxHeight: '90vh', overflow: 'auto', padding: 24,
-          fontFamily: 'Cairo, Inter, sans-serif',
+          fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
         }}
         dir={isAr ? 'rtl' : 'ltr'}
       >
@@ -1169,7 +1169,7 @@ function Section({ title, subtitle, icon, children }: {
           </div>
         )}
         <div style={{
-          fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 900, fontSize: 16,
+          fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 16,
           color: 'var(--wsl-ink)',
         }}>
           {title}
@@ -1178,7 +1178,7 @@ function Section({ title, subtitle, icon, children }: {
       {subtitle && (
         <div style={{
           fontSize: 12, color: 'var(--wsl-ink-3)', marginBottom: 14, marginInlineStart: 42,
-          fontFamily: 'Cairo, Inter, sans-serif',
+          fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
         }}>
           {subtitle}
         </div>
@@ -1208,7 +1208,7 @@ function ExpCard({ item, onChange, onRemove, isAr }: {
   return (
     <div style={subCardStyle}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-        <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--wsl-ink-3)', fontFamily: 'Cairo, Inter, sans-serif' }}>
+        <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--wsl-ink-3)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
           {isAr ? 'خبرة' : 'Experience'}
         </span>
         <button onClick={onRemove} style={removeBtnStyle}><X size={12} /></button>
@@ -1247,7 +1247,7 @@ function EduCard({ item, onChange, onRemove, isAr }: {
   return (
     <div style={subCardStyle}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-        <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--wsl-ink-3)', fontFamily: 'Cairo, Inter, sans-serif' }}>
+        <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--wsl-ink-3)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
           {isAr ? 'تعليم' : 'Education'}
         </span>
         <button onClick={onRemove} style={removeBtnStyle}><X size={12} /></button>
@@ -1279,7 +1279,7 @@ function TemplateCard({ selected, onClick, title, desc, tags, preview }: {
         border: selected ? '2px solid #14b8a6' : '2px solid var(--wsl-border, #E5E7EB)',
         background: selected ? 'rgba(10,143,132,0.04)' : '#fff',
         transition: 'all 180ms',
-        fontFamily: 'Cairo, Inter, sans-serif',
+        fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
       }}
     >
       <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
@@ -1356,13 +1356,13 @@ function TemplatePreview({ kind }: { kind: 'mit' | 'harvard' }) {
 const labelStyle: React.CSSProperties = {
   display: 'block', fontSize: 12, fontWeight: 800,
   color: 'var(--wsl-ink-2)', marginBottom: 4,
-  fontFamily: 'Cairo, Inter, sans-serif',
+  fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
 };
 
 const inputStyle: React.CSSProperties = {
   width: '100%', padding: '10px 12px', borderRadius: 8,
   border: '1px solid var(--wsl-border, #E5E7EB)', fontSize: 13,
-  fontFamily: 'Cairo, Inter, sans-serif', outline: 'none',
+  fontFamily: '"Thmanyah Sans", system-ui, sans-serif', outline: 'none',
   background: '#fff', marginBottom: 4, boxSizing: 'border-box',
 };
 
@@ -1374,7 +1374,7 @@ const subCardStyle: React.CSSProperties = {
 const addBtnStyle: React.CSSProperties = {
   padding: '6px 12px', borderRadius: 8, border: '1px solid rgba(10,143,132,0.3)',
   background: 'rgba(10,143,132,0.08)', color: '#14b8a6', fontSize: 12, fontWeight: 800,
-  cursor: 'pointer', fontFamily: 'Cairo, Inter, sans-serif',
+  cursor: 'pointer', fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
   display: 'inline-flex', alignItems: 'center', gap: 4,
 };
 
@@ -1387,6 +1387,6 @@ const removeBtnStyle: React.CSSProperties = {
 const actionBtn: React.CSSProperties = {
   padding: '6px 12px', borderRadius: 6, border: '1px solid var(--wsl-border, #E5E7EB)',
   background: '#fff', color: 'var(--wsl-ink-2)', fontSize: 12, fontWeight: 800,
-  cursor: 'pointer', fontFamily: 'Cairo, Inter, sans-serif', textDecoration: 'none',
+  cursor: 'pointer', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', textDecoration: 'none',
   display: 'inline-flex', alignItems: 'center', gap: 4,
 };

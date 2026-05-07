@@ -213,7 +213,7 @@ function useToast() {
               color: t.type === 'success' ? '#065F46' : t.type === 'error' ? '#991B1B' : '#1E40AF',
               border: `1px solid ${t.type === 'success' ? '#A7F3D0' : t.type === 'error' ? '#FECACA' : '#BFDBFE'}`,
               boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
-              fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 700, fontSize: 13,
+              fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 700, fontSize: 13,
               display: 'flex', alignItems: 'center', gap: 10,
             }}>
             {t.type === 'success' ? <Check size={16} /> : t.type === 'error' ? <X size={16} /> : <AlertCircle size={16} />}
@@ -475,7 +475,7 @@ export default function ProfileAnalysis() {
   return (
     <DashboardLayout>
       <Toasts />
-      <div style={{ maxWidth: analysis ? 1280 : 1100, margin: '0 auto', padding: '24px 16px', fontFamily: 'Cairo, Inter, sans-serif', transition: 'max-width 300ms ease' }}>
+      <div style={{ maxWidth: analysis ? 1280 : 1100, margin: '0 auto', padding: '24px 16px', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', transition: 'max-width 300ms ease' }}>
 
         <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} style={{ marginBottom: 24 }}>
           <h1 style={{ fontSize: 32, fontWeight: 800, margin: 0, background: 'linear-gradient(90deg, #14b8a6, #0d9488)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>

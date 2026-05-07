@@ -38,7 +38,7 @@ export default function SectionListItem({ section, active, isRTL, onClick }: Pro
         borderRadius: 10,
         cursor: 'pointer',
         textAlign: isRTL ? 'right' : 'left',
-        fontFamily: 'Cairo, Inter, sans-serif',
+        fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
         transition: 'transform 120ms, background 120ms',
       }}
       onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = '#f8fafc'; }}

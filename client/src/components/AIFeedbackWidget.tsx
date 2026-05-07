@@ -66,7 +66,7 @@ export const AIFeedbackWidget: React.FC<Props> = ({ feature, outputId }) => {
           color: '#065F46',
           fontSize: 12,
           fontWeight: 700,
-          fontFamily: 'Cairo, Inter, sans-serif',
+          fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
           display: 'inline-flex',
           alignItems: 'center',
           gap: 6,
@@ -85,7 +85,7 @@ export const AIFeedbackWidget: React.FC<Props> = ({ feature, outputId }) => {
         borderRadius: 10,
         background: '#F9FAFB',
         border: '1px solid #E5E7EB',
-        fontFamily: 'Cairo, Inter, sans-serif',
+        fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
       }}
     >
       <div

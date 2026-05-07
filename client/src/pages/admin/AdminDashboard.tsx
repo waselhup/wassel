@@ -30,7 +30,7 @@ function useToast() {
       <AnimatePresence>
         {toasts.map(t => (
           <motion.div key={t.id} initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: 40 }}
-            style={{ padding: '12px 18px', borderRadius: 12, minWidth: 260, background: t.type === 'success' ? '#ECFDF5' : '#FEF2F2', color: t.type === 'success' ? '#065F46' : '#991B1B', border: `1px solid ${t.type === 'success' ? '#A7F3D0' : '#FECACA'}`, boxShadow: '0 8px 24px rgba(0,0,0,0.08)', fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 700, fontSize: 13, display: 'flex', alignItems: 'center', gap: 10 }}>
+            style={{ padding: '12px 18px', borderRadius: 12, minWidth: 260, background: t.type === 'success' ? '#ECFDF5' : '#FEF2F2', color: t.type === 'success' ? '#065F46' : '#991B1B', border: `1px solid ${t.type === 'success' ? '#A7F3D0' : '#FECACA'}`, boxShadow: '0 8px 24px rgba(0,0,0,0.08)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 700, fontSize: 13, display: 'flex', alignItems: 'center', gap: 10 }}>
             {t.type === 'success' ? <CheckCircle2 size={16} /> : <XCircle size={16} />}
             {t.message}
           </motion.div>
@@ -150,7 +150,7 @@ export default function AdminDashboard() {
       <DashboardLayout pageTitle={isAr ? 'لوحة الإدارة' : 'Admin Dashboard'}>
         <div style={{ padding: 60, textAlign: 'center' }}>
           <Shield size={48} style={{ color: '#DC2626', margin: '0 auto 16px' }} />
-          <div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 20, color: '#DC2626' }}>
+          <div style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 20, color: '#DC2626' }}>
             {isAr ? 'غير مصرّح' : 'Unauthorized'}
           </div>
         </div>
@@ -174,8 +174,8 @@ export default function AdminDashboard() {
     ? users.filter(u => (u.email || '').toLowerCase().includes(searchQuery.toLowerCase()) || (u.full_name || '').toLowerCase().includes(searchQuery.toLowerCase()))
     : users;
 
-  const thStyle: React.CSSProperties = { padding: '10px 14px', textAlign: 'start', fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 11, color: '#6B7280', whiteSpace: 'nowrap' };
-  const tdStyle: React.CSSProperties = { padding: '10px 14px', fontFamily: 'Cairo, Inter, sans-serif', fontSize: 13 };
+  const thStyle: React.CSSProperties = { padding: '10px 14px', textAlign: 'start', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 11, color: '#6B7280', whiteSpace: 'nowrap' };
+  const tdStyle: React.CSSProperties = { padding: '10px 14px', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontSize: 13 };
 
   return (
     <DashboardLayout pageTitle={isAr ? 'لوحة الإدارة' : 'Admin Dashboard'}>
@@ -183,13 +183,13 @@ export default function AdminDashboard() {
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 4px' }}>
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
-          <h1 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 28, color: 'var(--wsl-ink)', margin: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
+          <h1 style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 28, color: 'var(--wsl-ink)', margin: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{ width: 40, height: 40, borderRadius: 12, background: 'linear-gradient(135deg, #DC2626, #EA580C)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Shield size={20} color="#fff" />
             </div>
             {isAr ? 'لوحة الإدارة' : 'Admin Dashboard'}
           </h1>
-          <button onClick={loadData} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 10, border: '1px solid var(--wsl-border, #E5E7EB)', background: '#fff', cursor: 'pointer', fontFamily: 'Cairo, sans-serif', fontWeight: 800, fontSize: 13, color: 'var(--wsl-ink-2)' }}>
+          <button onClick={loadData} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 10, border: '1px solid var(--wsl-border, #E5E7EB)', background: '#fff', cursor: 'pointer', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 800, fontSize: 13, color: 'var(--wsl-ink-2)' }}>
             <RefreshCw size={14} /> {isAr ? 'تحديث' : 'Refresh'}
           </button>
         </motion.div>
@@ -200,7 +200,7 @@ export default function AdminDashboard() {
             const active = tab === tb.id;
             return (
               <button key={tb.id} onClick={() => setTab(tb.id)}
-                style={{ flex: 1, minWidth: 90, padding: '9px 10px', borderRadius: 9, border: 'none', cursor: 'pointer', background: active ? '#fff' : 'transparent', color: active ? 'var(--wsl-ink)' : 'var(--wsl-ink-3)', fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 900, fontSize: 12, boxShadow: active ? '0 2px 6px rgba(0,0,0,0.06)' : 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 5, transition: 'all 150ms ease', whiteSpace: 'nowrap' }}>
+                style={{ flex: 1, minWidth: 90, padding: '9px 10px', borderRadius: 9, border: 'none', cursor: 'pointer', background: active ? '#fff' : 'transparent', color: active ? 'var(--wsl-ink)' : 'var(--wsl-ink-3)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 12, boxShadow: active ? '0 2px 6px rgba(0,0,0,0.06)' : 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 5, transition: 'all 150ms ease', whiteSpace: 'nowrap' }}>
                 <tb.icon size={13} />
                 {tb.label}
                 {(tb.count || 0) > 0 && (
@@ -227,12 +227,12 @@ export default function AdminDashboard() {
                     <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
                       style={{ background: '#fff', borderRadius: 14, border: '1px solid var(--wsl-border, #E5E7EB)', padding: 16 }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                        <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--wsl-ink-3)', fontFamily: 'Cairo, sans-serif' }}>{s.label}</span>
+                        <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--wsl-ink-3)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>{s.label}</span>
                         <div style={{ width: 28, height: 28, borderRadius: 8, background: s.color + '15', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           <s.icon size={14} style={{ color: s.color }} />
                         </div>
                       </div>
-                      <div style={{ fontSize: 24, fontWeight: 900, color: 'var(--wsl-ink)', fontFamily: 'Inter' }}>{s.value}</div>
+                      <div style={{ fontSize: 24, fontWeight: 900, color: 'var(--wsl-ink)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>{s.value}</div>
                     </motion.div>
                   ))}
                 </div>
@@ -263,10 +263,10 @@ export default function AdminDashboard() {
                         flexShrink: 0, boxShadow: `0 0 0 4px ${dotColor}22`,
                       }} />
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 14, color: 'var(--wsl-ink)', marginBottom: 4 }}>
+                        <div style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 14, color: 'var(--wsl-ink)', marginBottom: 4 }}>
                           Claude API {h ? `· ${h.httpCode || '0'}` : ''} {h?.latencyMs ? `· ${h.latencyMs}ms` : ''}
                         </div>
-                        <div style={{ fontSize: 12, color: 'var(--wsl-ink-3)', fontFamily: 'Cairo, Inter, sans-serif', lineHeight: 1.5 }}>
+                        <div style={{ fontSize: 12, color: 'var(--wsl-ink-3)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', lineHeight: 1.5 }}>
                           {!h ? (isAr ? '...جاري الفحص' : 'Checking...') : h.message}
                         </div>
                         {h?.creditExhausted && (
@@ -286,7 +286,7 @@ export default function AdminDashboard() {
 
                 {/* System Status */}
                 <div style={{ background: '#fff', borderRadius: 14, border: '1px solid var(--wsl-border, #E5E7EB)', padding: 20, marginBottom: 20 }}>
-                  <h3 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 16, color: 'var(--wsl-ink)', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <h3 style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 16, color: 'var(--wsl-ink)', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
                     <Activity size={16} style={{ color: '#14b8a6' }} /> {isAr ? 'حالة الخدمات' : 'Service Status'}
                   </h3>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 10 }}>
@@ -297,7 +297,7 @@ export default function AdminDashboard() {
                         <div key={service} style={{ padding: 12, borderRadius: 10, border: '1px solid var(--wsl-border, #E5E7EB)', display: 'flex', alignItems: 'center', gap: 10 }}>
                           <div style={{ width: 10, height: 10, borderRadius: '50%', background: statusColor }} />
                           <div>
-                            <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--wsl-ink)', fontFamily: 'Inter', textTransform: 'capitalize' }}>{service}</div>
+                            <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--wsl-ink)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', textTransform: 'capitalize' }}>{service}</div>
                             <div style={{ fontSize: 11, color: 'var(--wsl-ink-3)' }}>{data.total} calls · {data.errors} errors</div>
                           </div>
                         </div>
@@ -308,11 +308,11 @@ export default function AdminDashboard() {
 
                 {(systemStatus?.recentErrors || []).length > 0 && (
                   <div style={{ background: '#FEF2F2', borderRadius: 14, border: '1px solid #FECACA', padding: 20 }}>
-                    <h3 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 16, color: '#991B1B', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <h3 style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 16, color: '#991B1B', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
                       <AlertTriangle size={16} /> {isAr ? 'أخطاء حديثة' : 'Recent Errors'}
                     </h3>
                     {(systemStatus.recentErrors || []).slice(0, 8).map((err: any, i: number) => (
-                      <div key={i} style={{ padding: 10, borderRadius: 8, background: '#fff', border: '1px solid #FECACA', fontSize: 12, fontFamily: 'Inter', marginBottom: 6 }}>
+                      <div key={i} style={{ padding: 10, borderRadius: 8, background: '#fff', border: '1px solid #FECACA', fontSize: 12, fontFamily: '"Thmanyah Sans", system-ui, sans-serif', marginBottom: 6 }}>
                         <strong style={{ color: '#DC2626' }}>{err.service}</strong> <span style={{ color: '#6B7280' }}>{err.endpoint}</span> <span style={{ color: '#991B1B' }}>{err.status_code}</span>
                         <div style={{ color: '#6B7280', marginTop: 2, fontSize: 11 }}>{(err.error_msg || '').substring(0, 100)}</div>
                       </div>
@@ -328,7 +328,7 @@ export default function AdminDashboard() {
                   <Search size={16} style={{ position: 'absolute', top: '50%', insetInlineStart: 12, transform: 'translateY(-50%)', color: '#9CA3AF' }} />
                   <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
                     placeholder={isAr ? 'بحث بالبريد أو الاسم...' : 'Search by email or name...'}
-                    style={{ width: '100%', padding: '10px 12px 10px 36px', borderRadius: 10, border: '1.5px solid var(--wsl-border)', fontFamily: 'Cairo, Inter, sans-serif', fontSize: 13, outline: 'none', background: '#F9FAFB', boxSizing: 'border-box' }} />
+                    style={{ width: '100%', padding: '10px 12px 10px 36px', borderRadius: 10, border: '1.5px solid var(--wsl-border)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontSize: 13, outline: 'none', background: '#F9FAFB', boxSizing: 'border-box' }} />
                 </div>
                 <div style={{ background: '#fff', borderRadius: 14, border: '1px solid var(--wsl-border)', overflow: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
@@ -352,13 +352,13 @@ export default function AdminDashboard() {
                           <td style={tdStyle}>
                             <span style={{ padding: '2px 8px', borderRadius: 999, background: u.plan === 'pro' ? '#D1FAE5' : '#F3F4F6', color: u.plan === 'pro' ? '#065F46' : '#6B7280', fontSize: 11, fontWeight: 800 }}>{u.plan || 'free'}</span>
                           </td>
-                          <td style={tdStyle}><span style={{ fontWeight: 900, color: '#14b8a6', fontFamily: 'Inter' }}>{u.token_balance || 0}</span></td>
+                          <td style={tdStyle}><span style={{ fontWeight: 900, color: '#14b8a6', fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>{u.token_balance || 0}</span></td>
                           <td style={tdStyle}>
                             {u.is_admin && <span style={{ padding: '2px 6px', borderRadius: 999, background: '#EDE9FE', color: '#7C3AED', fontSize: 10, fontWeight: 800, marginInlineEnd: 4 }}>Admin</span>}
                             {u.is_banned && <span style={{ padding: '2px 6px', borderRadius: 999, background: '#FEE2E2', color: '#DC2626', fontSize: 10, fontWeight: 800 }}>Banned</span>}
                             {!u.is_admin && !u.is_banned && <span style={{ color: '#059669', fontSize: 11, fontWeight: 800 }}>Active</span>}
                           </td>
-                          <td style={tdStyle}><span style={{ fontSize: 11, color: 'var(--wsl-ink-3)', fontFamily: 'Inter' }}>{new Date(u.created_at).toLocaleDateString('en', { month: 'short', day: 'numeric' })}</span></td>
+                          <td style={tdStyle}><span style={{ fontSize: 11, color: 'var(--wsl-ink-3)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>{new Date(u.created_at).toLocaleDateString('en', { month: 'short', day: 'numeric' })}</span></td>
                           <td style={tdStyle}>
                             <div style={{ display: 'flex', gap: 4 }}>
                               <button onClick={() => setAddTokensModal({ userId: u.id, name: u.full_name || u.email })} title="Add tokens"
@@ -380,7 +380,7 @@ export default function AdminDashboard() {
                 {pendingReviews.length === 0 ? (
                   <div style={{ background: '#fff', borderRadius: 14, border: '2px dashed var(--wsl-border)', padding: '60px 24px', textAlign: 'center' }}>
                     <Star size={32} style={{ color: '#D97706', margin: '0 auto 12px' }} />
-                    <div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 16 }}>{isAr ? 'لا توجد مراجعات معلقة' : 'No Pending Reviews'}</div>
+                    <div style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 16 }}>{isAr ? 'لا توجد مراجعات معلقة' : 'No Pending Reviews'}</div>
                   </div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -388,21 +388,21 @@ export default function AdminDashboard() {
                       <div key={r.id} style={{ background: '#fff', borderRadius: 14, border: '1px solid var(--wsl-border)', padding: 20 }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                           <div>
-                            <span style={{ fontWeight: 800, fontFamily: 'Cairo, sans-serif', fontSize: 14 }}>{r.user_name || r.user_email || 'Unknown'}</span>
+                            <span style={{ fontWeight: 800, fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontSize: 14 }}>{r.user_name || r.user_email || 'Unknown'}</span>
                             <div style={{ display: 'flex', gap: 2, marginTop: 4 }}>
                               {[1, 2, 3, 4, 5].map(s => (
                                 <Star key={s} size={14} style={{ color: s <= r.rating ? '#D97706' : '#E5E7EB', fill: s <= r.rating ? '#D97706' : 'none' }} />
                               ))}
                             </div>
                           </div>
-                          <span style={{ fontSize: 11, color: 'var(--wsl-ink-3)', fontFamily: 'Inter' }}>{new Date(r.created_at).toLocaleDateString('en', { month: 'short', day: 'numeric' })}</span>
+                          <span style={{ fontSize: 11, color: 'var(--wsl-ink-3)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>{new Date(r.created_at).toLocaleDateString('en', { month: 'short', day: 'numeric' })}</span>
                         </div>
-                        <p style={{ fontSize: 14, color: 'var(--wsl-ink-2)', lineHeight: 1.7, fontFamily: 'Cairo, Inter, sans-serif', marginBottom: 14 }}>{r.comment}</p>
+                        <p style={{ fontSize: 14, color: 'var(--wsl-ink-2)', lineHeight: 1.7, fontFamily: '"Thmanyah Sans", system-ui, sans-serif', marginBottom: 14 }}>{r.comment}</p>
                         <div style={{ display: 'flex', gap: 8 }}>
-                          <button onClick={() => handleApproveReview(r.id)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 8, border: 'none', background: '#059669', color: '#fff', fontWeight: 800, fontSize: 12, cursor: 'pointer', fontFamily: 'Cairo, sans-serif' }}>
+                          <button onClick={() => handleApproveReview(r.id)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 8, border: 'none', background: '#059669', color: '#fff', fontWeight: 800, fontSize: 12, cursor: 'pointer', fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
                             <CheckCircle2 size={14} /> {isAr ? 'قبول' : 'Approve'}
                           </button>
-                          <button onClick={() => handleRejectReview(r.id)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 8, border: '1px solid #FECACA', background: '#FEF2F2', color: '#DC2626', fontWeight: 800, fontSize: 12, cursor: 'pointer', fontFamily: 'Cairo, sans-serif' }}>
+                          <button onClick={() => handleRejectReview(r.id)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 8, border: '1px solid #FECACA', background: '#FEF2F2', color: '#DC2626', fontWeight: 800, fontSize: 12, cursor: 'pointer', fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
                             <XCircle size={14} /> {isAr ? 'رفض' : 'Reject'}
                           </button>
                         </div>
@@ -418,7 +418,7 @@ export default function AdminDashboard() {
                 {(systemStatus?.recentErrors || []).length === 0 ? (
                   <div style={{ background: '#ECFDF5', borderRadius: 14, border: '1px solid #A7F3D0', padding: '40px 24px', textAlign: 'center' }}>
                     <CheckCircle2 size={32} style={{ color: '#059669', margin: '0 auto 12px' }} />
-                    <div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 16, color: '#065F46' }}>{isAr ? 'لا توجد أخطاء حديثة' : 'All Clear'}</div>
+                    <div style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 16, color: '#065F46' }}>{isAr ? 'لا توجد أخطاء حديثة' : 'All Clear'}</div>
                   </div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -442,15 +442,15 @@ export default function AdminDashboard() {
             {tab === 'tokens' && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                 <div style={{ background: '#fff', borderRadius: 14, border: '1px solid var(--wsl-border)', padding: 20, marginBottom: 20 }}>
-                  <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--wsl-ink-3)', fontFamily: 'Cairo, sans-serif', marginBottom: 6 }}>{isAr ? 'إجمالي التوكنز المشتراة' : 'Total Tokens Purchased'}</div>
-                  <div style={{ fontSize: 32, fontWeight: 900, color: '#14b8a6', fontFamily: 'Inter' }}>{(stats?.tokensPurchased || 0).toLocaleString('en-US')}</div>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--wsl-ink-3)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', marginBottom: 6 }}>{isAr ? 'إجمالي التوكنز المشتراة' : 'Total Tokens Purchased'}</div>
+                  <div style={{ fontSize: 32, fontWeight: 900, color: '#14b8a6', fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>{(stats?.tokensPurchased || 0).toLocaleString('en-US')}</div>
                 </div>
-                <h3 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 16, marginBottom: 12 }}>{isAr ? 'أعلى المستخدمين' : 'Top Users by Balance'}</h3>
+                <h3 style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 16, marginBottom: 12 }}>{isAr ? 'أعلى المستخدمين' : 'Top Users by Balance'}</h3>
                 <div style={{ background: '#fff', borderRadius: 14, border: '1px solid var(--wsl-border)', overflow: 'hidden' }}>
                   {[...users].sort((a, b) => (b.token_balance || 0) - (a.token_balance || 0)).slice(0, 10).map((u, i) => (
                     <div key={u.id} style={{ padding: '12px 16px', borderBottom: i < 9 ? '1px solid var(--wsl-border)' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <span style={{ fontWeight: 800, fontSize: 13, fontFamily: 'Cairo, sans-serif' }}>{u.full_name || u.email} <span style={{ fontSize: 11, color: 'var(--wsl-ink-3)' }}>({u.plan || 'free'})</span></span>
-                      <span style={{ fontWeight: 900, fontSize: 16, color: '#14b8a6', fontFamily: 'Inter' }}>{(u.token_balance || 0).toLocaleString('en-US')}</span>
+                      <span style={{ fontWeight: 800, fontSize: 13, fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>{u.full_name || u.email} <span style={{ fontSize: 11, color: 'var(--wsl-ink-3)' }}>({u.plan || 'free'})</span></span>
+                      <span style={{ fontWeight: 900, fontSize: 16, color: '#14b8a6', fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>{(u.token_balance || 0).toLocaleString('en-US')}</span>
                     </div>
                   ))}
                 </div>
@@ -462,7 +462,7 @@ export default function AdminDashboard() {
                 <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
                   {['all', 'open', 'in_progress', 'resolved', 'closed'].map(f => (
                     <button key={f} onClick={() => setTicketFilter(f)}
-                      style={{ padding: '6px 14px', borderRadius: 8, border: ticketFilter === f ? '1.5px solid #14b8a6' : '1.5px solid var(--wsl-border)', background: ticketFilter === f ? 'rgba(10,143,132,0.07)' : '#fff', color: ticketFilter === f ? '#14b8a6' : '#6B7280', fontWeight: 800, fontSize: 12, cursor: 'pointer', fontFamily: 'Cairo, sans-serif' }}>
+                      style={{ padding: '6px 14px', borderRadius: 8, border: ticketFilter === f ? '1.5px solid #14b8a6' : '1.5px solid var(--wsl-border)', background: ticketFilter === f ? 'rgba(10,143,132,0.07)' : '#fff', color: ticketFilter === f ? '#14b8a6' : '#6B7280', fontWeight: 800, fontSize: 12, cursor: 'pointer', fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
                       {f === 'all' ? (isAr ? 'الكل' : 'All') : f === 'open' ? (isAr ? 'مفتوحة' : 'Open') : f === 'in_progress' ? (isAr ? 'قيد المعالجة' : 'In Progress') : f === 'resolved' ? (isAr ? 'تم الحل' : 'Resolved') : (isAr ? 'مغلقة' : 'Closed')}
                     </button>
                   ))}
@@ -470,7 +470,7 @@ export default function AdminDashboard() {
                 {feedbackTickets.filter(t => ticketFilter === 'all' || t.status === ticketFilter).length === 0 ? (
                   <div style={{ background: '#fff', borderRadius: 14, border: '2px dashed var(--wsl-border)', padding: '40px 24px', textAlign: 'center' }}>
                     <TicketCheck size={32} style={{ color: '#059669', margin: '0 auto 12px' }} />
-                    <div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 16, color: '#065F46' }}>{isAr ? 'لا توجد ملاحظات' : 'No Tickets'}</div>
+                    <div style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 16, color: '#065F46' }}>{isAr ? 'لا توجد ملاحظات' : 'No Tickets'}</div>
                   </div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -486,10 +486,10 @@ export default function AdminDashboard() {
                               {t.priority === 'urgent' && <span style={{ padding: '2px 6px', borderRadius: 4, background: '#FEE2E2', color: '#DC2626', fontSize: 10, fontWeight: 900 }}>URGENT</span>}
                               {t.priority === 'high' && <span style={{ padding: '2px 6px', borderRadius: 4, background: '#FEF3C7', color: '#92400E', fontSize: 10, fontWeight: 900 }}>HIGH</span>}
                             </div>
-                            <span style={{ fontSize: 11, color: 'var(--wsl-ink-4)', fontFamily: 'Inter' }}>{new Date(t.created_at).toLocaleDateString('en', { month: 'short', day: 'numeric' })}</span>
+                            <span style={{ fontSize: 11, color: 'var(--wsl-ink-4)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>{new Date(t.created_at).toLocaleDateString('en', { month: 'short', day: 'numeric' })}</span>
                           </div>
-                          <h4 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 15, color: 'var(--wsl-ink)', marginBottom: 4 }}>{t.subject}</h4>
-                          <p style={{ fontSize: 13, color: 'var(--wsl-ink-2)', lineHeight: 1.6, marginBottom: 8, fontFamily: 'Cairo, Inter, sans-serif' }}>{t.description.substring(0, 200)}{t.description.length > 200 ? '...' : ''}</p>
+                          <h4 style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 15, color: 'var(--wsl-ink)', marginBottom: 4 }}>{t.subject}</h4>
+                          <p style={{ fontSize: 13, color: 'var(--wsl-ink-2)', lineHeight: 1.6, marginBottom: 8, fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>{t.description.substring(0, 200)}{t.description.length > 200 ? '...' : ''}</p>
                           <div style={{ fontSize: 11, color: 'var(--wsl-ink-3)', marginBottom: 10 }}>
                             {isAr ? 'من:' : 'From:'} <strong>{t.user?.full_name || t.user?.email || 'Unknown'}</strong>
                             {t.page_url && <span style={{ marginInlineStart: 8 }}>({t.page_url})</span>}
@@ -549,16 +549,16 @@ export default function AdminDashboard() {
             <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)' }} onClick={() => setRespondModal(null)} />
             <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
               style={{ position: 'relative', background: '#fff', borderRadius: 16, padding: 24, width: '90%', maxWidth: 440, boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
-              <h3 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 18, marginBottom: 8 }}>{isAr ? 'الرد على الملاحظة' : 'Respond to Ticket'}</h3>
+              <h3 style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 18, marginBottom: 8 }}>{isAr ? 'الرد على الملاحظة' : 'Respond to Ticket'}</h3>
               <p style={{ fontSize: 13, color: 'var(--wsl-ink-3)', marginBottom: 16, fontWeight: 800 }}>{respondModal.subject}</p>
               <textarea value={respondText} onChange={e => setRespondText(e.target.value)} rows={4}
                 placeholder={isAr ? 'اكتب ردك...' : 'Write your response...'}
-                style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1.5px solid var(--wsl-border)', fontSize: 13, fontFamily: 'Cairo, Inter, sans-serif', outline: 'none', resize: 'none', marginBottom: 14, boxSizing: 'border-box' }} />
+                style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1.5px solid var(--wsl-border)', fontSize: 13, fontFamily: '"Thmanyah Sans", system-ui, sans-serif', outline: 'none', resize: 'none', marginBottom: 14, boxSizing: 'border-box' }} />
               <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                <button onClick={() => setRespondModal(null)} style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid var(--wsl-border)', background: '#fff', cursor: 'pointer', fontFamily: 'Cairo, sans-serif', fontWeight: 800, fontSize: 13 }}>{isAr ? 'إلغاء' : 'Cancel'}</button>
+                <button onClick={() => setRespondModal(null)} style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid var(--wsl-border)', background: '#fff', cursor: 'pointer', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 800, fontSize: 13 }}>{isAr ? 'إلغاء' : 'Cancel'}</button>
                 <button onClick={async () => {
                   try { await trpc.feedback.respond({ id: respondModal.id, response: respondText, status: 'resolved' }); toast.push('success', isAr ? 'تم الرد' : 'Responded'); setRespondModal(null); loadData(); } catch (e: any) { toast.push('error', e?.message || 'Failed'); }
-                }} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#14b8a6', color: '#fff', cursor: 'pointer', fontFamily: 'Cairo, sans-serif', fontWeight: 800, fontSize: 13 }}>{isAr ? 'إرسال الرد' : 'Send Response'}</button>
+                }} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#14b8a6', color: '#fff', cursor: 'pointer', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 800, fontSize: 13 }}>{isAr ? 'إرسال الرد' : 'Send Response'}</button>
               </div>
             </motion.div>
           </div>
@@ -570,17 +570,17 @@ export default function AdminDashboard() {
             <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)' }} onClick={() => setAddTokensModal(null)} />
             <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
               style={{ position: 'relative', background: '#fff', borderRadius: 16, padding: 24, width: '90%', maxWidth: 400, boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
-              <h3 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 18, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <h3 style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 18, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Coins size={18} style={{ color: '#14b8a6' }} /> {isAr ? 'إضافة توكنز' : 'Add Tokens'}
               </h3>
-              <div style={{ fontSize: 13, color: 'var(--wsl-ink-3)', marginBottom: 16, fontFamily: 'Cairo, sans-serif' }}>{isAr ? 'إلى:' : 'To:'} <strong>{addTokensModal.name}</strong></div>
+              <div style={{ fontSize: 13, color: 'var(--wsl-ink-3)', marginBottom: 16, fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>{isAr ? 'إلى:' : 'To:'} <strong>{addTokensModal.name}</strong></div>
               <input type="number" value={tokenAmount} onChange={e => setTokenAmount(parseInt(e.target.value) || 0)}
-                style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1.5px solid var(--wsl-border)', fontFamily: 'Inter', fontSize: 16, fontWeight: 900, outline: 'none', marginBottom: 10, boxSizing: 'border-box' }} />
+                style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1.5px solid var(--wsl-border)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontSize: 16, fontWeight: 900, outline: 'none', marginBottom: 10, boxSizing: 'border-box' }} />
               <input value={tokenReason} onChange={e => setTokenReason(e.target.value)} placeholder={isAr ? 'السبب (اختياري)' : 'Reason (optional)'}
-                style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1.5px solid var(--wsl-border)', fontFamily: 'Cairo, Inter, sans-serif', fontSize: 13, outline: 'none', marginBottom: 16, boxSizing: 'border-box' }} />
+                style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1.5px solid var(--wsl-border)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontSize: 13, outline: 'none', marginBottom: 16, boxSizing: 'border-box' }} />
               <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                <button onClick={() => setAddTokensModal(null)} style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid var(--wsl-border)', background: '#fff', cursor: 'pointer', fontFamily: 'Cairo, sans-serif', fontWeight: 800, fontSize: 13 }}>{isAr ? 'إلغاء' : 'Cancel'}</button>
-                <button onClick={handleAddTokens} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#14b8a6', color: '#fff', cursor: 'pointer', fontFamily: 'Cairo, sans-serif', fontWeight: 800, fontSize: 13 }}>{isAr ? 'إضافة' : 'Add'}</button>
+                <button onClick={() => setAddTokensModal(null)} style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid var(--wsl-border)', background: '#fff', cursor: 'pointer', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 800, fontSize: 13 }}>{isAr ? 'إلغاء' : 'Cancel'}</button>
+                <button onClick={handleAddTokens} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#14b8a6', color: '#fff', cursor: 'pointer', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 800, fontSize: 13 }}>{isAr ? 'إضافة' : 'Add'}</button>
               </div>
             </motion.div>
           </div>

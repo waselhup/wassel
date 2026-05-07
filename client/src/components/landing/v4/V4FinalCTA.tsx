@@ -5,7 +5,7 @@ import { useLocation } from 'wouter';
 export default function V4FinalCTA() {
   const { t, i18n } = useTranslation();
   const isAr = i18n.language === 'ar';
-  const fontFamily = isAr ? 'Cairo, sans-serif' : 'Inter, sans-serif';
+  const fontFamily = '"Thmanyah Sans", system-ui, sans-serif';
   const [, navigate] = useLocation();
   const [email, setEmail] = useState('');
 

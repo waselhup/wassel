@@ -40,7 +40,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, page
   const [tokenBalance, setTokenBalance] = useState<number | null>(null);
   const [userPlan, setUserPlan] = useState<string>('free');
   const isRTL = i18n.language === 'ar';
-  const font = isRTL ? 'Cairo, sans-serif' : 'Inter, sans-serif';
+  const font = '"Thmanyah Sans", system-ui, sans-serif';
   // When this layout is rendered inside the V2 ProtectedShell (which already
   // provides the sidebar, topbar, and account cluster), we skip the V1 chrome
   // and render only the page body — preserving every page's tRPC/business
@@ -291,7 +291,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, page
           <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', fontWeight: 600, letterSpacing: 0.6, textTransform: 'uppercase' }}>
             {t('nav.tokens', isRTL ? 'الرصيد' : 'Tokens')}
           </div>
-          <div style={{ fontSize: '1.05rem', fontWeight: 600, color: 'var(--text)', fontFamily: 'Inter, sans-serif', lineHeight: 1.1 }}>
+          <div style={{ fontSize: '1.05rem', fontWeight: 600, color: 'var(--text)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', lineHeight: 1.1 }}>
             {tokenBalance !== null ? tokenBalance.toLocaleString('en-US') : '…'}
           </div>
         </div>
@@ -501,7 +501,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, page
                   fontWeight: 600,
                   fontSize: '0.8rem',
                   color: 'var(--text)',
-                  fontFamily: 'Inter, sans-serif',
+                  fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
                 }}
               >
                 {tokenBalance !== null ? tokenBalance.toLocaleString('en-US') : '…'}

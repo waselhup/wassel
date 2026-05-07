@@ -7,7 +7,7 @@ import { WasselLogo } from '../../WasselLogo';
 export default function V4Nav() {
   const { t, i18n } = useTranslation();
   const isAr = i18n.language === 'ar';
-  const fontFamily = isAr ? 'Cairo, sans-serif' : 'Inter, sans-serif';
+  const fontFamily = '"Thmanyah Sans", system-ui, sans-serif';
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const toggleLang = () => {
@@ -98,7 +98,7 @@ export default function V4Nav() {
               border: '1px solid var(--v4-border)',
               background: 'white',
               color: 'var(--v4-text)',
-              fontFamily: 'Inter, sans-serif',
+              fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
               fontWeight: 600,
               fontSize: 12,
               cursor: 'pointer',

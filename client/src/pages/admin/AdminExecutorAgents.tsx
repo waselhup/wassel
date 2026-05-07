@@ -195,7 +195,7 @@ export default function AdminExecutorAgents() {
     <div style={{ display: 'grid', gridTemplateColumns: '240px 1fr 280px', gap: 12, height: 'calc(100vh - 280px)', minHeight: 500 }}>
       {/* Left pane: agents + conversations */}
       <div style={{ background: '#fff', borderRadius: 14, border: '1px solid #E5E7EB', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ padding: '12px 14px', borderBottom: '1px solid #E5E7EB', fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 12, color: '#6B7280' }}>
+        <div style={{ padding: '12px 14px', borderBottom: '1px solid #E5E7EB', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 12, color: '#6B7280' }}>
           {isAr ? 'الوكلاء' : 'Agents'}
         </div>
         <div style={{ flex: 1, overflowY: 'auto' }}>
@@ -215,10 +215,10 @@ export default function AdminExecutorAgents() {
                   <Icon size={14} color={colors.text} />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 12, fontWeight: 900, color: '#111827', fontFamily: 'Cairo, sans-serif' }}>
+                  <div style={{ fontSize: 12, fontWeight: 900, color: '#111827', fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
                     {isAr ? a.name_ar : a.name_en}
                   </div>
-                  <div style={{ fontSize: 10, color: '#9CA3AF', fontFamily: 'Cairo, sans-serif' }}>
+                  <div style={{ fontSize: 10, color: '#9CA3AF', fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
                     {a.allowed_tools.length} {isAr ? 'أداة' : 'tools'}
                   </div>
                 </div>
@@ -226,7 +226,7 @@ export default function AdminExecutorAgents() {
             );
           })}
         </div>
-        <div style={{ padding: '10px 14px', borderTop: '1px solid #E5E7EB', fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 11, color: '#6B7280' }}>
+        <div style={{ padding: '10px 14px', borderTop: '1px solid #E5E7EB', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 11, color: '#6B7280' }}>
           {isAr ? 'محادثاتي' : 'My conversations'}
         </div>
         <div style={{ maxHeight: 180, overflowY: 'auto' }}>
@@ -235,7 +235,7 @@ export default function AdminExecutorAgents() {
             return (
               <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 4, borderBottom: '1px solid #F3F4F6' }}>
                 <button onClick={() => openConversation(c)}
-                  style={{ flex: 1, padding: '8px 14px', background: activeConv?.id === c.id ? '#F0FDF9' : 'transparent', border: 'none', cursor: 'pointer', textAlign: 'start', fontSize: 11, fontFamily: 'Cairo, sans-serif', color: '#374151', minWidth: 0 }}>
+                  style={{ flex: 1, padding: '8px 14px', background: activeConv?.id === c.id ? '#F0FDF9' : 'transparent', border: 'none', cursor: 'pointer', textAlign: 'start', fontSize: 11, fontFamily: '"Thmanyah Sans", system-ui, sans-serif', color: '#374151', minWidth: 0 }}>
                   <div style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {c.title || (agent ? (isAr ? agent.name_ar : agent.name_en) : c.agent_id)}
                   </div>
@@ -265,15 +265,15 @@ export default function AdminExecutorAgents() {
                 );
               })()}
               <div style={{ flex: 1 }}>
-                <div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 14, color: '#111827' }}>
+                <div style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 14, color: '#111827' }}>
                   {isAr ? selectedAgent.name_ar : selectedAgent.name_en}
                 </div>
-                <div style={{ fontSize: 11, color: '#6B7280', fontFamily: 'Cairo, sans-serif' }}>
+                <div style={{ fontSize: 11, color: '#6B7280', fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
                   {isAr ? selectedAgent.description_ar : selectedAgent.description_en}
                 </div>
               </div>
               {pendingCount > 0 && (
-                <span style={{ padding: '3px 10px', borderRadius: 999, background: '#FEF3C7', color: '#92400E', fontSize: 10, fontWeight: 900, fontFamily: 'Cairo, sans-serif', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                <span style={{ padding: '3px 10px', borderRadius: 999, background: '#FEF3C7', color: '#92400E', fontSize: 10, fontWeight: 900, fontFamily: '"Thmanyah Sans", system-ui, sans-serif', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                   <AlertTriangle size={10} /> {pendingCount} {isAr ? 'بانتظار الموافقة' : 'pending'}
                 </span>
               )}
@@ -281,7 +281,7 @@ export default function AdminExecutorAgents() {
 
             <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
               {messages.length === 0 && (
-                <div style={{ textAlign: 'center', padding: 40, color: '#9CA3AF', fontSize: 12, fontFamily: 'Cairo, sans-serif' }}>
+                <div style={{ textAlign: 'center', padding: 40, color: '#9CA3AF', fontSize: 12, fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
                   {isAr ? 'ابدأ المحادثة بإرسال رسالة' : 'Start by sending a message'}
                 </div>
               )}
@@ -291,7 +291,7 @@ export default function AdminExecutorAgents() {
                     maxWidth: '82%', padding: '10px 14px', borderRadius: 12,
                     background: m.role === 'user' ? '#14b8a6' : '#F9FAFB',
                     color: m.role === 'user' ? '#fff' : '#111827',
-                    fontFamily: 'Cairo, Inter, sans-serif', fontSize: 13, lineHeight: 1.7,
+                    fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontSize: 13, lineHeight: 1.7,
                     whiteSpace: 'pre-wrap', wordBreak: 'break-word',
                   }}>
                     {m.content}
@@ -304,13 +304,13 @@ export default function AdminExecutorAgents() {
                 </div>
               ))}
               {sending && (
-                <div style={{ display: 'flex', gap: 8, padding: '8px 12px', color: '#6B7280', fontSize: 12, fontFamily: 'Cairo, sans-serif' }}>
+                <div style={{ display: 'flex', gap: 8, padding: '8px 12px', color: '#6B7280', fontSize: 12, fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
                   <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
                   {isAr ? 'يفكر...' : 'Thinking...'}
                 </div>
               )}
               {err && (
-                <div style={{ padding: 10, borderRadius: 10, background: '#FEF2F2', border: '1px solid #FECACA', color: '#991B1B', fontSize: 12, fontFamily: 'Cairo, sans-serif' }}>
+                <div style={{ padding: 10, borderRadius: 10, background: '#FEF2F2', border: '1px solid #FECACA', color: '#991B1B', fontSize: 12, fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
                   {err}
                 </div>
               )}
@@ -330,7 +330,7 @@ export default function AdminExecutorAgents() {
                 rows={2}
                 style={{
                   flex: 1, padding: '10px 12px', borderRadius: 10, border: '1px solid #E5E7EB',
-                  resize: 'none', fontSize: 13, fontFamily: 'Cairo, Inter, sans-serif', outline: 'none',
+                  resize: 'none', fontSize: 13, fontFamily: '"Thmanyah Sans", system-ui, sans-serif', outline: 'none',
                 }}
               />
               <button
@@ -339,7 +339,7 @@ export default function AdminExecutorAgents() {
                 style={{
                   padding: '0 16px', borderRadius: 10, background: '#14b8a6', color: '#fff',
                   border: 'none', cursor: 'pointer', opacity: !input.trim() || sending ? 0.5 : 1,
-                  display: 'flex', alignItems: 'center', gap: 6, fontWeight: 800, fontSize: 12, fontFamily: 'Cairo, sans-serif',
+                  display: 'flex', alignItems: 'center', gap: 6, fontWeight: 800, fontSize: 12, fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
                 }}
               >
                 <Send size={14} />
@@ -350,10 +350,10 @@ export default function AdminExecutorAgents() {
         ) : (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 40, color: '#9CA3AF' }}>
             <Bot size={40} style={{ marginBottom: 10, color: '#D1D5DB' }} />
-            <div style={{ fontSize: 14, fontFamily: 'Cairo, sans-serif', fontWeight: 800 }}>
+            <div style={{ fontSize: 14, fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 800 }}>
               {isAr ? 'اختر وكيلاً للبدء' : 'Pick an agent to start'}
             </div>
-            <div style={{ fontSize: 11, marginTop: 4, fontFamily: 'Cairo, sans-serif' }}>
+            <div style={{ fontSize: 11, marginTop: 4, fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
               {isAr ? 'من القائمة على اليمين' : 'From the list on the left'}
             </div>
           </div>
@@ -362,12 +362,12 @@ export default function AdminExecutorAgents() {
 
       {/* Right pane: action log */}
       <div style={{ background: '#fff', borderRadius: 14, border: '1px solid #E5E7EB', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ padding: '12px 14px', borderBottom: '1px solid #E5E7EB', display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 12, color: '#6B7280' }}>
+        <div style={{ padding: '12px 14px', borderBottom: '1px solid #E5E7EB', display: 'flex', alignItems: 'center', gap: 6, fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 12, color: '#6B7280' }}>
           <ShieldCheck size={12} /> {isAr ? 'سجل الإجراءات' : 'Actions log'}
         </div>
         <div style={{ flex: 1, overflowY: 'auto', padding: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
           {allToolsInConv.length === 0 && (
-            <div style={{ textAlign: 'center', padding: 20, color: '#9CA3AF', fontSize: 11, fontFamily: 'Cairo, sans-serif' }}>
+            <div style={{ textAlign: 'center', padding: 20, color: '#9CA3AF', fontSize: 11, fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
               {isAr ? 'لا توجد إجراءات بعد' : 'No actions yet'}
             </div>
           )}
@@ -388,16 +388,16 @@ export default function AdminExecutorAgents() {
                 {JSON.stringify(a.tool_input, null, 2)}
               </pre>
               {a.error_message && (
-                <div style={{ marginTop: 4, fontSize: 10, color: '#991B1B', fontFamily: 'Cairo, sans-serif' }}>
+                <div style={{ marginTop: 4, fontSize: 10, color: '#991B1B', fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
                   {a.error_message}
                 </div>
               )}
               {a.status === 'pending' && (
                 <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
-                  <button onClick={() => approveAction(a.id)} style={{ flex: 1, padding: '5px 8px', borderRadius: 6, background: '#10B981', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 10, fontWeight: 900, fontFamily: 'Cairo, sans-serif', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 3 }}>
+                  <button onClick={() => approveAction(a.id)} style={{ flex: 1, padding: '5px 8px', borderRadius: 6, background: '#10B981', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 10, fontWeight: 900, fontFamily: '"Thmanyah Sans", system-ui, sans-serif', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 3 }}>
                     <Check size={10} /> {isAr ? 'موافقة' : 'Approve'}
                   </button>
-                  <button onClick={() => rejectAction(a.id)} style={{ flex: 1, padding: '5px 8px', borderRadius: 6, background: '#EF4444', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 10, fontWeight: 900, fontFamily: 'Cairo, sans-serif', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 3 }}>
+                  <button onClick={() => rejectAction(a.id)} style={{ flex: 1, padding: '5px 8px', borderRadius: 6, background: '#EF4444', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 10, fontWeight: 900, fontFamily: '"Thmanyah Sans", system-ui, sans-serif', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 3 }}>
                     <X size={10} /> {isAr ? 'رفض' : 'Reject'}
                   </button>
                 </div>

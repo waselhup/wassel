@@ -97,7 +97,7 @@ export default function Login() {
             onClick={handleGoogleLogin}
             disabled={oauthLoading !== null || loading}
             className="w-full h-12 rounded-lg bg-white border border-[#dadce0] text-[#3c4043] font-semibold text-sm hover:shadow-md transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-3"
-            style={{ fontFamily: "Inter, sans-serif" }}
+            style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}
           >
             {oauthLoading === "google" ? (
               <Loader2 className="w-5 h-5 animate-spin" />

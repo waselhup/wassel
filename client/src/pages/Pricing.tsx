@@ -53,7 +53,7 @@ export default function Pricing() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   return (
-    <div dir={isRTL ? 'rtl' : 'ltr'} className="min-h-screen" style={{ background: 'var(--wsl-bg)', fontFamily: isRTL ? 'Cairo, sans-serif' : 'Inter, sans-serif' }}>
+    <div dir={isRTL ? 'rtl' : 'ltr'} className="min-h-screen" style={{ background: 'var(--wsl-bg)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
       {/* Header */}
       <nav className="sticky top-0 z-50 backdrop-blur-md bg-white/80 border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
@@ -92,7 +92,7 @@ export default function Pricing() {
               )}
               <h3 className="text-xl font-extrabold mb-2" style={{ color: 'var(--wsl-ink)' }}>{p.name}</h3>
               <div className="flex items-baseline gap-1 mb-4">
-                <span className="text-4xl font-extrabold" style={{ color: 'var(--wsl-teal)', fontFamily: 'Inter, sans-serif' }}>{p.price}</span>
+                <span className="text-4xl font-extrabold" style={{ color: 'var(--wsl-teal)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>{p.price}</span>
                 <span className="text-sm" style={{ color: 'var(--wsl-ink-3)' }}>{t('pricing.sar', '\u0631\u064a\u0627\u0644')}{p.period}</span>
               </div>
               <ul className="space-y-3 mb-6 flex-1">

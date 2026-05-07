@@ -51,7 +51,7 @@ export default function LandingPage() {
       dir={isRTL ? 'rtl' : 'ltr'}
       lang={isRTL ? 'ar' : 'en'}
       style={{
-        fontFamily: isRTL ? 'Cairo, sans-serif' : 'Inter, sans-serif',
+        fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
         background: 'var(--v4-bg)',
         color: 'var(--v4-text)',
         minHeight: '100vh',

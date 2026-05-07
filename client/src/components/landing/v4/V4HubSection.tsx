@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 export default function V4HubSection() {
   const { t, i18n } = useTranslation();
   const isAr = i18n.language === 'ar';
-  const fontFamily = isAr ? 'Cairo, sans-serif' : 'Inter, sans-serif';
+  const fontFamily = '"Thmanyah Sans", system-ui, sans-serif';
 
   return (
     <section id="hub" className="v4-section-mobile" style={{ position: 'relative', padding: '6rem 2rem', zIndex: 5, fontFamily }}>

@@ -33,13 +33,13 @@ export default function MyTickets() {
     <DashboardLayout pageTitle={isAr ? 'ملاحظاتي' : 'My Tickets'}>
       <div style={{ maxWidth: 800, margin: '0 auto', padding: '0 4px' }}>
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} style={{ marginBottom: 24 }}>
-          <h1 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 28, color: 'var(--wsl-ink)', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <h1 style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 28, color: 'var(--wsl-ink)', display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{ width: 40, height: 40, borderRadius: 12, background: 'linear-gradient(135deg, #14b8a6, #0f766e)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <TicketCheck size={20} color="#fff" />
             </div>
             {isAr ? 'ملاحظاتي وتذاكري' : 'My Feedback & Tickets'}
           </h1>
-          <p style={{ color: 'var(--wsl-ink-3)', fontSize: 14, fontFamily: 'Cairo, sans-serif', marginTop: 4 }}>
+          <p style={{ color: 'var(--wsl-ink-3)', fontSize: 14, fontFamily: '"Thmanyah Sans", system-ui, sans-serif', marginTop: 4 }}>
             {isAr ? 'تتبع حالة ملاحظاتك وردود الفريق' : 'Track your feedback status and team responses'}
           </p>
         </motion.div>
@@ -51,10 +51,10 @@ export default function MyTickets() {
         ) : tickets.length === 0 ? (
           <div style={{ background: '#fff', borderRadius: 16, border: '2px dashed var(--wsl-border)', padding: '60px 24px', textAlign: 'center' }}>
             <MessageSquare size={40} style={{ color: '#9CA3AF', margin: '0 auto 12px' }} />
-            <div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 16, color: 'var(--wsl-ink-3)' }}>
+            <div style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 16, color: 'var(--wsl-ink-3)' }}>
               {isAr ? 'لم ترسل أي ملاحظات بعد' : 'No feedback submitted yet'}
             </div>
-            <p style={{ fontSize: 13, color: '#9CA3AF', marginTop: 4, fontFamily: 'Cairo, sans-serif' }}>
+            <p style={{ fontSize: 13, color: '#9CA3AF', marginTop: 4, fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
               {isAr ? 'اضغط على زر الملاحظات في أسفل الصفحة لإرسال أول ملاحظة' : 'Click the feedback button at the bottom to send your first feedback'}
             </p>
           </div>
@@ -68,25 +68,25 @@ export default function MyTickets() {
                   style={{ background: '#fff', borderRadius: 14, border: '1px solid var(--wsl-border)', padding: 20 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ padding: '2px 10px', borderRadius: 999, background: st.bg, color: st.text, fontSize: 11, fontWeight: 900, fontFamily: 'Cairo, sans-serif' }}>
+                      <span style={{ padding: '2px 10px', borderRadius: 999, background: st.bg, color: st.text, fontSize: 11, fontWeight: 900, fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
                         {isAr ? st.label_ar : st.label_en}
                       </span>
-                      <span style={{ padding: '2px 8px', borderRadius: 6, background: '#F3F4F6', color: '#6B7280', fontSize: 10, fontWeight: 800, fontFamily: 'Cairo, sans-serif' }}>
+                      <span style={{ padding: '2px 8px', borderRadius: 6, background: '#F3F4F6', color: '#6B7280', fontSize: 10, fontWeight: 800, fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
                         {isAr ? cat.ar : cat.en}
                       </span>
                     </div>
-                    <span style={{ fontSize: 11, color: 'var(--wsl-ink-4)', fontFamily: 'Inter' }}>
+                    <span style={{ fontSize: 11, color: 'var(--wsl-ink-4)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
                       {new Date(t.created_at).toLocaleDateString(isAr ? 'ar' : 'en', { month: 'short', day: 'numeric', year: 'numeric' })}
                     </span>
                   </div>
-                  <h3 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 16, color: 'var(--wsl-ink)', marginBottom: 6 }}>{t.subject}</h3>
-                  <p style={{ fontSize: 14, color: 'var(--wsl-ink-2)', lineHeight: 1.7, fontFamily: 'Cairo, Inter, sans-serif' }}>{t.description}</p>
+                  <h3 style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 16, color: 'var(--wsl-ink)', marginBottom: 6 }}>{t.subject}</h3>
+                  <p style={{ fontSize: 14, color: 'var(--wsl-ink-2)', lineHeight: 1.7, fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>{t.description}</p>
                   {t.admin_response && (
                     <div style={{ marginTop: 12, padding: 14, borderRadius: 10, background: '#F0FDF9', border: '1px solid #A7F3D0' }}>
-                      <div style={{ fontSize: 11, fontWeight: 800, color: '#065F46', marginBottom: 4, fontFamily: 'Cairo, sans-serif', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <div style={{ fontSize: 11, fontWeight: 800, color: '#065F46', marginBottom: 4, fontFamily: '"Thmanyah Sans", system-ui, sans-serif', display: 'flex', alignItems: 'center', gap: 4 }}>
                         <CheckCircle2 size={12} /> {isAr ? 'رد الفريق' : 'Team Response'}
                       </div>
-                      <p style={{ fontSize: 13, color: '#065F46', fontFamily: 'Cairo, Inter, sans-serif', lineHeight: 1.6 }}>{t.admin_response}</p>
+                      <p style={{ fontSize: 13, color: '#065F46', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', lineHeight: 1.6 }}>{t.admin_response}</p>
                     </div>
                   )}
                 </motion.div>

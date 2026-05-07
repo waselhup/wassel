@@ -13,7 +13,7 @@
 - AI: Anthropic Claude API (claude-sonnet-4-6 for campaigns/CV, claude-haiku-4-5-20251001 for LinkedIn)
 - Prospect Scraping: Apify (harvestapi/linkedin-profile-search) — NEVER say "Apify" in UI
 - Payments: Moyasar (pending registration)
-- Fonts: Cairo (Arabic) + Inter (English)
+- Fonts: Thmanyah Sans (bilingual Arabic+Latin, self-hosted woff2) + JetBrains Mono (code)
 - i18n: react-i18next, AR + EN
 ## Credentials (never commit to public repo)
 SUPABASE_URL=https://hiqotmimlgsrsnovtopd.supabase.co

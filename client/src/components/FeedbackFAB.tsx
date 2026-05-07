@@ -88,14 +88,14 @@ export default function FeedbackFAB() {
               {done ? (
                 <div style={{ textAlign: 'center', padding: '32px 0' }}>
                   <CheckCircle2 size={48} style={{ color: '#059669', margin: '0 auto 12px' }} />
-                  <div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 18, color: '#065F46' }}>
+                  <div style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 18, color: '#065F46' }}>
                     {isAr ? 'تم إرسال ملاحظتك بنجاح!' : 'Feedback submitted!'}
                   </div>
                 </div>
               ) : (
                 <>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-                    <h3 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 900, fontSize: 20, color: 'var(--wsl-ink)', display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
+                    <h3 style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 20, color: 'var(--wsl-ink)', display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
                       <MessageSquarePlus size={20} style={{ color: '#14b8a6' }} />
                       {isAr ? 'إرسال ملاحظة' : 'Send Feedback'}
                     </h3>
@@ -106,13 +106,13 @@ export default function FeedbackFAB() {
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                     <div>
-                      <label style={{ display: 'block', fontSize: 12, fontWeight: 800, color: '#6B7280', marginBottom: 4, fontFamily: 'Cairo, sans-serif' }}>
+                      <label style={{ display: 'block', fontSize: 12, fontWeight: 800, color: '#6B7280', marginBottom: 4, fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
                         {isAr ? 'النوع' : 'Category'}
                       </label>
                       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                         {categories.map(c => (
                           <button key={c.value} onClick={() => setForm(f => ({ ...f, category: c.value as any }))}
-                            style={{ padding: '6px 14px', borderRadius: 8, border: form.category === c.value ? '1.5px solid #14b8a6' : '1.5px solid #E5E7EB', background: form.category === c.value ? 'rgba(10,143,132,0.07)' : '#fff', color: form.category === c.value ? '#14b8a6' : '#6B7280', fontWeight: 800, fontSize: 12, cursor: 'pointer', fontFamily: 'Cairo, sans-serif' }}>
+                            style={{ padding: '6px 14px', borderRadius: 8, border: form.category === c.value ? '1.5px solid #14b8a6' : '1.5px solid #E5E7EB', background: form.category === c.value ? 'rgba(10,143,132,0.07)' : '#fff', color: form.category === c.value ? '#14b8a6' : '#6B7280', fontWeight: 800, fontSize: 12, cursor: 'pointer', fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
                             {c.label}
                           </button>
                         ))}
@@ -120,32 +120,32 @@ export default function FeedbackFAB() {
                     </div>
 
                     <div>
-                      <label style={{ display: 'block', fontSize: 12, fontWeight: 800, color: '#6B7280', marginBottom: 4, fontFamily: 'Cairo, sans-serif' }}>
+                      <label style={{ display: 'block', fontSize: 12, fontWeight: 800, color: '#6B7280', marginBottom: 4, fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
                         {isAr ? 'الموضوع' : 'Subject'}
                       </label>
                       <input value={form.subject} onChange={e => setForm(f => ({ ...f, subject: e.target.value }))}
                         placeholder={isAr ? 'وصف مختصر للملاحظة...' : 'Brief description...'}
-                        style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1.5px solid #E5E7EB', fontSize: 14, fontFamily: 'Cairo, Inter, sans-serif', outline: 'none', boxSizing: 'border-box' }} />
+                        style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1.5px solid #E5E7EB', fontSize: 14, fontFamily: '"Thmanyah Sans", system-ui, sans-serif', outline: 'none', boxSizing: 'border-box' }} />
                     </div>
 
                     <div>
-                      <label style={{ display: 'block', fontSize: 12, fontWeight: 800, color: '#6B7280', marginBottom: 4, fontFamily: 'Cairo, sans-serif' }}>
+                      <label style={{ display: 'block', fontSize: 12, fontWeight: 800, color: '#6B7280', marginBottom: 4, fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
                         {isAr ? 'التفاصيل' : 'Details'}
                       </label>
                       <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                         placeholder={isAr ? 'اشرح المشكلة أو الاقتراح بالتفصيل...' : 'Describe the issue or suggestion in detail...'}
                         rows={4}
-                        style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1.5px solid #E5E7EB', fontSize: 14, fontFamily: 'Cairo, Inter, sans-serif', outline: 'none', resize: 'none', boxSizing: 'border-box' }} />
+                        style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1.5px solid #E5E7EB', fontSize: 14, fontFamily: '"Thmanyah Sans", system-ui, sans-serif', outline: 'none', resize: 'none', boxSizing: 'border-box' }} />
                     </div>
 
                     <div>
-                      <label style={{ display: 'block', fontSize: 12, fontWeight: 800, color: '#6B7280', marginBottom: 4, fontFamily: 'Cairo, sans-serif' }}>
+                      <label style={{ display: 'block', fontSize: 12, fontWeight: 800, color: '#6B7280', marginBottom: 4, fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
                         {isAr ? 'الأولوية' : 'Priority'}
                       </label>
                       <div style={{ display: 'flex', gap: 6 }}>
                         {priorities.map(p => (
                           <button key={p.value} onClick={() => setForm(f => ({ ...f, priority: p.value as any }))}
-                            style={{ padding: '6px 12px', borderRadius: 8, border: form.priority === p.value ? '1.5px solid #14b8a6' : '1.5px solid #E5E7EB', background: form.priority === p.value ? 'rgba(10,143,132,0.07)' : '#fff', color: form.priority === p.value ? '#14b8a6' : '#6B7280', fontWeight: 800, fontSize: 11, cursor: 'pointer', fontFamily: 'Cairo, sans-serif' }}>
+                            style={{ padding: '6px 12px', borderRadius: 8, border: form.priority === p.value ? '1.5px solid #14b8a6' : '1.5px solid #E5E7EB', background: form.priority === p.value ? 'rgba(10,143,132,0.07)' : '#fff', color: form.priority === p.value ? '#14b8a6' : '#6B7280', fontWeight: 800, fontSize: 11, cursor: 'pointer', fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
                             {p.label}
                           </button>
                         ))}
@@ -153,13 +153,13 @@ export default function FeedbackFAB() {
                     </div>
 
                     {error && (
-                      <div style={{ padding: '8px 14px', borderRadius: 8, background: '#FEF2F2', border: '1px solid #FECACA', color: '#DC2626', fontSize: 13, fontFamily: 'Cairo, sans-serif' }}>
+                      <div style={{ padding: '8px 14px', borderRadius: 8, background: '#FEF2F2', border: '1px solid #FECACA', color: '#DC2626', fontSize: 13, fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
                         {error}
                       </div>
                     )}
 
                     <button onClick={submit} disabled={loading}
-                      style={{ width: '100%', padding: '12px 0', borderRadius: 12, border: 'none', background: '#14b8a6', color: '#fff', fontWeight: 900, fontSize: 14, cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.6 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontFamily: 'Cairo, sans-serif' }}>
+                      style={{ width: '100%', padding: '12px 0', borderRadius: 12, border: 'none', background: '#14b8a6', color: '#fff', fontWeight: 900, fontSize: 14, cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.6 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
                       {loading ? <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} /> : null}
                       {loading ? (isAr ? 'جاري الإرسال...' : 'Submitting...') : (isAr ? 'إرسال الملاحظة' : 'Submit Feedback')}
                     </button>

@@ -43,8 +43,8 @@
   --shadow-lift: 0 1px 0 rgba(16,24,40,.04), 0 8px 24px -8px rgba(16,24,40,.10);
 
   /* Type */
-  --font-ar: 'Cairo', 'Inter', system-ui, sans-serif;
-  --font-en: 'Inter', system-ui, sans-serif;
+  --font-ar: 'Thmanyah Sans', system-ui, sans-serif;
+  --font-en: 'Thmanyah Sans', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 
   /* Motion */

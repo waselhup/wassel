@@ -135,7 +135,7 @@ function useToast() {
               color: t.type === 'success' ? '#065F46' : '#991B1B',
               border: `1px solid ${t.type === 'success' ? '#A7F3D0' : '#FECACA'}`,
               boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
-              fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 700, fontSize: 13,
+              fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 700, fontSize: 13,
               display: 'flex', alignItems: 'center', gap: 10,
             }}
           >
@@ -431,14 +431,14 @@ export default function Posts() {
           style={{ marginBottom: 24 }}
         >
           <h1 style={{
-            fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 900,
+            fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900,
             fontSize: 30, color: 'var(--wsl-ink)', letterSpacing: '-0.5px', margin: 0,
           }}>
             {t('posts.studio.title')}
           </h1>
           <p style={{
             marginTop: 6, color: 'var(--wsl-ink-3)',
-            fontFamily: 'Cairo, Inter, sans-serif', fontSize: 14, lineHeight: 1.6,
+            fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontSize: 14, lineHeight: 1.6,
           }}>
             {t('posts.studio.subtitle')}
           </p>
@@ -452,7 +452,7 @@ export default function Posts() {
           {/* Voice placeholder */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
             <div style={{
-              fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 800, fontSize: 13,
+              fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 800, fontSize: 13,
               color: 'var(--wsl-ink-2)',
             }}>
               {t('posts.studio.topic.label')}
@@ -469,19 +469,19 @@ export default function Posts() {
             style={{
               width: '100%', padding: '12px 14px', borderRadius: 10,
               border: '1.5px solid var(--wsl-border, #E5E7EB)',
-              fontFamily: 'Cairo, Inter, sans-serif', fontSize: 14, lineHeight: 1.6,
+              fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontSize: 14, lineHeight: 1.6,
               resize: 'vertical', background: '#F9FAFB',
               outline: 'none', direction: isAr ? 'rtl' : 'ltr',
             }}
           />
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
-            <span style={{ fontSize: 11, color: 'var(--wsl-ink-3)', fontFamily: 'Cairo, Inter, sans-serif' }}>
+            <span style={{ fontSize: 11, color: 'var(--wsl-ink-3)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
               {t('posts.studio.topic.hint')}
             </span>
             <span style={{
               fontSize: 11, fontWeight: 700,
               color: topic.length > 1800 ? '#DC2626' : 'var(--wsl-ink-3)',
-              fontFamily: 'Cairo, Inter, sans-serif',
+              fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
             }}>
               {topic.length} / 2000
             </span>
@@ -492,7 +492,7 @@ export default function Posts() {
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.05 }} style={cardStyle}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 10 }}>
             <div style={labelStyle}>{t('posts.studio.tones.label')}</div>
-            <span style={{ fontSize: 11, color: 'var(--wsl-ink-3)', fontFamily: 'Cairo, Inter, sans-serif' }}>
+            <span style={{ fontSize: 11, color: 'var(--wsl-ink-3)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
               {t('posts.studio.tones.hint')}
             </span>
           </div>
@@ -536,7 +536,7 @@ export default function Posts() {
             <div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 6 }}>
                 <div style={labelStyle}>{t('posts.studio.dialect.label')}</div>
-                <span style={{ fontSize: 11, color: 'var(--wsl-ink-3)', fontFamily: 'Cairo, Inter, sans-serif' }}>
+                <span style={{ fontSize: 11, color: 'var(--wsl-ink-3)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
                   {t('posts.studio.dialect.hint')}
                 </span>
               </div>
@@ -566,7 +566,7 @@ export default function Posts() {
               width: '100%', padding: '14px 20px', display: 'flex',
               alignItems: 'center', justifyContent: 'space-between', gap: 10,
               border: 'none', cursor: 'pointer', background: 'transparent',
-              fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 800, fontSize: 14,
+              fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 800, fontSize: 14,
               color: 'var(--wsl-ink)', textAlign: isAr ? 'right' : 'left',
             }}
           >
@@ -678,10 +678,10 @@ export default function Posts() {
                   <div style={{ marginTop: 20, padding: 14, borderRadius: 12, background: '#F0FDFA', border: '1px solid #CCFBF1' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
                       <div>
-                        <div style={{ fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 800, fontSize: 14, color: '#134E4A' }}>
+                        <div style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 800, fontSize: 14, color: '#134E4A' }}>
                           ✍️ {t('posts.studio.advanced.styleSamples.label')}
                         </div>
-                        <div style={{ fontSize: 12, color: '#0F766E', marginTop: 2, fontFamily: 'Cairo, Inter, sans-serif' }}>
+                        <div style={{ fontSize: 12, color: '#0F766E', marginTop: 2, fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
                           {t('posts.studio.advanced.styleSamples.description')}
                         </div>
                       </div>
@@ -713,10 +713,10 @@ export default function Posts() {
                   <div style={{ marginTop: 14, padding: 14, borderRadius: 12, background: '#FEF3C7', border: '1px solid #FDE68A' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
                       <div>
-                        <div style={{ fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 800, fontSize: 14, color: '#78350F' }}>
+                        <div style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 800, fontSize: 14, color: '#78350F' }}>
                           💡 {t('posts.studio.advanced.inspiration.label')}
                         </div>
-                        <div style={{ fontSize: 12, color: '#92400E', marginTop: 2, fontFamily: 'Cairo, Inter, sans-serif' }}>
+                        <div style={{ fontSize: 12, color: '#92400E', marginTop: 2, fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
                           {t('posts.studio.advanced.inspiration.description')}
                         </div>
                       </div>
@@ -730,7 +730,7 @@ export default function Posts() {
                         style={{
                           flex: 1, minWidth: 200, padding: '9px 12px', borderRadius: 9,
                           border: '1.5px solid #FDE68A', background: '#fff',
-                          fontFamily: 'Cairo, Inter, sans-serif', fontSize: 13,
+                          fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontSize: 13,
                           outline: 'none', direction: 'ltr',
                         }}
                       />
@@ -756,10 +756,10 @@ export default function Posts() {
                     </div>
                     {inspirationPreview && (
                       <div style={{ marginTop: 10, padding: 10, borderRadius: 9, background: '#fff', border: '1px solid #FDE68A' }}>
-                        <div style={{ fontSize: 12, fontWeight: 800, color: '#78350F', fontFamily: 'Cairo, Inter, sans-serif', marginBottom: 4 }}>
+                        <div style={{ fontSize: 12, fontWeight: 800, color: '#78350F', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', marginBottom: 4 }}>
                           {t('posts.studio.advanced.inspiration.loadedTitle')} {inspirationPreview.title}
                         </div>
-                        <div style={{ fontSize: 12, color: '#92400E', fontFamily: 'Cairo, Inter, sans-serif', lineHeight: 1.6 }}>
+                        <div style={{ fontSize: 12, color: '#92400E', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', lineHeight: 1.6 }}>
                           {inspirationPreview.preview.slice(0, 300)}…
                         </div>
                       </div>
@@ -781,16 +781,16 @@ export default function Posts() {
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
             <div>
-              <div style={{ fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 900, fontSize: 15, color: '#78350F' }}>
+              <div style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 15, color: '#78350F' }}>
                 🧬 {t('posts.studio.dna.title')}
               </div>
-              <div style={{ fontSize: 12, color: '#92400E', fontFamily: 'Cairo, Inter, sans-serif', marginTop: 2 }}>
+              <div style={{ fontSize: 12, color: '#92400E', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', marginTop: 2 }}>
                 {t('posts.studio.dna.subtitle')}
               </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <Award size={16} color={dnaScore >= 80 ? '#16A34A' : dnaScore >= 60 ? '#F59E0B' : '#DC2626'} />
-              <div style={{ fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 900, fontSize: 22, color: dnaScore >= 80 ? '#16A34A' : dnaScore >= 60 ? '#F59E0B' : '#DC2626' }}>
+              <div style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 22, color: dnaScore >= 80 ? '#16A34A' : dnaScore >= 60 ? '#F59E0B' : '#DC2626' }}>
                 {dnaScore}%
               </div>
             </div>
@@ -831,7 +831,7 @@ export default function Posts() {
                 : 'var(--wsl-border, #E5E7EB)',
               color: canGenerate ? '#fff' : 'var(--wsl-ink-3)',
               cursor: canGenerate ? 'pointer' : 'not-allowed',
-              fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 900, fontSize: 15,
+              fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 15,
               boxShadow: canGenerate ? '0 6px 20px rgba(10,143,132,0.3)' : 'none',
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 10,
             }}
@@ -877,7 +877,7 @@ export default function Posts() {
                         border: 'none', cursor: 'pointer',
                         background: active ? '#fff' : 'transparent',
                         color: active ? 'var(--wsl-ink)' : 'var(--wsl-ink-3)',
-                        fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 900, fontSize: 13,
+                        fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 13,
                         boxShadow: active ? '0 2px 6px rgba(0,0,0,0.06)' : 'none',
                         display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                         transition: 'all 150ms ease',
@@ -891,7 +891,7 @@ export default function Posts() {
                         <span style={{
                           marginInlineStart: 4, padding: '1px 6px', borderRadius: 999,
                           background: '#14b8a6', color: '#fff', fontSize: 9, fontWeight: 900,
-                          fontFamily: 'Cairo, Inter, sans-serif',
+                          fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
                         }}>
                           ★
                         </span>
@@ -913,10 +913,10 @@ export default function Posts() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
                     <UserAvatar avatarUrl={avatar} name={displayName} email={user?.email} size="md" />
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 900, fontSize: 13 }}>
+                      <div style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 13 }}>
                         {displayName}
                       </div>
-                      <div style={{ fontSize: 11, color: 'var(--wsl-ink-3)', fontFamily: 'Cairo, Inter, sans-serif' }}>
+                      <div style={{ fontSize: 11, color: 'var(--wsl-ink-3)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
                         {t(`posts.studio.variations.${currentVariation.id}Hint`)}
                       </div>
                     </div>
@@ -932,7 +932,7 @@ export default function Posts() {
                       color: currentVariation.id === 'safe' ? '#4B5563'
                         : currentVariation.id === 'balanced' ? '#14b8a6'
                         : '#92400E',
-                      fontFamily: 'Cairo, Inter, sans-serif',
+                      fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
                     }}>
                       {t(`posts.studio.variations.${currentVariation.id}Hint`)}
                     </span>
@@ -940,7 +940,7 @@ export default function Posts() {
 
                   {/* Content */}
                   <div style={{
-                    fontFamily: 'Cairo, Inter, sans-serif', fontSize: 15, lineHeight: 1.9,
+                    fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontSize: 15, lineHeight: 1.9,
                     color: 'var(--wsl-ink)', whiteSpace: 'pre-wrap',
                     direction: ['english'].includes(String(generationResult.dna.dialect)) ? 'ltr' : 'rtl',
                     marginBottom: 12, padding: 14, background: '#F9FAFB', borderRadius: 10, border: '1px solid #E5E7EB',
@@ -955,7 +955,7 @@ export default function Posts() {
                         <span key={i} style={{
                           padding: '4px 10px', borderRadius: 999,
                           background: 'rgba(10,143,132,0.08)', color: '#14b8a6',
-                          fontSize: 11, fontWeight: 800, fontFamily: 'Cairo, Inter, sans-serif',
+                          fontSize: 11, fontWeight: 800, fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
                           display: 'inline-flex', alignItems: 'center', gap: 3,
                         }}>
                           <Hash size={10} />{String(h).replace(/^#/, '')}
@@ -965,7 +965,7 @@ export default function Posts() {
                   )}
 
                   {/* Char count */}
-                  <div style={{ fontSize: 11, color: 'var(--wsl-ink-3)', textAlign: isAr ? 'left' : 'right', marginBottom: 10, fontFamily: 'Cairo, Inter, sans-serif' }}>
+                  <div style={{ fontSize: 11, color: 'var(--wsl-ink-3)', textAlign: isAr ? 'left' : 'right', marginBottom: 10, fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
                     {t('posts.studio.variations.charCount', { count: currentVariation.content.length })}
                   </div>
 
@@ -975,7 +975,7 @@ export default function Posts() {
                       display: 'inline-flex', alignItems: 'center', gap: 6,
                       padding: '9px 16px', borderRadius: 9, border: 'none',
                       background: '#0077B5', color: '#fff',
-                      fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 900, fontSize: 13,
+                      fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 13,
                       cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,119,181,0.3)',
                     }}>
                       <Linkedin size={14} /> {t('posts.studio.variations.actions.publish')}
@@ -994,10 +994,10 @@ export default function Posts() {
                   {/* Tips */}
                   {generationResult.tips && generationResult.tips.length > 0 && (
                     <div style={{ marginTop: 14, padding: 12, borderRadius: 10, background: '#EFF6FF', border: '1px solid #BFDBFE' }}>
-                      <div style={{ fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 900, fontSize: 12, color: '#1E40AF', marginBottom: 6 }}>
+                      <div style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 12, color: '#1E40AF', marginBottom: 6 }}>
                         💡 {t('posts.studio.variations.tipsTitle')}
                       </div>
-                      <ul style={{ margin: 0, paddingInlineStart: 18, fontSize: 12, color: '#1E40AF', fontFamily: 'Cairo, Inter, sans-serif', lineHeight: 1.7 }}>
+                      <ul style={{ margin: 0, paddingInlineStart: 18, fontSize: 12, color: '#1E40AF', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', lineHeight: 1.7 }}>
                         {generationResult.tips.map((tip, i) => <li key={i}>{tip}</li>)}
                       </ul>
                     </div>
@@ -1015,7 +1015,7 @@ export default function Posts() {
 
         {/* === HISTORY === */}
         <div style={{ marginTop: 28 }}>
-          <div style={{ fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 900, fontSize: 18, color: 'var(--wsl-ink)', marginBottom: 12 }}>
+          <div style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 18, color: 'var(--wsl-ink)', marginBottom: 12 }}>
             {t('posts.studio.history.title')}
           </div>
           {loadingPosts ? (
@@ -1030,10 +1030,10 @@ export default function Posts() {
               borderRadius: 16, padding: '40px 24px', textAlign: 'center',
             }}>
               <FileText size={28} color="#14b8a6" />
-              <div style={{ fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 900, fontSize: 15, color: 'var(--wsl-ink)', marginTop: 10 }}>
+              <div style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 15, color: 'var(--wsl-ink)', marginTop: 10 }}>
                 {t('posts.studio.history.empty')}
               </div>
-              <div style={{ fontFamily: 'Cairo, Inter, sans-serif', fontSize: 12, color: 'var(--wsl-ink-3)' }}>
+              <div style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontSize: 12, color: 'var(--wsl-ink-3)' }}>
                 {t('posts.studio.history.emptyHint')}
               </div>
             </div>
@@ -1046,7 +1046,7 @@ export default function Posts() {
                       padding: '2px 8px', borderRadius: 999, fontSize: 10, fontWeight: 800,
                       background: p.status === 'posted' ? '#D1FAE5' : p.status === 'scheduled' ? '#FEF3C7' : '#F3F4F6',
                       color: p.status === 'posted' ? '#065F46' : p.status === 'scheduled' ? '#92400E' : '#4B5563',
-                      fontFamily: 'Cairo, Inter, sans-serif',
+                      fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
                     }}>
                       {t(`posts.studio.history.${p.status === 'posted' ? 'published' : p.status}`)}
                     </span>
@@ -1058,7 +1058,7 @@ export default function Posts() {
                     </button>
                   </div>
                   <div style={{
-                    fontFamily: 'Cairo, Inter, sans-serif', fontSize: 12, lineHeight: 1.6,
+                    fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontSize: 12, lineHeight: 1.6,
                     color: 'var(--wsl-ink-2)', minHeight: 60, marginBottom: 6,
                     display: '-webkit-box', WebkitLineClamp: 4, WebkitBoxOrient: 'vertical',
                     overflow: 'hidden',
@@ -1066,7 +1066,7 @@ export default function Posts() {
                   }}>
                     {(p.content || p.topic || '').slice(0, 200)}
                   </div>
-                  <div style={{ fontSize: 10, color: 'var(--wsl-ink-3)', fontFamily: 'Cairo, Inter, sans-serif' }}>
+                  <div style={{ fontSize: 10, color: 'var(--wsl-ink-3)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
                     {relativeTime(p.created_at, isAr)}
                     {p.dialect && <> · {t(`posts.studio.dialect.${p.dialect}`, { defaultValue: p.dialect })}</>}
                   </div>
@@ -1102,10 +1102,10 @@ export default function Posts() {
               <div style={{ padding: 20, borderBottom: '1px solid #E5E7EB' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
-                    <div style={{ fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 900, fontSize: 18, color: 'var(--wsl-ink)' }}>
+                    <div style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 18, color: 'var(--wsl-ink)' }}>
                       ✍️ {t('posts.studio.advanced.styleSamples.dialogTitle')}
                     </div>
-                    <div style={{ fontSize: 12, color: 'var(--wsl-ink-3)', fontFamily: 'Cairo, Inter, sans-serif', marginTop: 4 }}>
+                    <div style={{ fontSize: 12, color: 'var(--wsl-ink-3)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', marginTop: 4 }}>
                       {t('posts.studio.advanced.styleSamples.dialogSubtitle')}
                     </div>
                   </div>
@@ -1123,13 +1123,13 @@ export default function Posts() {
                   rows={5}
                   style={{
                     width: '100%', padding: 12, borderRadius: 10, border: '1.5px solid #E5E7EB',
-                    fontFamily: 'Cairo, Inter, sans-serif', fontSize: 13, lineHeight: 1.7,
+                    fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontSize: 13, lineHeight: 1.7,
                     resize: 'vertical', outline: 'none', background: '#F9FAFB',
                     direction: isAr ? 'rtl' : 'ltr',
                   }}
                 />
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 }}>
-                  <span style={{ fontSize: 11, color: newSampleText.length < 50 ? '#DC2626' : 'var(--wsl-ink-3)', fontFamily: 'Cairo, Inter, sans-serif' }}>
+                  <span style={{ fontSize: 11, color: newSampleText.length < 50 ? '#DC2626' : 'var(--wsl-ink-3)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
                     {newSampleText.length < 50 ? t('posts.studio.advanced.styleSamples.minChars') : `${newSampleText.length}/5000`}
                   </span>
                   <button
@@ -1152,21 +1152,21 @@ export default function Posts() {
                 {/* List */}
                 <div style={{ marginTop: 20 }}>
                   {styleSamples.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: 30, color: 'var(--wsl-ink-3)', fontFamily: 'Cairo, Inter, sans-serif', fontSize: 13 }}>
+                    <div style={{ textAlign: 'center', padding: 30, color: 'var(--wsl-ink-3)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontSize: 13 }}>
                       {t('posts.studio.advanced.styleSamples.empty')}
                     </div>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                       {styleSamples.map((s) => (
                         <div key={s.id} style={{ padding: 12, borderRadius: 10, border: '1px solid #E5E7EB', background: '#F9FAFB' }}>
-                          <div style={{ fontSize: 12, color: 'var(--wsl-ink-2)', fontFamily: 'Cairo, Inter, sans-serif', lineHeight: 1.6, marginBottom: 6, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', direction: isAr ? 'rtl' : 'ltr' }}>
+                          <div style={{ fontSize: 12, color: 'var(--wsl-ink-2)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', lineHeight: 1.6, marginBottom: 6, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', direction: isAr ? 'rtl' : 'ltr' }}>
                             {s.content}
                           </div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontSize: 10, color: 'var(--wsl-ink-3)', fontFamily: 'Cairo, Inter, sans-serif' }}>
+                            <span style={{ fontSize: 10, color: 'var(--wsl-ink-3)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
                               {relativeTime(s.created_at, isAr)}
                             </span>
-                            <button onClick={() => deleteStyleSample(s.id)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#DC2626', fontSize: 11, fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 700 }}>
+                            <button onClick={() => deleteStyleSample(s.id)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#DC2626', fontSize: 11, fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 700 }}>
                               <Trash2 size={12} /> {t('posts.studio.advanced.styleSamples.delete')}
                             </button>
                           </div>
@@ -1208,7 +1208,7 @@ function VoicePlaceholder() {
         background: '#FEF3C7', border: '1px solid #FDE68A',
         color: '#92400E', fontSize: 11, fontWeight: 800,
         cursor: 'not-allowed', opacity: 0.95,
-        fontFamily: 'Cairo, Inter, sans-serif',
+        fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
       }}
     >
       <Mic size={12} />
@@ -1231,7 +1231,7 @@ function DnaChip({ label, value, highlight }: { label: string; value: string; hi
       padding: '5px 10px', borderRadius: 10,
       background: highlight ? '#F59E0B' : 'rgba(255,255,255,0.7)',
       color: highlight ? '#fff' : '#78350F',
-      fontSize: 11, fontWeight: 800, fontFamily: 'Cairo, Inter, sans-serif',
+      fontSize: 11, fontWeight: 800, fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
       border: highlight ? 'none' : '1px solid #FDE68A',
     }}>
       <span style={{ opacity: highlight ? 0.9 : 0.6 }}>{label}:</span>
@@ -1249,19 +1249,19 @@ const cardStyle: React.CSSProperties = {
 
 const labelStyle: React.CSSProperties = {
   display: 'block',
-  fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 800, fontSize: 13,
+  fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 800, fontSize: 13,
   color: 'var(--wsl-ink-2)',
 };
 
 const chipOptionalStyle: React.CSSProperties = {
   fontSize: 10, fontWeight: 700, color: 'var(--wsl-ink-3)',
-  fontFamily: 'Cairo, Inter, sans-serif',
+  fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
   padding: '1px 6px', borderRadius: 6, background: '#F3F4F6',
 };
 
 const checkboxLabelStyle: React.CSSProperties = {
   display: 'inline-flex', alignItems: 'center', gap: 8, cursor: 'pointer',
-  fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 700, fontSize: 12,
+  fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 700, fontSize: 12,
   color: 'var(--wsl-ink-2)', padding: '6px 10px', borderRadius: 8,
   background: '#F9FAFB', border: '1px solid #E5E7EB',
 };
@@ -1271,14 +1271,14 @@ const actionBtn: React.CSSProperties = {
   padding: '8px 14px', borderRadius: 9,
   border: '1px solid var(--wsl-border, #E5E7EB)',
   background: '#fff', color: 'var(--wsl-ink-2)',
-  fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 800, fontSize: 12,
+  fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 800, fontSize: 12,
   cursor: 'pointer',
 };
 
 const btnSmallStyle: React.CSSProperties = {
   display: 'inline-flex', alignItems: 'center', gap: 5,
   padding: '7px 12px', borderRadius: 8,
-  fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 800, fontSize: 12,
+  fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 800, fontSize: 12,
   cursor: 'pointer',
 };
 
@@ -1289,7 +1289,7 @@ function pillStyle(active: boolean): React.CSSProperties {
     border: `1.5px solid ${active ? '#14b8a6' : '#E5E7EB'}`,
     background: active ? '#14b8a6' : '#fff',
     color: active ? '#fff' : 'var(--wsl-ink-2)',
-    fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 800, fontSize: 12,
+    fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 800, fontSize: 12,
     cursor: 'pointer',
     transition: 'all 150ms ease',
   };
@@ -1311,7 +1311,7 @@ function segmentStyle(active: boolean): React.CSSProperties {
     border: `1.5px solid ${active ? '#14b8a6' : '#E5E7EB'}`,
     background: active ? '#14b8a6' : '#fff',
     color: active ? '#fff' : 'var(--wsl-ink-2)',
-    fontFamily: 'Cairo, Inter, sans-serif', fontWeight: 800, fontSize: 13,
+    fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 800, fontSize: 13,
     cursor: 'pointer',
     display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
     transition: 'all 150ms ease',

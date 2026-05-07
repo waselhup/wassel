@@ -88,7 +88,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
           justifyContent: 'center',
           background: 'linear-gradient(135deg, #FEF2F2 0%, #FFF7ED 100%)',
           padding: 24,
-          fontFamily: 'Cairo, Inter, sans-serif',
+          fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
         }}
       >
         <div

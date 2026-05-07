@@ -63,7 +63,7 @@ export default function ProfilePreviewCard({ profile, verdict, isRTL, labels }: 
   const hasAnyFlag = !!(flags.isOpenToWork || flags.isHiring || flags.isPremium || flags.isCreator);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, fontFamily: 'Cairo, Inter, sans-serif' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
       {/* Profile header card with banner */}
       <div style={{
         background: '#ffffff',

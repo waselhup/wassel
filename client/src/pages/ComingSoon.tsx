@@ -45,7 +45,7 @@ export default function ComingSoon() {
           margin: '0 auto',
           padding: '64px 24px',
           textAlign: 'center',
-          fontFamily: isAr ? 'Cairo, sans-serif' : 'Inter, sans-serif',
+          fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
         }}
         dir={isAr ? 'rtl' : 'ltr'}
       >
@@ -202,7 +202,7 @@ function CrossSellCard({
         cursor: 'pointer',
         textAlign: isAr ? 'right' : 'left',
         transition: 'all 180ms',
-        fontFamily: isAr ? 'Cairo, sans-serif' : 'Inter, sans-serif',
+        fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.borderColor = '#0F766E';

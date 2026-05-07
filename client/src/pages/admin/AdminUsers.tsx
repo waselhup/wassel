@@ -45,7 +45,7 @@ function useToast() {
               color: t.type === "success" ? "#065F46" : "#991B1B",
               border: `1px solid ${t.type === "success" ? "#A7F3D0" : "#FECACA"}`,
               boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
-              fontFamily: "Cairo, Inter, sans-serif", fontWeight: 700, fontSize: 13,
+              fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 700, fontSize: 13,
               display: "flex", alignItems: "center", gap: 10,
             }}
           >

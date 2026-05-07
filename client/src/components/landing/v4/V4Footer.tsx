@@ -5,7 +5,7 @@ import { WasselLogo } from '../../WasselLogo';
 export default function V4Footer() {
   const { t, i18n } = useTranslation();
   const isAr = i18n.language === 'ar';
-  const fontFamily = isAr ? 'Cairo, sans-serif' : 'Inter, sans-serif';
+  const fontFamily = '"Thmanyah Sans", system-ui, sans-serif';
 
   const linkStyle: React.CSSProperties = {
     color: 'var(--text-body)',
