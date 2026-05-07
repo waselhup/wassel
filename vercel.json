@@ -27,6 +27,6 @@
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/index.js" },
     { "source": "/unsubscribe", "destination": "/api/index.js" },
-    { "source": "/((?!api/|unsubscribe).*)", "destination": "/index.html" }
+    { "source": "/((?!api/|unsubscribe|fonts/).*)", "destination": "/index.html" }
   ]
 }
