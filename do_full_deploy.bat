@@ -5,7 +5,7 @@ echo === Delete lock file if exists ===
 if exist .git\index.lock del .git\index.lock
 
 echo === Rebuild api/index.js as CJS ===
-node node_modules\esbuild\bin\esbuild server/_core/vercel.ts --platform=node --bundle --format=cjs --outfile=api/index.js
+node node_modules\esbuild\bin\esbuild server/_core/vercel.ts --platform=node --bundle --format=cjs --outfile=api/index.js --external:@napi-rs/canvas --external:sharp --external:tesseract.js --external:pdfjs-dist --external:puppeteer-core --external:@sparticuz/chromium
 if %errorlevel% neq 0 (
     echo BUILD FAILED!
     exit /b 1
