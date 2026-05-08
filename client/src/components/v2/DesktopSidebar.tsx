@@ -28,7 +28,7 @@ export interface DesktopSidebarProps extends HTMLAttributes<HTMLElement> {
 }
 
 const PLAN_QUOTAS: Record<string, number> = {
-  free: 100,
+  free: 10,
   starter: 500,
   pro: 2000,
   elite: 10000,

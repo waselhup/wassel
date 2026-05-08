@@ -234,7 +234,7 @@ function Auth() {
             </h1>
             <p className="mt-2 mb-6 font-ar leading-relaxed text-v2-body text-[13px] lg:mb-8 lg:text-[14px]">
               {isSignup
-                ? 'أنشئ حساباً مجانياً · 100 توكن للبداية.'
+                ? 'أنشئ حساباً مجانياً · 10 توكن للبداية.'
                 : 'سجّل الدخول لمتابعة العمل.'}
             </p>
 

@@ -13,7 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRecentActivity, relativeLabel, type ActivityKind } from '@/lib/v2/useRecentActivity';
 
 const PLAN_QUOTAS: Record<string, number> = {
-  free: 100,
+  free: 10,
   starter: 500,
   pro: 2000,
   elite: 10000,

@@ -127,7 +127,7 @@ function Landing() {
                 </Button>
               </div>
               <p className="mt-2.5 text-center font-ar text-[13px] text-v2-dim lg:text-start">
-                <NumDisplay>100</NumDisplay> توكن مجاني · بدون بطاقة ائتمان
+                <NumDisplay>10</NumDisplay> توكن مجاني · بدون بطاقة ائتمان
               </p>
             </div>
 

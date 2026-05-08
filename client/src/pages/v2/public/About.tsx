@@ -168,7 +168,7 @@ export default function About() {
           <Card padding="lg" radius="xl" elevated className="text-center lg:mx-auto lg:max-w-[720px] lg:py-12">
             <Eyebrow className="mb-2 block !text-teal-700">ابدأ اليوم</Eyebrow>
             <h2 className="font-ar font-bold text-v2-ink text-[22px] lg:text-[28px]">
-              <NumDisplay>100</NumDisplay> توكن مجاني · بدون بطاقة ائتمان
+              <NumDisplay>10</NumDisplay> توكن مجاني · بدون بطاقة ائتمان
             </h2>
             <div className="mt-5 flex flex-col gap-2.5 lg:flex-row lg:justify-center lg:gap-3">
               <Button
