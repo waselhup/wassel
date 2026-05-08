@@ -10,6 +10,7 @@ import { LinkdApiProfileNotFoundError } from '../services/linkdapi';
 import { validateAndNormalizeLinkedInUrl } from '../lib/linkedin-url-validator';
 import { generateDocxReport, generatePdfReport } from '../lib/profile-report-generator';
 import { deductTokens, refundTokens, throwInsufficientTokensError } from '../lib/tokens';
+import { getProductTokenCost } from '../lib/product-costs';
 import { safeJsonParse } from '../lib/safe-json';
 
 const TARGET_GOAL = z.enum([
@@ -956,7 +957,8 @@ export const linkedinRouter = router({
       reportLanguage: REPORT_LANGUAGE.default('ar'),
     }))
     .mutation(async ({ input, ctx }) => {
-      const TOKEN_COST = 25;
+      // Read canonical cost from products.radar.token_cost. Fallback 25.
+      const TOKEN_COST = await getProductTokenCost(ctx.supabase, 'radar', 25);
       const FEATURE = 'linkedin.analyzeTargeted';
       const lang = input.reportLanguage;
       const startedAt = Date.now();

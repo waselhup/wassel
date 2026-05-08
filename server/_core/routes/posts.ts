@@ -4,6 +4,7 @@ import { router, protectedProcedure } from '../trpc-init';
 import { callClaude, extractText, extractJson } from '../lib/claude-client';
 import { classifyClaudeError, sendClaudeOpsAlert } from '../lib/apiLogger';
 import { deductTokens, refundTokens, throwInsufficientTokensError } from '../lib/tokens';
+import { getProductTokenCost } from '../lib/product-costs';
 
 // ===== Enums =====
 const TONE = z.enum([
@@ -180,7 +181,9 @@ export const postsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const TOKEN_COST = 30;
+      // Read canonical cost from products.linkedin_post.token_cost (DB-driven).
+      // Falls back to 30 if the lookup fails so the feature stays online.
+      const TOKEN_COST = await getProductTokenCost(ctx.supabase, 'linkedin_post', 30);
       const FEATURE = 'posts.generate';
       let deducted = false;
 

@@ -4,6 +4,7 @@ import { router, protectedProcedure } from '../trpc-init';
 import { callClaude, extractText, extractJson } from '../lib/claude-client';
 import { classifyClaudeError, sendClaudeOpsAlert } from '../lib/apiLogger';
 import { deductTokens, refundTokens, throwInsufficientTokensError } from '../lib/tokens';
+import { getProductTokenCost } from '../lib/product-costs';
 import {
   extractTextFromFile,
   extractCVFields,
@@ -26,8 +27,12 @@ import {
 const TEMPLATE = z.enum(['mit-classic', 'harvard-executive']);
 const LANGUAGE = z.enum(['ar', 'en']);
 const PARSE_METHOD = z.enum(['docx', 'pdf-text', 'pdf-ocr', 'manual']);
-const TOKEN_COST = 10;
-const COVER_LETTER_EXTRA_COST = 5;
+
+// Default fallbacks. The actual cost on each call is read from
+// products.cv_builder.token_cost and products.cover_letter.token_cost via
+// getProductTokenCost() so the catalog stays the source of truth.
+const TOKEN_COST_FALLBACK = 10;
+const COVER_LETTER_FALLBACK = 5;
 
 const CV_BUILDER_SYSTEM = `You are an expert ATS-optimized CV writer trained on MIT Career Services and Harvard Business School standards.
 
@@ -164,6 +169,10 @@ export const cvRouter = router({
       sourceParseMethod: PARSE_METHOD.default('manual'),
     }))
     .mutation(async ({ input, ctx }) => {
+      // Read canonical costs from products catalog. The DB is the source of
+      // truth; the constants above are only used if the lookup fails.
+      const TOKEN_COST = await getProductTokenCost(ctx.supabase, 'cv_builder', TOKEN_COST_FALLBACK);
+      const COVER_LETTER_EXTRA_COST = await getProductTokenCost(ctx.supabase, 'cover_letter', COVER_LETTER_FALLBACK);
       const totalCost = TOKEN_COST + (input.includeCoverLetter ? COVER_LETTER_EXTRA_COST : 0);
       const FEATURE = input.includeCoverLetter ? 'cv.generate+cover_letter' : 'cv.generate';
       const lang = (input.language as 'ar' | 'en') || 'en';
