@@ -1,5 +1,5 @@
-import mammoth from 'mammoth';
 import { callClaude, extractText, extractJson } from './claude-client';
+import { parseDocument, type ParseMethod as DocParseMethod } from './document-parser';
 
 export type ParseMethod = 'docx' | 'pdf-text' | 'pdf-ocr' | 'manual';
 
@@ -39,109 +39,24 @@ export interface ExtractTextResult {
   method: ParseMethod;
 }
 
-/**
- * Extract raw text from a CV file buffer. Supports PDF (pdf-parse),
- * DOCX (mammoth), and plain text. Attempts OCR fallback for scanned PDFs
- * via tesseract.js when the text layer is missing.
- *
- * Throws a user-facing Error on unsupported types or fully unreadable PDFs.
- */
+const METHOD_MAP: Record<DocParseMethod, ParseMethod> = {
+  'pdf-text': 'pdf-text',
+  'pdf-ocr': 'pdf-ocr',
+  'docx': 'docx',
+  'image-ocr': 'pdf-ocr',
+  'text': 'docx',
+};
+
 export async function extractTextFromFile(
   buffer: Buffer,
   mimeType: string,
   fileName: string
 ): Promise<ExtractTextResult> {
-  const ext = (fileName.toLowerCase().split('.').pop() || '').trim();
-
-  if ((mimeType && mimeType.includes('pdf')) || ext === 'pdf') {
-    // First try: extract text layer via pdf-parse
-    try {
-      const pdfMod: any = await import('pdf-parse');
-      const pdf = pdfMod.default || pdfMod;
-      const data = await pdf(buffer);
-      if (data?.text && data.text.trim().length >= 100) {
-        return { text: data.text as string, method: 'pdf-text' };
-      }
-      // Text layer too thin — attempt OCR
-      console.log('[cv-parser] PDF text layer <100 chars, attempting OCR fallback...');
-    } catch (err: any) {
-      console.error('[cv-parser] pdf-parse failed:', err?.message);
-    }
-
-    // OCR fallback
-    try {
-      const ocrText = await extractTextViaOCR(buffer);
-      if (ocrText && ocrText.trim().length >= 100) {
-        return { text: ocrText, method: 'pdf-ocr' };
-      }
-    } catch (ocrErr: any) {
-      console.error('[cv-parser] OCR failed:', ocrErr?.message);
-    }
-
-    throw new Error(
-      'لم نتمكن من قراءة الـ PDF — يبدو أنه ممسوح ضوئياً أو فارغ. ' +
-      'الحل: ارفع ملف Word (.docx) للحصول على أدق استخراج، أو أعد إنشاء PDF من Word.'
-    );
-  }
-
-  if (
-    (mimeType && (mimeType.includes('wordprocessingml') || mimeType.includes('officedocument'))) ||
-    ext === 'docx'
-  ) {
-    const result = await mammoth.extractRawText({ buffer });
-    return { text: result.value, method: 'docx' };
-  }
-
-  if ((mimeType && mimeType.includes('text')) || ext === 'txt') {
-    return { text: buffer.toString('utf-8'), method: 'docx' }; // treat as clean text
-  }
-
-  throw new Error(`Unsupported file type: ${mimeType || ext || 'unknown'}`);
-}
-
-/**
- * Attempt OCR on a scanned PDF using tesseract.js.
- * Render requires @napi-rs/canvas which isn't always available on Vercel
- * serverless. When unavailable, throws — upstream catches and returns the
- * guided error message instructing the user to upload Word.
- */
-async function extractTextViaOCR(pdfBuffer: Buffer): Promise<string> {
-  let createCanvas: any;
-  try {
-    const canvasMod: any = await import('@napi-rs/canvas');
-    createCanvas = canvasMod.createCanvas;
-  } catch {
-    throw new Error('Canvas rendering unavailable in this environment');
-  }
-
-  const pdfjsMod: any = await import('pdfjs-dist/legacy/build/pdf.mjs');
-  if (pdfjsMod.GlobalWorkerOptions) pdfjsMod.GlobalWorkerOptions.workerSrc = '';
-
-  const { createWorker } = await import('tesseract.js');
-
-  const loadingTask = pdfjsMod.getDocument({ data: new Uint8Array(pdfBuffer) });
-  const pdfDoc = await loadingTask.promise;
-
-  const maxPages = Math.min(pdfDoc.numPages, 3);
-  const worker = await createWorker('ara+eng');
-
-  let fullText = '';
-  try {
-    for (let i = 1; i <= maxPages; i++) {
-      const page = await pdfDoc.getPage(i);
-      const viewport = page.getViewport({ scale: 2.0 });
-      const canvas = createCanvas(viewport.width, viewport.height);
-      const context = canvas.getContext('2d');
-      await page.render({ canvasContext: context, viewport }).promise;
-      const pngBuf = canvas.toBuffer('image/png');
-      const result = await worker.recognize(pngBuf);
-      fullText += (result.data.text || '') + '\n\n';
-    }
-  } finally {
-    await worker.terminate();
-  }
-
-  return fullText.trim();
+  const result = await parseDocument(buffer, mimeType, fileName);
+  return {
+    text: result.text,
+    method: METHOD_MAP[result.method] || 'docx',
+  };
 }
 
 const EXTRACTION_SYSTEM = `You are a precise CV parser. Extract structured data from raw CV text.
