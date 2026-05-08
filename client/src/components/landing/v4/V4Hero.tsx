@@ -6,6 +6,7 @@ export default function V4Hero() {
   const { t, i18n } = useTranslation();
   const isAr = i18n.language === 'ar';
   const fontFamily = '"Thmanyah Sans", system-ui, sans-serif';
+  const fontDisplay = '"Thmanyah Display", "Thmanyah Sans", system-ui, sans-serif';
 
   return (
     <section
@@ -21,7 +22,7 @@ export default function V4Hero() {
       <div style={{ position: 'relative', zIndex: 3, maxWidth: 900, margin: '0 auto' }}>
         <h1
           style={{
-            fontFamily,
+            fontFamily: fontDisplay,
             fontSize: 'clamp(2rem, 5.5vw, 4rem)',
             fontWeight: 500,
             lineHeight: 1.15,
