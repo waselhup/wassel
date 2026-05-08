@@ -13,6 +13,8 @@ import { useAuth } from '@/contexts/AuthContext';
 const Landing = lazy(() => import('@/pages/v2/Landing'));
 const Auth = lazy(() => import('@/pages/v2/Auth'));
 const Pricing = lazy(() => import('@/pages/v2/Pricing'));
+const PricingProducts = lazy(() => import('@/pages/v2/PricingProducts'));
+const Billing = lazy(() => import('@/pages/v2/Billing'));
 const Home = lazy(() => import('@/pages/v2/Home'));
 const Posts = lazy(() => import('@/pages/v2/Posts'));
 const Profile = lazy(() => import('@/pages/v2/Profile'));
@@ -178,6 +180,8 @@ function V2Routes(): ReactElement | null {
   const [matchLogin] = useRoute('/v2/login');
   const [matchSignup] = useRoute('/v2/signup');
   const [matchPricing] = useRoute('/v2/pricing');
+  const [matchPricingProducts] = useRoute('/v2/pricing/products');
+  const [matchBilling] = useRoute('/v2/billing');
   const [matchHome] = useRoute('/v2/home');
   const [matchAnalyze] = useRoute('/v2/analyze');
   const [matchAnalyzeLoading] = useRoute('/v2/analyze/loading');
@@ -194,8 +198,14 @@ function V2Routes(): ReactElement | null {
   if (matchLogin || matchSignup) {
     return <PublicShell><Suspense fallback={<V2Loader />}><Auth /></Suspense></PublicShell>;
   }
+  if (matchPricingProducts) {
+    return <PublicShell><Suspense fallback={<V2Loader />}><PricingProducts /></Suspense></PublicShell>;
+  }
   if (matchPricing) {
     return <PublicShell><Suspense fallback={<V2Loader />}><Pricing /></Suspense></PublicShell>;
+  }
+  if (matchBilling) {
+    return <ProtectedShell><Suspense fallback={<V2Loader />}><Billing /></Suspense></ProtectedShell>;
   }
   if (matchHome) {
     return <ProtectedShell><Suspense fallback={<V2Loader />}><Home /></Suspense></ProtectedShell>;
