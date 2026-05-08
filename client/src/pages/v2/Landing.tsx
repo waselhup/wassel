@@ -180,10 +180,10 @@ function Landing() {
             <div>
               <Eyebrow className="mb-1 block !text-teal-700 lg:mb-2">PRICING</Eyebrow>
               <div className="font-ar text-[14px] font-semibold text-v2-ink lg:text-[24px]">
-                من <NumDisplay>99</NumDisplay> ر.س / شهر
+                ابدأ مجاناً
               </div>
               <div className="mt-0.5 font-ar text-[12px] text-v2-dim lg:mt-2 lg:text-[14px]">
-                <NumDisplay>3</NumDisplay> باقات · ابدأ مجاناً
+                <NumDisplay>4</NumDisplay> باقات · بدون التزام
               </div>
             </div>
             <span className="font-ar text-[13px] font-semibold text-teal-700 lg:text-[15px]">
