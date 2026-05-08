@@ -67,10 +67,15 @@ const config: Config = {
         },
       },
       fontFamily: {
-        cairo: ['"Thmanyah Sans"', 'Cairo', 'sans-serif'],
-        inter: ['"Thmanyah Sans"', 'Inter', 'sans-serif'],
-        sans: ['"Thmanyah Sans"', 'system-ui', 'sans-serif'],
-        arabic: ['"Thmanyah Sans"', 'system-ui', 'sans-serif'],
+        // Thmanyah typeface strategy (Thmanyah)
+        display: ['"Thmanyah Display"', '"Thmanyah Sans"', 'system-ui', 'sans-serif'],
+        text:    ['"Thmanyah Text"', '"Thmanyah Sans"', 'system-ui', 'sans-serif'],
+
+        // UI / interface — Thmanyah Sans
+        cairo:   ['"Thmanyah Sans"', 'Cairo', 'sans-serif'],
+        inter:   ['"Thmanyah Sans"', 'Inter', 'sans-serif'],
+        sans:    ['"Thmanyah Sans"', 'system-ui', 'sans-serif'],
+        arabic:  ['"Thmanyah Sans"', 'system-ui', 'sans-serif'],
 
         // v2 — exact stacks from tokens.css
         ar:   ['"Thmanyah Sans"', 'system-ui', 'sans-serif'],

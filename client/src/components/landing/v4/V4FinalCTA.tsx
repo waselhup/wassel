@@ -6,6 +6,7 @@ export default function V4FinalCTA() {
   const { t, i18n } = useTranslation();
   const isAr = i18n.language === 'ar';
   const fontFamily = '"Thmanyah Sans", system-ui, sans-serif';
+  const fontDisplay = '"Thmanyah Display", "Thmanyah Sans", system-ui, sans-serif';
   const [, navigate] = useLocation();
   const [email, setEmail] = useState('');
 
@@ -33,7 +34,7 @@ export default function V4FinalCTA() {
       <div>
         <h2
           style={{
-            fontFamily,
+            fontFamily: fontDisplay,
             fontSize: 'clamp(2rem, 4.5vw, 3rem)',
             fontWeight: 500,
             lineHeight: 1.15,

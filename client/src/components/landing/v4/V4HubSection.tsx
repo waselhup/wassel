@@ -4,6 +4,7 @@ export default function V4HubSection() {
   const { t, i18n } = useTranslation();
   const isAr = i18n.language === 'ar';
   const fontFamily = '"Thmanyah Sans", system-ui, sans-serif';
+  const fontDisplay = '"Thmanyah Display", "Thmanyah Sans", system-ui, sans-serif';
 
   return (
     <section id="hub" className="v4-section-mobile" style={{ position: 'relative', padding: '6rem 2rem', zIndex: 5, fontFamily }}>
@@ -18,7 +19,7 @@ export default function V4HubSection() {
             margin: '0 auto 4rem',
           }}
         >
-          <h2 style={{ fontFamily, fontSize: '2rem', fontWeight: 500, lineHeight: 1.2, letterSpacing: '-0.02em' }}>
+          <h2 style={{ fontFamily: fontDisplay, fontSize: '2rem', fontWeight: 500, lineHeight: 1.2, letterSpacing: '-0.02em' }}>
             {t('landing_v4.hub.title')}
           </h2>
           <p style={{ fontFamily, color: 'var(--v4-text-body)', fontSize: '0.95rem', lineHeight: 1.6 }}>
