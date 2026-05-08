@@ -9,47 +9,10 @@
  * visually and editorially.
  */
 
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
+import { CAIRO_FONT_BASE64 } from './cairo-font-data';
 import type { ReportOptions } from './profile-report-generator';
 
-// Load Cairo at module-init time. ~600KB embedded once per cold start.
-// We probe several locations because the bundled CJS file (api/index.js)
-// and the dev TS file end up in very different cwd contexts:
-//   - dev (tsx):    .../server/_core/lib/profile-report-html.ts → __dirname is server/_core/lib
-//   - prod Vercel:  .../api/index.js with cwd = /var/task → look for /var/task/api/fonts
-//   - prod local:   process.cwd() = repo root → look for server/_core/lib/fonts
-let CAIRO_DATA_URI = '';
-function tryLoadCairo(): Buffer | null {
-  const candidates: string[] = [];
-  // ESM __dirname (TS dev mode)
-  try {
-    const dir = typeof __dirname !== 'undefined'
-      ? __dirname
-      : dirname(fileURLToPath(import.meta.url));
-    candidates.push(join(dir, 'fonts', 'Cairo.ttf'));
-  } catch { /* swallow */ }
-  // Vercel deploy: /var/task/api/fonts/Cairo.ttf
-  candidates.push(join(process.cwd(), 'api', 'fonts', 'Cairo.ttf'));
-  // Local repo root
-  candidates.push(join(process.cwd(), 'server', '_core', 'lib', 'fonts', 'Cairo.ttf'));
-  // Sibling of bundle (api/index.js + api/fonts/Cairo.ttf)
-  candidates.push(join(process.cwd(), 'fonts', 'Cairo.ttf'));
-
-  for (const p of candidates) {
-    try {
-      return readFileSync(p);
-    } catch { /* try next */ }
-  }
-  return null;
-}
-const cairoBuf = tryLoadCairo();
-if (cairoBuf) {
-  CAIRO_DATA_URI = `data:font/ttf;base64,${cairoBuf.toString('base64')}`;
-} else {
-  console.warn('[profile-report-html] Cairo.ttf not found — Chromium will use system Arabic fallback');
-}
+const CAIRO_DATA_URI = `data:font/ttf;base64,${CAIRO_FONT_BASE64}`;
 
 const ESCAPE: Record<string, string> = {
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
@@ -361,13 +324,13 @@ export function buildAnalysisReportHtml(opts: ReportOptions): string {
   <meta charset="utf-8" />
   <title>${esc(L.title)}</title>
   <style>
-    ${CAIRO_DATA_URI ? `@font-face {
+    @font-face {
       font-family: 'Cairo';
       font-style: normal;
       font-weight: 400 800;
       font-display: block;
       src: url('${CAIRO_DATA_URI}') format('truetype');
-    }` : ''}
+    }
     @page { size: A4; margin: 18mm 16mm; }
     * { box-sizing: border-box; }
     html, body { margin: 0; padding: 0; }

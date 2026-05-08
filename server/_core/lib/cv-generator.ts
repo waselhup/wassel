@@ -382,11 +382,12 @@ export async function buildHarvardExecutiveDocx(cv: CVData): Promise<Buffer> {
 
 // ─── PDF output (Puppeteer HTML→PDF with Cairo font for Arabic support) ─────
 
-export async function buildCVPDF(cv: CVData, template: CVTemplate): Promise<Buffer> {
-  const html = buildCVHtml(cv, template);
+export async function buildCVPDF(cv: CVData, template: CVTemplate, language?: 'ar' | 'en'): Promise<Buffer> {
+  const html = buildCVHtml(cv, template, language);
+  const isRTL = (language || 'en') === 'ar';
   return renderHtmlToPdf({
     html,
-    dir: 'ltr',
+    dir: isRTL ? 'rtl' : 'ltr',
     format: 'Letter',
     margin: { top: '16mm', right: '18mm', bottom: '16mm', left: '18mm' },
   });

@@ -1,35 +1,8 @@
-import { readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { CAIRO_FONT_BASE64 } from './cairo-font-data';
 import type { CVData, CVTemplate } from './cv-generator';
 import type { CoverLetterContent, CandidateInfo } from './cover-letter-generator';
 
-let CAIRO_DATA_URI = '';
-
-function tryLoadCairo(): Buffer | null {
-  const candidates: string[] = [];
-  try {
-    const dir = typeof __dirname !== 'undefined'
-      ? __dirname
-      : dirname(fileURLToPath(import.meta.url));
-    candidates.push(join(dir, 'fonts', 'Cairo.ttf'));
-  } catch { /* swallow */ }
-  candidates.push(join(process.cwd(), 'api', 'fonts', 'Cairo.ttf'));
-  candidates.push(join(process.cwd(), 'server', '_core', 'lib', 'fonts', 'Cairo.ttf'));
-  candidates.push(join(process.cwd(), 'fonts', 'Cairo.ttf'));
-
-  for (const p of candidates) {
-    try { return readFileSync(p); } catch { /* next */ }
-  }
-  return null;
-}
-
-const cairoBuf = tryLoadCairo();
-if (cairoBuf) {
-  CAIRO_DATA_URI = `data:font/ttf;base64,${cairoBuf.toString('base64')}`;
-} else {
-  console.warn('[cv-pdf-html] Cairo.ttf not found — Arabic will use system fallback');
-}
+const CAIRO_DATA_URI = `data:font/ttf;base64,${CAIRO_FONT_BASE64}`;
 
 const ESCAPE: Record<string, string> = {
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
@@ -39,19 +12,29 @@ function esc(s: string | null | undefined): string {
   return String(s).replace(/[&<>"']/g, (c) => ESCAPE[c] ?? c);
 }
 
-const FONT_FACE = CAIRO_DATA_URI
-  ? `@font-face {
-      font-family: 'Cairo';
-      font-style: normal;
-      font-weight: 100 900;
-      font-display: block;
-      src: url('${CAIRO_DATA_URI}') format('truetype');
-    }`
-  : '';
+const FONT_FACE = `@font-face {
+  font-family: 'Cairo';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: block;
+  src: url('${CAIRO_DATA_URI}') format('truetype');
+}`;
 
-const BASE_FONT = `'Cairo', 'Thmanyah Sans', 'Noto Sans Arabic', 'Calibri', 'Helvetica Neue', Arial, sans-serif`;
+const BASE_FONT = `'Cairo', 'Noto Sans Arabic', 'Calibri', 'Helvetica Neue', Arial, sans-serif`;
 
-export function buildCVHtml(cv: CVData, template: CVTemplate): string {
+function hasArabic(text: string): boolean {
+  return /[؀-ۿݐ-ݿﭐ-﷿ﹰ-﻿]/.test(text);
+}
+
+function detectLanguage(cv: CVData): 'ar' | 'en' {
+  const sample = [cv.fullName, cv.summary, cv.experience?.[0]?.title].filter(Boolean).join(' ');
+  return hasArabic(sample) ? 'ar' : 'en';
+}
+
+export function buildCVHtml(cv: CVData, template: CVTemplate, language?: 'ar' | 'en'): string {
+  const lang = language || detectLanguage(cv);
+  const isRTL = lang === 'ar';
+  const dir = isRTL ? 'rtl' : 'ltr';
   const isMIT = template === 'mit-classic';
   const NAVY = '#1e3a5f';
 
@@ -62,11 +45,10 @@ export function buildCVHtml(cv: CVData, template: CVTemplate): string {
   let sections = '';
 
   if (cv.summary) {
-    sections += sectionBlock(
-      isMIT ? 'Professional Summary' : 'Executive Summary',
-      `<p>${esc(cv.summary)}</p>`,
-      isMIT, NAVY
-    );
+    const title = isRTL
+      ? (isMIT ? 'الملخص المهني' : 'الملخص التنفيذي')
+      : (isMIT ? 'Professional Summary' : 'Executive Summary');
+    sections += sectionBlock(title, `<p>${esc(cv.summary)}</p>`, isMIT, NAVY, isRTL);
   }
 
   if (cv.experience.length) {
@@ -86,7 +68,8 @@ export function buildCVHtml(cv: CVData, template: CVTemplate): string {
         </div>`;
       }
     }
-    sections += sectionBlock('Professional Experience', body, isMIT, NAVY);
+    const title = isRTL ? 'الخبرة المهنية' : 'Professional Experience';
+    sections += sectionBlock(title, body, isMIT, NAVY, isRTL);
   }
 
   if (cv.education.length) {
@@ -106,7 +89,8 @@ export function buildCVHtml(cv: CVData, template: CVTemplate): string {
         </div>`;
       }
     }
-    sections += sectionBlock('Education', body, isMIT, NAVY);
+    const title = isRTL ? 'التعليم' : 'Education';
+    sections += sectionBlock(title, body, isMIT, NAVY, isRTL);
   }
 
   if (cv.certifications.length) {
@@ -114,39 +98,38 @@ export function buildCVHtml(cv: CVData, template: CVTemplate): string {
       const parts = [c.name, c.issuer, c.year ? `(${c.year})` : ''].filter(Boolean);
       return `<li>${esc(parts.join(' — '))}</li>`;
     }).join('');
-    sections += sectionBlock(
-      isMIT ? 'Certifications & Licenses' : 'Certifications & Licenses',
-      `<ul>${body}</ul>`, isMIT, NAVY
-    );
+    const title = isRTL ? 'الشهادات والتراخيص' : 'Certifications & Licenses';
+    sections += sectionBlock(title, `<ul>${body}</ul>`, isMIT, NAVY, isRTL);
   }
 
   if (cv.skills.length) {
     const body = cv.skills.map((g) =>
       `<p><span class="bold" ${!isMIT ? `style="color:${NAVY}"` : ''}>${esc(g.categoryName)}:</span> ${esc((g.items || []).join(', '))}</p>`
     ).join('');
-    sections += sectionBlock(
-      isMIT ? 'Technical Skills' : 'Core Competencies',
-      body, isMIT, NAVY
-    );
+    const title = isRTL
+      ? (isMIT ? 'المهارات التقنية' : 'الكفاءات الأساسية')
+      : (isMIT ? 'Technical Skills' : 'Core Competencies');
+    sections += sectionBlock(title, body, isMIT, NAVY, isRTL);
   }
 
   if (cv.languages.length) {
     const text = cv.languages
       .map((l) => `${l.name}${l.proficiency ? ` (${l.proficiency})` : ''}`)
       .join(', ');
-    sections += `<p style="margin-top:8px"><span class="bold" ${!isMIT ? `style="color:${NAVY}"` : ''}>Languages:</span> ${esc(text)}</p>`;
+    const label = isRTL ? 'اللغات' : 'Languages';
+    sections += `<p style="margin-top:8px"><span class="bold" ${!isMIT ? `style="color:${NAVY}"` : ''}>${esc(label)}:</span> ${esc(text)}</p>`;
   }
 
   if (cv.achievements.length) {
     const body = cv.achievements.map((a) => `<li>${esc(a)}</li>`).join('');
-    sections += sectionBlock(
-      isMIT ? 'Key Achievements' : 'Signature Achievements',
-      `<ul>${body}</ul>`, isMIT, NAVY
-    );
+    const title = isRTL
+      ? (isMIT ? 'الإنجازات الرئيسية' : 'الإنجازات المميزة')
+      : (isMIT ? 'Key Achievements' : 'Signature Achievements');
+    sections += sectionBlock(title, `<ul>${body}</ul>`, isMIT, NAVY, isRTL);
   }
 
   return `<!DOCTYPE html>
-<html lang="en" dir="ltr">
+<html lang="${lang}" dir="${dir}">
 <head>
 <meta charset="utf-8" />
 <title>${esc(cv.fullName)} — CV</title>
@@ -159,11 +142,12 @@ export function buildCVHtml(cv: CVData, template: CVTemplate): string {
     font-size: 10pt;
     line-height: 1.45;
     color: #000;
+    direction: ${dir};
   }
   .name {
     font-size: ${isMIT ? '16pt' : '18pt'};
     font-weight: 700;
-    ${isMIT ? 'text-align: center; text-transform: uppercase;' : `color: ${NAVY};`}
+    ${isMIT ? `text-align: center; ${isRTL ? '' : 'text-transform: uppercase;'}` : `color: ${NAVY};`}
     margin-bottom: 4px;
   }
   .contact {
@@ -172,7 +156,6 @@ export function buildCVHtml(cv: CVData, template: CVTemplate): string {
     margin-bottom: 16px;
   }
   .section-header {
-    text-transform: uppercase;
     font-weight: 700;
     font-size: 11pt;
     margin-top: 14px;
@@ -180,6 +163,7 @@ export function buildCVHtml(cv: CVData, template: CVTemplate): string {
     border-bottom: ${isMIT ? '1px solid #000' : `1.5px solid ${NAVY}`};
     margin-bottom: 8px;
     ${isMIT ? '' : `color: ${NAVY};`}
+    ${isRTL ? '' : 'text-transform: uppercase;'}
   }
   .entry { margin-bottom: 8px; }
   .row {
@@ -190,9 +174,9 @@ export function buildCVHtml(cv: CVData, template: CVTemplate): string {
   .bold { font-weight: 700; }
   .italic { font-style: italic; }
   .muted { color: #666; }
-  .right { text-align: right; flex-shrink: 0; margin-left: 12px; }
+  .right { text-align: ${isRTL ? 'left' : 'right'}; flex-shrink: 0; ${isRTL ? 'margin-right: 12px;' : 'margin-left: 12px;'} }
   ul {
-    padding-left: 18px;
+    ${isRTL ? 'padding-right: 18px; padding-left: 0;' : 'padding-left: 18px;'}
     margin: 4px 0 2px;
   }
   li {
@@ -291,8 +275,8 @@ export function buildCoverLetterHtml(
 </html>`;
 }
 
-function sectionBlock(title: string, body: string, isMIT: boolean, navy: string): string {
-  return `<div class="section-header" ${!isMIT ? `style="color:${navy};border-color:${navy}"` : ''}>${esc(title).toUpperCase()}</div>${body}`;
+function sectionBlock(title: string, body: string, isMIT: boolean, navy: string, isRTL: boolean): string {
+  return `<div class="section-header" ${!isMIT ? `style="color:${navy};border-color:${navy}"` : ''}>${isRTL ? esc(title) : esc(title).toUpperCase()}</div>${body}`;
 }
 
 function bulletList(items: string[]): string {

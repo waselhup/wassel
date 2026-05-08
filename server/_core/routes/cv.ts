@@ -214,7 +214,7 @@ export const cvRouter = router({
       const docxBuf = input.template === 'mit-classic'
         ? await buildMITClassicDocx(cvData)
         : await buildHarvardExecutiveDocx(cvData);
-      const pdfBuf = await buildCVPDF(cvData, input.template as CVTemplate);
+      const pdfBuf = await buildCVPDF(cvData, input.template as CVTemplate, input.language);
 
       // Upload to storage (service role bypasses RLS — we own the folder naming)
       const ts = Date.now();
