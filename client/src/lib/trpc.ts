@@ -371,6 +371,60 @@ export const trpc = {
         textLength: number;
       }>('document.parse', input),
   },
+  pricing: {
+    getPlans: () => trpcQuery<Array<{
+      id: string;
+      name_ar: string; name_en: string;
+      tagline_ar: string | null; tagline_en: string | null;
+      monthly_price_sar: string; annual_price_sar: string | null;
+      monthly_tokens: number;
+      display_order: number;
+      is_featured: boolean; is_custom: boolean; is_free: boolean;
+      badge_ar: string | null; badge_en: string | null;
+      features: Array<{
+        id: string; plan_id: string; feature_key: string;
+        feature_ar: string; feature_en: string;
+        is_included: boolean; is_coming_soon: boolean; is_highlighted: boolean;
+        display_order: number;
+      }>;
+    }>>('pricing.getPlans'),
+    getProducts: () => trpcQuery<Array<{
+      id: string;
+      name_ar: string; name_en: string;
+      description_ar: string | null; description_en: string | null;
+      price_sar: string;
+      category: string;
+      token_cost: number;
+      is_bundle: boolean;
+      bundle_items: any | null;
+      display_order: number;
+    }>>('pricing.getProducts'),
+    getCurrentSubscription: () => trpcQuery<any | null>('pricing.getCurrentSubscription'),
+    getTokenBalance: () => trpcQuery<{
+      balance: number; totalPurchased: number; totalUsed: number; lastUpdated: string | null;
+    }>('pricing.getTokenBalance'),
+    getTransactionHistory: (input?: { limit?: number; offset?: number }) =>
+      trpcQuery<{ tokenTransactions: any[]; paymentTransactions: any[] }>(
+        'pricing.getTransactionHistory', input || {}
+      ),
+    subscribeToPlan: (input: { planId: string; billingCycle: 'monthly' | 'annual' }) =>
+      trpcMutation<{
+        paymentId: string; amount: number; currency: 'SAR';
+        planId: string; billingCycle: 'monthly' | 'annual';
+        muyassarCheckoutUrl: string | null;
+      }>('pricing.subscribeToPlan', input),
+    cancelSubscription: () => trpcMutation<{ success: boolean }>('pricing.cancelSubscription'),
+    purchaseTokens: (input: { quantity: number }) =>
+      trpcMutation<{
+        paymentId: string; amount: number; currency: 'SAR';
+        quantity: number; muyassarCheckoutUrl: string | null;
+      }>('pricing.purchaseTokens', input),
+    purchaseProduct: (input: { productId: string }) =>
+      trpcMutation<{
+        paymentId: string; amount: number; currency: 'SAR';
+        productId: string; muyassarCheckoutUrl: string | null;
+      }>('pricing.purchaseProduct', input),
+  },
   agents: {
     list: () => trpcQuery<any[]>('agents.list'),
     startConversation: (input: { agentId: string; title?: string }) =>

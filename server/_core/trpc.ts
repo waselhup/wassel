@@ -15,6 +15,7 @@ import { analyticsRouter } from './routes/analytics';
 import { opsRouter } from './routes/ops';
 import { postsRouter } from './routes/posts';
 import { documentRouter } from './routes/document';
+import { pricingRouter } from './routes/pricing';
 
 export { router, publicProcedure, protectedProcedure };
 
@@ -54,6 +55,7 @@ export const appRouter = router({
   ops: opsRouter,
   posts: postsRouter,
   document: documentRouter,
+  pricing: pricingRouter,
 });
 
 export type AppRouter = typeof appRouter;
