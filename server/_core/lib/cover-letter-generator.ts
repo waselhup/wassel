@@ -1,6 +1,7 @@
 import { Document, Packer, Paragraph, TextRun, AlignmentType } from 'docx';
-import { jsPDF } from 'jspdf';
 import { callClaude, extractText, extractJson } from './claude-client';
+import { renderHtmlToPdf } from './arabic-pdf-renderer';
+import { buildCoverLetterHtml } from './cv-pdf-html';
 
 export interface CoverLetterInput {
   cvData: any;
@@ -190,63 +191,16 @@ export async function generateCoverLetterDocx(
   return await Packer.toBuffer(doc);
 }
 
-export function generateCoverLetterPdf(
+export async function generateCoverLetterPdf(
   content: CoverLetterContent,
   candidateInfo: CandidateInfo,
   language: 'ar' | 'en'
-): Buffer {
-  const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-  const isRTL = language === 'ar';
-
-  let y = 20;
-  const pageWidth = 210;
-  const margin = 20;
-  const contentWidth = pageWidth - margin * 2;
-  const align: 'left' | 'right' = isRTL ? 'right' : 'left';
-  const textX = isRTL ? pageWidth - margin : margin;
-  const lineHeight = 6;
-
-  pdf.setFontSize(16);
-  pdf.setFont('helvetica', 'bold');
-  pdf.text(candidateInfo.name, textX, y, { align });
-  y += lineHeight + 2;
-
-  pdf.setFontSize(10);
-  pdf.setFont('helvetica', 'normal');
-  const contactLine = [candidateInfo.email, candidateInfo.phone, candidateInfo.location]
-    .filter(Boolean)
-    .join(' | ');
-  pdf.text(contactLine, textX, y, { align });
-  y += lineHeight * 2;
-
-  const today = new Date().toLocaleDateString('en-US', {
-    year: 'numeric', month: 'long', day: 'numeric',
+): Promise<Buffer> {
+  const html = buildCoverLetterHtml(content, candidateInfo, language);
+  return renderHtmlToPdf({
+    html,
+    dir: language === 'ar' ? 'rtl' : 'ltr',
+    format: 'A4',
+    margin: { top: '20mm', right: '20mm', bottom: '20mm', left: '20mm' },
   });
-  pdf.text(today, textX, y, { align });
-  y += lineHeight * 2;
-
-  pdf.text(content.greeting, textX, y, { align });
-  y += lineHeight * 2;
-
-  pdf.setFontSize(11);
-  for (const para of content.paragraphs) {
-    const lines: string[] = pdf.splitTextToSize(para, contentWidth);
-    for (const line of lines) {
-      if (y > 270) { pdf.addPage(); y = 20; }
-      pdf.text(line, textX, y, { align });
-      y += lineHeight;
-    }
-    y += lineHeight;
-  }
-
-  y += lineHeight;
-  const sigLines = content.signature.split('\n');
-  for (let i = 0; i < sigLines.length; i++) {
-    if (y > 280) { pdf.addPage(); y = 20; }
-    pdf.setFont('helvetica', i === sigLines.length - 1 ? 'bold' : 'normal');
-    pdf.text(sigLines[i], textX, y, { align });
-    y += lineHeight;
-  }
-
-  return Buffer.from(pdf.output('arraybuffer'));
 }

@@ -287,7 +287,7 @@ export const cvRouter = router({
 
           const [clDocxBuf, clPdfBuf] = await Promise.all([
             generateCoverLetterDocx(clContent, candidateInfo, input.language),
-            Promise.resolve(generateCoverLetterPdf(clContent, candidateInfo, input.language)),
+            generateCoverLetterPdf(clContent, candidateInfo, input.language),
           ]);
 
           coverLetterDocxPath = `${ctx.user.id}/cover-letters/${ts}_${safeRole}_cl.docx`;
