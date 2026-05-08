@@ -359,6 +359,18 @@ export const trpc = {
     update: (input: { id: string; patch: Record<string, any> }) =>
       trpcMutation<any>('posts.update', input),
   },
+  document: {
+    parse: (input: { fileBase64: string; fileName: string; mimeType: string }) =>
+      trpcMutation<{
+        text: string;
+        method: 'pdf-text' | 'pdf-ocr' | 'docx' | 'image-ocr' | 'text';
+        documentType: 'pdf' | 'docx' | 'image' | 'text';
+        pageCount: number;
+        confidence: number;
+        warnings: string[];
+        textLength: number;
+      }>('document.parse', input),
+  },
   agents: {
     list: () => trpcQuery<any[]>('agents.list'),
     startConversation: (input: { agentId: string; title?: string }) =>
