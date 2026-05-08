@@ -7,6 +7,7 @@ import { createContext } from './context';
 import type { IncomingMessage, ServerResponse } from 'http';
 import { createClient } from '@supabase/supabase-js';
 import { sendWelcomeEmail, sendTestEmail, sendAnalysisReportEmail } from './lib/email';
+import { muyassarWebhookHandler } from './lib/muyassar-webhook';
 
 const app = express();
 
@@ -25,9 +26,20 @@ app.use(cors({
   credentials: true,
 }));
 
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({
+  limit: '10mb',
+  verify: (req: any, _res, buf) => {
+    // Stash the raw body for routes that need to verify HMAC signatures
+    // (Muyassar webhook). Only stored as a string for the signature check.
+    if (req.url && req.url.startsWith('/api/webhooks/')) {
+      req.rawBody = buf.toString('utf8');
+    }
+  },
+}));
 
 app.post('/api/telegram', telegramHandler);
+
+app.post('/api/webhooks/muyassar', muyassarWebhookHandler);
 
 app.get('/api/health', (_req, res) => {
   res.json({
