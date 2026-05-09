@@ -6,6 +6,7 @@ import Topbar from '@/components/v2/Topbar';
 import Button from '@/components/v2/Button';
 import NumDisplay from '@/components/v2/NumDisplay';
 import { trpc } from '@/lib/trpc';
+import ReviewBlock from '@/components/v2/ReviewBlock';
 
 interface SubscriptionRow {
   id: string;
@@ -405,6 +406,17 @@ function Billing() {
                 </div>
               )}
             </section>
+
+            {/* Customer review (only shown if user has at least one paid action — i.e.
+                they have any payment_transactions or any token usage. We keep this
+                gated by the "has any transactions" check above to avoid prompting
+                brand-new free users for a review before they've used anything). */}
+            {(transactions.paymentTransactions.length > 0 ||
+              transactions.tokenTransactions.length > 0) && (
+              <section className="mt-5">
+                <ReviewBlock />
+              </section>
+            )}
           </>
         )}
       </div>

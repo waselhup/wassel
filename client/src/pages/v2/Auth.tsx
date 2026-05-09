@@ -79,25 +79,6 @@ function VisualPanel() {
           </ul>
         </div>
 
-        {/* Testimonial */}
-        <figure className="max-w-[440px]">
-          <blockquote className="font-ar text-[14px] leading-relaxed text-v2-body">
-            «وصّل ساعدني أعيد صياغة بروفايلي قبل مقابلة مهمة. الفرق واضح في عدد رسائل
-            التوظيف اللي وصلتني.»
-          </blockquote>
-          <figcaption className="mt-3 flex items-center gap-3">
-            <span
-              aria-hidden="true"
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-teal-600 font-ar text-[13px] font-bold text-white"
-            >
-              س
-            </span>
-            <div className="font-ar">
-              <div className="text-[13px] font-semibold text-v2-ink">سارة العنزي</div>
-              <div className="text-[11px] text-v2-dim">مديرة منتج · الرياض</div>
-            </div>
-          </figcaption>
-        </figure>
       </div>
     </div>
   );
