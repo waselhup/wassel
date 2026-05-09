@@ -39,7 +39,7 @@ interface QuickAction {
   id: string;
   title: string;
   description: string;
-  priceSar: number;
+  cost: number;
   href: string;
   icon: ReactElement;
 }
@@ -112,9 +112,9 @@ function Home() {
   const weekday = WEEKDAY_AR[now.getDay()];
 
   const actions: QuickAction[] = [
-    { id: 'analyze', title: 'تحليل البروفايل', description: 'رادار شامل مقابل دور هدف', priceSar: 149, href: '/v2/analyze', icon: RadarIcon },
-    { id: 'post',    title: 'صياغة منشور',     description: 'AI · بصوتك أنت',           priceSar: 5,   href: '/v2/posts', icon: PostIcon },
-    { id: 'cv',      title: 'منشئ السيرة',      description: 'CV احترافي مخصّص',         priceSar: 129, href: '/v2/cvs',  icon: CvIcon  },
+    { id: 'analyze', title: 'تحليل البروفايل', description: 'رادار شامل مقابل دور هدف', cost: 25, href: '/v2/analyze', icon: RadarIcon },
+    { id: 'post',    title: 'صياغة منشور',     description: 'AI · بصوتك أنت',           cost: 5,  href: '/v2/posts', icon: PostIcon },
+    { id: 'cv',      title: 'منشئ السيرة',      description: 'CV احترافي مخصّص',         cost: 40, href: '/v2/cvs',  icon: CvIcon  },
   ];
 
 
@@ -205,7 +205,7 @@ function Home() {
               <span className="block text-[12px] text-v2-dim lg:mt-0.5 lg:text-[13px]">{action.description}</span>
             </span>
             <NumDisplay className="text-[12px] text-v2-body lg:mt-1 lg:text-[12px] lg:font-semibold lg:text-teal-700">
-              {action.priceSar} ر.س
+              {action.cost} توكن
             </NumDisplay>
             <span className="text-v2-mute lg:hidden">{ChevronStart}</span>
           </button>
