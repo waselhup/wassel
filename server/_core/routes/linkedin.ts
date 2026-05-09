@@ -957,8 +957,8 @@ export const linkedinRouter = router({
       reportLanguage: REPORT_LANGUAGE.default('ar'),
     }))
     .mutation(async ({ input, ctx }) => {
-      // Read canonical cost from products.radar.token_cost. Fallback 25.
-      const TOKEN_COST = await getProductTokenCost(ctx.supabase, 'radar', 25);
+      // Read canonical cost from products.radar.token_cost. Fallback 149.
+      const TOKEN_COST = await getProductTokenCost(ctx.supabase, 'radar', 149);
       const FEATURE = 'linkedin.analyzeTargeted';
       const lang = input.reportLanguage;
       const startedAt = Date.now();

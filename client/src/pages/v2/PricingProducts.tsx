@@ -180,7 +180,7 @@ function PricingProducts() {
                       className="absolute -top-2.5 end-4 rounded-v2-pill bg-teal-500 px-2.5 py-1 font-ar text-[10px] font-bold tracking-[0.04em]"
                       style={{ color: '#0a3530' }}
                     >
-                      {t('وفّر 19 ر.س', 'Save 19 SAR')}
+                      {t('وفّر 19 توكن', 'Save 19 tokens')}
                     </span>
                   )}
 

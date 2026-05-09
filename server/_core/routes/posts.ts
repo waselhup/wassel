@@ -182,8 +182,8 @@ export const postsRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       // Read canonical cost from products.linkedin_post.token_cost (DB-driven).
-      // Falls back to 30 if the lookup fails so the feature stays online.
-      const TOKEN_COST = await getProductTokenCost(ctx.supabase, 'linkedin_post', 30);
+      // Falls back to 5 if the lookup fails so the feature stays online.
+      const TOKEN_COST = await getProductTokenCost(ctx.supabase, 'linkedin_post', 5);
       const FEATURE = 'posts.generate';
       let deducted = false;
 

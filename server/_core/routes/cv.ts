@@ -31,8 +31,8 @@ const PARSE_METHOD = z.enum(['docx', 'pdf-text', 'pdf-ocr', 'manual']);
 // Default fallbacks. The actual cost on each call is read from
 // products.cv_builder.token_cost and products.cover_letter.token_cost via
 // getProductTokenCost() so the catalog stays the source of truth.
-const TOKEN_COST_FALLBACK = 10;
-const COVER_LETTER_FALLBACK = 5;
+const TOKEN_COST_FALLBACK = 129;
+const COVER_LETTER_FALLBACK = 69;
 
 const CV_BUILDER_SYSTEM = `You are an expert ATS-optimized CV writer trained on MIT Career Services and Harvard Business School standards.
 
