@@ -7,8 +7,15 @@ import NumDisplay from './NumDisplay';
 interface Plan {
   id: string;
   name_ar: string; name_en: string;
-  monthly_price_sar: string; annual_price_sar: string | null;
+  monthly_price_sar: string | number;
+  annual_price_sar: string | number | null;
   monthly_tokens: number;
+}
+
+function num(v: unknown): number {
+  if (v === null || v === undefined) return 0;
+  const n = typeof v === 'number' ? v : Number(v);
+  return Number.isFinite(n) ? n : 0;
 }
 
 interface CheckoutModalProps {
@@ -38,8 +45,8 @@ function CheckoutModal({ plan, billingCycle, onClose }: CheckoutModalProps) {
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
-  const monthly = Number(plan.monthly_price_sar);
-  const annual = Number(plan.annual_price_sar ?? 0);
+  const monthly = num(plan.monthly_price_sar);
+  const annual = num(plan.annual_price_sar);
   const total = billingCycle === 'annual' ? annual : monthly;
   const monthlyEquiv = billingCycle === 'annual' && annual > 0
     ? Math.round(annual / 12)

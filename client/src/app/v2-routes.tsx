@@ -1,4 +1,5 @@
-import { lazy, Suspense, useEffect, type ReactElement, type ReactNode } from 'react';
+import { Suspense, useEffect, type ReactElement, type ReactNode } from 'react';
+import { lazyWithRetry as lazy } from '@/lib/lazy-with-retry';
 import { useLocation, useRoute } from 'wouter';
 import { JobsProvider } from '@/lib/v2/jobs';
 import { ToastProvider, useToast } from '@/lib/v2/toast';

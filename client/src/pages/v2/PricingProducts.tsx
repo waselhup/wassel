@@ -13,11 +13,17 @@ interface Product {
   id: string;
   name_ar: string; name_en: string;
   description_ar: string | null; description_en: string | null;
-  price_sar: string;
+  price_sar: string | number;
   category: string;
   token_cost: number;
   is_bundle: boolean;
   bundle_items: any | null;
+}
+
+function num(v: unknown): number {
+  if (v === null || v === undefined) return 0;
+  const n = typeof v === 'number' ? v : Number(v);
+  return Number.isFinite(n) ? n : 0;
 }
 
 const PRODUCT_ICON: Record<string, string> = {
@@ -50,12 +56,16 @@ function PricingProducts() {
     ])
       .then(([prods, bal]) => {
         if (cancelled) return;
-        setProducts(prods as Product[]);
-        if (bal) setTokenBalance(bal.balance);
+        const safe = Array.isArray(prods)
+          ? (prods as Product[]).filter((p) => p && typeof p.id === 'string')
+          : [];
+        setProducts(safe);
+        if (bal && typeof bal.balance === 'number') setTokenBalance(bal.balance);
         setLoading(false);
       })
       .catch((e) => {
         if (cancelled) return;
+        console.error('[PricingProducts] load failed:', e);
         setError(e?.message || 'Failed to load products');
         setLoading(false);
       });
@@ -159,10 +169,10 @@ function PricingProducts() {
         {!loading && !error && products.length > 0 && (
           <div className="grid grid-cols-1 gap-3.5 md:grid-cols-2 lg:grid-cols-3 lg:gap-5">
             {products.map((product) => {
-              const name = isAr ? product.name_ar : product.name_en;
+              const name = (isAr ? product.name_ar : product.name_en) || product.id;
               const description = isAr ? product.description_ar : product.description_en;
-              const price = Number(product.price_sar);
-              const tokens = product.token_cost;
+              const price = num(product.price_sar);
+              const tokens = num(product.token_cost);
               const canUseTokens = tokenBalance !== null && tokenBalance >= tokens;
               const fb = feedback?.id === product.id ? feedback : null;
               const icon = PRODUCT_ICON[product.id] || '✨';

@@ -1,4 +1,5 @@
-import React, { Suspense, lazy, useEffect } from 'react';
+import React, { Suspense, useEffect } from 'react';
+import { lazyWithRetry as lazy } from '@/lib/lazy-with-retry';
 import { useRoute, useLocation } from 'wouter';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { useTranslation } from 'react-i18next';

@@ -16,14 +16,25 @@ interface Plan {
   id: string;
   name_ar: string; name_en: string;
   tagline_ar: string | null; tagline_en: string | null;
-  monthly_price_sar: string; annual_price_sar: string | null;
+  // Prices come back as JSON numbers from PostgREST (numeric → number) but we
+  // accept string|number defensively so a backend type drift can't crash the page.
+  monthly_price_sar: string | number;
+  annual_price_sar: string | number | null;
   monthly_tokens: number;
   is_featured: boolean; is_custom: boolean; is_free: boolean;
   badge_ar: string | null; badge_en: string | null;
-  features: Array<{
+  features?: Array<{
     feature_ar: string; feature_en: string;
     is_included: boolean; is_coming_soon: boolean; is_highlighted: boolean;
   }>;
+}
+
+// Coerce any numeric-ish value (string, number, null, undefined) to a finite
+// number. Falls back to 0 so render math never produces NaN.
+function num(v: unknown): number {
+  if (v === null || v === undefined) return 0;
+  const n = typeof v === 'number' ? v : Number(v);
+  return Number.isFinite(n) ? n : 0;
 }
 
 const FAQ_AR: { q: string; a: string }[] = [
@@ -70,13 +81,18 @@ function Pricing() {
     let cancelled = false;
     trpc.pricing.getPlans()
       .then((data) => {
-        if (!cancelled) {
-          setPlans(data as Plan[]);
-          setLoading(false);
-        }
+        if (cancelled) return;
+        // Defensive: accept anything that's array-like; drop entries that
+        // don't have an id so a single bad row can't crash the whole page.
+        const safe = Array.isArray(data)
+          ? (data as Plan[]).filter((p) => p && typeof p.id === 'string')
+          : [];
+        setPlans(safe);
+        setLoading(false);
       })
       .catch((e) => {
         if (!cancelled) {
+          console.error('[Pricing] getPlans failed:', e);
           setError(e?.message || 'Failed to load plans');
           setLoading(false);
         }
@@ -174,15 +190,17 @@ function Pricing() {
         {!loading && !error && plans.length > 0 && (
           <div className="flex flex-col gap-3.5 lg:grid lg:grid-cols-4 lg:items-start lg:gap-5">
             {plans.map((plan) => {
-              const monthly = Number(plan.monthly_price_sar);
-              const annual = Number(plan.annual_price_sar ?? 0);
+              const monthly = num(plan.monthly_price_sar);
+              const annual = num(plan.annual_price_sar);
               const annualMonthlyEquiv = annual ? Math.round(annual / 12) : monthly;
               const price = cycle === 'annual' ? annualMonthlyEquiv : monthly;
               const showAnnualSavings = cycle === 'annual' && annual > 0 && annualMonthlyEquiv < monthly;
-              const dark = plan.is_featured;
-              const name = isAr ? plan.name_ar : plan.name_en;
+              const dark = !!plan.is_featured;
+              const name = (isAr ? plan.name_ar : plan.name_en) || plan.id;
               const tagline = isAr ? plan.tagline_ar : plan.tagline_en;
               const badge = isAr ? plan.badge_ar : plan.badge_en;
+              const monthlyTokens = num(plan.monthly_tokens);
+              const features = Array.isArray(plan.features) ? plan.features : [];
 
               const ctaLabel = plan.is_free
                 ? t('ابدأ مجاناً', 'Start free')
@@ -192,7 +210,7 @@ function Pricing() {
 
               const tokensLabel = plan.is_custom
                 ? t('حسب الاحتياج', 'Custom volume')
-                : t(`${plan.monthly_tokens} توكن شهرياً`, `${plan.monthly_tokens} tokens / month`);
+                : t(`${monthlyTokens} توكن شهرياً`, `${monthlyTokens} tokens / month`);
 
               const priceLabel = plan.is_custom
                 ? t('سعر مخصّص', 'Custom')
@@ -269,7 +287,7 @@ function Pricing() {
                   </div>
 
                   <ul className="m-0 mb-5 list-none p-0 lg:mb-6">
-                    {(plan.features || []).map((f, i) => {
+                    {features.map((f, i) => {
                       const featureText = isAr ? f.feature_ar : f.feature_en;
                       return (
                         <li
