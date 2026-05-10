@@ -1,8 +1,51 @@
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import { router, publicProcedure, protectedProcedure } from '../trpc-init';
+import { createInvoice, isMoyasarConfigured } from '../lib/moyasar-client';
 
 const BILLING_CYCLE = z.enum(['monthly', 'annual']);
+
+const PUBLIC_BASE_URL =
+  process.env.PUBLIC_APP_URL ||
+  process.env.NEXT_PUBLIC_APP_URL ||
+  'https://wasselhub.com';
+
+/**
+ * Build the Moyasar callback URL the customer's browser is redirected to
+ * after the hosted form. We always send them to /checkout/success?id=<txn>;
+ * the success page polls payment status and routes to /checkout/failed when
+ * the webhook confirmed a failure.
+ */
+function buildCallbackUrl(transactionId: string): string {
+  return `${PUBLIC_BASE_URL.replace(/\/$/, '')}/v2/checkout/success?id=${encodeURIComponent(transactionId)}`;
+}
+
+/**
+ * Create a Moyasar hosted invoice for a pending payment_transactions row.
+ * Returns the URL to redirect the customer to, plus the invoice id which we
+ * cache on the payment row so admins can correlate later.
+ *
+ * If Moyasar isn't configured (dev) we return null and the caller surfaces
+ * the existing "being configured" placeholder UI.
+ */
+async function createHostedInvoiceForPayment(args: {
+  paymentId: string;
+  amountSar: number;
+  description: string;
+  metadataExtra?: Record<string, string>;
+}): Promise<{ url: string; invoiceId: string } | null> {
+  if (!isMoyasarConfigured()) return null;
+  const invoice = await createInvoice({
+    amountHalalas: Math.round(args.amountSar * 100),
+    description: args.description,
+    callbackUrl: buildCallbackUrl(args.paymentId),
+    metadata: {
+      payment_id: args.paymentId,
+      ...(args.metadataExtra || {}),
+    },
+  });
+  return { url: invoice.url, invoiceId: invoice.id };
+}
 
 export const pricingRouter = router({
   /**
@@ -211,15 +254,43 @@ export const pricingRouter = router({
         throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: payErr.message });
       }
 
+      let checkoutUrl: string | null = null;
+      try {
+        const invoice = await createHostedInvoiceForPayment({
+          paymentId: payment.id,
+          amountSar: amount,
+          description: `Wassel ${plan.name_en} (${input.billingCycle})`,
+          metadataExtra: {
+            type: 'subscription',
+            plan_id: input.planId,
+            billing_cycle: input.billingCycle,
+          },
+        });
+        if (invoice) {
+          checkoutUrl = invoice.url;
+          await ctx.supabase
+            .from('payment_transactions')
+            .update({ muyassar_invoice_id: invoice.invoiceId })
+            .eq('id', payment.id);
+        }
+      } catch (e: any) {
+        // Mark the row failed so the user can retry without leaving an
+        // orphaned 'pending' charge. The error surfaces as a tRPC error.
+        await ctx.supabase
+          .from('payment_transactions')
+          .update({ status: 'failed', metadata: { ...payment.metadata, gateway_error: e?.message } })
+          .eq('id', payment.id);
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: `Moyasar invoice failed: ${e?.message}` });
+      }
+
       return {
         paymentId: payment.id,
         amount,
         currency: 'SAR' as const,
         planId: input.planId,
         billingCycle: input.billingCycle,
-        // Frontend uses this to redirect to Muyassar checkout — wire actual
-        // Muyassar API call here once API keys are configured.
-        muyassarCheckoutUrl: null as string | null,
+        // Frontend redirects window.location to this URL when present.
+        muyassarCheckoutUrl: checkoutUrl,
       };
     }),
 
@@ -295,12 +366,35 @@ export const pricingRouter = router({
         throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: error.message });
       }
 
+      let checkoutUrl: string | null = null;
+      try {
+        const invoice = await createHostedInvoiceForPayment({
+          paymentId: payment.id,
+          amountSar: amount,
+          description: `Wassel tokens — ${input.quantity}`,
+          metadataExtra: { type: 'token_topup', quantity: String(input.quantity) },
+        });
+        if (invoice) {
+          checkoutUrl = invoice.url;
+          await ctx.supabase
+            .from('payment_transactions')
+            .update({ muyassar_invoice_id: invoice.invoiceId })
+            .eq('id', payment.id);
+        }
+      } catch (e: any) {
+        await ctx.supabase
+          .from('payment_transactions')
+          .update({ status: 'failed', metadata: { ...payment.metadata, gateway_error: e?.message } })
+          .eq('id', payment.id);
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: `Moyasar invoice failed: ${e?.message}` });
+      }
+
       return {
         paymentId: payment.id,
         amount,
         currency: 'SAR' as const,
         quantity: input.quantity,
-        muyassarCheckoutUrl: null as string | null,
+        muyassarCheckoutUrl: checkoutUrl,
       };
     }),
 
@@ -355,12 +449,56 @@ export const pricingRouter = router({
         throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: error.message });
       }
 
+      let checkoutUrl: string | null = null;
+      try {
+        const invoice = await createHostedInvoiceForPayment({
+          paymentId: payment.id,
+          amountSar: amount,
+          description: `Wassel ${product.name_en}`,
+          metadataExtra: { type: 'product', product_id: input.productId },
+        });
+        if (invoice) {
+          checkoutUrl = invoice.url;
+          await ctx.supabase
+            .from('payment_transactions')
+            .update({ muyassar_invoice_id: invoice.invoiceId })
+            .eq('id', payment.id);
+        }
+      } catch (e: any) {
+        await ctx.supabase
+          .from('payment_transactions')
+          .update({ status: 'failed', metadata: { ...payment.metadata, gateway_error: e?.message } })
+          .eq('id', payment.id);
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: `Moyasar invoice failed: ${e?.message}` });
+      }
+
       return {
         paymentId: payment.id,
         amount,
         currency: 'SAR' as const,
         productId: input.productId,
-        muyassarCheckoutUrl: null as string | null,
+        muyassarCheckoutUrl: checkoutUrl,
       };
+    }),
+
+  /**
+   * Authed: poll status of a single payment_transactions row.
+   * The /checkout/success page hits this every 2s while waiting for the
+   * webhook to mark the row 'completed'. RLS-scoped to the caller.
+   */
+  getPaymentStatus: protectedProcedure
+    .input(z.object({ transactionId: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      const { data, error } = await ctx.supabase
+        .from('payment_transactions')
+        .select('id, status, type, amount_sar, currency, completed_at, metadata, reference_id, reference_type')
+        .eq('id', input.transactionId)
+        .eq('user_id', ctx.user.id)
+        .single();
+
+      if (error || !data) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Transaction not found' });
+      }
+      return data;
     }),
 });

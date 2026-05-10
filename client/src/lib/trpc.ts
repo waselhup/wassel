@@ -424,6 +424,18 @@ export const trpc = {
         paymentId: string; amount: number; currency: 'SAR';
         productId: string; muyassarCheckoutUrl: string | null;
       }>('pricing.purchaseProduct', input),
+    getPaymentStatus: (input: { transactionId: string }) =>
+      trpcQuery<{
+        id: string;
+        status: 'pending' | 'completed' | 'failed' | 'cancelled' | string;
+        type: 'subscription' | 'token_topup' | 'product' | string;
+        amount_sar: string | number;
+        currency: string;
+        completed_at: string | null;
+        metadata: Record<string, any> | null;
+        reference_id: string | null;
+        reference_type: string | null;
+      }>('pricing.getPaymentStatus', input),
   },
   agents: {
     list: () => trpcQuery<any[]>('agents.list'),

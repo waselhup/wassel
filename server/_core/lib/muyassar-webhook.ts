@@ -15,16 +15,30 @@ import type { Request, Response } from 'express';
  * via payment_transactions.muyassar_transaction_id.
  */
 
-interface MuyassarPayload {
+/**
+ * Moyasar webhook payload — supports both the event-envelope format
+ *   { id, type: 'payment_paid', data: { id, status, amount, metadata, ... } }
+ * and the flat payment-object format used by older test setups.
+ */
+interface MuyassarFlatPayload {
   id?: string;
   invoice_id?: string;
   amount?: number;
   currency?: string;
-  status?: string; // 'paid' | 'failed' | 'cancelled'
+  status?: string; // 'paid' | 'failed' | 'cancelled' | 'authorized' | 'captured' | 'verified' | 'refunded'
   metadata?: { payment_id?: string };
   payment_method?: string;
   callback_id?: string;
+  source?: { type?: string; company?: string };
 }
+
+interface MuyassarEnvelopePayload {
+  id?: string;
+  type?: string; // 'payment_paid' | 'payment_failed' | etc.
+  data?: MuyassarFlatPayload;
+}
+
+type MuyassarPayload = MuyassarFlatPayload & MuyassarEnvelopePayload;
 
 function getSupabase() {
   const url = process.env.SUPABASE_URL;
@@ -54,8 +68,15 @@ function verifySignature(rawBody: string, signature: string | undefined, secret:
 
 export async function muyassarWebhookHandler(req: Request, res: Response) {
   const rawBody: string = (req as any).rawBody || JSON.stringify(req.body || {});
-  const signature = req.headers['x-muyassar-signature'] as string | undefined;
-  const secret = process.env.MUYASSAR_WEBHOOK_SECRET;
+  // Moyasar's official header is `x-moyasar-signature`; we also accept the
+  // historical mis-spelling for backwards compatibility with anything set up
+  // before the spelling was fixed.
+  const signature =
+    (req.headers['x-moyasar-signature'] as string | undefined) ||
+    (req.headers['x-muyassar-signature'] as string | undefined);
+  const secret =
+    process.env.MOYASAR_WEBHOOK_SECRET ||
+    process.env.MUYASSAR_WEBHOOK_SECRET;
 
   // Verify signature only if secret is configured (allows unsigned in dev).
   if (secret && !verifySignature(rawBody, signature, secret)) {
@@ -63,10 +84,29 @@ export async function muyassarWebhookHandler(req: Request, res: Response) {
     return res.status(401).json({ error: 'Invalid signature' });
   }
 
-  const payload = (req.body || {}) as MuyassarPayload;
-  const paymentId = payload.metadata?.payment_id;
-  const muyassarTxId = payload.id;
-  const muyassarStatus = payload.status;
+  const envelope = (req.body || {}) as MuyassarPayload;
+  // If the body is an event envelope { type, data: {...} }, unwrap it. The
+  // payment object in `data` is what carries id/metadata/status. Otherwise
+  // treat the body itself as the payment object (legacy/test shape).
+  const payment: MuyassarFlatPayload =
+    (envelope.data && typeof envelope.data === 'object') ? envelope.data : envelope;
+  const eventType = envelope.type;
+
+  const paymentId = payment.metadata?.payment_id;
+  const muyassarTxId = payment.id;
+  // Prefer event-type signal when present (payment_paid / payment_failed /
+  // payment_refunded / payment_authorized / payment_captured / payment_verified).
+  // Fall back to payment.status for legacy/test setups.
+  const muyassarStatus =
+    eventType === 'payment_paid' || eventType === 'payment_captured' || eventType === 'payment_verified'
+      ? 'paid'
+      : eventType === 'payment_failed'
+        ? 'failed'
+        : eventType === 'payment_refunded'
+          ? 'refunded'
+          : eventType === 'payment_authorized'
+            ? 'authorized'
+            : payment.status;
 
   if (!paymentId || !muyassarTxId) {
     return res.status(400).json({ error: 'Missing payment_id or transaction id' });
@@ -77,23 +117,43 @@ export async function muyassarWebhookHandler(req: Request, res: Response) {
   // Idempotency check: already processed this Muyassar transaction?
   const { data: existing } = await supabase
     .from('payment_transactions')
-    .select('id, status, muyassar_transaction_id, user_id, type, metadata')
+    .select('id, status, muyassar_transaction_id, muyassar_invoice_id, user_id, type, amount_sar, metadata')
     .eq('id', paymentId)
     .single();
 
   if (!existing) {
-    return res.status(404).json({ error: 'Payment not found' });
+    // Payment doesn't exist in our DB. Could be a webhook for a payment
+    // created on a different environment — return 200 so Moyasar stops
+    // retrying. Log loudly so ops can investigate.
+    console.warn('[muyassar-webhook] payment not found, dropping', { paymentId });
+    return res.status(200).json({ ok: true, status: 'not_found' });
   }
 
   if (existing.status === 'completed' && existing.muyassar_transaction_id === muyassarTxId) {
     return res.json({ ok: true, status: 'already_processed' });
   }
 
-  // Map Muyassar status → our status
+  // Sanity-check the webhook amount against the row we created. Moyasar
+  // amounts are in halalas (1 SAR = 100). Mismatch is suspicious but we
+  // still process — we log loudly so ops can investigate.
+  if (muyassarStatus === 'paid' && typeof payment.amount === 'number') {
+    const expectedHalalas = Math.round(Number(existing.amount_sar) * 100);
+    if (payment.amount !== expectedHalalas) {
+      console.warn(
+        '[muyassar-webhook] amount mismatch',
+        { paymentId, expected: expectedHalalas, received: payment.amount }
+      );
+    }
+  }
+
+  // Map Moyasar status → our status. We treat 'authorized' as still pending
+  // (settlement comes later via 'captured' or 'paid'), and 'refunded' as a
+  // separate refunded status so reporting can distinguish it from cancel.
   const newStatus =
     muyassarStatus === 'paid' ? 'completed'
       : muyassarStatus === 'failed' ? 'failed'
       : muyassarStatus === 'cancelled' ? 'cancelled'
+      : muyassarStatus === 'refunded' ? 'refunded'
       : 'pending';
 
   const { error: updErr } = await supabase
@@ -101,8 +161,8 @@ export async function muyassarWebhookHandler(req: Request, res: Response) {
     .update({
       status: newStatus,
       muyassar_transaction_id: muyassarTxId,
-      muyassar_invoice_id: payload.invoice_id || null,
-      payment_method: payload.payment_method || null,
+      muyassar_invoice_id: payment.invoice_id || existing.muyassar_invoice_id || null,
+      payment_method: payment.payment_method || payment.source?.type || null,
       completed_at: newStatus === 'completed' ? new Date().toISOString() : null,
     })
     .eq('id', paymentId);

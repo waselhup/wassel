@@ -39,6 +39,10 @@ app.use(express.json({
 
 app.post('/api/telegram', telegramHandler);
 
+// Moyasar webhook — mount under both spellings so existing dashboard
+// configurations (muyassar) keep working while new ones use the correct
+// 'moyasar' spelling.
+app.post('/api/webhooks/moyasar', muyassarWebhookHandler);
 app.post('/api/webhooks/muyassar', muyassarWebhookHandler);
 
 app.get('/api/health', (_req, res) => {

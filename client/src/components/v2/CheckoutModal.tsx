@@ -65,11 +65,16 @@ function CheckoutModal({ plan, billingCycle, onClose }: CheckoutModalProps) {
         planId: plan.id,
         billingCycle,
       });
-      setPendingPaymentId(res.paymentId);
-      // When Muyassar is wired, redirect:
+      // Live path: server already created a Moyasar invoice and gave us
+      // the hosted-form URL — redirect the browser to it. The customer
+      // returns to /v2/checkout/success?id=<paymentId>.
       if (res.muyassarCheckoutUrl) {
         window.location.href = res.muyassarCheckoutUrl;
+        return;
       }
+      // Fallback path: Moyasar isn't configured (dev environment). Show the
+      // pending state so the dev knows the row was created but no charge ran.
+      setPendingPaymentId(res.paymentId);
     } catch (e: any) {
       setError(e?.message || t('فشلت العملية', 'Checkout failed'));
     } finally {
@@ -120,8 +125,8 @@ function CheckoutModal({ plan, billingCycle, onClose }: CheckoutModalProps) {
               </h3>
               <p className="mt-2 font-ar text-[13px] text-v2-body">
                 {t(
-                  'سنوجّهك إلى بوّابة الدفع قريباً. حالياً، الدفع عبر Moyasar قيد التهيئة.',
-                  'You will be redirected to the payment gateway. Moyasar checkout is being configured.'
+                  'تم إنشاء طلب الدفع. بوّابة الدفع غير مفعّلة في هذه البيئة بعد.',
+                  'A pending payment was created. The gateway is not enabled in this environment yet.'
                 )}
               </p>
               <div className="mt-3 font-en text-[11px] text-v2-mute">
@@ -183,11 +188,11 @@ function CheckoutModal({ plan, billingCycle, onClose }: CheckoutModalProps) {
                 )}
               </div>
 
-              {/* Payment placeholder */}
-              <div className="mb-4 rounded-v2-md border border-amber-200 bg-amber-50 px-3 py-2.5 font-ar text-[12px] text-amber-800">
+              {/* Payment notice — Moyasar hosted form. */}
+              <div className="mb-4 rounded-v2-md border border-teal-200 bg-teal-50 px-3 py-2.5 font-ar text-[12px] text-teal-800">
                 {t(
-                  'الدفع عبر Moyasar (مدى، فيزا، Apple Pay) قيد التهيئة. اضغط "تأكيد" لإنشاء طلب دفع.',
-                  'Moyasar payments (Mada, Visa, Apple Pay) are being configured. Click Confirm to create a pending payment.'
+                  'سيتم تحويلك إلى بوّابة الدفع الآمنة (مدى، فيزا، Apple Pay) عبر Moyasar.',
+                  'You\'ll be redirected to the secure Moyasar payment page (Mada, Visa, Apple Pay).'
                 )}
               </div>
 

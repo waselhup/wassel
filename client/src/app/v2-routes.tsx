@@ -16,6 +16,8 @@ const Auth = lazy(() => import('@/pages/v2/Auth'));
 const Pricing = lazy(() => import('@/pages/v2/Pricing'));
 const PricingProducts = lazy(() => import('@/pages/v2/PricingProducts'));
 const Billing = lazy(() => import('@/pages/v2/Billing'));
+const CheckoutSuccess = lazy(() => import('@/pages/v2/CheckoutSuccess'));
+const CheckoutFailed = lazy(() => import('@/pages/v2/CheckoutFailed'));
 const Home = lazy(() => import('@/pages/v2/Home'));
 const Posts = lazy(() => import('@/pages/v2/Posts'));
 const Profile = lazy(() => import('@/pages/v2/Profile'));
@@ -183,6 +185,8 @@ function V2Routes(): ReactElement | null {
   const [matchPricing] = useRoute('/v2/pricing');
   const [matchPricingProducts] = useRoute('/v2/pricing/products');
   const [matchBilling] = useRoute('/v2/billing');
+  const [matchCheckoutSuccess] = useRoute('/v2/checkout/success');
+  const [matchCheckoutFailed] = useRoute('/v2/checkout/failed');
   const [matchHome] = useRoute('/v2/home');
   const [matchAnalyze] = useRoute('/v2/analyze');
   const [matchAnalyzeLoading] = useRoute('/v2/analyze/loading');
@@ -207,6 +211,15 @@ function V2Routes(): ReactElement | null {
   }
   if (matchBilling) {
     return <ProtectedShell><Suspense fallback={<V2Loader />}><Billing /></Suspense></ProtectedShell>;
+  }
+  // Checkout return URLs from Moyasar's hosted form. Auth-gated because we
+  // poll a user-scoped tRPC query (pricing.getPaymentStatus) — if a guest
+  // somehow lands here we want them to log in before seeing transaction data.
+  if (matchCheckoutSuccess) {
+    return <ProtectedShell><Suspense fallback={<V2Loader />}><CheckoutSuccess /></Suspense></ProtectedShell>;
+  }
+  if (matchCheckoutFailed) {
+    return <ProtectedShell><Suspense fallback={<V2Loader />}><CheckoutFailed /></Suspense></ProtectedShell>;
   }
   if (matchHome) {
     return <ProtectedShell><Suspense fallback={<V2Loader />}><Home /></Suspense></ProtectedShell>;
