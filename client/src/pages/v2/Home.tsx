@@ -382,17 +382,9 @@ function Home() {
             {loading ? (
               <Skeleton variant="text" width="60%" className="h-[28px] lg:h-[34px]" />
             ) : (
-              <>
-                <h1 className="truncate font-ar font-bold leading-tight text-v2-ink text-[22px] lg:text-[28px]">
-                  {greeting}
-                </h1>
-                {(profile as any)?.title ? (
-                  <p className="truncate font-ar text-[13px] text-v2-dim lg:text-[14px]">
-                    {(profile as any).title}
-                    {(profile as any)?.company ? ` · ${(profile as any).company}` : ''}
-                  </p>
-                ) : null}
-              </>
+              <h1 className="truncate font-ar font-bold leading-tight text-v2-ink text-[22px] lg:text-[28px]">
+                {greeting}
+              </h1>
             )}
           </div>
         </div>
