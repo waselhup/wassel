@@ -195,9 +195,9 @@ function Profile() {
         .eq('id', user.id);
       if (error) throw error;
       await refreshProfile();
-      setSaveMsg({ tone: 'ok', text: 'تم حفظ التغييرات.' });
+      setSaveMsg({ tone: 'ok', text: 'تم حفظ التغييرات' });
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'فشل حفظ التغييرات.';
+      const msg = err instanceof Error ? err.message : 'فشل حفظ التغييرات';
       setSaveMsg({ tone: 'err', text: msg });
     } finally {
       setSaving(false);

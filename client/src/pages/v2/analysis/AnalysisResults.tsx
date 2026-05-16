@@ -66,6 +66,30 @@ export default function AnalysisResults() {
   const [missing, setMissing] = useState(false);
   const [exportingFmt, setExportingFmt] = useState<'docx' | 'pdf' | null>(null);
   const [selectedSectionKey, setSelectedSectionKey] = useState<string | null>(null);
+  const [reanalyzing, setReanalyzing] = useState(false);
+  const [reanalyzeError, setReanalyzeError] = useState<string | null>(null);
+
+  async function handleReanalyze() {
+    if (!data?.id || !data?.linkedinUrl) return;
+    setReanalyzing(true);
+    setReanalyzeError(null);
+    try {
+      const res = await trpcMutation<{
+        id: string; analysis: any; linkedinUrl: string; tokensUsed: number;
+      }>('linkedin.analyzeTargeted', {
+        linkedinUrl: data.linkedinUrl,
+        targetGoal: (data as any).targetGoal || 'job_search',
+        industry: (data as any).industry || 'tech',
+        reportLanguage: isAr ? 'ar' : 'en',
+        parentAnalysisId: data.id,
+      });
+      navigate(`/v2/analyze/result/${res.id}`);
+    } catch (e: any) {
+      setReanalyzeError(e?.message || (isAr ? 'فشل إعادة التحليل' : 'Re-analysis failed'));
+    } finally {
+      setReanalyzing(false);
+    }
+  }
 
   useEffect(() => {
     if (!id) {
@@ -104,7 +128,7 @@ export default function AnalysisResults() {
       frameworkLabel: s.framework_label || undefined,
       effort: s.effort,
       description: isAr
-        ? 'قسم مهم في بروفايلك — راجع الملاحظات أدناه.'
+        ? 'قسم مهم في بروفايلك — راجع الملاحظات أدناه'
         : 'An important section of your profile — review the notes below.',
       verdict: s.assessment,
       currentText: s.current,
@@ -230,11 +254,11 @@ export default function AnalysisResults() {
           <Card padding="lg" radius="lg" className="text-center">
             <Eyebrow className="mb-2 block">RADAR</Eyebrow>
             <h2 className="font-ar text-[18px] font-bold text-v2-ink">
-              {isAr ? 'لم نجد هذا التحليل في الجلسة الحالية.' : 'No analysis found in this session.'}
+              {isAr ? 'لم نجد هذا التحليل في الجلسة الحالية' : 'No analysis found in this session.'}
             </h2>
             <p className="mt-2 font-ar text-[13px] text-v2-dim">
               {isAr
-                ? 'افتح السجل من صفحة الرادار للوصول إلى التحاليل السابقة.'
+                ? 'افتح السجل من صفحة الرادار للوصول إلى التحاليل السابقة'
                 : 'Open the radar history to access prior analyses.'}
             </p>
             <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-center">
@@ -297,7 +321,7 @@ export default function AnalysisResults() {
         <div className="mt-5 lg:mt-2">
           <Eyebrow className="mb-1.5 block">{isAr ? 'نتيجة Wassel' : 'Wassel score'} · {tokensUsed} TOKEN</Eyebrow>
           <h1 className="font-ar font-bold leading-tight text-v2-ink text-[24px] lg:text-[32px]">
-            {isAr ? 'تحليلك جاهز.' : 'Your analysis is ready.'}
+            {isAr ? 'تحليلك جاهز' : 'Your analysis is ready.'}
           </h1>
         </div>
 
@@ -320,11 +344,40 @@ export default function AnalysisResults() {
                 size="md"
                 fullWidth
                 leadingIcon={<Sparkles size={16} />}
+                onClick={handleReanalyze}
+                disabled={reanalyzing || !data.linkedinUrl}
+              >
+                {reanalyzing
+                  ? (isAr ? 'جاري إعادة التحليل…' : 'Re-analyzing…')
+                  : (isAr ? 'أعد التحليل (مجاناً)' : 'Re-analyze (Free)')}
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                fullWidth
                 onClick={() => navigate('/v2/analyze')}
               >
                 {isAr ? 'تحليل بروفايل آخر' : 'Analyse another profile'}
               </Button>
+              {reanalyzeError && (
+                <p className="text-center font-ar text-[12px] text-red-600">{reanalyzeError}</p>
+              )}
             </div>
+          </Card>
+
+          {/* B.12: Post-analysis guidance — apply suggestions then re-check free */}
+          <Card padding="lg" radius="lg" className="mb-5 bg-teal-50/60 border-teal-100 lg:order-3 lg:col-span-12 lg:mb-0">
+            <Eyebrow className="mb-2 block !text-teal-700">
+              {isAr ? 'الخطوة التالية' : 'NEXT STEP'}
+            </Eyebrow>
+            <h3 className="mb-2 font-ar text-[17px] font-bold text-v2-ink lg:text-[19px]">
+              {isAr ? 'طبّق التوصيات على بروفايلك' : 'Apply the recommendations to your profile'}
+            </h3>
+            <p className="font-ar text-[13px] leading-relaxed text-v2-body lg:text-[14px]">
+              {isAr
+                ? 'بعد ما تطبّق كل التوصيات على بروفايل لينكدإن، ارجع وحدّث التحليل مجاناً — لو طبّقت 100% من توصياتنا، نتيجتك راح تكون 100'
+                : "Once you've applied all our suggestions to your LinkedIn profile, come back and refresh the analysis for free — if you apply 100% of our recommendations, your score will be 100."}
+            </p>
           </Card>
 
           {/* Section list — mobile shows full list; desktop shows it as a rail
@@ -360,7 +413,7 @@ export default function AnalysisResults() {
             ) : (
               <Card padding="lg" radius="lg" className="text-center">
                 <p className="font-ar text-[14px] text-v2-dim">
-                  {isAr ? 'لا توجد أقسام تفصيلية في هذا التحليل.' : 'No section breakdown available for this analysis.'}
+                  {isAr ? 'لا توجد أقسام تفصيلية في هذا التحليل' : 'No section breakdown available for this analysis.'}
                 </p>
               </Card>
             )}

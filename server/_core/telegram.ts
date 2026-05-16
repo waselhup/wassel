@@ -24,7 +24,7 @@ async function askOZAIL(message: string): Promise<string> {
       max_tokens: 800,
       system: `You are OZAIL, the AI CEO of Wassel (وصل) — Arabic-first LinkedIn outreach SaaS for Saudi Arabia.
 Platform: https://wassel-alpha.vercel.app
-Pricing: Free 100 tokens | Starter 99 SAR | Pro 249 SAR | Agency 599 SAR
+Pricing: Free 10 tokens | Starter 99 SAR | Pro 249 SAR | Agency 599 SAR
 Respond in Arabic. Be concise for Telegram (max 400 chars). Be decisive and strategic.`,
       messages: [{ role: 'user', content: message }],
     }),
@@ -45,7 +45,7 @@ export async function telegramHandler(req: Request, res: Response) {
     const text: string = message.text || '';
 
     if (text === '/start') {
-      await sendTelegram(chatId, `🤖 *مرحباً في OZAIL*\nوكيل الذكاء الاصطناعي لـ وصّل\n\n/report - تقرير يومي\n/help - المساعدة\n\nأو أرسل أي سؤال مباشرة 🚀`);
+      await sendTelegram(chatId, `🤖 *مرحباً في OZAIL*\nوكيل الذكاء الاصطناعي لـ وصل\n\n/report - تقرير يومي\n/help - المساعدة\n\nأو أرسل أي سؤال مباشرة 🚀`);
     } else if (text === '/report') {
       await sendTelegram(chatId, '⏳ جاري إعداد التقرير...');
       const report = await askOZAIL('أعطني تقرير يومي مختصر لوصل: المستخدمون، الحملات، الأولويات. اجعله مناسباً للتيليجرام.');

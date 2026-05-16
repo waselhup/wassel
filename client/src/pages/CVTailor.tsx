@@ -683,7 +683,7 @@ export default function CVTailor() {
         </Section>
 
         <Section title={t('cv.generate.title', isAr ? 'جاهز للإنشاء؟' : 'Ready to Generate?')}
-          subtitle={t('cv.generate.subtitle', isAr ? '10 توكن لكل سيرة (DOCX + PDF)' : '10 tokens per CV (DOCX + PDF)')}
+          subtitle={t('cv.generate.subtitle', isAr ? '129 توكن لكل سيرة (DOCX + PDF)' : '129 tokens per CV (DOCX + PDF)')}
           icon={<Download size={18} />}>
 
           {/* Cover Letter Checkbox — v3 */}
@@ -703,7 +703,7 @@ export default function CVTailor() {
                 <Mail size={14} style={{ color: '#D97706' }} />
                 <strong>{t('cv.coverLetter.label', isAr ? 'أضف خطاب تقديم (Cover Letter)' : 'Add a Cover Letter')}</strong>
                 <span style={{ background: '#D97706', color: '#fff', padding: '2px 8px', borderRadius: 999, fontSize: 11, fontWeight: 800 }}>
-                  +5 {t('common.tokens', isAr ? 'توكن' : 'tokens')}
+                  {isAr ? 'باندل 179 توكن (وفر 19)' : 'Bundle 179 tokens (save 19)'}
                 </span>
               </div>
               <div style={{ marginTop: 4, color: 'var(--wsl-ink-3)', fontSize: 12 }}>
@@ -737,8 +737,8 @@ export default function CVTailor() {
               <>
                 <Sparkles size={16} />
                 {includeCoverLetter
-                  ? (isAr ? 'إنشاء السيرة + خطاب التقديم — 15 توكن' : 'Generate CV + Cover Letter — 15 tokens')
-                  : t('cv.generate.button', isAr ? 'إنشاء السيرة — 10 توكن' : 'Generate CV — 10 tokens')}
+                  ? (isAr ? 'إنشاء السيرة + خطاب التقديم — 179 توكن' : 'Generate CV + Cover Letter — 179 tokens')
+                  : t('cv.generate.button', isAr ? 'إنشاء السيرة — 129 توكن' : 'Generate CV — 129 tokens')}
               </>
             )}
           </button>

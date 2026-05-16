@@ -49,7 +49,7 @@ function CheckoutFailed() {
           </h1>
           <p className="mt-2 font-ar text-[13px] text-v2-body">
             {t(
-              'لم يتم خصم أي مبلغ من بطاقتك. يمكنك المحاولة مجدداً، أو اختيار طريقة دفع مختلفة.',
+              'لم يتم خصم أي مبلغ من بطاقتك. يمكنك المحاولة مجدداً، أو اختيار طريقة دفع مختلفة',
               'No charge was made to your card. You can try again or use a different payment method.'
             )}
           </p>

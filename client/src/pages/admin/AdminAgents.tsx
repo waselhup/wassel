@@ -617,7 +617,7 @@ export default function AdminAgents() {
         </div>
         <div style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 12 }}>
           {isAr
-            ? 'الملاحظات تُضاف لرسالة النظام في كل محادثة لتحسين الردود.'
+            ? 'الملاحظات تُضاف لرسالة النظام في كل محادثة لتحسين الردود'
             : 'Notes are appended to the system prompt of every conversation.'}
         </div>
         {training.length === 0 ? (

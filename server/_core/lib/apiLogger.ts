@@ -79,7 +79,7 @@ async function sendTelegramAlert(service: string, errorCount: number, lastError?
   if (!token) return;
 
   const ALI_CHAT = '1205315908';
-  const message = '🚨 *تنبيه وصّل* 🚨\n\n' +
+  const message = '🚨 *تنبيه وصل* 🚨\n\n' +
     'الخدمة: `' + service + '`\n' +
     'عدد الأخطاء (5 دقائق): ' + errorCount + '\n' +
     'آخر خطأ: ' + (lastError ? lastError.substring(0, 200) : 'N/A') + '\n\n' +

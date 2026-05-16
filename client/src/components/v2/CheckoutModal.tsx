@@ -125,7 +125,7 @@ function CheckoutModal({ plan, billingCycle, onClose }: CheckoutModalProps) {
               </h3>
               <p className="mt-2 font-ar text-[13px] text-v2-body">
                 {t(
-                  'تم إنشاء طلب الدفع. بوّابة الدفع غير مفعّلة في هذه البيئة بعد.',
+                  'تم إنشاء طلب الدفع. بوّابة الدفع غير مفعّلة في هذه البيئة بعد',
                   'A pending payment was created. The gateway is not enabled in this environment yet.'
                 )}
               </p>
@@ -191,7 +191,7 @@ function CheckoutModal({ plan, billingCycle, onClose }: CheckoutModalProps) {
               {/* Payment notice — Moyasar hosted form. */}
               <div className="mb-4 rounded-v2-md border border-teal-200 bg-teal-50 px-3 py-2.5 font-ar text-[12px] text-teal-800">
                 {t(
-                  'سيتم تحويلك إلى بوّابة الدفع الآمنة (مدى، فيزا، Apple Pay) عبر Moyasar.',
+                  'سيتم تحويلك إلى بوّابة الدفع الآمنة (مدى، فيزا، Apple Pay) عبر Moyasar',
                   'You\'ll be redirected to the secure Moyasar payment page (Mada, Visa, Apple Pay).'
                 )}
               </div>

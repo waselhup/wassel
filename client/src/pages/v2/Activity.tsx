@@ -213,13 +213,13 @@ function Activity() {
           <EmptyState
             variant="search"
             title="لا توجد أنشطة بعد"
-            description="ستظهر هنا تحليلاتك ومنشوراتك وحملاتك بمجرد البدء."
+            description="ستظهر هنا تحليلاتك ومنشوراتك وحملاتك بمجرد البدء"
           />
         ) : (
           <EmptyState
             variant="search"
             title="لا يوجد نشاط"
-            description="لم نجد عناصر تطابق هذا الفلتر. جرّب فلتراً آخر."
+            description="لم نجد عناصر تطابق هذا الفلتر. جرّب فلتراً آخر"
           />
         )
       ) : (

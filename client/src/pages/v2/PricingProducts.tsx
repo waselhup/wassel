@@ -88,7 +88,7 @@ function PricingProducts() {
       setFeedback({
         id: product.id,
         message: t(
-          'تم إنشاء طلب الدفع. الدفع قيد التهيئة.',
+          'تم إنشاء طلب الدفع. الدفع قيد التهيئة',
           'Payment request created. Checkout is being configured.'
         ),
         tone: 'success',
@@ -139,7 +139,7 @@ function PricingProducts() {
           </h1>
           <p className="mt-2 font-ar leading-relaxed text-v2-body text-[14px] lg:mx-auto lg:mt-3 lg:max-w-[560px] lg:text-[16px]">
             {t(
-              'كل منتج يأتي بسعر واضح بالريال السعودي، أو يمكنك استخدام رصيد التوكن لديك.',
+              'كل منتج يأتي بسعر واضح بالريال السعودي، أو يمكنك استخدام رصيد التوكن لديك',
               'Each product has a clear SAR price, or you can spend your existing token balance.'
             )}
           </p>
@@ -162,7 +162,7 @@ function PricingProducts() {
 
         {error && (
           <div className="rounded-v2-md border border-red-200 bg-red-50 p-4 text-center font-ar text-red-700 text-[13px]">
-            {t('تعذّر تحميل المنتجات. حاول مرة أخرى.', 'Could not load products. Please retry.')}
+            {t('تعذّر تحميل المنتجات. حاول مرة أخرى', 'Could not load products. Please retry.')}
           </div>
         )}
 
@@ -273,11 +273,11 @@ function PricingProducts() {
 
         <section className="mt-8 rounded-v2-md border border-v2-line bg-v2-canvas-2 p-5 text-center lg:mt-16 lg:p-8">
           <h2 className="font-ar font-semibold text-v2-ink text-[16px] lg:text-[20px]">
-            {t('تستخدم باستمرار؟ اشترك ووفّر.', 'Use often? Subscribe and save.')}
+            {t('تستخدم باستمرار؟ اشترك ووفّر', 'Use often? Subscribe and save.')}
           </h2>
           <p className="mt-1.5 font-ar text-[13px] text-v2-body lg:text-[14px]">
             {t(
-              'الباقات الشهرية أرخص من الشراء الفردي بنسبة 40% فأكثر.',
+              'الباقات الشهرية أرخص من الشراء الفردي بنسبة 40% فأكثر',
               'Monthly plans are 40%+ cheaper than buying individually.'
             )}
           </p>

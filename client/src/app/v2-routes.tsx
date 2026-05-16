@@ -21,7 +21,8 @@ const CheckoutFailed = lazy(() => import('@/pages/v2/CheckoutFailed'));
 const Home = lazy(() => import('@/pages/v2/Home'));
 const Posts = lazy(() => import('@/pages/v2/Posts'));
 const Profile = lazy(() => import('@/pages/v2/Profile'));
-const Activity = lazy(() => import('@/pages/v2/Activity'));
+// /v2/activity retired — its content lives inside /v2/home as the "Recent
+// activity" panel. Legacy path now redirects (see matchActivity below).
 // V2-wrapped versions of the real V1 feature pages — they reuse the working
 // tRPC/business logic but render inside the V2 ProtectedShell chrome.
 const CVBuilder = lazy(() => import('@/pages/v2/CVBuilder'));
@@ -247,7 +248,10 @@ function V2Routes(): ReactElement | null {
     return <ProtectedShell><Suspense fallback={<V2Loader />}><Profile /></Suspense></ProtectedShell>;
   }
   if (matchActivity) {
-    return <ProtectedShell><Suspense fallback={<V2Loader />}><Activity /></Suspense></ProtectedShell>;
+    // Activity has been folded into the Home dashboard. Bookmarks redirect.
+    window.history.replaceState({}, '', '/v2/home');
+    window.dispatchEvent(new PopStateEvent('popstate'));
+    return null;
   }
   if (matchAdmin) {
     return <ProtectedShell><Suspense fallback={<V2Loader />}><AdminPanel /></Suspense></ProtectedShell>;

@@ -884,7 +884,7 @@ export default function ProfileAnalysis() {
                 frameworkLabel: s.framework_label || undefined,
                 effort: s.effort,
                 description: description || (i18n.language === 'ar'
-                  ? 'قسم مهم في بروفايلك — راجع الملاحظات أدناه.'
+                  ? 'قسم مهم في بروفايلك — راجع الملاحظات أدناه'
                   : 'An important section of your profile — review the notes below.'),
                 verdict: s.assessment,
                 currentText: s.current,

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'wouter';
 import { useTranslation } from 'react-i18next';
 import { ChevronDown, ChevronUp } from 'lucide-react';
@@ -64,6 +64,9 @@ export default function ProfileInput() {
   const [industry, setIndustry] = useState<Industry | null>(null);
   const [customIndustry, setCustomIndustry] = useState('');
   const [language, setLanguage] = useState<ReportLang>(isAr ? 'ar' : 'en');
+  // Keep report language in sync with UI language so AR users always get AR
+  // analysis output, EN users always get EN (B.8).
+  useEffect(() => { setLanguage(isAr ? 'ar' : 'en'); }, [isAr]);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [targetRole, setTargetRole] = useState('');
   const [targetCompany, setTargetCompany] = useState('');
@@ -130,11 +133,11 @@ export default function ProfileInput() {
         <div className="mt-5 mb-6 lg:mt-2 lg:mb-8">
           <Eyebrow className="mb-1.5 block">RADAR · {COST} TOKEN</Eyebrow>
           <h1 className="font-ar font-bold leading-tight text-v2-ink text-[26px] lg:text-[32px]">
-            {isAr ? 'لنحلل بروفايلك بدقة.' : "Let's analyse your profile."}
+            {isAr ? 'لنحلل بروفايلك بدقة' : "Let's analyse your profile."}
           </h1>
           <p className="mt-2 font-ar text-[14px] text-v2-dim">
             {isAr
-              ? 'أدخل رابط لينكد إن، اختر هدفك، وسنُجري تحليلاً مخصصاً للسوق السعودي والخليجي.'
+              ? 'أدخل رابط لينكد إن، اختر هدفك، وسنُجري تحليلاً مخصصاً للسوق السعودي والخليجي'
               : 'Drop your LinkedIn URL, pick a goal, and we will run a Saudi-market-aware deep analysis.'}
           </p>
         </div>
@@ -296,7 +299,7 @@ export default function ProfileInput() {
           </Button>
           {!enoughBalance && (
             <p className="text-center font-ar text-[12px] font-semibold text-rose-700">
-              {isAr ? 'الرصيد غير كافٍ — أعِد الشحن من صفحة الباقات.' : 'Not enough tokens — top up on the Pricing page.'}
+              {isAr ? 'الرصيد غير كافٍ — أعِد الشحن من صفحة الباقات' : 'Not enough tokens — top up on the Pricing page.'}
             </p>
           )}
         </div>

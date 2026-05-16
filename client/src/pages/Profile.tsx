@@ -163,7 +163,7 @@ export default function Profile() {
     setSubmittingReview(true);
     try {
       await trpc.reviews.submit({ rating: reviewRating, comment: reviewComment });
-      toast.push('success', isAr ? 'تم إرسال مراجعتك! ستظهر بعد الموافقة.' : 'Review submitted! Will appear after approval.');
+      toast.push('success', isAr ? 'تم إرسال مراجعتك! ستظهر بعد الموافقة' : 'Review submitted! Will appear after approval.');
       setReviewComment('');
       setReviewRating(5);
       trpc.reviews.myReviews().then(setMyReviews).catch(() => {});
@@ -314,7 +314,7 @@ export default function Profile() {
             style={{ background: '#fff', borderRadius: 16, border: '1px solid var(--wsl-border)', padding: 24 }}>
             <div style={{ marginBottom: 20, padding: '14px 18px', borderRadius: 12, background: '#F0FDF9', border: '1px solid #A7F3D0', fontSize: 12, color: '#065F46', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 700, lineHeight: 1.7 }}>
               {isAr
-                ? 'هذه المعلومات تساعد الذكاء الاصطناعي في تخصيص المحتوى لك — سيتم استخدامها في تحليل البروفايل والسيرة الذاتية والمنشورات والتواصل المهني.'
+                ? 'هذه المعلومات تساعد الذكاء الاصطناعي في تخصيص المحتوى لك — سيتم استخدامها في تحليل البروفايل والسيرة الذاتية والمنشورات والتواصل المهني'
                 : 'This info helps the AI personalize everything it creates for you — profile analysis, CV, posts, and outreach.'}
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16, marginBottom: 16 }}>

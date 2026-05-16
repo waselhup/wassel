@@ -955,11 +955,34 @@ export const linkedinRouter = router({
       targetRole: z.string().max(200).optional(),
       targetCompany: z.string().max(200).optional(),
       reportLanguage: REPORT_LANGUAGE.default('ar'),
+      // B.9: re-analysis. When set + valid (owned by user, same URL, not deleted),
+      // the cost is waived and the new analysis is recorded as a child of the
+      // referenced one. Used by the post-analysis guidance screen.
+      parentAnalysisId: z.string().uuid().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
       // Read canonical cost from products.radar.token_cost. Fallback 149.
-      const TOKEN_COST = await getProductTokenCost(ctx.supabase, 'radar', 149);
+      const BASE_COST = await getProductTokenCost(ctx.supabase, 'radar', 149);
       const FEATURE = 'linkedin.analyzeTargeted';
+
+      // Re-analysis pricing: if caller provided a valid parent_analysis_id
+      // they own (same linkedin_url, not deleted), the re-check is free.
+      let isReanalysis = false;
+      let parentRow: { id: string; linkedin_url: string } | null = null;
+      if (input.parentAnalysisId) {
+        const { data: parent } = await ctx.supabase
+          .from('profile_analyses')
+          .select('id, linkedin_url, user_id, deleted_at')
+          .eq('id', input.parentAnalysisId)
+          .eq('user_id', ctx.user.id)
+          .is('deleted_at', null)
+          .maybeSingle();
+        if (parent && (!input.linkedinUrl || parent.linkedin_url === input.linkedinUrl)) {
+          parentRow = { id: parent.id, linkedin_url: parent.linkedin_url };
+          isReanalysis = true;
+        }
+      }
+      const TOKEN_COST = isReanalysis ? 0 : BASE_COST;
       const lang = input.reportLanguage;
       const startedAt = Date.now();
       let deducted = false;
@@ -1086,13 +1109,22 @@ export const linkedinRouter = router({
 
         // ── STAGE 5: atomic token deduction ────────────────────────────────
         // We only deduct once we know the profile is real AND has enough data.
+        // B.9: re-analysis is free (TOKEN_COST=0) — skip the RPC entirely so
+        // we never log a 0-amount transaction.
         stage = 'deducting_tokens';
-        const deduct = await deductTokens(ctx.supabase, ctx.user.id, TOKEN_COST, FEATURE);
-        if (!deduct.success) throwInsufficientTokensError(deduct, lang);
-        deducted = true;
-        console.log('[RADAR stage=deducting_tokens ok]', {
-          userId: ctx.user.id, before: deduct.balance_before, after: deduct.balance_after,
-        });
+        let deduct: any = { success: true, balance_before: null, balance_after: null };
+        if (TOKEN_COST > 0) {
+          deduct = await deductTokens(ctx.supabase, ctx.user.id, TOKEN_COST, FEATURE);
+          if (!deduct.success) throwInsufficientTokensError(deduct, lang);
+          deducted = true;
+          console.log('[RADAR stage=deducting_tokens ok]', {
+            userId: ctx.user.id, before: deduct.balance_before, after: deduct.balance_after,
+          });
+        } else {
+          console.log('[RADAR stage=deducting_tokens skipped — re-analysis]', {
+            userId: ctx.user.id, parentAnalysisId: parentRow?.id,
+          });
+        }
 
         // ── STAGE 6: build Claude payload ──────────────────────────────────
         stage = 'building_payload';
@@ -1332,6 +1364,8 @@ export const linkedinRouter = router({
             report_language: lang,
             profile_data: unifiedProfile,
             tokens_used: TOKEN_COST,
+            parent_analysis_id: parentRow?.id || null,
+            is_reanalysis: isReanalysis,
           })
           .select()
           .single();
@@ -1513,11 +1547,11 @@ export const linkedinRouter = router({
   listAnalyses: protectedProcedure.query(async ({ ctx }) => {
     const { data } = await ctx.supabase
       .from('profile_analyses')
-      .select('id, linkedin_url, target_goal, industry, report_language, analysis_data, created_at')
+      .select('id, linkedin_url, target_goal, industry, report_language, analysis_data, created_at, parent_analysis_id, is_reanalysis, tokens_used')
       .eq('user_id', ctx.user.id)
       .is('deleted_at', null)
       .order('created_at', { ascending: false })
-      .limit(20);
+      .limit(50);
 
     return (data || []).map((a: any) => ({
       id: a.id,
@@ -1528,6 +1562,9 @@ export const linkedinRouter = router({
       overall_score: a.analysis_data?.overall_score || 0,
       verdict: a.analysis_data?.verdict || '',
       created_at: a.created_at,
+      parent_analysis_id: a.parent_analysis_id || null,
+      is_reanalysis: !!a.is_reanalysis,
+      tokens_used: a.tokens_used || 0,
     }));
   }),
 
@@ -1605,5 +1642,36 @@ export const linkedinRouter = router({
         .eq('user_id', ctx.user.id);
       return { success: true };
     }),
+
+  /**
+   * B.5: Service usage counters for the home dashboard. Counts each artifact
+   * the user has produced. Excludes deleted rows.
+   */
+  serviceStats: protectedProcedure.query(async ({ ctx }) => {
+    const uid = ctx.user.id;
+    const [analyses, posts, cvs, coverLetters, lastAnalysis] = await Promise.all([
+      ctx.supabase.from('profile_analyses').select('id', { count: 'exact', head: true })
+        .eq('user_id', uid).is('deleted_at', null),
+      ctx.supabase.from('posts').select('id', { count: 'exact', head: true }).eq('user_id', uid),
+      ctx.supabase.from('generated_cvs').select('id', { count: 'exact', head: true }).eq('user_id', uid),
+      ctx.supabase.from('generated_cvs').select('id', { count: 'exact', head: true })
+        .eq('user_id', uid).eq('cover_letter_generated', true),
+      ctx.supabase.from('profile_analyses')
+        .select('id, analysis_data, created_at')
+        .eq('user_id', uid).is('deleted_at', null)
+        .order('created_at', { ascending: false })
+        .limit(1).maybeSingle(),
+    ]);
+    const lastScore = (lastAnalysis.data as any)?.analysis_data?.overall_score || null;
+    return {
+      analyses: analyses.count || 0,
+      posts: posts.count || 0,
+      cvs: cvs.count || 0,
+      coverLetters: coverLetters.count || 0,
+      lastAnalysis: lastAnalysis.data
+        ? { id: (lastAnalysis.data as any).id, score: lastScore, createdAt: (lastAnalysis.data as any).created_at }
+        : null,
+    };
+  }),
 
 });

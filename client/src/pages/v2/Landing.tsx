@@ -15,9 +15,9 @@ interface Feature {
 }
 
 const FEATURES: Feature[] = [
-  { num: '01', title: 'الرادار',     description: 'تحليل ذكي لبروفايلك مع 3 توصيات بأعلى أثر، مرتّبة بحسب التأثير على دور هدف.' },
-  { num: '02', title: 'الاستوديو',   description: 'صياغة منشورات احترافية بصوتك ولهجتك، بنبرات مختلفة وقوالب جاهزة.' },
-  { num: '03', title: 'سيرة ذكية',   description: 'CV مخصّص يستخرج تلقائياً من بروفايلك ومُعدَّل لكل وظيفة.' },
+  { num: '01', title: 'الرادار',     description: 'تحليل ذكي لبروفايلك مع 3 توصيات بأعلى أثر، مرتّبة بحسب التأثير على دور هدف' },
+  { num: '02', title: 'الاستوديو',   description: 'صياغة منشورات احترافية بصوتك ولهجتك، بنبرات مختلفة وقوالب جاهزة' },
+  { num: '03', title: 'سيرة ذكية',   description: 'CV مخصّص يستخرج تلقائياً من بروفايلك ومُعدَّل لكل وظيفة' },
 ];
 
 const BrandMark = () => (
@@ -27,7 +27,7 @@ const BrandMark = () => (
       <circle cx="11" cy="11" r="5"   stroke="var(--teal-700)" strokeWidth="1.4" />
       <circle cx="11" cy="11" r="1.4" fill="var(--teal-700)" />
     </svg>
-    <span className="font-ar text-[16px] font-bold text-v2-ink">وصّل</span>
+    <span className="font-ar text-[16px] font-bold text-v2-ink">وصل</span>
   </span>
 );
 

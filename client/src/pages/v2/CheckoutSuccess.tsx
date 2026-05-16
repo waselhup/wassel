@@ -121,7 +121,7 @@ function CheckoutSuccess() {
             </h1>
             <p className="mt-2 font-ar text-[13px] text-v2-body">
               {t(
-                'لا تغلق هذه الصفحة. سنخبرك بمجرد وصول التأكيد من بوّابة الدفع.',
+                'لا تغلق هذه الصفحة. سنخبرك بمجرد وصول التأكيد من بوّابة الدفع',
                 'Please don\'t close this page. We\'ll confirm as soon as the gateway responds.'
               )}
             </p>
@@ -148,12 +148,12 @@ function CheckoutSuccess() {
             <p className="mt-2 font-ar text-[13px] text-v2-body">
               {type === 'subscription' && (planNameAr || planNameEn)
                 ? t(
-                    `تم تفعيل اشتراك ${planNameAr || planNameEn}.`,
+                    `تم تفعيل اشتراك ${planNameAr || planNameEn}`,
                     `Your ${planNameEn || planNameAr} subscription is now active.`
                   )
                 : type === 'token_topup'
-                  ? t('تمت إضافة التوكن إلى رصيدك.', 'Tokens have been added to your balance.')
-                  : t('تم تفعيل المنتج.', 'Your purchase has been activated.')}
+                  ? t('تمت إضافة التوكن إلى رصيدك', 'Tokens have been added to your balance.')
+                  : t('تم تفعيل المنتج', 'Your purchase has been activated.')}
             </p>
 
             <div className="mt-5 flex items-center justify-around border-y border-teal-200 py-4 text-center">
@@ -193,7 +193,7 @@ function CheckoutSuccess() {
             </h1>
             <p className="mt-2 font-ar text-[13px] text-v2-body">
               {t(
-                'تأخّر تأكيد بوّابة الدفع قليلاً. سنرسل لك إيميلاً فور اكتمال التحقق، ويمكنك متابعة الحالة من صفحة الفواتير.',
+                'تأخّر تأكيد بوّابة الدفع قليلاً. سنرسل لك إيميلاً فور اكتمال التحقق، ويمكنك متابعة الحالة من صفحة الفواتير',
                 'The gateway is taking longer than usual. We\'ll email you as soon as it confirms, and you can also check the billing page.'
               )}
             </p>

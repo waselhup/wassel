@@ -33,6 +33,7 @@ const PARSE_METHOD = z.enum(['docx', 'pdf-text', 'pdf-ocr', 'manual']);
 // getProductTokenCost() so the catalog stays the source of truth.
 const TOKEN_COST_FALLBACK = 129;
 const COVER_LETTER_FALLBACK = 69;
+const BUNDLE_FALLBACK = 179;
 
 const CV_BUILDER_SYSTEM = `You are an expert ATS-optimized CV writer trained on MIT Career Services and Harvard Business School standards.
 
@@ -173,7 +174,10 @@ export const cvRouter = router({
       // truth; the constants above are only used if the lookup fails.
       const TOKEN_COST = await getProductTokenCost(ctx.supabase, 'cv_builder', TOKEN_COST_FALLBACK);
       const COVER_LETTER_EXTRA_COST = await getProductTokenCost(ctx.supabase, 'cover_letter', COVER_LETTER_FALLBACK);
-      const totalCost = TOKEN_COST + (input.includeCoverLetter ? COVER_LETTER_EXTRA_COST : 0);
+      const BUNDLE_COST = await getProductTokenCost(ctx.supabase, 'bundle_cv_cover', BUNDLE_FALLBACK);
+      // Bundle pricing: CV + Cover Letter together is charged as bundle (179)
+      // instead of CV (129) + Cover (69) = 198. Saves the customer 19 tokens.
+      const totalCost = input.includeCoverLetter ? BUNDLE_COST : TOKEN_COST;
       const FEATURE = input.includeCoverLetter ? 'cv.generate+cover_letter' : 'cv.generate';
       const lang = (input.language as 'ar' | 'en') || 'en';
       let deducted = false;
@@ -331,16 +335,19 @@ export const cvRouter = router({
       }
 
       const coverLetterGenerated = !!(coverLetterDocxPath && coverLetterPdfPath);
-      const actualCost = TOKEN_COST + (coverLetterGenerated ? COVER_LETTER_EXTRA_COST : 0);
+      // Bundle cost when cover letter succeeds, else just CV cost.
+      const actualCost = coverLetterGenerated ? BUNDLE_COST : TOKEN_COST;
 
       // If the user asked for a cover letter but we couldn't generate one,
-      // partial-refund the 5 extra tokens so they aren't charged for nothing.
+      // partial-refund the difference between bundle and CV so they aren't
+      // charged for the cover letter portion they didn't receive.
       let tokensRemaining = deduct.balance_after;
       if (input.includeCoverLetter && !coverLetterGenerated) {
+        const bundleSurcharge = Math.max(0, BUNDLE_COST - TOKEN_COST);
         const refund = await refundTokens(
           ctx.supabase,
           ctx.user.id,
-          COVER_LETTER_EXTRA_COST,
+          bundleSurcharge,
           'cv.generate.cover_letter_failed'
         );
         if (refund.success && typeof refund.balance_after === 'number') {

@@ -156,7 +156,7 @@ export function useRecentActivity(): {
       setEntries(merged);
       setLoading(false);
       if (allFailed) {
-        setError('تعذّر تحميل النشاط الأخير.');
+        setError('تعذّر تحميل النشاط الأخير');
       }
     });
 

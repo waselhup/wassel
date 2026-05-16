@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import PulseBar from '@/components/v2/PulseBar';
 import JobsIndicator from '@/components/v2/JobsIndicator';
 import UserMenu from '@/components/v2/UserMenu';
+import LangToggle from '@/components/v2/LangToggle';
 import { useAuth } from '@/contexts/AuthContext';
 
 export interface DesktopNavLink {
@@ -28,8 +29,8 @@ export interface DesktopTopbarProps extends HTMLAttributes<HTMLElement> {
 const defaultNavLinks: DesktopNavLink[] = [
   { id: 'home',     label: 'الرئيسية', href: '/v2/home' },
   { id: 'analyze',  label: 'الرادار',   href: '/v2/analyze' },
+  { id: 'cv',       label: 'السيرة',    href: '/v2/cvs' },
   { id: 'posts',    label: 'المنشورات',  href: '/v2/posts' },
-  { id: 'activity', label: 'النشاط',    href: '/v2/activity' },
 ];
 
 const Logo = (
@@ -74,7 +75,7 @@ function DesktopTopbar({
             aria-label="الرئيسية"
           >
             {Logo}
-            <span className="font-ar text-[17px] font-bold text-v2-ink">وصّل</span>
+            <span className="font-ar text-[17px] font-bold text-v2-ink">وصل</span>
           </button>
 
           {navLinks.some((l) => !l.cta) && (
@@ -124,6 +125,7 @@ function DesktopTopbar({
                   {link.label}
                 </button>
               ))}
+              <LangToggle size="sm" />
               {showAccountCluster && (
                 <>
                   <JobsIndicator />

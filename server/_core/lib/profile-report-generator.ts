@@ -209,7 +209,7 @@ export async function generateDocxReport(opts: ReportOptions): Promise<Buffer> {
 
   const L = isAr ? {
     title: 'تقرير تحليل البروفايل المهني',
-    subtitle: 'تحليل ذكي مدعوم بمنصّة وصّل',
+    subtitle: 'تحليل ذكي مدعوم بمنصّة وصل',
     score: 'الدرجة الإجمالية',
     grade: 'التصنيف',
     generatedOn: 'تاريخ الإنشاء',
@@ -237,7 +237,7 @@ export async function generateDocxReport(opts: ReportOptions): Promise<Buffer> {
     rank: '#',
     action: 'الإجراء',
     impact: 'الأثر',
-    footer: 'منصّة وصّل · wasselhub.com',
+    footer: 'منصّة وصل · wasselhub.com',
   } : {
     title: 'Professional Profile Analysis Report',
     subtitle: 'AI-powered analysis by Wassel',
@@ -285,7 +285,7 @@ export async function generateDocxReport(opts: ReportOptions): Promise<Buffer> {
     new Paragraph({
       alignment: AlignmentType.CENTER,
       spacing: { before: 600, after: 200 },
-      children: [new TextRun({ text: isAr ? 'وصّل' : 'Wassel', bold: true, size: 36, color: TEAL_DEEP, font })],
+      children: [new TextRun({ text: isAr ? 'وصل' : 'Wassel', bold: true, size: 36, color: TEAL_DEEP, font })],
     }),
     new Paragraph({
       alignment: AlignmentType.CENTER,

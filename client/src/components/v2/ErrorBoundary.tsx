@@ -48,7 +48,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
         <EmptyState
           variant="error"
           title="حدث خطأ غير متوقع"
-          description="نعتذر عن ذلك. أعد المحاولة، وإذا استمرت المشكلة تواصل مع الدعم."
+          description="نعتذر عن ذلك. أعد المحاولة، وإذا استمرت المشكلة تواصل مع الدعم"
           action={
             <div className="flex gap-2">
               <Button variant="primary" size="md" onClick={this.reset}>

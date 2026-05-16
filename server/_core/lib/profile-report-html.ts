@@ -117,7 +117,7 @@ export function buildAnalysisReportHtml(opts: ReportOptions): string {
 
   const L = isAr ? {
     title: 'تقرير تحليل البروفايل المهني',
-    subtitle: 'تحليل ذكي مدعوم بمنصة وصّل',
+    subtitle: 'تحليل ذكي مدعوم بمنصة وصل',
     score: 'الدرجة الإجمالية',
     grade: 'التصنيف',
     generatedOn: 'تاريخ الإنشاء',
@@ -145,7 +145,7 @@ export function buildAnalysisReportHtml(opts: ReportOptions): string {
     rank: '#',
     action: 'الإجراء',
     impact: 'الأثر',
-    footer: 'تم إنشاؤه بواسطة منصّة وصّل · wasselhub.com',
+    footer: 'تم إنشاؤه بواسطة منصّة وصل · wasselhub.com',
   } : {
     title: 'Professional Profile Analysis Report',
     subtitle: 'AI-powered analysis by Wassel',
@@ -187,7 +187,7 @@ export function buildAnalysisReportHtml(opts: ReportOptions): string {
     <section class="cover">
       <div class="brand">
         <div class="brand-mark">و</div>
-        <div class="brand-text">${isAr ? 'وصّل' : 'Wassel'}</div>
+        <div class="brand-text">${isAr ? 'وصل' : 'Wassel'}</div>
       </div>
       <h1 class="title">${esc(L.title)}</h1>
       <p class="subtitle">${esc(L.subtitle)}</p>

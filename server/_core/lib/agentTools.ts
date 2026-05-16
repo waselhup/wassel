@@ -312,7 +312,7 @@ const draftTicketResponse: ToolDef = {
 
     const isAr = (ticket.locale || 'ar') === 'ar';
     const sys = isAr
-      ? 'أنت عضو في فريق دعم وصّل. اكتب رداً متعاطفاً واحترافياً بالعربية.'
+      ? 'أنت عضو في فريق دعم وصل. اكتب رداً متعاطفاً واحترافياً بالعربية.'
       : 'You are a Wassel support team member. Write an empathetic, professional response in English.';
     const user = `Ticket subject: ${ticket.subject}\nCategory: ${ticket.category}\nPriority: ${ticket.priority}\nBody: ${ticket.description}\n\nDraft a 3-6 sentence response.`;
 

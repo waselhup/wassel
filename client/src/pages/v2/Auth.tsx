@@ -19,7 +19,7 @@ const BrandMark = () => (
       <circle cx="11" cy="11" r="5"   stroke="var(--teal-700)" strokeWidth="1.4" />
       <circle cx="11" cy="11" r="1.4" fill="var(--teal-700)" />
     </svg>
-    <span className="font-ar text-[15px] font-bold text-v2-ink">وصّل</span>
+    <span className="font-ar text-[15px] font-bold text-v2-ink">وصل</span>
   </div>
 );
 
@@ -125,12 +125,12 @@ function Auth() {
     try {
       if (isSignup) {
         if (!agree) {
-          setError('يرجى الموافقة على الشروط والخصوصية للمتابعة.');
+          setError('يرجى الموافقة على الشروط والخصوصية للمتابعة');
           return;
         }
         const { error: signUpError } = await signUp(email, password, name);
         if (signUpError) {
-          setError(signUpError.message || 'فشل إنشاء الحساب. حاول مجدداً.');
+          setError(signUpError.message || 'فشل إنشاء الحساب. حاول مجدداً');
           return;
         }
         // Supabase may require email confirmation; if so user/session won't be set yet.
@@ -138,20 +138,20 @@ function Auth() {
         if (session) {
           navigate('/v2/home', { replace: true });
         } else {
-          setInfo('تم إنشاء الحساب. تحقق من بريدك لتفعيل الحساب ثم سجّل الدخول.');
+          setInfo('تم إنشاء الحساب. تحقق من بريدك لتفعيل الحساب ثم سجّل الدخول');
           setTab('login');
           navigate('/v2/login', { replace: true });
         }
       } else {
         const { error: signInError } = await signIn(email, password);
         if (signInError) {
-          setError(signInError.message || 'فشل تسجيل الدخول. تأكد من البيانات.');
+          setError(signInError.message || 'فشل تسجيل الدخول. تأكد من البيانات');
           return;
         }
         navigate('/v2/home', { replace: true });
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'حدث خطأ غير متوقع.';
+      const msg = err instanceof Error ? err.message : 'حدث خطأ غير متوقع';
       setError(msg);
     } finally {
       setSubmitting(false);
@@ -172,12 +172,12 @@ function Auth() {
         },
       });
       if (oauthError) {
-        setError(oauthError.message || 'فشل تسجيل الدخول عبر LinkedIn.');
+        setError(oauthError.message || 'فشل تسجيل الدخول عبر LinkedIn');
         setOauthLoading(false);
       }
       // On success the browser is redirected away; no further action.
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'فشل تسجيل الدخول عبر LinkedIn.';
+      const msg = err instanceof Error ? err.message : 'فشل تسجيل الدخول عبر LinkedIn';
       setError(msg);
       setOauthLoading(false);
     }
@@ -211,12 +211,12 @@ function Auth() {
             <BrandMark />
 
             <h1 className="font-ar font-bold leading-tight text-v2-ink text-[26px] lg:text-[32px]">
-              {isSignup ? t('v2.auth.signupHeading', 'ابدأ معنا.') : t('v2.auth.loginHeading', 'مرحباً بعودتك.')}
+              {isSignup ? t('v2.auth.signupHeading', 'ابدأ معنا') : t('v2.auth.loginHeading', 'مرحباً بعودتك')}
             </h1>
             <p className="mt-2 mb-6 font-ar leading-relaxed text-v2-body text-[13px] lg:mb-8 lg:text-[14px]">
               {isSignup
-                ? 'أنشئ حساباً مجانياً · 10 توكن للبداية.'
-                : 'سجّل الدخول لمتابعة العمل.'}
+                ? 'أنشئ حساباً مجانياً · 10 توكن للبداية'
+                : 'سجّل الدخول لمتابعة العمل'}
             </p>
 
             <div className="mb-6 grid grid-cols-2 gap-1 rounded-v2-md border border-v2-line bg-v2-canvas-2 p-1 lg:mb-8">

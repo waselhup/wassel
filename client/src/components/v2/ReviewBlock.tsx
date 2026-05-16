@@ -46,11 +46,11 @@ function ReviewBlock() {
 
   const submit = async () => {
     if (rating < 1) {
-      setError(t('اختر تقييماً من 1 إلى 5 نجوم.', 'Pick a rating from 1 to 5 stars.'));
+      setError(t('اختر تقييماً من 1 إلى 5 نجوم', 'Pick a rating from 1 to 5 stars.'));
       return;
     }
     if (comment.trim().length < 5) {
-      setError(t('اكتب تعليقاً قصيراً (5 أحرف على الأقل).', 'Write a short comment (5+ characters).'));
+      setError(t('اكتب تعليقاً قصيراً (5 أحرف على الأقل)', 'Write a short comment (5+ characters).'));
       return;
     }
     setSubmitting(true);
@@ -76,7 +76,7 @@ function ReviewBlock() {
       existing.status === 'approved'
         ? t('تم نشر مراجعتك. شكراً!', 'Your review is live. Thank you!')
         : existing.status === 'pending'
-          ? t('مراجعتك قيد المراجعة من الإدارة قبل النشر.', 'Your review is awaiting admin approval before going public.')
+          ? t('مراجعتك قيد المراجعة من الإدارة قبل النشر', 'Your review is awaiting admin approval before going public.')
           : t('مراجعتك بانتظار', 'Review pending');
 
     const tone =
@@ -118,7 +118,7 @@ function ReviewBlock() {
       </h3>
       <p className="font-ar text-[12px] text-v2-dim mb-3">
         {t(
-          'كيف كانت تجربتك مع وصل؟ مراجعتك ستظهر للعموم بعد موافقة الإدارة.',
+          'كيف كانت تجربتك مع وصل؟ مراجعتك ستظهر للعموم بعد موافقة الإدارة',
           'How was your Wassel experience? Your review will appear publicly after admin approval.'
         )}
       </p>
@@ -150,7 +150,7 @@ function ReviewBlock() {
         rows={3}
         maxLength={1000}
         placeholder={t(
-          'مثال: ساعدني وصل في تحسين بروفايل لينكد إن خلال أسبوع.',
+          'مثال: ساعدني وصل في تحسين بروفايل لينكد إن خلال أسبوع',
           'Example: Wassel helped me improve my LinkedIn profile within a week.'
         )}
         className="w-full rounded-v2-md border border-v2-line bg-v2-surface px-3 py-2 font-ar text-[13px] text-v2-ink focus:border-teal-500 focus:outline-none resize-none"

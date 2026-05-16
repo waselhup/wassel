@@ -37,7 +37,7 @@ export default function ResetPassword() {
           .then(({ error: sessionErr }) => {
             if (sessionErr) {
               console.error("[RESET] setSession error:", sessionErr);
-              setError(t("auth.reset.linkExpired", "رابط الاستعادة منتهي الصلاحية. اطلب رابطاً جديداً."));
+              setError(t("auth.reset.linkExpired", "رابط الاستعادة منتهي الصلاحية. اطلب رابطاً جديداً"));
               setMode("request");
             } else {
               setMode("newpw");
@@ -65,7 +65,7 @@ export default function ResetPassword() {
       await resetPassword?.(email);
       setMode("sent");
     } catch (err: any) {
-      setError(err?.message || t("auth.reset.error", "فشل الإرسال. حاول مجدداً."));
+      setError(err?.message || t("auth.reset.error", "فشل الإرسال. حاول مجدداً"));
     } finally {
       setLoading(false);
     }
@@ -157,7 +157,7 @@ export default function ResetPassword() {
             {t("auth.reset.sent.title", "تم الإرسال!")}
           </h3>
           <p className="text-[#6b7280] mb-6">
-            {t("auth.reset.sent.desc", "تحقق من بريدك الإلكتروني واتبع الرابط لإعادة تعيين كلمة المرور.")}
+            {t("auth.reset.sent.desc", "تحقق من بريدك الإلكتروني واتبع الرابط لإعادة تعيين كلمة المرور")}
           </p>
           <Link
             href="/login"

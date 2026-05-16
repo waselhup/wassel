@@ -1,5 +1,6 @@
 import type { HTMLAttributes, ReactNode } from 'react';
 import { useLocation } from 'wouter';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import NumDisplay from '@/components/v2/NumDisplay';
 import Eyebrow from '@/components/v2/Eyebrow';
@@ -87,7 +88,6 @@ const defaultItems: DesktopSidebarItem[] = [
   { id: 'analyze',  label: 'الرادار',   href: '/v2/analyze',  icon: RadarIcon },
   { id: 'cv',       label: 'السيرة',    href: '/v2/cvs',      icon: CvIcon },
   { id: 'posts',    label: 'المنشورات', href: '/v2/posts',    icon: PostsIcon },
-  { id: 'activity', label: 'النشاط',   href: '/v2/activity', icon: ActivityIcon },
 ];
 
 function DesktopSidebar({
@@ -102,12 +102,17 @@ function DesktopSidebar({
 }: DesktopSidebarProps) {
   const [location, navigate] = useLocation();
   const { user, profile } = useAuth();
+  const { i18n } = useTranslation();
+  const isAr = (i18n.language || 'ar').startsWith('ar');
 
   const planKey = profile?.plan ?? 'free';
   const balance = balanceProp ?? profile?.token_balance ?? 0;
   const total = totalProp ?? PLAN_QUOTAS[planKey] ?? PLAN_QUOTAS.free;
   const userName = userNameProp ?? firstNameOf(profile?.full_name, profile?.email ?? user?.email);
-  const userPlan = userPlanProp ?? PLAN_LABELS[planKey] ?? PLAN_LABELS.free;
+  const userPlanLabelsEn: Record<string, string> = {
+    free: 'Free plan', starter: 'Starter plan', pro: 'Pro plan', elite: 'Elite plan',
+  };
+  const userPlan = userPlanProp ?? (isAr ? (PLAN_LABELS[planKey] ?? PLAN_LABELS.free) : (userPlanLabelsEn[planKey] ?? userPlanLabelsEn.free));
   const avatarUrl = profile?.avatar_url ?? null;
 
   const items: DesktopSidebarItem[] = itemsProp ?? (
@@ -116,8 +121,9 @@ function DesktopSidebar({
       : defaultItems
   );
 
-  const used = Math.max(0, total - balance);
-  const usedPct = total > 0 ? Math.min(100, Math.round((used / total) * 100)) : 0;
+  // The /total bar was removed in favor of a clean balance display, but we
+  // still compute `total` for potential future plan-quota UI.
+  void total;
 
   return (
     <aside
@@ -184,27 +190,19 @@ function DesktopSidebar({
       {showTokenWidget && (
         <div className="px-3 py-2">
           <div className="rounded-v2-md border border-v2-line bg-v2-canvas px-3.5 py-3">
-            <Eyebrow>TOKEN BALANCE</Eyebrow>
+            <Eyebrow>{isAr ? 'رصيد التوكن' : 'TOKEN BALANCE'}</Eyebrow>
             <div className="mt-1.5 flex items-baseline gap-1.5">
               <NumDisplay className="text-[20px] font-bold leading-none text-v2-ink">
                 {balance}
               </NumDisplay>
-              <span className="font-ar text-[11px] text-v2-dim">/</span>
-              <NumDisplay className="text-[12px] text-v2-dim">{total}</NumDisplay>
-              <span className="font-ar text-[11px] text-v2-dim">توكن</span>
-            </div>
-            <div className="mt-2 h-[3px] w-full overflow-hidden rounded-full bg-v2-line">
-              <div
-                className="h-full rounded-full bg-teal-500"
-                style={{ width: `${100 - usedPct}%` }}
-              />
+              <span className="font-ar text-[11px] text-v2-dim">{isAr ? 'توكن' : 'tokens'}</span>
             </div>
             <button
               type="button"
               onClick={() => navigate('/v2/pricing')}
               className="mt-2 font-ar text-[12px] font-semibold text-teal-700 hover:text-teal-600 cursor-pointer"
             >
-              شحن +
+              {isAr ? 'شحن +' : 'Top up +'}
             </button>
           </div>
         </div>

@@ -11,6 +11,15 @@ import Button from '@/components/v2/Button';
 import Skeleton, { useInitialLoading } from '@/components/v2/Skeleton';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRecentActivity, relativeLabel, type ActivityKind } from '@/lib/v2/useRecentActivity';
+import { trpcQuery } from '@/lib/trpc';
+
+interface ServiceStats {
+  analyses: number;
+  posts: number;
+  cvs: number;
+  coverLetters: number;
+  lastAnalysis: { id: string; score: number | null; createdAt: string } | null;
+}
 
 const PLAN_QUOTAS: Record<string, number> = {
   free: 10,
@@ -87,9 +96,31 @@ const ChevronStart = (
   </svg>
 );
 
+function StatTile({ label, value, loading, onClick }: {
+  label: string; value: number; loading?: boolean; onClick?: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex flex-col items-start gap-1 rounded-v2-md border border-v2-line bg-v2-surface px-3 py-3 text-start hover:bg-v2-canvas-2 cursor-pointer transition-colors duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/30"
+    >
+      <Eyebrow>{label}</Eyebrow>
+      {loading ? (
+        <Skeleton variant="text" width={40} className="h-7" />
+      ) : (
+        <NumDisplay className="text-[22px] font-bold leading-none text-v2-ink lg:text-[26px]">
+          {value}
+        </NumDisplay>
+      )}
+    </button>
+  );
+}
+
 function Home() {
   const [, navigate] = useLocation();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isAr = (i18n.language || 'ar').startsWith('ar');
   const initialLoading = useInitialLoading(800);
   const { user, profile, loading: authLoading } = useAuth();
 
@@ -100,13 +131,22 @@ function Home() {
   const { entries: activityEntries, loading: activityLoading } = useRecentActivity();
   const recentActivity = activityEntries.slice(0, 3);
 
+  const [stats, setStats] = useState<ServiceStats | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    trpcQuery<ServiceStats>('linkedin.serviceStats').then((s) => {
+      if (!cancelled) setStats(s);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
   const balance = profile?.token_balance ?? 0;
   const planKey = profile?.plan ?? 'free';
   const total = PLAN_QUOTAS[planKey] ?? PLAN_QUOTAS.free;
   const used = Math.max(0, total - balance);
-  const usedPct = total > 0 ? Math.min(100, Math.round((used / total) * 100)) : 0;
+  void total;
   const firstName = firstNameOf(profile, user);
-  const greeting = `${greetingFor(now)}، ${firstName}.`;
+  const greeting = `${greetingFor(now)}، ${firstName}`;
   const clockHH = String(now.getHours()).padStart(2, '0');
   const clockMM = String(now.getMinutes()).padStart(2, '0');
   const weekday = WEEKDAY_AR[now.getDay()];
@@ -127,33 +167,23 @@ function Home() {
     ) : (
       <Card padding="lg" radius="lg" elevated className="h-full">
         <div className="flex items-start justify-between mb-1">
-          <Eyebrow>TOKEN BALANCE</Eyebrow>
+          <Eyebrow>{isAr ? 'رصيد التوكن' : 'TOKEN BALANCE'}</Eyebrow>
           <button
             type="button"
             onClick={() => navigate('/v2/pricing')}
             className="font-ar text-[12px] font-semibold text-teal-700 hover:text-teal-600 cursor-pointer"
           >
-            شحن +
+            {isAr ? 'شحن +' : 'Top up +'}
           </button>
         </div>
         <div className="mt-2 flex items-baseline gap-2">
           <NumDisplay className="text-[36px] font-bold text-v2-ink leading-none">
             {balance}
           </NumDisplay>
-          <span className="font-ar text-[13px] text-v2-dim">توكن</span>
-          <span className="ms-auto font-ar text-[12px] text-v2-dim">
-            من <NumDisplay>{total}</NumDisplay>
-          </span>
+          <span className="font-ar text-[13px] text-v2-dim">{isAr ? 'توكن' : 'tokens'}</span>
         </div>
-        <div className="mt-3 h-[3px] w-full rounded-full bg-v2-line">
-          <div
-            className="h-full rounded-full bg-teal-500"
-            style={{ width: `${100 - usedPct}%` }}
-          />
-        </div>
-        <div className="mt-2 flex items-center justify-between">
-          <Eyebrow>USED · <NumDisplay>{used}</NumDisplay></Eyebrow>
-          <Eyebrow>RENEWS · <NumDisplay>JAN 1</NumDisplay></Eyebrow>
+        <div className="mt-2">
+          <Eyebrow>{isAr ? 'استُخدم' : 'USED'} · <NumDisplay>{used}</NumDisplay></Eyebrow>
         </div>
       </Card>
     )
@@ -181,7 +211,7 @@ function Home() {
   const ActionsBlock = (
     <div>
       <h2 className="mb-3 font-ar text-[17px] font-semibold text-v2-ink lg:mb-4 lg:text-[19px]">
-        إجراءات سريعة
+        {isAr ? 'إجراءات سريعة' : 'Quick actions'}
       </h2>
       {/* Mobile: stacked rows, Desktop: 3-card horizontal grid */}
       <div className="flex flex-col lg:grid lg:grid-cols-3 lg:gap-4">
@@ -217,14 +247,7 @@ function Home() {
   const RecentBlock = (
     <div>
       <div className="mb-3 flex items-baseline justify-between lg:mb-4">
-        <h2 className="font-ar text-[17px] font-semibold text-v2-ink lg:text-[19px]">آخر النشاط</h2>
-        <button
-          type="button"
-          onClick={() => navigate('/v2/activity')}
-          className="font-ar text-[12px] font-semibold text-teal-700 hover:text-teal-600 cursor-pointer"
-        >
-          السجل ←
-        </button>
+        <h2 className="font-ar text-[17px] font-semibold text-v2-ink lg:text-[19px]">{isAr ? 'آخر النشاط' : 'Recent activity'}</h2>
       </div>
       <div className="flex flex-col">
         {loading || activityLoading ? (
@@ -286,7 +309,7 @@ function Home() {
               <circle cx="11" cy="11" r="5"   stroke="var(--teal-700)" strokeWidth="1.4" />
               <circle cx="11" cy="11" r="1.4" fill="var(--teal-700)" />
             </svg>
-            <span className="font-ar text-[15px] font-bold text-v2-ink">وصّل</span>
+            <span className="font-ar text-[15px] font-bold text-v2-ink">وصل</span>
           </span>
         }
         trailing={
@@ -307,19 +330,102 @@ function Home() {
           Desktop: 12-col grid dashboard, no extra padding (DesktopShell owns it). */}
       <div className="flex-1 px-[22px] pb-[110px] lg:px-0 lg:pb-0">
 
-        {/* Greeting — full width on both. Bigger on lg. */}
-        <div className="mt-5 mb-6 lg:mt-2 lg:mb-8">
-          <Eyebrow className="mb-1.5 block">
-            <NumDisplay>{clockHH}:{clockMM}</NumDisplay> · {weekday}
-          </Eyebrow>
+        {/* Profile Header — avatar from LinkedIn (avatar_url), full_name,
+            job_title/headline. B.5 requirement: photo is non-negotiable.
+            On accounts with no avatar, we fall back to a teal initial badge. */}
+        <div className="mt-5 mb-5 flex items-center gap-4 lg:mt-2 lg:mb-6">
           {loading ? (
-            <Skeleton variant="text" width="60%" className="h-[36px] lg:h-[44px]" />
+            <Skeleton variant="text" width={64} className="h-16 w-16 rounded-full" />
+          ) : profile?.avatar_url ? (
+            <img
+              src={profile.avatar_url}
+              alt=""
+              className="h-16 w-16 shrink-0 rounded-full border border-v2-line object-cover lg:h-20 lg:w-20"
+              referrerPolicy="no-referrer"
+            />
           ) : (
-            <h1 className="font-ar font-bold leading-tight text-v2-ink text-[28px] lg:text-[36px]">
-              {greeting}
-            </h1>
+            <span
+              aria-hidden="true"
+              className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-teal-600 font-ar text-[22px] font-bold text-white lg:h-20 lg:w-20 lg:text-[28px]"
+            >
+              {firstName.trim().charAt(0).toUpperCase() || '?'}
+            </span>
           )}
+          <div className="min-w-0 flex-1">
+            <Eyebrow className="mb-1 block">
+              <NumDisplay>{clockHH}:{clockMM}</NumDisplay> · {weekday}
+            </Eyebrow>
+            {loading ? (
+              <Skeleton variant="text" width="60%" className="h-[28px] lg:h-[34px]" />
+            ) : (
+              <>
+                <h1 className="truncate font-ar font-bold leading-tight text-v2-ink text-[22px] lg:text-[28px]">
+                  {greeting}
+                </h1>
+                {(profile as any)?.title ? (
+                  <p className="truncate font-ar text-[13px] text-v2-dim lg:text-[14px]">
+                    {(profile as any).title}
+                    {(profile as any)?.company ? ` · ${(profile as any).company}` : ''}
+                  </p>
+                ) : null}
+              </>
+            )}
+          </div>
         </div>
+
+        {/* Service usage stats — pulled from server, real numbers only */}
+        <div className="mb-6 grid grid-cols-2 gap-2.5 lg:grid-cols-4 lg:gap-4">
+          <StatTile
+            label={isAr ? 'تحليلات' : 'Analyses'}
+            value={stats?.analyses ?? 0}
+            loading={!stats}
+            onClick={() => navigate('/v2/analyze')}
+          />
+          <StatTile
+            label={isAr ? 'منشورات' : 'Posts'}
+            value={stats?.posts ?? 0}
+            loading={!stats}
+            onClick={() => navigate('/v2/posts')}
+          />
+          <StatTile
+            label={isAr ? 'سير ذاتية' : 'CVs'}
+            value={stats?.cvs ?? 0}
+            loading={!stats}
+            onClick={() => navigate('/v2/cvs')}
+          />
+          <StatTile
+            label={isAr ? 'خطابات تقديم' : 'Cover letters'}
+            value={stats?.coverLetters ?? 0}
+            loading={!stats}
+            onClick={() => navigate('/v2/cvs')}
+          />
+        </div>
+
+        {/* Current Profile Score — when last analysis exists */}
+        {stats?.lastAnalysis && stats.lastAnalysis.score != null && (
+          <div className="mb-6">
+            <Card padding="md" radius="lg" elevated>
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <Eyebrow>{isAr ? 'نتيجة بروفايلك الحالية' : 'CURRENT PROFILE SCORE'}</Eyebrow>
+                  <div className="mt-1.5 flex items-baseline gap-2">
+                    <NumDisplay className="text-[28px] font-bold text-teal-700 leading-none">
+                      {stats.lastAnalysis.score}
+                    </NumDisplay>
+                    <span className="font-ar text-[13px] text-v2-dim">/ 100</span>
+                  </div>
+                </div>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => navigate(`/v2/analyze/result/${stats.lastAnalysis!.id}`)}
+                >
+                  {isAr ? 'افتح التقرير' : 'Open report'}
+                </Button>
+              </div>
+            </Card>
+          </div>
+        )}
 
         {/* Mobile flow: TokenCard → Actions → Tip → Recent → CTA. */}
         {/* Desktop: 12-col grid, two rows of (8/4). */}

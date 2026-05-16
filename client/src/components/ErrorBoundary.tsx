@@ -76,7 +76,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
     const message =
       this.props.fallbackMessage ||
       (isAr
-        ? 'عذراً، واجهنا مشكلة. حاول إعادة تحميل الصفحة أو العودة للرئيسية.'
+        ? 'عذراً، واجهنا مشكلة. حاول إعادة تحميل الصفحة أو العودة للرئيسية'
         : "Sorry, we hit a snag. Try reloading or returning home.");
 
     return (

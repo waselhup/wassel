@@ -71,12 +71,13 @@ interface Template {
   cost: number;
 }
 
+// Every post variant costs 5 tokens (linkedin_post canonical price).
 const TEMPLATES: Template[] = [
-  { id: 't1', title: 'منشور رأي', description: 'مقدمة جذابة + 3 نقاط + خاتمة', cost: 15 },
-  { id: 't2', title: 'دراسة حالة', description: 'تحدّي · حل · نتيجة', cost: 25 },
-  { id: 't3', title: 'تأمل أسبوعي', description: 'ماذا تعلّمت هذا الأسبوع', cost: 12 },
-  { id: 't4', title: 'إعلان إنجاز', description: 'متواضع لكن واثق', cost: 10 },
-  { id: 't5', title: 'منشور سرد قصصي', description: 'لحظة → درس → دعوة', cost: 18 },
+  { id: 't1', title: 'منشور رأي', description: 'مقدمة جذابة + 3 نقاط + خاتمة', cost: 5 },
+  { id: 't2', title: 'دراسة حالة', description: 'تحدّي · حل · نتيجة', cost: 5 },
+  { id: 't3', title: 'تأمل أسبوعي', description: 'ماذا تعلّمت هذا الأسبوع', cost: 5 },
+  { id: 't4', title: 'إعلان إنجاز', description: 'متواضع لكن واثق', cost: 5 },
+  { id: 't5', title: 'منشور سرد قصصي', description: 'لحظة → درس → دعوة', cost: 5 },
 ];
 
 const TONES: { id: Tone; label: string }[] = [
@@ -86,7 +87,7 @@ const TONES: { id: Tone; label: string }[] = [
   { id: 'analytical',   label: 'تحليلية' },
 ];
 
-const COMPOSE_COST = 30;
+const COMPOSE_COST = 5;
 
 function statusFromServer(s: 'draft' | 'scheduled' | 'posted'): Status {
   if (s === 'posted') return 'منشور';
@@ -141,11 +142,17 @@ interface PostRowProps {
   onPublish: (p: UiPost) => void;
   onDelete: (p: UiPost) => void;
   onCopy: (p: UiPost) => void;
+  onView: (p: UiPost) => void;
 }
 
-function PostRow({ post, onPublish, onDelete, onCopy }: PostRowProps) {
+function PostRow({ post, onPublish, onDelete, onCopy, onView }: PostRowProps) {
   return (
-    <div className="border-b border-v2-line py-4 lg:rounded-v2-lg lg:border lg:bg-v2-surface lg:p-5 lg:hover:shadow-card lg:transition-shadow lg:duration-200 lg:ease-out">
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={() => onView(post)}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onView(post); } }}
+      className="cursor-pointer border-b border-v2-line py-4 lg:rounded-v2-lg lg:border lg:bg-v2-surface lg:p-5 lg:hover:shadow-card lg:transition-shadow lg:duration-200 lg:ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/30">
       <div className="mb-1.5 flex items-start justify-between gap-2.5">
         <div className="flex-1 font-ar text-[14px] font-semibold text-v2-ink lg:text-[15px]">
           {post.topic}
@@ -175,7 +182,7 @@ function PostRow({ post, onPublish, onDelete, onCopy }: PostRowProps) {
         {post.status !== 'منشور' && (
           <button
             type="button"
-            onClick={() => onPublish(post)}
+            onClick={(e) => { e.stopPropagation(); onPublish(post); }}
             className="rounded-v2-md border border-teal-600 bg-teal-600 px-3 py-1.5 font-ar text-[12px] font-semibold text-white hover:bg-teal-700 cursor-pointer transition-colors"
           >
             نشر على LinkedIn
@@ -183,14 +190,14 @@ function PostRow({ post, onPublish, onDelete, onCopy }: PostRowProps) {
         )}
         <button
           type="button"
-          onClick={() => onCopy(post)}
+          onClick={(e) => { e.stopPropagation(); onCopy(post); }}
           className="rounded-v2-md border border-v2-line bg-v2-surface px-3 py-1.5 font-ar text-[12px] font-medium text-v2-ink hover:bg-v2-canvas-2 cursor-pointer transition-colors"
         >
           نسخ
         </button>
         <button
           type="button"
-          onClick={() => onDelete(post)}
+          onClick={(e) => { e.stopPropagation(); onDelete(post); }}
           className="rounded-v2-md border border-v2-line bg-v2-surface px-3 py-1.5 font-ar text-[12px] font-medium text-red-600 hover:bg-red-50 cursor-pointer transition-colors"
         >
           حذف
@@ -306,6 +313,7 @@ function Posts() {
   const [posts, setPosts] = useState<ServerPost[]>([]);
   const [postsLoading, setPostsLoading] = useState(true);
   const [highlightId, setHighlightId] = useState<string | null>(null);
+  const [viewing, setViewing] = useState<UiPost | null>(null);
 
   async function loadPosts() {
     try {
@@ -454,7 +462,7 @@ function Posts() {
             drafts.length === 0 ? (
               <EmptyState
                 title="لا توجد مسودات بعد"
-                description="ابدأ بمنشور جديد من زر الأعلى أو من أحد القوالب الجاهزة."
+                description="ابدأ بمنشور جديد من زر الأعلى أو من أحد القوالب الجاهزة"
               />
             ) : (
               <div className="flex flex-col lg:grid lg:grid-cols-2 lg:gap-4 lg:pt-2">
@@ -463,7 +471,7 @@ function Posts() {
                     key={p.id}
                     className={p.id === highlightId ? 'rounded-v2-lg ring-2 ring-teal-400 transition-all duration-700' : ''}
                   >
-                    <PostRow post={p} onPublish={publishVariation} onDelete={deletePost} onCopy={copyPost} />
+                    <PostRow post={p} onPublish={publishVariation} onDelete={deletePost} onCopy={copyPost} onView={setViewing} />
                   </div>
                 ))}
               </div>
@@ -474,12 +482,12 @@ function Posts() {
             published.length === 0 ? (
               <EmptyState
                 title="لا توجد منشورات بعد"
-                description="عند نشر مسوداتك، ستظهر هنا."
+                description="عند نشر مسوداتك، ستظهر هنا"
               />
             ) : (
               <div className="flex flex-col lg:grid lg:grid-cols-2 lg:gap-4 lg:pt-2">
                 {published.map((p) => (
-                  <PostRow key={p.id} post={p} onPublish={publishVariation} onDelete={deletePost} onCopy={copyPost} />
+                  <PostRow key={p.id} post={p} onPublish={publishVariation} onDelete={deletePost} onCopy={copyPost} onView={setViewing} />
                 ))}
               </div>
             )
@@ -628,6 +636,72 @@ function Posts() {
         fabIcon="check"
         onFabClick={() => setComposerOpen(true)}
       />
+
+      {/* B.6: Post view modal — opens when any post row is clicked */}
+      {viewing && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+          onClick={() => setViewing(null)}
+        >
+          <div
+            className="max-h-[85dvh] w-full max-w-[640px] overflow-y-auto rounded-v2-lg bg-v2-surface p-6 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div className="flex-1">
+                <Eyebrow>{viewing.status === 'منشور' ? 'PUBLISHED' : 'DRAFT'} · {viewing.date}</Eyebrow>
+                <h3 className="mt-1 font-ar text-[17px] font-bold text-v2-ink">{viewing.topic}</h3>
+              </div>
+              <button
+                type="button"
+                aria-label="إغلاق"
+                onClick={() => setViewing(null)}
+                className="rounded-full p-1 text-v2-mute hover:bg-v2-canvas-2 hover:text-v2-ink"
+              >
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                  <path d="M5 5 L15 15 M15 5 L5 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
+              </button>
+            </div>
+            <pre className="mb-4 max-h-[50dvh] overflow-y-auto whitespace-pre-wrap rounded-v2-md border border-v2-line bg-v2-canvas p-4 font-ar text-[14px] leading-relaxed text-v2-ink">
+              {viewing.content}
+            </pre>
+            <div className="mb-3 flex items-center gap-3 text-[12px] text-v2-dim">
+              <NumDisplay>{viewing.words}</NumDisplay>
+              <span className="font-ar">كلمة</span>
+              {viewing.tones.length > 0 && <>
+                <span>·</span>
+                <span className="font-ar">{viewing.tones.map((tn) => TONE_LABEL_AR[tn] || tn).join('، ')}</span>
+              </>}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {viewing.status !== 'منشور' && (
+                <button
+                  type="button"
+                  onClick={() => { publishVariation(viewing); setViewing(null); }}
+                  className="rounded-v2-md border border-teal-600 bg-teal-600 px-3.5 py-2 font-ar text-[13px] font-semibold text-white hover:bg-teal-700 cursor-pointer"
+                >
+                  نشر على LinkedIn
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => copyPost(viewing)}
+                className="rounded-v2-md border border-v2-line bg-v2-surface px-3.5 py-2 font-ar text-[13px] font-medium text-v2-ink hover:bg-v2-canvas-2 cursor-pointer"
+              >
+                نسخ
+              </button>
+              <button
+                type="button"
+                onClick={() => { deletePost(viewing); setViewing(null); }}
+                className="ms-auto rounded-v2-md border border-v2-line bg-v2-surface px-3.5 py-2 font-ar text-[13px] font-medium text-red-600 hover:bg-red-50 cursor-pointer"
+              >
+                حذف
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </Phone>
   );
 }

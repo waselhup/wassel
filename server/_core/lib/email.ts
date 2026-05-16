@@ -68,7 +68,7 @@ function shell(opts: {
   const dir = opts.isAr ? 'rtl' : 'ltr';
   const lang = opts.isAr ? 'ar' : 'en';
   const footerText = opts.isAr
-    ? '© 2026 وصّل · منصة سعودية الصنع'
+    ? '© 2026 وصل · منصة سعودية الصنع'
     : '© 2026 Wassel · Made in Saudi Arabia';
   return `<!DOCTYPE html>
 <html lang="${lang}" dir="${dir}">
@@ -83,7 +83,7 @@ function shell(opts: {
   <tr><td align="center">
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="560" style="max-width:560px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.06);">
       <tr><td style="padding:24px 28px;background:linear-gradient(135deg,#0A8F84,#0EA5E9);color:#ffffff;">
-        <div style="font-size:22px;font-weight:900;letter-spacing:-0.3px;">${opts.isAr ? 'وصّل' : 'Wassel'}</div>
+        <div style="font-size:22px;font-weight:900;letter-spacing:-0.3px;">${opts.isAr ? 'وصل' : 'Wassel'}</div>
         <div style="font-size:12px;opacity:0.85;margin-top:2px;">${opts.isAr ? 'منصتك الذكية للتسويق عبر LinkedIn' : 'Your smart LinkedIn marketing platform'}</div>
       </td></tr>
       <tr><td style="padding:28px;">${opts.bodyInner}</td></tr>
@@ -112,18 +112,18 @@ function escapeHtml(s: string): string {
 
 export async function sendWelcomeEmail(user: EmailRecipient): Promise<SendResult> {
   const isAr = (user.language || 'ar') === 'ar';
-  const name = user.fullName?.trim() || (isAr ? 'مستخدم وصّل' : 'Wassel member');
+  const name = user.fullName?.trim() || (isAr ? 'مستخدم وصل' : 'Wassel member');
   const subject = isAr
-    ? 'مرحباً بك في وصّل — 1000 توكن مجاناً'
-    : 'Welcome to Wassel — 1,000 free tokens';
+    ? 'مرحباً بك في وصل — 10 توكن مجاناً'
+    : 'Welcome to Wassel — 10 free tokens';
 
   const inner = isAr
     ? `
       <h1 style="font-size:22px;font-weight:900;color:#111827;margin:0 0 12px;">أهلاً ${escapeHtml(name)} 👋</h1>
-      <p style="font-size:14px;line-height:1.7;color:#374151;margin:0 0 14px;">شكراً لانضمامك إلى <strong>وصّل</strong> — منصتك الذكية للتسويق عبر LinkedIn في السوق السعودي والخليجي.</p>
+      <p style="font-size:14px;line-height:1.7;color:#374151;margin:0 0 14px;">شكراً لانضمامك إلى <strong>وصل</strong> — منصتك الذكية للتسويق عبر LinkedIn في السوق السعودي والخليجي.</p>
       <div style="background:linear-gradient(135deg,rgba(10,143,132,0.08),rgba(14,165,233,0.08));border-radius:12px;padding:16px 18px;margin:14px 0;">
-        <div style="font-weight:800;color:#0A8F84;font-size:15px;">رصيدك: 1,000 توكن مجاني</div>
-        <div style="font-size:12px;color:#6B7280;margin-top:4px;">كافي لـ 30+ تحليل بروفايل و 100+ منشور</div>
+        <div style="font-weight:800;color:#0A8F84;font-size:15px;">رصيدك: 10 توكن مجاني</div>
+        <div style="font-size:12px;color:#6B7280;margin-top:4px;">يكفي لتجربة منشور أو منشورين — جرّب الأدوات وادفع لما تحب أكثر</div>
       </div>
       <h3 style="font-size:14px;font-weight:900;margin:20px 0 8px;">ابدأ بإحدى هذه الأدوات:</h3>
       <ul style="margin:0 0 18px;padding-inline-start:20px;font-size:13px;line-height:1.9;color:#374151;">
@@ -138,8 +138,8 @@ export async function sendWelcomeEmail(user: EmailRecipient): Promise<SendResult
       <h1 style="font-size:22px;font-weight:900;color:#111827;margin:0 0 12px;">Welcome, ${escapeHtml(name)} 👋</h1>
       <p style="font-size:14px;line-height:1.7;color:#374151;margin:0 0 14px;">Thanks for joining <strong>Wassel</strong> — your smart LinkedIn marketing platform for the Saudi/GCC market.</p>
       <div style="background:linear-gradient(135deg,rgba(10,143,132,0.08),rgba(14,165,233,0.08));border-radius:12px;padding:16px 18px;margin:14px 0;">
-        <div style="font-weight:800;color:#0A8F84;font-size:15px;">Your balance: 1,000 free tokens</div>
-        <div style="font-size:12px;color:#6B7280;margin-top:4px;">Enough for 30+ profile analyses and 100+ posts</div>
+        <div style="font-weight:800;color:#0A8F84;font-size:15px;">Your balance: 10 free tokens</div>
+        <div style="font-size:12px;color:#6B7280;margin-top:4px;">Enough to try a post or two — explore Wassel before topping up</div>
       </div>
       <h3 style="font-size:14px;font-weight:900;margin:20px 0 8px;">Start with one of these tools:</h3>
       <ul style="margin:0 0 18px;padding-inline-start:20px;font-size:13px;line-height:1.9;color:#374151;">
@@ -152,13 +152,13 @@ export async function sendWelcomeEmail(user: EmailRecipient): Promise<SendResult
     `;
 
   const text = isAr
-    ? `أهلاً ${name}\n\nشكراً لانضمامك إلى وصّل. حصلت على 1000 توكن مجاناً.\n\nادخل لوحتك: ${APP_URL}/app\n\nمحتاج مساعدة؟ رد على هذا البريد.\n\n— فريق وصّل`
-    : `Welcome, ${name}\n\nThanks for joining Wassel. You have 1,000 free tokens.\n\nOpen your dashboard: ${APP_URL}/app\n\nNeed help? Just reply.\n\n— The Wassel Team`;
+    ? `أهلاً ${name}\n\nشكراً لانضمامك إلى وصل. حصلت على 10 توكن مجاناً.\n\nادخل لوحتك: ${APP_URL}/app\n\nمحتاج مساعدة؟ رد على هذا البريد.\n\n— فريق وصل`
+    : `Welcome, ${name}\n\nThanks for joining Wassel. You have 10 free tokens.\n\nOpen your dashboard: ${APP_URL}/app\n\nNeed help? Just reply.\n\n— The Wassel Team`;
 
   return sendRaw({
     to: user.email,
     subject,
-    html: shell({ isAr, preheader: isAr ? 'لديك 1000 توكن مجاني للبدء' : 'You have 1,000 free tokens', bodyInner: inner }),
+    html: shell({ isAr, preheader: isAr ? 'لديك 10 توكن مجاني للبدء' : 'You have 10 free tokens', bodyInner: inner }),
     text,
   });
 }
@@ -173,12 +173,12 @@ export async function sendTicketResponseEmail(opts: {
   const subject = isAr
     ? `رد على ملاحظتك: ${opts.ticketSubject}`
     : `Response to your feedback: ${opts.ticketSubject}`;
-  const name = opts.user.fullName?.trim() || (isAr ? 'مستخدم وصّل' : 'Wassel member');
+  const name = opts.user.fullName?.trim() || (isAr ? 'مستخدم وصل' : 'Wassel member');
 
   const inner = isAr
     ? `
       <h1 style="font-size:20px;font-weight:900;color:#111827;margin:0 0 10px;">رد على ملاحظتك</h1>
-      <p style="font-size:14px;line-height:1.7;color:#374151;margin:0 0 14px;">أهلاً ${escapeHtml(name)}، فريق وصّل رد على ملاحظتك:</p>
+      <p style="font-size:14px;line-height:1.7;color:#374151;margin:0 0 14px;">أهلاً ${escapeHtml(name)}، فريق وصل رد على ملاحظتك:</p>
       <div style="background:#F9FAFB;border:1px solid #E5E7EB;border-radius:12px;padding:14px 18px;margin:14px 0;">
         <div style="font-size:11px;font-weight:800;color:#6B7280;margin-bottom:6px;">الموضوع</div>
         <div style="font-size:14px;font-weight:700;color:#111827;">${escapeHtml(opts.ticketSubject)}</div>
@@ -204,13 +204,13 @@ export async function sendTicketResponseEmail(opts: {
     `;
 
   const text = isAr
-    ? `أهلاً ${name}\n\nرد فريق وصّل على ملاحظتك:\n\nالموضوع: ${opts.ticketSubject}\n\n${opts.responseText}\n\nعرض المحادثة: ${APP_URL}/app/tickets`
+    ? `أهلاً ${name}\n\nرد فريق وصل على ملاحظتك:\n\nالموضوع: ${opts.ticketSubject}\n\n${opts.responseText}\n\nعرض المحادثة: ${APP_URL}/app/tickets`
     : `Hi ${name}\n\nWassel team responded to your ticket:\n\nSubject: ${opts.ticketSubject}\n\n${opts.responseText}\n\nView conversation: ${APP_URL}/app/tickets`;
 
   return sendRaw({
     to: opts.user.email,
     subject,
-    html: shell({ isAr, preheader: isAr ? 'فريق وصّل رد على ملاحظتك' : 'Wassel team responded', bodyInner: inner }),
+    html: shell({ isAr, preheader: isAr ? 'فريق وصل رد على ملاحظتك' : 'Wassel team responded', bodyInner: inner }),
     text,
   });
 }
@@ -223,14 +223,14 @@ export async function sendTokenGrantEmail(opts: {
 }): Promise<SendResult> {
   const isAr = (opts.user.language || 'ar') === 'ar';
   const subject = isAr
-    ? `حصلت على ${opts.amount} توكن من وصّل`
+    ? `حصلت على ${opts.amount} توكن من وصل`
     : `You received ${opts.amount} tokens from Wassel`;
-  const name = opts.user.fullName?.trim() || (isAr ? 'مستخدم وصّل' : 'Wassel member');
+  const name = opts.user.fullName?.trim() || (isAr ? 'مستخدم وصل' : 'Wassel member');
 
   const inner = isAr
     ? `
       <h1 style="font-size:22px;font-weight:900;color:#111827;margin:0 0 12px;">🎉 توكنز جديدة في رصيدك</h1>
-      <p style="font-size:14px;line-height:1.7;color:#374151;margin:0 0 14px;">أهلاً ${escapeHtml(name)}، أضافت إدارة وصّل توكنز إلى رصيدك:</p>
+      <p style="font-size:14px;line-height:1.7;color:#374151;margin:0 0 14px;">أهلاً ${escapeHtml(name)}، أضافت إدارة وصل توكنز إلى رصيدك:</p>
       <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:linear-gradient(135deg,#0A8F84,#0EA5E9);border-radius:14px;margin:16px 0;color:#ffffff;">
         <tr><td style="padding:20px 24px;text-align:center;">
           <div style="font-size:36px;font-weight:900;letter-spacing:-1px;">+${opts.amount.toLocaleString('en-US')}</div>
@@ -262,7 +262,7 @@ export async function sendTokenGrantEmail(opts: {
     `;
 
   const text = isAr
-    ? `أهلاً ${name}\n\nأضافت إدارة وصّل ${opts.amount} توكن إلى رصيدك.\nالسبب: ${opts.reason}\nرصيدك الحالي: ${opts.newBalance} توكن\n\nاستخدم التوكنز: ${APP_URL}/app`
+    ? `أهلاً ${name}\n\nأضافت إدارة وصل ${opts.amount} توكن إلى رصيدك.\nالسبب: ${opts.reason}\nرصيدك الحالي: ${opts.newBalance} توكن\n\nاستخدم التوكنز: ${APP_URL}/app`
     : `Hi ${name}\n\nWassel admin added ${opts.amount} tokens to your balance.\nReason: ${opts.reason}\nNew balance: ${opts.newBalance} tokens\n\nUse them: ${APP_URL}/app`;
 
   return sendRaw({
@@ -356,7 +356,7 @@ export interface AnalysisEmailInput {
 export async function sendAnalysisReportEmail(input: AnalysisEmailInput): Promise<SendResult> {
   const isAr = input.language === 'ar';
   const subject = isAr
-    ? `تقريرك من وصّل — نتيجة ${input.overallScore}/100`
+    ? `تقريرك من وصل — نتيجة ${input.overallScore}/100`
     : `Your Wassel Report — Score ${input.overallScore}/100`;
 
   const verdictHtml = input.headlineVerdict
@@ -366,7 +366,7 @@ export async function sendAnalysisReportEmail(input: AnalysisEmailInput): Promis
   const body = isAr
     ? `
       <h1 style="font-size:22px;font-weight:900;color:#111827;margin:0 0 12px;">تقريرك جاهز 📊</h1>
-      <p style="font-size:14px;color:#374151;line-height:1.8;margin:0 0 14px;">اكتمل تحليل بروفايلك المهني بواسطة وصّل. النتيجة الإجمالية:</p>
+      <p style="font-size:14px;color:#374151;line-height:1.8;margin:0 0 14px;">اكتمل تحليل بروفايلك المهني بواسطة وصل. النتيجة الإجمالية:</p>
       <div style="text-align:center;background:linear-gradient(135deg,#ECFDFB,#FDF6E4);border-radius:14px;padding:22px;margin:14px 0;">
         <div style="font-size:48px;font-weight:900;background:linear-gradient(135deg,#0A8F84,#C9922A);-webkit-background-clip:text;-webkit-text-fill-color:transparent;color:#0A8F84;">${input.overallScore}</div>
         <div style="font-size:12px;color:#64748B;margin-top:4px;">من 100</div>
@@ -379,7 +379,7 @@ export async function sendAnalysisReportEmail(input: AnalysisEmailInput): Promis
         <li>ذكر الاستشهادات من كل إطار بحثي</li>
         <li>${input.quickWinsCount || 0} تعديل فوري قابل للتنفيذ</li>
       </ul>
-      <div style="text-align:center;margin-top:22px;">${btn(`${APP_URL}/app/profile-analysis`, 'افتح التقرير في وصّل')}</div>
+      <div style="text-align:center;margin-top:22px;">${btn(`${APP_URL}/app/profile-analysis`, 'افتح التقرير في وصل')}</div>
     `
     : `
       <h1 style="font-size:22px;font-weight:900;color:#111827;margin:0 0 12px;">Your Report is Ready 📊</h1>
@@ -401,7 +401,7 @@ export async function sendAnalysisReportEmail(input: AnalysisEmailInput): Promis
 
   const html = shell({ isAr, preheader: subject, bodyInner: body });
   const text = isAr
-    ? `تقريرك من وصّل جاهز — النتيجة ${input.overallScore}/100. افتح: ${APP_URL}/app/profile-analysis`
+    ? `تقريرك من وصل جاهز — النتيجة ${input.overallScore}/100. افتح: ${APP_URL}/app/profile-analysis`
     : `Your Wassel report is ready — Score ${input.overallScore}/100. Open: ${APP_URL}/app/profile-analysis`;
 
   return sendRaw({ to: input.to, subject, html, text });

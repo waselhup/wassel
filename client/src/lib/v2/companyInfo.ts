@@ -45,7 +45,7 @@ export interface CompanyLegalInfo {
 const PRIMARY_EMAIL = 'waselhup@gmail.com';
 
 export const COMPANY_LEGAL_INFO: CompanyLegalInfo = {
-  brandAr: 'وصّل',
+  brandAr: 'وصل',
   brandEn: 'Wassel',
   commercialRegistration: '7052843203',
   vatNumber: null,
@@ -64,13 +64,13 @@ export const COMPANY_LEGAL_INFO: CompanyLegalInfo = {
 
 export const COMPLIANCE_AR = {
   digitalRegulation:
-    'نلتزم بأنظمة المملكة العربية السعودية ومتطلبات هيئة الاتصالات والفضاء والتقنية.',
+    'نلتزم بأنظمة المملكة العربية السعودية ومتطلبات هيئة الاتصالات والفضاء والتقنية',
   dataProtection:
-    'نحمي بياناتك وفقاً لنظام حماية البيانات الشخصية في المملكة العربية السعودية.',
+    'نحمي بياناتك وفقاً لنظام حماية البيانات الشخصية في المملكة العربية السعودية',
   ecommerce:
-    'تشغّل المنصّة وفق نظام التجارة الإلكترونية السعودي.',
+    'تشغّل المنصّة وفق نظام التجارة الإلكترونية السعودي',
   linkedin:
-    'نستخدم واجهات معتمدة فقط ولا نخالف شروط منصّات الطرف الثالث.',
+    'نستخدم واجهات معتمدة فقط ولا نخالف شروط منصّات الطرف الثالث',
 } as const;
 
 export const COMPLIANCE_EN = {

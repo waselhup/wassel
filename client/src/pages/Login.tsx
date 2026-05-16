@@ -60,7 +60,7 @@ export default function Login() {
       await signIn?.(email, password);
       setLocation("/app");
     } catch (err: any) {
-      setError(err?.message || t("auth.error.generic", "فشل تسجيل الدخول. تأكد من البيانات."));
+      setError(err?.message || t("auth.error.generic", "فشل تسجيل الدخول. تأكد من البيانات"));
       setShake(true);
       setTimeout(() => setShake(false), 500);
     } finally {

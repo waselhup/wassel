@@ -33,7 +33,7 @@
   },
   "hero": {
     "title": "Multiply Your Job Opportunities Effortlessly",
-    "subtitle": "Wassel isn’t just a platform — it’s your strategic partner. We help you showcase your skills professionally and automate your outreach, ensuring the world sees your true value.",
+    "subtitle": "Wassel isn’t just a platform — it’s your strategic partner. We help you showcase your skills professionally and automate your outreach, ensuring the world sees your true value",
     "cta_primary": "Get Started - Free",
     "cta_primary_badge": "Start free · 10 tokens gift",
     "cta_secondary": "Watch Demo",
@@ -77,15 +77,15 @@
     "subtitle": "Three simple steps to results",
     "step1": {
       "title": "Optimize Your Profile",
-      "description": "Our AI analyzes your LinkedIn profile, scores it, and rewrites your headline and summary to attract Saudi recruiters."
+      "description": "Our AI analyzes your LinkedIn profile, scores it, and rewrites your headline and summary to attract Saudi recruiters"
     },
     "step2": {
       "title": "Launch a Smart Campaign",
-      "description": "We find decision-makers in your target companies and write 500 personalized emails that sound human — not automated."
+      "description": "We find decision-makers in your target companies and write 500 personalized emails that sound human — not automated"
     },
     "step3": {
       "title": "Track Results & Connect",
-      "description": "Monitor open and reply rates in real time, then connect directly on LinkedIn with one click."
+      "description": "Monitor open and reply rates in real time, then connect directly on LinkedIn with one click"
     }
   },
   "pricing": {
@@ -154,33 +154,33 @@
     "items": [
       {
         "question": "Is Wassel free to try?",
-        "answer": "Yes. You can sign up for free and get starter tokens to analyze your LinkedIn profile and tailor a CV before upgrading."
+        "answer": "Yes. You can sign up for free and get starter tokens to analyze your LinkedIn profile and tailor a CV before upgrading"
       },
       {
         "question": "Is my data private and secure?",
-        "answer": "Absolutely. Your data is stored on Supabase with row-level security and fully complies with Saudi PDPL."
+        "answer": "Absolutely. Your data is stored on Supabase with row-level security and fully complies with Saudi PDPL"
       },
       {
         "question": "Do I need a LinkedIn Premium account?",
-        "answer": "No. Wassel works with any free LinkedIn account — no premium subscription required."
+        "answer": "No. Wassel works with any free LinkedIn account — no premium subscription required"
       },
       {
         "question": "How does AI write the emails?",
-        "answer": "Wassel uses Claude AI to craft personalized, professional B2B emails in Arabic or English, tailored to each decision-maker."
+        "answer": "Wassel uses Claude AI to craft personalized, professional B2B emails in Arabic or English, tailored to each decision-maker"
       },
       {
         "question": "Do you support Arabic and English?",
-        "answer": "Yes. Wassel is Arabic-first with full RTL support and Cairo font, plus complete English localization."
+        "answer": "Yes. Wassel is Arabic-first with full RTL support and Cairo font, plus complete English localization"
       },
       {
         "question": "Can I cancel anytime?",
-        "answer": "Yes. All subscriptions are month-to-month and you can cancel from the dashboard at any time with no hidden fees."
+        "answer": "Yes. All subscriptions are month-to-month and you can cancel from the dashboard at any time with no hidden fees"
       }
     ]
   },
   "footer": {
     "description": "Wassel - Your Smart Platform for Saudi Job Search",
-    "copyright": "All rights reserved 2026 Wassel. Made in Saudi Arabia.",
+    "copyright": "All rights reserved 2026 Wassel. Made in Saudi Arabia",
     "madeIn": "Made in Saudi Arabia with love",
     "links": {
       "product": {
@@ -283,7 +283,7 @@
     "analyticsDesc": "Track opens, replies, and conversions in real time",
     "comingSoon": "Coming Soon",
     "betaMessage": "You're using the beta version",
-    "betaDescription": "Thanks for being an early user! Your feedback shapes the product."
+    "betaDescription": "Thanks for being an early user! Your feedback shapes the product"
   },
   "common": {
     "loading": "Loading...",
@@ -406,9 +406,9 @@
     "analyze": "Analyze LinkedIn Profile",
     "analyzing": "Analyzing...",
     "scoreLabel": "Your LinkedIn Score",
-    "scoreExcellent": "Excellent! Your profile is well-optimized.",
-    "scoreGood": "Good! There's room for improvement.",
-    "scoreNeeds": "Let's improve your profile with these suggestions.",
+    "scoreExcellent": "Excellent! Your profile is well-optimized",
+    "scoreGood": "Good! There's room for improvement",
+    "scoreNeeds": "Let's improve your profile with these suggestions",
     "headlineLabel": "Headline",
     "currentLabel": "Current",
     "suggestedLabel": "Suggested",
@@ -422,8 +422,8 @@
     "insufficientTokensDesc": "You need more tokens. Buy tokens",
     "analyzeMyProfile": "Analyze My Profile",
     "invalidUrl": "Invalid LinkedIn URL",
-    "analysisFailed": "Analysis failed. Please try again.",
-    "needMore": "You need {{count}} more tokens.",
+    "analysisFailed": "Analysis failed. Please try again",
+    "needMore": "You need {{count}} more tokens",
     "buyTokens": "Buy tokens",
     "stepFetching": "Fetching profile data...",
     "stepAnalyzing": "Analyzing with AI...",
@@ -452,7 +452,7 @@
     "description": "Generate tailored CVs for 3 different career fields to maximize your opportunities",
     "selectFieldsLabel": "Choose 3 Career Fields",
     "selectFieldsDesc": "Select the career paths you want to tailor your CV for",
-    "cost": "Cost: 10 tokens",
+    "cost": "Cost: 129 tokens",
     "generateCVs": "Generate CVs",
     "generating": "Generating...",
     "selectedCount": "Selected",
@@ -524,7 +524,7 @@
       "recipient": "Recipient",
       "company": "Company",
       "jobTitle": "Job Title",
-      "noRecipientsFound": "No recipients found. Try different target criteria.",
+      "noRecipientsFound": "No recipients found. Try different target criteria",
       "aiEmailPreview": "AI Email Preview",
       "emailSample": "Sample Email",
       "subject": "Subject",
@@ -573,7 +573,7 @@
     "settings": "System Settings",
     "adminBadge": "Admin",
     "backToApp": "Back to App",
-    "notAuthorized": "You don't have permission to access the admin panel.",
+    "notAuthorized": "You don't have permission to access the admin panel",
     "totalUsers": "Total Users",
     "activeUsers": "Active Users (7 days)",
     "totalCampaigns": "Total Campaigns",
@@ -609,7 +609,7 @@
     "noUsersFound": "No users found matching your filters",
     "tokenAmount": "Token Amount",
     "reason": "Reason",
-    "reasonPlaceholder": "Admin bonus, promotional credit, etc.",
+    "reasonPlaceholder": "Admin bonus, promotional credit, etc",
     "addTokensDesc": "Add tokens to {name}'s account",
     "campaignName": "Campaign Name",
     "user": "User",
@@ -634,14 +634,14 @@
   "payment": {
     "title": "Tokens & Subscription",
     "comingSoon": "Payment Coming Soon",
-    "comingSoonDesc": "We're preparing secure payment processing. This feature will be available shortly.",
-    "contactSupport": "Please contact support for more information.",
+    "comingSoonDesc": "We're preparing secure payment processing. This feature will be available shortly",
+    "contactSupport": "Please contact support for more information",
     "currentBalance": "Current Balance",
     "tokensAvailable": "Tokens Available",
     "tokens": "Purchase Tokens",
     "subscription": "Subscription Plans",
     "tokenInfo": "Tokens power all your features",
-    "tokenInfoDesc": "Use tokens to analyze LinkedIn profiles, generate tailored CVs, and send email campaigns. Buy tokens as needed or choose a subscription plan for regular allocations.",
+    "tokenInfoDesc": "Use tokens to analyze LinkedIn profiles, generate tailored CVs, and send email campaigns. Buy tokens as needed or choose a subscription plan for regular allocations",
     "packages": "Available Packages",
     "tokensLabel": "Tokens",
     "save": "Save",
@@ -649,7 +649,7 @@
     "paymentMethod": "Payment Method",
     "applyPay": "Pay with Apple Pay",
     "visaMada": "Pay with Visa/Mada",
-    "paymentNote": "Payment methods are coming soon. Moyasar and Tap integration in progress.",
+    "paymentNote": "Payment methods are coming soon. Moyasar and Tap integration in progress",
     "transactionHistory": "Transaction History",
     "purchase": "Token Purchase",
     "spend": "Token Spend",
@@ -691,9 +691,9 @@
     "subtitle": "Collect your analyses and campaign results to build a smart knowledge base",
     "export": "Export for NotebookLM",
     "notebooklm": "NotebookLM Integration",
-    "notebooklmDesc": "Export your data as a JSON file and upload it to Google NotebookLM to build a smart knowledge base you can query.",
+    "notebooklmDesc": "Export your data as a JSON file and upload it to Google NotebookLM to build a smart knowledge base you can query",
     "openNotebook": "Open NotebookLM",
-    "empty": "No items yet. Analyze your LinkedIn profile or launch a campaign to start building your knowledge base.",
+    "empty": "No items yet. Analyze your LinkedIn profile or launch a campaign to start building your knowledge base",
     "marketTips": "Saudi Market Insights",
     "tab": {
       "all": "All",
@@ -808,8 +808,8 @@
     },
     "generate": {
       "title": "Ready to Generate?",
-      "subtitle": "10 tokens per CV (DOCX + PDF)",
-      "button": "Generate CV — 10 tokens",
+      "subtitle": "129 tokens per CV (DOCX + PDF)",
+      "button": "Generate CV — 129 tokens",
       "success": "Generated!",
       "error": "Generation failed"
     },
@@ -1031,10 +1031,10 @@
         "loading6": "Reviewing flow and rhythm...",
         "loading7": "Adding final touches...",
         "error": "Generation failed — please try again",
-        "errorApiKey": "Generation service is not configured. Contact support.",
+        "errorApiKey": "Generation service is not configured. Contact support",
         "errorTimeout": "Response timed out — please try again",
-        "errorCredits": "Service temporarily unavailable (API credits). We're on it.",
-        "errorRateLimit": "Rate limit reached. Try again in a minute.",
+        "errorCredits": "Service temporarily unavailable (API credits). We're on it",
+        "errorRateLimit": "Rate limit reached. Try again in a minute",
         "errorInvalidResponse": "Invalid response — please try again",
         "success": "Post generated successfully"
       },
@@ -1322,7 +1322,7 @@
       "why": "Why",
       "example": "Example",
       "timeTotal": "Total time: ~{{n}}",
-      "tip": "💡 These are suggestions — you're the decision maker. Take what works, leave what doesn't. Run the analysis again after applying changes."
+      "tip": "💡 These are suggestions — you're the decision maker. Take what works, leave what doesn't. Run the analysis again after applying changes"
     },
     "completenessWarning": {
       "title": "Profile data extracted: {{n}}%",
@@ -1446,7 +1446,7 @@
         "low": "Low impact"
       },
       "exportReport": "Download Report (Word)",
-      "exportDocx": "Download DOCX (+5 tokens)",
+      "exportDocx": "Download DOCX",
       "exportDocxFree": "Download DOCX (already paid)"
     },
     "frameworks": {
@@ -1508,9 +1508,9 @@
       },
       "error": {
         "notFoundTitle": "We couldn't find this profile",
-        "notFoundHelp": "Check the URL and make sure the profile is public and not private.",
+        "notFoundHelp": "Check the URL and make sure the profile is public and not private",
         "insufficientTitle": "Not enough profile content",
-        "insufficientHelp": "Add more content to your profile and try again.",
+        "insufficientHelp": "Add more content to your profile and try again",
         "requested": "Requested profile:",
         "noTokensCharged": "No tokens were charged",
         "balance": "Balance"
@@ -1581,13 +1581,13 @@
     },
     "hub": {
       "title": "Intelligent Work Hub for Your Career",
-      "desc": "A self-structuring, centralized system to seamlessly manage your LinkedIn profile, CVs, posts, and outreach campaigns — all powered by AI.",
+      "desc": "A self-structuring, centralized system to seamlessly manage your LinkedIn profile, CVs, posts, and outreach campaigns — all powered by AI",
       "mockup_workflow": "WORKFLOW V.1",
       "mockup_overview": "Overview",
       "mockup_steps": "7 Steps",
       "mockup_duration": "Apx: 25 min",
       "mockup_card_title": "New LinkedIn Profile Analysis",
-      "mockup_card_desc": "Deep scan of your LinkedIn presence with AI-powered recommendations based on your target goal.",
+      "mockup_card_desc": "Deep scan of your LinkedIn presence with AI-powered recommendations based on your target goal",
       "mockup_start": "Start workflow",
       "mockup_preview": "Preview",
       "mockup_tasks": "TASKS",
@@ -1599,8 +1599,8 @@
     },
     "fits": {
       "title": "Fits like a glove, works like a charm",
-      "desc1": "Our platform uses AI to automatically assemble the right tools for your career stage in seconds.",
-      "desc2": "No more generic templates, outdated advice, or one-size-fits-all CV builders.",
+      "desc1": "Our platform uses AI to automatically assemble the right tools for your career stage in seconds",
+      "desc2": "No more generic templates, outdated advice, or one-size-fits-all CV builders",
       "stack_analytics": "Analytics",
       "stack_campaigns": "Campaigns",
       "stack_profile": "Profile Analysis",
@@ -1609,7 +1609,7 @@
     },
     "bento": {
       "silos_title": "Tear down silos, move faster & save time",
-      "silos_sub": "Everything in one place.",
+      "silos_sub": "Everything in one place",
       "services_label": "SERVICES",
       "services_head": "All Services",
       "services_all": "All items",
@@ -1624,9 +1624,9 @@
       "services_campaigns": "Campaigns",
       "services_campaigns_meta": "Beta · 3 Projects",
       "measure_title": "Made to measure, built to last",
-      "measure_sub": "Customize every field.",
+      "measure_sub": "Customize every field",
       "measure_head": "Fields",
-      "measure_help": "Once customized below, each field will display by corresponding info.",
+      "measure_help": "Once customized below, each field will display by corresponding info",
       "field_description": "Description",
       "field_description_v": "Text",
       "field_role": "Role ID",
@@ -1643,7 +1643,7 @@
     },
     "final_cta": {
       "title": "Build your Wassel in seconds...",
-      "desc": "Get started in minutes and watch it mold to your unique career needs.",
+      "desc": "Get started in minutes and watch it mold to your unique career needs",
       "placeholder": "Enter your email (e.g. hello@wassel.sa)",
       "build": "Build",
       "hint": "Free to start · 10 tokens included · Cancel anytime"
@@ -1682,7 +1682,7 @@
       "card7_meta": "3 similar profiles",
       "card8_badge": "New",
       "card8_title": "Evidence-based analysis",
-      "card8_body": "Every observation now cites one of 6 research frameworks — from MIT weak-ties to Harvard's ATS methodology.",
+      "card8_body": "Every observation now cites one of 6 research frameworks — from MIT weak-ties to Harvard's ATS methodology",
       "card9_title": "Profile Report",
       "card9_meta": "Final analysis · 3 pages"
     },
@@ -1714,13 +1714,13 @@
   "about": {
     "eyebrow": "About Wassel",
     "title": "About Wassel",
-    "subtitle": "A Saudi platform built with craft — from the heart of Al-Ahsa.",
-    "story_para1": "Wassel is a Saudi AI-powered platform built to help professionals across the Saudi and GCC markets grow their LinkedIn presence — from profile analysis and CV creation to content generation and outreach campaigns.",
-    "story_para2": "We believe every Saudi professional deserves intelligent tools that understand their language, market, and cultural context.",
+    "subtitle": "A Saudi platform built with craft — from the heart of Al-Ahsa",
+    "story_para1": "Wassel is a Saudi AI-powered platform built to help professionals across the Saudi and GCC markets grow their LinkedIn presence — from profile analysis and CV creation to content generation and outreach campaigns",
+    "story_para2": "We believe every Saudi professional deserves intelligent tools that understand their language, market, and cultural context",
     "team": {
       "eyebrow": "The Team",
       "title": "Built by two",
-      "subtitle": "We share your market, your language, and your ambition.",
+      "subtitle": "We share your market, your language, and your ambition",
       "hassan": {
         "name": "Hassan Al-Mudhi",
         "role": "Co-Founder & CEO",

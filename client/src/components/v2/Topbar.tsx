@@ -2,6 +2,7 @@ import type { HTMLAttributes, ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import PulseBar from '@/components/v2/PulseBar';
 import JobsIndicator from '@/components/v2/JobsIndicator';
+import LangToggle from '@/components/v2/LangToggle';
 
 export interface TopbarProps extends Omit<HTMLAttributes<HTMLDivElement>, 'title'> {
   /** main heading rendered in the center column */
@@ -99,6 +100,7 @@ function Topbar({
           )}
         </div>
         <div className="flex min-w-[64px] items-center justify-end gap-1.5">
+          <LangToggle size="sm" variant="ghost" />
           {trailing}
           {showJobsIndicator && <JobsIndicator />}
         </div>

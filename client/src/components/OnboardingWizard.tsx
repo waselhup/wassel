@@ -279,7 +279,7 @@ export const OnboardingWizard: React.FC<Props> = ({ onClose }) => {
                 }}
               >
                 {isAr
-                  ? 'حصلت على 10 توكن هدية للبدء. خلال دقيقتين، سنرشدك لأهم أدوات وصل لتحقق أقصى استفادة.'
+                  ? 'حصلت على 10 توكن هدية للبدء. خلال دقيقتين، سنرشدك لأهم أدوات وصل لتحقق أقصى استفادة'
                   : "You got 10 free tokens to start. In 2 minutes, we'll show you Wassel's most powerful tools."}
               </p>
               <div
@@ -363,7 +363,7 @@ export const OnboardingWizard: React.FC<Props> = ({ onClose }) => {
                 }}
               >
                 {isAr
-                  ? 'يمكنك تحليل أي بروفايل LinkedIn (بما فيه بروفايلك) للحصول على تقييم احترافي شامل.'
+                  ? 'يمكنك تحليل أي بروفايل LinkedIn (بما فيه بروفايلك) للحصول على تقييم احترافي شامل'
                   : 'You can analyze any LinkedIn profile (including yours) to get a comprehensive professional assessment.'}
               </p>
               <div
@@ -428,7 +428,7 @@ export const OnboardingWizard: React.FC<Props> = ({ onClose }) => {
                   margin: '0 0 18px',
                 }}
               >
-                {isAr ? 'نستخدم هذه المعلومات لتخصيص اقتراحاتنا.' : "We use this to personalize your experience."}
+                {isAr ? 'نستخدم هذه المعلومات لتخصيص اقتراحاتنا' : "We use this to personalize your experience."}
               </p>
 
               <div style={{ marginBottom: 14 }}>

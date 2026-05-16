@@ -18,7 +18,7 @@ const FEATURE_INFO: Record<string, FeatureInfo> = {
     titleAr: 'التواصل المهني قريباً',
     titleEn: 'Smart outreach coming soon',
     descAr:
-      'نعمل على ميزة متقدّمة لأتمتة التواصل المهني على LinkedIn بالذكاء الاصطناعي — مع احترام كامل لحدود المنصة وبجودة محادثات حقيقية.',
+      'نعمل على ميزة متقدّمة لأتمتة التواصل المهني على LinkedIn بالذكاء الاصطناعي — مع احترام كامل لحدود المنصة وبجودة محادثات حقيقية',
     descEn:
       'We are crafting a thoughtful AI-powered outreach experience — one that respects platform limits and reads like a real conversation.',
     eta: 'Q3 2026',

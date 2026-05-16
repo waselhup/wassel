@@ -123,7 +123,7 @@ export default function CampaignNew() {
       ])) as { messages: Array<{ companyId: string; companyName: string; subject: string; body: string }> };
       setMessages((result.messages || []).map((m) => ({ ...m, approved: false })));
     } catch (e: any) {
-      if (e?.message === "timeout") setError(t("new.err.timeout", "انتهت المهلة. حاول مرة أخرى."));
+      if (e?.message === "timeout") setError(t("new.err.timeout", "انتهت المهلة. حاول مرة أخرى"));
       else setError(e?.message || t("new.err.genFailed", "فشل إنشاء الرسائل"));
     } finally {
       setGenerating(false);
@@ -390,7 +390,7 @@ export default function CampaignNew() {
                     )}
                   </div>
                   <p className="text-xs text-gray-500">
-                    {t("new.reviewHint", "نعرض عينة من 5 رسائل. الباقي سينشأ بنفس النمط.")}
+                    {t("new.reviewHint", "نعرض عينة من 5 رسائل. الباقي سينشأ بنفس النمط")}
                   </p>
 
                   {generating && (
@@ -516,7 +516,7 @@ export default function CampaignNew() {
                   <div className="rounded-xl bg-amber-50 border border-amber-200 p-3 text-xs text-amber-800 max-w-md mx-auto mb-6">
                     {t(
                       "new.dryRunNote",
-                      "ملاحظة: الإرسال حالياً في وضع الاختبار (dry-run) — ستُحفظ الرسائل في السجل لكن لن تُرسل فعلياً حتى تفعيل النطاق."
+                      "ملاحظة: الإرسال حالياً في وضع الاختبار (dry-run) — ستُحفظ الرسائل في السجل لكن لن تُرسل فعلياً حتى تفعيل النطاق"
                     )}
                   </div>
                   <button
@@ -546,7 +546,7 @@ export default function CampaignNew() {
                     {t("new.launched", "تم إنشاء الحملة!")}
                   </h3>
                   <p className="text-gray-500">
-                    {t("new.launchedD", "الحملة في قائمة الانتظار — سيبدأ الإرسال حسب الحد اليومي.")}
+                    {t("new.launchedD", "الحملة في قائمة الانتظار — سيبدأ الإرسال حسب الحد اليومي")}
                   </p>
                 </div>
               )}

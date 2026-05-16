@@ -90,7 +90,7 @@ function Billing() {
   }, []);
 
   const handleCancelSubscription = async () => {
-    if (!confirm(t('هل أنت متأكد من إلغاء التجديد التلقائي؟ ستظل قادراً على استخدام الاشتراك حتى نهاية الفترة الحالية.', 'Cancel auto-renewal? Your subscription stays active until the current period ends.'))) {
+    if (!confirm(t('هل أنت متأكد من إلغاء التجديد التلقائي؟ ستظل قادراً على استخدام الاشتراك حتى نهاية الفترة الحالية', 'Cancel auto-renewal? Your subscription stays active until the current period ends.'))) {
       return;
     }
     setCancelling(true);
@@ -118,7 +118,7 @@ function Billing() {
         return;
       }
       setTopUpFeedback(t(
-        `تم إنشاء طلب دفع بقيمة ${topUpQty} ر.س. الدفع قيد التهيئة.`,
+        `تم إنشاء طلب دفع بقيمة ${topUpQty} ر.س. الدفع قيد التهيئة`,
         `Payment request created for ${topUpQty} SAR. Checkout is being configured.`
       ));
     } catch (e: any) {
@@ -220,7 +220,7 @@ function Billing() {
                     )}
                     {subscription.cancelled_at && (
                       <div className="rounded-v2-md border border-amber-200 bg-amber-50 px-3 py-2 font-ar text-[12px] text-amber-800">
-                        {t('تم إلغاء التجديد التلقائي. الاشتراك يبقى نشطاً حتى نهاية الفترة.', 'Auto-renewal cancelled. Subscription stays active until period end.')}
+                        {t('تم إلغاء التجديد التلقائي. الاشتراك يبقى نشطاً حتى نهاية الفترة', 'Auto-renewal cancelled. Subscription stays active until period end.')}
                       </div>
                     )}
                   </div>
@@ -228,7 +228,7 @@ function Billing() {
               ) : (
                 <>
                   <div className="font-ar text-[14px] text-v2-body">
-                    {t('لا يوجد اشتراك نشط حالياً.', 'No active subscription.')}
+                    {t('لا يوجد اشتراك نشط حالياً', 'No active subscription.')}
                   </div>
                   <Button
                     variant="primary"
@@ -353,7 +353,7 @@ function Billing() {
 
               {transactions.paymentTransactions.length === 0 && transactions.tokenTransactions.length === 0 ? (
                 <div className="py-6 text-center font-ar text-[13px] text-v2-dim">
-                  {t('لا توجد معاملات بعد.', 'No transactions yet.')}
+                  {t('لا توجد معاملات بعد', 'No transactions yet.')}
                 </div>
               ) : (
                 <div className="space-y-2">

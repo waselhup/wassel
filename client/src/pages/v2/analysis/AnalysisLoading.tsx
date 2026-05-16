@@ -234,9 +234,9 @@ export default function AnalysisLoading() {
     } catch (e: any) {
       apiDoneRef.current = true;
       const code: string = e?.data?.code || e?.code || '';
-      const msg: string = e?.message || (isAr ? 'فشل التحليل. أعد المحاولة.' : 'Analysis failed. Please try again.');
+      const msg: string = e?.message || (isAr ? 'فشل التحليل. أعد المحاولة' : 'Analysis failed. Please try again.');
       let friendly = msg;
-      if (code === 'NOT_FOUND') friendly = isAr ? 'لم نعثر على هذا البروفايل على لينكد إن.' : "We couldn't find this LinkedIn profile.";
+      if (code === 'NOT_FOUND') friendly = isAr ? 'لم نعثر على هذا البروفايل على لينكد إن' : "We couldn't find this LinkedIn profile.";
       setError(friendly);
       setPhase('error');
     }
@@ -292,14 +292,14 @@ export default function AnalysisLoading() {
           <Eyebrow className="mb-1.5">RADAR · IN PROGRESS</Eyebrow>
           <h1 className="font-ar font-bold leading-tight text-v2-ink text-[24px] lg:text-[30px] max-w-[460px]">
             {phase === 'error'
-              ? (isAr ? 'تعذّر إكمال التحليل.' : "We couldn't finish the analysis.")
-              : (isAr ? 'نُجري تحليلاً عميقاً لبروفايلك.' : 'Running a deep analysis on your profile.')}
+              ? (isAr ? 'تعذّر إكمال التحليل' : "We couldn't finish the analysis.")
+              : (isAr ? 'نُجري تحليلاً عميقاً لبروفايلك' : 'Running a deep analysis on your profile.')}
           </h1>
           <p className="mt-2 font-ar text-[14px] text-v2-dim max-w-[440px]">
             {phase === 'error'
-              ? (isAr ? 'لم يتم خصم أي توكنات. يمكنك إعادة المحاولة بأمان.' : 'No tokens were charged. You can safely retry.')
+              ? (isAr ? 'لم يتم خصم أي توكنات. يمكنك إعادة المحاولة بأمان' : 'No tokens were charged. You can safely retry.')
               : (isAr
-                ? 'التحليل الشامل يحتاج 60–120 ثانية للحصول على أفضل النتائج.'
+                ? 'التحليل الشامل يحتاج 60–120 ثانية للحصول على أفضل النتائج'
                 : 'Deep analysis needs 60–120 seconds for the best results.')}
           </p>
           {phase !== 'error' && (
@@ -407,7 +407,7 @@ export default function AnalysisLoading() {
             <span className="text-v2-body">{isAr ? 'لمسات أخيرة…' : 'Final touches…'}</span>
           ) : (
             <span className="text-v2-dim">
-              {isAr ? 'تحليل عميق جارٍ — لا تُغلق النافذة.' : 'Deep analysis running — keep this tab open.'}
+              {isAr ? 'تحليل عميق جارٍ — لا تُغلق النافذة' : 'Deep analysis running — keep this tab open.'}
             </span>
           )}
         </div>

@@ -38,10 +38,10 @@ function num(v: unknown): number {
 }
 
 const FAQ_AR: { q: string; a: string }[] = [
-  { q: 'هل أستطيع الإلغاء في أي وقت؟', a: 'نعم. الإلغاء فوري بدون التزام، ويمكنك الاستمرار حتى نهاية فترة الاشتراك المدفوع.' },
-  { q: 'هل تتجدّد التوكن شهرياً؟',     a: 'نعم. كل اشتراك يجدّد رصيد التوكن في تاريخ التجديد، ولا تتراكم التوكن غير المستخدمة.' },
-  { q: 'هل أستطيع الترقية أو التخفيض لاحقاً؟', a: 'نعم. الترقية تطبَّق فوراً بفرق سعر متناسب، والتخفيض يبدأ من فترة التجديد القادمة.' },
-  { q: 'كيف يتم الدفع؟', a: 'ندعم البطاقات السعودية ومدى وApple Pay عبر بوّابة Moyasar الآمنة. الفواتير تصل بالبريد فور الاشتراك.' },
+  { q: 'هل أستطيع الإلغاء في أي وقت؟', a: 'نعم. الإلغاء فوري بدون التزام، ويمكنك الاستمرار حتى نهاية فترة الاشتراك المدفوع' },
+  { q: 'هل تتجدّد التوكن شهرياً؟',     a: 'نعم. كل اشتراك يجدّد رصيد التوكن في تاريخ التجديد، ولا تتراكم التوكن غير المستخدمة' },
+  { q: 'هل أستطيع الترقية أو التخفيض لاحقاً؟', a: 'نعم. الترقية تطبَّق فوراً بفرق سعر متناسب، والتخفيض يبدأ من فترة التجديد القادمة' },
+  { q: 'كيف يتم الدفع؟', a: 'ندعم البطاقات السعودية ومدى وApple Pay عبر بوّابة Moyasar الآمنة. الفواتير تصل بالبريد فور الاشتراك' },
 ];
 
 const FAQ_EN: { q: string; a: string }[] = [
@@ -135,10 +135,10 @@ function Pricing() {
         <section className="mb-6 lg:mb-0 lg:py-20 lg:text-center">
           <Eyebrow className="mb-2 block !text-teal-700 lg:mb-3">PRICING</Eyebrow>
           <h1 className="font-ar font-bold leading-tight text-v2-ink text-[26px] lg:text-[48px]">
-            {t('اختر الباقة المناسبة.', 'Pick the plan that fits.')}
+            {t('اختر الباقة المناسبة', 'Pick the plan that fits.')}
           </h1>
           <p className="mt-2 font-ar leading-relaxed text-v2-body text-[14px] lg:mx-auto lg:mt-4 lg:max-w-[560px] lg:text-[17px]">
-            {t('ابدأ مجاناً، ارقَ متى احتجت، الغِ متى شئت.', 'Start free, upgrade when you need it, cancel anytime.')}
+            {t('ابدأ مجاناً، ارقَ متى احتجت، الغِ متى شئت', 'Start free, upgrade when you need it, cancel anytime.')}
           </p>
         </section>
 
@@ -183,7 +183,7 @@ function Pricing() {
 
         {error && (
           <div className="rounded-v2-md border border-red-200 bg-red-50 p-4 text-center font-ar text-red-700 text-[13px]">
-            {t('تعذّر تحميل الباقات. حاول مرة أخرى.', 'Could not load plans. Please retry.')}
+            {t('تعذّر تحميل الباقات. حاول مرة أخرى', 'Could not load plans. Please retry.')}
           </div>
         )}
 
