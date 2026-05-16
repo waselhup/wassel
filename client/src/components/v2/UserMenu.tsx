@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type HTMLAttributes } from 'react';
 import { useLocation } from 'wouter';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -21,11 +22,18 @@ export interface UserMenuItem {
   destructive?: boolean;
 }
 
-const PLAN_LABELS: Record<string, string> = {
+const PLAN_LABELS_AR: Record<string, string> = {
   free: 'الخطة المجانية',
   starter: 'خطة البداية',
   pro: 'الخطة الاحترافية',
   elite: 'خطة إيليت',
+};
+
+const PLAN_LABELS_EN: Record<string, string> = {
+  free: 'Free plan',
+  starter: 'Starter plan',
+  pro: 'Pro plan',
+  elite: 'Elite plan',
 };
 
 const ChevronDown = (
@@ -56,11 +64,14 @@ function UserMenu({
 }: UserMenuProps) {
   const [, navigate] = useLocation();
   const { user, profile, signOut } = useAuth();
+  const { i18n } = useTranslation();
+  const isAr = (i18n.language || 'ar').startsWith('ar');
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement | null>(null);
 
+  const planDict = isAr ? PLAN_LABELS_AR : PLAN_LABELS_EN;
   const resolvedName = nameProp ?? firstNameOf(profile?.full_name, profile?.email ?? user?.email) ?? '';
-  const resolvedPlan = planProp ?? PLAN_LABELS[profile?.plan ?? 'free'] ?? 'الخطة المجانية';
+  const resolvedPlan = planProp ?? planDict[profile?.plan ?? 'free'] ?? planDict.free;
   const avatarUrl = profile?.avatar_url ?? null;
 
   const handleSignOut = async () => {
@@ -69,9 +80,9 @@ function UserMenu({
   };
 
   const defaultItems: UserMenuItem[] = items ?? [
-    { id: 'profile',  label: 'الملف الشخصي', href: '/v2/me' },
-    { id: 'settings', label: 'الإعدادات',    href: '/v2/me' },
-    { id: 'logout',   label: 'تسجيل الخروج',  onSelect: handleSignOut, destructive: true },
+    { id: 'profile',  label: isAr ? 'الملف الشخصي' : 'Profile',  href: '/v2/me' },
+    { id: 'settings', label: isAr ? 'الإعدادات'    : 'Settings', href: '/v2/me' },
+    { id: 'logout',   label: isAr ? 'تسجيل الخروج'  : 'Sign out', onSelect: handleSignOut, destructive: true },
   ];
 
   // Close on outside click and Escape.
@@ -104,7 +115,7 @@ function UserMenu({
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-label={`قائمة الحساب — ${resolvedName}`}
+        aria-label={`${isAr ? 'قائمة الحساب' : 'Account menu'} — ${resolvedName}`}
         className={cn(
           'flex items-center gap-1.5 h-9 ps-1 pe-2 rounded-v2-pill cursor-pointer',
           'border border-transparent hover:bg-v2-canvas-2 transition-colors duration-200 ease-out',
@@ -134,7 +145,7 @@ function UserMenu({
       {open && (
         <div
           role="menu"
-          aria-label="قائمة الحساب"
+          aria-label={isAr ? 'قائمة الحساب' : 'Account menu'}
           className={cn(
             'absolute top-[calc(100%+8px)] end-0 z-40 min-w-[224px]',
             'rounded-v2-md border border-v2-line bg-v2-surface shadow-lift',

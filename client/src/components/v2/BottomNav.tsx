@@ -1,4 +1,5 @@
 import type { HTMLAttributes, ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 
 export type BottomNavItemId = 'home' | 'analyze' | 'tools' | 'profile' | 'posts' | 'activity';
@@ -52,12 +53,14 @@ const ProfileIcon = (
   </svg>
 );
 
-const defaultItems: BottomNavItem[] = [
-  { id: 'home',    label: 'الرئيسية', icon: HomeIcon },
-  { id: 'analyze', label: 'الرادار',  icon: RadarIcon },
-  { id: 'tools',   label: 'الأدوات',  icon: ToolsIcon },
-  { id: 'profile', label: 'حسابي',    icon: ProfileIcon },
-];
+function buildDefaultItems(isAr: boolean): BottomNavItem[] {
+  return [
+    { id: 'home',    label: isAr ? 'الرئيسية' : 'Home',    icon: HomeIcon },
+    { id: 'analyze', label: isAr ? 'الرادار'   : 'Radar',   icon: RadarIcon },
+    { id: 'tools',   label: isAr ? 'الأدوات'   : 'Tools',   icon: ToolsIcon },
+    { id: 'profile', label: isAr ? 'حسابي'     : 'Account', icon: ProfileIcon },
+  ];
+}
 
 const fabIcons: Record<FabIconName, ReactNode> = {
   plus: (
@@ -80,12 +83,16 @@ const fabIcons: Record<FabIconName, ReactNode> = {
 function BottomNav({
   className,
   active,
-  items = defaultItems,
+  items: itemsProp,
   fabIcon = 'plus',
   onFabClick,
-  fabLabel = 'إجراء',
+  fabLabel: fabLabelProp,
   ...rest
 }: BottomNavProps) {
+  const { i18n } = useTranslation();
+  const isAr = (i18n.language || 'ar').startsWith('ar');
+  const items = itemsProp ?? buildDefaultItems(isAr);
+  const fabLabel = fabLabelProp ?? (isAr ? 'إجراء' : 'Action');
   // The FAB is centered. We split the items into two halves so the FAB sits between them.
   const half = Math.ceil(items.length / 2);
   const left = items.slice(0, half);

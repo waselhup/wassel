@@ -19,8 +19,11 @@ import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/contexts/AuthContext';
 
 type Tab = 'drafts' | 'published' | 'templates';
-type Status = 'مسودة' | 'جاهز للنشر' | 'منشور';
+type Status = 'draft' | 'scheduled' | 'posted';
 type Tone = 'professional' | 'friendly' | 'motivational' | 'analytical';
+
+const STATUS_LABEL_AR: Record<Status, string> = { draft: 'مسودة', scheduled: 'جاهز للنشر', posted: 'منشور' };
+const STATUS_LABEL_EN: Record<Status, string> = { draft: 'Draft', scheduled: 'Scheduled', posted: 'Published' };
 
 const TONE_MAP: Record<Tone, string> = {
   professional: 'professional',
@@ -40,6 +43,18 @@ const TONE_LABEL_AR: Record<string, string> = {
   storytelling: 'قصصي',
   sarcastic: 'ساخر',
   provocative: 'صادم',
+};
+const TONE_LABEL_EN: Record<string, string> = {
+  professional: 'Professional',
+  friendly: 'Friendly',
+  motivational: 'Motivational',
+  analytical: 'Analytical',
+  humorous: 'Humorous',
+  humble: 'Humble',
+  bold: 'Bold',
+  storytelling: 'Storytelling',
+  sarcastic: 'Sarcastic',
+  provocative: 'Provocative',
 };
 
 interface ServerPost {
@@ -72,46 +87,64 @@ interface Template {
 }
 
 // Every post variant costs 5 tokens (linkedin_post canonical price).
-const TEMPLATES: Template[] = [
-  { id: 't1', title: 'منشور رأي', description: 'مقدمة جذابة + 3 نقاط + خاتمة', cost: 5 },
-  { id: 't2', title: 'دراسة حالة', description: 'تحدّي · حل · نتيجة', cost: 5 },
-  { id: 't3', title: 'تأمل أسبوعي', description: 'ماذا تعلّمت هذا الأسبوع', cost: 5 },
-  { id: 't4', title: 'إعلان إنجاز', description: 'متواضع لكن واثق', cost: 5 },
-  { id: 't5', title: 'منشور سرد قصصي', description: 'لحظة → درس → دعوة', cost: 5 },
-];
+function buildTemplates(isAr: boolean): Template[] {
+  return isAr ? [
+    { id: 't1', title: 'منشور رأي', description: 'مقدمة جذابة + 3 نقاط + خاتمة', cost: 5 },
+    { id: 't2', title: 'دراسة حالة', description: 'تحدّي · حل · نتيجة', cost: 5 },
+    { id: 't3', title: 'تأمل أسبوعي', description: 'ماذا تعلّمت هذا الأسبوع', cost: 5 },
+    { id: 't4', title: 'إعلان إنجاز', description: 'متواضع لكن واثق', cost: 5 },
+    { id: 't5', title: 'منشور سرد قصصي', description: 'لحظة → درس → دعوة', cost: 5 },
+  ] : [
+    { id: 't1', title: 'Opinion post',  description: 'Hook + 3 points + close', cost: 5 },
+    { id: 't2', title: 'Case study',    description: 'Challenge · solution · result', cost: 5 },
+    { id: 't3', title: 'Weekly reflection', description: 'What you learned this week', cost: 5 },
+    { id: 't4', title: 'Achievement',   description: 'Humble but confident', cost: 5 },
+    { id: 't5', title: 'Story post',    description: 'Moment → lesson → CTA', cost: 5 },
+  ];
+}
 
-const TONES: { id: Tone; label: string }[] = [
-  { id: 'professional', label: 'مهنية' },
-  { id: 'friendly',     label: 'ودودة' },
-  { id: 'motivational', label: 'ملهمة' },
-  { id: 'analytical',   label: 'تحليلية' },
-];
+function buildTones(isAr: boolean): { id: Tone; label: string }[] {
+  const labels = isAr ? TONE_LABEL_AR : TONE_LABEL_EN;
+  return [
+    { id: 'professional', label: labels.professional },
+    { id: 'friendly',     label: labels.friendly },
+    { id: 'motivational', label: labels.motivational },
+    { id: 'analytical',   label: labels.analytical },
+  ];
+}
 
 const COMPOSE_COST = 5;
 
 function statusFromServer(s: 'draft' | 'scheduled' | 'posted'): Status {
-  if (s === 'posted') return 'منشور';
-  if (s === 'scheduled') return 'جاهز للنشر';
-  return 'مسودة';
+  return s; // keep server enum as-is; render via STATUS_LABEL_* maps
 }
 
-function relativeArDate(iso: string): string {
+function relativeDate(iso: string, isAr: boolean): string {
   const created = new Date(iso).getTime();
   if (Number.isNaN(created)) return '';
   const diffMs = Date.now() - created;
   const diffMin = Math.floor(diffMs / 60_000);
-  if (diffMin < 1) return 'الآن';
-  if (diffMin < 60) return `قبل ${diffMin} د`;
+  if (isAr) {
+    if (diffMin < 1) return 'الآن';
+    if (diffMin < 60) return `قبل ${diffMin} د`;
+    const diffH = Math.floor(diffMin / 60);
+    if (diffH < 24) return `قبل ${diffH} س`;
+    const diffD = Math.floor(diffH / 24);
+    if (diffD < 7) return `قبل ${diffD} ي`;
+    return new Date(iso).toLocaleDateString('ar-SA', { month: 'short', day: 'numeric' });
+  }
+  if (diffMin < 1) return 'now';
+  if (diffMin < 60) return `${diffMin} min ago`;
   const diffH = Math.floor(diffMin / 60);
-  if (diffH < 24) return `قبل ${diffH} س`;
+  if (diffH < 24) return `${diffH} hr ago`;
   const diffD = Math.floor(diffH / 24);
-  if (diffD < 7) return `قبل ${diffD} ي`;
-  return new Date(iso).toLocaleDateString('ar-SA', { month: 'short', day: 'numeric' });
+  if (diffD < 7) return `${diffD} day${diffD > 1 ? 's' : ''} ago`;
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-function toUiPost(p: ServerPost): UiPost {
+function toUiPost(p: ServerPost, isAr: boolean): UiPost {
   const content = p.content || '';
-  const topic = (p.topic || content.slice(0, 60) || 'منشور').trim();
+  const topic = (p.topic || content.slice(0, 60) || (isAr ? 'منشور' : 'Post')).trim();
   const preview = content.replace(/\s+/g, ' ').trim().slice(0, 200);
   return {
     id: p.id,
@@ -119,20 +152,21 @@ function toUiPost(p: ServerPost): UiPost {
     content,
     preview: preview || '—',
     status: statusFromServer(p.status),
-    date: relativeArDate(p.created_at),
+    date: relativeDate(p.created_at, isAr),
     words: content ? content.trim().split(/\s+/).length : 0,
     tones: Array.isArray(p.tones) ? p.tones : [],
   };
 }
 
-function StatusPill({ status }: { status: Status }) {
+function StatusPill({ status, isAr }: { status: Status; isAr: boolean }) {
   const tone =
-    status === 'جاهز للنشر' ? 'bg-teal-50 text-teal-700 border-teal-100' :
-    status === 'منشور'      ? 'bg-v2-indigo-50 text-v2-indigo border-v2-indigo/30' :
-                              'bg-v2-canvas-2 text-v2-dim border-v2-line';
+    status === 'scheduled' ? 'bg-teal-50 text-teal-700 border-teal-100' :
+    status === 'posted'    ? 'bg-v2-indigo-50 text-v2-indigo border-v2-indigo/30' :
+                             'bg-v2-canvas-2 text-v2-dim border-v2-line';
+  const label = (isAr ? STATUS_LABEL_AR : STATUS_LABEL_EN)[status];
   return (
     <span className={`shrink-0 rounded-full border px-2 py-0.5 font-ar text-[10px] font-semibold whitespace-nowrap ${tone}`}>
-      {status}
+      {label}
     </span>
   );
 }
@@ -143,9 +177,10 @@ interface PostRowProps {
   onDelete: (p: UiPost) => void;
   onCopy: (p: UiPost) => void;
   onView: (p: UiPost) => void;
+  isAr: boolean;
 }
 
-function PostRow({ post, onPublish, onDelete, onCopy, onView }: PostRowProps) {
+function PostRow({ post, onPublish, onDelete, onCopy, onView, isAr }: PostRowProps) {
   return (
     <div
       role="button"
@@ -157,7 +192,7 @@ function PostRow({ post, onPublish, onDelete, onCopy, onView }: PostRowProps) {
         <div className="flex-1 font-ar text-[14px] font-semibold text-v2-ink lg:text-[15px]">
           {post.topic}
         </div>
-        <StatusPill status={post.status} />
+        <StatusPill status={post.status} isAr={isAr} />
       </div>
       <p className="mb-2.5 line-clamp-2 font-ar text-[13px] leading-relaxed text-v2-body lg:line-clamp-3">
         {post.preview}
@@ -168,24 +203,24 @@ function PostRow({ post, onPublish, onDelete, onCopy, onView }: PostRowProps) {
             key={tn}
             className="rounded-full border border-v2-line bg-v2-canvas-2 px-2 py-0.5 font-ar text-[10px] font-medium text-v2-body"
           >
-            {TONE_LABEL_AR[tn] || tn}
+            {(isAr ? TONE_LABEL_AR : TONE_LABEL_EN)[tn] || tn}
           </span>
         ))}
       </div>
       <div className="flex items-center gap-3.5 text-[11px] text-v2-dim">
         <NumDisplay>{post.words}</NumDisplay>
-        <span className="font-ar">كلمة</span>
+        <span className="font-ar">{isAr ? 'كلمة' : 'words'}</span>
         <span>·</span>
         <span className="font-ar">{post.date}</span>
       </div>
       <div className="mt-3 flex flex-wrap gap-2">
-        {post.status !== 'منشور' && (
+        {post.status !== 'posted' && (
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); onPublish(post); }}
             className="rounded-v2-md border border-teal-600 bg-teal-600 px-3 py-1.5 font-ar text-[12px] font-semibold text-white hover:bg-teal-700 cursor-pointer transition-colors"
           >
-            نشر على LinkedIn
+            {isAr ? 'نشر على LinkedIn' : 'Publish to LinkedIn'}
           </button>
         )}
         <button
@@ -193,14 +228,14 @@ function PostRow({ post, onPublish, onDelete, onCopy, onView }: PostRowProps) {
           onClick={(e) => { e.stopPropagation(); onCopy(post); }}
           className="rounded-v2-md border border-v2-line bg-v2-surface px-3 py-1.5 font-ar text-[12px] font-medium text-v2-ink hover:bg-v2-canvas-2 cursor-pointer transition-colors"
         >
-          نسخ
+          {isAr ? 'نسخ' : 'Copy'}
         </button>
         <button
           type="button"
           onClick={(e) => { e.stopPropagation(); onDelete(post); }}
           className="rounded-v2-md border border-v2-line bg-v2-surface px-3 py-1.5 font-ar text-[12px] font-medium text-red-600 hover:bg-red-50 cursor-pointer transition-colors"
         >
-          حذف
+          {isAr ? 'حذف' : 'Delete'}
         </button>
       </div>
     </div>
@@ -220,13 +255,14 @@ interface ComposerProps {
   desktop?: boolean;
 }
 
-function Composer({ topic, setTopic, content, setContent, tone, setTone, onGenerate, generating = false, desktop = false }: ComposerProps) {
+function Composer({ topic, setTopic, content, setContent, tone, setTone, onGenerate, generating = false, desktop = false, isAr }: ComposerProps & { isAr: boolean }) {
   const taMin = desktop ? 'min-h-[260px]' : 'min-h-[180px]';
+  const TONES = buildTones(isAr);
 
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <Eyebrow className="mb-2 block">الموضوع</Eyebrow>
+        <Eyebrow className="mb-2 block">{isAr ? 'الموضوع' : 'Topic'}</Eyebrow>
         <input
           value={topic}
           onChange={(e) => setTopic(e.target.value)}
@@ -235,27 +271,27 @@ function Composer({ topic, setTopic, content, setContent, tone, setTone, onGener
       </div>
 
       <div>
-        <Eyebrow className="mb-2 block">المحتوى</Eyebrow>
+        <Eyebrow className="mb-2 block">{isAr ? 'المحتوى' : 'Content'}</Eyebrow>
         <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          placeholder="ابدأ بفكرتك الأساسية، أو اضغط ولّد وسنبدأ معك..."
+          placeholder={isAr ? 'ابدأ بفكرتك الأساسية، أو اضغط ولّد وسنبدأ معك…' : 'Start with your main idea, or hit Generate and we will draft with you…'}
           className={`${taMin} w-full resize-none rounded-v2-md border border-v2-line bg-v2-surface px-3.5 py-3.5 font-ar text-[14px] leading-relaxed text-v2-ink outline-none placeholder:text-v2-mute focus:border-teal-500 focus:ring-2 focus:ring-teal-500/30`}
         />
       </div>
 
       <div>
-        <Eyebrow className="mb-2.5 block">النبرة</Eyebrow>
+        <Eyebrow className="mb-2.5 block">{isAr ? 'النبرة' : 'Tone'}</Eyebrow>
         <div className="flex flex-wrap gap-1.5">
-          {TONES.map((t) => (
+          {TONES.map((tn) => (
             <Pill
-              key={t.id}
+              key={tn.id}
               size="sm"
               tone="neutral"
-              selected={tone === t.id}
-              onClick={() => setTone(t.id)}
+              selected={tone === tn.id}
+              onClick={() => setTone(tn.id)}
             >
-              {t.label}
+              {tn.label}
             </Pill>
           ))}
         </div>
@@ -263,9 +299,9 @@ function Composer({ topic, setTopic, content, setContent, tone, setTone, onGener
 
       <div className="flex items-center justify-between border-y border-v2-line py-3.5">
         <div>
-          <Eyebrow>التكلفة</Eyebrow>
+          <Eyebrow>{isAr ? 'التكلفة' : 'Cost'}</Eyebrow>
           <p className="mt-0.5 font-ar text-[14px] font-semibold text-v2-ink">
-            <NumDisplay>{COMPOSE_COST}</NumDisplay> توكن · ≈ <NumDisplay>150</NumDisplay> كلمة
+            <NumDisplay>{COMPOSE_COST}</NumDisplay> {isAr ? 'توكن · ≈' : 'tokens · ≈'} <NumDisplay>150</NumDisplay> {isAr ? 'كلمة' : 'words'}
           </p>
         </div>
       </div>
@@ -288,7 +324,9 @@ function Composer({ topic, setTopic, content, setContent, tone, setTone, onGener
         }
         onClick={onGenerate}
       >
-        {generating ? 'جارٍ التوليد...' : 'ولّد بالذكاء الاصطناعي'}
+        {generating
+          ? (isAr ? 'جارٍ التوليد…' : 'Generating…')
+          : (isAr ? 'ولّد بالذكاء الاصطناعي' : 'Generate with AI')}
       </Button>
     </div>
   );
@@ -296,7 +334,8 @@ function Composer({ topic, setTopic, content, setContent, tone, setTone, onGener
 
 function Posts() {
   const [, navigate] = useLocation();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isAr = (i18n.language || 'ar').startsWith('ar');
   const { addJob } = useJobs();
   const { showToast } = useToast();
   const { refreshProfile } = useAuth();
@@ -331,19 +370,19 @@ function Posts() {
   }, []);
 
   const drafts = useMemo<UiPost[]>(
-    () => posts.filter((p) => p.status === 'draft' || p.status === 'scheduled').map(toUiPost),
-    [posts]
+    () => posts.filter((p) => p.status === 'draft' || p.status === 'scheduled').map((p) => toUiPost(p, isAr)),
+    [posts, isAr]
   );
   const published = useMemo<UiPost[]>(
-    () => posts.filter((p) => p.status === 'posted').map(toUiPost),
-    [posts]
+    () => posts.filter((p) => p.status === 'posted').map((p) => toUiPost(p, isAr)),
+    [posts, isAr]
   );
 
   const generate = async () => {
     const trimmed = topic.trim();
     const fullTopic = content.trim() ? `${trimmed}\n\n${content.trim()}` : trimmed;
     if (fullTopic.length < 10) {
-      showToast({ message: 'الموضوع قصير جداً — 10 أحرف على الأقل', tone: 'error' });
+      showToast({ message: isAr ? 'الموضوع قصير جداً — 10 أحرف على الأقل' : 'Topic is too short — 10 chars minimum', tone: 'error' });
       return;
     }
     console.log('[v2/posts] generate STARTING', { topic: trimmed.slice(0, 60), tone });
@@ -352,7 +391,7 @@ function Posts() {
 
     addJob({
       type: 'post-generation',
-      title: trimmed || 'منشور جديد',
+      title: trimmed || (isAr ? 'منشور جديد' : 'New post'),
       durationMs: 15000,
     });
 
@@ -373,7 +412,7 @@ function Posts() {
       setTab('drafts');
       if (result?.id) setHighlightId(result.id);
       showToast({
-        message: t('posts.studio.generate.success', 'تم توليد المنشور بنجاح ✨'),
+        message: t('posts.studio.generate.success', isAr ? 'تم توليد المنشور بنجاح ✨' : 'Post generated successfully ✨'),
         tone: 'success',
       });
       // Clear inputs so the user is ready for the next one.
@@ -382,9 +421,9 @@ function Posts() {
       console.error('[v2/posts] generate ERROR', err);
       // Pull a sensible message: tRPC errors expose .message; classifyClaudeError already returns Arabic.
       const code = (err as any)?.data?.code;
-      let message: string = err?.message || 'فشل التوليد — حاول مرة أخرى';
+      let message: string = err?.message || (isAr ? 'فشل التوليد — حاول مرة أخرى' : 'Generation failed — please try again');
       if (code === 'UNAUTHORIZED') {
-        message = 'انتهت الجلسة — سجّل دخول من جديد';
+        message = isAr ? 'انتهت الجلسة — سجّل دخول من جديد' : 'Session expired — sign in again';
       }
       showToast({ message, tone: 'error', duration: 7000 });
     } finally {
@@ -405,13 +444,13 @@ function Posts() {
   }
 
   async function deletePost(p: UiPost) {
-    if (!confirm('حذف هذا المنشور؟')) return;
+    if (!confirm(isAr ? 'حذف هذا المنشور؟' : 'Delete this post?')) return;
     try {
       await trpc.posts.delete({ id: p.id });
       setPosts((cur) => cur.filter((x) => x.id !== p.id));
-      showToast({ message: 'تم الحذف', tone: 'success' });
+      showToast({ message: isAr ? 'تم الحذف' : 'Deleted', tone: 'success' });
     } catch (e: any) {
-      showToast({ message: e?.message || 'فشل الحذف', tone: 'error' });
+      showToast({ message: e?.message || (isAr ? 'فشل الحذف' : 'Delete failed'), tone: 'error' });
     }
   }
 
@@ -419,15 +458,16 @@ function Posts() {
     const text = p.content.trim();
     try {
       navigator.clipboard.writeText(text);
-      showToast({ message: 'تم النسخ', tone: 'success' });
+      showToast({ message: isAr ? 'تم النسخ' : 'Copied', tone: 'success' });
     } catch {
-      showToast({ message: 'تعذر النسخ — انسخ يدوياً', tone: 'error' });
+      showToast({ message: isAr ? 'تعذر النسخ — انسخ يدوياً' : 'Copy failed — copy manually', tone: 'error' });
     }
   }
 
   // On desktop the composer is "always visible" in its column — no toggle.
   const desktopComposerVisible = isDesktop;
 
+  const TEMPLATES = buildTemplates(isAr);
   const counts = {
     drafts:    drafts.length,
     published: published.length,
@@ -435,9 +475,9 @@ function Posts() {
   };
 
   const tabs: { id: Tab; label: string; count: number }[] = [
-    { id: 'drafts',    label: 'مسودات',  count: counts.drafts },
-    { id: 'published', label: 'منشورة',  count: counts.published },
-    { id: 'templates', label: 'قوالب',   count: counts.templates },
+    { id: 'drafts',    label: isAr ? 'مسودات' : 'Drafts',    count: counts.drafts },
+    { id: 'published', label: isAr ? 'منشورة' : 'Published', count: counts.published },
+    { id: 'templates', label: isAr ? 'قوالب'  : 'Templates', count: counts.templates },
   ];
 
   const showSkeleton = initialLoading || postsLoading;
@@ -461,8 +501,8 @@ function Posts() {
           {tab === 'drafts' && (
             drafts.length === 0 ? (
               <EmptyState
-                title="لا توجد مسودات بعد"
-                description="ابدأ بمنشور جديد من زر الأعلى أو من أحد القوالب الجاهزة"
+                title={isAr ? 'لا توجد مسودات بعد' : 'No drafts yet'}
+                description={isAr ? 'ابدأ بمنشور جديد من زر الأعلى أو من أحد القوالب الجاهزة' : 'Start a new post from the button above, or pick a ready template'}
               />
             ) : (
               <div className="flex flex-col lg:grid lg:grid-cols-2 lg:gap-4 lg:pt-2">
@@ -471,7 +511,7 @@ function Posts() {
                     key={p.id}
                     className={p.id === highlightId ? 'rounded-v2-lg ring-2 ring-teal-400 transition-all duration-700' : ''}
                   >
-                    <PostRow post={p} onPublish={publishVariation} onDelete={deletePost} onCopy={copyPost} onView={setViewing} />
+                    <PostRow post={p} onPublish={publishVariation} onDelete={deletePost} onCopy={copyPost} onView={setViewing} isAr={isAr} />
                   </div>
                 ))}
               </div>
@@ -481,13 +521,13 @@ function Posts() {
           {tab === 'published' && (
             published.length === 0 ? (
               <EmptyState
-                title="لا توجد منشورات بعد"
-                description="عند نشر مسوداتك، ستظهر هنا"
+                title={isAr ? 'لا توجد منشورات بعد' : 'No published posts yet'}
+                description={isAr ? 'عند نشر مسوداتك، ستظهر هنا' : 'Once you publish your drafts, they appear here'}
               />
             ) : (
               <div className="flex flex-col lg:grid lg:grid-cols-2 lg:gap-4 lg:pt-2">
                 {published.map((p) => (
-                  <PostRow key={p.id} post={p} onPublish={publishVariation} onDelete={deletePost} onCopy={copyPost} onView={setViewing} />
+                  <PostRow key={p.id} post={p} onPublish={publishVariation} onDelete={deletePost} onCopy={copyPost} onView={setViewing} isAr={isAr} />
                 ))}
               </div>
             )
@@ -511,7 +551,7 @@ function Posts() {
                     <span className="block text-[12px] text-v2-dim lg:mt-1">{tp.description}</span>
                   </div>
                   <NumDisplay className="text-[11px] text-v2-body lg:mt-2 lg:text-[12px] lg:font-semibold lg:text-teal-700">
-                    {tp.cost} توكن
+                    {tp.cost} {isAr ? 'توكن' : 'tokens'}
                   </NumDisplay>
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true" className="rtl:rotate-180 lg:hidden">
                     <path d="M4 3 L8 6 L4 9" stroke="var(--mute)" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
@@ -530,7 +570,7 @@ function Posts() {
       <Topbar
         back
         onBack={() => navigate('/v2/home')}
-        title={t('v2.posts.title', 'الاستوديو')}
+        title={t('v2.posts.title', isAr ? 'الاستوديو' : 'Studio')}
         bg="canvas"
         trailing={
           <Button
@@ -539,14 +579,14 @@ function Posts() {
             onClick={() => setComposerOpen(true)}
             leadingIcon={<span className="text-[14px] leading-none">+</span>}
           >
-            جديد
+            {isAr ? 'جديد' : 'New'}
           </Button>
         }
       />
 
       {/* Tabs row — full width on both. lg:max-w confines to list column */}
       <div className="border-b border-v2-line lg:border-b-0">
-        <div role="tablist" aria-label="مرشحات الاستوديو" className="flex gap-1 px-[22px] pt-3.5 -mb-px lg:px-0 lg:pt-0">
+        <div role="tablist" aria-label={isAr ? 'مرشحات الاستوديو' : 'Studio filters'} className="flex gap-1 px-[22px] pt-3.5 -mb-px lg:px-0 lg:pt-0">
           {tabs.map((tb) => {
             const active = tab === tb.id;
             return (
@@ -583,14 +623,15 @@ function Posts() {
         </div>
 
         {/* Composer column — desktop only, sticky aside */}
-        <aside className="hidden lg:col-span-5 lg:block lg:pt-4" aria-label="منشئ المحتوى">
+        <aside className="hidden lg:col-span-5 lg:block lg:pt-4" aria-label={isAr ? 'منشئ المحتوى' : 'Content composer'}>
           <div className="sticky top-[88px]">
             <Card padding="lg" radius="lg" elevated>
               <div className="mb-4 flex items-center justify-between">
-                <Eyebrow className="!text-teal-700">منشور جديد</Eyebrow>
-                <span className="font-ar text-[11px] text-v2-dim">AI · مدعوم بصوتك</span>
+                <Eyebrow className="!text-teal-700">{isAr ? 'منشور جديد' : 'New post'}</Eyebrow>
+                <span className="font-ar text-[11px] text-v2-dim">{isAr ? 'AI · مدعوم بصوتك' : 'AI · powered by your voice'}</span>
               </div>
               <Composer
+                isAr={isAr}
                 topic={topic}
                 setTopic={setTopic}
                 content={content}
@@ -611,9 +652,10 @@ function Posts() {
         open={composerOpen && !desktopComposerVisible}
         onClose={() => setComposerOpen(false)}
         snapPoints={[90]}
-        title="منشور جديد"
+        title={isAr ? 'منشور جديد' : 'New post'}
       >
         <Composer
+          isAr={isAr}
           topic={topic}
           setTopic={setTopic}
           content={content}
@@ -628,10 +670,10 @@ function Posts() {
       <BottomNav
         active="posts"
         items={[
-          { id: 'home',    label: 'الرئيسية', icon: <span />, onSelect: () => navigate('/v2/home') },
-          { id: 'analyze', label: 'الرادار',  icon: <span />, onSelect: () => navigate('/v2/analyze') },
-          { id: 'posts',   label: 'الاستوديو', icon: <span />, onSelect: () => navigate('/v2/posts') },
-          { id: 'profile', label: 'حسابي',    icon: <span />, onSelect: () => navigate('/v2/me') },
+          { id: 'home',    label: isAr ? 'الرئيسية' : 'Home',    icon: <span />, onSelect: () => navigate('/v2/home') },
+          { id: 'analyze', label: isAr ? 'الرادار'   : 'Radar',   icon: <span />, onSelect: () => navigate('/v2/analyze') },
+          { id: 'posts',   label: isAr ? 'الاستوديو' : 'Studio',  icon: <span />, onSelect: () => navigate('/v2/posts') },
+          { id: 'profile', label: isAr ? 'حسابي'     : 'Account', icon: <span />, onSelect: () => navigate('/v2/me') },
         ]}
         fabIcon="check"
         onFabClick={() => setComposerOpen(true)}
@@ -649,12 +691,12 @@ function Posts() {
           >
             <div className="mb-4 flex items-start justify-between gap-3">
               <div className="flex-1">
-                <Eyebrow>{viewing.status === 'منشور' ? 'PUBLISHED' : 'DRAFT'} · {viewing.date}</Eyebrow>
+                <Eyebrow>{(isAr ? STATUS_LABEL_AR : STATUS_LABEL_EN)[viewing.status]} · {viewing.date}</Eyebrow>
                 <h3 className="mt-1 font-ar text-[17px] font-bold text-v2-ink">{viewing.topic}</h3>
               </div>
               <button
                 type="button"
-                aria-label="إغلاق"
+                aria-label={isAr ? 'إغلاق' : 'Close'}
                 onClick={() => setViewing(null)}
                 className="rounded-full p-1 text-v2-mute hover:bg-v2-canvas-2 hover:text-v2-ink"
               >
@@ -668,20 +710,22 @@ function Posts() {
             </pre>
             <div className="mb-3 flex items-center gap-3 text-[12px] text-v2-dim">
               <NumDisplay>{viewing.words}</NumDisplay>
-              <span className="font-ar">كلمة</span>
+              <span className="font-ar">{isAr ? 'كلمة' : 'words'}</span>
               {viewing.tones.length > 0 && <>
                 <span>·</span>
-                <span className="font-ar">{viewing.tones.map((tn) => TONE_LABEL_AR[tn] || tn).join('، ')}</span>
+                <span className="font-ar">
+                  {viewing.tones.map((tn) => (isAr ? TONE_LABEL_AR : TONE_LABEL_EN)[tn] || tn).join(isAr ? '، ' : ', ')}
+                </span>
               </>}
             </div>
             <div className="flex flex-wrap gap-2">
-              {viewing.status !== 'منشور' && (
+              {viewing.status !== 'posted' && (
                 <button
                   type="button"
                   onClick={() => { publishVariation(viewing); setViewing(null); }}
                   className="rounded-v2-md border border-teal-600 bg-teal-600 px-3.5 py-2 font-ar text-[13px] font-semibold text-white hover:bg-teal-700 cursor-pointer"
                 >
-                  نشر على LinkedIn
+                  {isAr ? 'نشر على LinkedIn' : 'Publish to LinkedIn'}
                 </button>
               )}
               <button
@@ -689,14 +733,14 @@ function Posts() {
                 onClick={() => copyPost(viewing)}
                 className="rounded-v2-md border border-v2-line bg-v2-surface px-3.5 py-2 font-ar text-[13px] font-medium text-v2-ink hover:bg-v2-canvas-2 cursor-pointer"
               >
-                نسخ
+                {isAr ? 'نسخ' : 'Copy'}
               </button>
               <button
                 type="button"
                 onClick={() => { deletePost(viewing); setViewing(null); }}
                 className="ms-auto rounded-v2-md border border-v2-line bg-v2-surface px-3.5 py-2 font-ar text-[13px] font-medium text-red-600 hover:bg-red-50 cursor-pointer"
               >
-                حذف
+                {isAr ? 'حذف' : 'Delete'}
               </button>
             </div>
           </div>

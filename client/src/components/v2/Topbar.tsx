@@ -1,5 +1,6 @@
 import type { HTMLAttributes, ReactNode } from 'react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 import PulseBar from '@/components/v2/PulseBar';
 import JobsIndicator from '@/components/v2/JobsIndicator';
 import LangToggle from '@/components/v2/LangToggle';
@@ -53,6 +54,8 @@ function Topbar({
   showJobsIndicator = true,
   ...rest
 }: TopbarProps) {
+  const { i18n } = useTranslation();
+  const isAr = (i18n.language || 'ar').startsWith('ar');
   return (
     <div
       className={cn(
@@ -72,7 +75,7 @@ function Topbar({
             <button
               type="button"
               onClick={onBack}
-              aria-label="رجوع"
+              aria-label={isAr ? 'رجوع' : 'Back'}
               className={cn(
                 'flex h-9 w-9 items-center justify-center rounded-v2-pill',
                 'cursor-pointer text-v2-ink hover:bg-v2-canvas-2',

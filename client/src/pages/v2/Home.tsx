@@ -28,20 +28,26 @@ const PLAN_QUOTAS: Record<string, number> = {
   elite: 10000,
 };
 
-function firstNameOf(profile: { full_name: string | null } | null, user: { email?: string | null } | null): string {
+function firstNameOf(profile: { full_name: string | null } | null, user: { email?: string | null } | null, isAr: boolean): string {
   const full = profile?.full_name?.trim();
   if (full) return full.split(/\s+/)[0]!;
   const email = user?.email ?? '';
   const local = email.split('@')[0];
-  return local || 'صديقي';
+  return local || (isAr ? 'صديقي' : 'friend');
 }
 
-function greetingFor(date: Date): string {
+function greetingFor(date: Date, isAr: boolean): string {
   const h = date.getHours();
-  if (h < 5) return 'مساء الخير';
-  if (h < 12) return 'صباح الخير';
-  if (h < 18) return 'مرحباً';
-  return 'مساء الخير';
+  if (isAr) {
+    if (h < 5) return 'مساء الخير';
+    if (h < 12) return 'صباح الخير';
+    if (h < 18) return 'مرحباً';
+    return 'مساء الخير';
+  }
+  if (h < 5)  return 'Good evening';
+  if (h < 12) return 'Good morning';
+  if (h < 18) return 'Hello';
+  return 'Good evening';
 }
 
 interface QuickAction {
@@ -71,6 +77,7 @@ function useNow(intervalMs = 30_000): Date {
 }
 
 const WEEKDAY_AR = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+const WEEKDAY_EN = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 const RadarIcon = (
   <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
@@ -145,17 +152,25 @@ function Home() {
   const total = PLAN_QUOTAS[planKey] ?? PLAN_QUOTAS.free;
   const used = Math.max(0, total - balance);
   void total;
-  const firstName = firstNameOf(profile, user);
-  const greeting = `${greetingFor(now)}، ${firstName}`;
+  const firstName = firstNameOf(profile, user, isAr);
+  const greeting = isAr
+    ? `${greetingFor(now, true)}، ${firstName}`
+    : `${greetingFor(now, false)}, ${firstName}`;
   const clockHH = String(now.getHours()).padStart(2, '0');
   const clockMM = String(now.getMinutes()).padStart(2, '0');
-  const weekday = WEEKDAY_AR[now.getDay()];
+  const weekday = (isAr ? WEEKDAY_AR : WEEKDAY_EN)[now.getDay()];
 
-  const actions: QuickAction[] = [
-    { id: 'analyze', title: 'تحليل البروفايل', description: 'رادار شامل مقابل دور هدف', cost: 149, href: '/v2/analyze', icon: RadarIcon },
-    { id: 'post',    title: 'صياغة منشور',     description: 'AI · بصوتك أنت',           cost: 5,   href: '/v2/posts', icon: PostIcon },
-    { id: 'cv',      title: 'منشئ السيرة',      description: 'CV احترافي مخصّص',         cost: 129, href: '/v2/cvs',  icon: CvIcon  },
-  ];
+  const actions: QuickAction[] = isAr
+    ? [
+        { id: 'analyze', title: 'تحليل البروفايل', description: 'رادار شامل مقابل دور هدف', cost: 149, href: '/v2/analyze', icon: RadarIcon },
+        { id: 'post',    title: 'صياغة منشور',     description: 'AI · بصوتك أنت',           cost: 5,   href: '/v2/posts', icon: PostIcon },
+        { id: 'cv',      title: 'منشئ السيرة',      description: 'CV احترافي مخصّص',         cost: 129, href: '/v2/cvs',  icon: CvIcon  },
+      ]
+    : [
+        { id: 'analyze', title: 'Profile analysis', description: 'Radar against a target role', cost: 149, href: '/v2/analyze', icon: RadarIcon },
+        { id: 'post',    title: 'Generate a post',  description: 'AI · in your own voice',     cost: 5,   href: '/v2/posts', icon: PostIcon },
+        { id: 'cv',      title: 'CV builder',       description: 'ATS-ready, role-tailored CV', cost: 129, href: '/v2/cvs',  icon: CvIcon  },
+      ];
 
 
   const TokenCard = (
@@ -199,9 +214,12 @@ function Home() {
           </svg>
         </span>
         <div className="flex-1">
-          <Eyebrow className="text-teal-700">TIP · TODAY</Eyebrow>
+          <Eyebrow className="text-teal-700">{isAr ? 'نصيحة اليوم' : 'TIP · TODAY'}</Eyebrow>
           <p className="mt-1 font-ar text-[14px] leading-relaxed text-v2-ink-2">
-            المنشورات يومَي الثلاثاء والأربعاء صباحاً تحقق ظهوراً أعلى بـ <span className="font-semibold text-teal-700">3x</span> في السوق السعودي.
+            {isAr
+              ? <>المنشورات يومَي الثلاثاء والأربعاء صباحاً تحقق ظهوراً أعلى بـ <span className="font-semibold text-teal-700">3x</span> في السوق السعودي</>
+              : <>Posts on Tuesday and Wednesday mornings get <span className="font-semibold text-teal-700">3x</span> more reach in the Saudi/GCC market</>
+            }
           </p>
         </div>
       </div>
@@ -235,7 +253,7 @@ function Home() {
               <span className="block text-[12px] text-v2-dim lg:mt-0.5 lg:text-[13px]">{action.description}</span>
             </span>
             <NumDisplay className="text-[12px] text-v2-body lg:mt-1 lg:text-[12px] lg:font-semibold lg:text-teal-700">
-              {action.cost} توكن
+              {action.cost} {isAr ? 'توكن' : 'tokens'}
             </NumDisplay>
             <span className="text-v2-mute lg:hidden">{ChevronStart}</span>
           </button>
@@ -266,13 +284,15 @@ function Home() {
           ))
         ) : recentActivity.length === 0 ? (
           <div className="border-y border-v2-line px-1 py-8 text-center">
-            <p className="font-ar text-[14px] text-v2-dim">لا توجد أنشطة حديثة بعد.</p>
+            <p className="font-ar text-[14px] text-v2-dim">
+              {isAr ? 'لا توجد أنشطة حديثة بعد' : 'No recent activity yet'}
+            </p>
             <button
               type="button"
               onClick={() => navigate('/v2/analyze')}
               className="mt-2 font-ar text-[12px] font-semibold text-teal-700 hover:text-teal-600 cursor-pointer"
             >
-              ابدأ بأول تحليل ←
+              {isAr ? 'ابدأ بأول تحليل ←' : 'Start your first analysis →'}
             </button>
           </div>
         ) : (
@@ -309,13 +329,13 @@ function Home() {
               <circle cx="11" cy="11" r="5"   stroke="var(--teal-700)" strokeWidth="1.4" />
               <circle cx="11" cy="11" r="1.4" fill="var(--teal-700)" />
             </svg>
-            <span className="font-ar text-[15px] font-bold text-v2-ink">وصل</span>
+            <span className="font-ar text-[15px] font-bold text-v2-ink">{isAr ? 'وصل' : 'Wassel'}</span>
           </span>
         }
         trailing={
           <button
             type="button"
-            aria-label="بحث"
+            aria-label={isAr ? 'بحث' : 'Search'}
             className="relative flex h-9 w-9 items-center justify-center rounded-v2-pill text-v2-ink hover:bg-v2-canvas-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/30"
           >
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
@@ -464,7 +484,7 @@ function Home() {
             onClick={() => navigate('/v2/analyze')}
             className="lg:w-auto lg:px-10"
           >
-            {t('v2.home.startAnalysis', 'ابدأ تحليلاً جديداً')}
+            {t('v2.home.startAnalysis', isAr ? 'ابدأ تحليلاً جديداً' : 'Start a new analysis')}
           </Button>
         </div>
       </div>
@@ -472,10 +492,10 @@ function Home() {
       <BottomNav
         active="home"
         items={[
-          { id: 'home',    label: 'الرئيسية',  icon: <span /> , onSelect: () => navigate('/v2/home') },
-          { id: 'analyze', label: 'الرادار',   icon: <span /> , onSelect: () => navigate('/v2/analyze') },
-          { id: 'posts',   label: 'الاستوديو', icon: <span /> , onSelect: () => navigate('/v2/posts') },
-          { id: 'profile', label: 'حسابي',     icon: <span /> , onSelect: () => navigate('/v2/me') },
+          { id: 'home',    label: isAr ? 'الرئيسية'  : 'Home',    icon: <span /> , onSelect: () => navigate('/v2/home') },
+          { id: 'analyze', label: isAr ? 'الرادار'    : 'Radar',   icon: <span /> , onSelect: () => navigate('/v2/analyze') },
+          { id: 'posts',   label: isAr ? 'الاستوديو'  : 'Studio',  icon: <span /> , onSelect: () => navigate('/v2/posts') },
+          { id: 'profile', label: isAr ? 'حسابي'      : 'Account', icon: <span /> , onSelect: () => navigate('/v2/me') },
         ]}
         fabIcon="plus"
         onFabClick={() => navigate('/v2/analyze')}

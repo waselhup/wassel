@@ -145,7 +145,8 @@ function SecurityCardRow({ row, twoFA, setTwoFA }: { row: SecurityRow; twoFA: bo
 
 function Profile() {
   const [, navigate] = useLocation();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isAr = (i18n.language || 'ar').startsWith('ar');
   const { user, profile, signOut, refreshProfile } = useAuth();
   const [tab, setTab] = useState<Tab>('profile');
 
@@ -212,12 +213,12 @@ function Profile() {
   return (
     <Phone>
       <Topbar
-        title={t('v2.profile.title', 'حسابي')}
+        title={t('v2.profile.title', isAr ? 'حسابي' : 'My account')}
         bg="canvas"
         trailing={
           <button
             type="button"
-            aria-label="الإعدادات"
+            aria-label={isAr ? 'الإعدادات' : 'Settings'}
             className="flex h-9 w-9 items-center justify-center rounded-v2-pill text-v2-ink hover:bg-v2-canvas-2 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/30"
           >
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
@@ -569,10 +570,10 @@ function Profile() {
       <BottomNav
         active="profile"
         items={[
-          { id: 'home',    label: 'الرئيسية', icon: <span />, onSelect: () => navigate('/v2/home') },
-          { id: 'analyze', label: 'الرادار',  icon: <span />, onSelect: () => navigate('/v2/analyze') },
-          { id: 'posts',   label: 'الاستوديو', icon: <span />, onSelect: () => navigate('/v2/posts') },
-          { id: 'profile', label: 'حسابي',    icon: <span />, onSelect: () => navigate('/v2/me') },
+          { id: 'home',    label: isAr ? 'الرئيسية' : 'Home',    icon: <span />, onSelect: () => navigate('/v2/home') },
+          { id: 'analyze', label: isAr ? 'الرادار'   : 'Radar',   icon: <span />, onSelect: () => navigate('/v2/analyze') },
+          { id: 'posts',   label: isAr ? 'الاستوديو' : 'Studio',  icon: <span />, onSelect: () => navigate('/v2/posts') },
+          { id: 'profile', label: isAr ? 'حسابي'     : 'Account', icon: <span />, onSelect: () => navigate('/v2/me') },
         ]}
         fabIcon="plus"
         onFabClick={() => navigate('/v2/analyze')}

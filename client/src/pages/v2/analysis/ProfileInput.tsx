@@ -126,7 +126,7 @@ export default function ProfileInput() {
 
       <div className="flex-1 px-[22px] pb-[110px] lg:px-0 lg:pb-0">
         <div className="mt-5 mb-6 lg:mt-2 lg:mb-8">
-          <Eyebrow className="mb-1.5 block">RADAR · {COST} TOKEN</Eyebrow>
+          <Eyebrow className="mb-1.5 block">{isAr ? `الرادار · ${COST} توكن` : `RADAR · ${COST} TOKENS`}</Eyebrow>
           <h1 className="font-ar font-bold leading-tight text-v2-ink text-[26px] lg:text-[32px]">
             {isAr ? 'لنحلل بروفايلك بدقة' : "Let's analyse your profile."}
           </h1>
@@ -303,10 +303,10 @@ export default function ProfileInput() {
       <BottomNav
         active="analyze"
         items={[
-          { id: 'home',    label: 'الرئيسية',  icon: <span /> , onSelect: () => navigate('/v2/home') },
-          { id: 'analyze', label: 'الرادار',   icon: <span /> , onSelect: () => navigate('/v2/analyze') },
-          { id: 'posts',   label: 'الاستوديو', icon: <span /> , onSelect: () => navigate('/v2/posts') },
-          { id: 'profile', label: 'حسابي',     icon: <span /> , onSelect: () => navigate('/v2/me') },
+          { id: 'home',    label: isAr ? 'الرئيسية'  : 'Home',    icon: <span /> , onSelect: () => navigate('/v2/home') },
+          { id: 'analyze', label: isAr ? 'الرادار'    : 'Radar',   icon: <span /> , onSelect: () => navigate('/v2/analyze') },
+          { id: 'posts',   label: isAr ? 'الاستوديو'  : 'Studio',  icon: <span /> , onSelect: () => navigate('/v2/posts') },
+          { id: 'profile', label: isAr ? 'حسابي'      : 'Account', icon: <span /> , onSelect: () => navigate('/v2/me') },
         ]}
         fabIcon="arrow"
         fabLabel={isAr ? 'ابدأ التحليل' : 'Start analysis'}

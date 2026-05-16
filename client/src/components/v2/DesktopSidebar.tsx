@@ -83,12 +83,14 @@ const CvIcon = (
   </svg>
 );
 
-const defaultItems: DesktopSidebarItem[] = [
-  { id: 'home',     label: 'الرئيسية', href: '/v2/home',     icon: HomeIcon },
-  { id: 'analyze',  label: 'الرادار',   href: '/v2/analyze',  icon: RadarIcon },
-  { id: 'cv',       label: 'السيرة',    href: '/v2/cvs',      icon: CvIcon },
-  { id: 'posts',    label: 'المنشورات', href: '/v2/posts',    icon: PostsIcon },
-];
+function buildDefaultItems(isAr: boolean): DesktopSidebarItem[] {
+  return [
+    { id: 'home',     label: isAr ? 'الرئيسية'  : 'Home',     href: '/v2/home',     icon: HomeIcon },
+    { id: 'analyze',  label: isAr ? 'الرادار'    : 'Radar',    href: '/v2/analyze',  icon: RadarIcon },
+    { id: 'cv',       label: isAr ? 'السيرة'     : 'CV',       href: '/v2/cvs',      icon: CvIcon },
+    { id: 'posts',    label: isAr ? 'المنشورات'  : 'Posts',    href: '/v2/posts',    icon: PostsIcon },
+  ];
+}
 
 function DesktopSidebar({
   className,
@@ -115,9 +117,10 @@ function DesktopSidebar({
   const userPlan = userPlanProp ?? (isAr ? (PLAN_LABELS[planKey] ?? PLAN_LABELS.free) : (userPlanLabelsEn[planKey] ?? userPlanLabelsEn.free));
   const avatarUrl = profile?.avatar_url ?? null;
 
+  const defaultItems = buildDefaultItems(isAr);
   const items: DesktopSidebarItem[] = itemsProp ?? (
     profile?.is_admin
-      ? [...defaultItems, { id: 'admin', label: 'الإدارة', href: '/v2/admin', icon: ShieldIcon }]
+      ? [...defaultItems, { id: 'admin', label: isAr ? 'الإدارة' : 'Admin', href: '/v2/admin', icon: ShieldIcon }]
       : defaultItems
   );
 
@@ -127,7 +130,7 @@ function DesktopSidebar({
 
   return (
     <aside
-      aria-label="التنقل الجانبي"
+      aria-label={isAr ? 'التنقل الجانبي' : 'Sidebar navigation'}
       className={cn(
         'sticky top-16 flex h-[calc(100dvh-64px)] w-60 shrink-0 flex-col',
         // border-e = end side (left in RTL, right in LTR) — the edge that meets <main>
@@ -151,7 +154,7 @@ function DesktopSidebar({
         }
       `}</style>
 
-      <nav className="flex flex-col gap-0.5 p-3" aria-label="القوائم الرئيسية">
+      <nav className="flex flex-col gap-0.5 p-3" aria-label={isAr ? 'القوائم الرئيسية' : 'Primary navigation'}>
         {items.map((item) => {
           const isActive = location === item.href || location.startsWith(`${item.href}/`);
           return (
@@ -219,7 +222,7 @@ function DesktopSidebar({
           'text-start cursor-pointer hover:bg-v2-canvas-2 transition-colors duration-200 ease-out',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/30',
         )}
-        aria-label={`الحساب — ${userName}`}
+        aria-label={`${isAr ? 'الحساب' : 'Account'} — ${userName}`}
       >
         {avatarUrl ? (
           <img

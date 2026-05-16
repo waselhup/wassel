@@ -1,5 +1,6 @@
 import type { HTMLAttributes, ReactNode } from 'react';
 import { useLocation } from 'wouter';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import PulseBar from '@/components/v2/PulseBar';
 import JobsIndicator from '@/components/v2/JobsIndicator';
@@ -26,12 +27,14 @@ export interface DesktopTopbarProps extends HTMLAttributes<HTMLElement> {
   trailing?: ReactNode;
 }
 
-const defaultNavLinks: DesktopNavLink[] = [
-  { id: 'home',     label: 'الرئيسية', href: '/v2/home' },
-  { id: 'analyze',  label: 'الرادار',   href: '/v2/analyze' },
-  { id: 'cv',       label: 'السيرة',    href: '/v2/cvs' },
-  { id: 'posts',    label: 'المنشورات',  href: '/v2/posts' },
-];
+function buildDefaultNavLinks(isAr: boolean): DesktopNavLink[] {
+  return [
+    { id: 'home',     label: isAr ? 'الرئيسية' : 'Home',    href: '/v2/home' },
+    { id: 'analyze',  label: isAr ? 'الرادار'   : 'Radar',   href: '/v2/analyze' },
+    { id: 'cv',       label: isAr ? 'السيرة'    : 'CV',      href: '/v2/cvs' },
+    { id: 'posts',    label: isAr ? 'المنشورات' : 'Posts',   href: '/v2/posts' },
+  ];
+}
 
 const Logo = (
   <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
@@ -51,9 +54,12 @@ function DesktopTopbar({
 }: DesktopTopbarProps) {
   const [location, navigate] = useLocation();
   const { profile } = useAuth();
+  const { i18n } = useTranslation();
+  const isAr = (i18n.language || 'ar').startsWith('ar');
+  const defaultNavLinks = buildDefaultNavLinks(isAr);
   const navLinks = navLinksProp ?? (
     showAccountCluster && profile?.is_admin
-      ? [...defaultNavLinks, { id: 'admin', label: 'الإدارة', href: '/admin' }]
+      ? [...defaultNavLinks, { id: 'admin', label: isAr ? 'الإدارة' : 'Admin', href: '/admin' }]
       : defaultNavLinks
   );
 
@@ -72,14 +78,14 @@ function DesktopTopbar({
             type="button"
             onClick={() => navigate('/v2/home')}
             className="flex items-center gap-2 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/30 rounded-v2-sm px-1"
-            aria-label="الرئيسية"
+            aria-label={isAr ? 'الرئيسية' : 'Home'}
           >
             {Logo}
-            <span className="font-ar text-[17px] font-bold text-v2-ink">وصل</span>
+            <span className="font-ar text-[17px] font-bold text-v2-ink">{isAr ? 'وصل' : 'Wassel'}</span>
           </button>
 
           {navLinks.some((l) => !l.cta) && (
-            <nav className="flex items-center gap-1" aria-label="التنقل الرئيسي">
+            <nav className="flex items-center gap-1" aria-label={isAr ? 'التنقل الرئيسي' : 'Primary navigation'}>
               {navLinks.filter((l) => !l.cta).map((link) => {
                 const isActive = location === link.href || location.startsWith(`${link.href}/`);
                 return (
