@@ -1375,6 +1375,34 @@ export const linkedinRouter = router({
           throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: saveErr.message });
         }
 
+        // ── PROFILE ENRICHMENT (B.5) ──────────────────────────────────────
+        // Sync LinkedIn-derived fields onto profiles so the dashboard avatar,
+        // name and title reflect the user's real LinkedIn presence. Email
+        // signups don't go through OAuth, so this is often the only chance
+        // we get to populate avatar_url with a real photo.
+        try {
+          const profileUpdate: Record<string, any> = {};
+          if (unifiedProfile?.profilePicture && typeof unifiedProfile.profilePicture === 'string') {
+            profileUpdate.avatar_url = unifiedProfile.profilePicture;
+          }
+          if (normalizedUrl) profileUpdate.linkedin_url = normalizedUrl;
+          if (unifiedProfile?.fullName && typeof unifiedProfile.fullName === 'string') {
+            profileUpdate.full_name = unifiedProfile.fullName;
+          }
+          if (unifiedProfile?.headline && typeof unifiedProfile.headline === 'string') {
+            profileUpdate.title = unifiedProfile.headline;
+          }
+          if (Object.keys(profileUpdate).length > 0) {
+            await ctx.supabase
+              .from('profiles')
+              .update(profileUpdate)
+              .eq('id', ctx.user.id);
+            console.log('[RADAR profile-enrichment]', Object.keys(profileUpdate));
+          }
+        } catch (enrichErr) {
+          console.error('[RADAR profile-enrichment] non-fatal:', enrichErr);
+        }
+
         // ── SUCCESS ────────────────────────────────────────────────────────
         console.log('[RADAR stage=success]', {
           userId: ctx.user.id,

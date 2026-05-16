@@ -1,4 +1,4 @@
-import type { HTMLAttributes, ReactNode } from 'react';
+import { useEffect, useState, type HTMLAttributes, type ReactNode } from 'react';
 import { useLocation } from 'wouter';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
@@ -116,6 +116,8 @@ function DesktopSidebar({
   };
   const userPlan = userPlanProp ?? (isAr ? (PLAN_LABELS[planKey] ?? PLAN_LABELS.free) : (userPlanLabelsEn[planKey] ?? userPlanLabelsEn.free));
   const avatarUrl = profile?.avatar_url ?? null;
+  const [avatarBroken, setAvatarBroken] = useState(false);
+  useEffect(() => { setAvatarBroken(false); }, [avatarUrl]);
 
   const defaultItems = buildDefaultItems(isAr);
   const items: DesktopSidebarItem[] = itemsProp ?? (
@@ -224,12 +226,14 @@ function DesktopSidebar({
         )}
         aria-label={`${isAr ? 'الحساب' : 'Account'} — ${userName}`}
       >
-        {avatarUrl ? (
+        {avatarUrl && !avatarBroken ? (
           <img
             src={avatarUrl}
             alt=""
             className="h-8 w-8 shrink-0 rounded-full object-cover"
             aria-hidden="true"
+            referrerPolicy="no-referrer"
+            onError={() => setAvatarBroken(true)}
           />
         ) : (
           <span
@@ -240,7 +244,7 @@ function DesktopSidebar({
           </span>
         )}
         <span className="min-w-0 flex-1 font-ar">
-          <span className="block truncate text-[13px] font-semibold text-v2-ink">{userName || 'الحساب'}</span>
+          <span className="block truncate text-[13px] font-semibold text-v2-ink">{userName || (isAr ? 'الحساب' : 'Account')}</span>
           <span className="block truncate text-[11px] text-v2-dim">{userPlan}</span>
         </span>
       </button>

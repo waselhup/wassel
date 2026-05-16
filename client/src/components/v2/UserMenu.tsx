@@ -73,6 +73,9 @@ function UserMenu({
   const resolvedName = nameProp ?? firstNameOf(profile?.full_name, profile?.email ?? user?.email) ?? '';
   const resolvedPlan = planProp ?? planDict[profile?.plan ?? 'free'] ?? planDict.free;
   const avatarUrl = profile?.avatar_url ?? null;
+  const [avatarBroken, setAvatarBroken] = useState(false);
+  // Reset broken flag whenever the URL changes (e.g. after re-sync from OAuth).
+  useEffect(() => { setAvatarBroken(false); }, [avatarUrl]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -123,12 +126,14 @@ function UserMenu({
           open && 'bg-v2-canvas-2 border-v2-line',
         )}
       >
-        {avatarUrl ? (
+        {avatarUrl && !avatarBroken ? (
           <img
             src={avatarUrl}
             alt=""
             className="h-7 w-7 rounded-full object-cover"
             aria-hidden="true"
+            referrerPolicy="no-referrer"
+            onError={() => setAvatarBroken(true)}
           />
         ) : (
           <span

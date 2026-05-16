@@ -147,6 +147,9 @@ function Home() {
     return () => { cancelled = true; };
   }, []);
 
+  const [avatarBroken, setAvatarBroken] = useState(false);
+  useEffect(() => { setAvatarBroken(false); }, [profile?.avatar_url]);
+
   const balance = profile?.token_balance ?? 0;
   const planKey = profile?.plan ?? 'free';
   const total = PLAN_QUOTAS[planKey] ?? PLAN_QUOTAS.free;
@@ -356,12 +359,13 @@ function Home() {
         <div className="mt-5 mb-5 flex items-center gap-4 lg:mt-2 lg:mb-6">
           {loading ? (
             <Skeleton variant="text" width={64} className="h-16 w-16 rounded-full" />
-          ) : profile?.avatar_url ? (
+          ) : profile?.avatar_url && !avatarBroken ? (
             <img
               src={profile.avatar_url}
               alt=""
               className="h-16 w-16 shrink-0 rounded-full border border-v2-line object-cover lg:h-20 lg:w-20"
               referrerPolicy="no-referrer"
+              onError={() => setAvatarBroken(true)}
             />
           ) : (
             <span
