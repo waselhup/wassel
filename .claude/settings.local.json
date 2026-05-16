@@ -224,7 +224,13 @@
       "Bash(git commit -m 'feat\\(pricing\\): B2+B3 — /pricing/products and /billing pages *)",
       "Bash(git commit -m 'feat\\(pricing\\): D — read token costs from products table at runtime *)",
       "Bash(git commit -m 'fix\\(landing\\): drop fake '\\\\''99 SAR'\\\\'' claim from pricing teaser *)",
-      "Bash(git commit -m 'fix\\(landing\\): correct free token count from 100 to 10 to match signup grant *)"
+      "Bash(git commit -m 'fix\\(landing\\): correct free token count from 100 to 10 to match signup grant *)",
+      "Bash(python3 -c ' *)",
+      "Bash(ls -lt /c/Users/WIN11-24H2GPT/Downloads/ 2>/dev/null | head -30)",
+      "Bash(grep -iE \"\\\\.\\(png|jpg|jpeg|webp|gif|bmp\\)$\")",
+      "Bash(grep -iE \"\\\\.\\(png|jpg|jpeg|webp\\)$\")",
+      "Bash(ls -lt /c/Users/WIN11-24H2GPT/Pictures/Screenshots/ 2>/dev/null | head -15)",
+      "Bash(git fetch *)"
     ]
   },
   "enableAllProjectMcpServers": true,

@@ -43,11 +43,8 @@ const INDUSTRIES: { id: Industry; ar: string; en: string }[] = [
   { id: 'other',             ar: 'مجال آخر',          en: 'Other' },
 ];
 
-const COST = 25;
-
-const PLAN_QUOTAS: Record<string, number> = {
-  free: 100, starter: 500, pro: 2000, elite: 10000,
-};
+// Canonical Radar cost — must match products.radar.token_cost in Supabase.
+const COST = 149;
 
 export default function ProfileInput() {
   const { i18n } = useTranslation();
@@ -55,8 +52,6 @@ export default function ProfileInput() {
   const [, navigate] = useLocation();
   const { profile } = useAuth();
   const balance = profile?.token_balance ?? 0;
-  const planKey = profile?.plan ?? 'free';
-  const total = PLAN_QUOTAS[planKey] ?? PLAN_QUOTAS.free;
 
   const [url, setUrl] = useState('');
   const [urlError, setUrlError] = useState<string | null>(null);
@@ -279,7 +274,7 @@ export default function ProfileInput() {
               <div className="text-end font-ar">
                 <Eyebrow>{isAr ? 'رصيدك' : 'Balance'}</Eyebrow>
                 <div className={`mt-1 text-[14px] font-semibold ${enoughBalance ? 'text-v2-ink' : 'text-rose-700'}`}>
-                  {balance} / {total} {isAr ? 'توكن' : 'tokens'}
+                  {balance} {isAr ? 'توكن' : 'tokens'}
                 </div>
                 <div className="mt-0.5 text-[11px] text-v2-dim">
                   {isAr ? `يحتاج التحليل ${COST} توكن` : `Analysis needs ${COST} tokens`}
