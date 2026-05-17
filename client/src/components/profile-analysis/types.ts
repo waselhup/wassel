@@ -20,6 +20,13 @@ export interface SectionView {
   editUrl?: string;
 }
 
+// Language of the user's actual LinkedIn profile text, paired with the
+// language of the paste-ready "suggested" copy. Suggestion language can
+// differ from report language (e.g. AR analysis of an EN profile → EN
+// suggested copy). Used by SectionDetailPanel to set dir/lang/font correctly
+// and to surface a small "this is in your profile's language" label.
+export type ProfileLang = 'ar' | 'en';
+
 export interface ExperienceEntry {
   title: string;
   company: string;

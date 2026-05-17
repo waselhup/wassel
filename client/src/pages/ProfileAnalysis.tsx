@@ -956,12 +956,18 @@ export default function ProfileAnalysis() {
               flagCreator: t('profileRadar.flags.creator'),
             };
 
+            const reportLangV1: 'ar' | 'en' =
+              ((analysis as any)?.report_language as 'ar' | 'en') || (i18n.language === 'ar' ? 'ar' : 'en');
+            const suggestionLangV1: 'ar' | 'en' =
+              ((analysis as any)?.suggestion_language as 'ar' | 'en') || reportLangV1;
             const detailEl = activeSection ? (
               <SectionDetailPanel
                 section={activeSection}
                 index={activeIndex ?? 0}
                 total={sectionViews.length}
                 isRTL={isRTL}
+                reportLang={reportLangV1}
+                suggestionLang={suggestionLangV1}
                 labels={detailLabels}
                 onBack={back}
                 onPrev={goPrev}

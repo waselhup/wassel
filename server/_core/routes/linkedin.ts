@@ -131,40 +131,57 @@ so before you write a single character, decide which language each field
 must be in:
 
 ┌────────────────────────────────────────────────────────────────────────┐
-│  ui_language ─→ ONLY ONE field: sections[].suggested                   │
-│                                                                        │
-│      The "suggested" rewrite is what the user will literally paste     │
-│      into LinkedIn. It MUST be in ui_language regardless of:           │
-│        • the profile's original language                               │
-│        • report_language                                               │
-│        • anything else                                                 │
-│      If ui_language = 'en' → "suggested" is ENGLISH. Period.           │
-│      If ui_language = 'ar' → "suggested" is ARABIC. Period.            │
-├────────────────────────────────────────────────────────────────────────┤
-│  report_language ─→ EVERY OTHER human-readable string:                 │
+│  report_language ─→ EVERY explanation / analysis string:               │
 │      verdict, target_alignment.notes,                                  │
 │      sections[].assessment, sections[].why,                            │
 │      top_priorities[].action, top_priorities[].expected_impact,        │
 │      evidence_bundle.missing_data_flags                                │
 │                                                                        │
-│      The user chose report_language because that's the language they   │
-│      want to READ the analysis in. Respect it strictly.                │
+│      The user chose report_language to READ the analysis in.           │
+│      Respect it strictly — never translate, never mix.                 │
+├────────────────────────────────────────────────────────────────────────┤
+│  suggestion_language ─→ ONLY ONE field: sections[].suggested           │
+│                                                                        │
+│      The "suggested" rewrite is what the user will literally paste     │
+│      into LinkedIn. It MUST be in suggestion_language regardless of:   │
+│        • the profile's original language (do not auto-match it)        │
+│        • report_language                                               │
+│        • the UI language                                               │
+│      If suggestion_language = 'en' → "suggested" is ENGLISH. Period.   │
+│      If suggestion_language = 'ar' → "suggested" is ARABIC. Period.    │
 ├────────────────────────────────────────────────────────────────────────┤
 │  ORIGINAL profile text ─→ sections[].current                           │
 │      Always keep "current" in the language it appears on LinkedIn.     │
 │      Never translate the user's own content.                           │
 └────────────────────────────────────────────────────────────────────────┘
 
-Concrete walk-through (this is the user's actual scenario):
-- ui_language='en', report_language='ar', profile is mostly English
-  → "current": English (unchanged, copied from profile)
-  → "suggested": ENGLISH (a polished English LinkedIn rewrite they paste in)
+How the server derives suggestion_language (you don't decide this, the
+server does — you just obey the value sent in the payload):
+- report_language='en' → suggestion_language ALWAYS 'en' (user's explicit
+  English choice overrides everything, including an Arabic profile)
+- report_language='ar' → suggestion_language matches the PROFILE's actual
+  language (so the user can paste it back into LinkedIn without a
+  language flip)
+
+Concrete walk-throughs:
+- report='ar', suggestion='en', profile is mostly English
+  → "current": English (unchanged)
+  → "suggested": ENGLISH (paste-ready LinkedIn copy in English)
   → "assessment", "why", "action", "verdict": ARABIC (the user reads these)
 
-A user does NOT change their UI language just to get a different profile
-copy. So whatever ui_language is RIGHT NOW, that is the language of the
-paste-ready "suggested" text. No exceptions, no auto-detection from the
-profile's original language, no helpful translations.
+- report='ar', suggestion='ar', profile is mostly Arabic
+  → "current": Arabic (unchanged)
+  → "suggested": ARABIC
+  → all explanations: ARABIC
+
+- report='en', suggestion='en', profile is mostly Arabic
+  → "current": Arabic (unchanged — that is the user's actual profile text)
+  → "suggested": ENGLISH (the user explicitly wants English output)
+  → all explanations: ENGLISH
+
+When report_language differs from suggestion_language, do NOT translate
+the suggested rewrite into report_language. Keep them split exactly as
+the contract says.
 
 ═══════════════════════════════════════
 FRAMEWORKS (cite by letter)
@@ -315,7 +332,7 @@ Return valid JSON ONLY. No markdown, no code fences. Start with { end with }.
 
 LANGUAGE RULES — see the boxed table at the top of this prompt.
 Quick reference:
-- ui_language → ONLY sections[].suggested
+- suggestion_language → ONLY sections[].suggested
 - report_language → verdict, notes, assessment, why, action, expected_impact, missing_data_flags
 - original profile language → sections[].current
 
@@ -341,7 +358,7 @@ Schema:
       "score": number (0-100) | null,        // null ONLY if the section on LinkedIn is truly empty
       "assessment": string (1-2 sentences in report_language — quote the profile text, explain what works/doesn't),
       "current": string (the exact current text from profile, or "Empty" if absent — in original profile language),
-      "suggested": string (a concrete rewrite ready to paste into LinkedIn — in ui_language),
+      "suggested": string (a concrete rewrite ready to paste into LinkedIn — in suggestion_language),
       "why": string (1 sentence citing the framework — in report_language),
       "framework": "A" | "B" | "C" | "D" | "E" | "F",
       "effort": "quick" | "moderate" | "deep"
@@ -491,6 +508,25 @@ async function scrapeLinkedInProfile(profileUrl: string): Promise<any> {
 
 function isArabicName(name: string): boolean {
   return /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]/.test(name);
+}
+
+// Detect the dominant script of the user's LinkedIn profile text.
+// Used by analyzeTargeted to decide what language the paste-ready
+// "suggested" rewrite should be in when report_language=ar (so an
+// Arabic-UI user with an English profile still gets English rewrites).
+// English fallback when there's no analyzable text \u2014 most LinkedIn profiles
+// default to English.
+function detectProfileLanguage(profile: {
+  headline?: string | null;
+  summary?: string | null;
+  about?: string | null;
+}): 'ar' | 'en' {
+  const text = `${profile?.headline ?? ''} ${profile?.summary ?? ''} ${profile?.about ?? ''}`.trim();
+  if (!text) return 'en';
+  const arabicChars = (text.match(/[\u0600-\u06FF]/g) || []).length;
+  const latinChars = (text.match(/[A-Za-z]/g) || []).length;
+  if (arabicChars === 0 && latinChars === 0) return 'en';
+  return arabicChars > latinChars ? 'ar' : 'en';
 }
 
 function buildProfileText(profileData: any) {
@@ -1005,15 +1041,15 @@ export const linkedinRouter = router({
       customIndustryLabel: z.string().trim().min(2).max(60).optional(),
       targetRole: z.string().max(200).optional(),
       targetCompany: z.string().max(200).optional(),
-      // Language the rewritten profile copy ("suggested") should be in —
-      // user picks this in the form (AR/EN toggle). Stored in DB as the
-      // report_language for back-compat with the existing column.
+      // The ONE language the user picks. It controls all explanations.
+      // The suggested-rewrite language is derived asymmetrically server-side:
+      //   reportLanguage=en → suggestions always in en (user's explicit choice wins)
+      //   reportLanguage=ar → suggestions in the profile's actual language
+      //                       (so the user can paste them back into LinkedIn
+      //                       without a language flip)
       reportLanguage: REPORT_LANGUAGE.default('ar'),
-      // Language the coaching strings (assessment/why/action/verdict) should
-      // be in — always the user's current UI language. A user can want EN
-      // profile copy while reading AR coaching (and vice-versa). Defaults to
-      // reportLanguage when caller doesn't provide it, to preserve old
-      // behavior for any non-updated client.
+      // Legacy: still accepted from old clients but no longer drives anything.
+      // Suggestion language is now computed from reportLanguage + profile text.
       uiLanguage: REPORT_LANGUAGE.optional(),
       // B.9: re-analysis. When set + valid (owned by user, same URL, not deleted),
       // the cost is waived and the new analysis is recorded as a child of the
@@ -1044,9 +1080,14 @@ export const linkedinRouter = router({
       }
       const TOKEN_COST = isReanalysis ? 0 : BASE_COST;
       const lang = input.reportLanguage;
-      // uiLanguage governs coaching strings; defaults to reportLanguage when
-      // the client doesn't pass it (legacy clients).
-      const uiLang = input.uiLanguage || input.reportLanguage;
+      // All user-facing messages (validation errors, scrape failures, etc.)
+      // are localized to `lang` — the language the user picked to read the
+      // analysis in. suggestionLang is computed AFTER scrape (we need the
+      // profile text to detect its language). Default until then = lang,
+      // so the language-contract block below is well-defined even on
+      // failure paths that never reach the scrape.
+      let suggestionLang: 'ar' | 'en' = lang === 'en' ? 'en' : lang;
+      let profileLang: 'ar' | 'en' = 'en';
       const startedAt = Date.now();
       let deducted = false;
       let stage = 'init';
@@ -1068,7 +1109,7 @@ export const linkedinRouter = router({
         if (input.linkedinUrl) {
           const validation = validateAndNormalizeLinkedInUrl(input.linkedinUrl);
           if (!validation.valid) {
-            const msg = uiLang === 'ar'
+            const msg = lang === 'ar'
               ? `${validation.errorMessageAr}. ${validation.suggestion || ''}`
               : `${validation.errorMessageEn}. ${validation.suggestion || ''}`;
             throw new TRPCError({ code: 'BAD_REQUEST', message: msg.trim() });
@@ -1083,7 +1124,7 @@ export const linkedinRouter = router({
         if (normalizedUrl && !requestedSlug) {
           throw new TRPCError({
             code: 'BAD_REQUEST',
-            message: uiLang === 'ar'
+            message: lang === 'ar'
               ? 'رابط LinkedIn غير صالح. تأكد من أنه بصيغة https://linkedin.com/in/username'
               : 'Invalid LinkedIn URL. Use the format https://linkedin.com/in/username',
           });
@@ -1125,14 +1166,14 @@ export const linkedinRouter = router({
             if (kind === 'URL_MISMATCH') {
               throw new TRPCError({
                 code: 'NOT_FOUND',
-                message: uiLang === 'ar'
+                message: lang === 'ar'
                   ? `لم نتمكن من العثور على بروفايل (${requestedSlug}). تأكد من الرابط وأن البروفايل عام وليس خاصاً. لم يتم خصم أي نقاط.`
                   : `We couldn't find the profile (${requestedSlug}). Check the URL and make sure the profile is public. No tokens were charged.`,
               });
             }
             throw new TRPCError({
               code: 'NOT_FOUND',
-              message: uiLang === 'ar'
+              message: lang === 'ar'
                 ? `لم نتمكن من قراءة البروفايل (${requestedSlug || 'الرابط'}). تأكد من أن البروفايل عام. لم يتم خصم أي نقاط.`
                 : `Failed to read profile (${requestedSlug || 'the URL'}) — ensure it's public. No tokens were charged.`,
             });
@@ -1152,7 +1193,7 @@ export const linkedinRouter = router({
             });
             throw new TRPCError({
               code: 'NOT_FOUND',
-              message: uiLang === 'ar'
+              message: lang === 'ar'
                 ? `لم نتمكن من العثور على بروفايل (${requestedSlug}). تأكد من الرابط. لم يتم خصم أي نقاط.`
                 : `We couldn't find the profile (${requestedSlug}). Check the URL. No tokens were charged.`,
             });
@@ -1164,11 +1205,26 @@ export const linkedinRouter = router({
         if (unifiedProfile && !input.imageBase64 && completeness < 25) {
           throw new TRPCError({
             code: 'BAD_REQUEST',
-            message: uiLang === 'ar'
+            message: lang === 'ar'
               ? `هذا البروفايل يحتاج إلى بيانات أكثر (${completeness}%). الأقسام الناقصة: ${missingSections.join('، ')}. أضف المزيد من المحتوى ثم جرّب مرة أخرى. لم يتم خصم أي نقاط.`
               : `This profile needs more content (${completeness}%). Missing: ${missingSections.join(', ')}. Add more content and retry. No tokens were charged.`,
           });
         }
+
+        // Now that we have the profile, decide what language the paste-ready
+        // suggestions should be in.
+        // - reportLanguage='en' → 'en' (user's explicit choice wins, even if profile is Arabic)
+        // - reportLanguage='ar' → match the profile's actual text so the user
+        //   can paste suggestions back into LinkedIn without a language flip
+        if (unifiedProfile) {
+          profileLang = detectProfileLanguage({
+            headline: unifiedProfile.headline,
+            summary: unifiedProfile.summary,
+            about: unifiedProfile.about,
+          });
+        }
+        suggestionLang = lang === 'en' ? 'en' : profileLang;
+        console.log('[RADAR language-split]', { reportLang: lang, profileLang, suggestionLang });
 
         // ── STAGE 5: atomic token deduction ────────────────────────────────
         // We only deduct once we know the profile is real AND has enough data.
@@ -1178,7 +1234,7 @@ export const linkedinRouter = router({
         let deduct: any = { success: true, balance_before: null, balance_after: null };
         if (TOKEN_COST > 0) {
           deduct = await deductTokens(ctx.supabase, ctx.user.id, TOKEN_COST, FEATURE);
-          if (!deduct.success) throwInsufficientTokensError(deduct, uiLang);
+          if (!deduct.success) throwInsufficientTokensError(deduct, lang);
           deducted = true;
           console.log('[RADAR stage=deducting_tokens ok]', {
             userId: ctx.user.id, before: deduct.balance_before, after: deduct.balance_after,
@@ -1252,9 +1308,9 @@ export const linkedinRouter = router({
           industry_is_custom: input.industry === 'other',
           target_role: input.targetRole || null,
           target_company: input.targetCompany || null,
-          // ui_language → ONLY field affected: sections[].suggested
-          //               (the paste-ready LinkedIn rewrite)
-          ui_language: uiLang,
+          // suggestion_language → ONLY field affected: sections[].suggested
+          //                       (the paste-ready LinkedIn rewrite)
+          suggestion_language: suggestionLang,
           // report_language → every other human-readable field
           //                   (assessment, why, action, verdict, notes, etc.)
           report_language: lang,
@@ -1267,11 +1323,11 @@ export const linkedinRouter = router({
         // content than to system instructions, so we restate the rule here.
         const langPreface =
           `LANGUAGE CONTRACT FOR THIS REQUEST:\n` +
-          `• Write sections[].suggested in ${uiLang === 'ar' ? 'ARABIC' : 'ENGLISH'} (ui_language="${uiLang}")\n` +
+          `• Write sections[].suggested in ${suggestionLang === 'ar' ? 'ARABIC' : 'ENGLISH'} (suggestion_language="${suggestionLang}")\n` +
           `• Write assessment, why, action, verdict, notes, expected_impact, missing_data_flags in ${lang === 'ar' ? 'ARABIC' : 'ENGLISH'} (report_language="${lang}")\n` +
           `• Keep sections[].current in the profile's original language (do not translate)\n` +
-          (uiLang !== lang
-            ? `\nIMPORTANT: ui_language and report_language differ in this request. The "suggested" rewrites MUST be in ${uiLang === 'ar' ? 'ARABIC' : 'ENGLISH'} (matching ui_language), while everything else MUST be in ${lang === 'ar' ? 'ARABIC' : 'ENGLISH'} (matching report_language). Do not match the profile's source language.\n`
+          (suggestionLang !== lang
+            ? `\nIMPORTANT: report_language and suggestion_language differ in this request. The "suggested" rewrites MUST be in ${suggestionLang === 'ar' ? 'ARABIC' : 'ENGLISH'} (matching suggestion_language — which is the user's actual profile language), while every explanation MUST be in ${lang === 'ar' ? 'ARABIC' : 'ENGLISH'} (matching report_language — what the user picked to read). Do NOT translate the suggested rewrite into report_language; keep them split.\n`
             : '');
 
         const payloadText = langPreface + '\n\n' + JSON.stringify(userPayload, null, 2);
@@ -1329,7 +1385,7 @@ export const linkedinRouter = router({
           });
           throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
-            message: uiLang === 'ar'
+            message: lang === 'ar'
               ? 'انقطع تحليل الذكاء الاصطناعي قبل اكتماله — الرجاء المحاولة مرة أخرى'
               : 'AI analysis was cut off before completion — please retry',
           });
@@ -1348,7 +1404,7 @@ export const linkedinRouter = router({
           });
           throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
-            message: uiLang === 'ar' ? 'فشل تحليل الرد من الذكاء الاصطناعي' : 'Failed to parse analysis response',
+            message: lang === 'ar' ? 'فشل تحليل الرد من الذكاء الاصطناعي' : 'Failed to parse analysis response',
           });
         }
 
@@ -1395,11 +1451,11 @@ export const linkedinRouter = router({
         });
         result.sections = orderedSections;
 
-        // ── LANGUAGE ENFORCEMENT (uiLang ≠ lang case) ──────────────────────
-        // Claude regularly ignores the language contract when ui_language
-        // differs from the profile's source language. We detect mismatched
-        // "suggested" strings and force-rewrite them via a focused second
-        // Claude call. Server-side enforcement, not prompt-engineered hope.
+        // ── LANGUAGE ENFORCEMENT (suggestionLang case) ─────────────────────
+        // Claude regularly ignores the language contract — especially when
+        // suggestionLang differs from the user's report language. We detect
+        // mismatched "suggested" strings and force-rewrite them via a focused
+        // second Claude call. Server-side enforcement, not prompt-engineered hope.
         const detectScript = (s: string): 'ar' | 'en' | 'mixed' | 'empty' => {
           if (!s || !s.trim()) return 'empty';
           const arabicChars = (s.match(/[؀-ۿ]/g) || []).length;
@@ -1414,11 +1470,11 @@ export const linkedinRouter = router({
 
         const mismatched = result.sections
           .map((s: any, idx: number) => ({ idx, s, script: detectScript(s.suggested || '') }))
-          .filter((x: any) => x.script !== 'empty' && x.script !== uiLang && x.script !== 'mixed');
+          .filter((x: any) => x.script !== 'empty' && x.script !== suggestionLang && x.script !== 'mixed');
 
         if (mismatched.length > 0) {
           console.log('[RADAR enforce-lang] mismatched suggestions, rewriting',
-            { count: mismatched.length, uiLang, lang });
+            { count: mismatched.length, suggestionLang, lang });
           try {
             const rewriteSystem =
               `You translate LinkedIn profile section rewrites between Arabic and English.\n` +
@@ -1430,11 +1486,11 @@ export const linkedinRouter = router({
               key: m.s.key,
               current_text: m.s.suggested,
               from: m.script,
-              to: uiLang,
+              to: suggestionLang,
             }));
             const rewriteUser =
               `Translate each "current_text" from "from" language to "to" language. ` +
-              `All items must end up in "${uiLang === 'ar' ? 'ARABIC' : 'ENGLISH'}".\n\n` +
+              `All items must end up in "${suggestionLang === 'ar' ? 'ARABIC' : 'ENGLISH'}".\n\n` +
               `Return ONLY JSON of shape: {"items":[{"key":"...", "rewritten":"..."}]}\n\n` +
               `Input:\n` + JSON.stringify({ items }, null, 2);
 
@@ -1456,7 +1512,7 @@ export const linkedinRouter = router({
               }
               for (const m of mismatched) {
                 const fixed = byKey.get(m.s.key);
-                if (fixed && detectScript(fixed) === uiLang) {
+                if (fixed && detectScript(fixed) === suggestionLang) {
                   result.sections[m.idx].suggested = fixed;
                 }
               }
@@ -1502,9 +1558,14 @@ export const linkedinRouter = router({
         if (input.industry === 'other' && input.customIndustryLabel) {
           result.custom_industry_label = input.customIndustryLabel;
         }
-        // Store ui_language alongside the analysis so the export endpoint
-        // can produce DOCX/PDF in the same coaching language the user saw.
-        result.ui_language = uiLang;
+        // Store language metadata alongside the analysis so the export
+        // endpoint and the UI both know what to render in what language.
+        result.report_language = lang;
+        result.suggestion_language = suggestionLang;
+        result.profile_language = profileLang;
+        // Back-compat shim: older client builds read ui_language. Keep it
+        // mirrored to report_language for now so they don't break.
+        result.ui_language = lang;
 
         // ── STAGE: persist to DB ───────────────────────────────────────────
         stage = 'persisting_to_db';
@@ -1519,6 +1580,8 @@ export const linkedinRouter = router({
             target_role: input.targetRole || null,
             target_company: input.targetCompany || null,
             report_language: lang,
+            suggestion_language: suggestionLang,
+            profile_language: profileLang,
             profile_data: unifiedProfile,
             tokens_used: TOKEN_COST,
             parent_analysis_id: parentRow?.id || null,
@@ -1681,16 +1744,16 @@ export const linkedinRouter = router({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'التحليل غير موجود' });
       }
 
-      // Report language = the long-form details language the user picked
-      // when running the analysis. Chrome (section headings, framework
-      // labels, intro/footer copy) and assessments/whys/actions are all
-      // rendered in this language. The "suggested" rewrite inside each
-      // section stays in whatever language Claude returned it in (it's
-      // the user's paste-ready LinkedIn copy in their UI language).
+      // Report language = the language the user picked when running the
+      // analysis. Chrome (section headings, framework labels, intro/footer
+      // copy) and assessments/whys/actions all render in this language.
+      // The "suggested" rewrite stays in whatever language Claude returned
+      // it in (= suggestion_language: english always when lang=en, profile
+      // language when lang=ar).
       const lang = (analysis.report_language as 'ar' | 'en') || 'ar';
-      // Kept around for the deduct error helper (uses current request UI).
-      const uiLang: 'ar' | 'en' =
-        ((analysis.analysis_data as any)?.ui_language as 'ar' | 'en') || lang;
+      // Used only by the deduct error helper. Localize to report_language —
+      // that's what the user picked to read.
+      const uiLang: 'ar' | 'en' = lang;
       const userName = (analysis.profile_data as any)?.fullName
                     || (analysis.profile_data as any)?.name
                     || undefined;

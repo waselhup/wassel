@@ -80,10 +80,10 @@ export default function AnalysisResults() {
         linkedinUrl: data.linkedinUrl,
         targetGoal: (data as any).targetGoal || 'job_search',
         industry: (data as any).industry || 'tech',
-        // Long-form details language — keep the user's original pick.
-        reportLanguage: (data as any).reportLanguage || (isAr ? 'ar' : 'en'),
-        // Paste-ready "suggested" copy follows the user's current UI lang.
-        uiLanguage: isAr ? 'ar' : 'en',
+        // The CURRENT picked language — re-analysis honours the freshly
+        // selected report language, never inherits the parent row's.
+        reportLanguage: (data.analysis?.report_language as 'ar' | 'en')
+          || (isAr ? 'ar' : 'en'),
         parentAnalysisId: data.id,
       });
       navigate(`/v2/analyze/result/${res.id}`);
@@ -171,6 +171,20 @@ export default function AnalysisResults() {
     : Math.max(0, sectionViews.findIndex((v) => v.key === selectedSectionKey));
   const activeSection = activeIndex !== null && activeIndex >= 0 ? sectionViews[activeIndex] : null;
 
+  // Asymmetric language model: report_language = what the user picked (drives
+  // all explanations); suggestion_language = what the paste-ready copy is in
+  // (= profile's actual language when reportLang=ar; always 'en' when
+  // reportLang=en). Legacy rows without these fields fall back to UI language.
+  const reportLang: 'ar' | 'en' =
+    (data?.analysis?.report_language as 'ar' | 'en') || (isAr ? 'ar' : 'en');
+  const suggestionLang: 'ar' | 'en' =
+    (data?.analysis?.suggestion_language as 'ar' | 'en') || reportLang;
+  const suggestedLangNote = suggestionLang === reportLang
+    ? undefined
+    : reportLang === 'ar'
+      ? `النص المقترح (بلغة بروفايلك: ${suggestionLang === 'ar' ? 'العربية' : 'English'})`
+      : `Suggested text (in your profile's language: ${suggestionLang === 'ar' ? 'العربية' : 'English'})`;
+
   const detailLabels = useMemo(() => ({
     backToList: isAr ? 'عودة للقائمة' : 'Back to list',
     prev: isAr ? 'السابق' : 'Prev',
@@ -185,11 +199,12 @@ export default function AnalysisResults() {
     openOnLinkedIn: isAr ? 'فتح على لينكد إن' : 'Open on LinkedIn',
     currentLabel: isAr ? 'الحالي' : 'Current',
     suggestedLabel: isAr ? 'المقترح' : 'Suggested',
+    suggestedLangNote,
     checklist: isAr ? 'قائمة المراجعة' : 'Checklist',
     moreInfo: isAr ? 'تفاصيل' : 'More info',
     copy: isAr ? 'نسخ' : 'Copy',
     copied: isAr ? 'تم النسخ' : 'Copied',
-  }), [isAr, activeIndex, sectionViews.length]);
+  }), [isAr, activeIndex, sectionViews.length, suggestedLangNote]);
 
   const previewLabels = useMemo(() => ({
     verdictTitle: isAr ? 'الحكم العام' : 'Overall verdict',
@@ -392,6 +407,8 @@ export default function AnalysisResults() {
                 index={activeIndex ?? 0}
                 total={sectionViews.length}
                 isRTL={isRTL}
+                reportLang={reportLang}
+                suggestionLang={suggestionLang}
                 labels={detailLabels}
                 onBack={() => setSelectedSectionKey(null)}
                 onPrev={() => {

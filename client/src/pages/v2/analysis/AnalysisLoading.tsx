@@ -208,8 +208,6 @@ export default function AnalysisLoading() {
         targetRole: params.targetRole,
         targetCompany: params.targetCompany,
         reportLanguage: params.reportLanguage,
-        // ui_language → coaching strings (assessment/why/action) stay in UI lang
-        uiLanguage: (params as any).uiLanguage || params.reportLanguage,
       });
 
       apiDoneAtRef.current = performance.now();
