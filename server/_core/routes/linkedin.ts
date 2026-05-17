@@ -1395,6 +1395,79 @@ export const linkedinRouter = router({
         });
         result.sections = orderedSections;
 
+        // ── LANGUAGE ENFORCEMENT (uiLang ≠ lang case) ──────────────────────
+        // Claude regularly ignores the language contract when ui_language
+        // differs from the profile's source language. We detect mismatched
+        // "suggested" strings and force-rewrite them via a focused second
+        // Claude call. Server-side enforcement, not prompt-engineered hope.
+        const detectScript = (s: string): 'ar' | 'en' | 'mixed' | 'empty' => {
+          if (!s || !s.trim()) return 'empty';
+          const arabicChars = (s.match(/[؀-ۿ]/g) || []).length;
+          const latinChars  = (s.match(/[A-Za-z]/g) || []).length;
+          const total = arabicChars + latinChars;
+          if (total === 0) return 'empty';
+          const arRatio = arabicChars / total;
+          if (arRatio > 0.5) return 'ar';
+          if (arRatio < 0.15) return 'en';
+          return 'mixed';
+        };
+
+        const mismatched = result.sections
+          .map((s: any, idx: number) => ({ idx, s, script: detectScript(s.suggested || '') }))
+          .filter((x: any) => x.script !== 'empty' && x.script !== uiLang && x.script !== 'mixed');
+
+        if (mismatched.length > 0) {
+          console.log('[RADAR enforce-lang] mismatched suggestions, rewriting',
+            { count: mismatched.length, uiLang, lang });
+          try {
+            const rewriteSystem =
+              `You translate LinkedIn profile section rewrites between Arabic and English.\n` +
+              `Rules:\n` +
+              `- Preserve meaning, keywords, metrics, certifications, company names.\n` +
+              `- Output professional LinkedIn copy native to the target language.\n` +
+              `- Never add commentary, explanations, or markdown. Return JSON only.`;
+            const items = mismatched.map((m: any) => ({
+              key: m.s.key,
+              current_text: m.s.suggested,
+              from: m.script,
+              to: uiLang,
+            }));
+            const rewriteUser =
+              `Translate each "current_text" from "from" language to "to" language. ` +
+              `All items must end up in "${uiLang === 'ar' ? 'ARABIC' : 'ENGLISH'}".\n\n` +
+              `Return ONLY JSON of shape: {"items":[{"key":"...", "rewritten":"..."}]}\n\n` +
+              `Input:\n` + JSON.stringify({ items }, null, 2);
+
+            const rewriteRes = await callClaude({
+              task: 'profile_analysis_lang_fix',
+              system: rewriteSystem,
+              userContent: rewriteUser,
+              maxTokens: 4000,
+              temperature: 0.2,
+            });
+            const rewriteText = extractText(rewriteRes);
+            const parsed = extractJson<any>(rewriteText);
+            if (parsed && Array.isArray(parsed.items)) {
+              const byKey = new Map<string, string>();
+              for (const it of parsed.items) {
+                if (it && typeof it.key === 'string' && typeof it.rewritten === 'string') {
+                  byKey.set(it.key, it.rewritten);
+                }
+              }
+              for (const m of mismatched) {
+                const fixed = byKey.get(m.s.key);
+                if (fixed && detectScript(fixed) === uiLang) {
+                  result.sections[m.idx].suggested = fixed;
+                }
+              }
+              console.log('[RADAR enforce-lang ok]', { rewritten: byKey.size });
+            }
+          } catch (e: any) {
+            console.error('[RADAR enforce-lang fail]', e?.message || e);
+            // Non-fatal — we'd rather ship a mixed-language analysis than 500.
+          }
+        }
+
         // Compute overall_score SERVER-SIDE from the weighted section table.
         // Trusting Claude's arithmetic drifts (saw 47 vs 58 for same input).
         result.overall_score = computeOverallFromSections(orderedSections, input.targetGoal);
