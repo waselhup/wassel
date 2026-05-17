@@ -80,11 +80,9 @@ export default function AnalysisResults() {
         linkedinUrl: data.linkedinUrl,
         targetGoal: (data as any).targetGoal || 'job_search',
         industry: (data as any).industry || 'tech',
-        // Re-analysis keeps the original profile-copy language preference if
-        // we have it, falling back to current UI lang.
+        // Long-form details language — keep the user's original pick.
         reportLanguage: (data as any).reportLanguage || (isAr ? 'ar' : 'en'),
-        // Coaching always in current UI language (matches what the user is
-        // currently reading).
+        // Paste-ready "suggested" copy follows the user's current UI lang.
         uiLanguage: isAr ? 'ar' : 'en',
         parentAnalysisId: data.id,
       });

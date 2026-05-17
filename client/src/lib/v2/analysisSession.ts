@@ -36,16 +36,16 @@ export interface AnalysisParams {
   targetRole?: string;
   targetCompany?: string;
   /**
-   * Language for the rewritten profile copy ("suggested" rewrites) — user
-   * picks this in the form. They want the LinkedIn copy in this language
-   * so they can paste it directly.
+   * Language for the long-form details (assessment, why, action, verdict,
+   * exported DOCX/PDF chrome). User picks this — they may want details in
+   * Arabic even though their LinkedIn (and our UI) is in English.
    */
   reportLanguage: ReportLang;
   /**
-   * Language for the coaching strings (assessment / why / action / verdict)
-   * — always the current UI language. A user can read AR coaching while
-   * receiving EN profile copy (common case: Saudi pro who wants an English
-   * LinkedIn but can't read English explanations comfortably).
+   * Language for the paste-ready "suggested" LinkedIn rewrite — always the
+   * current UI language. The user pastes this directly onto their profile,
+   * so it must match the interface language they're working in (no one
+   * switches UI just to get different profile copy).
    */
   uiLanguage: ReportLang;
 }

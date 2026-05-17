@@ -270,19 +270,22 @@ Return valid JSON ONLY. No markdown, no code fences. Start with { end with }.
 
 LANGUAGE RULES — TWO SEPARATE LANGUAGES (READ CAREFULLY):
 - ui_language ('ar' or 'en') — the UI language the user is reading right now.
-  ALL coaching strings (verdict, assessment, why, action, expected_impact,
-  notes, missing_data_flags) MUST be in ui_language. This is what the user
-  can actually understand.
+  The "suggested" LinkedIn rewrite for each section MUST be in ui_language
+  — that is the copy the user will paste into their profile, and no one
+  changes their UI language just to get a different profile copy. The
+  rewrite must match the user's current UI language exactly.
 - report_language ('ar' or 'en') — the user's chosen language for the
-  rewritten profile copy. The "suggested" rewrite for each section MUST be
-  in report_language (that's what they will paste into LinkedIn).
+  long-form explanations (assessment, why, action, expected_impact,
+  verdict, notes, missing_data_flags). A user reading English UI may pick
+  Arabic here because they want the framework reasoning explained in their
+  native language; conversely an Arabic-UI user may pick English to keep
+  the reasoning in industry-standard terminology.
 - "current" stays in the profile's original language (never translate the
   user's existing content).
 
-If ui_language === report_language, both are the same. When they differ,
-the user sees coaching in their native UI language but receives ready-to-
-paste LinkedIn copy in the target language they picked. This matters: a
-Saudi engineer may want an English profile but cannot read English advice.
+If ui_language === report_language, both are the same. When they differ:
+- "suggested" follows ui_language (paste-ready copy = UI lang)
+- everything explanatory follows report_language (reasoning lang = user pick)
 
 Western digits (0-9) only in any language.
 
@@ -293,21 +296,21 @@ Schema:
   "confidence": "high" | "medium" | "low",
   "data_completeness": number (0-100, copy from input.profile_completeness),
 
-  "verdict": string (2-3 sentences in ui_language, grounded in actual profile content),
+  "verdict": string (2-3 sentences in report_language, grounded in actual profile content),
 
   "target_alignment": {
     "goal_match_score": number (0-100),
-    "notes": string (in ui_language; references actual profile content, not assumed background)
+    "notes": string (in report_language; references actual profile content, not assumed background)
   },
 
   "sections": [
     {
       "key": "headline" | "about" | "experience" | "skills" | "education" | "recommendations" | "activity" | "profile_completeness",
       "score": number (0-100) | null,        // null ONLY if the section on LinkedIn is truly empty
-      "assessment": string (1-2 sentences in ui_language — quote the profile text, explain what works/doesn't),
+      "assessment": string (1-2 sentences in report_language — quote the profile text, explain what works/doesn't),
       "current": string (the exact current text from profile, or "Empty" if absent — in original profile language),
-      "suggested": string (a concrete rewrite ready to paste into LinkedIn — in report_language),
-      "why": string (1 sentence citing the framework — in ui_language),
+      "suggested": string (a concrete rewrite ready to paste into LinkedIn — in ui_language),
+      "why": string (1 sentence citing the framework — in report_language),
       "framework": "A" | "B" | "C" | "D" | "E" | "F",
       "effort": "quick" | "moderate" | "deep"
     }
@@ -317,17 +320,17 @@ Schema:
   "top_priorities": [
     {
       "rank": 1 | 2 | 3,
-      "action": string (in ui_language),
+      "action": string (in report_language),
       "section_key": "headline" | "about" | "experience" | "skills" | "education" | "recommendations" | "activity" | "profile_completeness",
       "framework": "A" | "B" | "C" | "D" | "E" | "F",
-      "expected_impact": string (in ui_language — e.g. "Could 2-3x profile visibility per Framework B")
+      "expected_impact": string (in report_language — e.g. "Could 2-3x profile visibility per Framework B")
     }
   ],
 
   "evidence_bundle": {
     "profile_quotes_used": string[] (short quotes or paraphrases taken from the input profile),
     "frameworks_referenced": string[] (subset of ["A","B","C","D","E","F"] — each framework you actually cited),
-    "missing_data_flags": string[] (fields that couldn't be analyzed — e.g. "about section empty", "no recommendations")
+    "missing_data_flags": string[] (in report_language — fields that couldn't be analyzed — e.g. "about section empty", "no recommendations")
   }
 }
 
@@ -1335,11 +1338,11 @@ export const linkedinRouter = router({
             name_en: SECTION_NAMES[key].en,
             score,
             assessment: typeof s.assessment === 'string' ? s.assessment : '',
-            current: typeof s.current === 'string' ? s.current : (score === null ? (uiLang === 'ar' ? 'فارغ' : 'Empty') : ''),
+            current: typeof s.current === 'string' ? s.current : (score === null ? (lang === 'ar' ? 'فارغ' : 'Empty') : ''),
             suggested: typeof s.suggested === 'string' ? s.suggested : '',
             why: typeof s.why === 'string' ? s.why : '',
             framework: (['A','B','C','D','E','F'].includes(fw) ? fw : null) as 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | null,
-            framework_label: labels ? (uiLang === 'ar' ? labels.ar : labels.en) : null,
+            framework_label: labels ? (lang === 'ar' ? labels.ar : labels.en) : null,
             effort: ['quick','moderate','deep'].includes(s.effort) ? s.effort : 'moderate',
           };
         });
@@ -1360,7 +1363,7 @@ export const linkedinRouter = router({
             action: typeof pr.action === 'string' ? pr.action : '',
             section_key: validSectionKey,
             framework: (['A','B','C','D','E','F'].includes(fw) ? fw : null),
-            framework_label: labels ? (uiLang === 'ar' ? labels.ar : labels.en) : null,
+            framework_label: labels ? (lang === 'ar' ? labels.ar : labels.en) : null,
             expected_impact: typeof pr.expected_impact === 'string' ? pr.expected_impact : '',
           };
         });
@@ -1558,21 +1561,22 @@ export const linkedinRouter = router({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'التحليل غير موجود' });
       }
 
-      // Coaching language — what the user actually reads. Stored on the
-      // analysis itself when available, falling back to report_language for
-      // older rows. The DOCX/PDF renderer uses this to localize section
-      // headings, framework labels, and template chrome — so a user whose
-      // UI is Arabic always gets an Arabic-rendered report even if their
-      // chosen profile-copy language was English.
-      const reportLang = (analysis.report_language as 'ar' | 'en') || 'ar';
+      // Report language = the long-form details language the user picked
+      // when running the analysis. Chrome (section headings, framework
+      // labels, intro/footer copy) and assessments/whys/actions are all
+      // rendered in this language. The "suggested" rewrite inside each
+      // section stays in whatever language Claude returned it in (it's
+      // the user's paste-ready LinkedIn copy in their UI language).
+      const lang = (analysis.report_language as 'ar' | 'en') || 'ar';
+      // Kept around for the deduct error helper (uses current request UI).
       const uiLang: 'ar' | 'en' =
-        ((analysis.analysis_data as any)?.ui_language as 'ar' | 'en') || reportLang;
+        ((analysis.analysis_data as any)?.ui_language as 'ar' | 'en') || lang;
       const userName = (analysis.profile_data as any)?.fullName
                     || (analysis.profile_data as any)?.name
                     || undefined;
 
       const reportOpts = {
-        language: uiLang,
+        language: lang,
         userName,
         targetGoal: analysis.target_goal,
         industry: analysis.industry,

@@ -94,11 +94,13 @@ export default function ProfileInput() {
       customIndustryLabel: industry === 'other' ? customIndustry.trim() : undefined,
       targetRole: targetRole.trim() || undefined,
       targetCompany: targetCompany.trim() || undefined,
-      // The toggle controls "what language the rewritten LinkedIn copy is in"
+      // The toggle controls the LONG-FORM details language
+      // (assessment / why / action / verdict). User picks this because
+      // no one changes their UI just to read explanations in another lang.
       reportLanguage: language,
-      // Coaching strings (assessment/why/action) always follow the user's
-      // current UI language — they may want EN profile copy but read AR
-      // explanations
+      // Paste-ready "suggested" LinkedIn copy = current UI language.
+      // The user pastes it directly onto their profile, so it must match
+      // the UI they're working in.
       uiLanguage: isAr ? 'ar' : 'en',
     };
     setAnalysisParams(id, params);
@@ -220,11 +222,11 @@ export default function ProfileInput() {
           </Card>
 
           <Card padding="lg" radius="lg">
-            <Eyebrow className="mb-2 block">{isAr ? 'لغة نسخة البروفايل المُقترحة' : 'Suggested profile copy language'}</Eyebrow>
+            <Eyebrow className="mb-2 block">{isAr ? 'لغة التفاصيل والشرح' : 'Details & explanation language'}</Eyebrow>
             <p className="mb-2.5 font-ar text-[12px] text-v2-dim">
               {isAr
-                ? 'تختار اللغة التي تريد نسخ التحسينات بها إلى بروفايلك على لينكدإن. التوصيات والشرح يبقون بلغتك الحالية'
-                : "Pick the language for the LinkedIn copy you'll paste in. Coaching and explanations will stay in your current UI language."}
+                ? 'تختار اللغة التي تريد قراءة التفاصيل والشرح والتوصيات بها. النص المُقترَح للصق على بروفايلك يبقى بلغة واجهتك الحالية'
+                : "Pick the language for the long-form details, reasoning and recommendations. The suggested LinkedIn copy stays in your current UI language so you can paste it directly."}
             </p>
             <div className="flex gap-2">
               {(['ar', 'en'] as ReportLang[]).map((l) => {
