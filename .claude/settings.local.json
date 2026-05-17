@@ -231,7 +231,9 @@
       "Bash(grep -iE \"\\\\.\\(png|jpg|jpeg|webp\\)$\")",
       "Bash(ls -lt /c/Users/WIN11-24H2GPT/Pictures/Screenshots/ 2>/dev/null | head -15)",
       "Bash(git fetch *)",
-      "Bash(awk '/exportReport: protectedProcedure/,/^  [a-zA-Z]+: protectedProcedure/' server/_core/routes/linkedin.ts)"
+      "Bash(awk '/exportReport: protectedProcedure/,/^  [a-zA-Z]+: protectedProcedure/' server/_core/routes/linkedin.ts)",
+      "Bash(curl -s \"https://wasselhub.com/api/health\")",
+      "Bash(curl -s -I \"https://wasselhub.com\")"
     ]
   },
   "enableAllProjectMcpServers": true,

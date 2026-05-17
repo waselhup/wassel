@@ -122,6 +122,51 @@ const FRAMEWORK_LABELS: Record<'A' | 'B' | 'C' | 'D' | 'E' | 'F', { en: string; 
 const PROFILE_RADAR_SYSTEM = `You are an evidence-based career analyst. Every observation you make MUST be grounded in one of 6 published frameworks. You cite the framework by letter (A-F) for every score and every recommendation. If you cannot cite a framework, you do not make the observation.
 
 ═══════════════════════════════════════
+🚨 LANGUAGE — NON-NEGOTIABLE, READ FIRST 🚨
+═══════════════════════════════════════
+
+The user payload carries TWO independent language flags. They control
+DIFFERENT fields. Mixing them up is the most common failure of this prompt,
+so before you write a single character, decide which language each field
+must be in:
+
+┌────────────────────────────────────────────────────────────────────────┐
+│  ui_language ─→ ONLY ONE field: sections[].suggested                   │
+│                                                                        │
+│      The "suggested" rewrite is what the user will literally paste     │
+│      into LinkedIn. It MUST be in ui_language regardless of:           │
+│        • the profile's original language                               │
+│        • report_language                                               │
+│        • anything else                                                 │
+│      If ui_language = 'en' → "suggested" is ENGLISH. Period.           │
+│      If ui_language = 'ar' → "suggested" is ARABIC. Period.            │
+├────────────────────────────────────────────────────────────────────────┤
+│  report_language ─→ EVERY OTHER human-readable string:                 │
+│      verdict, target_alignment.notes,                                  │
+│      sections[].assessment, sections[].why,                            │
+│      top_priorities[].action, top_priorities[].expected_impact,        │
+│      evidence_bundle.missing_data_flags                                │
+│                                                                        │
+│      The user chose report_language because that's the language they   │
+│      want to READ the analysis in. Respect it strictly.                │
+├────────────────────────────────────────────────────────────────────────┤
+│  ORIGINAL profile text ─→ sections[].current                           │
+│      Always keep "current" in the language it appears on LinkedIn.     │
+│      Never translate the user's own content.                           │
+└────────────────────────────────────────────────────────────────────────┘
+
+Concrete walk-through (this is the user's actual scenario):
+- ui_language='en', report_language='ar', profile is mostly English
+  → "current": English (unchanged, copied from profile)
+  → "suggested": ENGLISH (a polished English LinkedIn rewrite they paste in)
+  → "assessment", "why", "action", "verdict": ARABIC (the user reads these)
+
+A user does NOT change their UI language just to get a different profile
+copy. So whatever ui_language is RIGHT NOW, that is the language of the
+paste-ready "suggested" text. No exceptions, no auto-detection from the
+profile's original language, no helpful translations.
+
+═══════════════════════════════════════
 FRAMEWORKS (cite by letter)
 ═══════════════════════════════════════
 
@@ -268,24 +313,11 @@ OUTPUT
 
 Return valid JSON ONLY. No markdown, no code fences. Start with { end with }.
 
-LANGUAGE RULES — TWO SEPARATE LANGUAGES (READ CAREFULLY):
-- ui_language ('ar' or 'en') — the UI language the user is reading right now.
-  The "suggested" LinkedIn rewrite for each section MUST be in ui_language
-  — that is the copy the user will paste into their profile, and no one
-  changes their UI language just to get a different profile copy. The
-  rewrite must match the user's current UI language exactly.
-- report_language ('ar' or 'en') — the user's chosen language for the
-  long-form explanations (assessment, why, action, expected_impact,
-  verdict, notes, missing_data_flags). A user reading English UI may pick
-  Arabic here because they want the framework reasoning explained in their
-  native language; conversely an Arabic-UI user may pick English to keep
-  the reasoning in industry-standard terminology.
-- "current" stays in the profile's original language (never translate the
-  user's existing content).
-
-If ui_language === report_language, both are the same. When they differ:
-- "suggested" follows ui_language (paste-ready copy = UI lang)
-- everything explanatory follows report_language (reasoning lang = user pick)
+LANGUAGE RULES — see the boxed table at the top of this prompt.
+Quick reference:
+- ui_language → ONLY sections[].suggested
+- report_language → verdict, notes, assessment, why, action, expected_impact, missing_data_flags
+- original profile language → sections[].current
 
 Western digits (0-9) only in any language.
 
@@ -1220,21 +1252,36 @@ export const linkedinRouter = router({
           industry_is_custom: input.industry === 'other',
           target_role: input.targetRole || null,
           target_company: input.targetCompany || null,
-          // report_language → what "suggested" rewrites are in
-          report_language: lang,
-          // ui_language → what coaching strings (assessment/why/action) are in
+          // ui_language → ONLY field affected: sections[].suggested
+          //               (the paste-ready LinkedIn rewrite)
           ui_language: uiLang,
+          // report_language → every other human-readable field
+          //                   (assessment, why, action, verdict, notes, etc.)
+          report_language: lang,
           profile_completeness: completeness,
           missing_sections: missingSections,
           profile_data: structuredProfile,
         };
 
+        // Per-request language reminder — Claude attends more to user-message
+        // content than to system instructions, so we restate the rule here.
+        const langPreface =
+          `LANGUAGE CONTRACT FOR THIS REQUEST:\n` +
+          `• Write sections[].suggested in ${uiLang === 'ar' ? 'ARABIC' : 'ENGLISH'} (ui_language="${uiLang}")\n` +
+          `• Write assessment, why, action, verdict, notes, expected_impact, missing_data_flags in ${lang === 'ar' ? 'ARABIC' : 'ENGLISH'} (report_language="${lang}")\n` +
+          `• Keep sections[].current in the profile's original language (do not translate)\n` +
+          (uiLang !== lang
+            ? `\nIMPORTANT: ui_language and report_language differ in this request. The "suggested" rewrites MUST be in ${uiLang === 'ar' ? 'ARABIC' : 'ENGLISH'} (matching ui_language), while everything else MUST be in ${lang === 'ar' ? 'ARABIC' : 'ENGLISH'} (matching report_language). Do not match the profile's source language.\n`
+            : '');
+
+        const payloadText = langPreface + '\n\n' + JSON.stringify(userPayload, null, 2);
+
         const userContent: any = input.imageBase64
           ? [
               { type: 'image', source: { type: 'base64', media_type: input.mediaType || 'image/png', data: input.imageBase64 } },
-              { type: 'text', text: JSON.stringify(userPayload, null, 2) },
+              { type: 'text', text: payloadText },
             ]
-          : JSON.stringify(userPayload, null, 2);
+          : payloadText;
 
         // ── STAGE: call Claude ─────────────────────────────────────────────
         stage = 'calling_claude';
