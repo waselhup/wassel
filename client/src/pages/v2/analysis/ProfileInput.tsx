@@ -94,7 +94,12 @@ export default function ProfileInput() {
       customIndustryLabel: industry === 'other' ? customIndustry.trim() : undefined,
       targetRole: targetRole.trim() || undefined,
       targetCompany: targetCompany.trim() || undefined,
+      // The toggle controls "what language the rewritten LinkedIn copy is in"
       reportLanguage: language,
+      // Coaching strings (assessment/why/action) always follow the user's
+      // current UI language — they may want EN profile copy but read AR
+      // explanations
+      uiLanguage: isAr ? 'ar' : 'en',
     };
     setAnalysisParams(id, params);
     navigate(`/v2/analyze/loading?id=${id}`);
@@ -215,7 +220,12 @@ export default function ProfileInput() {
           </Card>
 
           <Card padding="lg" radius="lg">
-            <Eyebrow className="mb-2 block">{isAr ? 'لغة التقرير' : 'Report language'}</Eyebrow>
+            <Eyebrow className="mb-2 block">{isAr ? 'لغة نسخة البروفايل المُقترحة' : 'Suggested profile copy language'}</Eyebrow>
+            <p className="mb-2.5 font-ar text-[12px] text-v2-dim">
+              {isAr
+                ? 'تختار اللغة التي تريد نسخ التحسينات بها إلى بروفايلك على لينكدإن. التوصيات والشرح يبقون بلغتك الحالية'
+                : "Pick the language for the LinkedIn copy you'll paste in. Coaching and explanations will stay in your current UI language."}
+            </p>
             <div className="flex gap-2">
               {(['ar', 'en'] as ReportLang[]).map((l) => {
                 const active = language === l;

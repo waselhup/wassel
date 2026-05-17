@@ -35,7 +35,19 @@ export interface AnalysisParams {
   customIndustryLabel?: string;
   targetRole?: string;
   targetCompany?: string;
+  /**
+   * Language for the rewritten profile copy ("suggested" rewrites) — user
+   * picks this in the form. They want the LinkedIn copy in this language
+   * so they can paste it directly.
+   */
   reportLanguage: ReportLang;
+  /**
+   * Language for the coaching strings (assessment / why / action / verdict)
+   * — always the current UI language. A user can read AR coaching while
+   * receiving EN profile copy (common case: Saudi pro who wants an English
+   * LinkedIn but can't read English explanations comfortably).
+   */
+  uiLanguage: ReportLang;
 }
 
 export interface StoredAnalysisResult {

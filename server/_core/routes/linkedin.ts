@@ -267,8 +267,24 @@ OUTPUT
 ═══════════════════════════════════════
 
 Return valid JSON ONLY. No markdown, no code fences. Start with { end with }.
-Use report_language ('ar' = Modern Standard Arabic, 'en' = Professional
-English) for all human-readable strings. Western digits (0-9) only.
+
+LANGUAGE RULES — TWO SEPARATE LANGUAGES (READ CAREFULLY):
+- ui_language ('ar' or 'en') — the UI language the user is reading right now.
+  ALL coaching strings (verdict, assessment, why, action, expected_impact,
+  notes, missing_data_flags) MUST be in ui_language. This is what the user
+  can actually understand.
+- report_language ('ar' or 'en') — the user's chosen language for the
+  rewritten profile copy. The "suggested" rewrite for each section MUST be
+  in report_language (that's what they will paste into LinkedIn).
+- "current" stays in the profile's original language (never translate the
+  user's existing content).
+
+If ui_language === report_language, both are the same. When they differ,
+the user sees coaching in their native UI language but receives ready-to-
+paste LinkedIn copy in the target language they picked. This matters: a
+Saudi engineer may want an English profile but cannot read English advice.
+
+Western digits (0-9) only in any language.
 
 Schema:
 
@@ -277,21 +293,21 @@ Schema:
   "confidence": "high" | "medium" | "low",
   "data_completeness": number (0-100, copy from input.profile_completeness),
 
-  "verdict": string (2-3 sentences in target language, grounded in actual profile content),
+  "verdict": string (2-3 sentences in ui_language, grounded in actual profile content),
 
   "target_alignment": {
     "goal_match_score": number (0-100),
-    "notes": string (references actual profile content, not assumed background)
+    "notes": string (in ui_language; references actual profile content, not assumed background)
   },
 
   "sections": [
     {
       "key": "headline" | "about" | "experience" | "skills" | "education" | "recommendations" | "activity" | "profile_completeness",
       "score": number (0-100) | null,        // null ONLY if the section on LinkedIn is truly empty
-      "assessment": string (1-2 sentences in target language — quote the profile text, explain what works/doesn't),
+      "assessment": string (1-2 sentences in ui_language — quote the profile text, explain what works/doesn't),
       "current": string (the exact current text from profile, or "Empty" if absent — in original profile language),
-      "suggested": string (a concrete rewrite ready to paste into LinkedIn — in original profile language or the user's chosen target language),
-      "why": string (1 sentence citing the framework — in target language),
+      "suggested": string (a concrete rewrite ready to paste into LinkedIn — in report_language),
+      "why": string (1 sentence citing the framework — in ui_language),
       "framework": "A" | "B" | "C" | "D" | "E" | "F",
       "effort": "quick" | "moderate" | "deep"
     }
@@ -301,10 +317,10 @@ Schema:
   "top_priorities": [
     {
       "rank": 1 | 2 | 3,
-      "action": string (in target language),
+      "action": string (in ui_language),
       "section_key": "headline" | "about" | "experience" | "skills" | "education" | "recommendations" | "activity" | "profile_completeness",
       "framework": "A" | "B" | "C" | "D" | "E" | "F",
-      "expected_impact": string (in target language — e.g. "Could 2-3x profile visibility per Framework B")
+      "expected_impact": string (in ui_language — e.g. "Could 2-3x profile visibility per Framework B")
     }
   ],
 
@@ -954,7 +970,16 @@ export const linkedinRouter = router({
       customIndustryLabel: z.string().trim().min(2).max(60).optional(),
       targetRole: z.string().max(200).optional(),
       targetCompany: z.string().max(200).optional(),
+      // Language the rewritten profile copy ("suggested") should be in —
+      // user picks this in the form (AR/EN toggle). Stored in DB as the
+      // report_language for back-compat with the existing column.
       reportLanguage: REPORT_LANGUAGE.default('ar'),
+      // Language the coaching strings (assessment/why/action/verdict) should
+      // be in — always the user's current UI language. A user can want EN
+      // profile copy while reading AR coaching (and vice-versa). Defaults to
+      // reportLanguage when caller doesn't provide it, to preserve old
+      // behavior for any non-updated client.
+      uiLanguage: REPORT_LANGUAGE.optional(),
       // B.9: re-analysis. When set + valid (owned by user, same URL, not deleted),
       // the cost is waived and the new analysis is recorded as a child of the
       // referenced one. Used by the post-analysis guidance screen.
@@ -984,6 +1009,9 @@ export const linkedinRouter = router({
       }
       const TOKEN_COST = isReanalysis ? 0 : BASE_COST;
       const lang = input.reportLanguage;
+      // uiLanguage governs coaching strings; defaults to reportLanguage when
+      // the client doesn't pass it (legacy clients).
+      const uiLang = input.uiLanguage || input.reportLanguage;
       const startedAt = Date.now();
       let deducted = false;
       let stage = 'init';
@@ -1005,7 +1033,7 @@ export const linkedinRouter = router({
         if (input.linkedinUrl) {
           const validation = validateAndNormalizeLinkedInUrl(input.linkedinUrl);
           if (!validation.valid) {
-            const msg = lang === 'ar'
+            const msg = uiLang === 'ar'
               ? `${validation.errorMessageAr}. ${validation.suggestion || ''}`
               : `${validation.errorMessageEn}. ${validation.suggestion || ''}`;
             throw new TRPCError({ code: 'BAD_REQUEST', message: msg.trim() });
@@ -1020,7 +1048,7 @@ export const linkedinRouter = router({
         if (normalizedUrl && !requestedSlug) {
           throw new TRPCError({
             code: 'BAD_REQUEST',
-            message: lang === 'ar'
+            message: uiLang === 'ar'
               ? 'رابط LinkedIn غير صالح. تأكد من أنه بصيغة https://linkedin.com/in/username'
               : 'Invalid LinkedIn URL. Use the format https://linkedin.com/in/username',
           });
@@ -1062,14 +1090,14 @@ export const linkedinRouter = router({
             if (kind === 'URL_MISMATCH') {
               throw new TRPCError({
                 code: 'NOT_FOUND',
-                message: lang === 'ar'
+                message: uiLang === 'ar'
                   ? `لم نتمكن من العثور على بروفايل (${requestedSlug}). تأكد من الرابط وأن البروفايل عام وليس خاصاً. لم يتم خصم أي نقاط.`
                   : `We couldn't find the profile (${requestedSlug}). Check the URL and make sure the profile is public. No tokens were charged.`,
               });
             }
             throw new TRPCError({
               code: 'NOT_FOUND',
-              message: lang === 'ar'
+              message: uiLang === 'ar'
                 ? `لم نتمكن من قراءة البروفايل (${requestedSlug || 'الرابط'}). تأكد من أن البروفايل عام. لم يتم خصم أي نقاط.`
                 : `Failed to read profile (${requestedSlug || 'the URL'}) — ensure it's public. No tokens were charged.`,
             });
@@ -1089,7 +1117,7 @@ export const linkedinRouter = router({
             });
             throw new TRPCError({
               code: 'NOT_FOUND',
-              message: lang === 'ar'
+              message: uiLang === 'ar'
                 ? `لم نتمكن من العثور على بروفايل (${requestedSlug}). تأكد من الرابط. لم يتم خصم أي نقاط.`
                 : `We couldn't find the profile (${requestedSlug}). Check the URL. No tokens were charged.`,
             });
@@ -1101,7 +1129,7 @@ export const linkedinRouter = router({
         if (unifiedProfile && !input.imageBase64 && completeness < 25) {
           throw new TRPCError({
             code: 'BAD_REQUEST',
-            message: lang === 'ar'
+            message: uiLang === 'ar'
               ? `هذا البروفايل يحتاج إلى بيانات أكثر (${completeness}%). الأقسام الناقصة: ${missingSections.join('، ')}. أضف المزيد من المحتوى ثم جرّب مرة أخرى. لم يتم خصم أي نقاط.`
               : `This profile needs more content (${completeness}%). Missing: ${missingSections.join(', ')}. Add more content and retry. No tokens were charged.`,
           });
@@ -1115,7 +1143,7 @@ export const linkedinRouter = router({
         let deduct: any = { success: true, balance_before: null, balance_after: null };
         if (TOKEN_COST > 0) {
           deduct = await deductTokens(ctx.supabase, ctx.user.id, TOKEN_COST, FEATURE);
-          if (!deduct.success) throwInsufficientTokensError(deduct, lang);
+          if (!deduct.success) throwInsufficientTokensError(deduct, uiLang);
           deducted = true;
           console.log('[RADAR stage=deducting_tokens ok]', {
             userId: ctx.user.id, before: deduct.balance_before, after: deduct.balance_after,
@@ -1189,7 +1217,10 @@ export const linkedinRouter = router({
           industry_is_custom: input.industry === 'other',
           target_role: input.targetRole || null,
           target_company: input.targetCompany || null,
+          // report_language → what "suggested" rewrites are in
           report_language: lang,
+          // ui_language → what coaching strings (assessment/why/action) are in
+          ui_language: uiLang,
           profile_completeness: completeness,
           missing_sections: missingSections,
           profile_data: structuredProfile,
@@ -1248,7 +1279,7 @@ export const linkedinRouter = router({
           });
           throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
-            message: lang === 'ar'
+            message: uiLang === 'ar'
               ? 'انقطع تحليل الذكاء الاصطناعي قبل اكتماله — الرجاء المحاولة مرة أخرى'
               : 'AI analysis was cut off before completion — please retry',
           });
@@ -1267,7 +1298,7 @@ export const linkedinRouter = router({
           });
           throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
-            message: lang === 'ar' ? 'فشل تحليل الرد من الذكاء الاصطناعي' : 'Failed to parse analysis response',
+            message: uiLang === 'ar' ? 'فشل تحليل الرد من الذكاء الاصطناعي' : 'Failed to parse analysis response',
           });
         }
 
@@ -1304,11 +1335,11 @@ export const linkedinRouter = router({
             name_en: SECTION_NAMES[key].en,
             score,
             assessment: typeof s.assessment === 'string' ? s.assessment : '',
-            current: typeof s.current === 'string' ? s.current : (score === null ? (lang === 'ar' ? 'فارغ' : 'Empty') : ''),
+            current: typeof s.current === 'string' ? s.current : (score === null ? (uiLang === 'ar' ? 'فارغ' : 'Empty') : ''),
             suggested: typeof s.suggested === 'string' ? s.suggested : '',
             why: typeof s.why === 'string' ? s.why : '',
             framework: (['A','B','C','D','E','F'].includes(fw) ? fw : null) as 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | null,
-            framework_label: labels ? (lang === 'ar' ? labels.ar : labels.en) : null,
+            framework_label: labels ? (uiLang === 'ar' ? labels.ar : labels.en) : null,
             effort: ['quick','moderate','deep'].includes(s.effort) ? s.effort : 'moderate',
           };
         });
@@ -1329,7 +1360,7 @@ export const linkedinRouter = router({
             action: typeof pr.action === 'string' ? pr.action : '',
             section_key: validSectionKey,
             framework: (['A','B','C','D','E','F'].includes(fw) ? fw : null),
-            framework_label: labels ? (lang === 'ar' ? labels.ar : labels.en) : null,
+            framework_label: labels ? (uiLang === 'ar' ? labels.ar : labels.en) : null,
             expected_impact: typeof pr.expected_impact === 'string' ? pr.expected_impact : '',
           };
         });
@@ -1348,6 +1379,9 @@ export const linkedinRouter = router({
         if (input.industry === 'other' && input.customIndustryLabel) {
           result.custom_industry_label = input.customIndustryLabel;
         }
+        // Store ui_language alongside the analysis so the export endpoint
+        // can produce DOCX/PDF in the same coaching language the user saw.
+        result.ui_language = uiLang;
 
         // ── STAGE: persist to DB ───────────────────────────────────────────
         stage = 'persisting_to_db';
@@ -1524,13 +1558,21 @@ export const linkedinRouter = router({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'التحليل غير موجود' });
       }
 
-      const lang = (analysis.report_language as 'ar' | 'en') || 'ar';
+      // Coaching language — what the user actually reads. Stored on the
+      // analysis itself when available, falling back to report_language for
+      // older rows. The DOCX/PDF renderer uses this to localize section
+      // headings, framework labels, and template chrome — so a user whose
+      // UI is Arabic always gets an Arabic-rendered report even if their
+      // chosen profile-copy language was English.
+      const reportLang = (analysis.report_language as 'ar' | 'en') || 'ar';
+      const uiLang: 'ar' | 'en' =
+        ((analysis.analysis_data as any)?.ui_language as 'ar' | 'en') || reportLang;
       const userName = (analysis.profile_data as any)?.fullName
                     || (analysis.profile_data as any)?.name
                     || undefined;
 
       const reportOpts = {
-        language: lang,
+        language: uiLang,
         userName,
         targetGoal: analysis.target_goal,
         industry: analysis.industry,
@@ -1546,7 +1588,7 @@ export const linkedinRouter = router({
           // Atomic deduct. Marks docx_generated only after deduct succeeds,
           // so any subsequent failure lets the user retry without double-charge.
           const deduct = await deductTokens(ctx.supabase, ctx.user.id, DOCX_COST, DOCX_FEATURE);
-          if (!deduct.success) throwInsufficientTokensError(deduct, lang);
+          if (!deduct.success) throwInsufficientTokensError(deduct, uiLang);
           await ctx.supabase
             .from('profile_analyses')
             .update({ docx_generated: true })
