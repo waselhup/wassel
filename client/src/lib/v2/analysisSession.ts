@@ -36,18 +36,14 @@ export interface AnalysisParams {
   targetRole?: string;
   targetCompany?: string;
   /**
-   * Language for the long-form details (assessment, why, action, verdict,
-   * exported DOCX/PDF chrome). User picks this — they may want details in
-   * Arabic even though their LinkedIn (and our UI) is in English.
+   * The ONE language the user picks. Drives every explanation in the report
+   * (commentary, scoring rationale, action items). The paste-ready
+   * "suggested" rewrite language is derived server-side asymmetrically:
+   *   reportLanguage='en' → suggestions always English (user's explicit choice wins)
+   *   reportLanguage='ar' → suggestions in the profile's actual language
+   *                         (so the user can paste them back into LinkedIn)
    */
   reportLanguage: ReportLang;
-  /**
-   * Language for the paste-ready "suggested" LinkedIn rewrite — always the
-   * current UI language. The user pastes this directly onto their profile,
-   * so it must match the interface language they're working in (no one
-   * switches UI just to get different profile copy).
-   */
-  uiLanguage: ReportLang;
 }
 
 export interface StoredAnalysisResult {

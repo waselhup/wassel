@@ -233,7 +233,11 @@
       "Bash(git fetch *)",
       "Bash(awk '/exportReport: protectedProcedure/,/^  [a-zA-Z]+: protectedProcedure/' server/_core/routes/linkedin.ts)",
       "Bash(curl -s \"https://wasselhub.com/api/health\")",
-      "Bash(curl -s -I \"https://wasselhub.com\")"
+      "Bash(curl -s -I \"https://wasselhub.com\")",
+      "Bash(cd \"C:\\\\Users\\\\WIN11-24H2GPT\\\\Desktop\\\\wassel-v2\" && find . -type f \\\\\\( -name \"*.ts\" -o -name \"*.tsx\" \\\\\\) | grep -v node_modules | head -30)",
+      "Bash(git stash *)",
+      "PowerShell(npx esbuild server/_core/vercel.ts --platform=node --bundle --format=cjs --external:@napi-rs/canvas --external:sharp --outfile=api/index.js)",
+      "PowerShell($f = Get-Item api\\\\index.js; \"$\\($f.Length\\) bytes — $\\($f.LastWriteTime\\)\")"
     ]
   },
   "enableAllProjectMcpServers": true,

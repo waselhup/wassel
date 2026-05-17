@@ -3,13 +3,17 @@ import {
   ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, CheckCircle2,
   AlertTriangle, Lightbulb, ExternalLink, ClipboardList,
 } from 'lucide-react';
-import type { SectionView } from './types';
+import type { SectionView, ProfileLang } from './types';
 
 interface Props {
   section: SectionView;
   index: number;
   total: number;
   isRTL: boolean;
+  /** Language of the analysis explanations (what the user picked). */
+  reportLang: ProfileLang;
+  /** Language of the paste-ready suggested rewrite (asymmetric — see server). */
+  suggestionLang: ProfileLang;
   labels: {
     backToList: string;
     prev: string;
@@ -22,6 +26,11 @@ interface Props {
     openOnLinkedIn: string;
     currentLabel: string;
     suggestedLabel: string;
+    /** Shown above "suggested" when its language differs from the report
+     *  language, so the user understands why this block is in a different
+     *  script ("here is your English LinkedIn copy" while reading an Arabic
+     *  analysis, or vice-versa). */
+    suggestedLangNote?: string;
     checklist: string;
     moreInfo: string;
     copy: string;
@@ -62,7 +71,7 @@ function statusMeta(section: SectionView, labels: Props['labels']) {
 }
 
 export default function SectionDetailPanel({
-  section, index, total, isRTL, labels,
+  section, index, total, isRTL, reportLang, suggestionLang, labels,
   onBack, onPrev, onNext, onCopy,
 }: Props) {
   // Keyboard navigation: Escape = back, ArrowLeft/ArrowRight = prev/next
@@ -214,10 +223,27 @@ export default function SectionDetailPanel({
               fontSize: 11, fontWeight: 800, color: '#0f766e',
               letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 6,
             }}>{labels.suggestedLabel}</div>
-            <div style={{
-              fontSize: 13, color: '#0f766e', lineHeight: 1.6, whiteSpace: 'pre-wrap', fontWeight: 600,
-              fontFamily: 'ui-monospace, SFMono-Regular, monospace',
-            }}>{section.suggestedText}</div>
+            {suggestionLang !== reportLang && labels.suggestedLangNote && (
+              <div style={{
+                fontSize: 11, color: '#0f766e', marginBottom: 8, opacity: 0.85,
+                fontWeight: 600,
+              }}>
+                {labels.suggestedLangNote}
+              </div>
+            )}
+            <div
+              dir={suggestionLang === 'ar' ? 'rtl' : 'ltr'}
+              lang={suggestionLang}
+              style={{
+                fontSize: 13, color: '#0f766e', lineHeight: 1.6, whiteSpace: 'pre-wrap', fontWeight: 600,
+                // Arabic copy reads better in the project sans (Thmanyah);
+                // English copy keeps the mono look users associate with
+                // "ready to paste".
+                fontFamily: suggestionLang === 'ar'
+                  ? '"Thmanyah Sans", system-ui, sans-serif'
+                  : 'ui-monospace, SFMono-Regular, monospace',
+                textAlign: suggestionLang === 'ar' ? 'right' : 'left',
+              }}>{section.suggestedText}</div>
             <button type="button"
               onClick={() => onCopy(section.suggestedText || '')}
               style={{

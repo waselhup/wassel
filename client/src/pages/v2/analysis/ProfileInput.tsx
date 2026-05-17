@@ -94,14 +94,10 @@ export default function ProfileInput() {
       customIndustryLabel: industry === 'other' ? customIndustry.trim() : undefined,
       targetRole: targetRole.trim() || undefined,
       targetCompany: targetCompany.trim() || undefined,
-      // The toggle controls the LONG-FORM details language
-      // (assessment / why / action / verdict). User picks this because
-      // no one changes their UI just to read explanations in another lang.
+      // One language for the whole report. The paste-ready "suggested" copy
+      // language is derived server-side from this + the profile's actual
+      // text (see analyzeTargeted).
       reportLanguage: language,
-      // Paste-ready "suggested" LinkedIn copy = current UI language.
-      // The user pastes it directly onto their profile, so it must match
-      // the UI they're working in.
-      uiLanguage: isAr ? 'ar' : 'en',
     };
     setAnalysisParams(id, params);
     navigate(`/v2/analyze/loading?id=${id}`);
@@ -222,11 +218,11 @@ export default function ProfileInput() {
           </Card>
 
           <Card padding="lg" radius="lg">
-            <Eyebrow className="mb-2 block">{isAr ? 'لغة التفاصيل والشرح' : 'Details & explanation language'}</Eyebrow>
+            <Eyebrow className="mb-2 block">{isAr ? 'لغة التحليل' : 'Report language'}</Eyebrow>
             <p className="mb-2.5 font-ar text-[12px] text-v2-dim">
               {isAr
-                ? 'تختار اللغة التي تريد قراءة التفاصيل والشرح والتوصيات بها. النص المُقترَح للصق على بروفايلك يبقى بلغة واجهتك الحالية'
-                : "Pick the language for the long-form details, reasoning and recommendations. The suggested LinkedIn copy stays in your current UI language so you can paste it directly."}
+                ? 'اللغة التي تقرأ بها كل تفاصيل التحليل. النص المُقترَح للصق على بروفايلك سيكون بنفس لغة بروفايلك الحالي (لو اخترت العربية)، أو بالإنجليزية (لو اخترت الإنجليزية)'
+                : 'The language all explanations are written in. The paste-ready suggested copy follows your profile\'s actual language when you pick Arabic, or is always English when you pick English.'}
             </p>
             <div className="flex gap-2">
               {(['ar', 'en'] as ReportLang[]).map((l) => {
