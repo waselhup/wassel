@@ -1735,5 +1735,82 @@
     "cta_title": "جاهز لتطوير حضورك على LinkedIn؟",
     "cta_primary": "ابدأ الآن مجاناً",
     "cta_secondary": "الرجوع للرئيسية"
+  },
+  "landing": {
+    "brand": "وصل",
+    "skipToContent": "تخطٍ إلى المحتوى الرئيسي",
+    "publicNav": {
+      "home": "الرئيسية",
+      "pricing": "الأسعار",
+      "login": "تسجيل الدخول",
+      "signup": "إنشاء حساب"
+    },
+    "hero": {
+      "eyebrow": "الذكاء الاصطناعي · نموّ لينكد إن",
+      "headlineLine1": "بروفايل لينكد إن",
+      "headlineLine2": "يجلب الفرص",
+      "headlineHighlight": "تلقائياً",
+      "subtitle": "تحليل ذكي ببروفايلك، توصيات قابلة للتطبيق، ومنشورات بصوتك أنت — مصمَّم للسوق السعودي والخليجي",
+      "ctaPrimary": "ابدأ مجاناً",
+      "ctaSecondary": "تسجيل الدخول",
+      "signIn": "دخول",
+      "freeTokensSuffix": "توكن مجاني · بدون بطاقة ائتمان"
+    },
+    "features": {
+      "eyebrow": "المنتج",
+      "heading": "ثلاث أدوات مترابطة، نتيجة واحدة",
+      "radar": {
+        "title": "الرادار",
+        "description": "تحليل ذكي لبروفايلك مع 3 توصيات بأعلى أثر، مرتّبة بحسب التأثير على دور هدف"
+      },
+      "studio": {
+        "title": "الاستوديو",
+        "description": "صياغة منشورات احترافية بصوتك ولهجتك، بنبرات مختلفة وقوالب جاهزة"
+      },
+      "cv": {
+        "title": "سيرة ذكية",
+        "description": "سيرة ذاتية مخصّصة تُستخرج تلقائياً من بروفايلك ومُعدَّلة لكل وظيفة"
+      }
+    },
+    "pricingTeaser": {
+      "eyebrow": "الأسعار",
+      "title": "ابدأ مجاناً",
+      "subtitleSuffix": "باقات · بدون التزام",
+      "cta": "الأسعار ←"
+    },
+    "footer": {
+      "tagline": "منصّة الذكاء الاصطناعي لتطوير البروفايل المهني — مصمَّمة للسوق السعودي والخليجي",
+      "commercialRegistrationLabel": "السجل التجاري",
+      "commercialRegistrationShort": "س.ت",
+      "locationLabel": "الموقع",
+      "designedIn": "صُمم في الأحساء",
+      "columns": {
+        "product": {
+          "eyebrow": "المنتج",
+          "radar": "الرادار",
+          "studio": "الاستوديو",
+          "cvBuilder": "منشئ السيرة",
+          "pricing": "الأسعار"
+        },
+        "company": {
+          "eyebrow": "الشركة",
+          "about": "من نحن",
+          "contact": "تواصل معنا"
+        },
+        "legal": {
+          "eyebrow": "القانوني",
+          "terms": "الشروط",
+          "privacy": "الخصوصية",
+          "refund": "سياسة الاسترداد"
+        }
+      },
+      "mobileLinks": {
+        "about": "من نحن",
+        "terms": "الشروط",
+        "privacy": "الخصوصية",
+        "refund": "الاسترداد",
+        "contact": "تواصل"
+      }
+    }
   }
 }

@@ -1,6 +1,7 @@
 import { Suspense, useEffect, type ReactElement, type ReactNode } from 'react';
 import { lazyWithRetry as lazy } from '@/lib/lazy-with-retry';
 import { useLocation, useRoute } from 'wouter';
+import { useTranslation } from 'react-i18next';
 import { JobsProvider } from '@/lib/v2/jobs';
 import { ToastProvider, useToast } from '@/lib/v2/toast';
 import type { Job } from '@/lib/v2/jobs';
@@ -54,12 +55,13 @@ function V2Loader() {
  * Skip-to-content link rendered at the very top. Hidden until focused.
  */
 function SkipLink() {
+  const { t } = useTranslation();
   return (
     <a
       href="#v2-main"
       className="absolute start-4 top-2 z-[100] -translate-y-12 rounded-v2-md bg-v2-ink px-3 py-2 font-ar text-[13px] font-semibold text-white shadow-lift transition-transform duration-200 ease-out focus:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/50"
     >
-      تخطٍ إلى المحتوى الرئيسي
+      {t('landing.skipToContent')}
     </a>
   );
 }
@@ -116,14 +118,15 @@ function ProtectedShell({ children }: { children: ReactNode }) {
  * sidebar or jobs/account cluster (Landing/Auth/Pricing don't need them) and
  * with public-marketing nav links instead of app nav.
  */
-const PUBLIC_NAV_LINKS = [
-  { id: 'home',    label: 'الرئيسية',     href: '/v2' },
-  { id: 'pricing', label: 'الأسعار',      href: '/v2/pricing' },
-  { id: 'login',   label: 'تسجيل دخول',    href: '/v2/login' },
-  { id: 'signup',  label: 'إنشاء حساب',    href: '/v2/signup', cta: true },
-];
-
 function PublicShell({ children }: { children: ReactNode }) {
+  const { t } = useTranslation();
+  const publicNavLinks = [
+    { id: 'home',    label: t('landing.publicNav.home'),    href: '/v2' },
+    { id: 'pricing', label: t('landing.publicNav.pricing'), href: '/v2/pricing' },
+    { id: 'login',   label: t('landing.publicNav.login'),   href: '/v2/login' },
+    { id: 'signup',  label: t('landing.publicNav.signup'),  href: '/v2/signup', cta: true },
+  ];
+
   return (
     <ErrorBoundary>
       <SkipLink />
@@ -131,7 +134,7 @@ function PublicShell({ children }: { children: ReactNode }) {
         withSidebar={false}
         showAccountCluster={false}
         showPulse={false}
-        navLinks={PUBLIC_NAV_LINKS}
+        navLinks={publicNavLinks}
       >
         <main id="v2-main" className="min-h-[100dvh] lg:min-h-0">
           <PageTransition>{children}</PageTransition>

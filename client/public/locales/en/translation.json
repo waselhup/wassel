@@ -1741,5 +1741,82 @@
     "cta_title": "Ready to grow your LinkedIn presence?",
     "cta_primary": "Get started free",
     "cta_secondary": "Back to home"
+  },
+  "landing": {
+    "brand": "Wassel",
+    "skipToContent": "Skip to main content",
+    "publicNav": {
+      "home": "Home",
+      "pricing": "Pricing",
+      "login": "Sign in",
+      "signup": "Sign up"
+    },
+    "hero": {
+      "eyebrow": "AI · LINKEDIN GROWTH",
+      "headlineLine1": "A LinkedIn profile",
+      "headlineLine2": "that attracts opportunities",
+      "headlineHighlight": "automatically",
+      "subtitle": "Smart profile analysis, actionable recommendations, and posts in your own voice — built for the Saudi and Gulf market",
+      "ctaPrimary": "Start for free",
+      "ctaSecondary": "Sign in",
+      "signIn": "Sign in",
+      "freeTokensSuffix": "free tokens · no credit card required"
+    },
+    "features": {
+      "eyebrow": "The product",
+      "heading": "Three connected tools, one outcome",
+      "radar": {
+        "title": "Radar",
+        "description": "A smart read of your profile with the three highest-impact recommendations, ranked by their effect on your target role"
+      },
+      "studio": {
+        "title": "Studio",
+        "description": "Craft professional posts in your own voice and dialect — across tones, with ready-made templates"
+      },
+      "cv": {
+        "title": "Smart CV",
+        "description": "A tailored CV pulled automatically from your profile and adapted for every role you apply to"
+      }
+    },
+    "pricingTeaser": {
+      "eyebrow": "Pricing",
+      "title": "Start for free",
+      "subtitleSuffix": "plans · no commitment",
+      "cta": "See pricing →"
+    },
+    "footer": {
+      "tagline": "The AI platform for growing your professional profile — built for the Saudi and Gulf market",
+      "commercialRegistrationLabel": "Commercial registration",
+      "commercialRegistrationShort": "CR",
+      "locationLabel": "Location",
+      "designedIn": "Designed in Al-Ahsa",
+      "columns": {
+        "product": {
+          "eyebrow": "Product",
+          "radar": "Radar",
+          "studio": "Studio",
+          "cvBuilder": "CV builder",
+          "pricing": "Pricing"
+        },
+        "company": {
+          "eyebrow": "Company",
+          "about": "About",
+          "contact": "Contact"
+        },
+        "legal": {
+          "eyebrow": "Legal",
+          "terms": "Terms",
+          "privacy": "Privacy",
+          "refund": "Refund policy"
+        }
+      },
+      "mobileLinks": {
+        "about": "About",
+        "terms": "Terms",
+        "privacy": "Privacy",
+        "refund": "Refund",
+        "contact": "Contact"
+      }
+    }
   }
 }

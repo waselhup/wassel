@@ -1,58 +1,64 @@
 import { useLocation } from 'wouter';
+import { useTranslation } from 'react-i18next';
 import Eyebrow from '@/components/v2/Eyebrow';
 import NumDisplay from '@/components/v2/NumDisplay';
 import { COMPANY_LEGAL_INFO, COPYRIGHT_YEAR } from '@/lib/v2/companyInfo';
 
 interface FooterColumn {
-  eyebrow: string;
-  links: { label: string; href: string }[];
+  eyebrowKey: string;
+  links: { labelKey: string; href: string }[];
 }
 
 const FOOTER_COLUMNS: FooterColumn[] = [
   {
-    eyebrow: 'المنتج',
+    eyebrowKey: 'landing.footer.columns.product.eyebrow',
     links: [
-      { label: 'الرادار',         href: '/v2/analyze' },
-      { label: 'الاستوديو',       href: '/v2/posts' },
-      { label: 'منشئ السيرة',     href: '/v2/cvs' },
-      { label: 'الأسعار',         href: '/v2/pricing' },
+      { labelKey: 'landing.footer.columns.product.radar',     href: '/v2/analyze' },
+      { labelKey: 'landing.footer.columns.product.studio',    href: '/v2/posts' },
+      { labelKey: 'landing.footer.columns.product.cvBuilder', href: '/v2/cvs' },
+      { labelKey: 'landing.footer.columns.product.pricing',   href: '/v2/pricing' },
     ],
   },
   {
-    eyebrow: 'الشركة',
+    eyebrowKey: 'landing.footer.columns.company.eyebrow',
     links: [
-      { label: 'من نحن',          href: '/about' },
-      { label: 'تواصل معنا',      href: '/contact' },
+      { labelKey: 'landing.footer.columns.company.about',   href: '/about' },
+      { labelKey: 'landing.footer.columns.company.contact', href: '/contact' },
     ],
   },
   {
-    eyebrow: 'القانوني',
+    eyebrowKey: 'landing.footer.columns.legal.eyebrow',
     links: [
-      { label: 'الشروط',          href: '/terms' },
-      { label: 'الخصوصية',         href: '/privacy' },
-      { label: 'سياسة الاسترداد',   href: '/refund' },
+      { labelKey: 'landing.footer.columns.legal.terms',   href: '/terms' },
+      { labelKey: 'landing.footer.columns.legal.privacy', href: '/privacy' },
+      { labelKey: 'landing.footer.columns.legal.refund',  href: '/refund' },
     ],
   },
 ];
 
 const MOBILE_LINKS = [
-  { label: 'من نحن',           href: '/about' },
-  { label: 'الشروط',           href: '/terms' },
-  { label: 'الخصوصية',          href: '/privacy' },
-  { label: 'الاسترداد',          href: '/refund' },
-  { label: 'تواصل',             href: '/contact' },
+  { labelKey: 'landing.footer.mobileLinks.about',   href: '/about' },
+  { labelKey: 'landing.footer.mobileLinks.terms',   href: '/terms' },
+  { labelKey: 'landing.footer.mobileLinks.privacy', href: '/privacy' },
+  { labelKey: 'landing.footer.mobileLinks.refund',  href: '/refund' },
+  { labelKey: 'landing.footer.mobileLinks.contact', href: '/contact' },
 ];
 
-const BrandMark = () => (
-  <span className="flex items-center gap-2">
-    <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-      <circle cx="11" cy="11" r="9"   stroke="var(--teal-700)" strokeWidth="1.4" />
-      <circle cx="11" cy="11" r="5"   stroke="var(--teal-700)" strokeWidth="1.4" />
-      <circle cx="11" cy="11" r="1.4" fill="var(--teal-700)" />
-    </svg>
-    <span className="font-ar text-[16px] font-bold text-v2-ink">{COMPANY_LEGAL_INFO.brandAr}</span>
-  </span>
-);
+function BrandMark() {
+  const { t, i18n } = useTranslation();
+  const isAr = (i18n.language || 'ar').startsWith('ar');
+  const brand = isAr ? COMPANY_LEGAL_INFO.brandAr : COMPANY_LEGAL_INFO.brandEn;
+  return (
+    <span className="flex items-center gap-2">
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+        <circle cx="11" cy="11" r="9"   stroke="var(--teal-700)" strokeWidth="1.4" />
+        <circle cx="11" cy="11" r="5"   stroke="var(--teal-700)" strokeWidth="1.4" />
+        <circle cx="11" cy="11" r="1.4" fill="var(--teal-700)" />
+      </svg>
+      <span className="font-ar text-[16px] font-bold text-v2-ink">{brand || t('landing.brand')}</span>
+    </span>
+  );
+}
 
 /**
  * Footer used across the public marketing pages (Landing, About, Contact,
@@ -61,7 +67,13 @@ const BrandMark = () => (
  */
 export default function PublicFooter() {
   const [, navigate] = useLocation();
+  const { t, i18n } = useTranslation();
+  const isAr = (i18n.language || 'ar').startsWith('ar');
   const cr = COMPANY_LEGAL_INFO.commercialRegistration;
+  const city = isAr ? COMPANY_LEGAL_INFO.city : COMPANY_LEGAL_INFO.cityEn;
+  const region = isAr ? COMPANY_LEGAL_INFO.regionAr : COMPANY_LEGAL_INFO.regionEn;
+  const country = isAr ? COMPANY_LEGAL_INFO.country : COMPANY_LEGAL_INFO.countryEn;
+  const locationSeparator = isAr ? '، ' : ', ';
 
   return (
     <>
@@ -71,7 +83,7 @@ export default function PublicFooter() {
           <div className="flex w-full items-center justify-between">
             <Eyebrow>© WASSEL · <NumDisplay>{COPYRIGHT_YEAR}</NumDisplay></Eyebrow>
             {cr && (
-              <Eyebrow>س.ت · <NumDisplay>{cr}</NumDisplay></Eyebrow>
+              <Eyebrow>{t('landing.footer.commercialRegistrationShort')} · <NumDisplay>{cr}</NumDisplay></Eyebrow>
             )}
           </div>
           <div className="flex flex-wrap gap-x-3.5 gap-y-1.5 font-ar text-[11px] text-v2-dim">
@@ -82,7 +94,7 @@ export default function PublicFooter() {
                 onClick={() => navigate(l.href)}
                 className="hover:text-v2-body cursor-pointer transition-colors duration-200 ease-out"
               >
-                {l.label}
+                {t(l.labelKey)}
               </button>
             ))}
           </div>
@@ -95,36 +107,36 @@ export default function PublicFooter() {
           <div>
             <BrandMark />
             <p className="mt-3 max-w-[280px] font-ar text-[13px] leading-relaxed text-v2-dim">
-              منصّة الذكاء الاصطناعي لتطوير البروفايل المهني — مصمَّمة للسوق السعودي والخليجي.
+              {t('landing.footer.tagline')}
             </p>
             <div className="mt-4 space-y-1 font-ar text-[12px] text-v2-dim">
               {cr && (
                 <div>
-                  <span className="text-v2-mute">السجل التجاري · </span>
+                  <span className="text-v2-mute">{t('landing.footer.commercialRegistrationLabel')} · </span>
                   <NumDisplay className="text-v2-body">{cr}</NumDisplay>
                 </div>
               )}
               <div>
-                <span className="text-v2-mute">الموقع · </span>
+                <span className="text-v2-mute">{t('landing.footer.locationLabel')} · </span>
                 <span className="text-v2-body">
-                  {COMPANY_LEGAL_INFO.city}، {COMPANY_LEGAL_INFO.regionAr}، {COMPANY_LEGAL_INFO.country}
+                  {city}{locationSeparator}{region}{locationSeparator}{country}
                 </span>
               </div>
             </div>
           </div>
 
           {FOOTER_COLUMNS.map((col) => (
-            <div key={col.eyebrow}>
-              <Eyebrow className="mb-3 block">{col.eyebrow}</Eyebrow>
+            <div key={col.eyebrowKey}>
+              <Eyebrow className="mb-3 block">{t(col.eyebrowKey)}</Eyebrow>
               <ul className="m-0 flex list-none flex-col gap-2 p-0">
                 {col.links.map((l) => (
-                  <li key={l.label}>
+                  <li key={l.labelKey}>
                     <button
                       type="button"
                       onClick={() => navigate(l.href)}
                       className="font-ar text-[13px] text-v2-body hover:text-teal-700 cursor-pointer transition-colors duration-200 ease-out"
                     >
-                      {l.label}
+                      {t(l.labelKey)}
                     </button>
                   </li>
                 ))}
@@ -135,7 +147,7 @@ export default function PublicFooter() {
 
         <div className="mt-12 flex items-center justify-between border-t border-v2-line pt-6">
           <Eyebrow>© WASSEL · <NumDisplay>{COPYRIGHT_YEAR}</NumDisplay></Eyebrow>
-          <span className="font-ar text-[12px] text-v2-dim">صُمم في الأحساء.</span>
+          <span className="font-ar text-[12px] text-v2-dim">{t('landing.footer.designedIn')}</span>
         </div>
       </footer>
     </>

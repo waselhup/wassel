@@ -10,26 +10,29 @@ import PublicFooter from '@/components/v2/PublicFooter';
 
 interface Feature {
   num: string;
-  title: string;
-  description: string;
+  titleKey: string;
+  descriptionKey: string;
 }
 
 const FEATURES: Feature[] = [
-  { num: '01', title: 'الرادار',     description: 'تحليل ذكي لبروفايلك مع 3 توصيات بأعلى أثر، مرتّبة بحسب التأثير على دور هدف' },
-  { num: '02', title: 'الاستوديو',   description: 'صياغة منشورات احترافية بصوتك ولهجتك، بنبرات مختلفة وقوالب جاهزة' },
-  { num: '03', title: 'سيرة ذكية',   description: 'CV مخصّص يستخرج تلقائياً من بروفايلك ومُعدَّل لكل وظيفة' },
+  { num: '01', titleKey: 'landing.features.radar.title',  descriptionKey: 'landing.features.radar.description' },
+  { num: '02', titleKey: 'landing.features.studio.title', descriptionKey: 'landing.features.studio.description' },
+  { num: '03', titleKey: 'landing.features.cv.title',     descriptionKey: 'landing.features.cv.description' },
 ];
 
-const BrandMark = () => (
-  <span className="flex items-center gap-2 px-2 py-1">
-    <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-      <circle cx="11" cy="11" r="9"   stroke="var(--teal-700)" strokeWidth="1.4" />
-      <circle cx="11" cy="11" r="5"   stroke="var(--teal-700)" strokeWidth="1.4" />
-      <circle cx="11" cy="11" r="1.4" fill="var(--teal-700)" />
-    </svg>
-    <span className="font-ar text-[16px] font-bold text-v2-ink">وصل</span>
-  </span>
-);
+function BrandMark() {
+  const { t } = useTranslation();
+  return (
+    <span className="flex items-center gap-2 px-2 py-1">
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+        <circle cx="11" cy="11" r="9"   stroke="var(--teal-700)" strokeWidth="1.4" />
+        <circle cx="11" cy="11" r="5"   stroke="var(--teal-700)" strokeWidth="1.4" />
+        <circle cx="11" cy="11" r="1.4" fill="var(--teal-700)" />
+      </svg>
+      <span className="font-ar text-[16px] font-bold text-v2-ink">{t('landing.brand')}</span>
+    </span>
+  );
+}
 
 /** Decorative concentric-rings illustration used in the desktop hero,
  * with the V2 SpinningLogo centered on top of it for added motion. */
@@ -84,7 +87,7 @@ function Landing() {
             size="sm"
             onClick={() => navigate('/v2/login')}
           >
-            {t('v2.landing.signIn', 'دخول')}
+            {t('landing.hero.signIn')}
           </Button>
         }
       />
@@ -95,14 +98,14 @@ function Landing() {
         <section className="mb-9 mt-2 lg:mb-0 lg:mt-0 lg:py-24">
           <div className="lg:grid lg:grid-cols-2 lg:items-center lg:gap-16">
             <div className="lg:order-1">
-              <Eyebrow className="mb-3 block !text-teal-700">AI · LINKEDIN GROWTH</Eyebrow>
+              <Eyebrow className="mb-3 block !text-teal-700">{t('landing.hero.eyebrow')}</Eyebrow>
               <h1 className="font-ar font-bold leading-[1.15] -tracking-[0.01em] text-v2-ink text-[36px] lg:text-[56px]">
-                بروفايل لينكد إن<br />
-                يجلب الفرص<br />
-                <span className="font-semibold text-teal-700">تلقائياً.</span>
+                {t('landing.hero.headlineLine1')}<br />
+                {t('landing.hero.headlineLine2')}<br />
+                <span className="font-semibold text-teal-700">{t('landing.hero.headlineHighlight')}</span>
               </h1>
               <p className="mt-3.5 font-ar leading-relaxed text-v2-body text-[15px] lg:mt-5 lg:max-w-[520px] lg:text-[17px]">
-                تحليل ذكي ببروفايلك، توصيات قابلة للتطبيق، ومنشورات بصوتك أنت — مصمَّم للسوق السعودي والخليجي.
+                {t('landing.hero.subtitle')}
               </p>
 
               {/* CTAs — stacked on mobile, side-by-side on desktop */}
@@ -114,7 +117,7 @@ function Landing() {
                   onClick={() => navigate('/v2/signup')}
                   className="lg:w-auto lg:px-7"
                 >
-                  {t('v2.landing.startFree', 'ابدأ مجاناً')}
+                  {t('landing.hero.ctaPrimary')}
                 </Button>
                 <Button
                   variant="secondary"
@@ -123,11 +126,11 @@ function Landing() {
                   onClick={() => navigate('/v2/login')}
                   className="lg:w-auto lg:px-7"
                 >
-                  {t('v2.landing.login', 'تسجيل الدخول')}
+                  {t('landing.hero.ctaSecondary')}
                 </Button>
               </div>
               <p className="mt-2.5 text-center font-ar text-[13px] text-v2-dim lg:text-start">
-                <NumDisplay>10</NumDisplay> توكن مجاني · بدون بطاقة ائتمان
+                <NumDisplay>10</NumDisplay> {t('landing.hero.freeTokensSuffix')}
               </p>
             </div>
 
@@ -139,9 +142,9 @@ function Landing() {
 
         {/* FEATURES — stacked rows on mobile, 3-card grid on desktop */}
         <section className="mb-10 lg:mb-0 lg:py-24">
-          <Eyebrow className="mb-3.5 block lg:mb-3 lg:text-center">المنتج</Eyebrow>
+          <Eyebrow className="mb-3.5 block lg:mb-3 lg:text-center">{t('landing.features.eyebrow')}</Eyebrow>
           <h2 className="hidden font-ar font-bold text-v2-ink lg:mx-auto lg:mb-12 lg:block lg:max-w-[640px] lg:text-center lg:text-[36px] lg:leading-tight">
-            ثلاث أدوات مترابطة، نتيجة واحدة.
+            {t('landing.features.heading')}
           </h2>
 
           <div className="flex flex-col lg:grid lg:grid-cols-3 lg:gap-6">
@@ -158,10 +161,10 @@ function Landing() {
                 </NumDisplay>
                 <div>
                   <div className="mb-1 font-ar text-[14px] font-semibold text-v2-ink lg:mb-2 lg:text-[18px]">
-                    {f.title}
+                    {t(f.titleKey)}
                   </div>
                   <div className="font-ar leading-relaxed text-v2-body text-[13px] lg:text-[14px]">
-                    {f.description}
+                    {t(f.descriptionKey)}
                   </div>
                 </div>
               </div>
@@ -178,16 +181,16 @@ function Landing() {
               lg:mx-auto lg:max-w-[720px] lg:rounded-v2-xl lg:px-10 lg:py-10 lg:shadow-card"
           >
             <div>
-              <Eyebrow className="mb-1 block !text-teal-700 lg:mb-2">PRICING</Eyebrow>
+              <Eyebrow className="mb-1 block !text-teal-700 lg:mb-2">{t('landing.pricingTeaser.eyebrow')}</Eyebrow>
               <div className="font-ar text-[14px] font-semibold text-v2-ink lg:text-[24px]">
-                ابدأ مجاناً
+                {t('landing.pricingTeaser.title')}
               </div>
               <div className="mt-0.5 font-ar text-[12px] text-v2-dim lg:mt-2 lg:text-[14px]">
-                <NumDisplay>4</NumDisplay> باقات · بدون التزام
+                <NumDisplay>4</NumDisplay> {t('landing.pricingTeaser.subtitleSuffix')}
               </div>
             </div>
             <span className="font-ar text-[13px] font-semibold text-teal-700 lg:text-[15px]">
-              الأسعار ←
+              {t('landing.pricingTeaser.cta')}
             </span>
           </button>
         </section>

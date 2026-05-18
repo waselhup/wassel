@@ -24,12 +24,18 @@ export interface CompanyLegalInfo {
   refundEmail: string;
   /** Privacy / data-protection inbox (today routes to the general inbox) */
   privacyEmail: string;
-  /** City of operations */
+  /** City of operations (AR) */
   city: string;
+  /** City of operations (EN) */
+  cityEn: string;
   /** Region / administrative area, AR */
   regionAr: string;
-  /** Country */
+  /** Region / administrative area, EN */
+  regionEn: string;
+  /** Country (AR) */
   country: string;
+  /** Country (EN) */
+  countryEn: string;
   /** ISO 3166-1 alpha-2 */
   countryCode: 'SA';
   /** Business hours, AR */
@@ -54,8 +60,11 @@ export const COMPANY_LEGAL_INFO: CompanyLegalInfo = {
   refundEmail: PRIMARY_EMAIL,
   privacyEmail: PRIMARY_EMAIL,
   city: 'الأحساء',
+  cityEn: 'Al-Ahsa',
   regionAr: 'المنطقة الشرقية',
+  regionEn: 'Eastern Province',
   country: 'المملكة العربية السعودية',
+  countryEn: 'Kingdom of Saudi Arabia',
   countryCode: 'SA',
   businessHoursAr: 'الأحد – الخميس، 9:00 ص – 6:00 م',
   businessHoursEn: 'Sunday – Thursday, 9:00 AM – 6:00 PM',
