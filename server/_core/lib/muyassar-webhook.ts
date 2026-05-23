@@ -90,8 +90,14 @@ export async function muyassarWebhookHandler(req: Request, res: Response) {
     (envelope.data && typeof envelope.data === 'object') ? envelope.data : envelope;
   const eventType = envelope.type;
 
-  const paymentId = payment.metadata?.payment_id;
+  // Moyasar payment objects don't inherit invoice metadata, so
+  // metadata.payment_id is empty on most webhook deliveries even though
+  // it was set on the invoice. We resolve our internal row in two steps:
+  //   1. If metadata.payment_id is present, use it directly (fast path).
+  //   2. Else fall back to invoice_id → payment_transactions.muyassar_invoice_id.
+  const metadataPaymentId = payment.metadata?.payment_id;
   const muyassarTxId = payment.id;
+  const muyassarInvoiceId = payment.invoice_id;
   // Prefer event-type signal when present (payment_paid / payment_failed /
   // payment_refunded / payment_authorized / payment_captured / payment_verified).
   // Fall back to payment.status for legacy/test setups.
@@ -106,24 +112,50 @@ export async function muyassarWebhookHandler(req: Request, res: Response) {
             ? 'authorized'
             : payment.status;
 
-  if (!paymentId || !muyassarTxId) {
-    return res.status(400).json({ error: 'Missing payment_id or transaction id' });
+  if (!muyassarTxId) {
+    return res.status(400).json({ error: 'Missing transaction id' });
+  }
+  if (!metadataPaymentId && !muyassarInvoiceId) {
+    // No way to resolve this back to a payment_transactions row.
+    // Common for orphan payments (created outside our checkout flow).
+    // Return 200 so Moyasar stops retrying.
+    console.warn('[muyassar-webhook] no payment_id or invoice_id, dropping', { muyassarTxId });
+    return res.status(200).json({ ok: true, status: 'no_link' });
   }
 
   const supabase = getSupabase();
 
   // Idempotency check: already processed this Muyassar transaction?
-  const { data: existing } = await supabase
-    .from('payment_transactions')
-    .select('id, status, muyassar_transaction_id, muyassar_invoice_id, user_id, type, amount_sar, metadata')
-    .eq('id', paymentId)
-    .single();
+  let existing: any = null;
+  if (metadataPaymentId) {
+    const r = await supabase
+      .from('payment_transactions')
+      .select('id, status, muyassar_transaction_id, muyassar_invoice_id, user_id, type, amount_sar, metadata')
+      .eq('id', metadataPaymentId)
+      .maybeSingle();
+    existing = r.data;
+  }
+  if (!existing && muyassarInvoiceId) {
+    const r = await supabase
+      .from('payment_transactions')
+      .select('id, status, muyassar_transaction_id, muyassar_invoice_id, user_id, type, amount_sar, metadata')
+      .eq('muyassar_invoice_id', muyassarInvoiceId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    existing = r.data;
+  }
+  const paymentId = existing?.id;
 
   if (!existing) {
     // Payment doesn't exist in our DB. Could be a webhook for a payment
     // created on a different environment — return 200 so Moyasar stops
     // retrying. Log loudly so ops can investigate.
-    console.warn('[muyassar-webhook] payment not found, dropping', { paymentId });
+    console.warn('[muyassar-webhook] payment not found, dropping', {
+      metadataPaymentId,
+      muyassarInvoiceId,
+      muyassarTxId,
+    });
     return res.status(200).json({ ok: true, status: 'not_found' });
   }
 
