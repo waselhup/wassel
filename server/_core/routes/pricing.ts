@@ -235,7 +235,7 @@ export const pricingRouter = router({
           user_id: ctx.user.id,
           amount_sar: amount,
           currency: 'SAR',
-          type: 'subscription',
+          type: 'plan_subscription',
           reference_type: 'plan',
           reference_id: input.planId,
           status: 'pending',
@@ -261,7 +261,7 @@ export const pricingRouter = router({
           amountSar: amount,
           description: `Wassel ${plan.name_en} (${input.billingCycle})`,
           metadataExtra: {
-            type: 'subscription',
+            type: 'plan_subscription',
             plan_id: input.planId,
             billing_cycle: input.billingCycle,
           },

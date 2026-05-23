@@ -200,7 +200,7 @@ export async function muyassarWebhookHandler(req: Request, res: Response) {
 async function fulfillPayment(supabase: any, payment: any): Promise<void> {
   const { user_id, type, metadata } = payment;
 
-  if (type === 'subscription') {
+  if (type === 'plan_subscription') {
     await fulfillSubscription(supabase, user_id, payment);
   } else if (type === 'token_topup') {
     const qty = Number(metadata?.tokens_granted ?? 0);
