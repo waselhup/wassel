@@ -5,11 +5,12 @@ import type { Request, Response } from 'express';
 /**
  * Muyassar payment webhook handler.
  *
- * Verifies signature, marks the payment_transactions row 'completed', and
- * fulfills the order based on `type`:
- *   - subscription → create user_subscriptions row + grant monthly_tokens
- *   - token_topup  → grant N tokens
- *   - product      → grant token_cost tokens (and deliver bundle if applicable)
+ * Verifies the body's `secret_token` field against MOYASAR_WEBHOOK_SECRET
+ * (Moyasar inlines it in the JSON body — there's no HMAC header), marks
+ * the payment_transactions row 'completed', and fulfills the order:
+ *   - plan_subscription → create user_subscriptions row + grant monthly_tokens
+ *   - token_topup       → grant N tokens
+ *   - product           → grant token_cost tokens (and deliver bundle if applicable)
  *
  * Idempotent: re-deliveries of the same Muyassar transaction are detected
  * via payment_transactions.muyassar_transaction_id.
@@ -36,6 +37,13 @@ interface MuyassarEnvelopePayload {
   id?: string;
   type?: string; // 'payment_paid' | 'payment_failed' | etc.
   data?: MuyassarFlatPayload;
+  // Moyasar inlines the configured Secret Token as a top-level body field.
+  // There is NO header-based HMAC — verification is a plain equality check
+  // against this field.
+  secret_token?: string;
+  account_name?: string;
+  live?: boolean;
+  created_at?: string;
 }
 
 type MuyassarPayload = MuyassarFlatPayload & MuyassarEnvelopePayload;
@@ -48,43 +56,33 @@ function getSupabase() {
 }
 
 /**
- * Verify HMAC signature on the raw body.
- * Muyassar signs requests with `X-Muyassar-Signature: sha256=<hex>` using
- * the shared webhook secret. Compare in constant-time.
+ * Constant-time string equality (prevents timing attacks on the secret).
  */
-function verifySignature(rawBody: string, signature: string | undefined, secret: string): boolean {
-  if (!signature || !secret) return false;
-  const expected = crypto
-    .createHmac('sha256', secret)
-    .update(rawBody, 'utf8')
-    .digest('hex');
-  const provided = signature.replace(/^sha256=/, '');
-  if (expected.length !== provided.length) return false;
-  return crypto.timingSafeEqual(
-    Buffer.from(expected, 'hex'),
-    Buffer.from(provided, 'hex')
-  );
+function safeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(a, 'utf8'), Buffer.from(b, 'utf8'));
 }
 
 export async function muyassarWebhookHandler(req: Request, res: Response) {
-  const rawBody: string = (req as any).rawBody || JSON.stringify(req.body || {});
-  // Moyasar's official header is `x-moyasar-signature`; we also accept the
-  // historical mis-spelling for backwards compatibility with anything set up
-  // before the spelling was fixed.
-  const signature =
-    (req.headers['x-moyasar-signature'] as string | undefined) ||
-    (req.headers['x-muyassar-signature'] as string | undefined);
-  const secret =
+  const expectedSecret =
     process.env.MOYASAR_WEBHOOK_SECRET ||
     process.env.MUYASSAR_WEBHOOK_SECRET;
 
-  // Verify signature only if secret is configured (allows unsigned in dev).
-  if (secret && !verifySignature(rawBody, signature, secret)) {
-    console.warn('[muyassar-webhook] invalid signature');
-    return res.status(401).json({ error: 'Invalid signature' });
+  const envelope = (req.body || {}) as MuyassarPayload;
+
+  // Moyasar's webhook security model: the configured Secret Token is inlined
+  // as a top-level `secret_token` field in the JSON body. There is no header
+  // signature, no HMAC. We do a constant-time equality check against env.
+  // If MOYASAR_WEBHOOK_SECRET is unset (dev), skip verification so local
+  // testing without the dashboard works.
+  if (expectedSecret) {
+    const providedSecret = envelope.secret_token;
+    if (!providedSecret || !safeEqual(providedSecret, expectedSecret)) {
+      console.warn('[muyassar-webhook] invalid secret_token');
+      return res.status(401).json({ error: 'Invalid secret_token' });
+    }
   }
 
-  const envelope = (req.body || {}) as MuyassarPayload;
   // If the body is an event envelope { type, data: {...} }, unwrap it. The
   // payment object in `data` is what carries id/metadata/status. Otherwise
   // treat the body itself as the payment object (legacy/test shape).
