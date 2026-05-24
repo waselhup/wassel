@@ -33,7 +33,7 @@ const STEPS: Step[] = [
   { ar: 'تحليل المهارات والخبرات',      en: 'Analysing skills & experience',  descAr: 'معالجة تاريخ العمل',            descEn: 'Processing work history',      durationMs: 15_000 },
   { ar: 'فحص التعليم والشهادات',        en: 'Reviewing education & certs',    descAr: 'تقييم الخلفية الأكاديمية',      descEn: 'Evaluating credentials',       durationMs: 10_000 },
   { ar: 'تقييم قوة البروفايل',           en: 'Scoring profile strength',       descAr: 'حساب نقاط القوة',                descEn: 'Computing strength signals',   durationMs: 12_000 },
-  { ar: 'مقارنة مع السوق السعودي',       en: 'Benchmarking on Saudi market',   descAr: 'مقارنة مع قاعدة البيانات',       descEn: 'Comparing against benchmark',   durationMs: 18_000 },
+  { ar: 'مقارنة مع المعايير المهنية',     en: 'Benchmarking on industry standards', descAr: 'مقارنة مع قاعدة البيانات',     descEn: 'Comparing against benchmark',   durationMs: 18_000 },
   { ar: 'صياغة التوصيات بالذكاء الاصطناعي', en: 'Drafting AI recommendations', descAr: 'توليد نصائح مخصصة',              descEn: 'Generating tailored advice',   durationMs: 20_000 },
   { ar: 'حساب النتيجة النهائية',         en: 'Computing final score',          descAr: 'تجميع البيانات',                  descEn: 'Aggregating data',             durationMs:  8_000 },
   { ar: 'إعداد التقرير الشامل',           en: 'Preparing report',               descAr: 'تنسيق النتائج',                   descEn: 'Formatting output',            durationMs:  9_000 },

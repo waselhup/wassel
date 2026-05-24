@@ -130,14 +130,14 @@ export default function ProfileInput() {
 
       <div className="flex-1 px-[22px] pb-[110px] lg:px-0 lg:pb-0">
         <div className="mt-5 mb-6 lg:mt-2 lg:mb-8">
-          <Eyebrow className="mb-1.5 block">{isAr ? `الرادار · ${COST} توكن` : `RADAR · ${COST} TOKENS`}</Eyebrow>
+          <Eyebrow className="mb-1.5 block">{isAr ? `الرادار · ${COST} استخدام` : `RADAR · ${COST} USES`}</Eyebrow>
           <h1 className="font-ar font-bold leading-tight text-v2-ink text-[26px] lg:text-[32px]">
             {isAr ? 'لنحلل بروفايلك بدقة' : "Let's analyse your profile."}
           </h1>
           <p className="mt-2 font-ar text-[14px] text-v2-dim">
             {isAr
-              ? 'أدخل رابط لينكد إن، اختر هدفك، وسنُجري تحليلاً مخصصاً للسوق السعودي والخليجي'
-              : 'Drop your LinkedIn URL, pick a goal, and we will run a Saudi-market-aware deep analysis.'}
+              ? 'أدخل رابط LinkedIn، اختر هدفك، وسنُجري تحليلاً عميقاً ومخصصاً لأهدافك'
+              : 'Drop your LinkedIn URL, pick a goal, and we will run a deep, tailored analysis.'}
           </p>
         </div>
 

@@ -220,8 +220,8 @@ function Home() {
           <Eyebrow className="text-teal-700">{isAr ? 'نصيحة اليوم' : 'TIP · TODAY'}</Eyebrow>
           <p className="mt-1 font-ar text-[14px] leading-relaxed text-v2-ink-2">
             {isAr
-              ? <>المنشورات يومَي الثلاثاء والأربعاء صباحاً تحقق ظهوراً أعلى بـ <span className="font-semibold text-teal-700">3x</span> في السوق السعودي</>
-              : <>Posts on Tuesday and Wednesday mornings get <span className="font-semibold text-teal-700">3x</span> more reach in the Saudi/GCC market</>
+              ? <>المنشورات يومَي الثلاثاء والأربعاء صباحاً تحقق ظهوراً أعلى بـ <span className="font-semibold text-teal-700">3x</span> على LinkedIn</>
+              : <>Posts on Tuesday and Wednesday mornings get <span className="font-semibold text-teal-700">3x</span> more reach on LinkedIn</>
             }
           </p>
         </div>

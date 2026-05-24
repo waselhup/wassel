@@ -219,7 +219,7 @@
     },
     "signup": {
       "title": "Create Account",
-      "subtitle": "Join thousands of Saudi professionals",
+      "subtitle": "Join thousands of professionals on LinkedIn",
       "checkEmail": "Check your email for a confirmation link"
     },
     "resetPassword": {
@@ -1714,9 +1714,9 @@
   "about": {
     "eyebrow": "About Wassel",
     "title": "About Wassel",
-    "subtitle": "A Saudi platform built with craft — from the heart of Al-Ahsa",
-    "story_para1": "Wassel is a Saudi AI-powered platform built to help professionals across the Saudi and GCC markets grow their LinkedIn presence — from profile analysis and CV creation to content generation and outreach campaigns",
-    "story_para2": "We believe every Saudi professional deserves intelligent tools that understand their language, market, and cultural context",
+    "subtitle": "An Arabic-first platform built with craft — from the heart of Al-Ahsa",
+    "story_para1": "Wassel is an Arabic AI-powered platform that helps professionals grow their LinkedIn presence — from profile analysis and CV creation to content generation and outreach campaigns",
+    "story_para2": "We believe every professional deserves intelligent tools that understand their language and their goals",
     "team": {
       "eyebrow": "The Team",
       "title": "Built by two",
