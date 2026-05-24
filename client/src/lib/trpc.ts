@@ -399,6 +399,15 @@ export const trpc = {
       bundle_items: any | null;
       display_order: number;
     }>>('pricing.getProducts'),
+    createGuestAccount: (input: { fullName: string; phone: string; email: string }) =>
+      trpcMutation<
+        | { kind: 'existing_email'; email: string }
+        | {
+            kind: 'created';
+            userId: string;
+            session: { access_token: string; refresh_token: string };
+          }
+      >('pricing.createGuestAccount', input),
     getCurrentSubscription: () => trpcQuery<any | null>('pricing.getCurrentSubscription'),
     getTokenBalance: () => trpcQuery<{
       balance: number; totalPurchased: number; totalUsed: number; lastUpdated: string | null;

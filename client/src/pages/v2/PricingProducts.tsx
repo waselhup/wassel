@@ -8,6 +8,7 @@ import Eyebrow from '@/components/v2/Eyebrow';
 import NumDisplay from '@/components/v2/NumDisplay';
 import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/contexts/AuthContext';
+import GuestCheckoutForm from '@/components/v2/GuestCheckoutForm';
 
 interface Product {
   id: string;
@@ -44,6 +45,9 @@ function PricingProducts() {
   const [error, setError] = useState<string | null>(null);
   const [purchasing, setPurchasing] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<{ id: string; message: string; tone: 'success' | 'error' } | null>(null);
+  // When a guest clicks "Buy", we open the guest-account form and stash
+  // the product they wanted so we can resume the purchase after auth.
+  const [pendingGuestProduct, setPendingGuestProduct] = useState<Product | null>(null);
 
   const isAr = i18n.language === 'ar';
   const t = (ar: string, en: string) => isAr ? ar : en;
@@ -72,11 +76,10 @@ function PricingProducts() {
     return () => { cancelled = true; };
   }, [user]);
 
-  const handleBuyWithSAR = async (product: Product) => {
-    if (!user) {
-      navigate('/v2/signup');
-      return;
-    }
+  // Actually fire the protected purchaseProduct mutation. Pulled out of
+  // handleBuyWithSAR so the guest-form post-auth callback can also call it
+  // without going through the !user branch again.
+  const runProductPurchase = async (product: Product) => {
     setPurchasing(product.id);
     setFeedback(null);
     try {
@@ -104,8 +107,21 @@ function PricingProducts() {
     }
   };
 
+  const handleBuyWithSAR = async (product: Product) => {
+    if (!user) {
+      // Guest path — collect identity in the modal first; we resume the
+      // purchase from onAuthenticated below.
+      setPendingGuestProduct(product);
+      return;
+    }
+    await runProductPurchase(product);
+  };
+
   const handleUseTokens = (product: Product) => {
     if (!user) {
+      // Tokens are a feature-spend path, not a payment path. Anonymous users
+      // genuinely need an account to have a token balance, so bounce them
+      // to signup as before.
       navigate('/v2/signup');
       return;
     }
@@ -291,6 +307,27 @@ function PricingProducts() {
           </Button>
         </section>
       </div>
+
+      {/* Guest-account capture for buyers who clicked Buy without signing in.
+          Account is provisioned silently; we resume the purchase via
+          runProductPurchase as soon as supabase setSession lands. */}
+      {pendingGuestProduct && (
+        <GuestCheckoutForm
+          title={t('بيانات الدفع', 'Your details')}
+          subtitle={
+            t(
+              `${isAr ? pendingGuestProduct.name_ar : pendingGuestProduct.name_en} — ${num(pendingGuestProduct.price_sar)} ر.س`,
+              `${pendingGuestProduct.name_en} — ${num(pendingGuestProduct.price_sar)} SAR`,
+            )
+          }
+          onCancel={() => setPendingGuestProduct(null)}
+          onAuthenticated={() => {
+            const target = pendingGuestProduct;
+            setPendingGuestProduct(null);
+            if (target) runProductPurchase(target);
+          }}
+        />
+      )}
     </Phone>
   );
 }

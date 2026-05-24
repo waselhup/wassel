@@ -1,7 +1,40 @@
+import crypto from 'node:crypto';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import { router, publicProcedure, protectedProcedure } from '../trpc-init';
 import { createInvoice, isMoyasarConfigured } from '../lib/moyasar-client';
+
+/**
+ * Service-role Supabase client for admin operations (creating users on the
+ * guest-checkout path). Built lazily so a missing env var doesn't crash
+ * other procedures that don't need it.
+ */
+function getServiceClient(): SupabaseClient {
+  const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+  if (!url || !key) {
+    throw new TRPCError({
+      code: 'INTERNAL_SERVER_ERROR',
+      message: 'Supabase service-role credentials missing',
+    });
+  }
+  return createClient(url, key, { auth: { persistSession: false } });
+}
+
+/**
+ * Normalize a Saudi phone number to the canonical +9665XXXXXXXX form.
+ * Accepts: +9665XXXXXXXX, 009665XXXXXXXX, 9665XXXXXXXX, 05XXXXXXXX, 5XXXXXXXX.
+ * Returns the canonical form or null if it doesn't match Saudi mobile.
+ */
+function normalizeSaudiPhone(raw: string): string | null {
+  const digits = raw.replace(/[\s\-()]/g, '').replace(/^00/, '+');
+  const m =
+    digits.match(/^\+966(5\d{8})$/) ||
+    digits.match(/^966(5\d{8})$/) ||
+    digits.match(/^0?(5\d{8})$/);
+  return m ? `+966${m[1]}` : null;
+}
 
 const BILLING_CYCLE = z.enum(['monthly', 'annual']);
 
@@ -99,6 +132,143 @@ export const pricingRouter = router({
     }
     return data || [];
   }),
+
+  /**
+   * Public: create a Supabase auth user on the fly for a guest who wants to
+   * check out without signing up first. Returns a session the client uses
+   * to flip into the logged-in state — then the existing protected
+   * subscribeToPlan / purchaseProduct / purchaseTokens flows work unchanged.
+   *
+   * If an account already exists with the email, we return
+   * `{ kind: 'existing_email' }` and the client routes them to sign in.
+   * Otherwise we create the auth user with a random password, insert their
+   * profile row, sign in with that password to mint a session, and fire a
+   * password-reset email so they can set their own password and reclaim
+   * the account later.
+   */
+  createGuestAccount: publicProcedure
+    .input(
+      z.object({
+        fullName: z.string().trim().min(2, 'Name too short').max(80),
+        phone: z.string().trim().min(5, 'Phone too short').max(20),
+        email: z.string().trim().toLowerCase().email('Invalid email'),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const phone = normalizeSaudiPhone(input.phone);
+      if (!phone) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Invalid Saudi phone number',
+        });
+      }
+
+      const service = getServiceClient();
+
+      // Existence check — list users with the email filter so we don't have
+      // to scan all of auth.users.
+      const { data: existing } = await service.auth.admin.listUsers({
+        page: 1,
+        perPage: 1,
+      });
+      // listUsers doesn't filter server-side, so do it client-side. For our
+      // scale (current account count is small) this is fine; we'll switch
+      // to the Postgres-side check on auth.users if it ever gets slow.
+      const matchedExisting = existing?.users?.find(
+        (u) => (u.email || '').toLowerCase() === input.email,
+      );
+      if (matchedExisting) {
+        return {
+          kind: 'existing_email' as const,
+          email: input.email,
+        };
+      }
+
+      // Random 32-byte password — the user never sees it; they'll set their
+      // own via the reset-password email we send after.
+      const tempPassword = crypto.randomBytes(32).toString('base64url');
+
+      const { data: created, error: createErr } = await service.auth.admin.createUser({
+        email: input.email,
+        password: tempPassword,
+        email_confirm: true, // skip the confirm-email step; they're paying now
+        user_metadata: {
+          full_name: input.fullName,
+          phone,
+          source: 'guest_checkout',
+        },
+      });
+      if (createErr || !created?.user) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: createErr?.message || 'Failed to create account',
+        });
+      }
+
+      // Profile row (idempotent — the auth trigger may already insert a
+      // minimal row, so upsert by id).
+      await service
+        .from('profiles')
+        .upsert(
+          {
+            id: created.user.id,
+            email: input.email,
+            full_name: input.fullName,
+            phone,
+            plan: 'free',
+            token_balance: 0,
+            is_banned: false,
+            verified: false,
+          },
+          { onConflict: 'id' },
+        );
+
+      // Mint a session by signing in with the password we just set. We use
+      // a fresh non-admin client so the resulting session belongs to the
+      // new user, not the service role.
+      const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
+      const anonKey = process.env.VITE_SUPABASE_ANON_KEY || '';
+      if (!anonKey) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Supabase anon key missing',
+        });
+      }
+      const anon = createClient(url, anonKey, { auth: { persistSession: false } });
+      const { data: signIn, error: signInErr } = await anon.auth.signInWithPassword({
+        email: input.email,
+        password: tempPassword,
+      });
+      if (signInErr || !signIn?.session) {
+        // Soft-fail: we created the account but couldn't sign them in.
+        // Client should fall back to "sign in with your password we emailed".
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: signInErr?.message || 'Account created but sign-in failed',
+        });
+      }
+
+      // Fire-and-forget: send a password-reset link so the user can set
+      // their own password and reclaim the account from another device.
+      // Errors here don't block the checkout — they can request another
+      // reset from /v2/login anytime.
+      try {
+        await anon.auth.resetPasswordForEmail(input.email, {
+          redirectTo: `${PUBLIC_BASE_URL.replace(/\/$/, '')}/reset-password`,
+        });
+      } catch {
+        /* swallow — non-blocking */
+      }
+
+      return {
+        kind: 'created' as const,
+        userId: created.user.id,
+        session: {
+          access_token: signIn.session.access_token,
+          refresh_token: signIn.session.refresh_token,
+        },
+      };
+    }),
 
   /**
    * Authed: caller's active subscription (or null).

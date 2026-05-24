@@ -111,10 +111,10 @@ function Pricing() {
       window.location.href = 'mailto:sales@wasselhub.com?subject=Enterprise%20Plan%20Inquiry';
       return;
     }
-    if (!user) {
-      navigate('/v2/signup');
-      return;
-    }
+    // Paid plan — open the checkout modal whether logged in or not. The
+    // modal collects name/phone/email for guests and auto-provisions a
+    // Supabase user before redirecting to Moyasar, so we always know who
+    // paid even when they never explicitly "signed up".
     setCheckoutPlan(plan);
   };
 
