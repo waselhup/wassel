@@ -22,26 +22,26 @@ const FOOTER_COLUMNS: FooterColumn[] = [
   {
     eyebrowKey: 'landing.footer.columns.company.eyebrow',
     links: [
-      { labelKey: 'landing.footer.columns.company.about',   href: '/about' },
-      { labelKey: 'landing.footer.columns.company.contact', href: '/contact' },
+      { labelKey: 'landing.footer.columns.company.about',   href: '/v2/about' },
+      { labelKey: 'landing.footer.columns.company.contact', href: '/v2/contact' },
     ],
   },
   {
     eyebrowKey: 'landing.footer.columns.legal.eyebrow',
     links: [
-      { labelKey: 'landing.footer.columns.legal.terms',   href: '/terms' },
-      { labelKey: 'landing.footer.columns.legal.privacy', href: '/privacy' },
-      { labelKey: 'landing.footer.columns.legal.refund',  href: '/refund' },
+      { labelKey: 'landing.footer.columns.legal.terms',   href: '/v2/terms' },
+      { labelKey: 'landing.footer.columns.legal.privacy', href: '/v2/privacy' },
+      { labelKey: 'landing.footer.columns.legal.refund',  href: '/v2/refund' },
     ],
   },
 ];
 
 const MOBILE_LINKS = [
-  { labelKey: 'landing.footer.mobileLinks.about',   href: '/about' },
-  { labelKey: 'landing.footer.mobileLinks.terms',   href: '/terms' },
-  { labelKey: 'landing.footer.mobileLinks.privacy', href: '/privacy' },
-  { labelKey: 'landing.footer.mobileLinks.refund',  href: '/refund' },
-  { labelKey: 'landing.footer.mobileLinks.contact', href: '/contact' },
+  { labelKey: 'landing.footer.mobileLinks.about',   href: '/v2/about' },
+  { labelKey: 'landing.footer.mobileLinks.terms',   href: '/v2/terms' },
+  { labelKey: 'landing.footer.mobileLinks.privacy', href: '/v2/privacy' },
+  { labelKey: 'landing.footer.mobileLinks.refund',  href: '/v2/refund' },
+  { labelKey: 'landing.footer.mobileLinks.contact', href: '/v2/contact' },
 ];
 
 function BrandMark() {

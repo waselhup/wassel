@@ -1,65 +1,100 @@
+import { useTranslation } from 'react-i18next';
 import Phone from '@/components/v2/Phone';
 import Card from '@/components/v2/Card';
 import Eyebrow from '@/components/v2/Eyebrow';
 import NumDisplay from '@/components/v2/NumDisplay';
 import SpinningLogo from '@/components/v2/SpinningLogo';
 import PublicFooter from '@/components/v2/PublicFooter';
+import PublicTopbar from '@/components/v2/PublicTopbar';
 import {
   COMPANY_LEGAL_INFO,
   PAYMENT_INFO,
   PAYMENT_METHODS,
 } from '@/lib/v2/companyInfo';
 
-const ACCEPTED = [
-  {
-    title: 'عدم الرضا عن الخدمة',
-    body: 'إذا لم تلبِّ الخدمة توقعاتك خلال أوّل تجربة استخدام',
+const COPY = {
+  ar: {
+    eyebrow: 'سياسة الاسترداد',
+    h1: 'تجربة واضحة وسياسة استرداد عادلة',
+    intro: `يمكنك طلب الاسترداد خلال ${PAYMENT_INFO.refundPeriodDays} يوماً من تاريخ الدفع وفق سياسة الاسترداد الموضحة أدناه`,
+    bannerTitle: `${PAYMENT_INFO.refundPeriodDays} يوماً لطلبات الاسترداد`,
+    bannerBody: 'تتم مراجعة الطلبات بسرعة ووفق الشروط الموضحة',
+    acceptedTitle: 'حالات مقبولة',
+    accepted: [
+      { title: 'مشكلة مؤثرة في الخدمة', body: 'إذا واجهت مشكلة تمنعك من استخدام المزايا الأساسية بشكل طبيعي' },
+      { title: 'مشكلة تقنية غير محلولة', body: 'إذا تعذر حل المشكلة خلال وقت معقول' },
+      { title: 'عملية دفع غير صحيحة',   body: 'في حال تكرار الخصم أو حدوث خطأ في عملية الدفع' },
+    ],
+    exceptionsTitle: 'حالات غير مشمولة',
+    exceptions: [
+      { title: 'استهلاك معظم الاستخدامات', body: 'الحسابات التي استهلكت جزءاً كبيراً من الاستخدامات المتاحة' },
+      { title: 'إساءة الاستخدام',          body: 'إساءة استخدام الخدمة أو مخالفة الشروط' },
+      { title: 'بعد انتهاء المدة',         body: 'الطلبات المقدمة بعد انتهاء المدة المحددة' },
+    ],
+    stepsEyebrow: 'طلب الاسترداد بأربع خطوات',
+    stepsTitle: 'بدون عناء، بدون رسوم خفية',
+    steps: [
+      { num: '01', title: 'تواصل معنا',  body: `راسلنا على ${COMPANY_LEGAL_INFO.refundEmail} مع رقم الفاتورة` },
+      { num: '02', title: 'اذكر التفاصيل', body: 'تاريخ الدفع، طريقة الدفع، وسبب طلب الاسترداد' },
+      { num: '03', title: 'مراجعة',       body: 'تتم مراجعة الطلب وإرسال تحديث بحالته خلال أيام العمل' },
+      { num: '04', title: 'الاسترداد',     body: `يصل المبلغ خلال ${PAYMENT_INFO.refundProcessingDaysMin}–${PAYMENT_INFO.refundProcessingDaysMax} أيام عمل بنفس وسيلة الدفع` },
+    ],
+    paymentEyebrow: 'الدفع الآمن',
+    paymentBody: 'يتم الدفع عبر مزود دفع معتمد باستخدام تشفير آمن لحماية المعاملات. معاملات آمنة ومشفرة لحماية بيانات الدفع',
+    contactEyebrow: 'للاسترداد والدعم',
+    contactSubject: 'طلب استرداد',
   },
-  {
-    title: 'مشاكل تقنية',
-    body: 'إذا واجهتَ مشكلة تقنية لم نتمكن من حلّها في وقت معقول',
+  en: {
+    eyebrow: 'REFUND POLICY',
+    h1: 'A clear experience and a fair refund policy',
+    intro: `You can request a refund within ${PAYMENT_INFO.refundPeriodDays} days of payment, in line with the policy outlined below`,
+    bannerTitle: `${PAYMENT_INFO.refundPeriodDays} days to request a refund`,
+    bannerBody: 'Requests are reviewed quickly and according to the stated terms',
+    acceptedTitle: 'Eligible cases',
+    accepted: [
+      { title: 'A service-impacting issue', body: 'If you face an issue that prevents you from using core features normally' },
+      { title: 'Unresolved technical issue', body: 'If a technical problem cannot be resolved within a reasonable time' },
+      { title: 'Incorrect payment',          body: 'In case of a duplicate charge or an error in the payment process' },
+    ],
+    exceptionsTitle: 'Cases not covered',
+    exceptions: [
+      { title: 'High usage already consumed', body: 'Accounts that have consumed a significant portion of available usage' },
+      { title: 'Misuse of the service',       body: 'Misuse of the service or violation of the terms' },
+      { title: 'After the period ends',       body: 'Requests submitted after the specified period has ended' },
+    ],
+    stepsEyebrow: 'Refund in four steps',
+    stepsTitle: 'No hassle, no hidden fees',
+    steps: [
+      { num: '01', title: 'Contact us',    body: `Email ${COMPANY_LEGAL_INFO.refundEmail} with the invoice number` },
+      { num: '02', title: 'Share details', body: 'Date of payment, method, and reason for the refund request' },
+      { num: '03', title: 'Review',        body: 'We review the request and send a status update within business days' },
+      { num: '04', title: 'Refund',        body: `Funds arrive in ${PAYMENT_INFO.refundProcessingDaysMin}–${PAYMENT_INFO.refundProcessingDaysMax} business days via the same payment method` },
+    ],
+    paymentEyebrow: 'Secure payment',
+    paymentBody: 'Payments are processed through a certified payment provider using secure encryption to protect transactions',
+    contactEyebrow: 'Refunds & support',
+    contactSubject: 'Refund request',
   },
-  {
-    title: 'خصم متكرر بالخطأ',
-    body: 'إذا تمّ خصم اشتراك بالخطأ أو دون إذن',
-  },
-];
-
-const EXCEPTIONS = [
-  {
-    title: 'الاستخدام المخالف للشروط',
-    body: 'الاستخدام بطريقة تنتهك شروط الخدمة أو شروط منصّات الطرف الثالث',
-  },
-  {
-    title: 'بعد انتهاء المدة',
-    body: 'الطلبات المقدّمة بعد مرور أكثر من 14 يوماً تُراجَع كاستثناء',
-  },
-];
-
-const STEPS = [
-  { num: '01', title: 'تواصل معنا', body: `راسلنا على ${COMPANY_LEGAL_INFO.refundEmail} مع رقم الفاتورة` },
-  { num: '02', title: 'اذكر التفاصيل', body: 'تاريخ الدفع، طريقة الدفع، وسبب طلب الاسترداد' },
-  { num: '03', title: 'مراجعة سريعة', body: 'نراجع الطلب خلال 24 ساعة ونرسل تأكيداً بالنتيجة' },
-  {
-    num: '04',
-    title: 'الاسترداد',
-    body: `يصل المبلغ خلال ${PAYMENT_INFO.refundProcessingDaysMin}–${PAYMENT_INFO.refundProcessingDaysMax} أيام عمل بنفس وسيلة الدفع`,
-  },
-];
+} as const;
 
 export default function Refund() {
+  const { i18n } = useTranslation();
+  const isAr = (i18n.language || 'ar').startsWith('ar');
+  const t = isAr ? COPY.ar : COPY.en;
+
   return (
     <Phone>
-      <div className="flex-1 px-[22px] pb-12 lg:px-0 lg:pb-0">
+      <PublicTopbar />
+      <div className="flex-1 px-[22px] pb-12 lg:px-0 lg:pb-0" dir={isAr ? 'rtl' : 'ltr'}>
         {/* HERO */}
         <section className="mb-8 mt-2 flex flex-col items-center text-center lg:mt-4 lg:mb-12 lg:py-12">
           <SpinningLogo size="lg" speed="slow" className="mb-5" />
-          <Eyebrow className="mb-3 block !text-teal-700">سياسة الاسترداد</Eyebrow>
+          <Eyebrow className="mb-3 block !text-teal-700">{t.eyebrow}</Eyebrow>
           <h1 className="font-ar font-bold leading-[1.15] text-v2-ink text-[28px] lg:text-[44px] max-w-[640px]">
-            رضاك أولاً، أو يُسترد المبلغ.
+            {t.h1}
           </h1>
           <p className="mt-4 font-ar leading-relaxed text-v2-body text-[15px] lg:text-[17px] max-w-[600px]">
-            نوفر <NumDisplay>{PAYMENT_INFO.refundPeriodDays}</NumDisplay> يوماً ضمان استرداد كامل من تاريخ الدفع. نريد أن تثق بالخدمة قبل أن تستثمر فيها.
+            {t.intro}
           </p>
         </section>
 
@@ -71,10 +106,10 @@ export default function Refund() {
             </span>
             <div className="flex-1">
               <div className="font-ar text-[16px] font-bold text-v2-ink lg:text-[18px]">
-                <NumDisplay>{PAYMENT_INFO.refundPeriodDays}</NumDisplay> يوماً ضمان كامل
+                {t.bannerTitle}
               </div>
               <p className="mt-1 font-ar leading-relaxed text-v2-body text-[13px] lg:text-[14px]">
-                طلب استرداد ميسّر، بدون أسئلة معقّدة. نؤمن بجودة خدمتنا.
+                {t.bannerBody}
               </p>
             </div>
           </div>
@@ -85,9 +120,9 @@ export default function Refund() {
           <div className="lg:grid lg:grid-cols-2 lg:gap-6">
             {/* Accepted */}
             <Card padding="lg" radius="lg" className="mb-4 lg:mb-0">
-              <Eyebrow className="mb-3 block !text-teal-700">حالات مقبولة</Eyebrow>
+              <Eyebrow className="mb-3 block !text-teal-700">{t.acceptedTitle}</Eyebrow>
               <ul className="m-0 flex list-none flex-col gap-3 p-0">
-                {ACCEPTED.map((c) => (
+                {t.accepted.map((c) => (
                   <li key={c.title} className="flex items-start gap-3">
                     <span aria-hidden className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-teal-600 text-white">
                       <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
@@ -105,9 +140,9 @@ export default function Refund() {
 
             {/* Exceptions */}
             <Card padding="lg" radius="lg">
-              <Eyebrow className="mb-3 block !text-amber-700">حالات استثنائية</Eyebrow>
+              <Eyebrow className="mb-3 block !text-amber-700">{t.exceptionsTitle}</Eyebrow>
               <ul className="m-0 flex list-none flex-col gap-3 p-0">
-                {EXCEPTIONS.map((c) => (
+                {t.exceptions.map((c) => (
                   <li key={c.title} className="flex items-start gap-3">
                     <span aria-hidden className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-100 font-en text-[12px] font-bold text-amber-700">!</span>
                     <div>
@@ -123,17 +158,17 @@ export default function Refund() {
 
         {/* STEPS */}
         <section className="mb-10 lg:mb-16">
-          <Eyebrow className="mb-3 block lg:text-center">طلب الاسترداد بأربع خطوات</Eyebrow>
+          <Eyebrow className="mb-3 block lg:text-center">{t.stepsEyebrow}</Eyebrow>
           <h2 className="hidden font-ar font-bold text-v2-ink lg:mx-auto lg:mb-10 lg:block lg:max-w-[640px] lg:text-center lg:text-[32px] lg:leading-tight">
-            بدون عناء، بدون رسوم خفية.
+            {t.stepsTitle}
           </h2>
           <div className="flex flex-col lg:grid lg:grid-cols-4 lg:gap-4 lg:max-w-[1060px] lg:mx-auto">
-            {STEPS.map((s, i) => (
+            {t.steps.map((s, i) => (
               <Card
                 key={s.num}
                 padding="lg"
                 radius="lg"
-                className={`mb-3 lg:mb-0 ${i === STEPS.length - 1 ? 'mb-0' : ''}`}
+                className={`mb-3 lg:mb-0 ${i === t.steps.length - 1 ? 'mb-0' : ''}`}
               >
                 <div className="flex h-9 w-9 items-center justify-center rounded-v2-md bg-teal-50 font-en text-[13px] font-bold text-teal-700">
                   {s.num}
@@ -152,23 +187,17 @@ export default function Refund() {
         {/* PAYMENT METHODS */}
         <section className="mb-10 lg:mb-16 lg:max-w-[860px] lg:mx-auto">
           <Card padding="lg" radius="lg">
-            <Eyebrow className="mb-3 block">الدفع الآمن</Eyebrow>
+            <Eyebrow className="mb-3 block">{t.paymentEyebrow}</Eyebrow>
             <p className="font-ar text-[13px] leading-relaxed text-v2-body lg:text-[14px]">
-              يجري الدفع عبر مزود {PAYMENT_INFO.providerAr} بتشفير 256-bit SSL وتوافق PCI DSS. العملة المعتمدة: {PAYMENT_INFO.currencyAr} ({PAYMENT_INFO.currencyEn}).
+              {t.paymentBody}
             </p>
-            {!PAYMENT_INFO.isLive && (
-              <div className="mt-3 inline-flex items-center gap-1.5 rounded-v2-pill bg-amber-50 px-3 py-1 font-ar text-[11px] font-semibold text-amber-700">
-                <span aria-hidden>⏳</span>
-                الدفع قيد التفعيل — تواصل معنا لتفاصيل الباقات
-              </div>
-            )}
             <div className="mt-4 flex flex-wrap gap-2">
               {PAYMENT_METHODS.map((m) => (
                 <span
                   key={m.id}
                   className="rounded-v2-pill border border-v2-line bg-v2-canvas-2 px-3 py-1.5 font-ar text-[12px] font-medium text-v2-body"
                 >
-                  {m.ar}
+                  {isAr ? m.ar : m.en}
                 </span>
               ))}
             </div>
@@ -178,15 +207,15 @@ export default function Refund() {
         {/* CONTACT */}
         <section className="mb-10 lg:mb-0 lg:py-8">
           <Card padding="lg" radius="lg" className="lg:max-w-[860px] lg:mx-auto">
-            <Eyebrow className="mb-2 block">للاسترداد والدعم</Eyebrow>
+            <Eyebrow className="mb-2 block">{t.contactEyebrow}</Eyebrow>
             <a
-              href={`mailto:${COMPANY_LEGAL_INFO.refundEmail}?subject=${encodeURIComponent('طلب استرداد')}`}
+              href={`mailto:${COMPANY_LEGAL_INFO.refundEmail}?subject=${encodeURIComponent(t.contactSubject)}`}
               className="font-ar text-[16px] font-semibold text-teal-700 hover:text-teal-800 underline-offset-2 hover:underline"
             >
               {COMPANY_LEGAL_INFO.refundEmail}
             </a>
             <div className="mt-2 font-ar text-[13px] text-v2-dim">
-              {COMPANY_LEGAL_INFO.businessHoursAr} · {COMPANY_LEGAL_INFO.timezone}
+              {isAr ? COMPANY_LEGAL_INFO.businessHoursAr : COMPANY_LEGAL_INFO.businessHoursEn} · {COMPANY_LEGAL_INFO.timezone}
             </div>
           </Card>
         </section>

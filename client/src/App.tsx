@@ -156,12 +156,13 @@ const AppRoutes: React.FC = () => {
 
   if (matchReset) return <ResetPassword />;
 
-  // Public V2-styled legal & marketing pages.
-  if (matchPrivacy) return <PrivacyV2 />;
-  if (matchTerms)   return <TermsV2 />;
-  if (matchAbout)   return <AboutV2 />;
-  if (matchRefund)  return <RefundV2 />;
-  if (matchContact) return <ContactV2 />;
+  // Public V2-styled legal & marketing pages — redirected to /v2/* so they
+  // render inside PublicShell (with the persistent top nav for return-home).
+  if (matchPrivacy) return <Redirect to="/v2/privacy" />;
+  if (matchTerms)   return <Redirect to="/v2/terms" />;
+  if (matchAbout)   return <Redirect to="/v2/about" />;
+  if (matchRefund)  return <Redirect to="/v2/refund" />;
+  if (matchContact) return <Redirect to="/v2/contact" />;
   if (matchBlog) return <Blog />;
 
   // Protected app routes

@@ -16,6 +16,11 @@ const Landing = lazy(() => import('@/pages/v2/Landing'));
 const Auth = lazy(() => import('@/pages/v2/Auth'));
 const Pricing = lazy(() => import('@/pages/v2/Pricing'));
 const PricingProducts = lazy(() => import('@/pages/v2/PricingProducts'));
+const AboutPublic   = lazy(() => import('@/pages/v2/public/About'));
+const ContactPublic = lazy(() => import('@/pages/v2/public/Contact'));
+const PrivacyPublic = lazy(() => import('@/pages/v2/public/Privacy'));
+const TermsPublic   = lazy(() => import('@/pages/v2/public/Terms'));
+const RefundPublic  = lazy(() => import('@/pages/v2/public/Refund'));
 const Billing = lazy(() => import('@/pages/v2/Billing'));
 const CheckoutSuccess = lazy(() => import('@/pages/v2/CheckoutSuccess'));
 const CheckoutFailed = lazy(() => import('@/pages/v2/CheckoutFailed'));
@@ -188,6 +193,11 @@ function V2Routes(): ReactElement | null {
   const [matchSignup] = useRoute('/v2/signup');
   const [matchPricing] = useRoute('/v2/pricing');
   const [matchPricingProducts] = useRoute('/v2/pricing/products');
+  const [matchAbout]   = useRoute('/v2/about');
+  const [matchContact] = useRoute('/v2/contact');
+  const [matchPrivacy] = useRoute('/v2/privacy');
+  const [matchTerms]   = useRoute('/v2/terms');
+  const [matchRefund]  = useRoute('/v2/refund');
   const [matchBilling] = useRoute('/v2/billing');
   const [matchCheckoutSuccess] = useRoute('/v2/checkout/success');
   const [matchCheckoutFailed] = useRoute('/v2/checkout/failed');
@@ -212,6 +222,21 @@ function V2Routes(): ReactElement | null {
   }
   if (matchPricing) {
     return <PublicShell><Suspense fallback={<V2Loader />}><Pricing /></Suspense></PublicShell>;
+  }
+  if (matchAbout) {
+    return <PublicShell><Suspense fallback={<V2Loader />}><AboutPublic /></Suspense></PublicShell>;
+  }
+  if (matchContact) {
+    return <PublicShell><Suspense fallback={<V2Loader />}><ContactPublic /></Suspense></PublicShell>;
+  }
+  if (matchPrivacy) {
+    return <PublicShell><Suspense fallback={<V2Loader />}><PrivacyPublic /></Suspense></PublicShell>;
+  }
+  if (matchTerms) {
+    return <PublicShell><Suspense fallback={<V2Loader />}><TermsPublic /></Suspense></PublicShell>;
+  }
+  if (matchRefund) {
+    return <PublicShell><Suspense fallback={<V2Loader />}><RefundPublic /></Suspense></PublicShell>;
   }
   if (matchBilling) {
     return <ProtectedShell><Suspense fallback={<V2Loader />}><Billing /></Suspense></ProtectedShell>;

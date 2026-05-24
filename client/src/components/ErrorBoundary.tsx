@@ -62,7 +62,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
         `URL: ${typeof window !== 'undefined' ? window.location.href : ''}\n` +
         `Time: ${new Date().toISOString()}`,
     );
-    window.location.href = `mailto:waselhup@gmail.com?subject=${subject}&body=${body}`;
+    window.location.href = `mailto:waselhub@gmail.com?subject=${subject}&body=${body}`;
   };
 
   render() {

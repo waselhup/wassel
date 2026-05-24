@@ -48,7 +48,7 @@ export interface CompanyLegalInfo {
 
 // Single-inbox alias today; carved out so we can split per-team later
 // without touching every page.
-const PRIMARY_EMAIL = 'waselhup@gmail.com';
+const PRIMARY_EMAIL = 'waselhub@gmail.com';
 
 export const COMPANY_LEGAL_INFO: CompanyLegalInfo = {
   brandAr: 'وصل',
