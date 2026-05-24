@@ -1901,6 +1901,43 @@ export const linkedinRouter = router({
     }),
 
   /**
+   * Fetch one past analysis by id, in the same shape AnalysisResults consumes
+   * from sessionStorage. Lets the history panel link directly to
+   * /v2/analyze/result/<id> even when there's no sessionStorage hit (e.g.
+   * after a refresh, or when clicking from another device).
+   *
+   * RLS-scoped by user_id. Returns 404 when not found or soft-deleted.
+   */
+  getAnalysisById: protectedProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .query(async ({ input, ctx }) => {
+      const { data, error } = await ctx.supabase
+        .from('profile_analyses')
+        .select('id, linkedin_url, target_goal, industry, analysis_data, profile_data, tokens_used, parent_analysis_id, is_reanalysis, created_at')
+        .eq('id', input.id)
+        .eq('user_id', ctx.user.id)
+        .is('deleted_at', null)
+        .maybeSingle();
+
+      if (error || !data) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Analysis not found' });
+      }
+
+      return {
+        id: data.id,
+        linkedinUrl: data.linkedin_url,
+        targetGoal: data.target_goal,
+        industry: data.industry,
+        analysis: data.analysis_data,
+        profile: data.profile_data,
+        tokensUsed: data.tokens_used || 0,
+        parentAnalysisId: data.parent_analysis_id || null,
+        isReanalysis: !!data.is_reanalysis,
+        createdAt: data.created_at,
+      };
+    }),
+
+  /**
    * B.5: Service usage counters for the home dashboard. Counts each artifact
    * the user has produced. Excludes deleted rows.
    */

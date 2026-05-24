@@ -17,7 +17,7 @@ import {
   ScoreRing, SectionList, SectionDetailPanel, ProfilePreviewCard,
   deriveStatus, type SectionView,
 } from '@/components/profile-analysis';
-import { trpcMutation } from '@/lib/trpc';
+import { trpcMutation, trpcQuery } from '@/lib/trpc';
 import { getAnalysisResult, type StoredAnalysisResult } from '@/lib/v2/analysisSession';
 
 const SECTION_ICON: Record<string, LucideIcon> = {
@@ -105,11 +105,40 @@ export default function AnalysisResults() {
       setLoading(false);
       return;
     }
-    // No sessionStorage hit — could be a legacy /v2/analyze/result/<id>
-    // permalink. The existing tRPC API doesn't expose getById, so fall
-    // back gracefully: surface "not in session" with a path back.
-    setMissing(true);
-    setLoading(false);
+    // No sessionStorage hit — could be a permalink, a refresh, or a row
+    // opened from the Radar history panel. Fall back to fetching by id
+    // from the DB. Format-compatible with StoredAnalysisResult so the
+    // rest of the page renders without branching on the source.
+    let cancelled = false;
+    trpcQuery<{
+      id: string;
+      linkedinUrl: string;
+      targetGoal: string;
+      industry: string;
+      analysis: any;
+      profile: any;
+      tokensUsed: number;
+      createdAt: string;
+    }>('linkedin.getAnalysisById', { id })
+      .then((row) => {
+        if (cancelled) return;
+        setData({
+          id: row.id,
+          analysis: row.analysis,
+          profileSummary: row.profile,
+          linkedinUrl: row.linkedinUrl,
+          tokensUsed: row.tokensUsed,
+          storedAt: new Date(row.createdAt).getTime() || Date.now(),
+        });
+        setLoading(false);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        // Genuinely missing (deleted, wrong user, or invalid id).
+        setMissing(true);
+        setLoading(false);
+      });
+    return () => { cancelled = true; };
   }, [id, navigate]);
 
   const sections = useMemo(() => {

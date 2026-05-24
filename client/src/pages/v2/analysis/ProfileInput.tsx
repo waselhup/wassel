@@ -9,6 +9,7 @@ import Card from '@/components/v2/Card';
 import Input from '@/components/v2/Input';
 import Button from '@/components/v2/Button';
 import Eyebrow from '@/components/v2/Eyebrow';
+import RadarHistory from '@/components/v2/RadarHistory';
 import { useAuth } from '@/contexts/AuthContext';
 import { validateAndNormalizeLinkedInUrl } from '@/lib/linkedin-url-validator';
 import {
@@ -305,6 +306,11 @@ export default function ProfileInput() {
               {isAr ? 'الرصيد غير كافٍ — أعِد الشحن من صفحة الباقات' : 'Not enough tokens — top up on the Pricing page.'}
             </p>
           )}
+
+          {/* Past analyses — download PDF/DOCX or re-open. Pattern mirrors the
+              CV history list on /v2/cvs. The component loads its own data so
+              this page doesn't take on extra state. */}
+          <RadarHistory />
         </div>
       </div>
 
