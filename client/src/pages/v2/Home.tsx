@@ -165,14 +165,14 @@ function Home() {
 
   const actions: QuickAction[] = isAr
     ? [
-        { id: 'analyze', title: 'تحليل البروفايل', description: 'رادار شامل مقابل دور هدف', cost: 149, href: '/v2/analyze', icon: RadarIcon },
-        { id: 'post',    title: 'صياغة منشور',     description: 'AI · بصوتك أنت',           cost: 5,   href: '/v2/posts', icon: PostIcon },
-        { id: 'cv',      title: 'منشئ السيرة',      description: 'CV احترافي مخصّص',         cost: 129, href: '/v2/cvs',  icon: CvIcon  },
+        { id: 'analyze', title: 'تحليل البروفايل', description: 'اكتشف نقاط القوة وفرص التحسين', cost: 149, href: '/v2/analyze', icon: RadarIcon },
+        { id: 'post',    title: 'صياغة منشور',     description: 'أساليب ونبرات تناسب أهدافك',   cost: 5,   href: '/v2/posts', icon: PostIcon },
+        { id: 'cv',      title: 'منشئ السيرة',      description: 'سيرة احترافية متوافقة مع ATS', cost: 129, href: '/v2/cvs',  icon: CvIcon  },
       ]
     : [
-        { id: 'analyze', title: 'Profile analysis', description: 'Radar against a target role', cost: 149, href: '/v2/analyze', icon: RadarIcon },
-        { id: 'post',    title: 'Generate a post',  description: 'AI · in your own voice',     cost: 5,   href: '/v2/posts', icon: PostIcon },
-        { id: 'cv',      title: 'CV builder',       description: 'ATS-ready, role-tailored CV', cost: 129, href: '/v2/cvs',  icon: CvIcon  },
+        { id: 'analyze', title: 'Profile analysis', description: 'Discover strengths and opportunities', cost: 149, href: '/v2/analyze', icon: RadarIcon },
+        { id: 'post',    title: 'Generate a post',  description: 'Styles and tones for your goals',     cost: 5,   href: '/v2/posts', icon: PostIcon },
+        { id: 'cv',      title: 'CV builder',       description: 'ATS-ready, role-tailored CV',         cost: 129, href: '/v2/cvs',  icon: CvIcon  },
       ];
 
 

@@ -101,8 +101,7 @@ function Landing() {
               <Eyebrow className="mb-3 block !text-teal-700">{t('landing.hero.eyebrow')}</Eyebrow>
               <h1 className="font-ar font-bold leading-[1.15] -tracking-[0.01em] text-v2-ink text-[36px] lg:text-[56px]">
                 {t('landing.hero.headlineLine1')}<br />
-                {t('landing.hero.headlineLine2')}<br />
-                <span className="font-semibold text-teal-700">{t('landing.hero.headlineHighlight')}</span>
+                <span className="font-semibold text-teal-700">{t('landing.hero.headlineLine2')}</span>
               </h1>
               <p className="mt-3.5 font-ar leading-relaxed text-v2-body text-[15px] lg:mt-5 lg:max-w-[520px] lg:text-[17px]">
                 {t('landing.hero.subtitle')}
@@ -130,7 +129,7 @@ function Landing() {
                 </Button>
               </div>
               <p className="mt-2.5 text-center font-ar text-[13px] text-v2-dim lg:text-start">
-                <NumDisplay>10</NumDisplay> {t('landing.hero.freeTokensSuffix')}
+                {t('landing.hero.freeTokensSuffix')}
               </p>
             </div>
 
@@ -143,7 +142,7 @@ function Landing() {
         {/* FEATURES — stacked rows on mobile, 3-card grid on desktop */}
         <section className="mb-10 lg:mb-0 lg:py-24">
           <Eyebrow className="mb-3.5 block lg:mb-3 lg:text-center">{t('landing.features.eyebrow')}</Eyebrow>
-          <h2 className="hidden font-ar font-bold text-v2-ink lg:mx-auto lg:mb-12 lg:block lg:max-w-[640px] lg:text-center lg:text-[36px] lg:leading-tight">
+          <h2 className="hidden font-ar font-bold text-v2-ink whitespace-pre-line lg:mx-auto lg:mb-12 lg:block lg:max-w-[640px] lg:text-center lg:text-[36px] lg:leading-tight">
             {t('landing.features.heading')}
           </h2>
 

@@ -39,14 +39,14 @@ function VisualPanel() {
       <div className="relative flex h-full flex-col justify-between p-12">
         {/* Brand quote / value prop */}
         <div className="max-w-[440px]">
-          <Eyebrow className="mb-4 block !text-teal-700">AI · LINKEDIN GROWTH</Eyebrow>
+          <Eyebrow className="mb-4 block !text-teal-700">منصة عربية ذكية لمحترفي LinkedIn</Eyebrow>
           <p className="font-ar text-[26px] font-bold leading-[1.25] text-v2-ink">
-            بروفايل أقوى يفتح
+            حوّل لينكدإن إلى
             <br />
-            <span className="font-semibold text-teal-700">فرص حقيقية.</span>
+            <span className="font-semibold text-teal-700">قناة فرص</span>
           </p>
           <p className="mt-3 font-ar text-[14px] leading-relaxed text-v2-body">
-            تحليل، صياغة، وسيرة ذاتية — كلها بصوتك أنت، مصمَّمة للسوق السعودي.
+            تحليل، صياغة، وسيرة ذاتية — كلها بأساليب ونبرات تناسب أهدافك
           </p>
         </div>
 
@@ -215,7 +215,7 @@ function Auth() {
             </h1>
             <p className="mt-2 mb-6 font-ar leading-relaxed text-v2-body text-[13px] lg:mb-8 lg:text-[14px]">
               {isSignup
-                ? 'أنشئ حساباً مجانياً · 10 توكن للبداية'
+                ? 'أنشئ حساباً مجانياً · جرّب أولى ميزات وصل'
                 : 'سجّل الدخول لمتابعة العمل'}
             </p>
 

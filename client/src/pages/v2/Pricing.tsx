@@ -38,17 +38,15 @@ function num(v: unknown): number {
 }
 
 const FAQ_AR: { q: string; a: string }[] = [
-  { q: 'هل أستطيع الإلغاء في أي وقت؟', a: 'نعم. الإلغاء فوري بدون التزام، ويمكنك الاستمرار حتى نهاية فترة الاشتراك المدفوع' },
-  { q: 'هل تتجدّد التوكن شهرياً؟',     a: 'نعم. كل اشتراك يجدّد رصيد التوكن في تاريخ التجديد، ولا تتراكم التوكن غير المستخدمة' },
-  { q: 'هل أستطيع الترقية أو التخفيض لاحقاً؟', a: 'نعم. الترقية تطبَّق فوراً بفرق سعر متناسب، والتخفيض يبدأ من فترة التجديد القادمة' },
-  { q: 'كيف يتم الدفع؟', a: 'ندعم البطاقات السعودية ومدى وApple Pay عبر بوّابة Moyasar الآمنة. الفواتير تصل بالبريد فور الاشتراك' },
+  { q: 'كيف يتم احتساب الاستخدامات؟', a: 'كل باقة تشمل عدداً محدداً من الاستخدامات الشهرية تكفي لتحليلات البروفايل وإنشاء المنشورات وتوليد السير الذاتية. الاستخدامات تتجدد في تاريخ التجديد الشهري ولا تتراكم' },
+  { q: 'ما وسائل الدفع المتاحة؟',     a: 'ندعم مدى وVisa وMastercard وApple Pay عبر بوّابة Moyasar الآمنة. الفواتير تصل بالبريد فور الاشتراك' },
+  { q: 'هل أحتاج بطاقة ائتمان للبدء؟', a: 'لا. باقة الاستكشاف مجانية بالكامل ولا تتطلب بطاقة ائتمان — يمكنك تجربة المنصة فوراً بعد إنشاء حساب' },
 ];
 
 const FAQ_EN: { q: string; a: string }[] = [
-  { q: 'Can I cancel anytime?', a: 'Yes. Cancellation is instant with no commitment — you keep access until the end of your paid period.' },
-  { q: 'Do tokens reset monthly?', a: 'Yes. Every subscription refreshes your token balance on the renewal date. Unused tokens do not roll over.' },
-  { q: 'Can I upgrade or downgrade later?', a: 'Yes. Upgrades take effect immediately with a prorated price difference. Downgrades start from your next renewal.' },
-  { q: 'How do I pay?', a: 'We accept Saudi cards including Mada and Apple Pay through the secure Moyasar gateway. Invoices arrive by email after subscribing.' },
+  { q: 'How is usage calculated?',           a: 'Each plan includes a set number of monthly uses covering profile analyses, post generation, and CV creation. Uses refresh on your monthly renewal date and do not roll over' },
+  { q: 'What payment methods are available?', a: 'We accept Mada, Visa, Mastercard, and Apple Pay through the secure Moyasar gateway. Invoices arrive by email after subscribing' },
+  { q: 'Do I need a credit card to start?',   a: 'No. The Explore plan is fully free and requires no credit card — you can try the platform immediately after creating an account' },
 ];
 
 const CheckIcon = ({ primary }: { primary?: boolean }) => (
@@ -138,7 +136,7 @@ function Pricing() {
             {t('اختر الباقة المناسبة', 'Pick the plan that fits.')}
           </h1>
           <p className="mt-2 font-ar leading-relaxed text-v2-body text-[14px] lg:mx-auto lg:mt-4 lg:max-w-[560px] lg:text-[17px]">
-            {t('ابدأ مجاناً، ارقَ متى احتجت، الغِ متى شئت', 'Start free, upgrade when you need it, cancel anytime.')}
+            {t('ابدأ بخطوات بسيطة ثم وسّع استخدامك عند الحاجة', 'Start with simple steps then expand your usage when needed')}
           </p>
         </section>
 
@@ -203,14 +201,16 @@ function Pricing() {
               const features = Array.isArray(plan.features) ? plan.features : [];
 
               const ctaLabel = plan.is_free
-                ? t('ابدأ مجاناً', 'Start free')
+                ? t('استكشف الآن', 'Explore now')
                 : plan.is_custom
                   ? t('تواصل معنا', 'Contact us')
                   : t('اشترك', 'Subscribe');
 
               const tokensLabel = plan.is_custom
                 ? t('حسب الاحتياج', 'Custom volume')
-                : t(`${monthlyTokens} توكن شهرياً`, `${monthlyTokens} tokens / month`);
+                : plan.is_free
+                  ? t('منشوران LinkedIn للتجربة', 'Two LinkedIn posts to try')
+                  : t(`${monthlyTokens} استخدام شهرياً`, `${monthlyTokens} uses / month`);
 
               const priceLabel = plan.is_custom
                 ? t('سعر مخصّص', 'Custom')
@@ -342,9 +342,9 @@ function Pricing() {
         {/* TRUST STRIP */}
         <section className="mt-7 grid grid-cols-3 gap-2 border-t border-v2-line pt-5 text-center lg:mt-20 lg:gap-10 lg:border-y lg:py-10">
           {[
-            { t: t('آمن', 'Secure'),    d: t('SSL مشفّر', 'SSL encrypted') },
-            { t: t('الغِ متى', 'Cancel anytime'), d: t('بدون التزام', 'No commitment') },
-            { t: t('دعم', 'Support'),    d: t('عربي 24/7', 'Arabic 24/7') },
+            { t: t('بياناتك آمنة', 'Your data is safe'),     d: t('حماية وتشفير للبيانات', 'Data protection and encryption') },
+            { t: t('إلغاء مرن', 'Flexible cancellation'),    d: t('يمكنك الإلغاء في أي وقت', 'Cancel anytime') },
+            { t: t('دعم سريع', 'Quick support'),             d: t('مساعدة عند الحاجة', 'Help when needed') },
           ].map((item, i) => (
             <div key={i}>
               <div className="font-ar font-semibold text-v2-ink text-[13px] lg:text-[16px]">{item.t}</div>

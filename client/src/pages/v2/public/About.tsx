@@ -16,7 +16,7 @@ const VALUES = [
     eyebrow: '01',
     title: 'التميّز التقني',
     body:
-      'نستخدم أحدث تقنيات الذكاء الاصطناعي ومعايير هندسة البرمجيات لتقديم تجربة سريعة، آمنة، ومُختبَرة في السوق السعودي',
+      'نستخدم أحدث تقنيات الذكاء الاصطناعي ومعايير هندسة البرمجيات لتقديم تجربة سريعة وآمنة',
   },
   {
     eyebrow: '02',
@@ -28,7 +28,7 @@ const VALUES = [
     eyebrow: '03',
     title: 'الامتثال والشفافية',
     body:
-      'التزام كامل بالأنظمة السعودية، احترام شروط منصّات الطرف الثالث، وشفافية تامّة في كيفية استخدام بياناتك',
+      'التزام كامل بالأنظمة المعمول بها، احترام شروط منصّات الطرف الثالث، وشفافية تامّة في كيفية استخدام بياناتك',
   },
 ];
 
@@ -44,10 +44,10 @@ export default function About() {
           <SpinningLogo size="xl" speed="slow" label="وصل" className="mb-5" />
           <Eyebrow className="mb-3 block !text-teal-700">عن وصل</Eyebrow>
           <h1 className="font-ar font-bold leading-[1.15] text-v2-ink text-[32px] lg:text-[48px] max-w-[680px]">
-            نُبسّط البحث عن الفرص المهنية في السوق السعودي.
+            نُبسّط بناء حضورك المهني على LinkedIn
           </h1>
           <p className="mt-4 font-ar leading-relaxed text-v2-body text-[15px] lg:text-[17px] max-w-[640px]">
-            وصل منصّة ذكاء اصطناعي لتطوير البروفايل المهني، تساعد المهنيين السعوديين على اكتشاف وتجهيز الفرص المناسبة بكفاءة، مع التركيز على متطلبات السوق ورؤية المملكة 2030.
+            وصل منصة ذكاء اصطناعي عربية تساعدك على تحليل بروفايلك وإنشاء محتوى احترافي وسير ذاتية تجذب فرصاً أكثر
           </p>
         </section>
 
@@ -60,11 +60,11 @@ export default function About() {
                 وقتك أهم من البحث المتكرر.
               </h2>
               <p className="mt-4 font-ar leading-relaxed text-v2-body text-[14px] lg:text-[16px]">
-                توفير الوقت في البحث عن الفرص لا يعني التنازل عن الجودة.
-                نستخدم تحليل البروفايل بالذكاء الاصطناعي لاستخراج التوصيات الأعلى أثراً، نصوغ المنشورات بصوتك أنت، ونعدّل السيرة الذاتية لكل دور هدف — كل هذا داخل تجربة موحّدة باللغة العربية.
+                توفير الوقت في تطوير حضورك المهني لا يعني التنازل عن الجودة.
+                نستخدم الذكاء الاصطناعي لاستخراج التوصيات الأعلى أثراً، نقترح أساليب ونبرات مختلفة للمنشورات تناسب أهدافك، ونعدّل السيرة الذاتية لكل دور هدف — كل هذا داخل تجربة موحّدة باللغة العربية
               </p>
               <p className="mt-3 font-ar leading-relaxed text-v2-body text-[14px] lg:text-[16px]">
-                نخدم محترفين في القطاعات الرئيسية بالمملكة: التقنية، النفط والغاز، المالية، الاستشارات، الحكومة، والقطاع الأكاديمي.
+                نخدم المحترفين في مختلف القطاعات: التقنية، المالية، الاستشارات، التسويق، والقطاع الأكاديمي
               </p>
             </div>
             <div className="mt-8 hidden lg:mt-0 lg:flex lg:items-center lg:justify-center">
@@ -166,9 +166,9 @@ export default function About() {
         {/* CTA */}
         <section className="mb-10 lg:mb-0 lg:py-12">
           <Card padding="lg" radius="xl" elevated className="text-center lg:mx-auto lg:max-w-[720px] lg:py-12">
-            <Eyebrow className="mb-2 block !text-teal-700">ابدأ اليوم</Eyebrow>
+            <Eyebrow className="mb-2 block !text-teal-700">استكشف اليوم</Eyebrow>
             <h2 className="font-ar font-bold text-v2-ink text-[22px] lg:text-[28px]">
-              <NumDisplay>10</NumDisplay> توكن مجاني · بدون بطاقة ائتمان
+              🎁 جرّب أولى ميزات وصل · بدون بطاقة ائتمان
             </h2>
             <div className="mt-5 flex flex-col gap-2.5 lg:flex-row lg:justify-center lg:gap-3">
               <Button

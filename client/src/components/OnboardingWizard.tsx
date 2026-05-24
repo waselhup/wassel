@@ -279,8 +279,8 @@ export const OnboardingWizard: React.FC<Props> = ({ onClose }) => {
                 }}
               >
                 {isAr
-                  ? 'حصلت على 10 توكن هدية للبدء. خلال دقيقتين، سنرشدك لأهم أدوات وصل لتحقق أقصى استفادة'
-                  : "You got 10 free tokens to start. In 2 minutes, we'll show you Wassel's most powerful tools."}
+                  ? 'حصلت على باقة استكشاف مجانية للبدء. خلال دقيقتين، سنرشدك لأهم أدوات وصل لتحقق أقصى استفادة'
+                  : "You got a free Explore plan to start. In 2 minutes, we'll show you Wassel's most powerful tools."}
               </p>
               <div
                 style={{
@@ -311,10 +311,10 @@ export const OnboardingWizard: React.FC<Props> = ({ onClose }) => {
                 </div>
                 <div>
                   <div style={{ fontSize: 14, fontWeight: 800, color: '#1F2937' }}>
-                    {isAr ? 'رصيدك الحالي: 10 توكن' : 'Your balance: 10 tokens'}
+                    {isAr ? 'باقتك: استكشف' : 'Your plan: Explore'}
                   </div>
                   <div style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>
-                    {isAr ? 'كافٍ لتجربة التحليل وإنشاء سيرة ذاتية' : 'Enough to try an analysis and build one CV'}
+                    {isAr ? 'كافٍ لإنشاء منشورين LinkedIn للتجربة' : 'Enough to create two LinkedIn posts to try'}
                   </div>
                 </div>
               </div>

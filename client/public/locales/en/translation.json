@@ -34,8 +34,8 @@
   "hero": {
     "title": "Multiply Your Job Opportunities Effortlessly",
     "subtitle": "Wassel isn’t just a platform — it’s your strategic partner. We help you showcase your skills professionally and automate your outreach, ensuring the world sees your true value",
-    "cta_primary": "Get Started - Free",
-    "cta_primary_badge": "Start free · 10 tokens gift",
+    "cta_primary": "Explore now",
+    "cta_primary_badge": "Explore now · Try Wassel's first features",
     "cta_secondary": "Watch Demo",
     "stats": [
       {
@@ -1576,7 +1576,7 @@
     "hero": {
       "title": "An Intelligent Career Platform for Professionals",
       "subtitle": "The central hub for your LinkedIn presence",
-      "cta_primary": "Start Free",
+      "cta_primary": "Explore now",
       "cta_signin": "Sign in"
     },
     "hub": {
@@ -1645,8 +1645,8 @@
       "title": "Build your Wassel in seconds...",
       "desc": "Get started in minutes and watch it mold to your unique career needs",
       "placeholder": "Enter your email (e.g. hello@wassel.sa)",
-      "build": "Build",
-      "hint": "Free to start · 10 tokens included · Cancel anytime"
+      "build": "Explore now",
+      "hint": "Free to start · No credit card · Cancel anytime"
     },
     "floating": {
       "card1_name": "Ahmed Al-Hashim",
@@ -1739,7 +1739,7 @@
     "legal_label": "Commercial Registration",
     "legal_value": "CR No. 7052843203",
     "cta_title": "Ready to grow your LinkedIn presence?",
-    "cta_primary": "Get started free",
+    "cta_primary": "Explore now",
     "cta_secondary": "Back to home"
   },
   "landing": {
@@ -1752,40 +1752,40 @@
       "signup": "Sign up"
     },
     "hero": {
-      "eyebrow": "AI · LINKEDIN GROWTH",
-      "headlineLine1": "A LinkedIn profile",
-      "headlineLine2": "that attracts opportunities",
-      "headlineHighlight": "automatically",
-      "subtitle": "Smart profile analysis, actionable recommendations, and posts in your own voice — built for the Saudi and Gulf market",
-      "ctaPrimary": "Start for free",
+      "eyebrow": "Smart Arabic platform for LinkedIn professionals",
+      "headlineLine1": "Turn LinkedIn into an opportunity channel",
+      "headlineLine2": "not just a profile",
+      "headlineHighlight": "",
+      "subtitle": "Wassel analyzes your profile and suggests content and edits that help you attract more career opportunities",
+      "ctaPrimary": "Explore now",
       "ctaSecondary": "Sign in",
       "signIn": "Sign in",
-      "freeTokensSuffix": "free tokens · no credit card required"
+      "freeTokensSuffix": "🎁 Try Wassel's first features"
     },
     "features": {
       "eyebrow": "The product",
-      "heading": "Three connected tools, one outcome",
+      "heading": "Three connected tools\nOne goal: more opportunities",
       "radar": {
-        "title": "Radar",
-        "description": "A smart read of your profile with the three highest-impact recommendations, ranked by their effect on your target role"
+        "title": "Analyze your profile",
+        "description": "Discover strengths and improvement opportunities in your LinkedIn profile to get more opportunities"
       },
       "studio": {
-        "title": "Studio",
-        "description": "Craft professional posts in your own voice and dialect — across tones, with ready-made templates"
+        "title": "Create LinkedIn posts",
+        "description": "Create professional posts with different styles and tones that suit your audience and goals"
       },
       "cv": {
-        "title": "Smart CV",
-        "description": "A tailored CV pulled automatically from your profile and adapted for every role you apply to"
+        "title": "Pass ATS systems with ease",
+        "description": "Create a professional ATS-compatible resume using Harvard and MIT templates"
       }
     },
     "pricingTeaser": {
       "eyebrow": "Pricing",
-      "title": "Start for free",
-      "subtitleSuffix": "plans · no commitment",
+      "title": "Explore now",
+      "subtitleSuffix": "plans that fit your needs",
       "cta": "See pricing →"
     },
     "footer": {
-      "tagline": "The AI platform for growing your professional profile — built for the Saudi and Gulf market",
+      "tagline": "A smart platform that helps you build a stronger professional presence on LinkedIn",
       "commercialRegistrationLabel": "Commercial registration",
       "commercialRegistrationShort": "CR",
       "locationLabel": "Location",

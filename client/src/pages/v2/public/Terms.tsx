@@ -45,7 +45,7 @@ export default function Terms() {
           <Card padding="lg" radius="lg" className="mb-4">
             <Eyebrow className="mb-3 block">تعريف الخدمة</Eyebrow>
             <p className="font-ar text-[14px] leading-relaxed text-v2-body lg:text-[15px]">
-              وصل منصّة ذكاء اصطناعي تساعد المهنيين على تحليل بروفايل لينكد إن وإنشاء محتوى احترافي (منشورات وسير ذاتية)، بتركيز على السوق السعودي والخليجي.
+              وصل منصة ذكاء اصطناعي عربية تساعد المهنيين على تحليل بروفايل LinkedIn وإنشاء محتوى احترافي (منشورات وسير ذاتية).
             </p>
           </Card>
 

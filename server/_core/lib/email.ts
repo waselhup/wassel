@@ -114,16 +114,16 @@ export async function sendWelcomeEmail(user: EmailRecipient): Promise<SendResult
   const isAr = (user.language || 'ar') === 'ar';
   const name = user.fullName?.trim() || (isAr ? 'مستخدم وصل' : 'Wassel member');
   const subject = isAr
-    ? 'مرحباً بك في وصل — 10 توكن مجاناً'
-    : 'Welcome to Wassel — 10 free tokens';
+    ? 'مرحباً بك في وصل — جرّب أولى ميزات وصل'
+    : "Welcome to Wassel — Try Wassel's first features";
 
   const inner = isAr
     ? `
       <h1 style="font-size:22px;font-weight:900;color:#111827;margin:0 0 12px;">أهلاً ${escapeHtml(name)} 👋</h1>
-      <p style="font-size:14px;line-height:1.7;color:#374151;margin:0 0 14px;">شكراً لانضمامك إلى <strong>وصل</strong> — منصتك الذكية للتسويق عبر LinkedIn في السوق السعودي والخليجي.</p>
+      <p style="font-size:14px;line-height:1.7;color:#374151;margin:0 0 14px;">شكراً لانضمامك إلى <strong>وصل</strong> — منصة ذكية تساعدك على بناء حضور مهني أقوى على LinkedIn.</p>
       <div style="background:linear-gradient(135deg,rgba(10,143,132,0.08),rgba(14,165,233,0.08));border-radius:12px;padding:16px 18px;margin:14px 0;">
-        <div style="font-weight:800;color:#0A8F84;font-size:15px;">رصيدك: 10 توكن مجاني</div>
-        <div style="font-size:12px;color:#6B7280;margin-top:4px;">يكفي لتجربة منشور أو منشورين — جرّب الأدوات وادفع لما تحب أكثر</div>
+        <div style="font-weight:800;color:#0A8F84;font-size:15px;">باقتك: استكشف</div>
+        <div style="font-size:12px;color:#6B7280;margin-top:4px;">منشوران LinkedIn للتجربة — جرّب الأدوات وارتقِ متى احتجت</div>
       </div>
       <h3 style="font-size:14px;font-weight:900;margin:20px 0 8px;">ابدأ بإحدى هذه الأدوات:</h3>
       <ul style="margin:0 0 18px;padding-inline-start:20px;font-size:13px;line-height:1.9;color:#374151;">
@@ -136,10 +136,10 @@ export async function sendWelcomeEmail(user: EmailRecipient): Promise<SendResult
     `
     : `
       <h1 style="font-size:22px;font-weight:900;color:#111827;margin:0 0 12px;">Welcome, ${escapeHtml(name)} 👋</h1>
-      <p style="font-size:14px;line-height:1.7;color:#374151;margin:0 0 14px;">Thanks for joining <strong>Wassel</strong> — your smart LinkedIn marketing platform for the Saudi/GCC market.</p>
+      <p style="font-size:14px;line-height:1.7;color:#374151;margin:0 0 14px;">Thanks for joining <strong>Wassel</strong> — a smart platform that helps you build a stronger professional presence on LinkedIn.</p>
       <div style="background:linear-gradient(135deg,rgba(10,143,132,0.08),rgba(14,165,233,0.08));border-radius:12px;padding:16px 18px;margin:14px 0;">
-        <div style="font-weight:800;color:#0A8F84;font-size:15px;">Your balance: 10 free tokens</div>
-        <div style="font-size:12px;color:#6B7280;margin-top:4px;">Enough to try a post or two — explore Wassel before topping up</div>
+        <div style="font-weight:800;color:#0A8F84;font-size:15px;">Your plan: Explore</div>
+        <div style="font-size:12px;color:#6B7280;margin-top:4px;">Two LinkedIn posts to try — explore Wassel and upgrade when ready</div>
       </div>
       <h3 style="font-size:14px;font-weight:900;margin:20px 0 8px;">Start with one of these tools:</h3>
       <ul style="margin:0 0 18px;padding-inline-start:20px;font-size:13px;line-height:1.9;color:#374151;">
@@ -152,13 +152,13 @@ export async function sendWelcomeEmail(user: EmailRecipient): Promise<SendResult
     `;
 
   const text = isAr
-    ? `أهلاً ${name}\n\nشكراً لانضمامك إلى وصل. حصلت على 10 توكن مجاناً.\n\nادخل لوحتك: ${APP_URL}/app\n\nمحتاج مساعدة؟ رد على هذا البريد.\n\n— فريق وصل`
-    : `Welcome, ${name}\n\nThanks for joining Wassel. You have 10 free tokens.\n\nOpen your dashboard: ${APP_URL}/app\n\nNeed help? Just reply.\n\n— The Wassel Team`;
+    ? `أهلاً ${name}\n\nشكراً لانضمامك إلى وصل. باقتك الحالية: استكشف.\n\nادخل لوحتك: ${APP_URL}/app\n\nمحتاج مساعدة؟ رد على هذا البريد.\n\n— فريق وصل`
+    : `Welcome, ${name}\n\nThanks for joining Wassel. Your current plan: Explore.\n\nOpen your dashboard: ${APP_URL}/app\n\nNeed help? Just reply.\n\n— The Wassel Team`;
 
   return sendRaw({
     to: user.email,
     subject,
-    html: shell({ isAr, preheader: isAr ? 'لديك 10 توكن مجاني للبدء' : 'You have 10 free tokens', bodyInner: inner }),
+    html: shell({ isAr, preheader: isAr ? 'باقتك الحالية: استكشف' : 'Your current plan: Explore', bodyInner: inner }),
     text,
   });
 }
