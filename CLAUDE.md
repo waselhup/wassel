@@ -137,3 +137,61 @@ Pushed to master at 2026-04-11. Vercel auto-deploys.
 1. **Simple** — Prefer deleting lines over adding them. Minimal code.
 2. **Root cause** — No band-aid fixes. Dig until you find the real cause.
 3. **Minimal touch** — Only change what's necessary. No side effects.
+
+---
+
+## Career Copilot Transformation (branch `feat/career-copilot-transformation`)
+
+Wassel is becoming a Career Copilot, not a portfolio of tools. The transformation is documented in `docs/`:
+
+- `docs/MASTER-BRIEF.md` — corrected canonical brief (replaces older drafts)
+- `docs/golden-rules.md` — the 22 product rules
+- `docs/ban-list.md` — what we never ship or say
+- `docs/career-copilot-brain.md` — the in-app AI brain architecture
+- `docs/language-rules.md` — AR primary, EN secondary, Western digits, tone
+- `docs/decisions/A01.md` … `A22.md` — 22 architectural decisions
+- `docs/PRD/01-vision.md` … `06-errors-roadmap.md` — product specs per sprint
+- `docs/prompts/*.md` — prompt source files compiled into `_generated.ts`
+
+### The Backbone
+
+`career_profile` is one row per user (goal / level / target_role / industry / primary_language). Every screen reads it. Settings → Career Profile is the only place it changes. Temporary "act as if" experiments go to `section_overrides` (decay in 24h).
+
+**Mother Rule:** The user is never asked the same question twice.
+
+### The 3-Wallet System
+
+Replaces single `profiles.token_balance` with three wallets:
+1. `wallet_bonus` — promos, refunds, Explore plan (90-day expiry). Consumed 1st.
+2. `wallet_subscription` — monthly plan tokens (monthly expiry). Consumed 2nd.
+3. `wallet_topup` — paid top-ups (lifetime). Consumed 3rd.
+
+New RPC: `deduct_tokens_v2(user_id, amount, operation, metadata)`. Runs in parallel with legacy `deduct_tokens_atomic` (per A22 / Q4 of Sprint 1 pre-flight). Sprint 7 unifies. **Do not delete `deduct_tokens_atomic` before Sprint 7.**
+
+Helpers: `server/_core/lib/wallets.ts` (read + deduct + credit) and `server/_core/lib/career-profile.ts` (read/write profile + overrides + PDPL export/delete).
+
+### Prompt Pipeline
+
+Prompts live in `docs/prompts/*.md` as fenced blocks (system / user / schema). `scripts/build-prompts.ts` compiles them into `server/_core/prompts/_generated.ts`. Run with `npm run build:prompts`. Routers consume `_generated.ts`; never write inline strings for Claude calls.
+
+### Onboarding
+
+- `/v2/onboarding` is the 4-step wizard (Goal / Level / Identity / LinkedIn).
+- `AuthGate` redirects authenticated users with `career_profile == null` to `/v2/onboarding` (skipping Settings / Privacy / Billing / Onboarding-internal routes to avoid loops).
+- Settings → Career Profile (`/v2/settings/career`) edits the profile.
+- Settings → Privacy & Data (`/v2/settings/privacy`) exposes PDPL export + delete-all.
+
+### Parallel-session Safety (CRITICAL)
+
+A second Claude Code session is building **AI Workforce** (agents + portals) in parallel. **Career Copilot must NOT touch** any file listed in `docs/decisions/A22.md`. Managed exceptions:
+- `client/public/locales/{ar,en}/translation.json` — additive only, under namespaces `onboarding.*`, `careerProfile.*`, `wallets.*`, `privacy.*`, `radar.*`, `resume.*`, `content.*`, `dashboard.*`, `errors.*`, `settings.*`.
+- `package.json` — additive deps via `npm install` only.
+- `server/_core/trpc.ts` — Career Copilot adds **one** import line and **one** router-registration line. Nothing else.
+- `CLAUDE.md` — Career Copilot appends only (this very section).
+- `vercel.json` — Career Copilot does NOT touch.
+
+### Sprint Status (this branch)
+
+- Sprint 1 (Foundation): docs + schema + 3-wallet + prompt build pipeline — **done**
+- Sprint 2 (Onboarding + Profile management): wizard + careerProfile router + settings — **done**
+- Sprint 3–8: documented as roadmap in `docs/PRD/`, executed in future branches

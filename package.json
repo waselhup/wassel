@@ -8,6 +8,7 @@
     "build": "vite build && node build-server.js",
     "build:client": "vite build",
     "build:server": "node build-server.js",
+    "build:prompts": "node --experimental-strip-types scripts/build-prompts.ts",
     "preview": "vite preview",
     "lint": "tsc --noEmit"
   },
