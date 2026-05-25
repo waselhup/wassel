@@ -9,7 +9,7 @@ import UserAvatar from './UserAvatar';
 import { useAuth } from '@/contexts/AuthContext';
 
 export interface PortalLayoutProps {
-  persona: 'marketing' | 'finance' | 'ops' | 'growth' | 'workforce';
+  persona: 'marketing' | 'finance' | 'ops' | 'growth' | 'workforce' | 'customer_success' | 'revenue_lab' | 'product_intel' | 'compliance';
   title: string;
   accentColor: string;
   Icon: LucideIcon;
