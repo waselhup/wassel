@@ -3,11 +3,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation, Link } from 'wouter';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
-import { User as UserIcon, Megaphone, Wallet, Activity } from 'lucide-react';
+import { User as UserIcon, Megaphone, Wallet, Activity, LayoutDashboard } from 'lucide-react';
 
 const ADMIN_EMAILS = ['waselhup@gmail.com', 'almodhih.1995@gmail.com', 'alhashimali649@gmail.com'];
 
-type PersonaKey = 'user' | 'marketing' | 'finance' | 'ops';
+type PersonaKey = 'user' | 'marketing' | 'finance' | 'ops' | 'growth' | 'workforce';
 
 interface Persona {
   key: PersonaKey;
@@ -17,15 +17,24 @@ interface Persona {
   tooltipKey: string;
 }
 
+// Marketing portal route stays live (legacy bookmarks) but is hidden from the
+// switcher now that Sayed's Growth portal supersedes it. Re-add by inserting
+// the marketing entry if it should reappear in the FAB.
 const PERSONAS: Persona[] = [
-  { key: 'user',      href: '/v2/home',      color: '#14b8a6', Icon: UserIcon,  tooltipKey: 'personaSwitcher.user' },
-  { key: 'marketing', href: '/v2/marketing', color: '#8B5CF6', Icon: Megaphone, tooltipKey: 'personaSwitcher.marketing' },
-  { key: 'finance',   href: '/v2/finance',   color: '#D4AF37', Icon: Wallet,    tooltipKey: 'personaSwitcher.finance' },
-  { key: 'ops',       href: '/v2/ops',       color: '#0EA5E9', Icon: Activity,  tooltipKey: 'personaSwitcher.ops' },
+  { key: 'user',      href: '/v2/home',      color: '#14b8a6', Icon: UserIcon,         tooltipKey: 'personaSwitcher.user' },
+  { key: 'growth',    href: '/v2/growth',    color: '#10B981', Icon: Megaphone,        tooltipKey: 'personaSwitcher.growth' },
+  { key: 'finance',   href: '/v2/finance',   color: '#D4AF37', Icon: Wallet,           tooltipKey: 'personaSwitcher.finance' },
+  { key: 'ops',       href: '/v2/ops',       color: '#0EA5E9', Icon: Activity,         tooltipKey: 'personaSwitcher.ops' },
+  { key: 'workforce', href: '/v2/workforce', color: '#8B5CF6', Icon: LayoutDashboard,  tooltipKey: 'personaSwitcher.workforce' },
 ];
 
 function detectActive(location: string): PersonaKey {
-  if (location.startsWith('/v2/marketing') || location.startsWith('/v2/admin')) return 'marketing';
+  if (location.startsWith('/v2/growth')) return 'growth';
+  if (location.startsWith('/v2/workforce')) return 'workforce';
+  // /v2/marketing route still routes to MarketingPanel — mapped to marketing
+  // here even though we no longer render a chip for it. The fallback below
+  // sends it to 'user' so the FAB shows the user avatar on that page.
+  if (location.startsWith('/v2/marketing') || location.startsWith('/v2/admin')) return 'user';
   if (location.startsWith('/v2/finance')) return 'finance';
   if (location.startsWith('/v2/ops')) return 'ops';
   return 'user';

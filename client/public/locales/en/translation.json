@@ -1936,7 +1936,9 @@
     "user": "User Mode",
     "marketing": "Marketing",
     "finance": "Finance",
-    "ops": "Operations Mode"
+    "ops": "Operations Mode",
+    "growth": "Growth",
+    "workforce": "HQ"
   },
   "portal": {
     "backToUser": "Back to User Dashboard",
@@ -2194,5 +2196,135 @@
     "incidentDescPh": "Describe what happened (optional)...",
     "incidentServicePh": "Affected service (optional)...",
     "confirmCreateIncident": "Log"
+  },
+  "workforce": {
+    "headerTitle": "Wassel Command Center",
+    "morningBrief": "Morning Brief",
+    "dailyVitals": "Daily Vitals",
+    "approvalQueue": "Approval Queue",
+    "argueThread": "Discussion",
+    "agentRoster": "Agent Roster",
+    "costReport": "Cost Report",
+    "brainFile": "Agent Brain File",
+    "signups": "Signups today",
+    "paid": "Paid today",
+    "mrr": "MRR (SAR)",
+    "adSpend": "Ad spend",
+    "pending": "Pending approval",
+    "tokensSpend": "AI cost (SAR)",
+    "errors": "Errors 24h",
+    "churn": "Churned this month",
+    "approve": "Approve",
+    "reject": "Reject",
+    "editAndApprove": "Edit & approve",
+    "send": "Send",
+    "refresh": "Refresh",
+    "all": "All",
+    "active": "Active",
+    "paused": "Paused",
+    "overBudget": "Over budget",
+    "budgetUsed": "of token budget",
+    "rejectReason": "Reason for rejection?",
+    "editPayloadPrompt": "Edit payload (JSON):",
+    "emptyQueue": "No pending tasks. Try generating monthly batch from the Growth portal.",
+    "selectTask": "Select a task to view detail and discuss with the agent",
+    "noArgument": "No argument yet. Send a message to start.",
+    "saveBrain": "Save",
+    "cancel": "Cancel",
+    "openEditor": "Open editor",
+    "brainHelper": "The reference file every agent reads before generating content. Edit it to change all 8 agents' brain instantly.",
+    "approvalModes": {
+      "approval_required": "Approval required",
+      "suggest_only": "Suggest only",
+      "auto_with_bounds": "Auto with bounds",
+      "auto": "Fully auto"
+    }
+  },
+  "growth": {
+    "headerTitle": "Growth Center",
+    "sayedTitle": "Sayed — Content & Ads Maestro",
+    "sayedDescription": "Generates content for all your platforms + ad channels. Everything awaits your approval in HQ.",
+    "generateBatch": "Generate 30-Day Batch",
+    "repurpose": "Repurpose from Blog",
+    "draftAd": "Draft Ad Campaign",
+    "calendar": "Content Calendar",
+    "campaigns": "Ad Campaigns",
+    "channelPerformance": "Channel Performance",
+    "pendingApproval": "Pending approval",
+    "approved": "Approved",
+    "published": "Published",
+    "emptyCalendar": "No content scheduled. Click \"Generate 30-Day Batch\" to start.",
+    "emptyCampaigns": "No campaigns yet",
+    "killReason": "Reason to kill?",
+    "kill": "Kill",
+    "channel": "Channel",
+    "name": "Name",
+    "dailyBudget": "Daily budget",
+    "spend": "Spend",
+    "conversions": "Conversions",
+    "status": "Status",
+    "pickPlatforms": "Platforms",
+    "postsPerPlatform": "Posts per platform",
+    "run": "Run",
+    "cancel": "Cancel",
+    "generating": "Generating…",
+    "rssLabel": "Give me an RSS URL and I'll repurpose each article into 3 posts (LinkedIn + Twitter + Snap).",
+    "processing": "Processing…",
+    "objective": "Objective (e.g. signups)",
+    "audience": "Audience description (e.g. Saudi pros 25-40)",
+    "drafting": "Drafting…",
+    "draft": "Draft"
+  },
+  "agents": {
+    "sayed": {
+      "name": "Sayed",
+      "role": "Content & Ads Maestro"
+    },
+    "al_mukhadram": {
+      "name": "Al-Mukhadram",
+      "role": "Onboarding & Retention"
+    },
+    "fatima": {
+      "name": "Fatima",
+      "role": "Research & Friction Analyst"
+    },
+    "dhai": {
+      "name": "Dhai",
+      "role": "Compliance & Fraud Guardian"
+    },
+    "hassan": {
+      "name": "Hassan",
+      "role": "Conversion & Upsell Engineer"
+    },
+    "hussein": {
+      "name": "Hussein",
+      "role": "Platform Guardian"
+    },
+    "mohammed": {
+      "name": "Mohammed",
+      "role": "Accountant & Margin Watcher"
+    },
+    "faris": {
+      "name": "Faris",
+      "role": "Workforce Cockpit"
+    }
+  },
+  "approvalQueue": {
+    "filter": "Filter",
+    "status": {
+      "pending": "Pending",
+      "edited_approved": "Edited",
+      "executing": "Executing",
+      "completed": "Done",
+      "rejected": "Rejected"
+    },
+    "predictedImpact": "Predicted impact",
+    "estimatedCost": "Estimated cost"
+  },
+  "argueMode": {
+    "ali": "Ali",
+    "agent": "Agent",
+    "emptyHistory": "No argument yet. Send a message to start.",
+    "placeholder": "Type a note to the agent…"
   }
 }

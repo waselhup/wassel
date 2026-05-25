@@ -1930,7 +1930,9 @@
     "user": "وضع المستخدم",
     "marketing": "التسويق",
     "finance": "المالية",
-    "ops": "وضع العمليات"
+    "ops": "وضع العمليات",
+    "growth": "النمو",
+    "workforce": "القمرة"
   },
   "portal": {
     "backToUser": "العودة إلى لوحة المستخدم",
@@ -2188,5 +2190,135 @@
     "incidentDescPh": "وصف ما حدث (اختياري)...",
     "incidentServicePh": "الخدمة المتأثرة (اختياري)...",
     "confirmCreateIncident": "تسجيل"
+  },
+  "workforce": {
+    "headerTitle": "مركز قيادة وصل",
+    "morningBrief": "موجز الصباح",
+    "dailyVitals": "المؤشرات اليومية",
+    "approvalQueue": "قائمة الموافقات",
+    "argueThread": "النقاش",
+    "agentRoster": "فريق الوكلاء",
+    "costReport": "تقرير التكاليف",
+    "brainFile": "دماغ الوكلاء",
+    "signups": "تسجيلات اليوم",
+    "paid": "مدفوعات اليوم",
+    "mrr": "الإيراد الشهري ر.س",
+    "adSpend": "إنفاق الإعلانات",
+    "pending": "بانتظار الموافقة",
+    "tokensSpend": "تكلفة AI ر.س",
+    "errors": "أخطاء 24س",
+    "churn": "انسحاب الشهر",
+    "approve": "موافقة",
+    "reject": "رفض",
+    "editAndApprove": "تعديل وموافقة",
+    "send": "إرسال",
+    "refresh": "تحديث",
+    "all": "الكل",
+    "active": "نشط",
+    "paused": "متوقف",
+    "overBudget": "تجاوز الميزانية",
+    "budgetUsed": "من ميزانية الـ tokens",
+    "rejectReason": "سبب الرفض؟",
+    "editPayloadPrompt": "عدّل الـ payload (JSON):",
+    "emptyQueue": "لا توجد مهام معلّقة. جربّ توليد محتوى الشهر من قسم النمو.",
+    "selectTask": "اختر مهمة من القائمة لرؤية تفاصيلها وفتح نقاش مع الوكيل",
+    "noArgument": "لا حوار بعد. اكتب رسالة لبدء النقاش.",
+    "saveBrain": "حفظ",
+    "cancel": "إلغاء",
+    "openEditor": "فتح المحرّر",
+    "brainHelper": "الملف المرجعي الذي يقرأه كل وكيل قبل توليد المحتوى. عدّله لتغيير دماغ الـ 8 وكلاء فوراً.",
+    "approvalModes": {
+      "approval_required": "يتطلب موافقة",
+      "suggest_only": "اقتراح فقط",
+      "auto_with_bounds": "تلقائي ضمن حدود",
+      "auto": "تلقائي"
+    }
+  },
+  "growth": {
+    "headerTitle": "مركز النمو",
+    "sayedTitle": "سيد — قائد المحتوى والإعلانات",
+    "sayedDescription": "يولّد المحتوى لجميع منصاتك وقنوات الإعلان. كل شيء بانتظار موافقتك في مركز القيادة.",
+    "generateBatch": "توليد محتوى الشهر",
+    "repurpose": "إعادة صياغة من المدونة",
+    "draftAd": "تصميم حملة إعلانية",
+    "calendar": "تقويم المحتوى",
+    "campaigns": "الحملات الإعلانية",
+    "channelPerformance": "أداء القنوات",
+    "pendingApproval": "بانتظار الموافقة",
+    "approved": "موافق عليها",
+    "published": "منشورة",
+    "emptyCalendar": "لا محتوى مجدول بعد. اضغط \"توليد محتوى الشهر\" لبدء.",
+    "emptyCampaigns": "لا حملات بعد",
+    "killReason": "سبب الإيقاف؟",
+    "kill": "إيقاف",
+    "channel": "القناة",
+    "name": "الاسم",
+    "dailyBudget": "ميزانية يومية",
+    "spend": "إنفاق",
+    "conversions": "تحويلات",
+    "status": "الحالة",
+    "pickPlatforms": "المنصات",
+    "postsPerPlatform": "عدد المنشورات لكل منصة",
+    "run": "تشغيل",
+    "cancel": "إلغاء",
+    "generating": "جاري التوليد…",
+    "rssLabel": "أعطني رابط RSS وسأحوّل كل مقال إلى 3 منشورات (لينكدن + تويتر + سناب).",
+    "processing": "جاري المعالجة…",
+    "objective": "الهدف (مثل: تسجيلات جديدة)",
+    "audience": "وصف الجمهور (مثل: مهنيون سعوديون 25-40)",
+    "drafting": "جاري التصميم…",
+    "draft": "تصميم"
+  },
+  "agents": {
+    "sayed": {
+      "name": "سيد",
+      "role": "قائد المحتوى والإعلانات"
+    },
+    "al_mukhadram": {
+      "name": "المخضرم",
+      "role": "حارس العملاء"
+    },
+    "fatima": {
+      "name": "فاطمة",
+      "role": "محللة الاستخدام والاحتكاك"
+    },
+    "dhai": {
+      "name": "ضي",
+      "role": "حارسة الامتثال والاحتيال"
+    },
+    "hassan": {
+      "name": "حسن",
+      "role": "مهندس التحويل والترقية"
+    },
+    "hussein": {
+      "name": "حسين",
+      "role": "حارس المنصة"
+    },
+    "mohammed": {
+      "name": "محمد",
+      "role": "المحاسب وحارس الهامش"
+    },
+    "faris": {
+      "name": "فارس",
+      "role": "قمرة القيادة"
+    }
+  },
+  "approvalQueue": {
+    "filter": "تصفية",
+    "status": {
+      "pending": "معلّق",
+      "edited_approved": "معدّل",
+      "executing": "قيد التنفيذ",
+      "completed": "مكتمل",
+      "rejected": "مرفوض"
+    },
+    "predictedImpact": "الأثر المتوقع",
+    "estimatedCost": "التكلفة التقديرية"
+  },
+  "argueMode": {
+    "ali": "علي",
+    "agent": "الوكيل",
+    "emptyHistory": "لا حوار بعد. اكتب رسالة لبدء النقاش.",
+    "placeholder": "اكتب تعليقك للوكيل…"
   }
 }

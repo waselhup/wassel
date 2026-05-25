@@ -17,6 +17,8 @@ import { postsRouter } from './routes/posts';
 import { documentRouter } from './routes/document';
 import { pricingRouter } from './routes/pricing';
 import { financeRouter } from './routes/finance';
+import { farisRouter } from './routes/faris';
+import { sayedRouter } from './routes/sayed';
 
 export { router, publicProcedure, protectedProcedure };
 
@@ -58,6 +60,8 @@ export const appRouter = router({
   document: documentRouter,
   pricing: pricingRouter,
   finance: financeRouter,
+  faris: farisRouter,
+  sayed: sayedRouter,
 });
 
 export type AppRouter = typeof appRouter;

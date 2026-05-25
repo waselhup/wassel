@@ -35,6 +35,8 @@ const CVBuilder = lazy(() => import('@/pages/v2/CVBuilder'));
 const AdminPanel = lazy(() => import('@/pages/v2/AdminPanel'));
 const FinancePanel = lazy(() => import('@/pages/v2/FinancePanel'));
 const OpsPanel = lazy(() => import('@/pages/v2/OpsPanel'));
+const GrowthPanel = lazy(() => import('@/pages/v2/GrowthPanel'));
+const WorkforcePanel = lazy(() => import('@/pages/v2/WorkforcePanel'));
 
 // 3-stage profile analysis flow: Input → Loading → Result. State bridges
 // stages via sessionStorage (see lib/v2/analysisSession.ts). Stage 1 lives
@@ -238,6 +240,8 @@ function V2Routes(): ReactElement | null {
   const [matchMarketing] = useRoute('/v2/marketing');
   const [matchFinance] = useRoute('/v2/finance');
   const [matchOps] = useRoute('/v2/ops');
+  const [matchGrowth] = useRoute('/v2/growth');
+  const [matchWorkforce] = useRoute('/v2/workforce');
 
   if (matchLanding) {
     return <PublicShell><Suspense fallback={<V2Loader />}><Landing /></Suspense></PublicShell>;
@@ -328,6 +332,12 @@ function V2Routes(): ReactElement | null {
   }
   if (matchOps) {
     return <PortalShell><Suspense fallback={<V2Loader />}><OpsPanel /></Suspense></PortalShell>;
+  }
+  if (matchGrowth) {
+    return <PortalShell><Suspense fallback={<V2Loader />}><GrowthPanel /></Suspense></PortalShell>;
+  }
+  if (matchWorkforce) {
+    return <PortalShell><Suspense fallback={<V2Loader />}><WorkforcePanel /></Suspense></PortalShell>;
   }
 
   return null;

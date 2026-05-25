@@ -555,6 +555,64 @@ export const trpc = {
         reference_type: string | null;
       }>('pricing.getPaymentStatus', input),
   },
+  faris: {
+    listAgents: () => trpcQuery<Array<{
+      id: string; name_ar: string; name_en: string; role_ar: string; role_en: string;
+      portal: string; approval_mode: 'approval_required' | 'suggest_only' | 'auto_with_bounds' | 'auto';
+      argue_mode_enabled: boolean; monthly_token_budget: number; is_active: boolean;
+      avatar_color: string; avatar_icon: string;
+      tokens_this_month: number; cost_sar_this_month: number;
+      pending_tasks: number; completed_this_month: number; over_budget: boolean;
+    }>>('faris.listAgents'),
+    getApprovalQueue: (input?: { filter?: 'pending' | 'edited' | 'executing' | 'all'; agentId?: string; limit?: number }) =>
+      trpcQuery<{ rows: any[] }>('faris.getApprovalQueue', input || {}),
+    getTask: (input: { taskId: string }) =>
+      trpcQuery<{ task: any; arguments: any[] }>('faris.getTask', input),
+    approveTask: (input: { taskId: string; editedPayload?: Record<string, any> }) =>
+      trpcMutation<{ success: boolean; taskId: string }>('faris.approveTask', input),
+    rejectTask: (input: { taskId: string; reason: string }) =>
+      trpcMutation<{ success: boolean }>('faris.rejectTask', input),
+    replyToArgue: (input: { taskId: string; message: string }) =>
+      trpcMutation<{ agentReply: string | null; note?: string }>('faris.replyToArgue', input),
+    morningBrief: () =>
+      trpcQuery<{ signups: number; paid: number; pending: number; adSpendSar: number; generatedAt: string }>('faris.morningBrief'),
+    dailyVitals: () =>
+      trpcQuery<{
+        signupsToday: number; paidToday: number; mrrSar: number; adSpendSar: number;
+        pendingApprovals: number; agentTokenSpendSar: number; errors24h: number; churnedThisMonth: number;
+      }>('faris.dailyVitals'),
+    agentCostReport: (input?: { agentId?: string; days?: number }) =>
+      trpcQuery<{
+        sinceDays: number;
+        breakdown: Array<{ agentId: string; tokens: number; calls: number; costUsd: number; costSar: number }>;
+        totalCostSar: number; totalCostUsd: number;
+      }>('faris.agentCostReport', input || {}),
+    readContextFile: () => trpcQuery<{ content: string }>('faris.readContextFile'),
+    updateContextFile: (input: { content: string }) =>
+      trpcMutation<{ success: boolean }>('faris.updateContextFile', input),
+    toggleAgentMode: (input: { agentId: string; mode: 'approval_required' | 'suggest_only' | 'auto_with_bounds' | 'auto' }) =>
+      trpcMutation<{ success: boolean }>('faris.toggleAgentMode', input),
+    updateAgentBudget: (input: { agentId: string; monthlyTokenBudget: number }) =>
+      trpcMutation<{ success: boolean }>('faris.updateAgentBudget', input),
+  },
+  sayed: {
+    generateMonthlyBatch: (input: { platforms: string[]; themes?: string[]; postsPerPlatform?: number }) =>
+      trpcMutation<{ tasksCreated: number; totalEstimatedCostSar: number }>('sayed.generateMonthlyBatch', input),
+    draftSinglePost: (input: { platform: string; topic: string; sourceUrl?: string }) =>
+      trpcMutation<{ taskId: string }>('sayed.draftSinglePost', input),
+    draftAdCampaign: (input: { channel: string; objective: string; dailyBudgetSar: number; targetAudience: string }) =>
+      trpcMutation<{ campaignTaskId: string; creativeVariants: number }>('sayed.draftAdCampaign', input),
+    listContentCalendar: (input?: { startDate?: string; endDate?: string; platform?: string }) =>
+      trpcQuery<{ items: any[] }>('sayed.listContentCalendar', input || {}),
+    listAdCampaigns: (input?: { status?: string }) =>
+      trpcQuery<{ campaigns: any[] }>('sayed.listAdCampaigns', input || {}),
+    publishApprovedContent: (input: { contentId: string }) =>
+      trpcMutation<{ success: boolean; note: string }>('sayed.publishApprovedContent', input),
+    killCampaign: (input: { campaignId: string; reason: string }) =>
+      trpcMutation<{ success: boolean }>('sayed.killCampaign', input),
+    repurposeFromRss: (input: { feedUrl: string }) =>
+      trpcMutation<{ itemsRead: number; tasksQueued: number }>('sayed.repurposeFromRss', input),
+  },
   agents: {
     list: () => trpcQuery<any[]>('agents.list'),
     startConversation: (input: { agentId: string; title?: string }) =>
