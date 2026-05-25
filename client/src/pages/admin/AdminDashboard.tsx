@@ -1,36 +1,51 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import {
-  Shield, Users, Activity, AlertTriangle, Star, CheckCircle2,
-  XCircle, Loader2, Search, Coins, BarChart3,
-  RefreshCw, Ban, TicketCheck, MessageSquarePlus, Bot, Building2, Zap,
+  Shield, Users, Activity, AlertTriangle, CheckCircle2, XCircle, RefreshCw,
+  Sparkles, Flame, Coins, Wallet, TrendingUp, AlertOctagon, Crown,
+  ChevronDown, ChevronUp, TicketCheck, Bot, Ban, Server, Download, Megaphone, Wrench,
 } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/contexts/AuthContext';
-import AdminAgents from './AdminAgents';
-import AdminCompanies from './AdminCompanies';
-import AdminExecutorAgents from './AdminExecutorAgents';
-import ErrorBoundary from '@/components/ErrorBoundary';
+import Sparkline from './_dashboard/Sparkline';
+import StatTile, { type Verdict } from './_dashboard/StatTile';
+import FunnelChart from './_dashboard/FunnelChart';
+import CohortCard from './_dashboard/CohortCard';
+import TokenBurnBar from './_dashboard/TokenBurnBar';
 
-type Tab = 'overview' | 'users' | 'reviews' | 'alerts' | 'companies' | 'tokens' | 'tickets' | 'agents' | 'executor';
-
-interface Toast { id: number; type: 'success' | 'error'; message: string }
+// ───────────────────────────────────────────────────────────────────
+// Local toast (re-used pattern from AdminUsers)
+// ───────────────────────────────────────────────────────────────────
+interface Toast { id: number; type: 'success' | 'error'; message: string; }
 
 function useToast() {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const push = (type: Toast['type'], message: string) => {
     const id = Date.now() + Math.random();
-    setToasts(t => [...t, { id, type, message }]);
-    setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 3000);
+    setToasts((t) => [...t, { id, type, message }]);
+    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 3500);
   };
   const View = () => (
     <div style={{ position: 'fixed', top: 20, insetInlineEnd: 20, zIndex: 9999, display: 'flex', flexDirection: 'column', gap: 8 }}>
       <AnimatePresence>
-        {toasts.map(t => (
-          <motion.div key={t.id} initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: 40 }}
-            style={{ padding: '12px 18px', borderRadius: 12, minWidth: 260, background: t.type === 'success' ? '#ECFDF5' : '#FEF2F2', color: t.type === 'success' ? '#065F46' : '#991B1B', border: `1px solid ${t.type === 'success' ? '#A7F3D0' : '#FECACA'}`, boxShadow: '0 8px 24px rgba(0,0,0,0.08)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 700, fontSize: 13, display: 'flex', alignItems: 'center', gap: 10 }}>
+        {toasts.map((t) => (
+          <motion.div
+            key={t.id}
+            initial={{ opacity: 0, y: -16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, x: 40 }}
+            style={{
+              padding: '12px 18px', borderRadius: 12, minWidth: 260,
+              background: t.type === 'success' ? '#ECFDF5' : '#FEF2F2',
+              color: t.type === 'success' ? '#065F46' : '#991B1B',
+              border: `1px solid ${t.type === 'success' ? '#A7F3D0' : '#FECACA'}`,
+              boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
+              fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 700, fontSize: 13,
+              display: 'flex', alignItems: 'center', gap: 10,
+            }}
+          >
             {t.type === 'success' ? <CheckCircle2 size={16} /> : <XCircle size={16} />}
             {t.message}
           </motion.div>
@@ -41,110 +56,229 @@ function useToast() {
   return { push, View };
 }
 
+const ADMIN_EMAILS = ['waselhup@gmail.com', 'almodhih.1995@gmail.com', 'alhashimali649@gmail.com'];
+
+// Shared style helpers
+const sectionHeader: React.CSSProperties = {
+  display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 14,
+};
+const sectionTitle: React.CSSProperties = {
+  fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 18,
+  color: 'var(--wsl-ink, #0F172A)', margin: 0, display: 'inline-flex', alignItems: 'center', gap: 8,
+};
+const sectionSub: React.CSSProperties = {
+  fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 500, fontSize: 12,
+  color: 'var(--wsl-ink-3, #6B7280)',
+};
+const cardSurface: React.CSSProperties = {
+  background: '#fff', borderRadius: 14, border: '1px solid var(--wsl-border, #E5E7EB)',
+  padding: 22, boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+};
+const sectionWrap: React.CSSProperties = { marginBottom: 32 };
+
+// ───────────────────────────────────────────────────────────────────
+// Reusable inline pieces
+// ───────────────────────────────────────────────────────────────────
+function LoadingBox({ height = 120 }: { height?: number }) {
+  return (
+    <div
+      style={{
+        height,
+        borderRadius: 14,
+        background: 'linear-gradient(90deg, #F9FAFB, #F3F4F6, #F9FAFB)',
+        backgroundSize: '200% 100%',
+        animation: 'wsl-shimmer 1.4s linear infinite',
+      }}
+    />
+  );
+}
+
+function ErrorBox({ message, onRetry, retryLabel }: { message: string; onRetry?: () => void; retryLabel: string }) {
+  return (
+    <div
+      style={{
+        padding: 16,
+        borderRadius: 12,
+        background: '#FEF2F2',
+        border: '1px solid #FECACA',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+      }}
+    >
+      <AlertTriangle size={16} style={{ color: '#DC2626', flexShrink: 0 }} />
+      <div style={{ flex: 1, fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontSize: 12, color: '#991B1B', fontWeight: 700 }}>
+        {message}
+      </div>
+      {onRetry && (
+        <button
+          onClick={onRetry}
+          style={{
+            padding: '6px 12px', borderRadius: 8, background: '#DC2626', color: '#fff',
+            border: 'none', cursor: 'pointer',
+            fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 800, fontSize: 11,
+          }}
+        >
+          {retryLabel}
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ───────────────────────────────────────────────────────────────────
+// Component
+// ───────────────────────────────────────────────────────────────────
 export default function AdminDashboard() {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const isAr = i18n.language === 'ar';
   const toast = useToast();
-  const [tab, setTab] = useState<Tab>('overview');
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState<any>(null);
-  const [systemStatus, setSystemStatus] = useState<any>(null);
-  const [users, setUsers] = useState<any[]>([]);
-  const [pendingReviews, setPendingReviews] = useState<any[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [feedbackTickets, setFeedbackTickets] = useState<any[]>([]);
-  const [ticketFilter, setTicketFilter] = useState<string>('all');
-  const [respondModal, setRespondModal] = useState<any | null>(null);
-  const [respondText, setRespondText] = useState('');
-  const [addTokensModal, setAddTokensModal] = useState<{ userId: string; name: string } | null>(null);
-  const [tokenAmount, setTokenAmount] = useState(100);
-  const [tokenReason, setTokenReason] = useState('');
-  const [anthropicHealth, setAnthropicHealth] = useState<any>(null);
-
-  const ADMIN_EMAILS = ['waselhup@gmail.com', 'almodhih.1995@gmail.com', 'alhashimali649@gmail.com'];
   const isAdmin = ADMIN_EMAILS.includes(user?.email || '');
+
+  // Loadable data slots — each tracked independently for resilience
+  const [overview, setOverview] = useState<any>(null);
+  const [funnel, setFunnel] = useState<any>(null);
+  const [cohorts, setCohorts] = useState<any>(null);
+  const [tokenEconomy, setTokenEconomy] = useState<any>(null);
+  const [growth, setGrowth] = useState<any>(null);
+  const [systemStatus, setSystemStatus] = useState<any>(null);
+  const [tickets, setTickets] = useState<any[]>([]);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState<Record<string, boolean>>({
+    overview: true, funnel: true, cohorts: true, tokens: true, growth: true, system: true, tickets: true,
+  });
+
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
+    system: true, tickets: false, alerts: false, agents: false,
+  });
+
+  // Grant tokens modal state
+  const [grantModal, setGrantModal] = useState<{ userId: string; name: string } | null>(null);
+  const [grantAmount, setGrantAmount] = useState(50);
+
+  async function loadSection<T>(key: string, fn: () => Promise<T>, setter: (v: T) => void) {
+    setLoading((s) => ({ ...s, [key]: true }));
+    setErrors((e) => { const n = { ...e }; delete n[key]; return n; });
+    try {
+      const data = await fn();
+      setter(data);
+    } catch (e: any) {
+      setErrors((er) => ({ ...er, [key]: e?.message || 'Failed' }));
+    } finally {
+      setLoading((s) => ({ ...s, [key]: false }));
+    }
+  }
+
+  async function loadAll() {
+    loadSection('overview', () => trpc.admin.dashboardOverview(), setOverview);
+    loadSection('funnel', () => trpc.admin.funnel(), setFunnel);
+    loadSection('cohorts', () => trpc.admin.cohorts(), setCohorts);
+    loadSection('tokens', () => trpc.admin.tokenEconomy(), setTokenEconomy);
+    loadSection('growth', () => trpc.admin.growthSignals(), setGrowth);
+    loadSection('system', () => trpc.admin.systemStatus(), setSystemStatus);
+    loadSection('tickets', () => trpc.feedback.listAll(), setTickets);
+  }
 
   useEffect(() => {
     if (!isAdmin) return;
-    loadData();
+    loadAll();
   }, [isAdmin]);
 
-  // Poll Anthropic health every 60s when overview tab is open
-  useEffect(() => {
-    if (!isAdmin || tab !== 'overview') return;
-    let cancelled = false;
-    const fetchHealth = async () => {
-      try {
-        const h = await trpc.ops.anthropicHealth();
-        if (!cancelled) setAnthropicHealth(h);
-      } catch {
-        /* swallow — widget renders a neutral state */
-      }
-    };
-    void fetchHealth();
-    const iv = setInterval(fetchHealth, 60_000);
-    return () => {
-      cancelled = true;
-      clearInterval(iv);
-    };
-  }, [isAdmin, tab]);
+  async function handleGrantTokens(userId: string) {
+    setGrantModal({ userId, name: '' });
+  }
 
-  async function loadData() {
-    setLoading(true);
+  async function confirmGrant() {
+    if (!grantModal) return;
     try {
-      const [statsRes, statusRes, usersRes, reviewsRes, ticketsRes] = await Promise.allSettled([
-        trpc.admin.stats(),
-        trpc.admin.systemStatus(),
-        trpc.admin.users(),
-        trpc.reviews.listPending(),
-        trpc.feedback.listAll(),
-      ]);
-      if (statsRes.status === 'fulfilled') setStats(statsRes.value);
-      if (statusRes.status === 'fulfilled') setSystemStatus(statusRes.value);
-      if (usersRes.status === 'fulfilled') setUsers(usersRes.value || []);
-      if (reviewsRes.status === 'fulfilled') setPendingReviews(reviewsRes.value || []);
-      if (ticketsRes.status === 'fulfilled') setFeedbackTickets(ticketsRes.value || []);
-    } catch (e) {
-      console.error('[Admin] Load error:', e);
+      await trpc.admin.addTokens({
+        userId: grantModal.userId,
+        amount: grantAmount,
+        reason: 'Admin grant from cohort card',
+      });
+      toast.push('success', isAr ? `تمت إضافة ${grantAmount} توكن` : `Granted ${grantAmount} tokens`);
+      setGrantModal(null);
+      loadSection('cohorts', () => trpc.admin.cohorts(), setCohorts);
+    } catch (e: any) {
+      toast.push('error', e?.message || 'Failed');
     }
-    setLoading(false);
   }
 
-  async function handleApproveReview(id: string) {
-    try {
-      await trpc.reviews.approve({ id });
-      toast.push('success', isAr ? 'تم قبول المراجعة' : 'Review approved');
-      setPendingReviews(prev => prev.filter(r => r.id !== id));
-    } catch (e: any) { toast.push('error', e?.message || 'Failed'); }
+  function sendEmailTo(userId: string) {
+    const u = (cohorts?.hotProspects || []).find((x: any) => x.id === userId)
+          || (cohorts?.churnRisk || []).find((x: any) => x.id === userId);
+    if (u?.email) window.location.href = `mailto:${u.email}`;
   }
 
-  async function handleRejectReview(id: string) {
-    try {
-      await trpc.reviews.reject({ id });
-      toast.push('success', isAr ? 'تم رفض المراجعة' : 'Review rejected');
-      setPendingReviews(prev => prev.filter(r => r.id !== id));
-    } catch (e: any) { toast.push('error', e?.message || 'Failed'); }
+  function askTestimonial(userId: string) {
+    const u = (cohorts?.heroes || []).find((x: any) => x.id === userId);
+    if (!u?.email) return;
+    const subject = isAr
+      ? 'هل تشاركنا تجربتك مع وصل؟'
+      : 'Would you share your Wassel story?';
+    const body = isAr
+      ? `مرحباً ${u.full_name || ''},%0A%0Aلاحظنا أنك من أكثر مستخدمي وصل نشاطاً. هل يمكنك مشاركة تجربتك معنا في شهادة قصيرة؟%0A%0Aشكراً،%0Aفريق وصل`
+      : `Hi ${u.full_name || ''},%0A%0AYou're one of Wassel's most active users — would you share a short testimonial about your experience?%0A%0AThanks,%0AThe Wassel team`;
+    window.location.href = `mailto:${u.email}?subject=${encodeURIComponent(subject)}&body=${body}`;
   }
 
-  async function handleToggleBan(userId: string) {
-    try {
-      const res = await trpc.admin.toggleBan({ userId });
-      toast.push('success', res.banned ? (isAr ? 'تم حظر المستخدم' : 'User banned') : (isAr ? 'تم إلغاء الحظر' : 'User unbanned'));
-      setUsers(prev => prev.map(u => u.id === userId ? { ...u, is_banned: res.banned } : u));
-    } catch (e: any) { toast.push('error', e?.message || 'Failed'); }
+  // ─── Derived: verdicts for hero strip ───
+  function verdictFor(key: string, today: number, yesterday: number): Verdict {
+    if (key === 'fires') {
+      if (today === 0) return 'healthy';
+      if (today >= 3) return 'fire';
+      return 'watch';
+    }
+    if (key === 'tokensBurned') {
+      const delta = yesterday > 0 ? ((today - yesterday) / yesterday) * 100 : 0;
+      if (delta > 50) return 'watch'; // huge spike in cost
+      return 'neutral';
+    }
+    // signups / activated / paying / mrr — up is good
+    const delta = yesterday > 0 ? ((today - yesterday) / yesterday) * 100 : today > 0 ? 100 : 0;
+    if (delta < -20) return 'fire';
+    if (delta < 0) return 'watch';
+    return 'healthy';
   }
 
-  async function handleAddTokens() {
-    if (!addTokensModal) return;
-    try {
-      await trpc.admin.addTokens({ userId: addTokensModal.userId, amount: tokenAmount, reason: tokenReason || 'Admin grant' });
-      toast.push('success', isAr ? `تمت إضافة ${tokenAmount} توكن` : `Added ${tokenAmount} tokens`);
-      setAddTokensModal(null); setTokenAmount(100); setTokenReason('');
-      loadData();
-    } catch (e: any) { toast.push('error', e?.message || 'Failed'); }
-  }
+  // ─── Derived: funnel stages with localized labels ───
+  const funnelStages = useMemo(() => {
+    if (!funnel?.stages) return [];
+    const labelByKey: Record<string, string> = {
+      signups: t('admin.cc.stageSignups'),
+      onboarded: t('admin.cc.stageOnboarded'),
+      firstAnalysis: t('admin.cc.stageFirstAnalysis'),
+      firstCv: t('admin.cc.stageFirstCv'),
+      savedKb: t('admin.cc.stageSavedKb'),
+      paid: t('admin.cc.stagePaid'),
+    };
+    return funnel.stages.map((s: any) => ({ ...s, label: labelByKey[s.key] || s.key }));
+  }, [funnel, t]);
 
+  // ─── Burn-by-category segments ───
+  const burnSegments = useMemo(() => {
+    if (!tokenEconomy?.burnByCategory) return [];
+    const labelByKey: Record<string, string> = {
+      linkedin: t('admin.cc.catLinkedin'),
+      cv: t('admin.cc.catCv'),
+      campaign: t('admin.cc.catCampaign'),
+      other: t('admin.cc.catOther'),
+    };
+    const colorByKey: Record<string, string> = {
+      linkedin: '#14b8a6',
+      cv: '#8B5CF6',
+      campaign: '#F59E0B',
+      other: '#9CA3AF',
+    };
+    return tokenEconomy.burnByCategory.map((c: any) => ({
+      ...c,
+      label: labelByKey[c.key] || c.key,
+      color: colorByKey[c.key] || '#9CA3AF',
+    }));
+  }, [tokenEconomy, t]);
+
+  // ─── Auth gate ───
   if (!isAdmin) {
     return (
       <DashboardLayout pageTitle={isAr ? 'لوحة الإدارة' : 'Admin Dashboard'}>
@@ -158,435 +292,793 @@ export default function AdminDashboard() {
     );
   }
 
-  const tabs: { id: Tab; label: string; icon: any; count?: number }[] = [
-    { id: 'overview', label: isAr ? 'نظرة عامة' : 'Overview', icon: BarChart3 },
-    { id: 'users', label: isAr ? 'المستخدمين' : 'Users', icon: Users, count: users.length },
-    { id: 'reviews', label: isAr ? 'المراجعات' : 'Reviews', icon: Star, count: pendingReviews.length },
-    { id: 'alerts', label: isAr ? 'التنبيهات' : 'Alerts', icon: AlertTriangle, count: systemStatus?.recentErrors?.length || 0 },
-    { id: 'companies', label: isAr ? 'الشركات' : 'Companies', icon: Building2 },
-    { id: 'tokens', label: isAr ? 'التوكنز' : 'Tokens', icon: Coins },
-    { id: 'tickets', label: isAr ? 'الملاحظات' : 'Tickets', icon: TicketCheck, count: feedbackTickets.filter(t => t.status === 'open').length },
-    { id: 'agents', label: isAr ? 'الوكلاء' : 'Agents', icon: Bot },
-    { id: 'executor', label: isAr ? 'الوكلاء التنفيذيين' : 'Executor Agents', icon: Zap },
-  ];
-
-  const filteredUsers = searchQuery
-    ? users.filter(u => (u.email || '').toLowerCase().includes(searchQuery.toLowerCase()) || (u.full_name || '').toLowerCase().includes(searchQuery.toLowerCase()))
-    : users;
-
-  const thStyle: React.CSSProperties = { padding: '10px 14px', textAlign: 'start', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 11, color: '#6B7280', whiteSpace: 'nowrap' };
-  const tdStyle: React.CSSProperties = { padding: '10px 14px', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontSize: 13 };
+  const fmtNum = (n: number) => (n || 0).toLocaleString('en-US');
+  const openTicketsCount = (tickets || []).filter((x: any) => x.status === 'open').length;
+  const recentErrors = systemStatus?.recentErrors || [];
 
   return (
     <DashboardLayout pageTitle={isAr ? 'لوحة الإدارة' : 'Admin Dashboard'}>
       <toast.View />
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 4px' }}>
-        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
-          <h1 style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 28, color: 'var(--wsl-ink)', margin: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 40, height: 40, borderRadius: 12, background: 'linear-gradient(135deg, #DC2626, #EA580C)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Shield size={20} color="#fff" />
+      <style>{`
+        @keyframes wsl-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+      `}</style>
+      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 4px' }}>
+
+        {/* ─── Page Header ─────────────────────────────────────────── */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 24 }}
+        >
+          <div>
+            <h1
+              style={{
+                fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
+                fontWeight: 900, fontSize: 26, margin: 0, color: 'var(--wsl-ink, #0F172A)',
+                display: 'inline-flex', alignItems: 'center', gap: 10,
+              }}
+            >
+              <div
+                style={{
+                  width: 38, height: 38, borderRadius: 12,
+                  background: 'linear-gradient(135deg, #14b8a6, #0d9488)',
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                }}
+              >
+                <Shield size={18} color="#fff" />
+              </div>
+              {t('admin.cc.headerTitle')}
+            </h1>
+            <div style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 500, fontSize: 13, color: 'var(--wsl-ink-3, #6B7280)', marginTop: 6, marginInlineStart: 48 }}>
+              {t('admin.cc.headerSubtitle')}
             </div>
-            {isAr ? 'لوحة الإدارة' : 'Admin Dashboard'}
-          </h1>
-          <button onClick={loadData} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 10, border: '1px solid var(--wsl-border, #E5E7EB)', background: '#fff', cursor: 'pointer', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 800, fontSize: 13, color: 'var(--wsl-ink-2)' }}>
-            <RefreshCw size={14} /> {isAr ? 'تحديث' : 'Refresh'}
+          </div>
+          <button
+            onClick={loadAll}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px',
+              borderRadius: 10, border: '1px solid var(--wsl-border, #E5E7EB)',
+              background: '#fff', cursor: 'pointer',
+              fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 800, fontSize: 13,
+              color: 'var(--wsl-ink-2, #374151)',
+            }}
+          >
+            <RefreshCw size={14} />
+            {t('admin.cc.refresh')}
           </button>
         </motion.div>
 
-        {/* Tabs */}
-        <div style={{ display: 'flex', gap: 4, padding: 4, borderRadius: 12, background: 'var(--wsl-surf-2, #F3F4F6)', marginBottom: 20, overflowX: 'auto' }}>
-          {tabs.map(tb => {
-            const active = tab === tb.id;
-            return (
-              <button key={tb.id} onClick={() => setTab(tb.id)}
-                style={{ flex: 1, minWidth: 90, padding: '9px 10px', borderRadius: 9, border: 'none', cursor: 'pointer', background: active ? '#fff' : 'transparent', color: active ? 'var(--wsl-ink)' : 'var(--wsl-ink-3)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 12, boxShadow: active ? '0 2px 6px rgba(0,0,0,0.06)' : 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 5, transition: 'all 150ms ease', whiteSpace: 'nowrap' }}>
-                <tb.icon size={13} />
-                {tb.label}
-                {(tb.count || 0) > 0 && (
-                  <span style={{ padding: '1px 6px', borderRadius: 999, fontSize: 10, fontWeight: 900, background: active ? '#FEE2E2' : 'rgba(0,0,0,0.06)', color: active ? '#DC2626' : 'var(--wsl-ink-3)' }}>{tb.count}</span>
-                )}
-              </button>
-            );
-          })}
+        {/* ═══ SECTION 1 — TODAY AT A GLANCE ═══════════════════════════ */}
+        <div style={sectionWrap}>
+          <div style={sectionHeader}>
+            <h2 style={sectionTitle}>
+              <Sparkles size={16} style={{ color: '#14b8a6' }} />
+              {t('admin.cc.s1Title')}
+            </h2>
+          </div>
+
+          {errors.overview ? (
+            <ErrorBox message={errors.overview} onRetry={() => loadSection('overview', () => trpc.admin.dashboardOverview(), setOverview)} retryLabel={t('admin.cc.retry')} />
+          ) : loading.overview ? (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14 }}>
+              {Array.from({ length: 6 }).map((_, i) => <LoadingBox key={i} height={150} />)}
+            </div>
+          ) : overview ? (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14 }}>
+              <StatTile
+                index={0}
+                label={t('admin.cc.tileSignups')}
+                value={fmtNum(overview.signups.today)}
+                today={overview.signups.today}
+                yesterday={overview.signups.yesterday}
+                spark={overview.signups.spark}
+                verdict={verdictFor('signups', overview.signups.today, overview.signups.yesterday)}
+                verdictLabel={t(`admin.cc.verdict${verdictFor('signups', overview.signups.today, overview.signups.yesterday).charAt(0).toUpperCase() + verdictFor('signups', overview.signups.today, overview.signups.yesterday).slice(1)}`)}
+                icon={<Users size={14} />}
+              />
+              <StatTile
+                index={1}
+                label={t('admin.cc.tileActivated')}
+                value={fmtNum(overview.activated.today)}
+                today={overview.activated.today}
+                yesterday={overview.activated.yesterday}
+                spark={overview.activated.spark}
+                verdict={verdictFor('activated', overview.activated.today, overview.activated.yesterday)}
+                verdictLabel={t(`admin.cc.verdict${verdictFor('activated', overview.activated.today, overview.activated.yesterday).charAt(0).toUpperCase() + verdictFor('activated', overview.activated.today, overview.activated.yesterday).slice(1)}`)}
+                icon={<Activity size={14} />}
+              />
+              <StatTile
+                index={2}
+                label={t('admin.cc.tilePaying')}
+                value={fmtNum(overview.paying.today)}
+                today={overview.paying.today}
+                yesterday={overview.paying.yesterday}
+                spark={overview.paying.spark}
+                verdict="healthy"
+                verdictLabel={t('admin.cc.verdictHealthy')}
+                icon={<Crown size={14} />}
+              />
+              <StatTile
+                index={3}
+                label={t('admin.cc.tileMrr')}
+                value={`${fmtNum(overview.mrr.today)} ${t('admin.cc.sar')}`}
+                today={overview.mrr.today}
+                yesterday={overview.mrr.yesterday}
+                spark={overview.mrr.spark}
+                verdict="healthy"
+                verdictLabel={t('admin.cc.verdictHealthy')}
+                icon={<Wallet size={14} />}
+              />
+              <StatTile
+                index={4}
+                label={t('admin.cc.tileTokensBurned')}
+                value={fmtNum(overview.tokensBurned.today)}
+                today={overview.tokensBurned.today}
+                yesterday={overview.tokensBurned.yesterday}
+                spark={overview.tokensBurned.spark}
+                verdict={verdictFor('tokensBurned', overview.tokensBurned.today, overview.tokensBurned.yesterday)}
+                verdictLabel={t(`admin.cc.verdict${verdictFor('tokensBurned', overview.tokensBurned.today, overview.tokensBurned.yesterday).charAt(0).toUpperCase() + verdictFor('tokensBurned', overview.tokensBurned.today, overview.tokensBurned.yesterday).slice(1)}`)}
+                icon={<Coins size={14} />}
+              />
+              <StatTile
+                index={5}
+                label={t('admin.cc.tileFires')}
+                value={fmtNum(overview.fires.today)}
+                today={overview.fires.today}
+                yesterday={overview.fires.yesterday}
+                spark={overview.fires.spark}
+                verdict={verdictFor('fires', overview.fires.today, overview.fires.yesterday)}
+                verdictLabel={t(`admin.cc.verdict${verdictFor('fires', overview.fires.today, overview.fires.yesterday).charAt(0).toUpperCase() + verdictFor('fires', overview.fires.today, overview.fires.yesterday).slice(1)}`)}
+                icon={<Flame size={14} />}
+                hint={String(t('admin.cc.firesBreakdown', overview.fires.breakdown))}
+              />
+            </div>
+          ) : null}
         </div>
 
-        {loading ? (
-          <div style={{ padding: 60, textAlign: 'center' }}><Loader2 size={32} style={{ color: '#14b8a6', animation: 'spin 1s linear infinite' }} /></div>
-        ) : (
-          <>
-            {tab === 'overview' && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: 12, marginBottom: 24 }}>
-                  {[
-                    { label: isAr ? 'المستخدمين' : 'Users', value: stats?.totalUsers || 0, icon: Users, color: '#14b8a6' },
-                    { label: isAr ? 'الإيراد الشهري' : 'MRR', value: `${stats?.mrr || 0} SAR`, icon: Coins, color: '#D97706' },
-                    { label: isAr ? 'مراجعات معلقة' : 'Pending', value: pendingReviews.length, icon: Star, color: '#DC2626' },
-                    { label: isAr ? 'نشط' : 'Active', value: stats?.activeUsers || 0, icon: Activity, color: '#059669' },
-                  ].map((s, i) => (
-                    <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-                      style={{ background: '#fff', borderRadius: 14, border: '1px solid var(--wsl-border, #E5E7EB)', padding: 16 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                        <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--wsl-ink-3)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>{s.label}</span>
-                        <div style={{ width: 28, height: 28, borderRadius: 8, background: s.color + '15', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <s.icon size={14} style={{ color: s.color }} />
-                        </div>
-                      </div>
-                      <div style={{ fontSize: 24, fontWeight: 900, color: 'var(--wsl-ink)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>{s.value}</div>
-                    </motion.div>
-                  ))}
-                </div>
+        {/* ═══ SECTION 2 — FUNNEL ══════════════════════════════════════ */}
+        <div style={sectionWrap}>
+          <div style={sectionHeader}>
+            <div>
+              <h2 style={sectionTitle}>
+                <TrendingUp size={16} style={{ color: '#14b8a6' }} />
+                {t('admin.cc.s2Title')}
+              </h2>
+              <div style={{ ...sectionSub, marginTop: 4 }}>{t('admin.cc.s2Subtitle')}</div>
+            </div>
+          </div>
+          <div style={cardSurface}>
+            {errors.funnel ? (
+              <ErrorBox message={errors.funnel} onRetry={() => loadSection('funnel', () => trpc.admin.funnel(), setFunnel)} retryLabel={t('admin.cc.retry')} />
+            ) : loading.funnel ? (
+              <LoadingBox height={360} />
+            ) : funnel ? (
+              <FunnelChart
+                stages={funnelStages}
+                biggestDropIdx={funnel.biggestDropIdx}
+                biggestDropPct={funnel.biggestDropPct}
+                biggestLeakLabel={
+                  funnel.biggestDropPct > 0 && funnelStages[funnel.biggestDropIdx - 1] && funnelStages[funnel.biggestDropIdx]
+                    ? t('admin.cc.biggestLeak', {
+                        from: funnelStages[funnel.biggestDropIdx - 1].label,
+                        to: funnelStages[funnel.biggestDropIdx].label,
+                        pct: funnel.biggestDropPct,
+                      })
+                    : undefined
+                }
+                noLeaksLabel={funnel.biggestDropPct === 0 ? t('admin.cc.noLeaks') : undefined}
+                pctOfPrevFmt={(pct) => t('admin.cc.stagePctOfPrev', { pct })}
+              />
+            ) : null}
+          </div>
+        </div>
 
-                {/* Anthropic API Health */}
-                {(() => {
-                  const h = anthropicHealth;
-                  const dotColor = !h ? '#9CA3AF'
-                    : h.creditExhausted ? '#DC2626'
-                    : h.status === 'healthy' ? '#059669'
-                    : h.status === 'error' ? '#DC2626'
-                    : '#D97706';
-                  const bgTint = !h ? '#F9FAFB'
-                    : h.creditExhausted || h.status === 'error' ? '#FEF2F2'
-                    : h.status === 'healthy' ? '#ECFDF5'
-                    : '#FFFBEB';
-                  const borderTint = !h ? '#E5E7EB'
-                    : h.creditExhausted || h.status === 'error' ? '#FECACA'
-                    : h.status === 'healthy' ? '#A7F3D0'
-                    : '#FDE68A';
-                  return (
-                    <div style={{
-                      background: bgTint, borderRadius: 14, border: `1px solid ${borderTint}`,
-                      padding: 16, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 14,
+        {/* ═══ SECTION 3 — COHORTS ═════════════════════════════════════ */}
+        <div style={sectionWrap}>
+          <div style={sectionHeader}>
+            <h2 style={sectionTitle}>
+              <Users size={16} style={{ color: '#14b8a6' }} />
+              {t('admin.cc.s3Title')}
+            </h2>
+          </div>
+
+          {errors.cohorts ? (
+            <ErrorBox message={errors.cohorts} onRetry={() => loadSection('cohorts', () => trpc.admin.cohorts(), setCohorts)} retryLabel={t('admin.cc.retry')} />
+          ) : loading.cohorts ? (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
+              {Array.from({ length: 3 }).map((_, i) => <LoadingBox key={i} height={320} />)}
+            </div>
+          ) : cohorts ? (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
+              <CohortCard
+                index={0}
+                emoji="🔥"
+                accentColor="#DC2626"
+                title={t('admin.cc.hotProspectsTitle')}
+                subtitle={t('admin.cc.hotProspectsSub')}
+                emptyLabel={t('admin.cc.cohortEmpty')}
+                viewAllLabel={t('admin.cc.viewAll')}
+                actions={[
+                  { label: t('admin.cc.cohortGrantTokens'), onClick: handleGrantTokens, variant: 'primary' },
+                  { label: t('admin.cc.cohortSendEmail'), onClick: sendEmailTo },
+                ]}
+                rows={(cohorts.hotProspects || []).map((u: any) => ({
+                  id: u.id,
+                  email: u.email,
+                  full_name: u.full_name,
+                  avatar_url: u.avatar_url,
+                  meta: [
+                    t('admin.cc.cohortAnalysesShort', { n: u.analyses_7d }),
+                    t('admin.cc.cohortDaysOld', { n: u.days_old }),
+                    t('admin.cc.cohortTokensLeft', { n: u.token_balance }),
+                  ].join(' · '),
+                }))}
+              />
+              <CohortCard
+                index={1}
+                emoji="💀"
+                accentColor="#F59E0B"
+                title={t('admin.cc.churnRiskTitle')}
+                subtitle={t('admin.cc.churnRiskSub')}
+                emptyLabel={t('admin.cc.cohortEmpty')}
+                viewAllLabel={t('admin.cc.viewAll')}
+                actions={[
+                  { label: t('admin.cc.cohortSendEmail'), onClick: sendEmailTo, variant: 'primary' },
+                ]}
+                rows={(cohorts.churnRisk || []).map((u: any) => ({
+                  id: u.id,
+                  email: u.email,
+                  full_name: u.full_name,
+                  avatar_url: u.avatar_url,
+                  badge: { label: u.plan, color: '#7C3AED', bg: '#EDE9FE' },
+                  meta: [
+                    t('admin.cc.cohortMrr', { n: u.mrr }),
+                    t('admin.cc.cohortTokensLeft', { n: u.token_balance }),
+                  ].join(' · '),
+                }))}
+              />
+              <CohortCard
+                index={2}
+                emoji="🦄"
+                accentColor="#14b8a6"
+                title={t('admin.cc.heroesTitle')}
+                subtitle={t('admin.cc.heroesSub')}
+                emptyLabel={t('admin.cc.cohortEmpty')}
+                viewAllLabel={t('admin.cc.viewAll')}
+                actions={[
+                  { label: t('admin.cc.cohortAskTestimonial'), onClick: askTestimonial, variant: 'primary' },
+                ]}
+                rows={(cohorts.heroes || []).map((u: any) => ({
+                  id: u.id,
+                  email: u.email,
+                  full_name: u.full_name,
+                  avatar_url: u.avatar_url,
+                  badge: { label: u.plan, color: '#065F46', bg: '#D1FAE5' },
+                  meta: [
+                    t('admin.cc.cohortAnalysesShort', { n: u.analyses_lifetime }),
+                    t('admin.cc.cohortKbItems', { n: u.kb_items }),
+                  ].join(' · '),
+                }))}
+              />
+            </div>
+          ) : null}
+        </div>
+
+        {/* ═══ SECTION 4 — TOKEN ECONOMY ═══════════════════════════════ */}
+        <div style={sectionWrap}>
+          <div style={sectionHeader}>
+            <div>
+              <h2 style={sectionTitle}>
+                <Coins size={16} style={{ color: '#14b8a6' }} />
+                {t('admin.cc.s4Title')}
+              </h2>
+              <div style={{ ...sectionSub, marginTop: 4 }}>{t('admin.cc.s4Subtitle')}</div>
+            </div>
+          </div>
+
+          {errors.tokens ? (
+            <ErrorBox message={errors.tokens} onRetry={() => loadSection('tokens', () => trpc.admin.tokenEconomy(), setTokenEconomy)} retryLabel={t('admin.cc.retry')} />
+          ) : loading.tokens ? (
+            <LoadingBox height={300} />
+          ) : tokenEconomy ? (
+            <>
+              {tokenEconomy.marginAlert && (
+                <div
+                  style={{
+                    marginBottom: 14, padding: '12px 16px', borderRadius: 12,
+                    background: '#FFFBEB', border: '1px solid #FDE68A',
+                    fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 800, fontSize: 13, color: '#92400E',
+                    display: 'flex', alignItems: 'center', gap: 10,
+                  }}
+                >
+                  <AlertOctagon size={16} />
+                  {t('admin.cc.marginAlert', {
+                    plan: tokenEconomy.marginAlert.plan,
+                    pct: Math.round(tokenEconomy.marginAlert.margin_pct),
+                  })}
+                </div>
+              )}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: 14 }}>
+                <div style={cardSurface}>
+                  <div style={{ ...sectionTitle, fontSize: 14, marginBottom: 14 }}>
+                    {t('admin.cc.burnByCategoryTitle')}
+                  </div>
+                  <TokenBurnBar
+                    segments={burnSegments}
+                    tokensFmt={(n) => t('admin.cc.catTokens', { n: fmtNum(n) })}
+                    costFmt={(n) => t('admin.cc.catCost', { n })}
+                  />
+                  <div style={{
+                    marginTop: 14, paddingTop: 14, borderTop: '1px dashed var(--wsl-border, #E5E7EB)',
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--wsl-ink-3, #6B7280)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
+                      {t('admin.cc.totalCostUSD')}
+                    </span>
+                    <span dir="ltr" style={{
+                      fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 18,
+                      color: '#14b8a6', fontVariantNumeric: 'tabular-nums',
                     }}>
-                      <div style={{
-                        width: 14, height: 14, borderRadius: '50%', background: dotColor,
-                        flexShrink: 0, boxShadow: `0 0 0 4px ${dotColor}22`,
-                      }} />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 14, color: 'var(--wsl-ink)', marginBottom: 4 }}>
-                          Claude API {h ? `· ${h.httpCode || '0'}` : ''} {h?.latencyMs ? `· ${h.latencyMs}ms` : ''}
-                        </div>
-                        <div style={{ fontSize: 12, color: 'var(--wsl-ink-3)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', lineHeight: 1.5 }}>
-                          {!h ? (isAr ? '...جاري الفحص' : 'Checking...') : h.message}
-                        </div>
-                        {h?.creditExhausted && (
-                          <a
-                            href="https://console.anthropic.com/settings/billing"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            style={{ fontSize: 12, color: '#DC2626', fontWeight: 900, textDecoration: 'underline', marginTop: 6, display: 'inline-block' }}
-                          >
-                            ⚠️ {isAr ? 'اشحن Anthropic فوراً' : 'Top up Anthropic now'}
-                          </a>
-                        )}
-                      </div>
+                      ${tokenEconomy.totalCostUSD.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+
+                <div style={cardSurface}>
+                  <div style={{ ...sectionTitle, fontSize: 14, marginBottom: 14 }}>
+                    {t('admin.cc.topConsumersTitle')}
+                  </div>
+                  {(tokenEconomy.top10Consumers || []).length === 0 ? (
+                    <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--wsl-ink-3, #6B7280)', fontSize: 12, fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
+                      {t('admin.cc.empty')}
                     </div>
-                  );
-                })()}
-
-                {/* System Status */}
-                <div style={{ background: '#fff', borderRadius: 14, border: '1px solid var(--wsl-border, #E5E7EB)', padding: 20, marginBottom: 20 }}>
-                  <h3 style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 16, color: 'var(--wsl-ink)', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <Activity size={16} style={{ color: '#14b8a6' }} /> {isAr ? 'حالة الخدمات' : 'Service Status'}
-                  </h3>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 10 }}>
-                    {Object.entries(systemStatus?.stats || {}).map(([service, data]: [string, any]) => {
-                      const errorRate = data.total > 0 ? (data.errors / data.total) * 100 : 0;
-                      const statusColor = errorRate > 20 ? '#DC2626' : errorRate > 5 ? '#D97706' : '#059669';
-                      return (
-                        <div key={service} style={{ padding: 12, borderRadius: 10, border: '1px solid var(--wsl-border, #E5E7EB)', display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <div style={{ width: 10, height: 10, borderRadius: '50%', background: statusColor }} />
-                          <div>
-                            <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--wsl-ink)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', textTransform: 'capitalize' }}>{service}</div>
-                            <div style={{ fontSize: 11, color: 'var(--wsl-ink-3)' }}>{data.total} calls · {data.errors} errors</div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {(systemStatus?.recentErrors || []).length > 0 && (
-                  <div style={{ background: '#FEF2F2', borderRadius: 14, border: '1px solid #FECACA', padding: 20 }}>
-                    <h3 style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 16, color: '#991B1B', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <AlertTriangle size={16} /> {isAr ? 'أخطاء حديثة' : 'Recent Errors'}
-                    </h3>
-                    {(systemStatus.recentErrors || []).slice(0, 8).map((err: any, i: number) => (
-                      <div key={i} style={{ padding: 10, borderRadius: 8, background: '#fff', border: '1px solid #FECACA', fontSize: 12, fontFamily: '"Thmanyah Sans", system-ui, sans-serif', marginBottom: 6 }}>
-                        <strong style={{ color: '#DC2626' }}>{err.service}</strong> <span style={{ color: '#6B7280' }}>{err.endpoint}</span> <span style={{ color: '#991B1B' }}>{err.status_code}</span>
-                        <div style={{ color: '#6B7280', marginTop: 2, fontSize: 11 }}>{(err.error_msg || '').substring(0, 100)}</div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </motion.div>
-            )}
-
-            {tab === 'users' && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                <div style={{ marginBottom: 16, position: 'relative' }}>
-                  <Search size={16} style={{ position: 'absolute', top: '50%', insetInlineStart: 12, transform: 'translateY(-50%)', color: '#9CA3AF' }} />
-                  <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-                    placeholder={isAr ? 'بحث بالبريد أو الاسم...' : 'Search by email or name...'}
-                    style={{ width: '100%', padding: '10px 12px 10px 36px', borderRadius: 10, border: '1.5px solid var(--wsl-border)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontSize: 13, outline: 'none', background: '#F9FAFB', boxSizing: 'border-box' }} />
-                </div>
-                <div style={{ background: '#fff', borderRadius: 14, border: '1px solid var(--wsl-border)', overflow: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                    <thead>
-                      <tr style={{ background: '#F9FAFB', borderBottom: '1px solid var(--wsl-border)' }}>
-                        <th style={thStyle}>{isAr ? 'المستخدم' : 'User'}</th>
-                        <th style={thStyle}>{isAr ? 'الباقة' : 'Plan'}</th>
-                        <th style={thStyle}>{isAr ? 'التوكنز' : 'Tokens'}</th>
-                        <th style={thStyle}>{isAr ? 'الحالة' : 'Status'}</th>
-                        <th style={thStyle}>{isAr ? 'تاريخ' : 'Joined'}</th>
-                        <th style={thStyle}>{isAr ? 'إجراءات' : 'Actions'}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredUsers.map(u => (
-                        <tr key={u.id} style={{ borderBottom: '1px solid var(--wsl-border)' }}>
-                          <td style={tdStyle}>
-                            <div style={{ fontWeight: 800 }}>{u.full_name || '-'}</div>
-                            <div style={{ fontSize: 11, color: 'var(--wsl-ink-3)', direction: 'ltr' }}>{u.email}</div>
-                          </td>
-                          <td style={tdStyle}>
-                            <span style={{ padding: '2px 8px', borderRadius: 999, background: u.plan === 'pro' ? '#D1FAE5' : '#F3F4F6', color: u.plan === 'pro' ? '#065F46' : '#6B7280', fontSize: 11, fontWeight: 800 }}>{u.plan || 'free'}</span>
-                          </td>
-                          <td style={tdStyle}><span style={{ fontWeight: 900, color: '#14b8a6', fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>{u.token_balance || 0}</span></td>
-                          <td style={tdStyle}>
-                            {u.is_admin && <span style={{ padding: '2px 6px', borderRadius: 999, background: '#EDE9FE', color: '#7C3AED', fontSize: 10, fontWeight: 800, marginInlineEnd: 4 }}>Admin</span>}
-                            {u.is_banned && <span style={{ padding: '2px 6px', borderRadius: 999, background: '#FEE2E2', color: '#DC2626', fontSize: 10, fontWeight: 800 }}>Banned</span>}
-                            {!u.is_admin && !u.is_banned && <span style={{ color: '#059669', fontSize: 11, fontWeight: 800 }}>Active</span>}
-                          </td>
-                          <td style={tdStyle}><span style={{ fontSize: 11, color: 'var(--wsl-ink-3)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>{new Date(u.created_at).toLocaleDateString('en', { month: 'short', day: 'numeric' })}</span></td>
-                          <td style={tdStyle}>
-                            <div style={{ display: 'flex', gap: 4 }}>
-                              <button onClick={() => setAddTokensModal({ userId: u.id, name: u.full_name || u.email })} title="Add tokens"
-                                style={{ padding: '4px 8px', borderRadius: 6, border: '1px solid #D1FAE5', background: '#ECFDF5', color: '#065F46', cursor: 'pointer', display: 'flex', alignItems: 'center' }}><Coins size={12} /></button>
-                              <button onClick={() => handleToggleBan(u.id)} title={u.is_banned ? 'Unban' : 'Ban'}
-                                style={{ padding: '4px 8px', borderRadius: 6, border: '1px solid #FECACA', background: u.is_banned ? '#ECFDF5' : '#FEF2F2', color: u.is_banned ? '#065F46' : '#DC2626', cursor: 'pointer', display: 'flex', alignItems: 'center' }}><Ban size={12} /></button>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      {tokenEconomy.top10Consumers.map((c: any) => {
+                        const marginColor = c.margin_pct === null ? '#9CA3AF'
+                          : c.margin_pct > 30 ? '#DC2626'
+                          : c.margin_pct > 15 ? '#F59E0B'
+                          : '#10B981';
+                        return (
+                          <div key={c.id} style={{
+                            display: 'flex', alignItems: 'center', gap: 10,
+                            padding: '8px 10px', borderRadius: 8, background: '#F9FAFB',
+                          }}>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{
+                                fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
+                                fontWeight: 800, fontSize: 12, color: 'var(--wsl-ink, #0F172A)',
+                                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                              }}>
+                                {c.full_name || c.email}
+                                <span dir="ltr" style={{
+                                  marginInlineStart: 6, padding: '1px 6px', borderRadius: 4,
+                                  background: '#EDE9FE', color: '#7C3AED', fontSize: 9, fontWeight: 900,
+                                  textTransform: 'uppercase',
+                                }}>{c.plan}</span>
+                              </div>
                             </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </motion.div>
-            )}
-
-            {tab === 'reviews' && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                {pendingReviews.length === 0 ? (
-                  <div style={{ background: '#fff', borderRadius: 14, border: '2px dashed var(--wsl-border)', padding: '60px 24px', textAlign: 'center' }}>
-                    <Star size={32} style={{ color: '#D97706', margin: '0 auto 12px' }} />
-                    <div style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 16 }}>{isAr ? 'لا توجد مراجعات معلقة' : 'No Pending Reviews'}</div>
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                    {pendingReviews.map(r => (
-                      <div key={r.id} style={{ background: '#fff', borderRadius: 14, border: '1px solid var(--wsl-border)', padding: 20 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                          <div>
-                            <span style={{ fontWeight: 800, fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontSize: 14 }}>{r.user_name || r.user_email || 'Unknown'}</span>
-                            <div style={{ display: 'flex', gap: 2, marginTop: 4 }}>
-                              {[1, 2, 3, 4, 5].map(s => (
-                                <Star key={s} size={14} style={{ color: s <= r.rating ? '#D97706' : '#E5E7EB', fill: s <= r.rating ? '#D97706' : 'none' }} />
-                              ))}
-                            </div>
-                          </div>
-                          <span style={{ fontSize: 11, color: 'var(--wsl-ink-3)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>{new Date(r.created_at).toLocaleDateString('en', { month: 'short', day: 'numeric' })}</span>
-                        </div>
-                        <p style={{ fontSize: 14, color: 'var(--wsl-ink-2)', lineHeight: 1.7, fontFamily: '"Thmanyah Sans", system-ui, sans-serif', marginBottom: 14 }}>{r.comment}</p>
-                        <div style={{ display: 'flex', gap: 8 }}>
-                          <button onClick={() => handleApproveReview(r.id)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 8, border: 'none', background: '#059669', color: '#fff', fontWeight: 800, fontSize: 12, cursor: 'pointer', fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
-                            <CheckCircle2 size={14} /> {isAr ? 'قبول' : 'Approve'}
-                          </button>
-                          <button onClick={() => handleRejectReview(r.id)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 8, border: '1px solid #FECACA', background: '#FEF2F2', color: '#DC2626', fontWeight: 800, fontSize: 12, cursor: 'pointer', fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
-                            <XCircle size={14} /> {isAr ? 'رفض' : 'Reject'}
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </motion.div>
-            )}
-
-            {tab === 'alerts' && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                {(systemStatus?.recentErrors || []).length === 0 ? (
-                  <div style={{ background: '#ECFDF5', borderRadius: 14, border: '1px solid #A7F3D0', padding: '40px 24px', textAlign: 'center' }}>
-                    <CheckCircle2 size={32} style={{ color: '#059669', margin: '0 auto 12px' }} />
-                    <div style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 16, color: '#065F46' }}>{isAr ? 'لا توجد أخطاء حديثة' : 'All Clear'}</div>
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    {(systemStatus.recentErrors || []).map((err: any, i: number) => (
-                      <div key={i} style={{ background: '#fff', borderRadius: 10, border: '1px solid var(--wsl-border)', padding: 14, display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                        <AlertTriangle size={16} style={{ color: err.status_code >= 500 ? '#DC2626' : '#D97706', flexShrink: 0, marginTop: 2 }} />
-                        <div style={{ flex: 1 }}>
-                          <strong style={{ fontSize: 13, color: 'var(--wsl-ink)', textTransform: 'capitalize' as const }}>{err.service}</strong>
-                          <span style={{ padding: '1px 6px', borderRadius: 4, background: err.status_code >= 500 ? '#FEE2E2' : '#FEF3C7', color: err.status_code >= 500 ? '#DC2626' : '#92400E', fontSize: 11, fontWeight: 800, marginInlineStart: 6 }}>{err.status_code}</span>
-                          <span style={{ fontSize: 11, color: 'var(--wsl-ink-3)', marginInlineStart: 6 }}>{err.endpoint}</span>
-                          <div style={{ fontSize: 12, color: '#6B7280', marginTop: 4 }}>{(err.error_msg || '').substring(0, 200)}</div>
-                          <div style={{ fontSize: 10, color: '#9CA3AF', marginTop: 2 }}>{new Date(err.created_at).toLocaleString()}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </motion.div>
-            )}
-
-            {tab === 'tokens' && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                <div style={{ background: '#fff', borderRadius: 14, border: '1px solid var(--wsl-border)', padding: 20, marginBottom: 20 }}>
-                  <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--wsl-ink-3)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', marginBottom: 6 }}>{isAr ? 'إجمالي التوكنز المشتراة' : 'Total Tokens Purchased'}</div>
-                  <div style={{ fontSize: 32, fontWeight: 900, color: '#14b8a6', fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>{(stats?.tokensPurchased || 0).toLocaleString('en-US')}</div>
-                </div>
-                <h3 style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 16, marginBottom: 12 }}>{isAr ? 'أعلى المستخدمين' : 'Top Users by Balance'}</h3>
-                <div style={{ background: '#fff', borderRadius: 14, border: '1px solid var(--wsl-border)', overflow: 'hidden' }}>
-                  {[...users].sort((a, b) => (b.token_balance || 0) - (a.token_balance || 0)).slice(0, 10).map((u, i) => (
-                    <div key={u.id} style={{ padding: '12px 16px', borderBottom: i < 9 ? '1px solid var(--wsl-border)' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <span style={{ fontWeight: 800, fontSize: 13, fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>{u.full_name || u.email} <span style={{ fontSize: 11, color: 'var(--wsl-ink-3)' }}>({u.plan || 'free'})</span></span>
-                      <span style={{ fontWeight: 900, fontSize: 16, color: '#14b8a6', fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>{(u.token_balance || 0).toLocaleString('en-US')}</span>
-                    </div>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-
-            {tab === 'tickets' && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
-                  {['all', 'open', 'in_progress', 'resolved', 'closed'].map(f => (
-                    <button key={f} onClick={() => setTicketFilter(f)}
-                      style={{ padding: '6px 14px', borderRadius: 8, border: ticketFilter === f ? '1.5px solid #14b8a6' : '1.5px solid var(--wsl-border)', background: ticketFilter === f ? 'rgba(10,143,132,0.07)' : '#fff', color: ticketFilter === f ? '#14b8a6' : '#6B7280', fontWeight: 800, fontSize: 12, cursor: 'pointer', fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
-                      {f === 'all' ? (isAr ? 'الكل' : 'All') : f === 'open' ? (isAr ? 'مفتوحة' : 'Open') : f === 'in_progress' ? (isAr ? 'قيد المعالجة' : 'In Progress') : f === 'resolved' ? (isAr ? 'تم الحل' : 'Resolved') : (isAr ? 'مغلقة' : 'Closed')}
-                    </button>
-                  ))}
-                </div>
-                {feedbackTickets.filter(t => ticketFilter === 'all' || t.status === ticketFilter).length === 0 ? (
-                  <div style={{ background: '#fff', borderRadius: 14, border: '2px dashed var(--wsl-border)', padding: '40px 24px', textAlign: 'center' }}>
-                    <TicketCheck size={32} style={{ color: '#059669', margin: '0 auto 12px' }} />
-                    <div style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 16, color: '#065F46' }}>{isAr ? 'لا توجد ملاحظات' : 'No Tickets'}</div>
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    {feedbackTickets.filter(t => ticketFilter === 'all' || t.status === ticketFilter).map(t => {
-                      const stColors: Record<string, string> = { open: '#FEF3C7', in_progress: '#DBEAFE', resolved: '#D1FAE5', closed: '#F3F4F6' };
-                      const stTextColors: Record<string, string> = { open: '#92400E', in_progress: '#1E40AF', resolved: '#065F46', closed: '#6B7280' };
-                      return (
-                        <div key={t.id} style={{ background: '#fff', borderRadius: 14, border: '1px solid var(--wsl-border)', padding: 18 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, flexWrap: 'wrap', gap: 6 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                              <span style={{ padding: '2px 8px', borderRadius: 999, background: stColors[t.status] || '#F3F4F6', color: stTextColors[t.status] || '#6B7280', fontSize: 10, fontWeight: 900 }}>{t.status}</span>
-                              <span style={{ padding: '2px 6px', borderRadius: 4, background: '#F3F4F6', color: '#6B7280', fontSize: 10, fontWeight: 800 }}>{t.category}</span>
-                              {t.priority === 'urgent' && <span style={{ padding: '2px 6px', borderRadius: 4, background: '#FEE2E2', color: '#DC2626', fontSize: 10, fontWeight: 900 }}>URGENT</span>}
-                              {t.priority === 'high' && <span style={{ padding: '2px 6px', borderRadius: 4, background: '#FEF3C7', color: '#92400E', fontSize: 10, fontWeight: 900 }}>HIGH</span>}
-                            </div>
-                            <span style={{ fontSize: 11, color: 'var(--wsl-ink-4)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>{new Date(t.created_at).toLocaleDateString('en', { month: 'short', day: 'numeric' })}</span>
-                          </div>
-                          <h4 style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 15, color: 'var(--wsl-ink)', marginBottom: 4 }}>{t.subject}</h4>
-                          <p style={{ fontSize: 13, color: 'var(--wsl-ink-2)', lineHeight: 1.6, marginBottom: 8, fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>{t.description.substring(0, 200)}{t.description.length > 200 ? '...' : ''}</p>
-                          <div style={{ fontSize: 11, color: 'var(--wsl-ink-3)', marginBottom: 10 }}>
-                            {isAr ? 'من:' : 'From:'} <strong>{t.user?.full_name || t.user?.email || 'Unknown'}</strong>
-                            {t.page_url && <span style={{ marginInlineStart: 8 }}>({t.page_url})</span>}
-                          </div>
-                          {t.admin_response && (
-                            <div style={{ padding: 10, borderRadius: 8, background: '#F0FDF9', border: '1px solid #A7F3D0', marginBottom: 8 }}>
-                              <div style={{ fontSize: 10, fontWeight: 800, color: '#065F46', marginBottom: 2 }}>{isAr ? 'الرد:' : 'Response:'}</div>
-                              <div style={{ fontSize: 12, color: '#065F46' }}>{t.admin_response}</div>
-                            </div>
-                          )}
-                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                            <button onClick={() => { setRespondModal(t); setRespondText(t.admin_response || ''); }}
-                              style={{ padding: '5px 12px', borderRadius: 6, border: '1px solid #D1FAE5', background: '#ECFDF5', color: '#065F46', fontSize: 11, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
-                              <MessageSquarePlus size={12} /> {isAr ? 'رد' : 'Respond'}
+                            <span dir="ltr" style={{
+                              fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
+                              fontWeight: 900, fontSize: 11, color: '#14b8a6',
+                              fontVariantNumeric: 'tabular-nums', minWidth: 60, textAlign: 'end',
+                            }}>{fmtNum(c.tokens_consumed)}</span>
+                            <span dir="ltr" style={{
+                              fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
+                              fontWeight: 700, fontSize: 10, color: 'var(--wsl-ink-3, #6B7280)',
+                              fontVariantNumeric: 'tabular-nums', minWidth: 50, textAlign: 'end',
+                            }}>${c.cost_usd.toFixed(2)}</span>
+                            {c.margin_pct !== null && (
+                              <span dir="ltr" style={{
+                                fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
+                                fontWeight: 900, fontSize: 10, color: marginColor,
+                                fontVariantNumeric: 'tabular-nums', minWidth: 36, textAlign: 'end',
+                              }}>{Math.round(c.margin_pct)}%</span>
+                            )}
+                            <button
+                              onClick={() => handleGrantTokens(c.id)}
+                              style={{
+                                padding: '3px 8px', borderRadius: 6,
+                                border: '1px solid var(--wsl-border, #E5E7EB)',
+                                background: '#fff', color: '#14b8a6', cursor: 'pointer',
+                                fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
+                                fontWeight: 900, fontSize: 10,
+                              }}
+                            >
+                              {t('admin.cc.grantTokensBtn')}
                             </button>
-                            {['open', 'in_progress', 'resolved', 'closed'].filter(s => s !== t.status).map(s => (
-                              <button key={s} onClick={async () => {
-                                try { await trpc.feedback.updateStatus({ id: t.id, status: s }); toast.push('success', 'Updated'); loadData(); } catch (e: any) { toast.push('error', e?.message || 'Failed'); }
-                              }} style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid var(--wsl-border)', background: '#fff', color: '#6B7280', fontSize: 10, fontWeight: 800, cursor: 'pointer' }}>
-                                {s}
-                              </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
+          ) : null}
+        </div>
+
+        {/* ═══ SECTION 5 — GROWTH SIGNALS ══════════════════════════════ */}
+        <div style={sectionWrap}>
+          <div style={sectionHeader}>
+            <div>
+              <h2 style={sectionTitle}>
+                <TrendingUp size={16} style={{ color: '#14b8a6' }} />
+                {t('admin.cc.s5Title')}
+              </h2>
+              <div style={{ ...sectionSub, marginTop: 4 }}>{t('admin.cc.s5Subtitle')}</div>
+            </div>
+          </div>
+
+          {errors.growth ? (
+            <ErrorBox message={errors.growth} onRetry={() => loadSection('growth', () => trpc.admin.growthSignals(), setGrowth)} retryLabel={t('admin.cc.retry')} />
+          ) : loading.growth ? (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
+              {Array.from({ length: 4 }).map((_, i) => <LoadingBox key={i} height={160} />)}
+            </div>
+          ) : growth ? (
+            <>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
+                {/* Activation rate */}
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  style={cardSurface}
+                >
+                  <div style={{ fontSize: 11, fontWeight: 900, color: 'var(--wsl-ink-3, #6B7280)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', textTransform: 'uppercase', letterSpacing: 0.4 }}>
+                    {t('admin.cc.activationRate')}
+                  </div>
+                  <div dir="ltr" style={{
+                    fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
+                    fontWeight: 900, fontSize: 32, color: '#14b8a6',
+                    fontVariantNumeric: 'tabular-nums', marginTop: 6,
+                  }}>
+                    {growth.activationRate30d.toFixed(0)}%
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--wsl-ink-3, #6B7280)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', marginTop: 4 }}>
+                    {t('admin.cc.activationRateDesc')}
+                  </div>
+                  <div style={{ marginTop: 10 }}>
+                    <Sparkline data={growth.activationSpark} width={200} height={28} stroke="#14b8a6" fill="rgba(20, 184, 166, 0.15)" />
+                  </div>
+                </motion.div>
+
+                {/* TTFV */}
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.05 }}
+                  style={cardSurface}
+                >
+                  <div style={{ fontSize: 11, fontWeight: 900, color: 'var(--wsl-ink-3, #6B7280)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', textTransform: 'uppercase', letterSpacing: 0.4 }}>
+                    {t('admin.cc.ttfv')}
+                  </div>
+                  <div dir="ltr" style={{
+                    fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
+                    fontWeight: 900, fontSize: 32,
+                    color: growth.ttfvMinutes !== null && growth.ttfvMinutes <= 10 ? '#10B981' : '#F59E0B',
+                    fontVariantNumeric: 'tabular-nums', marginTop: 6,
+                  }}>
+                    {growth.ttfvMinutes !== null ? t('admin.cc.minutes', { n: Math.round(growth.ttfvMinutes) }) : '—'}
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--wsl-ink-3, #6B7280)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', marginTop: 4 }}>
+                    {growth.ttfvMinutes !== null ? t('admin.cc.ttfvGoal') : t('admin.cc.ttfvNone')}
+                  </div>
+                </motion.div>
+
+                {/* KB export rate */}
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 }}
+                  style={cardSurface}
+                >
+                  <div style={{ fontSize: 11, fontWeight: 900, color: 'var(--wsl-ink-3, #6B7280)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', textTransform: 'uppercase', letterSpacing: 0.4 }}>
+                    {t('admin.cc.kbExportRate')}
+                  </div>
+                  <div dir="ltr" style={{
+                    fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
+                    fontWeight: 900, fontSize: 32, color: '#8B5CF6',
+                    fontVariantNumeric: 'tabular-nums', marginTop: 6,
+                  }}>
+                    {growth.kbExportRate.toFixed(0)}%
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--wsl-ink-3, #6B7280)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', marginTop: 4 }}>
+                    {t('admin.cc.kbExportRateDesc')}
+                  </div>
+                </motion.div>
+
+                {/* Locale split */}
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.15 }}
+                  style={cardSurface}
+                >
+                  <div style={{ fontSize: 11, fontWeight: 900, color: 'var(--wsl-ink-3, #6B7280)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', textTransform: 'uppercase', letterSpacing: 0.4 }}>
+                    {t('admin.cc.localeSplit')}
+                  </div>
+                  {(() => {
+                    const total = growth.localeSplit.ar + growth.localeSplit.en + growth.localeSplit.other;
+                    const arPct = total > 0 ? (growth.localeSplit.ar / total) * 100 : 0;
+                    const enPct = total > 0 ? (growth.localeSplit.en / total) * 100 : 0;
+                    const otherPct = total > 0 ? (growth.localeSplit.other / total) * 100 : 0;
+                    return (
+                      <>
+                        <div dir="ltr" style={{
+                          display: 'flex', width: '100%', height: 12, borderRadius: 6,
+                          overflow: 'hidden', marginTop: 14, background: '#F3F4F6',
+                        }}>
+                          {arPct > 0 && <div style={{ width: `${arPct}%`, background: '#14b8a6' }} />}
+                          {enPct > 0 && <div style={{ width: `${enPct}%`, background: '#8B5CF6' }} />}
+                          {otherPct > 0 && <div style={{ width: `${otherPct}%`, background: '#9CA3AF' }} />}
+                        </div>
+                        <div style={{ display: 'flex', gap: 12, marginTop: 12, flexWrap: 'wrap', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontSize: 11, fontWeight: 800 }}>
+                          <span style={{ color: '#14b8a6' }} dir="ltr">● {t('admin.cc.localeAr')} {Math.round(arPct)}%</span>
+                          <span style={{ color: '#8B5CF6' }} dir="ltr">● {t('admin.cc.localeEn')} {Math.round(enPct)}%</span>
+                          {otherPct > 0 && (
+                            <span style={{ color: '#9CA3AF' }} dir="ltr">● {t('admin.cc.localeOther')} {Math.round(otherPct)}%</span>
+                          )}
+                        </div>
+                      </>
+                    );
+                  })()}
+                </motion.div>
+              </div>
+
+              {/* Referral placeholder — hidden until referrals table exists */}
+              {/* TODO: when public.referrals exists, show top 5 referrers here */}
+            </>
+          ) : null}
+        </div>
+
+        {/* ═══ SECTION 6 — SYSTEM HEALTH ═══════════════════════════════ */}
+        <div style={sectionWrap}>
+          <div style={sectionHeader}>
+            <div>
+              <h2 style={sectionTitle}>
+                <Server size={16} style={{ color: '#14b8a6' }} />
+                {t('admin.cc.s6Title')}
+              </h2>
+              <div style={{ ...sectionSub, marginTop: 4 }}>{t('admin.cc.s6Subtitle')}</div>
+            </div>
+          </div>
+
+          <div style={cardSurface}>
+            {/* Accordion */}
+            {[
+              { key: 'system', icon: <Server size={14} />, label: t('admin.cc.sysStatusTitle'), count: recentErrors.length },
+              { key: 'tickets', icon: <TicketCheck size={14} />, label: t('admin.cc.ticketsTitle'), count: openTicketsCount },
+              { key: 'alerts', icon: <AlertTriangle size={14} />, label: t('admin.cc.alertsTitle'), count: (overview?.fires.breakdown.banned || 0) + (overview?.fires.breakdown.failedPayments || 0) },
+              { key: 'agents', icon: <Bot size={14} />, label: t('admin.cc.agentsTitle'), count: 0 },
+            ].map((row) => {
+              const isOpen = openSections[row.key];
+              return (
+                <div key={row.key} style={{ borderBottom: '1px solid var(--wsl-border, #E5E7EB)' }}>
+                  <button
+                    onClick={() => setOpenSections((s) => ({ ...s, [row.key]: !s[row.key] }))}
+                    style={{
+                      width: '100%', padding: '12px 0', border: 'none', background: 'transparent', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', gap: 10,
+                      fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 800, fontSize: 13,
+                      color: 'var(--wsl-ink, #0F172A)', textAlign: 'start',
+                    }}
+                  >
+                    {row.icon}
+                    <span style={{ flex: 1 }}>{row.label}</span>
+                    {row.count > 0 && (
+                      <span dir="ltr" style={{
+                        padding: '2px 8px', borderRadius: 999,
+                        background: row.key === 'system' && row.count > 0 ? '#FEE2E2' : '#F3F4F6',
+                        color: row.key === 'system' && row.count > 0 ? '#DC2626' : 'var(--wsl-ink-2, #374151)',
+                        fontSize: 10, fontWeight: 900, fontVariantNumeric: 'tabular-nums',
+                      }}>{row.count}</span>
+                    )}
+                    {isOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                  </button>
+
+                  {isOpen && (
+                    <div style={{ padding: '4px 0 16px' }}>
+                      {row.key === 'system' && (
+                        loading.system ? <LoadingBox height={80} /> :
+                        errors.system ? <ErrorBox message={errors.system} retryLabel={t('admin.cc.retry')} onRetry={() => loadSection('system', () => trpc.admin.systemStatus(), setSystemStatus)} /> :
+                        systemStatus ? (
+                          <>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 10, marginBottom: 10 }}>
+                              {Object.entries(systemStatus.stats || {}).map(([svc, data]: [string, any]) => {
+                                const errRate = data.total > 0 ? (data.errors / data.total) * 100 : 0;
+                                const color = errRate > 20 ? '#DC2626' : errRate > 5 ? '#F59E0B' : '#10B981';
+                                return (
+                                  <div key={svc} style={{
+                                    display: 'flex', alignItems: 'center', gap: 10,
+                                    padding: 10, borderRadius: 10, background: '#F9FAFB',
+                                  }}>
+                                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
+                                    <div style={{ minWidth: 0 }}>
+                                      <div style={{
+                                        fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
+                                        fontWeight: 800, fontSize: 12, color: 'var(--wsl-ink, #0F172A)',
+                                        textTransform: 'capitalize',
+                                      }}>{svc}</div>
+                                      <div dir="ltr" style={{ fontSize: 10, color: 'var(--wsl-ink-3, #6B7280)' }}>
+                                        {data.total} calls · {data.errors} errors
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                            {recentErrors.length === 0 && (
+                              <div style={{
+                                padding: 10, borderRadius: 8, background: '#ECFDF5',
+                                border: '1px solid #A7F3D0',
+                                fontSize: 11, fontWeight: 700, color: '#065F46',
+                                fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
+                                display: 'inline-flex', alignItems: 'center', gap: 6,
+                              }}>
+                                <CheckCircle2 size={12} /> {t('admin.cc.allClear')}
+                              </div>
+                            )}
+                          </>
+                        ) : null
+                      )}
+
+                      {row.key === 'tickets' && (
+                        loading.tickets ? <LoadingBox height={80} /> :
+                        (tickets || []).length === 0 ? (
+                          <div style={{ fontSize: 12, color: 'var(--wsl-ink-3, #6B7280)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
+                            {t('admin.cc.allClear')}
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                            {tickets.slice(0, 5).map((tk: any) => (
+                              <div key={tk.id} style={{
+                                padding: 10, borderRadius: 8, background: '#F9FAFB',
+                                fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
+                              }}>
+                                <div style={{ fontWeight: 800, fontSize: 12, color: 'var(--wsl-ink, #0F172A)' }}>
+                                  {tk.subject}
+                                </div>
+                                <div style={{ fontSize: 10, color: 'var(--wsl-ink-3, #6B7280)', marginTop: 2 }}>
+                                  {tk.status} · {tk.category}
+                                </div>
+                              </div>
                             ))}
                           </div>
+                        )
+                      )}
+
+                      {row.key === 'alerts' && overview && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                          {overview.fires.breakdown.banned > 0 && (
+                            <div style={{
+                              padding: 10, borderRadius: 8, background: '#FEF2F2',
+                              fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontSize: 12, fontWeight: 700, color: '#991B1B',
+                              display: 'flex', alignItems: 'center', gap: 8,
+                            }}>
+                              <Ban size={14} />
+                              {t('admin.cc.alertBanned', { n: overview.fires.breakdown.banned })}
+                            </div>
+                          )}
+                          {overview.fires.breakdown.failedPayments > 0 && (
+                            <div style={{
+                              padding: 10, borderRadius: 8, background: '#FEF2F2',
+                              fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontSize: 12, fontWeight: 700, color: '#991B1B',
+                              display: 'flex', alignItems: 'center', gap: 8,
+                            }}>
+                              <Wallet size={14} />
+                              {t('admin.cc.alertFailedPayments', { n: overview.fires.breakdown.failedPayments })}
+                            </div>
+                          )}
+                          {overview.fires.breakdown.banned === 0 && overview.fires.breakdown.failedPayments === 0 && (
+                            <div style={{ fontSize: 12, color: 'var(--wsl-ink-3, #6B7280)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
+                              {t('admin.cc.allClear')}
+                            </div>
+                          )}
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </motion.div>
-            )}
+                      )}
 
-            {tab === 'agents' && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                <AdminAgents />
-              </motion.div>
-            )}
+                      {row.key === 'agents' && (
+                        <div style={{ fontSize: 12, color: 'var(--wsl-ink-3, #6B7280)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
+                          {t('admin.cc.empty')}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
 
-            {tab === 'companies' && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                <AdminCompanies />
-              </motion.div>
-            )}
-
-            {tab === 'executor' && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                <ErrorBoundary fallbackTitle={isAr ? 'خطأ في الوكلاء التنفيذيين' : 'Executor agents error'}>
-                  <AdminExecutorAgents />
-                </ErrorBoundary>
-              </motion.div>
-            )}
-          </>
-        )}
-
-        {/* Respond Modal */}
-        {respondModal && (
-          <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)' }} onClick={() => setRespondModal(null)} />
-            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-              style={{ position: 'relative', background: '#fff', borderRadius: 16, padding: 24, width: '90%', maxWidth: 440, boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
-              <h3 style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 18, marginBottom: 8 }}>{isAr ? 'الرد على الملاحظة' : 'Respond to Ticket'}</h3>
-              <p style={{ fontSize: 13, color: 'var(--wsl-ink-3)', marginBottom: 16, fontWeight: 800 }}>{respondModal.subject}</p>
-              <textarea value={respondText} onChange={e => setRespondText(e.target.value)} rows={4}
-                placeholder={isAr ? 'اكتب ردك...' : 'Write your response...'}
-                style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1.5px solid var(--wsl-border)', fontSize: 13, fontFamily: '"Thmanyah Sans", system-ui, sans-serif', outline: 'none', resize: 'none', marginBottom: 14, boxSizing: 'border-box' }} />
-              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                <button onClick={() => setRespondModal(null)} style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid var(--wsl-border)', background: '#fff', cursor: 'pointer', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 800, fontSize: 13 }}>{isAr ? 'إلغاء' : 'Cancel'}</button>
-                <button onClick={async () => {
-                  try { await trpc.feedback.respond({ id: respondModal.id, response: respondText, status: 'resolved' }); toast.push('success', isAr ? 'تم الرد' : 'Responded'); setRespondModal(null); loadData(); } catch (e: any) { toast.push('error', e?.message || 'Failed'); }
-                }} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#14b8a6', color: '#fff', cursor: 'pointer', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 800, fontSize: 13 }}>{isAr ? 'إرسال الرد' : 'Send Response'}</button>
-              </div>
-            </motion.div>
+            {/* Quick actions row */}
+            <div style={{ paddingTop: 16, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              <span style={{
+                fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 11,
+                color: 'var(--wsl-ink-3, #6B7280)', textTransform: 'uppercase', letterSpacing: 0.4,
+                alignSelf: 'center', marginInlineEnd: 6,
+              }}>
+                {t('admin.cc.quickActions')}
+              </span>
+              {[
+                { icon: <RefreshCw size={12} />, label: t('admin.cc.actionRefreshAll'), onClick: loadAll },
+                { icon: <Download size={12} />, label: t('admin.cc.actionExportCsv'), onClick: () => toast.push('success', 'TODO') },
+                { icon: <Megaphone size={12} />, label: t('admin.cc.actionBroadcast'), onClick: () => toast.push('success', 'TODO') },
+                { icon: <Wrench size={12} />, label: t('admin.cc.actionMaintenance'), onClick: () => toast.push('success', 'TODO') },
+              ].map((a, i) => (
+                <button
+                  key={i}
+                  onClick={a.onClick}
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 6,
+                    padding: '6px 12px', borderRadius: 8,
+                    border: '1px solid var(--wsl-border, #E5E7EB)', background: '#fff', cursor: 'pointer',
+                    fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 800, fontSize: 11,
+                    color: 'var(--wsl-ink-2, #374151)',
+                  }}
+                >
+                  {a.icon} {a.label}
+                </button>
+              ))}
+            </div>
           </div>
-        )}
+        </div>
 
-        {/* Add Tokens Modal */}
-        {addTokensModal && (
+        {/* Grant tokens modal */}
+        {grantModal && (
           <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)' }} onClick={() => setAddTokensModal(null)} />
-            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-              style={{ position: 'relative', background: '#fff', borderRadius: 16, padding: 24, width: '90%', maxWidth: 400, boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
-              <h3 style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 18, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Coins size={18} style={{ color: '#14b8a6' }} /> {isAr ? 'إضافة توكنز' : 'Add Tokens'}
+            <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)' }} onClick={() => setGrantModal(null)} />
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              style={{
+                position: 'relative', background: '#fff', borderRadius: 16, padding: 24,
+                width: '90%', maxWidth: 380, boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+              }}
+            >
+              <h3 style={{
+                fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 16,
+                marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8,
+              }}>
+                <Coins size={16} style={{ color: '#14b8a6' }} />
+                {t('admin.cc.cohortGrantTokens')}
               </h3>
-              <div style={{ fontSize: 13, color: 'var(--wsl-ink-3)', marginBottom: 16, fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>{isAr ? 'إلى:' : 'To:'} <strong>{addTokensModal.name}</strong></div>
-              <input type="number" value={tokenAmount} onChange={e => setTokenAmount(parseInt(e.target.value) || 0)}
-                style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1.5px solid var(--wsl-border)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontSize: 16, fontWeight: 900, outline: 'none', marginBottom: 10, boxSizing: 'border-box' }} />
-              <input value={tokenReason} onChange={e => setTokenReason(e.target.value)} placeholder={isAr ? 'السبب (اختياري)' : 'Reason (optional)'}
-                style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1.5px solid var(--wsl-border)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontSize: 13, outline: 'none', marginBottom: 16, boxSizing: 'border-box' }} />
+              <input
+                type="number" value={grantAmount}
+                onChange={(e) => setGrantAmount(parseInt(e.target.value) || 0)}
+                dir="ltr"
+                style={{
+                  width: '100%', padding: '10px 14px', borderRadius: 10,
+                  border: '1.5px solid var(--wsl-border, #E5E7EB)',
+                  fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
+                  fontSize: 18, fontWeight: 900, outline: 'none',
+                  marginBottom: 14, boxSizing: 'border-box',
+                }}
+              />
               <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                <button onClick={() => setAddTokensModal(null)} style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid var(--wsl-border)', background: '#fff', cursor: 'pointer', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 800, fontSize: 13 }}>{isAr ? 'إلغاء' : 'Cancel'}</button>
-                <button onClick={handleAddTokens} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#14b8a6', color: '#fff', cursor: 'pointer', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 800, fontSize: 13 }}>{isAr ? 'إضافة' : 'Add'}</button>
+                <button
+                  onClick={() => setGrantModal(null)}
+                  style={{
+                    padding: '8px 16px', borderRadius: 8,
+                    border: '1px solid var(--wsl-border, #E5E7EB)', background: '#fff', cursor: 'pointer',
+                    fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 800, fontSize: 13,
+                  }}
+                >
+                  {isAr ? 'إلغاء' : 'Cancel'}
+                </button>
+                <button
+                  onClick={confirmGrant}
+                  style={{
+                    padding: '8px 16px', borderRadius: 8,
+                    border: 'none', background: '#14b8a6', color: '#fff', cursor: 'pointer',
+                    fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 800, fontSize: 13,
+                  }}
+                >
+                  {isAr ? 'تأكيد' : 'Confirm'}
+                </button>
               </div>
             </motion.div>
           </div>
         )}
       </div>
-      <style>{`@keyframes spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }`}</style>
     </DashboardLayout>
   );
 }

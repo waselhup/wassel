@@ -182,6 +182,39 @@ export const trpc = {
       trpcMutation<{ success: boolean; banned: boolean }>('admin.toggleBan', input),
     campaigns: () => trpcQuery<any[]>('admin.campaigns'),
     systemStatus: () => trpcQuery<any>('admin.systemStatus'),
+    dashboardOverview: () => trpcQuery<{
+      signups: { today: number; yesterday: number; spark: number[] };
+      activated: { today: number; yesterday: number; spark: number[] };
+      paying: { today: number; yesterday: number; spark: number[] };
+      mrr: { today: number; yesterday: number; spark: number[] };
+      tokensBurned: { today: number; yesterday: number; spark: number[] };
+      fires: { today: number; yesterday: number; spark: number[]; breakdown: { errors: number; banned: number; failedPayments: number } };
+    }>('admin.dashboardOverview'),
+    funnel: () => trpcQuery<{
+      stages: Array<{ key: string; count: number }>;
+      biggestDropIdx: number;
+      biggestDropPct: number;
+    }>('admin.funnel'),
+    cohorts: () => trpcQuery<{
+      hotProspects: Array<any>;
+      churnRisk: Array<any>;
+      heroes: Array<any>;
+    }>('admin.cohorts'),
+    tokenEconomy: () => trpcQuery<{
+      burnByCategory: Array<{ key: string; tokens: number; cost_usd: number }>;
+      top10Consumers: Array<any>;
+      totalCostUSD: number;
+      marginAlert: any | null;
+    }>('admin.tokenEconomy'),
+    growthSignals: () => trpcQuery<{
+      activationRate30d: number;
+      ttfvMinutes: number | null;
+      kbExportRate: number;
+      localeSplit: { ar: number; en: number; other: number };
+      activationSpark: number[];
+      signupsCount: number;
+      activatedCount: number;
+    }>('admin.growthSignals'),
   },
   reviews: {
     list: () => trpcQuery<any[]>('reviews.list'),
