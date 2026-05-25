@@ -26,8 +26,15 @@ const apiM = fs.existsSync(API_OUT) ? fs.statSync(API_OUT).mtimeMs : 0;
 
 if (serverM > apiM) {
   console.log('[auto-rebuild] server/_core changed — rebuilding api/index.js');
+  // canvas natives (.node binaries) can't be bundled by esbuild — declare external.
   execSync(
-    'npx esbuild server/_core/vercel.ts --platform=node --bundle --format=cjs --outfile=api/index.js',
+    'npx esbuild server/_core/vercel.ts --platform=node --bundle --format=cjs --outfile=api/index.js ' +
+      '--external:@napi-rs/canvas ' +
+      '--external:@napi-rs/canvas-win32-x64-msvc ' +
+      '--external:@napi-rs/canvas-darwin-x64 ' +
+      '--external:@napi-rs/canvas-darwin-arm64 ' +
+      '--external:@napi-rs/canvas-linux-x64-gnu ' +
+      '--external:@napi-rs/canvas-linux-arm64-gnu',
     { stdio: 'inherit' }
   );
   console.log('[auto-rebuild] done.');

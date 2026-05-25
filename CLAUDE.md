@@ -35,7 +35,8 @@ ANTHROPIC_API_KEY= (set in Vercel env — do not hardcode)
 - Auth context: client/src/contexts/AuthContext.tsx
 
 ## Build & Deploy (ALWAYS in this order)
-1. npx esbuild server/_core/vercel.ts --platform=node --bundle --format=cjs --outfile=api/index.js
+1. npx esbuild server/_core/vercel.ts --platform=node --bundle --format=cjs --outfile=api/index.js --external:@napi-rs/canvas --external:@napi-rs/canvas-win32-x64-msvc --external:@napi-rs/canvas-darwin-x64 --external:@napi-rs/canvas-darwin-arm64 --external:@napi-rs/canvas-linux-x64-gnu --external:@napi-rs/canvas-linux-arm64-gnu
+   (canvas externals required — its .node native binaries can't be bundled by esbuild)
 2. .\ship_it.bat
 
 ## Non-negotiable Rules
