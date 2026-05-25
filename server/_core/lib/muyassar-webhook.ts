@@ -224,6 +224,25 @@ export async function muyassarWebhookHandler(req: Request, res: Response) {
     return res.status(500).json({ error: 'Fulfillment failed', detail: err?.message });
   }
 
+  // Hassan: attribute conversion + Mohammed: generate ZATCA invoice.
+  // Both are best-effort — webhook still returns 200 if either fails.
+  try {
+    const { hassan } = await import('../agents/hassan');
+    await hassan.recordConversion({
+      userId: existing.user_id,
+      amountSar: Number(existing.amount_sar) || 0,
+      pitchId: existing.metadata?.pitch_id,
+    });
+  } catch (e: any) {
+    console.warn('[muyassar-webhook] hassan.recordConversion failed:', e?.message);
+  }
+  try {
+    const { mohammed } = await import('../agents/mohammed');
+    await mohammed.generateZatcaInvoice(existing.id);
+  } catch (e: any) {
+    console.warn('[muyassar-webhook] mohammed.generateZatcaInvoice failed:', e?.message);
+  }
+
   return res.json({ ok: true, status: 'completed' });
 }
 
