@@ -1,4 +1,4 @@
-import { Suspense, useEffect, type ReactElement, type ReactNode } from 'react';
+import { Suspense, useEffect, useRef, useState, type ReactElement, type ReactNode } from 'react';
 import { lazyWithRetry as lazy } from '@/lib/lazy-with-retry';
 import { useLocation, useRoute } from 'wouter';
 import { useTranslation } from 'react-i18next';
@@ -10,6 +10,7 @@ import PageTransition from '@/components/v2/PageTransition';
 import ResponsiveShell from '@/components/v2/ResponsiveShell';
 import Skeleton from '@/components/v2/Skeleton';
 import { useAuth } from '@/contexts/AuthContext';
+import { trpc } from '@/lib/trpc';
 
 // Lazy-load v2 pages so they don't bloat the main bundle.
 const Landing = lazy(() => import('@/pages/v2/Landing'));
@@ -49,6 +50,11 @@ const ProfileInput = lazy(() => import('@/pages/v2/analysis/ProfileInput'));
 const AnalysisLoading = lazy(() => import('@/pages/v2/analysis/AnalysisLoading'));
 const AnalysisResults = lazy(() => import('@/pages/v2/analysis/AnalysisResults'));
 
+// Career Copilot — Sprint 2 surfaces.
+const OnboardingWizard = lazy(() => import('@/pages/onboarding/OnboardingWizard'));
+const CareerProfileSettings = lazy(() => import('@/pages/v2/CareerProfileSettings'));
+const PrivacyAndData = lazy(() => import('@/pages/v2/PrivacyAndData'));
+
 function V2Loader() {
   // Skeleton-shaped fallback that resembles the page chrome — feels less
   // like a hard interruption than a centered spinner while the chunk loads.
@@ -87,9 +93,26 @@ function SkipLink() {
  * topbar). On mobile it's a passthrough so each page's own <Phone>+<Topbar>
  * +<BottomNav> chrome continues to work unchanged.
  */
+// Routes that an unboarded user is allowed to visit (otherwise we'd risk a
+// redirect loop, or hide PDPL controls from someone trying to delete their
+// data before onboarding). Anything else under /v2 triggers the redirect.
+const ONBOARDING_BYPASS_PREFIXES = [
+  '/v2/onboarding',
+  '/v2/settings',
+  '/v2/billing',
+  '/v2/checkout',
+  '/v2/me',
+];
+
+function shouldBypassOnboardingRedirect(location: string): boolean {
+  return ONBOARDING_BYPASS_PREFIXES.some((p) => location === p || location.startsWith(p + '/'));
+}
+
 function AuthGate({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
+  const [careerProfileChecked, setCareerProfileChecked] = useState(false);
+  const checkedForUserRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -97,11 +120,44 @@ function AuthGate({ children }: { children: ReactNode }) {
     }
   }, [loading, user, navigate]);
 
+  // After login, fetch the career_profile once per user/session. If null and
+  // we're not already on an onboarding-bypass route, redirect to /v2/onboarding.
+  useEffect(() => {
+    if (loading || !user) return;
+    if (checkedForUserRef.current === user.id) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const result = await trpc.careerProfile.get();
+        if (cancelled) return;
+        checkedForUserRef.current = user.id;
+        setCareerProfileChecked(true);
+        if (!result?.profile && !shouldBypassOnboardingRedirect(location)) {
+          navigate('/v2/onboarding', { replace: true });
+        }
+      } catch (e) {
+        // Failing to fetch shouldn't strand the user — let them through.
+        // The careerProfile router being unavailable (e.g. during Sprint 1
+        // before migration apply) is a known transient.
+        console.warn('[AuthGate] careerProfile.get failed (non-blocking):', e);
+        checkedForUserRef.current = user.id;
+        setCareerProfileChecked(true);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [loading, user, location, navigate]);
+
   if (loading) {
     return <V2Loader />;
   }
 
   if (!user) return null;
+
+  // Block render until the first career_profile check resolves, so a fresh
+  // user doesn't see /v2/home flash before redirecting to onboarding.
+  if (!careerProfileChecked) {
+    return <V2Loader />;
+  }
 
   return <>{children}</>;
 }
@@ -240,6 +296,9 @@ function V2Routes(): ReactElement | null {
   const [matchPosts] = useRoute('/v2/posts');
   const [matchProfile] = useRoute('/v2/me');
   const [matchActivity] = useRoute('/v2/activity');
+  const [matchOnboarding] = useRoute('/v2/onboarding');
+  const [matchSettingsCareer] = useRoute('/v2/settings/career');
+  const [matchSettingsPrivacy] = useRoute('/v2/settings/privacy');
   const [matchAdmin] = useRoute('/v2/admin');
   const [matchMarketing] = useRoute('/v2/marketing');
   const [matchFinance] = useRoute('/v2/finance');
@@ -289,6 +348,15 @@ function V2Routes(): ReactElement | null {
   }
   if (matchCheckoutFailed) {
     return <ProtectedShell><Suspense fallback={<V2Loader />}><CheckoutFailed /></Suspense></ProtectedShell>;
+  }
+  if (matchOnboarding) {
+    return <ProtectedShell><Suspense fallback={<V2Loader />}><OnboardingWizard /></Suspense></ProtectedShell>;
+  }
+  if (matchSettingsCareer) {
+    return <ProtectedShell><Suspense fallback={<V2Loader />}><CareerProfileSettings /></Suspense></ProtectedShell>;
+  }
+  if (matchSettingsPrivacy) {
+    return <ProtectedShell><Suspense fallback={<V2Loader />}><PrivacyAndData /></Suspense></ProtectedShell>;
   }
   if (matchHome) {
     return <ProtectedShell><Suspense fallback={<V2Loader />}><Home /></Suspense></ProtectedShell>;

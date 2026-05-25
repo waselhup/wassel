@@ -25,6 +25,7 @@ import { fatimaRouter } from './routes/fatima';
 import { dhaiRouter } from './routes/dhai';
 import { husseinRouter } from './routes/hussein';
 import { mohammedRouter } from './routes/mohammed';
+import { careerProfileRouter } from './routes/career-profile';
 
 export { router, publicProcedure, protectedProcedure };
 
@@ -74,6 +75,7 @@ export const appRouter = router({
   dhai: dhaiRouter,
   hussein: husseinRouter,
   mohammed: mohammedRouter,
+  careerProfile: careerProfileRouter,
 });
 
 export type AppRouter = typeof appRouter;

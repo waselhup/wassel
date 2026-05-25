@@ -727,4 +727,40 @@ export const trpc = {
     deleteTrainingNote: (input: { noteId: string }) =>
       trpcMutation<any>('agents.deleteTrainingNote', input),
   },
+  careerProfile: {
+    get: () => trpcQuery<{ profile: any | null }>('careerProfile.get'),
+    wallets: () => trpcQuery<{
+      bonus:        { balance: number; expires_at: string | null; expired: boolean };
+      subscription: { balance: number; renews_at:  string | null };
+      topup:        { balance: number };
+      total:        number;
+    }>('careerProfile.wallets'),
+    create: (input: {
+      goal: 'job_search' | 'promotion' | 'personal_brand' | 'opportunities' | 'career_change';
+      level: 'entry' | 'mid' | 'senior' | 'executive';
+      target_role: string;
+      industry: string;
+      primary_language: 'ar' | 'en';
+      linkedin_url?: string | null;
+      manual_about?: string | null;
+      manual_top_skills?: string[] | null;
+      manual_current_role?: string | null;
+      manual_years_experience?: number | null;
+      manual_education?: string | null;
+    }) => trpcMutation<{ profile: any }>('careerProfile.create', input),
+    update: (input: Record<string, unknown>) =>
+      trpcMutation<{ profile: any }>('careerProfile.update', input),
+    delete: () => trpcMutation<{ success: boolean }>('careerProfile.delete', {}),
+    listOverrides: () => trpcQuery<{ overrides: any[] }>('careerProfile.listOverrides'),
+    sectionOverride: (input: {
+      section: 'radar' | 'resume' | 'content';
+      payload: Record<string, unknown>;
+      expires_in_hours?: number;
+    }) => trpcMutation<{ override: any }>('careerProfile.sectionOverride', input),
+    deleteOverride: (input: { id: string }) =>
+      trpcMutation<{ success: boolean }>('careerProfile.deleteOverride', input),
+    export: () => trpcMutation<{ data: Record<string, unknown> }>('careerProfile.export', {}),
+    deleteAllData: () =>
+      trpcMutation<{ success: boolean; errors: string[] }>('careerProfile.deleteAllData', { confirm: true }),
+  },
 };
