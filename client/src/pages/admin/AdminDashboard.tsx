@@ -6,7 +6,6 @@ import {
   Sparkles, Flame, Coins, Wallet, TrendingUp, AlertOctagon, Crown,
   ChevronDown, ChevronUp, TicketCheck, Bot, Ban, Server, Download, Megaphone, Wrench,
 } from 'lucide-react';
-import DashboardLayout from '@/components/DashboardLayout';
 import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/contexts/AuthContext';
 import Sparkline from './_dashboard/Sparkline';
@@ -281,14 +280,12 @@ export default function AdminDashboard() {
   // ─── Auth gate ───
   if (!isAdmin) {
     return (
-      <DashboardLayout pageTitle={isAr ? 'لوحة الإدارة' : 'Admin Dashboard'}>
-        <div style={{ padding: 60, textAlign: 'center' }}>
-          <Shield size={48} style={{ color: '#DC2626', margin: '0 auto 16px' }} />
-          <div style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 20, color: '#DC2626' }}>
-            {isAr ? 'غير مصرّح' : 'Unauthorized'}
-          </div>
+      <div style={{ padding: 60, textAlign: 'center' }}>
+        <Shield size={48} style={{ color: '#DC2626', margin: '0 auto 16px' }} />
+        <div style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 20, color: '#DC2626' }}>
+          {isAr ? 'غير مصرّح' : 'Unauthorized'}
         </div>
-      </DashboardLayout>
+      </div>
     );
   }
 
@@ -297,53 +294,33 @@ export default function AdminDashboard() {
   const recentErrors = systemStatus?.recentErrors || [];
 
   return (
-    <DashboardLayout pageTitle={isAr ? 'لوحة الإدارة' : 'Admin Dashboard'}>
+    <>
       <toast.View />
       <style>{`
         @keyframes wsl-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
       `}</style>
-      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 4px' }}>
-
-        {/* ─── Page Header ─────────────────────────────────────────── */}
+      <div style={{ margin: '0 auto', padding: '0 4px' }}>
+        {/* Page header is provided by PortalLayout; we only show a subtitle
+            + refresh button so the user knows when the data was last loaded. */}
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
-          style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 24 }}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 18 }}
         >
-          <div>
-            <h1
-              style={{
-                fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
-                fontWeight: 900, fontSize: 26, margin: 0, color: 'var(--wsl-ink, #0F172A)',
-                display: 'inline-flex', alignItems: 'center', gap: 10,
-              }}
-            >
-              <div
-                style={{
-                  width: 38, height: 38, borderRadius: 12,
-                  background: 'linear-gradient(135deg, #14b8a6, #0d9488)',
-                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                }}
-              >
-                <Shield size={18} color="#fff" />
-              </div>
-              {t('admin.cc.headerTitle')}
-            </h1>
-            <div style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 500, fontSize: 13, color: 'var(--wsl-ink-3, #6B7280)', marginTop: 6, marginInlineStart: 48 }}>
-              {t('admin.cc.headerSubtitle')}
-            </div>
+          <div style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 500, fontSize: 13, color: 'var(--wsl-ink-3, #6B7280)' }}>
+            {t('admin.cc.headerSubtitle')}
           </div>
           <button
             onClick={loadAll}
             style={{
-              display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px',
+              display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px',
               borderRadius: 10, border: '1px solid var(--wsl-border, #E5E7EB)',
               background: '#fff', cursor: 'pointer',
-              fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 800, fontSize: 13,
+              fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 800, fontSize: 12,
               color: 'var(--wsl-ink-2, #374151)',
             }}
           >
-            <RefreshCw size={14} />
+            <RefreshCw size={13} />
             {t('admin.cc.refresh')}
           </button>
         </motion.div>
@@ -1079,6 +1056,6 @@ export default function AdminDashboard() {
           </div>
         )}
       </div>
-    </DashboardLayout>
+    </>
   );
 }

@@ -172,6 +172,41 @@ export const trpc = {
       trpcMutation<{ company: any; emailsFound: number; note: string }>('companies.enrich', input),
     delete: (input: { id: string }) => trpcMutation<any>('companies.delete', input),
   },
+  finance: {
+    pulse: () => trpcQuery<{
+      mrr: { today: number; lastMonth: number; spark: number[] };
+      arr: { today: number; lastMonth: number; spark: number[] };
+      newRevenue: { today: number; lastMonth: number; spark: number[] };
+      churn: { today: number; lostMrr: number; lastMonth: number; spark: number[] };
+      netMargin: { today: number; lastMonth: number; spark: number[] };
+      cashOnHand: { today: number; lastMonth: number; spark: number[] };
+    }>('finance.pulse'),
+    waterfall: () => trpcQuery<{
+      startingMrr: number; newMrr: number; expansionMrr: number; churnedMrr: number; endingMrr: number;
+    }>('finance.waterfall'),
+    planBreakdown: () => trpcQuery<{
+      breakdown: Array<{ plan: string; users: number; mrr: number; percentOfMrr: number; avgTokensPerMonth: number; costPerUserSar: number; marginPercent: number | null }>;
+      totalMrr: number;
+    }>('finance.planBreakdown'),
+    payments: (input?: { limit?: number }) => trpcQuery<{
+      successful: any[]; failed: any[]; refunds: any[];
+    }>('finance.payments', input || {}),
+    costControl: () => trpcQuery<{
+      apiBreakdown: Array<{ key: string; tokens: number; cost_usd: number; cost_sar: number }>;
+      totalCostUsd: number; totalCostSar: number;
+      topDrivers: Array<{ id: string; email: string | null; full_name: string | null; plan: string; tokens_consumed: number; cost_sar: number; revenue_sar: number; net_margin_sar: number }>;
+      negativeMarginAlert: any | null;
+    }>('finance.costControl'),
+    exportCsv: (input: { month: string }) => trpcQuery<{
+      csv: string; filename: string; totalRows: number; totalAmountSar: number; totalVatSar: number;
+    }>('finance.exportCsv', input),
+    updateSetting: (input: { key: 'cash_on_hand_sar' | 'usd_sar_rate' | 'apify_monthly_cost_usd' | 'infra_monthly_cost_usd'; value: number }) =>
+      trpcMutation<{ success: boolean; key: string; value: number }>('finance.updateSetting', input),
+    generateInvoice: (input: { userId: string; amountSar: number; description: string }) =>
+      trpcMutation<{ paymentId: string; invoiceUrl: string; invoiceId: string }>('finance.generateInvoice', input),
+    refundPayment: (input: { moyasarPaymentId: string; reason: string }) =>
+      trpcMutation<{ success: boolean; paymentId: string; amountSar: number; note: string }>('finance.refundPayment', input),
+  },
   admin: {
     stats: () => trpcQuery<any>('admin.stats'),
     users: (input?: { search?: string; limit?: number }) =>

@@ -7,9 +7,10 @@ import UserAvatar from '@/components/UserAvatar';
 import { WasselLogo } from './WasselLogo';
 import {
   Home, FileText, Send, Coins, User, LogOut, Globe, Menu,
-  ChevronDown, TrendingUp, UserCheck, PenSquare, Shield, TicketCheck, HelpCircle
+  ChevronDown, TrendingUp, UserCheck, PenSquare, TicketCheck, HelpCircle
 } from 'lucide-react';
 import FeedbackFAB from './FeedbackFAB';
+import PersonaSwitcher from './PersonaSwitcher';
 import { useIsEmbeddedShell } from '@/contexts/EmbeddedShellContext';
 
 interface DashboardLayoutProps {
@@ -81,11 +82,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, page
     { href: '/app/profile', icon: User, label: t('nav.profile', isRTL ? 'الإعدادات' : 'Settings') },
     { href: '/app/tickets', icon: TicketCheck, label: t('nav.tickets', isRTL ? 'الدعم والمساعدة' : 'Help & Support') },
   ];
-
-  const ADMIN_EMAILS = ['waselhup@gmail.com', 'almodhih.1995@gmail.com', 'alhashimali649@gmail.com'];
-  if (ADMIN_EMAILS.includes(user?.email || '')) {
-    accountItems.push({ href: '/app/admin', icon: Shield, label: t('nav.admin', isRTL ? 'لوحة الإدارة' : 'Admin') });
-  }
+  // Admin link removed — admins now use the PersonaSwitcher floating cluster
+  // to jump between User / Marketing / Finance portals instead of a nav item.
 
   const groups: NavGroup[] = [
     { key: 'overview', label: isRTL ? 'نظرة عامة' : 'Overview', items: overviewItems },
@@ -401,6 +399,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, page
     // and the feedback FAB so the V2 chrome stays consistent.
     return (
       <div style={{ fontFamily: font, padding: '1.25rem 1.25rem 2rem' }}>
+        <PersonaSwitcher />
         {children}
         <FeedbackFAB />
       </div>
@@ -624,6 +623,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, page
         </main>
         <FeedbackFAB />
       </div>
+      <PersonaSwitcher />
     </div>
   );
 };

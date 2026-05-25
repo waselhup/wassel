@@ -33,6 +33,7 @@ const Profile = lazy(() => import('@/pages/v2/Profile'));
 // tRPC/business logic but render inside the V2 ProtectedShell chrome.
 const CVBuilder = lazy(() => import('@/pages/v2/CVBuilder'));
 const AdminPanel = lazy(() => import('@/pages/v2/AdminPanel'));
+const FinancePanel = lazy(() => import('@/pages/v2/FinancePanel'));
 
 // 3-stage profile analysis flow: Input → Loading → Result. State bridges
 // stages via sessionStorage (see lib/v2/analysisSession.ts). Stage 1 lives
@@ -111,6 +112,29 @@ function ProtectedShell({ children }: { children: ReactNode }) {
               </PageTransition>
             </main>
           </ResponsiveShell>
+        </JobsProviderWithToast>
+      </ToastProvider>
+    </ErrorBoundary>
+  );
+}
+
+/**
+ * Portal shell — auth-gated like ProtectedShell, but renders WITHOUT the
+ * user-app sidebar / account cluster / pulse strip. Used by the Marketing
+ * and Finance portals so they take over the full viewport with their own
+ * PortalLayout chrome.
+ */
+function PortalShell({ children }: { children: ReactNode }) {
+  return (
+    <ErrorBoundary>
+      <ToastProvider>
+        <JobsProviderWithToast>
+          <SkipLink />
+          <main id="v2-main" className="min-h-[100dvh]">
+            <PageTransition>
+              <AuthGate>{children}</AuthGate>
+            </PageTransition>
+          </main>
         </JobsProviderWithToast>
       </ToastProvider>
     </ErrorBoundary>
@@ -210,6 +234,8 @@ function V2Routes(): ReactElement | null {
   const [matchProfile] = useRoute('/v2/me');
   const [matchActivity] = useRoute('/v2/activity');
   const [matchAdmin] = useRoute('/v2/admin');
+  const [matchMarketing] = useRoute('/v2/marketing');
+  const [matchFinance] = useRoute('/v2/finance');
 
   if (matchLanding) {
     return <PublicShell><Suspense fallback={<V2Loader />}><Landing /></Suspense></PublicShell>;
@@ -281,8 +307,22 @@ function V2Routes(): ReactElement | null {
     window.dispatchEvent(new PopStateEvent('popstate'));
     return null;
   }
+  // /v2/admin is the legacy path — redirect to /v2/marketing so old bookmarks
+  // still work but the canonical URL reflects the persona.
   if (matchAdmin) {
-    return <ProtectedShell><Suspense fallback={<V2Loader />}><AdminPanel /></Suspense></ProtectedShell>;
+    window.history.replaceState({}, '', '/v2/marketing');
+    window.dispatchEvent(new PopStateEvent('popstate'));
+    return null;
+  }
+  // Marketing portal — uses its own PortalLayout, not the ProtectedShell.
+  // We still need the auth guard from ProtectedShell's logic, so we let the
+  // AdminPanel component itself wrap the dashboard in PortalLayout and
+  // perform the admin gate.
+  if (matchMarketing) {
+    return <PortalShell><Suspense fallback={<V2Loader />}><AdminPanel /></Suspense></PortalShell>;
+  }
+  if (matchFinance) {
+    return <PortalShell><Suspense fallback={<V2Loader />}><FinancePanel /></Suspense></PortalShell>;
   }
 
   return null;

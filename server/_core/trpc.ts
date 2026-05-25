@@ -16,6 +16,7 @@ import { opsRouter } from './routes/ops';
 import { postsRouter } from './routes/posts';
 import { documentRouter } from './routes/document';
 import { pricingRouter } from './routes/pricing';
+import { financeRouter } from './routes/finance';
 
 export { router, publicProcedure, protectedProcedure };
 
@@ -56,6 +57,7 @@ export const appRouter = router({
   posts: postsRouter,
   document: documentRouter,
   pricing: pricingRouter,
+  finance: financeRouter,
 });
 
 export type AppRouter = typeof appRouter;
