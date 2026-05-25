@@ -145,6 +145,232 @@ app.get('/api/cron/anthropic-health', async (req, res) => {
   });
 });
 
+// ===== Cron: subscription renewal check (daily @06:00) =====
+// Finds subscriptions whose current_period_end is within the next 7 days and
+// logs the count to api_logs so the Operations portal can chart it. Also
+// creates an incident if any active subscription is past_due without renewal.
+async function _opsCronSupabase() {
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) throw new Error('Supabase env vars missing');
+  const { createClient } = await import('@supabase/supabase-js');
+  return createClient(url, key, { auth: { persistSession: false } });
+}
+
+function _cronAuthOk(req: any): boolean {
+  const expected = process.env.CRON_SECRET;
+  if (!expected) return true;
+  const auth = req.headers.authorization || '';
+  return auth === `Bearer ${expected}`;
+}
+
+app.get('/api/cron/check-renewals', async (req, res) => {
+  if (!_cronAuthOk(req)) return res.status(401).json({ error: 'Unauthorized' });
+  const t0 = Date.now();
+  try {
+    const supa = await _opsCronSupabase();
+    const now = new Date();
+    const in7 = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const { count: expiringCount } = await supa
+      .from('subscriptions')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'active')
+      .gte('current_period_end', now.toISOString())
+      .lte('current_period_end', in7.toISOString());
+
+    const { data: pastDue } = await supa
+      .from('subscriptions')
+      .select('id, user_id, plan, current_period_end')
+      .eq('status', 'active')
+      .lt('current_period_end', now.toISOString());
+
+    let incidentId: string | null = null;
+    if ((pastDue || []).length > 0) {
+      const { data: inc } = await supa
+        .from('incidents')
+        .insert({
+          severity: 'warning',
+          source: 'cron/check-renewals',
+          title: `${(pastDue || []).length} subscriptions past period end`,
+          description: `Found ${(pastDue || []).length} active subs whose current_period_end has passed without renewal.`,
+          affected_service: 'subscriptions',
+        })
+        .select('id')
+        .single();
+      incidentId = inc?.id || null;
+    }
+
+    await supa.from('api_logs').insert({
+      service: 'cron',
+      endpoint: '/api/cron/check-renewals',
+      status_code: 200,
+      response_time_ms: Date.now() - t0,
+      error_msg: null,
+    });
+    return res.json({
+      ok: true,
+      expiring_in_7d: expiringCount || 0,
+      past_due_count: (pastDue || []).length,
+      incident_id: incidentId,
+      latencyMs: Date.now() - t0,
+    });
+  } catch (e: any) {
+    try {
+      const supa = await _opsCronSupabase();
+      await supa.from('api_logs').insert({
+        service: 'cron',
+        endpoint: '/api/cron/check-renewals',
+        status_code: 500,
+        response_time_ms: Date.now() - t0,
+        error_msg: (e?.message || 'error').slice(0, 500),
+      });
+    } catch { /* swallow */ }
+    return res.status(500).json({ ok: false, error: e?.message || 'error' });
+  }
+});
+
+// ===== Cron: detect abandoned signups (hourly) =====
+// Marks any user whose latest signup_event is >1h old and not 'first_action'
+// as 'abandoned'. Avoids double-marking — won't insert 'abandoned' twice
+// for the same user.
+app.get('/api/cron/check-abandoned-signups', async (req, res) => {
+  if (!_cronAuthOk(req)) return res.status(401).json({ error: 'Unauthorized' });
+  const t0 = Date.now();
+  try {
+    const supa = await _opsCronSupabase();
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+    const { data: signups } = await supa
+      .from('signup_events')
+      .select('user_id, created_at, event_type')
+      .gte('created_at', oneDayAgo)
+      .eq('event_type', 'signup_started');
+
+    const { data: completed } = await supa
+      .from('signup_events')
+      .select('user_id')
+      .gte('created_at', oneDayAgo)
+      .in('event_type', ['first_action', 'onboarding_completed']);
+
+    const { data: already } = await supa
+      .from('signup_events')
+      .select('user_id')
+      .gte('created_at', oneDayAgo)
+      .eq('event_type', 'abandoned');
+
+    const completedSet = new Set((completed || []).map((r: any) => r.user_id));
+    const alreadySet = new Set((already || []).map((r: any) => r.user_id));
+
+    const toMark = (signups || [])
+      .filter((s: any) => {
+        if (!s.user_id) return false;
+        if (s.created_at > oneHourAgo) return false; // too recent
+        if (completedSet.has(s.user_id)) return false;
+        if (alreadySet.has(s.user_id)) return false;
+        return true;
+      })
+      .map((s: any) => ({ user_id: s.user_id, event_type: 'abandoned', metadata: { source: 'cron/check-abandoned-signups' } }));
+
+    let inserted = 0;
+    if (toMark.length) {
+      const { error } = await supa.from('signup_events').insert(toMark);
+      if (!error) inserted = toMark.length;
+    }
+
+    await supa.from('api_logs').insert({
+      service: 'cron',
+      endpoint: '/api/cron/check-abandoned-signups',
+      status_code: 200,
+      response_time_ms: Date.now() - t0,
+    });
+    return res.json({ ok: true, abandoned_marked: inserted, latencyMs: Date.now() - t0 });
+  } catch (e: any) {
+    try {
+      const supa = await _opsCronSupabase();
+      await supa.from('api_logs').insert({
+        service: 'cron',
+        endpoint: '/api/cron/check-abandoned-signups',
+        status_code: 500,
+        response_time_ms: Date.now() - t0,
+        error_msg: (e?.message || 'error').slice(0, 500),
+      });
+    } catch { /* swallow */ }
+    return res.status(500).json({ ok: false, error: e?.message || 'error' });
+  }
+});
+
+// ===== Cron: services heartbeat (every 15m) =====
+// Auto-creates a 'warning' incident if Anthropic OR Apify error-rate in the
+// last 30 minutes exceeds 30%. Always logs to api_logs so the Operations
+// portal can show last heartbeat time.
+app.get('/api/cron/services-heartbeat', async (req, res) => {
+  if (!_cronAuthOk(req)) return res.status(401).json({ error: 'Unauthorized' });
+  const t0 = Date.now();
+  try {
+    const supa = await _opsCronSupabase();
+    const halfHourAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+
+    async function failureRate(service: string): Promise<{ rate: number; total: number; errors: number }> {
+      const { data } = await supa
+        .from('api_logs')
+        .select('status_code')
+        .eq('service', service)
+        .gte('created_at', halfHourAgo);
+      const rows = (data || []) as Array<{ status_code: number }>;
+      const total = rows.length;
+      const errors = rows.filter((r) => (r.status_code || 0) >= 400).length;
+      return { rate: total > 0 ? errors / total : 0, total, errors };
+    }
+
+    async function alreadyIncident(service: string): Promise<boolean> {
+      const { count } = await supa
+        .from('incidents')
+        .select('id', { count: 'exact', head: true })
+        .eq('affected_service', service)
+        .eq('source', 'cron/services-heartbeat')
+        .gte('created_at', oneHourAgo);
+      return (count || 0) > 0;
+    }
+
+    const created: string[] = [];
+    for (const service of ['anthropic', 'apify']) {
+      const { rate, total, errors } = await failureRate(service);
+      if (total > 0 && rate > 0.3 && !(await alreadyIncident(service))) {
+        await supa.from('incidents').insert({
+          severity: 'error',
+          source: 'cron/services-heartbeat',
+          title: `${service} error rate ${(rate * 100).toFixed(0)}% in last 30m`,
+          description: `${errors}/${total} calls failed in the last 30 minutes.`,
+          affected_service: service,
+        });
+        created.push(service);
+      }
+    }
+
+    await supa.from('api_logs').insert({
+      service: 'cron',
+      endpoint: '/api/cron/services-heartbeat',
+      status_code: 200,
+      response_time_ms: Date.now() - t0,
+    });
+    return res.json({ ok: true, incidents_created: created, latencyMs: Date.now() - t0 });
+  } catch (e: any) {
+    try {
+      const supa = await _opsCronSupabase();
+      await supa.from('api_logs').insert({
+        service: 'cron',
+        endpoint: '/api/cron/services-heartbeat',
+        status_code: 500,
+        response_time_ms: Date.now() - t0,
+        error_msg: (e?.message || 'error').slice(0, 500),
+      });
+    } catch { /* swallow */ }
+    return res.status(500).json({ ok: false, error: e?.message || 'error' });
+  }
+});
+
 // ===== Avatar proxy =====
 // LinkedIn (media.licdn.com), Google (lh3.googleusercontent.com), and other
 // CDNs sometimes return 403 to browsers loading <img src="..."> directly

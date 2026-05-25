@@ -34,6 +34,7 @@ const Profile = lazy(() => import('@/pages/v2/Profile'));
 const CVBuilder = lazy(() => import('@/pages/v2/CVBuilder'));
 const AdminPanel = lazy(() => import('@/pages/v2/AdminPanel'));
 const FinancePanel = lazy(() => import('@/pages/v2/FinancePanel'));
+const OpsPanel = lazy(() => import('@/pages/v2/OpsPanel'));
 
 // 3-stage profile analysis flow: Input → Loading → Result. State bridges
 // stages via sessionStorage (see lib/v2/analysisSession.ts). Stage 1 lives
@@ -236,6 +237,7 @@ function V2Routes(): ReactElement | null {
   const [matchAdmin] = useRoute('/v2/admin');
   const [matchMarketing] = useRoute('/v2/marketing');
   const [matchFinance] = useRoute('/v2/finance');
+  const [matchOps] = useRoute('/v2/ops');
 
   if (matchLanding) {
     return <PublicShell><Suspense fallback={<V2Loader />}><Landing /></Suspense></PublicShell>;
@@ -323,6 +325,9 @@ function V2Routes(): ReactElement | null {
   }
   if (matchFinance) {
     return <PortalShell><Suspense fallback={<V2Loader />}><FinancePanel /></Suspense></PortalShell>;
+  }
+  if (matchOps) {
+    return <PortalShell><Suspense fallback={<V2Loader />}><OpsPanel /></Suspense></PortalShell>;
   }
 
   return null;

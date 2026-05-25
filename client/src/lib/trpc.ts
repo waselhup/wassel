@@ -281,6 +281,47 @@ export const trpc = {
       latencyMs: number;
       timestamp: string;
     }>('ops.anthropicHealth'),
+    pulse: () => trpcQuery<{
+      signups: { today: number; yesterday: number; spark: number[] };
+      activeSubs: { today: number; lastWeek: number; spark: number[] };
+      expiringSoon: { today: number; lastWeek: number; spark: number[] };
+      failedHooks: { today: number; yesterday: number; spark: number[] };
+      apiErrors1h: { today: number; yesterday: number; spark: number[] };
+      openIncidents: { today: number; yesterday: number; spark: number[]; signupsLastWeek: number };
+    }>('ops.pulse'),
+    signupFunnel: (input?: { days?: number }) =>
+      trpcQuery<{ stages: Array<{ key: string; count: number }>; biggestDropIdx: number; biggestDropPct: number }>('ops.signupFunnel', input || {}),
+    signupFeed: (input?: { limit?: number }) =>
+      trpcQuery<{ events: Array<any>; abandonedLastHour: number }>('ops.signupFeed', input || {}),
+    subscriptions: (input?: { status?: 'active' | 'expiring' | 'past_due' | 'canceled' | 'new_month'; limit?: number; offset?: number }) =>
+      trpcQuery<{ rows: Array<any>; total: number }>('ops.subscriptions', input || {}),
+    subscriptionAction: (input: { subscriptionId: string; action: 'extend' | 'cancel' | 'mark_paid'; days?: number }) =>
+      trpcMutation<{ success: boolean; action: string }>('ops.subscriptionAction', input),
+    servicesHealth: () => trpcQuery<{
+      checkedAt: string;
+      services: Array<{ key: string; status: 'healthy' | 'watch' | 'critical'; metric: any; last_checked: string }>;
+    }>('ops.servicesHealth'),
+    runHealthCheck: (input: { service: string }) =>
+      trpcMutation<{ success: boolean; service: string }>('ops.runHealthCheck', input),
+    webhooks: (input?: { limit?: number }) =>
+      trpcQuery<{ rows: Array<any> }>('ops.webhooks', input || {}),
+    retryFulfillment: (input: { paymentTransactionId: string }) =>
+      trpcMutation<{ success: boolean; note: string }>('ops.retryFulfillment', input),
+    crons: () => trpcQuery<{
+      crons: Array<{ name: string; path: string; schedule: string; last_run: string | null; last_status: 'ok' | 'fail' | 'unknown' }>;
+    }>('ops.crons'),
+    triggerCron: (input: { endpoint: string }) =>
+      trpcMutation<{ success: boolean; status: number; error?: string }>('ops.triggerCron', input),
+    incidents: (input?: { status?: 'open' | 'investigating' | 'resolved' | 'dismissed' | 'all' }) =>
+      trpcQuery<{ rows: Array<any> }>('ops.incidents', input || {}),
+    createIncident: (input: { severity: 'info' | 'warning' | 'error' | 'critical'; title: string; description?: string; affected_service?: string }) =>
+      trpcMutation<{ success: boolean; id: string }>('ops.createIncident', input),
+    updateIncident: (input: { id: string; status: 'investigating' | 'resolved' | 'dismissed'; resolution_notes?: string }) =>
+      trpcMutation<{ success: boolean }>('ops.updateIncident', input),
+    broadcastEmail: (input: { subject_ar: string; subject_en: string; body_ar: string; body_en: string; audience: 'all' | 'paid' | 'free' }) =>
+      trpcMutation<{ success: boolean; recipientCount: number; note: string }>('ops.broadcastEmail', input),
+    toggleMaintenanceMode: (input: { enabled: boolean; message_ar?: string; message_en?: string }) =>
+      trpcMutation<{ success: boolean; enabled: boolean }>('ops.toggleMaintenanceMode', input),
   },
   aiFeedback: {
     submit: (input: { feature: string; outputId?: string; rating: number; comment?: string }) =>

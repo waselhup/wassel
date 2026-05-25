@@ -9,7 +9,10 @@
     }
   },
   "crons": [
-    { "path": "/api/cron/anthropic-health", "schedule": "0 */2 * * *" }
+    { "path": "/api/cron/anthropic-health", "schedule": "0 */2 * * *" },
+    { "path": "/api/cron/check-renewals", "schedule": "0 6 * * *" },
+    { "path": "/api/cron/check-abandoned-signups", "schedule": "0 * * * *" },
+    { "path": "/api/cron/services-heartbeat", "schedule": "*/15 * * * *" }
   ],
   "redirects": [
     {
