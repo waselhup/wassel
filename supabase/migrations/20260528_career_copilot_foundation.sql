@@ -77,9 +77,11 @@ CREATE TABLE IF NOT EXISTS section_overrides (
   expires_at  TIMESTAMPTZ NOT NULL DEFAULT (NOW() + INTERVAL '24 hours')
 );
 
+-- Non-partial index (Postgres rejects NOW() in a partial-index predicate
+-- because it isn't IMMUTABLE). Query planner still uses (user_id, section)
+-- and the expires_at filter is applied at query time.
 CREATE INDEX IF NOT EXISTS idx_section_overrides_user_section
-  ON section_overrides(user_id, section)
-  WHERE expires_at > NOW();
+  ON section_overrides(user_id, section, expires_at DESC);
 
 ALTER TABLE section_overrides ENABLE ROW LEVEL SECURITY;
 
