@@ -51,8 +51,6 @@ export default function PortalLayout({
         fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
       }}
     >
-      <PersonaSwitcher />
-
       <header
         style={{
           position: 'sticky',
@@ -144,6 +142,11 @@ export default function PortalLayout({
               </div>
             </div>
           </motion.div>
+
+          {/* CENTER — always-visible 4-persona switcher (admin only) */}
+          <div style={{ display: 'inline-flex', alignItems: 'center', flexShrink: 0 }}>
+            <PersonaSwitcher variant="inline" />
+          </div>
 
           {/* RIGHT — language toggle, back-to-user, admin avatar */}
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
