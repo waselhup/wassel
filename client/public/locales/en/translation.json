@@ -1938,7 +1938,11 @@
     "finance": "Finance",
     "ops": "Operations Mode",
     "growth": "Growth",
-    "workforce": "HQ"
+    "workforce": "HQ",
+    "customer_success": "Customer Success",
+    "revenue_lab": "Revenue Lab",
+    "product_intel": "Product Intel",
+    "compliance": "Compliance"
   },
   "portal": {
     "backToUser": "Back to User Dashboard",
@@ -2282,27 +2286,33 @@
     },
     "al_mukhadram": {
       "name": "Al-Mukhadram",
-      "role": "Onboarding & Retention"
+      "role": "Onboarding & Retention",
+      "en": "Al-Mukhadram"
     },
     "fatima": {
       "name": "Fatima",
-      "role": "Research & Friction Analyst"
+      "role": "Research & Friction Analyst",
+      "en": "Fatima"
     },
     "dhai": {
       "name": "Dhai",
-      "role": "Compliance & Fraud Guardian"
+      "role": "Compliance & Fraud Guardian",
+      "en": "Dhai"
     },
     "hassan": {
       "name": "Hassan",
-      "role": "Conversion & Upsell Engineer"
+      "role": "Conversion & Upsell Engineer",
+      "en": "Hassan"
     },
     "hussein": {
       "name": "Hussein",
-      "role": "Platform Guardian"
+      "role": "Platform Guardian",
+      "en": "Hussein"
     },
     "mohammed": {
       "name": "Mohammed",
-      "role": "Accountant & Margin Watcher"
+      "role": "Accountant & Margin Watcher",
+      "en": "Mohammed"
     },
     "faris": {
       "name": "Faris",
@@ -2326,5 +2336,88 @@
     "agent": "Agent",
     "emptyHistory": "No argument yet. Send a message to start.",
     "placeholder": "Type a note to the agent…"
+  },
+  "customerSuccess": {
+    "headerTitle": "Customer Success",
+    "subtitle": "Retains, nurtures, lifts",
+    "agentName": "Al-Mukhadram",
+    "agentTagline": "Seasoned customer success lead",
+    "actions": {
+      "welcomeSequence": "Draft welcome sequence",
+      "dailyRescues": "Daily rescue drafts",
+      "recomputeHealth": "Recompute health",
+      "flagVips": "Flag VIPs"
+    },
+    "healthCohorts": "Health Cohorts",
+    "topHealthScores": "Top Health Scores",
+    "whatsappMessages": "WhatsApp Messages",
+    "emailMessages": "Email Messages"
+  },
+  "revenueLab": {
+    "headerTitle": "Revenue Lab",
+    "subtitle": "Drafts pitches, runs experiments, converts",
+    "agentName": "Hassan",
+    "agentTagline": "Revenue copywriter",
+    "hotLeads": "Hot Leads",
+    "pendingPitches": "Pending Pitches",
+    "experiments": "Experiments",
+    "referrals": "Referrals",
+    "actions": {
+      "hotPitches": "Hot upgrade pitches",
+      "proposeExperiment": "Propose experiment",
+      "newReferral": "New referral code"
+    }
+  },
+  "productIntel": {
+    "headerTitle": "Product Intelligence",
+    "subtitle": "Observes, suggests, never executes",
+    "agentName": "Fatima",
+    "suggestOnlyBadge": "suggest-only mode",
+    "frictionPatterns": "Friction Patterns",
+    "weeklyReport": "Weekly Report",
+    "userVoiceThemes": "User Voice Themes",
+    "recommendations": "Recommendations",
+    "actions": {
+      "detectFriction": "Detect friction",
+      "generateWeeklyReport": "Generate weekly report",
+      "digestUserVoice": "Digest user voice"
+    }
+  },
+  "compliance": {
+    "headerTitle": "Compliance",
+    "subtitle": "Guards, monitors, records",
+    "agentName": "Dhai",
+    "fraudSignals": "Fraud Signals",
+    "moderationLog": "Moderation Log",
+    "pdplAudit": "PDPL Audit Log",
+    "actions": {
+      "dailySweep": "Daily sweep"
+    },
+    "decisions": {
+      "approved": "Approved",
+      "flagged": "Flagged",
+      "blocked": "Blocked"
+    },
+    "review": {
+      "confirmedFraud": "Fraud",
+      "falsePositive": "OK"
+    }
+  },
+  "upgradeModal": {
+    "defaultHeadline": "Level up on Wassel",
+    "defaultBody": "Unlock Wassel's paid plans to accelerate your career journey.",
+    "defaultCta": "View plans",
+    "maybeLater": "Maybe later"
+  },
+  "health": {
+    "segments": {
+      "vip": "VIP",
+      "active": "Active",
+      "warm_lead": "Warm",
+      "hot_lead": "Hot",
+      "at_risk": "At risk",
+      "dormant": "Dormant",
+      "churned": "Churned"
+    }
   }
 }

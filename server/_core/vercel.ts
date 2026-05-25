@@ -1,3 +1,5 @@
+import { initSentryServer, captureException as sentryCapture } from './lib/sentry-server';
+initSentryServer();
 import { telegramHandler } from './telegram';
 import express from 'express';
 import cors from 'cors';
@@ -8,6 +10,13 @@ import type { IncomingMessage, ServerResponse } from 'http';
 import { createClient } from '@supabase/supabase-js';
 import { sendWelcomeEmail, sendTestEmail, sendAnalysisReportEmail } from './lib/email';
 import { muyassarWebhookHandler } from './lib/muyassar-webhook';
+import * as whatsapp from './lib/whatsapp';
+import { alMukhadram } from './agents/al-mukhadram';
+import { hassan } from './agents/hassan';
+import { fatima } from './agents/fatima';
+import { dhai } from './agents/dhai';
+import { hussein } from './agents/hussein';
+import { mohammed } from './agents/mohammed';
 
 const app = express();
 
@@ -630,6 +639,134 @@ h1{font-size:22px;margin:0 0 12px;}p{font-size:14px;line-height:1.7;color:#37415
     res.status(500).send('<h1>Something went wrong</h1>');
   }
 });
+
+// ============================================================
+// WhatsApp Business Cloud API webhook (Meta v20.0)
+// ============================================================
+app.get('/api/webhooks/whatsapp', (req, res) => {
+  const mode = (req.query['hub.mode'] as string) || null;
+  const token = (req.query['hub.verify_token'] as string) || null;
+  const challenge = (req.query['hub.challenge'] as string) || null;
+  const ok = whatsapp.verifyWebhookChallenge(mode, token, challenge);
+  if (ok) return res.status(200).send(ok);
+  return res.status(403).json({ error: 'verify_failed' });
+});
+
+app.post('/api/webhooks/whatsapp', async (req: any, res) => {
+  const sig = req.headers['x-hub-signature-256'] as string | undefined;
+  const raw = req.rawBody || JSON.stringify(req.body);
+  if (!whatsapp.verifyWebhookSignature(raw, sig)) {
+    return res.status(401).json({ error: 'bad_signature' });
+  }
+  try {
+    const messages = whatsapp.parseInboundWebhook(req.body);
+    const sb = await _supa();
+    for (const m of messages) {
+      await sb.from('whatsapp_messages').insert({
+        agent_id: 'al_mukhadram',
+        direction: 'inbound',
+        to_phone: process.env.WHATSAPP_PHONE_NUMBER_ID || '',
+        from_phone: m.fromPhone,
+        message_type: m.type,
+        body: m.body,
+        whatsapp_message_id: m.whatsappMessageId,
+        status: 'delivered',
+        raw_payload: m.raw,
+      });
+      // best-effort: queue Al-Mukhadram support reply task (admin will review/approve)
+      try {
+        const { data: user } = await sb.from('profiles').select('id, language').eq('phone', m.fromPhone).maybeSingle();
+        if (user?.id) {
+          await alMukhadram.draftSupportReply({ userId: user.id, inboundMessage: m.body, channel: 'whatsapp' });
+        }
+      } catch (e: any) {
+        console.warn('[whatsapp webhook] reply draft failed:', e?.message);
+      }
+    }
+    res.status(200).json({ ok: true, count: messages.length });
+  } catch (e: any) {
+    console.error('[whatsapp webhook] failed:', e?.message);
+    sentryCapture(e, { route: '/api/webhooks/whatsapp' });
+    res.status(500).json({ error: 'webhook_processing_failed' });
+  }
+});
+
+// ============================================================
+// New batch 2+3 crons — Al-Mukhadram / Hassan / Fatima / Dhai / Hussein / Mohammed
+// ============================================================
+function _cronWrap(name: string, fn: () => Promise<any>) {
+  return async (req: any, res: any) => {
+    if (!_cronAuthOk(req)) return res.status(401).json({ error: 'Unauthorized' });
+    const t0 = Date.now();
+    try {
+      const result = await fn();
+      const sb = await _supa();
+      await sb.from('api_logs').insert({
+        service: 'cron', endpoint: `/api/cron/${name}`, severity: 'info',
+        latency_ms: Date.now() - t0, response_payload: result,
+      });
+      res.json({ ok: true, ...result });
+    } catch (e: any) {
+      console.error(`[cron/${name}] failed:`, e?.message);
+      sentryCapture(e, { cron: name });
+      const sb = await _supa();
+      await sb.from('api_logs').insert({
+        service: 'cron', endpoint: `/api/cron/${name}`, severity: 'error',
+        latency_ms: Date.now() - t0, error_message: String(e?.message || e),
+      });
+      res.status(500).json({ error: 'cron_failed', message: e?.message });
+    }
+  };
+}
+
+app.get('/api/cron/al-mukhadram-daily', _cronWrap('al-mukhadram-daily', async () => {
+  const rescues = await alMukhadram.draftDailyRescues(15);
+  const vips = await alMukhadram.flagVipsForOutreach();
+  return { rescues, vips };
+}));
+app.get('/api/cron/hassan-hot-leads', _cronWrap('hassan-hot-leads', async () => {
+  return hassan.draftHotUpgradePitches({ limit: 10, minPropensity: 0.5 });
+}));
+app.get('/api/cron/fatima-friction-scan', _cronWrap('fatima-friction-scan', async () => {
+  return fatima.detectFrictionPatterns({ lookbackDays: 7 });
+}));
+app.get('/api/cron/fatima-weekly-report', _cronWrap('fatima-weekly-report', async () => {
+  return fatima.generateWeeklyReport();
+}));
+app.get('/api/cron/email-sequences-runner', _cronWrap('email-sequences-runner', async () => {
+  // Send any scheduled enrollment messages whose next_send_at has passed.
+  const sb = await _supa();
+  const { data: due } = await sb.from('user_sequence_enrollments')
+    .select('id, user_id, sequence_id, current_step')
+    .eq('status', 'active')
+    .lte('next_send_at', new Date().toISOString())
+    .limit(50);
+  let processed = 0;
+  for (const e of due || []) {
+    await sb.from('user_sequence_enrollments').update({
+      current_step: (e.current_step || 0) + 1,
+      last_sent_at: new Date().toISOString(),
+      next_send_at: new Date(Date.now() + 86400 * 1000).toISOString(),
+    }).eq('id', e.id);
+    processed++;
+  }
+  return { processed };
+}));
+app.get('/api/cron/recompute-health-scores', _cronWrap('recompute-health-scores', async () => {
+  return alMukhadram.recomputeAllScores(500);
+}));
+app.get('/api/cron/dhai-daily-sweep', _cronWrap('dhai-daily-sweep', async () => {
+  return dhai.dailyComplianceSweep();
+}));
+app.get('/api/cron/hussein-auto-resolve', _cronWrap('hussein-auto-resolve', async () => {
+  return hussein.autoResolveKnownErrors();
+}));
+app.get('/api/cron/mohammed-reconcile', _cronWrap('mohammed-reconcile', async () => {
+  return mohammed.reconcileMoyasarDaily();
+}));
+app.get('/api/cron/mohammed-snapshot', _cronWrap('mohammed-snapshot', async () => {
+  return mohammed.computeFinanceSnapshot();
+}));
 
 app.use(
   '/api/trpc',

@@ -37,6 +37,10 @@ const FinancePanel = lazy(() => import('@/pages/v2/FinancePanel'));
 const OpsPanel = lazy(() => import('@/pages/v2/OpsPanel'));
 const GrowthPanel = lazy(() => import('@/pages/v2/GrowthPanel'));
 const WorkforcePanel = lazy(() => import('@/pages/v2/WorkforcePanel'));
+const CustomerSuccessPanel = lazy(() => import('@/pages/v2/CustomerSuccessPanel'));
+const RevenueLabPanel = lazy(() => import('@/pages/v2/RevenueLabPanel'));
+const ProductIntelPanel = lazy(() => import('@/pages/v2/ProductIntelPanel'));
+const CompliancePanel = lazy(() => import('@/pages/v2/CompliancePanel'));
 
 // 3-stage profile analysis flow: Input → Loading → Result. State bridges
 // stages via sessionStorage (see lib/v2/analysisSession.ts). Stage 1 lives
@@ -242,6 +246,10 @@ function V2Routes(): ReactElement | null {
   const [matchOps] = useRoute('/v2/ops');
   const [matchGrowth] = useRoute('/v2/growth');
   const [matchWorkforce] = useRoute('/v2/workforce');
+  const [matchCustomerSuccess] = useRoute('/v2/customer-success');
+  const [matchRevenueLab] = useRoute('/v2/revenue-lab');
+  const [matchProductIntel] = useRoute('/v2/product-intel');
+  const [matchCompliance] = useRoute('/v2/compliance');
 
   if (matchLanding) {
     return <PublicShell><Suspense fallback={<V2Loader />}><Landing /></Suspense></PublicShell>;
@@ -338,6 +346,18 @@ function V2Routes(): ReactElement | null {
   }
   if (matchWorkforce) {
     return <PortalShell><Suspense fallback={<V2Loader />}><WorkforcePanel /></Suspense></PortalShell>;
+  }
+  if (matchCustomerSuccess) {
+    return <PortalShell><Suspense fallback={<V2Loader />}><CustomerSuccessPanel /></Suspense></PortalShell>;
+  }
+  if (matchRevenueLab) {
+    return <PortalShell><Suspense fallback={<V2Loader />}><RevenueLabPanel /></Suspense></PortalShell>;
+  }
+  if (matchProductIntel) {
+    return <PortalShell><Suspense fallback={<V2Loader />}><ProductIntelPanel /></Suspense></PortalShell>;
+  }
+  if (matchCompliance) {
+    return <PortalShell><Suspense fallback={<V2Loader />}><CompliancePanel /></Suspense></PortalShell>;
   }
 
   return null;

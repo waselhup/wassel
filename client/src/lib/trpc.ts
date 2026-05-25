@@ -613,6 +613,101 @@ export const trpc = {
     repurposeFromRss: (input: { feedUrl: string }) =>
       trpcMutation<{ itemsRead: number; tasksQueued: number }>('sayed.repurposeFromRss', input),
   },
+  alMukhadram: {
+    draftWelcomeSequence: () => trpcMutation<{ tasksCreated: number; sequenceId: string | null }>('alMukhadram.draftWelcomeSequence', {}),
+    draftDailyRescues: (input?: { limit?: number }) => trpcMutation<{ tasksCreated: number; cohorts: any }>('alMukhadram.draftDailyRescues', input || {}),
+    draftSupportReply: (input: { userId: string; inboundMessage: string; channel: 'whatsapp' | 'email' }) =>
+      trpcMutation<{ taskId: string }>('alMukhadram.draftSupportReply', input),
+    flagVips: () => trpcMutation<{ count: number }>('alMukhadram.flagVips', {}),
+    listEnrollments: (input?: { status?: string; sequenceName?: string }) => trpcQuery<any[]>('alMukhadram.listEnrollments', input || {}),
+    enrollUser: (input: { userId: string; sequenceName: string }) => trpcMutation<any>('alMukhadram.enrollUser', input),
+    exitUser: (input: { userId: string; sequenceName: string; reason?: string }) => trpcMutation<any>('alMukhadram.exitUser', input),
+    healthScore: (input: { userId: string }) => trpcMutation<any>('alMukhadram.healthScore', input),
+    recomputeAllScores: (input?: { limit?: number }) => trpcMutation<{ updated: number }>('alMukhadram.recomputeAllScores', input || {}),
+    healthCohorts: () => trpcQuery<Record<string, number>>('alMukhadram.healthCohorts'),
+    listHealthScores: (input?: { segment?: string; limit?: number }) => trpcQuery<any[]>('alMukhadram.listHealthScores', input || {}),
+    listWhatsappMessages: (input?: { userId?: string; limit?: number }) => trpcQuery<any[]>('alMukhadram.listWhatsappMessages', input || {}),
+    listEmailMessages: (input?: { userId?: string; limit?: number }) => trpcQuery<any[]>('alMukhadram.listEmailMessages', input || {}),
+    sendApprovedMessage: (input: { taskId: string }) => trpcMutation<{ sent: number; errors: string[] }>('alMukhadram.sendApprovedMessage', input),
+  },
+  hassan: {
+    draftHotUpgradePitches: (input?: { limit?: number; minPropensity?: number }) =>
+      trpcMutation<{ tasksCreated: number }>('hassan.draftHotUpgradePitches', input || {}),
+    draftPitchForUser: (input: { userId: string; trigger: string; surface: string; experimentId?: string }) =>
+      trpcMutation<{ pitchId: string | null; taskId: string | null }>('hassan.draftPitchForUser', input),
+    listPendingPitches: () => trpcQuery<any[]>('hassan.listPendingPitches'),
+    approvePitch: (input: { pitchId: string }) => trpcMutation<{ ok: boolean }>('hassan.approvePitch', input),
+    rejectPitch: (input: { pitchId: string }) => trpcMutation<{ ok: boolean }>('hassan.rejectPitch', input),
+    listExperiments: (input?: { status?: string }) => trpcQuery<any[]>('hassan.listExperiments', input || {}),
+    proposeExperiment: (input: { surface: string; hypothesis: string }) =>
+      trpcMutation<{ experimentId: string | null; taskId: string }>('hassan.proposeExperiment', input),
+    startExperiment: (input: { experimentId: string }) => trpcMutation<{ ok: boolean }>('hassan.startExperiment', input),
+    killExperiment: (input: { experimentId: string; reason?: string }) => trpcMutation<{ ok: boolean }>('hassan.killExperiment', input),
+    hotLeads: (input?: { limit?: number }) => trpcQuery<any[]>('hassan.hotLeads', input || {}),
+    referralCodes: (input?: { userId?: string }) => trpcQuery<any[]>('hassan.referralCodes', input || {}),
+    createReferralCode: (input?: { userId?: string; rewardInviter?: number; rewardInvitee?: number; maxUses?: number }) =>
+      trpcMutation<{ code: string }>('hassan.createReferralCode', input || {}),
+    redeemReferralCode: (input: { code: string; inviteeUserId: string }) =>
+      trpcMutation<any>('hassan.redeemReferralCode', input),
+    servePitch: (input: { surface: string }) => trpcQuery<any>('hassan.servePitch', input),
+    recordPitchClick: (input: { pitchId: string }) => trpcMutation<{ ok: boolean }>('hassan.recordPitchClick', input),
+    recordConversion: (input: { userId: string; amountSar: number; pitchId?: string }) =>
+      trpcMutation<{ ok: boolean }>('hassan.recordConversion', input),
+  },
+  fatima: {
+    detectFrictionPatterns: (input?: { lookbackDays?: number }) =>
+      trpcMutation<{ patternsFound: number }>('fatima.detectFrictionPatterns', input || {}),
+    listFrictionPatterns: (input?: { severity?: string; status?: string }) =>
+      trpcQuery<any[]>('fatima.listFrictionPatterns', input || {}),
+    acknowledgePattern: (input: { patternId: string }) => trpcMutation<{ ok: boolean }>('fatima.acknowledgePattern', input),
+    dismissPattern: (input: { patternId: string; reason?: string }) => trpcMutation<{ ok: boolean }>('fatima.dismissPattern', input),
+    generateWeeklyReport: () => trpcMutation<{ reportId: string | null }>('fatima.generateWeeklyReport', {}),
+    latestWeeklyReport: () => trpcQuery<any>('fatima.latestWeeklyReport'),
+    computeFunnel: (input: { feature: string; startDate: string; endDate: string }) =>
+      trpcMutation<{ stages: Array<{ name: string; users: number }> }>('fatima.computeFunnel', input),
+    digestUserVoice: () => trpcMutation<{ themes: any[] }>('fatima.digestUserVoice', {}),
+    captureEvent: (input: { event: string; properties?: any; distinctId?: string; sessionId?: string; pageUrl?: string }) =>
+      trpcMutation<{ ok: boolean }>('fatima.captureEvent', input),
+  },
+  dhai: {
+    scanNewSignup: (input: { userId: string }) => trpcMutation<any>('dhai.scanNewSignup', input),
+    moderateContent: (input: { contentId: string; contentType: string; scannedText: string; language?: string; sourceAgent?: string }) =>
+      trpcMutation<{ decision: 'approved' | 'flagged' | 'blocked'; violations: string[] }>('dhai.moderateContent', input),
+    checkLinkedinTos: (input: { text: string }) => trpcMutation<{ ok: boolean; hits: string[] }>('dhai.checkLinkedinTos', input),
+    listFraudSignals: (input?: { status?: string; severity?: string; limit?: number }) =>
+      trpcQuery<any[]>('dhai.listFraudSignals', input || {}),
+    reviewSignal: (input: { signalId: string; decision: 'confirmed_fraud' | 'false_positive' | 'resolved'; notes?: string }) =>
+      trpcMutation<{ ok: boolean }>('dhai.reviewSignal', input),
+    logPdplEvent: (input: { eventType: string; userId?: string; dataCategory?: string; details?: any }) =>
+      trpcMutation<{ ok: boolean }>('dhai.logPdplEvent', input),
+    pdplAuditLog: (input?: { userId?: string; eventType?: string; limit?: number }) =>
+      trpcQuery<any[]>('dhai.pdplAuditLog', input || {}),
+    contentModerationLog: (input?: { decision?: 'approved' | 'flagged' | 'blocked'; limit?: number }) =>
+      trpcQuery<any[]>('dhai.contentModerationLog', input || {}),
+    dailySweep: () => trpcMutation<{ openSignals: number; flaggedContent: number; pdplEvents: number }>('dhai.dailySweep', {}),
+  },
+  hussein: {
+    listKnownPatterns: () => trpcQuery<any[]>('hussein.listKnownPatterns'),
+    seedDefaultPatterns: () => trpcMutation<{ seeded: number }>('hussein.seedDefaultPatterns', {}),
+    autoResolveErrors: () => trpcMutation<{ scanned: number; resolved: number; novel: number }>('hussein.autoResolveErrors', {}),
+    servicesHealthCheck: () => trpcMutation<Record<string, any>>('hussein.servicesHealthCheck', {}),
+    recentResolutions: (input?: { limit?: number }) => trpcQuery<any[]>('hussein.recentResolutions', input || {}),
+    createIncident: (input: { error: string; severity: 'low' | 'medium' | 'high' | 'critical'; service?: string }) =>
+      trpcMutation<{ incidentId: string | null }>('hussein.createIncident', input),
+  },
+  mohammed: {
+    reconcileMoyasarDaily: () => trpcMutation<{ checked: number; new: number; mismatches: number }>('mohammed.reconcileMoyasarDaily', {}),
+    generateInvoice: (input: { paymentTransactionId: string }) =>
+      trpcMutation<{ invoiceId: string; invoiceNumber: string; qrBase64: string } | null>('mohammed.generateInvoice', input),
+    listInvoices: (input?: { status?: string; userId?: string; limit?: number }) =>
+      trpcQuery<any[]>('mohammed.listInvoices', input || {}),
+    myInvoices: () => trpcQuery<any[]>('mohammed.myInvoices'),
+    dailySnapshot: () => trpcMutation<{ snapshotId: string | null }>('mohammed.dailySnapshot', {}),
+    financeKpis: (input?: { days?: number }) => trpcQuery<any[]>('mohammed.financeKpis', input || {}),
+    predictRunway: () => trpcMutation<{ runwayDays: number; dailyBurnSar: number; cashSar: number }>('mohammed.predictRunway', {}),
+    marginAlerts: () => trpcMutation<{ alerts: any[] }>('mohammed.marginAlerts', {}),
+    weeklyReport: () => trpcMutation<{ summary: string }>('mohammed.weeklyReport', {}),
+  },
   agents: {
     list: () => trpcQuery<any[]>('agents.list'),
     startConversation: (input: { agentId: string; title?: string }) =>

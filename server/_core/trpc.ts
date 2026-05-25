@@ -19,6 +19,12 @@ import { pricingRouter } from './routes/pricing';
 import { financeRouter } from './routes/finance';
 import { farisRouter } from './routes/faris';
 import { sayedRouter } from './routes/sayed';
+import { alMukhadramRouter } from './routes/al-mukhadram';
+import { hassanRouter } from './routes/hassan';
+import { fatimaRouter } from './routes/fatima';
+import { dhaiRouter } from './routes/dhai';
+import { husseinRouter } from './routes/hussein';
+import { mohammedRouter } from './routes/mohammed';
 
 export { router, publicProcedure, protectedProcedure };
 
@@ -62,6 +68,12 @@ export const appRouter = router({
   finance: financeRouter,
   faris: farisRouter,
   sayed: sayedRouter,
+  alMukhadram: alMukhadramRouter,
+  hassan: hassanRouter,
+  fatima: fatimaRouter,
+  dhai: dhaiRouter,
+  hussein: husseinRouter,
+  mohammed: mohammedRouter,
 });
 
 export type AppRouter = typeof appRouter;

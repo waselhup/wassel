@@ -3,11 +3,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation, Link } from 'wouter';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
-import { User as UserIcon, Megaphone, Wallet, Activity, LayoutDashboard } from 'lucide-react';
+import { User as UserIcon, Megaphone, Wallet, Activity, LayoutDashboard, HeartHandshake, TrendingUp, Microscope, ShieldCheck } from 'lucide-react';
 
 const ADMIN_EMAILS = ['waselhup@gmail.com', 'almodhih.1995@gmail.com', 'alhashimali649@gmail.com'];
 
-type PersonaKey = 'user' | 'marketing' | 'finance' | 'ops' | 'growth' | 'workforce';
+type PersonaKey = 'user' | 'marketing' | 'finance' | 'ops' | 'growth' | 'workforce' | 'customer_success' | 'revenue_lab' | 'product_intel' | 'compliance';
 
 interface Persona {
   key: PersonaKey;
@@ -17,23 +17,27 @@ interface Persona {
   tooltipKey: string;
 }
 
-// Marketing portal route stays live (legacy bookmarks) but is hidden from the
-// switcher now that Sayed's Growth portal supersedes it. Re-add by inserting
-// the marketing entry if it should reappear in the FAB.
+// 9 personas — 3×3 grid in FAB. Marketing route stays live for legacy bookmarks
+// but is hidden from the switcher.
 const PERSONAS: Persona[] = [
-  { key: 'user',      href: '/v2/home',      color: '#14b8a6', Icon: UserIcon,         tooltipKey: 'personaSwitcher.user' },
-  { key: 'growth',    href: '/v2/growth',    color: '#10B981', Icon: Megaphone,        tooltipKey: 'personaSwitcher.growth' },
-  { key: 'finance',   href: '/v2/finance',   color: '#D4AF37', Icon: Wallet,           tooltipKey: 'personaSwitcher.finance' },
-  { key: 'ops',       href: '/v2/ops',       color: '#0EA5E9', Icon: Activity,         tooltipKey: 'personaSwitcher.ops' },
-  { key: 'workforce', href: '/v2/workforce', color: '#8B5CF6', Icon: LayoutDashboard,  tooltipKey: 'personaSwitcher.workforce' },
+  { key: 'user',             href: '/v2/home',             color: '#14b8a6', Icon: UserIcon,        tooltipKey: 'personaSwitcher.user' },
+  { key: 'workforce',        href: '/v2/workforce',        color: '#8B5CF6', Icon: LayoutDashboard, tooltipKey: 'personaSwitcher.workforce' },
+  { key: 'growth',           href: '/v2/growth',           color: '#10B981', Icon: Megaphone,       tooltipKey: 'personaSwitcher.growth' },
+  { key: 'customer_success', href: '/v2/customer-success', color: '#F59E0B', Icon: HeartHandshake,  tooltipKey: 'personaSwitcher.customer_success' },
+  { key: 'revenue_lab',      href: '/v2/revenue-lab',      color: '#EF4444', Icon: TrendingUp,      tooltipKey: 'personaSwitcher.revenue_lab' },
+  { key: 'product_intel',    href: '/v2/product-intel',    color: '#EC4899', Icon: Microscope,      tooltipKey: 'personaSwitcher.product_intel' },
+  { key: 'compliance',       href: '/v2/compliance',       color: '#6366F1', Icon: ShieldCheck,     tooltipKey: 'personaSwitcher.compliance' },
+  { key: 'finance',          href: '/v2/finance',          color: '#D4AF37', Icon: Wallet,          tooltipKey: 'personaSwitcher.finance' },
+  { key: 'ops',              href: '/v2/ops',              color: '#0EA5E9', Icon: Activity,        tooltipKey: 'personaSwitcher.ops' },
 ];
 
 function detectActive(location: string): PersonaKey {
   if (location.startsWith('/v2/growth')) return 'growth';
   if (location.startsWith('/v2/workforce')) return 'workforce';
-  // /v2/marketing route still routes to MarketingPanel — mapped to marketing
-  // here even though we no longer render a chip for it. The fallback below
-  // sends it to 'user' so the FAB shows the user avatar on that page.
+  if (location.startsWith('/v2/customer-success')) return 'customer_success';
+  if (location.startsWith('/v2/revenue-lab')) return 'revenue_lab';
+  if (location.startsWith('/v2/product-intel')) return 'product_intel';
+  if (location.startsWith('/v2/compliance')) return 'compliance';
   if (location.startsWith('/v2/marketing') || location.startsWith('/v2/admin')) return 'user';
   if (location.startsWith('/v2/finance')) return 'finance';
   if (location.startsWith('/v2/ops')) return 'ops';
@@ -194,9 +198,9 @@ export default function PersonaSwitcher({ variant = 'fab' }: PersonaSwitcherProp
             style={{
               background: '#FFFFFF',
               borderRadius: 16,
-              padding: 8,
-              display: 'inline-flex',
-              flexDirection: 'column',
+              padding: 10,
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, auto)',
               gap: 6,
               border: '1px solid var(--border-subtle, #E5E7EB)',
               boxShadow: '0 12px 28px rgba(15, 23, 42, 0.12)',
@@ -210,17 +214,19 @@ export default function PersonaSwitcher({ variant = 'fab' }: PersonaSwitcherProp
                   <a
                     onClick={() => setOpen(false)}
                     aria-label={t(p.tooltipKey)}
+                    title={t(p.tooltipKey)}
                     style={{
                       position: 'relative',
                       display: 'inline-flex',
                       alignItems: 'center',
-                      gap: 10,
-                      padding: '6px 12px 6px 6px',
-                      borderRadius: 999,
-                      background: isActive ? p.color + '12' : 'transparent',
+                      justifyContent: 'center',
+                      width: 56,
+                      height: 56,
+                      borderRadius: 12,
+                      background: isActive ? p.color + '14' : 'transparent',
                       textDecoration: 'none',
                       cursor: 'pointer',
-                      transition: 'background 150ms ease',
+                      transition: 'background 150ms ease, transform 150ms ease',
                     }}
                     onMouseEnter={(e) => {
                       if (!isActive) e.currentTarget.style.background = '#F9FAFB';
@@ -230,46 +236,23 @@ export default function PersonaSwitcher({ variant = 'fab' }: PersonaSwitcherProp
                     }}
                   >
                     <motion.span
-                      whileHover={{ scale: 1.06 }}
+                      whileHover={{ scale: 1.08 }}
                       transition={{ type: 'spring', stiffness: 380, damping: 24 }}
                       style={{
-                        width: 36,
-                        height: 36,
+                        width: 40,
+                        height: 40,
                         borderRadius: '50%',
-                        background: '#fff',
+                        background: isActive ? p.color : '#fff',
                         border: `2px solid ${isActive ? p.color : 'rgba(0,0,0,0.08)'}`,
                         display: 'inline-flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         flexShrink: 0,
+                        boxShadow: isActive ? `0 4px 12px ${p.color}55` : 'none',
                       }}
                     >
-                      <Icon size={16} color={isActive ? p.color : '#6B7280'} strokeWidth={2.5} />
+                      <Icon size={18} color={isActive ? '#fff' : '#6B7280'} strokeWidth={2.5} />
                     </motion.span>
-                    <span
-                      style={{
-                        fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
-                        fontWeight: 800,
-                        fontSize: 12,
-                        color: isActive ? p.color : 'var(--wsl-ink-2, #374151)',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {t(p.tooltipKey)}
-                    </span>
-                    {isActive && (
-                      <motion.span
-                        layoutId="persona-fab-active-dot"
-                        style={{
-                          marginInlineStart: 4,
-                          width: 6,
-                          height: 6,
-                          borderRadius: '50%',
-                          background: p.color,
-                          boxShadow: `0 0 0 3px ${p.color}33`,
-                        }}
-                      />
-                    )}
                   </a>
                 </Link>
               );

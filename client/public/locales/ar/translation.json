@@ -1932,7 +1932,11 @@
     "finance": "المالية",
     "ops": "وضع العمليات",
     "growth": "النمو",
-    "workforce": "القمرة"
+    "workforce": "القمرة",
+    "customer_success": "نجاح العملاء",
+    "revenue_lab": "مختبر الإيرادات",
+    "product_intel": "ذكاء المنتج",
+    "compliance": "الامتثال"
   },
   "portal": {
     "backToUser": "العودة إلى لوحة المستخدم",
@@ -2276,27 +2280,33 @@
     },
     "al_mukhadram": {
       "name": "المخضرم",
-      "role": "حارس العملاء"
+      "role": "حارس العملاء",
+      "ar": "المخضرم"
     },
     "fatima": {
       "name": "فاطمة",
-      "role": "محللة الاستخدام والاحتكاك"
+      "role": "محللة الاستخدام والاحتكاك",
+      "ar": "فاطمة"
     },
     "dhai": {
       "name": "ضي",
-      "role": "حارسة الامتثال والاحتيال"
+      "role": "حارسة الامتثال والاحتيال",
+      "ar": "ضي"
     },
     "hassan": {
       "name": "حسن",
-      "role": "مهندس التحويل والترقية"
+      "role": "مهندس التحويل والترقية",
+      "ar": "حسن"
     },
     "hussein": {
       "name": "حسين",
-      "role": "حارس المنصة"
+      "role": "حارس المنصة",
+      "ar": "حسين"
     },
     "mohammed": {
       "name": "محمد",
-      "role": "المحاسب وحارس الهامش"
+      "role": "المحاسب وحارس الهامش",
+      "ar": "محمد"
     },
     "faris": {
       "name": "فارس",
@@ -2320,5 +2330,88 @@
     "agent": "الوكيل",
     "emptyHistory": "لا حوار بعد. اكتب رسالة لبدء النقاش.",
     "placeholder": "اكتب تعليقك للوكيل…"
+  },
+  "customerSuccess": {
+    "headerTitle": "نجاح العملاء",
+    "subtitle": "يحافظ، يرعى، ويرفع",
+    "agentName": "المخضرم",
+    "agentTagline": "عضوكم الكبير في نجاح العملاء",
+    "actions": {
+      "welcomeSequence": "صياغة تسلسل الترحيب",
+      "dailyRescues": "رسائل استرداد يومية",
+      "recomputeHealth": "إعادة حساب الصحة",
+      "flagVips": "وسم كبار العملاء"
+    },
+    "healthCohorts": "شرائح الصحة",
+    "topHealthScores": "أعلى نقاط الصحة",
+    "whatsappMessages": "رسائل واتساب",
+    "emailMessages": "رسائل البريد"
+  },
+  "revenueLab": {
+    "headerTitle": "مختبر الإيرادات",
+    "subtitle": "يصمم العروض، يشغّل التجارب، يحوّل",
+    "agentName": "حسن",
+    "agentTagline": "كاتب الإعلانات والمحول",
+    "hotLeads": "العملاء الحارّون",
+    "pendingPitches": "عروض ترقية بانتظار الموافقة",
+    "experiments": "التجارب",
+    "referrals": "برنامج الإحالة",
+    "actions": {
+      "hotPitches": "عروض حارة",
+      "proposeExperiment": "اقتراح تجربة",
+      "newReferral": "كود إحالة جديد"
+    }
+  },
+  "productIntel": {
+    "headerTitle": "ذكاء المنتج",
+    "subtitle": "تكتشف، تقترح، لا تنفّذ",
+    "agentName": "فاطمة",
+    "suggestOnlyBadge": "وضع: اقتراح فقط",
+    "frictionPatterns": "أنماط الاحتكاك",
+    "weeklyReport": "التقرير الأسبوعي",
+    "userVoiceThemes": "مواضيع صوت المستخدم",
+    "recommendations": "توصيات",
+    "actions": {
+      "detectFriction": "فحص الاحتكاكات",
+      "generateWeeklyReport": "توليد التقرير الأسبوعي",
+      "digestUserVoice": "صوت المستخدم"
+    }
+  },
+  "compliance": {
+    "headerTitle": "الامتثال",
+    "subtitle": "تحرس، تراقب، توثّق",
+    "agentName": "ضي",
+    "fraudSignals": "إشارات الاحتيال",
+    "moderationLog": "سجل تدقيق المحتوى",
+    "pdplAudit": "سجل PDPL",
+    "actions": {
+      "dailySweep": "فحص يومي شامل"
+    },
+    "decisions": {
+      "approved": "موافق",
+      "flagged": "موسوم",
+      "blocked": "محظور"
+    },
+    "review": {
+      "confirmedFraud": "احتيال",
+      "falsePositive": "سليم"
+    }
+  },
+  "upgradeModal": {
+    "defaultHeadline": "ارفع مستواك على وصل",
+    "defaultBody": "استفد من باقات وصل المدفوعة لتسريع رحلتك المهنية.",
+    "defaultCta": "عرض الباقات",
+    "maybeLater": "ربما لاحقاً"
+  },
+  "health": {
+    "segments": {
+      "vip": "كبار العملاء",
+      "active": "نشط",
+      "warm_lead": "دافئ",
+      "hot_lead": "حار",
+      "at_risk": "في خطر",
+      "dormant": "خامل",
+      "churned": "متخلٍّ"
+    }
   }
 }
