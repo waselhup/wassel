@@ -2696,7 +2696,84 @@
     }
   },
   "resume": {
-    "_placeholder": "يُملأ في Sprint 4"
+    "_placeholder": "يُملأ في Sprint 4",
+    "title": "السيرة الذاتية",
+    "subtitle": "بنِ سيرتك للدور المستهدف",
+    "list": {
+      "newCv": "+ سيرة جديدة",
+      "activeVersions": "سيرك النشطة",
+      "legacy": "سيرة قديمة",
+      "legacyBanner": "هذه سيرة قديمة. ابدأ نسخة جديدة للحصول على جميع المزايا",
+      "archived": "المؤرشفة",
+      "emptyState": "لم تنشئ سيرة بعد — ابدأ الآن!",
+      "atsScore": "نتيجة ATS",
+      "targetRole": "الدور المستهدف",
+      "lastUpdated": "آخر تحديث"
+    },
+    "preflight": {
+      "welcome": "بنِ سيرتك المثالية",
+      "targetRole": "الدور المستهدف",
+      "overrideForSession": "تعديل لجلسة واحدة",
+      "recommendedTemplate": "القالب الموصى به",
+      "changeTemplate": "تغيير القالب",
+      "build": "ابنِ السيرة ({{cost}} توكن)",
+      "viewCached": "عرض النسخة الحالية (مجاناً)",
+      "newVersion": "نسخة جديدة لدور مختلف ({{cost}} توكن)"
+    },
+    "building": {
+      "extracting": "استخراج خبرتك...",
+      "tailoring": "تخصيص للدور المستهدف...",
+      "optimizing": "تحسين لأنظمة ATS..."
+    },
+    "editor": {
+      "refinement": "تحسينات سريعة",
+      "freeRefinements": "{{remaining}} من 5 تحسينات مجانية متبقية",
+      "afterFive": "بعد 5 تحسينات، كل تعديل يكلف 5 توكنات",
+      "exportPdf": "تصدير PDF",
+      "exportDocx": "تصدير Word",
+      "exportJson": "تصدير JSON",
+      "archive": "أرشفة",
+      "restore": "استعادة",
+      "atsScore": {
+        "title": "نتيجة ATS",
+        "keywords": "الكلمات المفتاحية",
+        "sections": "الأقسام",
+        "format": "التنسيق",
+        "quantified": "الأرقام والإنجازات"
+      },
+      "chips": {
+        "shortenSummary": "اجعل الملخص أقصر",
+        "addLeadershipBullet": "أضف نقطة عن القيادة",
+        "changeVerb": "بدّل الفعل الافتتاحي",
+        "addQuantified": "أضف إنجازات بأرقام",
+        "moreProfessional": "أكثر احترافية"
+      }
+    },
+    "templates": {
+      "harvard_classic": {
+        "name": "هارفارد الكلاسيكي",
+        "reason": "موصى به للمستوى المتوسط والقيادي في السوق العالمي"
+      },
+      "mit_technical": {
+        "name": "MIT للتقنيين",
+        "reason": "مناسب للأدوار التقنية والهندسية"
+      },
+      "saudi_executive": {
+        "name": "القيادي السعودي",
+        "reason": "تنسيق فاخر للقيادات في السوق السعودي"
+      },
+      "modern_minimal": {
+        "name": "العصري المختصر",
+        "reason": "تصميم نظيف للمحترفين"
+      }
+    },
+    "errors": {
+      "noCareerProfile": "أكمل البروفايل المهني أولاً",
+      "insufficientTokens": "رصيدك غير كافٍ. أضف توكنات أو ترقّ خطتك",
+      "buildFailed": "فشل البناء. تم استرداد توكناتك",
+      "templateNotFound": "القالب غير موجود",
+      "legacyReadOnly": "النسخة القديمة للقراءة فقط"
+    }
   },
   "content": {
     "_placeholder": "يُملأ في Sprint 5"

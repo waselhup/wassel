@@ -2698,7 +2698,84 @@
     }
   },
   "resume": {
-    "_placeholder": "Populated in Sprint 4"
+    "_placeholder": "Populated in Sprint 4",
+    "title": "Resume",
+    "subtitle": "Build your resume for your target role",
+    "list": {
+      "newCv": "+ New Resume",
+      "activeVersions": "Active Versions",
+      "legacy": "Legacy CV",
+      "legacyBanner": "This is a legacy CV. Start a new version for full features",
+      "archived": "Archived",
+      "emptyState": "No CVs yet — start now!",
+      "atsScore": "ATS Score",
+      "targetRole": "Target Role",
+      "lastUpdated": "Last Updated"
+    },
+    "preflight": {
+      "welcome": "Build Your Perfect Resume",
+      "targetRole": "Target Role",
+      "overrideForSession": "Override for this session",
+      "recommendedTemplate": "Recommended Template",
+      "changeTemplate": "Change Template",
+      "build": "Build Resume ({{cost}} tokens)",
+      "viewCached": "View Cached Version (Free)",
+      "newVersion": "New Version for Different Role ({{cost}} tokens)"
+    },
+    "building": {
+      "extracting": "Extracting your experience...",
+      "tailoring": "Tailoring for target role...",
+      "optimizing": "Optimizing for ATS systems..."
+    },
+    "editor": {
+      "refinement": "Quick Refinements",
+      "freeRefinements": "{{remaining}} of 5 free refinements left",
+      "afterFive": "After 5 refinements, each costs 5 tokens",
+      "exportPdf": "Export PDF",
+      "exportDocx": "Export Word",
+      "exportJson": "Export JSON",
+      "archive": "Archive",
+      "restore": "Restore",
+      "atsScore": {
+        "title": "ATS Score",
+        "keywords": "Keywords",
+        "sections": "Sections",
+        "format": "Format",
+        "quantified": "Quantified Achievements"
+      },
+      "chips": {
+        "shortenSummary": "Shorten Summary",
+        "addLeadershipBullet": "Add Leadership Point",
+        "changeVerb": "Change Opening Verb",
+        "addQuantified": "Add Quantified Achievements",
+        "moreProfessional": "More Professional"
+      }
+    },
+    "templates": {
+      "harvard_classic": {
+        "name": "Harvard Classic",
+        "reason": "Recommended for mid-to-executive level in the global market"
+      },
+      "mit_technical": {
+        "name": "MIT Technical",
+        "reason": "Suitable for technical and engineering roles"
+      },
+      "saudi_executive": {
+        "name": "Saudi Executive",
+        "reason": "Premium layout for KSA market executives"
+      },
+      "modern_minimal": {
+        "name": "Modern Minimal",
+        "reason": "Clean design for professionals"
+      }
+    },
+    "errors": {
+      "noCareerProfile": "Complete your career profile first",
+      "insufficientTokens": "Not enough tokens. Add tokens or upgrade your plan",
+      "buildFailed": "Build failed. Your tokens were refunded",
+      "templateNotFound": "Template not found",
+      "legacyReadOnly": "Legacy versions are read-only"
+    }
   },
   "content": {
     "_placeholder": "Populated in Sprint 5"

@@ -28,6 +28,7 @@ import { mohammedRouter } from './routes/mohammed';
 import { careerProfileRouter } from './routes/career-profile';
 import { warRoomRouter } from './routes/war-room';
 import { radarRouter } from './routes/radar';
+import { resumeRouter } from './routes/resume';
 
 export { router, publicProcedure, protectedProcedure };
 
@@ -80,6 +81,7 @@ export const appRouter = router({
   careerProfile: careerProfileRouter,
   warRoom: warRoomRouter,
   radar: radarRouter,
+  resume: resumeRouter,
 });
 
 export type AppRouter = typeof appRouter;

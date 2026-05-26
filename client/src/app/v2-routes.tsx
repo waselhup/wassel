@@ -33,6 +33,9 @@ const Profile = lazy(() => import('@/pages/v2/Profile'));
 // V2-wrapped versions of the real V1 feature pages — they reuse the working
 // tRPC/business logic but render inside the V2 ProtectedShell chrome.
 const CVBuilder = lazy(() => import('@/pages/v2/CVBuilder'));
+const CVPreflight = lazy(() => import('@/pages/v2/CVPreflight'));
+const CVBuilding = lazy(() => import('@/pages/v2/CVBuilding'));
+const CVEditor = lazy(() => import('@/pages/v2/CVEditor'));
 const AdminPanel = lazy(() => import('@/pages/v2/AdminPanel'));
 const FinancePanel = lazy(() => import('@/pages/v2/FinancePanel'));
 const OpsPanel = lazy(() => import('@/pages/v2/OpsPanel'));
@@ -295,6 +298,9 @@ function V2Routes(): ReactElement | null {
   const [matchAnalyzeLoading] = useRoute('/v2/analyze/loading');
   const [matchAnalyzeResult] = useRoute('/v2/analyze/result/:id');
   const [matchCvs] = useRoute('/v2/cvs');
+  const [matchCvsNew] = useRoute('/v2/cvs/new');
+  const [matchCvsBuilding] = useRoute('/v2/cvs/building');
+  const [matchCvsEditor] = useRoute('/v2/cvs/:id');
   const [matchPosts] = useRoute('/v2/posts');
   const [matchProfile] = useRoute('/v2/me');
   const [matchActivity] = useRoute('/v2/activity');
@@ -375,8 +381,18 @@ function V2Routes(): ReactElement | null {
   if (matchAnalyzeResult) {
     return <ProtectedShell><Suspense fallback={<V2Loader />}><AnalysisResults /></Suspense></ProtectedShell>;
   }
-  // /v2/cvs renders the real CV Tailor page (form + Claude generation +
-  // DOCX/PDF export) inside the V2 ProtectedShell chrome.
+  // Sprint 4 — Resume v2: list → preflight → building → editor.
+  // Order matters: /v2/cvs/new must match BEFORE /v2/cvs/:id so the slug
+  // 'new' isn't treated as a version id.
+  if (matchCvsNew) {
+    return <ProtectedShell><Suspense fallback={<V2Loader />}><CVPreflight /></Suspense></ProtectedShell>;
+  }
+  if (matchCvsBuilding) {
+    return <ProtectedShell><Suspense fallback={<V2Loader />}><CVBuilding /></Suspense></ProtectedShell>;
+  }
+  if (matchCvsEditor) {
+    return <ProtectedShell><Suspense fallback={<V2Loader />}><CVEditor /></Suspense></ProtectedShell>;
+  }
   if (matchCvs) {
     return <ProtectedShell><Suspense fallback={<V2Loader />}><CVBuilder /></Suspense></ProtectedShell>;
   }

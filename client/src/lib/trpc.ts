@@ -920,6 +920,214 @@ export const trpc = {
     clearOverride: (input: { overrideId: string }) =>
       trpcMutation<{ success: boolean }>('radar.clearOverride', input),
   },
+  resume: {
+    preflight: (input?: { language?: 'ar' | 'en' }) =>
+      trpcQuery<{
+        ready: boolean;
+        profile: {
+          target_role: string;
+          industry: string;
+          level: 'entry' | 'mid' | 'senior' | 'executive';
+          linkedin_url: string | null;
+          primary_language: 'ar' | 'en';
+        } | null;
+        recommendedTemplate: ResumeTemplateShape | null;
+        alternativeTemplates: ResumeTemplateShape[];
+        hasCache: boolean;
+        latestCacheId: string | null;
+        latestVersionId: string | null;
+        estimatedCost: number;
+        activeVersionsCount: number;
+        archivedCount: number;
+        legacyCount: number;
+      }>('resume.preflight', input ?? {}),
+    listVersions: (input?: { status?: 'active' | 'archived' | 'legacy' | 'all'; limit?: number }) =>
+      trpcQuery<{ versions: ResumeVersionRow[] }>('resume.listVersions', input ?? {}),
+    getVersion: (input: { versionId: string }) =>
+      trpcQuery<{
+        version: ResumeVersionRow & { cache_id: string | null };
+        cache: {
+          id: string;
+          result: ResumeShape;
+          ats_score: number;
+          ats_breakdown: ResumeAtsBreakdownShape;
+          created_at: string;
+          template_id: string;
+        } | null;
+        refinementsUsed: number;
+        freeRefinementsPerVersion: number;
+        paidRefinementCost: number;
+      }>('resume.getVersion', input),
+    getCached: (input: { cacheId: string }) =>
+      trpcQuery<{
+        cacheId: string;
+        targetRole: string;
+        templateId: string;
+        language: 'ar' | 'en';
+        result: ResumeShape;
+        atsScore: number;
+        atsBreakdown: ResumeAtsBreakdownShape;
+        isFullBuild: boolean;
+        parentResumeId: string | null;
+        hitCount: number;
+        createdAt: string;
+        lastAccessedAt: string;
+      }>('resume.getCached', input),
+    listTemplates: (input?: { language?: 'ar' | 'en' }) =>
+      trpcQuery<{ templates: ResumeTemplateShape[] }>('resume.listTemplates', input ?? {}),
+    recommendTemplate: (input?: { overrideTargetRole?: string; language?: 'ar' | 'en' }) =>
+      trpcQuery<{ primary: ResumeTemplateShape; alternatives: ResumeTemplateShape[] }>(
+        'resume.recommendTemplate',
+        input ?? {},
+      ),
+    build: (input: {
+      templateId: string;
+      overrideTargetRole?: string;
+      language?: 'ar' | 'en';
+      forceRefresh?: boolean;
+    }) => trpcMutation<{
+      cacheId: string;
+      versionId: string;
+      isCacheHit: boolean;
+      tokensCharged: number;
+      walletUsed: 'bonus' | 'subscription' | 'topup' | 'mixed' | null;
+      atsScore: number;
+      atsBreakdown: ResumeAtsBreakdownShape;
+      result: ResumeShape;
+    }>('resume.build', input),
+    createNewVersion: (input: {
+      parentCacheId: string;
+      newTargetRole: string;
+      templateId: string;
+      language?: 'ar' | 'en';
+    }) => trpcMutation<{
+      cacheId: string;
+      versionId: string;
+      isCacheHit: boolean;
+      tokensCharged: number;
+      walletUsed: 'bonus' | 'subscription' | 'topup' | 'mixed' | null;
+      atsScore: number;
+      atsBreakdown: ResumeAtsBreakdownShape;
+      result: ResumeShape;
+    }>('resume.createNewVersion', input),
+    refine: (input: {
+      versionId: string;
+      chipType: string;
+      customPrompt?: string;
+      targetSection?: string;
+      language?: 'ar' | 'en';
+    }) => trpcMutation<{
+      result: ResumeShape;
+      atsScore: number;
+      atsBreakdown: ResumeAtsBreakdownShape;
+      tokensCharged: number;
+      refinementIndex: number;
+      isFreeWindow: boolean;
+      remainingFree: number;
+      cacheId: string;
+    }>('resume.refine', input),
+    archive: (input: { versionId: string }) =>
+      trpcMutation<{ success: boolean }>('resume.archive', input),
+    restore: (input: { versionId: string }) =>
+      trpcMutation<{ success: boolean }>('resume.restore', input),
+    exportPdf: (input: { versionId: string }) =>
+      trpcMutation<{ filename: string; mimeType: string; base64: string }>('resume.exportPdf', input),
+    exportDocx: (input: { versionId: string }) =>
+      trpcMutation<{ filename: string; mimeType: string; base64: string }>('resume.exportDocx', input),
+    exportJson: (input: { versionId: string }) =>
+      trpcMutation<{ filename: string; mimeType: string; base64: string }>('resume.exportJson', input),
+    history: (input?: { limit?: number }) =>
+      trpcQuery<{ versions: ResumeVersionRow[] }>('resume.history', input ?? {}),
+    sessionOverride: (input: { targetRole: string; expiresInHours?: number }) =>
+      trpcMutation<{ override: { id: string; section: string; payload: Record<string, unknown>; expires_at: string } }>(
+        'resume.sessionOverride',
+        input,
+      ),
+  },
+};
+
+// ─────────────────────────────────────────────
+// Resume shapes — mirror server/_core/lib/resume-engine.ts so the client
+// bundle doesn't pull in the engine itself.
+// ─────────────────────────────────────────────
+
+export type ResumeVersionRow = {
+  id: string;
+  cache_id: string | null;
+  target_role: string;
+  display_name: string;
+  template_id: string;
+  status: 'active' | 'archived' | 'legacy';
+  ats_score: number | null;
+  tokens_charged: number;
+  wallet_used: 'bonus' | 'subscription' | 'topup' | 'mixed' | null;
+  language: 'ar' | 'en';
+  legacy_source: string | null;
+  archived_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ResumeTemplateShape = {
+  id: string;
+  display_name_ar: string;
+  display_name_en: string;
+  description_ar: string | null;
+  description_en: string | null;
+  layout_type: 'classic' | 'modern' | 'creative' | 'executive';
+  region_fit: string[];
+  language_fit: string[];
+  level_fit: string[];
+  industry_boost: string[] | null;
+  is_active: boolean;
+  preview_url: string | null;
+};
+
+export type ResumeAtsBreakdownShape = {
+  keywords: number;
+  sections: number;
+  format: number;
+  quantified: number;
+  matched_keywords: string[];
+  missing_keywords: string[];
+  issues: string[];
+};
+
+export type ResumeShape = {
+  header: {
+    name: string;
+    title: string;
+    location: string | null;
+    phone: string | null;
+    email: string | null;
+    linkedin_url: string | null;
+  };
+  summary: string;
+  experience: Array<{
+    role: string;
+    company: string;
+    location: string | null;
+    start: string;
+    end: string;
+    bullets: string[];
+  }>;
+  education: Array<{
+    degree: string;
+    institution: string;
+    graduated: string;
+    honors: string | null;
+  }>;
+  skills: { hard: string[]; soft: string[] };
+  certifications: Array<{ name: string; issuer: string; year: string }>;
+  languages: Array<{ name: string; proficiency: string }>;
+  meta: {
+    target_role: string;
+    template_id: string;
+    profile_hash: string;
+    language: 'ar' | 'en';
+    version_label: string;
+    generated_at: string;
+  };
 };
 
 /**
