@@ -18,6 +18,7 @@ import { dhai } from './agents/dhai';
 import { hussein } from './agents/hussein';
 import { mohammed } from './agents/mohammed';
 import { generateWeeklyJournal as warRoomGenerateWeeklyJournal } from './lib/war-room-engine';
+import { generateSuggestions as dashboardGenerateSuggestions, snapshotPulse as dashboardSnapshotPulse } from './lib/dashboard-engine';
 
 const app = express();
 
@@ -782,6 +783,68 @@ app.get('/api/cron/war-room-weekly-journal', _cronWrap('war-room-weekly-journal'
     }
   }
   return { processed: results.length, results };
+}));
+
+// ===== Cron: dashboard suggestions (nightly at 02:00 AST = 23:00 UTC) =====
+// For every user active in the last 30 days:
+//   1. Generate a Next Task suggestion via the next-task prompt
+//   2. Snapshot today's Career Pulse (radar / resume / content / wallet)
+// Also expires any suggestions whose expires_at has passed.
+app.get('/api/cron/dashboard-suggestions', _cronWrap('dashboard-suggestions', async () => {
+  const sb = await _supa();
+
+  // 1. Expire old suggestions in one shot
+  await sb
+    .from('ai_suggestions')
+    .update({ status: 'expired' })
+    .eq('status', 'active')
+    .lt('expires_at', new Date().toISOString());
+
+  // 2. Pick active users (logged a meaningful activity in the last 30 days)
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const { data: recent } = await sb
+    .from('activity_log')
+    .select('user_id')
+    .gte('created_at', thirtyDaysAgo)
+    .limit(5000);
+
+  const activeIds = Array.from(
+    new Set(((recent ?? []) as Array<{ user_id: string }>).map((r) => r.user_id).filter(Boolean)),
+  );
+
+  // 3. Also include any user with a career_profile (so brand-new users get a nudge too)
+  const { data: profiles } = await sb.from('career_profile').select('user_id, primary_language');
+  for (const row of (profiles ?? []) as Array<{ user_id: string }>) {
+    if (!activeIds.includes(row.user_id)) activeIds.push(row.user_id);
+  }
+
+  const langByUser = new Map<string, 'ar' | 'en'>();
+  for (const row of (profiles ?? []) as Array<{ user_id: string; primary_language: 'ar' | 'en' }>) {
+    langByUser.set(row.user_id, row.primary_language || 'ar');
+  }
+
+  let generated = 0;
+  let snapshotted = 0;
+  const errors: Array<{ userId: string; error: string }> = [];
+
+  for (const userId of activeIds) {
+    try {
+      const lang = langByUser.get(userId) ?? 'ar';
+      const r = await dashboardGenerateSuggestions(sb, userId, lang);
+      generated += r.generated;
+      await dashboardSnapshotPulse(sb, userId);
+      snapshotted++;
+    } catch (e: any) {
+      errors.push({ userId, error: e?.message || String(e) });
+    }
+  }
+
+  return {
+    activeUsers: activeIds.length,
+    generated,
+    snapshotted,
+    errors: errors.slice(0, 10),
+  };
 }));
 
 app.use(

@@ -262,7 +262,89 @@
     }
   },
   "dashboard": {
-    "_placeholder": "Populated in Sprint 6"
+    "_placeholder": "Populated in Sprint 6",
+    "welcomeMorning": "Good morning, {{name}}",
+    "welcomeEvening": "Good evening, {{name}}",
+    "streak": "d",
+    "nextTask": {
+      "title": "Your Next Move",
+      "actCta": "Start now",
+      "dismiss": "Not now",
+      "highConfidence": "Highly recommended",
+      "empty": "You are on track. No new suggestions."
+    },
+    "pulse": {
+      "title": "Your Career Pulse",
+      "radarScore": "Radar Score",
+      "radarOutOf100": "out of 100",
+      "lastUpdated": "Last updated",
+      "resumeReady": "Resume",
+      "noResumeYet": "No resume yet",
+      "atsScore": "ATS",
+      "contentVelocity": "Content Velocity",
+      "postsLast30Days": "{{count}} posts last 30 days",
+      "noContentYet": "No content yet",
+      "wallet": "Balance",
+      "bonusExpiringSoon": "Bonus expiring soon"
+    },
+    "quickWins": {
+      "title": "Quick Wins",
+      "apply": "Apply"
+    },
+    "activity": {
+      "title": "Recent Activity",
+      "viewAll": "View all",
+      "empty": "No activity yet",
+      "actions": {
+        "radar.completed": "Completed Radar analysis",
+        "radar.cache_hit": "Viewed cached analysis",
+        "radar.applied_fix": "Applied a quick win",
+        "radar.reverted_fix": "Reverted a quick win",
+        "resume.built": "Built new resume",
+        "resume.new_version_built": "Created new resume version",
+        "resume.refined": "Refined your resume",
+        "resume.legacy_imported": "Imported legacy resume",
+        "resume.archived": "Archived resume",
+        "resume.exported_pdf": "Exported resume PDF",
+        "resume.exported_docx": "Exported resume DOCX",
+        "content.post.created": "Created a post",
+        "content.carousel.created": "Created a carousel",
+        "content.repurpose_bundle.created": "Repurpose bundle",
+        "content.refined": "Refined content",
+        "content.published": "Published content",
+        "content.exported_pdf": "Exported content PDF",
+        "content.legacy_imported": "Imported legacy post",
+        "onboarding.completed": "Completed onboarding",
+        "career_profile.updated": "Updated career profile",
+        "next_task.dismissed": "Dismissed a suggestion",
+        "next_task.actioned": "Started a suggestion"
+      }
+    },
+    "drafts": {
+      "title": "Drafts Library",
+      "resume": "Resumes",
+      "content": "Content",
+      "radar": "Analyses",
+      "noDrafts": "No active drafts",
+      "openEditor": "Open"
+    },
+    "sufficesFor": {
+      "title": "Your balance is enough for",
+      "or": "OR",
+      "radarCount": "{{count}} analyses",
+      "resumeCount": "{{count}} resumes",
+      "postCount": "{{count}} posts",
+      "carouselCount": "{{count}} carousels",
+      "repurposeCount": "{{count}} bundles",
+      "recommendedBundle": "Recommended for you",
+      "addTokens": "Add tokens",
+      "bundles": {
+        "fullJourney": "Full journey",
+        "contentPush": "Content push",
+        "roleRefresh": "Role refresh",
+        "topUpFirst": "Top up first"
+      }
+    }
   },
   "common": {
     "loading": "Loading...",
