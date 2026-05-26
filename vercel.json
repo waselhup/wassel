@@ -22,7 +22,8 @@
     { "path": "/api/cron/dhai-daily-sweep", "schedule": "0 4 * * *" },
     { "path": "/api/cron/hussein-auto-resolve", "schedule": "0 * * * *" },
     { "path": "/api/cron/mohammed-reconcile", "schedule": "0 23 * * *" },
-    { "path": "/api/cron/mohammed-snapshot", "schedule": "0 0 * * *" }
+    { "path": "/api/cron/mohammed-snapshot", "schedule": "0 0 * * *" },
+    { "path": "/api/cron/war-room-weekly-journal", "schedule": "0 5 * * 0" }
   ],
   "redirects": [
     {

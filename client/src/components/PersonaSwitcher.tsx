@@ -3,11 +3,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation, Link } from 'wouter';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
-import { User as UserIcon, Megaphone, Wallet, Activity, LayoutDashboard, HeartHandshake, TrendingUp, Microscope, ShieldCheck } from 'lucide-react';
+import { User as UserIcon, Megaphone, Wallet, Activity, LayoutDashboard, HeartHandshake, TrendingUp, Microscope, ShieldCheck, MessagesSquare } from 'lucide-react';
 
 const ADMIN_EMAILS = ['waselhup@gmail.com', 'almodhih.1995@gmail.com', 'alhashimali649@gmail.com'];
 
-type PersonaKey = 'user' | 'marketing' | 'finance' | 'ops' | 'growth' | 'workforce' | 'customer_success' | 'revenue_lab' | 'product_intel' | 'compliance';
+type PersonaKey = 'war_room' | 'user' | 'marketing' | 'finance' | 'ops' | 'growth' | 'workforce' | 'customer_success' | 'revenue_lab' | 'product_intel' | 'compliance';
 
 interface Persona {
   key: PersonaKey;
@@ -20,6 +20,7 @@ interface Persona {
 // 9 personas — 3×3 grid in FAB. Marketing route stays live for legacy bookmarks
 // but is hidden from the switcher.
 const PERSONAS: Persona[] = [
+  { key: 'war_room',         href: '/v2/war-room',         color: '#0F172A', Icon: MessagesSquare,  tooltipKey: 'personaSwitcher.war_room' },
   { key: 'user',             href: '/v2/home',             color: '#14b8a6', Icon: UserIcon,        tooltipKey: 'personaSwitcher.user' },
   { key: 'workforce',        href: '/v2/workforce',        color: '#8B5CF6', Icon: LayoutDashboard, tooltipKey: 'personaSwitcher.workforce' },
   { key: 'growth',           href: '/v2/growth',           color: '#10B981', Icon: Megaphone,       tooltipKey: 'personaSwitcher.growth' },
@@ -32,6 +33,7 @@ const PERSONAS: Persona[] = [
 ];
 
 function detectActive(location: string): PersonaKey {
+  if (location.startsWith('/v2/war-room')) return 'war_room';
   if (location.startsWith('/v2/growth')) return 'growth';
   if (location.startsWith('/v2/workforce')) return 'workforce';
   if (location.startsWith('/v2/customer-success')) return 'customer_success';

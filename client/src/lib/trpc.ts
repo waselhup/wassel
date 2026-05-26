@@ -763,4 +763,89 @@ export const trpc = {
     deleteAllData: () =>
       trpcMutation<{ success: boolean; errors: string[] }>('careerProfile.deleteAllData', { confirm: true }),
   },
+  warRoom: {
+    getPersonalities: () =>
+      trpcQuery<{ personalities: Array<{
+        agent_id: string;
+        age: number;
+        speech_style_ar: string; speech_style_en: string;
+        catchphrases_ar: string[] | null; catchphrases_en: string[] | null;
+        expressions: string[];
+        default_expression: string;
+        table_seat: number;
+        voice_pitch: number; voice_rate: number;
+        signature_animation: string | null;
+        system_prompt_extension_ar: string; system_prompt_extension_en: string;
+      }> }>('warRoom.getPersonalities'),
+    startSession: (input: { language?: 'ar' | 'en'; voiceEnabled?: boolean }) =>
+      trpcMutation<{ sessionId: string }>('warRoom.startSession', input),
+    endSession: (input: { sessionId: string }) =>
+      trpcMutation<{ success: boolean }>('warRoom.endSession', input),
+    sessionStats: () =>
+      trpcQuery<{ totalSessions: number; totalMessages: number; totalDecisions: number }>('warRoom.sessionStats'),
+    morningBrief: (input: { sessionId: string; language?: 'ar' | 'en' }) =>
+      trpcMutation<{ briefs: Array<{ agentId: string; message: string; expression: string; turnId: string }> }>('warRoom.morningBrief', input),
+    sendMessage: (input: { sessionId: string; message: string; language?: 'ar' | 'en'; voiceEnabled?: boolean }) =>
+      trpcMutation<{
+        aliTurnId: string;
+        replies: Array<{ agentId: string; message: string; expression: string; turnId: string }>;
+      }>('warRoom.sendMessage', input),
+    listMessages: (input: { sessionId: string; limit?: number }) =>
+      trpcQuery<{ turns: Array<{
+        id: string; speaker_type: 'ali' | 'agent'; speaker_id: string | null;
+        message: string; language: 'ar' | 'en'; expression: string | null; created_at: string;
+      }> }>('warRoom.listMessages', input),
+    recordDecision: (input: {
+      agentId: string;
+      conversationId?: string | null;
+      decisionType: 'approve' | 'reject' | 'edit' | 'approve_with_changes' | 'ask_question' | 'defer';
+      originalProposal: string;
+      aliResponse?: string;
+      aliEdit?: string;
+      rejectionReason?: string;
+      topicTags?: string[];
+    }) => trpcMutation<{ id: string }>('warRoom.recordDecision', input),
+    getDecisionMemory: (input: { agentId: string; limit?: number; topicTags?: string[] }) =>
+      trpcQuery<{ decisions: Array<{
+        decision_type: string;
+        original_proposal: string;
+        ali_response: string | null;
+        ali_edit: string | null;
+        topic_tags: string[] | null;
+        created_at: string;
+      }> }>('warRoom.getDecisionMemory', input),
+    agentMemoryStats: () =>
+      trpcQuery<{ counts: Array<{ agentId: string; count: number }> }>('warRoom.agentMemoryStats'),
+    attachScreenContent: (input: {
+      conversationId: string;
+      contentType: 'chart' | 'table' | 'text' | 'image' | 'funnel' | 'kpi' | 'comparison';
+      titleAr?: string;
+      titleEn?: string;
+      payload: Record<string, unknown>;
+      displayDurationSeconds?: number;
+    }) => trpcMutation<{ id: string }>('warRoom.attachScreenContent', input),
+    getScreenContent: (input: { conversationId: string }) =>
+      trpcQuery<{ content: Array<{
+        id: string;
+        conversation_id: string;
+        content_type: string;
+        title_ar: string | null;
+        title_en: string | null;
+        payload: any;
+        display_duration_seconds: number;
+        created_at: string;
+      }> }>('warRoom.getScreenContent', input),
+    weeklyJournal: (input?: { weekStart?: string }) =>
+      trpcQuery<{ journal: {
+        id: string;
+        week_start: string;
+        observations_ar: string;
+        observations_en: string;
+        patterns_detected: any;
+        decisions_analyzed: number;
+        created_at: string;
+      } | null }>('warRoom.weeklyJournal', input || {}),
+    generateWeeklyJournal: (input?: { language?: 'ar' | 'en' }) =>
+      trpcMutation<{ id: string; created: boolean }>('warRoom.generateWeeklyJournal', input || {}),
+  },
 };

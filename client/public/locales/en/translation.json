@@ -262,28 +262,7 @@
     }
   },
   "dashboard": {
-    "home": "Dashboard",
-    "welcomeBack": "Welcome back",
-    "tokenBalance": "Token Balance",
-    "linkedinScore": "LinkedIn Score",
-    "cvsGenerated": "CVs Generated",
-    "campaignsSent": "Campaigns Sent",
-    "analyzeLinkedin": "Analyze LinkedIn",
-    "createCv": "Create CV",
-    "newCampaign": "New Campaign",
-    "completeSetup": "Complete Your Setup",
-    "completeSetupDesc": "You have a few steps remaining",
-    "recentActivity": "Recent Activity",
-    "notAnalyzed": "Not analyzed yet",
-    "welcome": "Welcome",
-    "subtitle": "Here's what's happening with your career today",
-    "campaigns": "Email Campaigns",
-    "campaignsDesc": "Reach 500 decision-makers with personalized outreach",
-    "analytics": "Analytics Dashboard",
-    "analyticsDesc": "Track opens, replies, and conversions in real time",
-    "comingSoon": "Coming Soon",
-    "betaMessage": "You're using the beta version",
-    "betaDescription": "Thanks for being an early user! Your feedback shapes the product"
+    "_placeholder": "Populated in Sprint 6"
   },
   "common": {
     "loading": "Loading...",
@@ -314,27 +293,142 @@
     "logout": "Logout"
   },
   "onboarding": {
-    "title": "Job Title",
-    "step1Title": "Complete Your Profile",
-    "step1Description": "Let us know more about you",
-    "step2Title": "LinkedIn URL",
-    "step2Description": "Add your LinkedIn profile",
-    "step3Title": "Resume",
-    "step3Description": "Upload your resume",
-    "fullName": "Full Name",
-    "company": "Company Name",
-    "phone": "Phone Number",
-    "location": "City / Region",
-    "linkedinUrl": "LinkedIn URL",
-    "linkedinPlaceholder": "https://linkedin.com/in/your-profile",
-    "linkedinInvalid": "Please enter a valid LinkedIn URL",
-    "resumeLabel": "Resume",
-    "resumeHint": "Drag your file here or click to select",
-    "resumeSize": "Maximum 5 MB",
-    "progressStep": "Step",
-    "of": "of",
-    "setupComplete": "Your account is all set up!",
-    "setupCompleteDesc": "You can now start using Wassel"
+    "progress": {
+      "step": "Step {{current}} of {{total}}"
+    },
+    "step1": {
+      "title": "What brings you to Wassel?",
+      "subtitle": "Pick the goal that best describes your current career journey.",
+      "goals": {
+        "job_search": {
+          "label": "Looking for a new role",
+          "detail": "A new role at a new company or environment."
+        },
+        "promotion": {
+          "label": "Going for a promotion",
+          "detail": "A step up inside my current track or company."
+        },
+        "personal_brand": {
+          "label": "Building my professional brand",
+          "detail": "Consistent, authentic presence among peers."
+        },
+        "opportunities": {
+          "label": "Exploring future opportunities",
+          "detail": "Watching the market with no firm decision yet."
+        },
+        "career_change": {
+          "label": "Changing my career path",
+          "detail": "A new specialty or industry entirely."
+        }
+      }
+    },
+    "step2": {
+      "title": "Where are you in your career?",
+      "subtitle": "We tailor our coaching to your level.",
+      "levels": {
+        "entry": {
+          "label": "Entry",
+          "detail": "0–2 years of experience."
+        },
+        "mid": {
+          "label": "Mid-level",
+          "detail": "3–7 years of experience."
+        },
+        "senior": {
+          "label": "Senior",
+          "detail": "8–15 years of experience."
+        },
+        "executive": {
+          "label": "Executive",
+          "detail": "15+ years, or a current executive role."
+        }
+      }
+    },
+    "step3": {
+      "title": "Tell us your professional identity",
+      "subtitle": "These details drive every analysis and piece of content we generate for you.",
+      "fields": {
+        "target_role": {
+          "label": "Target role",
+          "placeholder": "e.g. Senior Product Manager",
+          "hint": "Use the exact phrasing companies use in job listings."
+        },
+        "industry": {
+          "label": "Industry",
+          "placeholder": "e.g. Fintech",
+          "suggestions": {
+            "fintech": "Fintech",
+            "healthtech": "Healthtech",
+            "edtech": "Edtech",
+            "government": "Government",
+            "retail": "Retail",
+            "real_estate": "Real estate",
+            "energy": "Energy"
+          }
+        },
+        "language": {
+          "label": "Primary language",
+          "options": {
+            "ar": "Arabic",
+            "en": "English"
+          }
+        }
+      }
+    },
+    "step4": {
+      "title": "Link your LinkedIn (or fill in manually)",
+      "subtitle": "We use this to sharpen analysis accuracy. You can skip.",
+      "modes": {
+        "linkedin": "Link LinkedIn",
+        "manual": "Fill manually"
+      },
+      "linkedin": {
+        "label": "Profile URL",
+        "invalid": "Please enter a valid LinkedIn URL.",
+        "hint": "We run discovery on your first Radar analysis."
+      },
+      "manual": {
+        "about": {
+          "label": "About you",
+          "placeholder": "A short summary of your experience and career path."
+        },
+        "skills": {
+          "label": "Top skills (up to 8)",
+          "placeholder": "Type a skill, then press Enter",
+          "add": "Add",
+          "remove": "Remove {{skill}}",
+          "counter": "{{count}} of {{max}}"
+        },
+        "current_role": {
+          "label": "Current role",
+          "placeholder": "e.g. Senior Business Analyst at X"
+        },
+        "years": {
+          "label": "Years of experience"
+        },
+        "education": {
+          "label": "Education",
+          "placeholder": "e.g. BSc Computer Science — King Saud University"
+        }
+      }
+    },
+    "nav": {
+      "back": "Back",
+      "next": "Next",
+      "finish": "Finish & save",
+      "saving": "Saving…",
+      "skip_linkedin": "Skip for now"
+    },
+    "complete": {
+      "title": "Done. Your career profile is ready.",
+      "subtitle": "Targeting a {{targetRole}} role in {{industry}}. Level: {{level}}. Goal: {{goal}}.",
+      "cta_primary_with_linkedin": "Start your first Radar analysis",
+      "cta_primary_no_linkedin": "Start your first Radar analysis",
+      "cta_secondary": "Go to the home page"
+    },
+    "errors": {
+      "create_failed": "Couldn't save your profile. Try again in a moment."
+    }
   },
   "profile": {
     "title": "Profile",
@@ -1942,7 +2036,8 @@
     "customer_success": "Customer Success",
     "revenue_lab": "Revenue Lab",
     "product_intel": "Product Intel",
-    "compliance": "Compliance"
+    "compliance": "Compliance",
+    "war_room": "War Room"
   },
   "portal": {
     "backToUser": "Back to User Dashboard",
@@ -2420,117 +2515,6 @@
       "churned": "Churned"
     }
   },
-  "onboarding": {
-    "progress": {
-      "step": "Step {{current}} of {{total}}"
-    },
-    "step1": {
-      "title": "What brings you to Wassel?",
-      "subtitle": "Pick the goal that best describes your current career journey.",
-      "goals": {
-        "job_search":     { "label": "Looking for a new role",     "detail": "A new role at a new company or environment." },
-        "promotion":      { "label": "Going for a promotion",       "detail": "A step up inside my current track or company." },
-        "personal_brand": { "label": "Building my professional brand","detail": "Consistent, authentic presence among peers." },
-        "opportunities":  { "label": "Exploring future opportunities","detail": "Watching the market with no firm decision yet." },
-        "career_change":  { "label": "Changing my career path",     "detail": "A new specialty or industry entirely." }
-      }
-    },
-    "step2": {
-      "title": "Where are you in your career?",
-      "subtitle": "We tailor our coaching to your level.",
-      "levels": {
-        "entry":     { "label": "Entry",      "detail": "0–2 years of experience." },
-        "mid":       { "label": "Mid-level",  "detail": "3–7 years of experience." },
-        "senior":    { "label": "Senior",     "detail": "8–15 years of experience." },
-        "executive": { "label": "Executive",  "detail": "15+ years, or a current executive role." }
-      }
-    },
-    "step3": {
-      "title": "Tell us your professional identity",
-      "subtitle": "These details drive every analysis and piece of content we generate for you.",
-      "fields": {
-        "target_role": {
-          "label": "Target role",
-          "placeholder": "e.g. Senior Product Manager",
-          "hint": "Use the exact phrasing companies use in job listings."
-        },
-        "industry": {
-          "label": "Industry",
-          "placeholder": "e.g. Fintech",
-          "suggestions": {
-            "fintech":     "Fintech",
-            "healthtech":  "Healthtech",
-            "edtech":      "Edtech",
-            "government":  "Government",
-            "retail":      "Retail",
-            "real_estate": "Real estate",
-            "energy":      "Energy"
-          }
-        },
-        "language": {
-          "label": "Primary language",
-          "options": {
-            "ar": "Arabic",
-            "en": "English"
-          }
-        }
-      }
-    },
-    "step4": {
-      "title": "Link your LinkedIn (or fill in manually)",
-      "subtitle": "We use this to sharpen analysis accuracy. You can skip.",
-      "modes": {
-        "linkedin": "Link LinkedIn",
-        "manual":   "Fill manually"
-      },
-      "linkedin": {
-        "label": "Profile URL",
-        "invalid": "Please enter a valid LinkedIn URL.",
-        "hint": "We run discovery on your first Radar analysis."
-      },
-      "manual": {
-        "about": {
-          "label": "About you",
-          "placeholder": "A short summary of your experience and career path."
-        },
-        "skills": {
-          "label": "Top skills (up to 8)",
-          "placeholder": "Type a skill, then press Enter",
-          "add": "Add",
-          "remove": "Remove {{skill}}",
-          "counter": "{{count}} of {{max}}"
-        },
-        "current_role": {
-          "label": "Current role",
-          "placeholder": "e.g. Senior Business Analyst at X"
-        },
-        "years": {
-          "label": "Years of experience"
-        },
-        "education": {
-          "label": "Education",
-          "placeholder": "e.g. BSc Computer Science — King Saud University"
-        }
-      }
-    },
-    "nav": {
-      "back":          "Back",
-      "next":          "Next",
-      "finish":        "Finish & save",
-      "saving":        "Saving…",
-      "skip_linkedin": "Skip for now"
-    },
-    "complete": {
-      "title": "Done. Your career profile is ready.",
-      "subtitle": "Targeting a {{targetRole}} role in {{industry}}. Level: {{level}}. Goal: {{goal}}.",
-      "cta_primary_with_linkedin": "Start your first Radar analysis",
-      "cta_primary_no_linkedin":   "Start your first Radar analysis",
-      "cta_secondary":             "Go to the home page"
-    },
-    "errors": {
-      "create_failed": "Couldn't save your profile. Try again in a moment."
-    }
-  },
   "careerProfile": {
     "title": "Career profile",
     "subtitle": "This information is Wassel's backbone. Every section in the app reads from it.",
@@ -2544,25 +2528,25 @@
       "cta": "Start onboarding"
     },
     "fields": {
-      "goal":             "Career goal",
-      "level":            "Career level",
-      "target_role":      "Target role",
-      "industry":         "Industry",
+      "goal": "Career goal",
+      "level": "Career level",
+      "target_role": "Target role",
+      "industry": "Industry",
       "primary_language": "Primary language",
-      "linkedin_url":     "LinkedIn URL",
-      "manual_about":     "About you"
+      "linkedin_url": "LinkedIn URL",
+      "manual_about": "About you"
     },
     "overrides": {
       "title": "Temporary overrides",
       "subtitle": "Short-lived experiments that don't affect your canonical profile. They expire automatically.",
       "empty": "No active overrides.",
       "section": {
-        "radar":   "Radar",
-        "resume":  "Resume",
+        "radar": "Radar",
+        "resume": "Resume",
         "content": "Content"
       },
       "expires_at": "Expires {{iso}}",
-      "delete":     "Delete"
+      "delete": "Delete"
     },
     "reset": {
       "title": "Reset profile",
@@ -2577,23 +2561,23 @@
     "title": "Wallet",
     "subtitle": "Three independent wallets, consumed in order: Bonus, then Subscription, then Top-up.",
     "bonus": {
-      "label":   "Bonus wallet",
-      "detail":  "Welcome gift and promos. Expires after a set period."
+      "label": "Bonus wallet",
+      "detail": "Welcome gift and promos. Expires after a set period."
     },
     "subscription": {
-      "label":   "Subscription wallet",
-      "detail":  "Your monthly plan tokens. Renews each cycle."
+      "label": "Subscription wallet",
+      "detail": "Your monthly plan tokens. Renews each cycle."
     },
     "topup": {
-      "label":   "Top-up wallet",
-      "detail":  "Paid top-ups. Lifetime — no expiry."
+      "label": "Top-up wallet",
+      "detail": "Paid top-ups. Lifetime — no expiry."
     },
-    "total":         "Total available",
-    "tokens_one":    "1 token",
-    "tokens_other":  "{{count}} tokens",
-    "expires_at":    "Expires {{iso}}",
-    "renews_at":     "Renews {{iso}}",
-    "no_expiry":     "No expiry"
+    "total": "Total available",
+    "tokens_one": "1 token",
+    "tokens_other": "{{count}} tokens",
+    "expires_at": "Expires {{iso}}",
+    "renews_at": "Renews {{iso}}",
+    "no_expiry": "No expiry"
   },
   "privacy": {
     "title": "Privacy & data",
@@ -2606,42 +2590,42 @@
     },
     "sources": {
       "title": "Discovery sources",
-      "body":  "When you link LinkedIn, we read public information from your profile to improve Radar and Resume accuracy. We never touch anything private."
+      "body": "When you link LinkedIn, we read public information from your profile to improve Radar and Resume accuracy. We never touch anything private."
     },
     "actions": {
       "export": {
-        "title":    "Download my data",
+        "title": "Download my data",
         "subtitle": "A JSON file with everything Wassel stores about you.",
-        "cta":      "Download",
-        "busy":     "Preparing…"
+        "cta": "Download",
+        "busy": "Preparing…"
       },
       "linkedin": {
-        "title":    "Manage LinkedIn",
+        "title": "Manage LinkedIn",
         "subtitle": "Remove or update the URL from your Career Profile settings.",
-        "cta":      "Manage"
+        "cta": "Manage"
       },
       "notifications": {
-        "title":    "Manage notifications",
+        "title": "Manage notifications",
         "subtitle": "Control which notifications you receive.",
-        "soon":     "Coming soon"
+        "soon": "Coming soon"
       }
     },
     "delete": {
       "title": "Delete everything permanently",
-      "body":  "All of your Wassel data will be permanently deleted and cannot be recovered. Your session will end automatically.",
+      "body": "All of your Wassel data will be permanently deleted and cannot be recovered. Your session will end automatically.",
       "confirm_placeholder": "Type \"{{word}}\" to confirm",
-      "confirm_word":        "DELETE",
-      "cta":                 "Delete permanently",
-      "busy":                "Deleting…",
-      "success":             "Your data has been deleted.",
-      "partial_failure":     "Some tables couldn't be cleared:"
+      "confirm_word": "DELETE",
+      "cta": "Delete permanently",
+      "busy": "Deleting…",
+      "success": "Your data has been deleted.",
+      "partial_failure": "Some tables couldn't be cleared:"
     }
   },
   "settings": {
     "sections": {
-      "career":        "Career profile",
-      "privacy":       "Privacy & data",
-      "wallet":        "Wallet",
+      "career": "Career profile",
+      "privacy": "Privacy & data",
+      "wallet": "Wallet",
       "notifications": "Notifications"
     }
   },
@@ -2654,21 +2638,108 @@
   "content": {
     "_placeholder": "Populated in Sprint 5"
   },
-  "dashboard": {
-    "_placeholder": "Populated in Sprint 6"
-  },
   "errors": {
-    "service_busy":       "The service is busy right now. Try again in a moment. No tokens were spent.",
-    "timeout":            "This took longer than expected. Try again. No tokens were spent.",
-    "no_tokens":          "You don't have enough tokens. Top up your wallet and try again.",
-    "no_tokens_partial":  "Your balance is below what this operation needs. Top up and retry.",
-    "invalid_input":      "There's an invalid value in the field: {{field}}.",
-    "not_found":          "We couldn't find {{kind}}. It may have been deleted.",
-    "unauthorized":       "Your session expired. Please sign in again.",
-    "rate_limited":       "Too many requests in a short window. Try again shortly.",
-    "discovery_failed":   "Discovery couldn't complete right now. Try again. No tokens were spent.",
-    "export_failed":      "We couldn't prepare your download. Try again.",
-    "cache_corrupted":    "The stored version is unreadable. Create a new one.",
-    "generic":            "Something unexpected happened. Try again in a moment."
+    "service_busy": "The service is busy right now. Try again in a moment. No tokens were spent.",
+    "timeout": "This took longer than expected. Try again. No tokens were spent.",
+    "no_tokens": "You don't have enough tokens. Top up your wallet and try again.",
+    "no_tokens_partial": "Your balance is below what this operation needs. Top up and retry.",
+    "invalid_input": "There's an invalid value in the field: {{field}}.",
+    "not_found": "We couldn't find {{kind}}. It may have been deleted.",
+    "unauthorized": "Your session expired. Please sign in again.",
+    "rate_limited": "Too many requests in a short window. Try again shortly.",
+    "discovery_failed": "Discovery couldn't complete right now. Try again. No tokens were spent.",
+    "export_failed": "We couldn't prepare your download. Try again.",
+    "cache_corrupted": "The stored version is unreadable. Create a new one.",
+    "generic": "Something unexpected happened. Try again in a moment."
+  },
+  "warRoom": {
+    "title": "War Room",
+    "subtitle": "8 agents ready to work",
+    "morningBrief": "Morning Brief",
+    "askPlaceholder": "Type a message to the team...",
+    "askAgent": "Ask an agent",
+    "send": "Send",
+    "speakInstead": "Speak instead",
+    "readAloud": "Read aloud",
+    "stopReading": "Stop reading",
+    "voiceUnsupported": "Your browser does not support voice",
+    "thinking": "Team is thinking...",
+    "knows": "Knows",
+    "ofYourDecisions": "of your decisions",
+    "memoryBadgeAria": "{{count}} stored decisions",
+    "weeklyJournal": "Weekly Journal — from Faris",
+    "basedOn": "Based on {{count}} decisions in week {{week}}",
+    "generateJournalCta": "Request weekly journal from Faris",
+    "quickActions": "Quick options",
+    "quick": {
+      "morningBrief": "Good morning, give me brief",
+      "approveSafe": "Approve all safe",
+      "showYesterday": "Show me yesterday"
+    },
+    "expressions": {
+      "neutral": "Neutral",
+      "happy": "Happy",
+      "thinking": "Thinking",
+      "concerned": "Concerned",
+      "excited": "Excited",
+      "frustrated": "Frustrated"
+    },
+    "decisions": {
+      "approve": "Approve",
+      "reject": "Reject",
+      "edit": "Edit",
+      "approve_with_changes": "Approve with changes",
+      "ask_question": "Ask question",
+      "defer": "Defer"
+    },
+    "agents": {
+      "faris": {
+        "role": "COO",
+        "tagline": "Calm and organized"
+      },
+      "sayed": {
+        "role": "Creative Director",
+        "tagline": "Energetic and direct"
+      },
+      "al_mukhadram": {
+        "role": "Customer Success",
+        "tagline": "Warm like an elder"
+      },
+      "hassan": {
+        "role": "Revenue Engineer",
+        "tagline": "Numbers without flattery"
+      },
+      "fatima": {
+        "role": "Product Research",
+        "tagline": "Silent and decisive"
+      },
+      "dhai": {
+        "role": "Compliance",
+        "tagline": "Business guardian"
+      },
+      "hussein": {
+        "role": "Platform Engineering",
+        "tagline": "Invisible until needed"
+      },
+      "mohammed": {
+        "role": "Accounting",
+        "tagline": "Every decision has a cost"
+      }
+    },
+    "header": {
+      "backToUser": "User app",
+      "languageToggle": "Toggle language"
+    },
+    "status": {
+      "idle": "Idle",
+      "thinking": "Thinking",
+      "speaking": "Speaking",
+      "offline": "Offline"
+    },
+    "errors": {
+      "sessionFailed": "Could not start session",
+      "sendFailed": "Could not send message",
+      "briefFailed": "Could not generate morning brief"
+    }
   }
 }

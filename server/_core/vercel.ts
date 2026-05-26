@@ -17,6 +17,7 @@ import { fatima } from './agents/fatima';
 import { dhai } from './agents/dhai';
 import { hussein } from './agents/hussein';
 import { mohammed } from './agents/mohammed';
+import { generateWeeklyJournal as warRoomGenerateWeeklyJournal } from './lib/war-room-engine';
 
 const app = express();
 
@@ -766,6 +767,21 @@ app.get('/api/cron/mohammed-reconcile', _cronWrap('mohammed-reconcile', async ()
 }));
 app.get('/api/cron/mohammed-snapshot', _cronWrap('mohammed-snapshot', async () => {
   return mohammed.computeFinanceSnapshot();
+}));
+app.get('/api/cron/war-room-weekly-journal', _cronWrap('war-room-weekly-journal', async () => {
+  // Generate Faris's weekly synthesis for each admin user.
+  const sb = await _supa();
+  const { data: admins } = await sb.from('profiles').select('id').eq('is_admin', true);
+  const results: Array<{ userId: string; ok: boolean; created?: boolean; error?: string }> = [];
+  for (const row of (admins || []) as Array<{ id: string }>) {
+    try {
+      const r = await warRoomGenerateWeeklyJournal(row.id, 'ar');
+      results.push({ userId: row.id, ok: true, created: r.created });
+    } catch (e: any) {
+      results.push({ userId: row.id, ok: false, error: e?.message || String(e) });
+    }
+  }
+  return { processed: results.length, results };
 }));
 
 app.use(

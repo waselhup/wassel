@@ -42,6 +42,7 @@ const CustomerSuccessPanel = lazy(() => import('@/pages/v2/CustomerSuccessPanel'
 const RevenueLabPanel = lazy(() => import('@/pages/v2/RevenueLabPanel'));
 const ProductIntelPanel = lazy(() => import('@/pages/v2/ProductIntelPanel'));
 const CompliancePanel = lazy(() => import('@/pages/v2/CompliancePanel'));
+const WarRoomPanel = lazy(() => import('@/pages/v2/WarRoomPanel'));
 
 // 3-stage profile analysis flow: Input → Loading → Result. State bridges
 // stages via sessionStorage (see lib/v2/analysisSession.ts). Stage 1 lives
@@ -102,6 +103,7 @@ const ONBOARDING_BYPASS_PREFIXES = [
   '/v2/billing',
   '/v2/checkout',
   '/v2/me',
+  '/v2/war-room',
 ];
 
 function shouldBypassOnboardingRedirect(location: string): boolean {
@@ -309,6 +311,7 @@ function V2Routes(): ReactElement | null {
   const [matchRevenueLab] = useRoute('/v2/revenue-lab');
   const [matchProductIntel] = useRoute('/v2/product-intel');
   const [matchCompliance] = useRoute('/v2/compliance');
+  const [matchWarRoom] = useRoute('/v2/war-room');
 
   if (matchLanding) {
     return <PublicShell><Suspense fallback={<V2Loader />}><Landing /></Suspense></PublicShell>;
@@ -426,6 +429,9 @@ function V2Routes(): ReactElement | null {
   }
   if (matchCompliance) {
     return <PortalShell><Suspense fallback={<V2Loader />}><CompliancePanel /></Suspense></PortalShell>;
+  }
+  if (matchWarRoom) {
+    return <PortalShell><Suspense fallback={<V2Loader />}><WarRoomPanel /></Suspense></PortalShell>;
   }
 
   return null;
