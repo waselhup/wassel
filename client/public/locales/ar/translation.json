@@ -262,7 +262,89 @@
     }
   },
   "dashboard": {
-    "_placeholder": "يُملأ في Sprint 6"
+    "_placeholder": "يُملأ في Sprint 6",
+    "welcomeMorning": "صباح الخير، {{name}}",
+    "welcomeEvening": "مساء الخير، {{name}}",
+    "streak": "يوم",
+    "nextTask": {
+      "title": "خطوتك التالية",
+      "actCta": "ابدأ الآن",
+      "dismiss": "ليس الآن",
+      "highConfidence": "موصى به بشدة",
+      "empty": "أنت على المسار الصحيح. لا توجد توصيات جديدة."
+    },
+    "pulse": {
+      "title": "نبضك المهني",
+      "radarScore": "نتيجة الرادار",
+      "radarOutOf100": "من 100",
+      "lastUpdated": "آخر تحديث",
+      "resumeReady": "السيرة",
+      "noResumeYet": "لم تبنِ سيرة بعد",
+      "atsScore": "ATS",
+      "contentVelocity": "زخم المحتوى",
+      "postsLast30Days": "{{count}} منشور آخر 30 يوم",
+      "noContentYet": "لم تنشر محتوى بعد",
+      "wallet": "الرصيد",
+      "bonusExpiringSoon": "بونس ينتهي قريباً"
+    },
+    "quickWins": {
+      "title": "تحسينات سريعة",
+      "apply": "تطبيق"
+    },
+    "activity": {
+      "title": "النشاط الأخير",
+      "viewAll": "عرض الكل",
+      "empty": "لا نشاط بعد",
+      "actions": {
+        "radar.completed": "أكملت تحليل الرادار",
+        "radar.cache_hit": "عرضت تحليل مخزّن",
+        "radar.applied_fix": "طبّقت تحسيناً سريعاً",
+        "radar.reverted_fix": "تراجعت عن تحسين",
+        "resume.built": "بنيت سيرة جديدة",
+        "resume.new_version_built": "أنشأت نسخة جديدة من السيرة",
+        "resume.refined": "حسّنت سيرتك",
+        "resume.legacy_imported": "استورد ت سيرة قديمة",
+        "resume.archived": "أرشفت سيرة",
+        "resume.exported_pdf": "صدّرت السيرة PDF",
+        "resume.exported_docx": "صدّرت السيرة DOCX",
+        "content.post.created": "أنشأت منشور",
+        "content.carousel.created": "أنشأت كاروسيل",
+        "content.repurpose_bundle.created": "حزمة إعادة توظيف",
+        "content.refined": "حسّنت محتوى",
+        "content.published": "نشرت محتوى",
+        "content.exported_pdf": "صدّرت محتوى PDF",
+        "content.legacy_imported": "استوردت منشور قديم",
+        "onboarding.completed": "أكملت Onboarding",
+        "career_profile.updated": "حدّثت ملفك المهني",
+        "next_task.dismissed": "تجاهلت اقتراح",
+        "next_task.actioned": "بدأت اقتراح"
+      }
+    },
+    "drafts": {
+      "title": "مكتبة المسودات",
+      "resume": "سير",
+      "content": "محتوى",
+      "radar": "تحاليل",
+      "noDrafts": "لا مسودات نشطة",
+      "openEditor": "فتح"
+    },
+    "sufficesFor": {
+      "title": "رصيدك يكفي لـ",
+      "or": "أو",
+      "radarCount": "{{count}} تحليل",
+      "resumeCount": "{{count}} سيرة",
+      "postCount": "{{count}} منشور",
+      "carouselCount": "{{count}} كاروسيل",
+      "repurposeCount": "{{count}} حزمة",
+      "recommendedBundle": "موصى به لك",
+      "addTokens": "إضافة توكنات",
+      "bundles": {
+        "fullJourney": "رحلة كاملة",
+        "contentPush": "دفعة محتوى",
+        "roleRefresh": "تحديث للدور",
+        "topUpFirst": "احتجت لشحن"
+      }
+    }
   },
   "common": {
     "loading": "جاري التحميل...",
