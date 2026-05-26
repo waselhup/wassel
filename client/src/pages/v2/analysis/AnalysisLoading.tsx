@@ -1,8 +1,21 @@
+/**
+ * /v2/analyze/loading — Radar v2 loading screen.
+ *
+ * Kicks off `trpc.radar.run({ overrideTargetRole? })` on mount; animates
+ * a 3-stage timeline (discover → compare → reveal); on success, navigates
+ * to /v2/analyze/result/:cacheId. On error, shows an inline retry CTA
+ * (tokens are refunded server-side per R03).
+ *
+ * The animation is purely visual — there's no server-side streaming. We
+ * pace overall progress to a planned 90s envelope, then "race to 100"
+ * once the API resolves.
+ */
+
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useSearch } from 'wouter';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { Check, AlertCircle } from 'lucide-react';
+import { Check, AlertCircle, Search, GitCompareArrows, Sparkles } from 'lucide-react';
 import Phone from '@/components/v2/Phone';
 import Topbar from '@/components/v2/Topbar';
 import Card from '@/components/v2/Card';
@@ -10,77 +23,66 @@ import Eyebrow from '@/components/v2/Eyebrow';
 import Button from '@/components/v2/Button';
 import NumDisplay from '@/components/v2/NumDisplay';
 import SpinningLogo from '@/components/v2/SpinningLogo';
-import { trpcMutation } from '@/lib/trpc';
-import {
-  clearAnalysisParams,
-  getAnalysisParams,
-  setAnalysisResult,
-  type AnalysisParams,
-} from '@/lib/v2/analysisSession';
+import { trpc } from '@/lib/trpc';
 
-interface Step {
+interface Stage {
   ar: string;
   en: string;
   descAr: string;
   descEn: string;
-  /** planned milliseconds for this step under the average-case 100s envelope */
   durationMs: number;
 }
 
-// Total ≈ 100s — the realistic middle of the 60–120s analysis window.
-const STEPS: Step[] = [
-  { ar: 'جلب بيانات لينكد إن',         en: 'Fetching LinkedIn data',         descAr: 'استخراج بيانات البروفايل',     descEn: 'Pulling profile data',         durationMs:  8_000 },
-  { ar: 'تحليل المهارات والخبرات',      en: 'Analysing skills & experience',  descAr: 'معالجة تاريخ العمل',            descEn: 'Processing work history',      durationMs: 15_000 },
-  { ar: 'فحص التعليم والشهادات',        en: 'Reviewing education & certs',    descAr: 'تقييم الخلفية الأكاديمية',      descEn: 'Evaluating credentials',       durationMs: 10_000 },
-  { ar: 'تقييم قوة البروفايل',           en: 'Scoring profile strength',       descAr: 'حساب نقاط القوة',                descEn: 'Computing strength signals',   durationMs: 12_000 },
-  { ar: 'مقارنة مع المعايير المهنية',     en: 'Benchmarking on industry standards', descAr: 'مقارنة مع قاعدة البيانات',     descEn: 'Comparing against benchmark',   durationMs: 18_000 },
-  { ar: 'صياغة التوصيات بالذكاء الاصطناعي', en: 'Drafting AI recommendations', descAr: 'توليد نصائح مخصصة',              descEn: 'Generating tailored advice',   durationMs: 20_000 },
-  { ar: 'حساب النتيجة النهائية',         en: 'Computing final score',          descAr: 'تجميع البيانات',                  descEn: 'Aggregating data',             durationMs:  8_000 },
-  { ar: 'إعداد التقرير الشامل',           en: 'Preparing report',               descAr: 'تنسيق النتائج',                   descEn: 'Formatting output',            durationMs:  9_000 },
+// Three stages — Radar v2 doesn't pretend to do 8 things. It does 3, well.
+const STAGES: Stage[] = [
+  {
+    ar: 'اكتشاف بياناتك',
+    en: 'Discovering your data',
+    descAr: 'استخراج وتطبيع بروفايل لينكد إن',
+    descEn: 'Pulling and normalising your LinkedIn profile',
+    durationMs: 22_000,
+  },
+  {
+    ar: 'مقارنة مع متطلبات الدور',
+    en: 'Comparing with role requirements',
+    descAr: 'تحليل الفجوات مقابل الدور المستهدف',
+    descEn: 'Mapping gaps against your target role',
+    durationMs: 42_000,
+  },
+  {
+    ar: 'كشف الفرص',
+    en: 'Revealing opportunities',
+    descAr: 'صياغة Quick Wins والتوصيات',
+    descEn: 'Composing Quick Wins and suggested actions',
+    durationMs: 26_000,
+  },
 ];
 
-const TOTAL_PLANNED_MS = STEPS.reduce((s, x) => s + x.durationMs, 0);
-const TICK_MS = 250;
-// Hold the last step at 92% until the API resolves so the bar never lies
-// about completion. When the API returns, we sprint to 100% and navigate.
+const TOTAL_PLANNED_MS = STAGES.reduce((s, x) => s + x.durationMs, 0);
+const TICK_MS = 220;
 const HOLD_AT_PCT = 0.92;
 
-interface StepState {
-  /** 0..1 progress for this individual step */
-  progress: number;
-  /** transition: this step starts when the cumulative elapsed ≥ its startOffset */
-  startOffset: number;
-  endOffset: number;
-}
-
-function getQueryId(search: string): string | null {
+function readQueryParam(search: string, key: string): string | null {
   try {
-    return new URLSearchParams(search).get('id');
+    return new URLSearchParams(search).get(key);
   } catch {
     return null;
   }
 }
 
-function formatSeconds(ms: number): string {
-  return Math.max(0, Math.round(ms / 1000)).toString();
-}
-
-export default function AnalysisLoading() {
+export default function RadarLoading() {
   const { i18n } = useTranslation();
   const isAr = i18n.language === 'ar';
   const [, navigate] = useLocation();
   const search = useSearch();
+  const override = readQueryParam(search, 'override');
 
-  const id = getQueryId(search);
-
-  // Per-step planned offsets so we can map a single elapsed-ms value into
-  // every step's individual progress bar without per-step timers.
-  const stepStates = useMemo<StepState[]>(() => {
-    let cumulative = 0;
-    return STEPS.map((s) => {
-      const startOffset = cumulative;
-      cumulative += s.durationMs;
-      return { progress: 0, startOffset, endOffset: cumulative };
+  const stageBounds = useMemo(() => {
+    let cum = 0;
+    return STAGES.map((s) => {
+      const start = cum;
+      cum += s.durationMs;
+      return { start, end: cum };
     });
   }, []);
 
@@ -88,43 +90,25 @@ export default function AnalysisLoading() {
   const [activeIdx, setActiveIdx] = useState(0);
   const [phase, setPhase] = useState<'running' | 'finishing' | 'finished' | 'error'>('running');
   const [error, setError] = useState<string | null>(null);
-  const [stepProgress, setStepProgress] = useState<number[]>(() => STEPS.map(() => 0));
+  const [stageProgress, setStageProgress] = useState<number[]>(() => STAGES.map(() => 0));
   const [elapsedMs, setElapsedMs] = useState(0);
 
-  // Guards
   const ranRef = useRef(false);
   const apiDoneRef = useRef(false);
-  const apiResultRef = useRef<{
-    id: string;
-    analysis: any;
-    profileSummary?: any;
-    linkedinUrl?: string;
-    tokensUsed?: number;
-  } | null>(null);
+  const cacheIdRef = useRef<string | null>(null);
   const startedAtRef = useRef<number>(0);
-  // Track when the API resolved so the overall ramp uses the exact moment.
   const apiDoneAtRef = useRef<number>(0);
 
-  // Boot: pull params, kick off the API, kick off the timeline.
+  // Boot — kick the API + the timeline.
   useEffect(() => {
-    if (!id) {
-      navigate('/v2/analyze', { replace: true });
-      return;
-    }
-    const params = getAnalysisParams(id);
-    if (!params) {
-      navigate('/v2/analyze', { replace: true });
-      return;
-    }
     if (ranRef.current) return;
     ranRef.current = true;
     startedAtRef.current = performance.now();
-    runAnalysis(id, params);
+    runRadar();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  }, []);
 
-  // The timeline driver — single rAF-equivalent interval that updates
-  // overall + per-step progress monotonically.
+  // Timeline driver.
   useEffect(() => {
     if (phase === 'finished' || phase === 'error') return;
     const tick = () => {
@@ -133,14 +117,8 @@ export default function AnalysisLoading() {
       setElapsedMs(elapsed);
 
       const apiDone = apiDoneRef.current;
-
-      // Overall progress: linear up to HOLD_AT_PCT during the planned window.
-      // If the API has resolved, race to 100%. If we're past the planned window
-      // and API hasn't resolved, hold at HOLD_AT_PCT and let the per-step bar
-      // pulse on the last step.
       let overall: number;
       if (apiDone) {
-        // Once API is done, ramp to 100 over ~600ms regardless of plan offset.
         overall = Math.min(1, (elapsed - (apiDoneAtRef.current - startedAtRef.current)) / 600 + HOLD_AT_PCT);
       } else {
         const planRatio = Math.min(1, elapsed / TOTAL_PLANNED_MS);
@@ -148,125 +126,84 @@ export default function AnalysisLoading() {
       }
       setOverallPct(overall);
 
-      // Active step + per-step progress
-      let active = STEPS.length - 1;
-      const next = STEPS.map((_, i) => {
-        const { startOffset, endOffset } = stepStates[i];
-        if (elapsed < startOffset) return 0;
-        if (elapsed >= endOffset) return 1;
-        return Math.min(1, (elapsed - startOffset) / (endOffset - startOffset));
+      let active = STAGES.length - 1;
+      const next = STAGES.map((_, i) => {
+        const { start, end } = stageBounds[i];
+        if (elapsed < start) return 0;
+        if (elapsed >= end) return 1;
+        return Math.min(1, (elapsed - start) / (end - start));
       });
-      for (let i = 0; i < STEPS.length; i++) {
+      for (let i = 0; i < STAGES.length; i++) {
         if (next[i] < 1) { active = i; break; }
       }
-      // If we've blown past the plan and still waiting on the API, keep
-      // active on the last step at 92% so the spinner stays visible.
       if (!apiDone && elapsed >= TOTAL_PLANNED_MS) {
-        active = STEPS.length - 1;
-        next[STEPS.length - 1] = HOLD_AT_PCT;
+        active = STAGES.length - 1;
+        next[STAGES.length - 1] = HOLD_AT_PCT;
       }
       setActiveIdx(active);
-      setStepProgress(next);
+      setStageProgress(next);
 
-      // If the API finished and we've ramped to 100%, navigate.
       if (apiDone && overall >= 1 && phase === 'running') {
         setPhase('finishing');
       }
     };
     const handle = window.setInterval(tick, TICK_MS);
-    tick(); // immediate first paint so we don't show 0 for a quarter second
+    tick();
     return () => window.clearInterval(handle);
-  }, [phase, stepStates]);
+  }, [phase, stageBounds]);
 
-  // After the bar reaches 100% post-API, navigate (gives the user a beat to
-  // see the green checkmark cascade).
+  // After the bar lands at 100%, redirect to the result page.
   useEffect(() => {
     if (phase !== 'finishing') return;
-    const t = window.setTimeout(() => {
-      const result = apiResultRef.current;
-      if (!result || !id) return;
-      clearAnalysisParams(id);
+    const id = window.setTimeout(() => {
+      if (!cacheIdRef.current) return;
       setPhase('finished');
-      navigate(`/v2/analyze/result/${result.id}`, { replace: true });
-    }, 600);
-    return () => window.clearTimeout(t);
-  }, [phase, id, navigate]);
+      navigate(`/v2/analyze/result/${cacheIdRef.current}`, { replace: true });
+    }, 500);
+    return () => window.clearTimeout(id);
+  }, [phase, navigate]);
 
-  async function runAnalysis(tempId: string, params: AnalysisParams) {
+  async function runRadar() {
     try {
-      const res = await trpcMutation<{
-        id: string;
-        analysis: any;
-        linkedinUrl: string;
-        tokensUsed: number;
-        profileSummary?: any;
-      }>('linkedin.analyzeTargeted', {
-        linkedinUrl: params.linkedinUrl,
-        targetGoal: params.targetGoal,
-        industry: params.industry,
-        customIndustryLabel: params.customIndustryLabel,
-        targetRole: params.targetRole,
-        targetCompany: params.targetCompany,
-        reportLanguage: params.reportLanguage,
+      const out = await trpc.radar.run({
+        overrideTargetRole: override ?? undefined,
+        language: isAr ? 'ar' : 'en',
       });
-
       apiDoneAtRef.current = performance.now();
       apiDoneRef.current = true;
-      apiResultRef.current = res;
-
-      // Persist under both temp and real id so the in-flight URL still
-      // resolves until we redirect.
-      setAnalysisResult(tempId, {
-        id: res.id,
-        analysis: res.analysis,
-        profileSummary: (res as any).profileSummary,
-        linkedinUrl: res.linkedinUrl,
-        tokensUsed: res.tokensUsed,
-      });
-      setAnalysisResult(res.id, {
-        id: res.id,
-        analysis: res.analysis,
-        profileSummary: (res as any).profileSummary,
-        linkedinUrl: res.linkedinUrl,
-        tokensUsed: res.tokensUsed,
-      });
-      // The driver effect will catch up on the next tick.
-    } catch (e: any) {
+      cacheIdRef.current = out.cacheId;
+      // Hand off the "fresh vs cached + tokens charged" info to the result
+      // page so it can flash the right chip on first paint.
+      try {
+        sessionStorage.setItem(`radar.justRan.${out.cacheId}`, JSON.stringify({
+          isCacheHit: out.isCacheHit,
+          tokensCharged: out.tokensCharged,
+        }));
+      } catch { /* ignore */ }
+    } catch (e: unknown) {
       apiDoneRef.current = true;
-      const code: string = e?.data?.code || e?.code || '';
-      const msg: string = e?.message || (isAr ? 'فشل التحليل. أعد المحاولة' : 'Analysis failed. Please try again.');
-      let friendly = msg;
-      if (code === 'NOT_FOUND') friendly = isAr ? 'لم نعثر على هذا البروفايل على لينكد إن' : "We couldn't find this LinkedIn profile.";
-      setError(friendly);
+      const err = e as { message?: string };
+      setError(err?.message || (isAr ? 'فشل التحليل. أعد المحاولة' : 'Analysis failed. Please try again.'));
       setPhase('error');
     }
   }
 
   function handleRetry() {
-    if (!id) {
-      navigate('/v2/analyze');
-      return;
-    }
-    const params = getAnalysisParams(id);
-    if (!params) {
-      navigate('/v2/analyze');
-      return;
-    }
     setError(null);
+    setPhase('running');
+    setOverallPct(0);
+    setStageProgress(STAGES.map(() => 0));
+    setActiveIdx(0);
     apiDoneRef.current = false;
-    apiResultRef.current = null;
+    cacheIdRef.current = null;
     apiDoneAtRef.current = 0;
     startedAtRef.current = performance.now();
-    setStepProgress(STEPS.map(() => 0));
-    setOverallPct(0);
-    setActiveIdx(0);
-    setPhase('running');
-    ranRef.current = true;
-    runAnalysis(id, params);
+    runRadar();
   }
 
   const overallPctRounded = Math.round(overallPct * 100);
-  const planRemainingMs = Math.max(0, TOTAL_PLANNED_MS - elapsedMs);
+  const planRemainingSec = Math.max(0, Math.round((TOTAL_PLANNED_MS - elapsedMs) / 1000));
+  const stageIconMap = [Search, GitCompareArrows, Sparkles];
 
   return (
     <Phone>
@@ -274,14 +211,13 @@ export default function AnalysisLoading() {
         sticky
         bg="canvas"
         leading={
-          <span className="font-ar text-[15px] font-bold text-v2-ink px-2">
+          <span className="px-2 font-ar text-[15px] font-bold text-v2-ink">
             {isAr ? 'جارٍ التحليل' : 'Analysing'}
           </span>
         }
       />
 
       <div className="flex-1 px-[22px] pb-10 lg:px-0">
-        {/* Hero — spinning logo + heading + ETA. Centered on every viewport. */}
         <div className="mt-6 mb-8 flex flex-col items-center text-center lg:mt-4 lg:mb-10">
           <SpinningLogo
             size="xl"
@@ -293,26 +229,24 @@ export default function AnalysisLoading() {
           <h1 className="font-ar font-bold leading-tight text-v2-ink text-[24px] lg:text-[30px] max-w-[460px]">
             {phase === 'error'
               ? (isAr ? 'تعذّر إكمال التحليل' : "We couldn't finish the analysis.")
-              : (isAr ? 'نُجري تحليلاً عميقاً لبروفايلك' : 'Running a deep analysis on your profile.')}
+              : (isAr ? 'نُحلّل بروفايلك مقابل دورك المستهدف' : 'Running your gap analysis.')}
           </h1>
           <p className="mt-2 font-ar text-[14px] text-v2-dim max-w-[440px]">
             {phase === 'error'
               ? (isAr ? 'لم يتم خصم أي توكنات. يمكنك إعادة المحاولة بأمان' : 'No tokens were charged. You can safely retry.')
-              : (isAr
-                ? 'التحليل الشامل يحتاج 60–120 ثانية للحصول على أفضل النتائج'
-                : 'Deep analysis needs 60–120 seconds for the best results.')}
+              : (isAr ? 'التحليل العميق يحتاج 60–120 ثانية للحصول على أفضل النتائج' : 'A thorough analysis takes 60–120 seconds.')}
           </p>
           {phase !== 'error' && (
             <div className="mt-3 inline-flex items-center gap-1.5 rounded-v2-pill bg-teal-50 px-3 py-1 font-ar text-[12px] font-semibold text-teal-700">
               <span aria-hidden>⏱</span>
               {isAr ? 'الوقت المتوقع' : 'ETA'} ·&nbsp;
-              <NumDisplay>{formatSeconds(planRemainingMs)}</NumDisplay>
+              <NumDisplay>{planRemainingSec}</NumDisplay>
               &nbsp;{isAr ? 'ث' : 's'}
             </div>
           )}
         </div>
 
-        {/* Overall progress bar */}
+        {/* Overall progress */}
         <Card padding="md" radius="lg" className="mx-auto mb-5 lg:max-w-[640px]">
           <div className="flex items-baseline justify-between font-ar">
             <Eyebrow>{isAr ? 'التقدم الإجمالي' : 'Overall progress'}</Eyebrow>
@@ -327,18 +261,19 @@ export default function AnalysisLoading() {
           </div>
         </Card>
 
-        {/* 8-step timeline */}
+        {/* 3-stage timeline */}
         <ol className="mx-auto flex flex-col gap-3 lg:max-w-[640px] lg:gap-3.5">
-          {STEPS.map((step, i) => {
-            const isComplete = stepProgress[i] >= 1;
+          {STAGES.map((stage, i) => {
+            const isComplete = stageProgress[i] >= 1;
             const isActive = i === activeIdx && !isComplete && phase !== 'error';
-            const indvProgress = Math.round((stepProgress[i] || 0) * 100);
+            const indvProgress = Math.round((stageProgress[i] || 0) * 100);
+            const Icon = stageIconMap[i];
             return (
               <motion.li
                 key={i}
                 initial={{ opacity: 0, x: isAr ? 16 : -16 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: Math.min(i * 0.04, 0.32) }}
+                transition={{ delay: Math.min(i * 0.06, 0.18) }}
                 className={`flex items-start gap-3 rounded-v2-md border px-3 py-3 transition-all duration-300 ease-out ${
                   isComplete
                     ? 'border-teal-200 bg-teal-50'
@@ -350,35 +285,25 @@ export default function AnalysisLoading() {
                 <span
                   aria-hidden
                   className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
-                    isComplete ? 'bg-teal-600 text-white' : isActive ? '' : 'bg-v2-canvas-2 text-v2-mute'
+                    isComplete ? 'bg-teal-600 text-white' : isActive ? 'bg-teal-100 text-teal-700' : 'bg-v2-canvas-2 text-v2-mute'
                   }`}
                 >
                   {isComplete ? (
-                    <motion.span
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ type: 'spring', stiffness: 400, damping: 18 }}
-                    >
+                    <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 400, damping: 18 }}>
                       <Check size={16} strokeWidth={2.6} />
                     </motion.span>
                   ) : isActive ? (
                     <SpinningLogo size="sm" speed="fast" />
                   ) : (
-                    <span className="font-en text-[12px] font-bold">{String(i + 1).padStart(2, '0')}</span>
+                    <Icon size={16} />
                   )}
                 </span>
                 <div className="min-w-0 flex-1">
-                  <div
-                    className={`font-ar text-[14px] ${
-                      isActive ? 'font-semibold text-teal-800'
-                        : isComplete ? 'font-medium text-v2-body'
-                        : 'text-v2-dim'
-                    }`}
-                  >
-                    {isAr ? step.ar : step.en}
+                  <div className={`font-ar text-[14px] ${isActive ? 'font-semibold text-teal-800' : isComplete ? 'font-medium text-v2-body' : 'text-v2-dim'}`}>
+                    {isAr ? stage.ar : stage.en}
                   </div>
                   <div className={`mt-0.5 font-ar text-[12px] ${isActive ? 'text-teal-700' : 'text-v2-dim'}`}>
-                    {isAr ? step.descAr : step.descEn}
+                    {isAr ? stage.descAr : stage.descEn}
                   </div>
                   {isActive && (
                     <div className="mt-2 h-[3px] w-32 overflow-hidden rounded-full bg-teal-100">
@@ -395,16 +320,18 @@ export default function AnalysisLoading() {
           })}
         </ol>
 
-        {/* Status line under the timeline */}
+        {/* Status under the timeline */}
         <div className="mx-auto mt-5 max-w-[640px] text-center font-ar text-[12px]">
           {phase === 'error' ? (
             <span className="text-rose-700">{isAr ? '✕ فشل التحليل' : '✕ Analysis failed'}</span>
           ) : phase === 'finishing' || phase === 'finished' ? (
             <span className="font-semibold text-teal-700">
-              {isAr ? '✓ التحليل مكتمل — جارٍ التحضير للعرض' : '✓ Analysis complete — preparing your report'}
+              {isAr ? '✓ التحليل مكتمل — تجهيز النتيجة' : '✓ Analysis complete — preparing your result'}
             </span>
           ) : apiDoneRef.current ? (
             <span className="text-v2-body">{isAr ? 'لمسات أخيرة…' : 'Final touches…'}</span>
+          ) : elapsedMs > TOTAL_PLANNED_MS ? (
+            <span className="text-v2-dim">{isAr ? 'نشتغل عليه، اقترب من النهاية…' : 'Working on it, almost done…'}</span>
           ) : (
             <span className="text-v2-dim">
               {isAr ? 'تحليل عميق جارٍ — لا تُغلق النافذة' : 'Deep analysis running — keep this tab open.'}
@@ -426,7 +353,7 @@ export default function AnalysisLoading() {
                     {isAr ? 'أعد المحاولة' : 'Retry'}
                   </Button>
                   <Button variant="secondary" size="sm" onClick={() => navigate('/v2/analyze')}>
-                    {isAr ? 'العودة للنموذج' : 'Back to form'}
+                    {isAr ? 'العودة' : 'Back'}
                   </Button>
                 </div>
               </div>

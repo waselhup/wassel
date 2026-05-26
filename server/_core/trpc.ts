@@ -27,6 +27,7 @@ import { husseinRouter } from './routes/hussein';
 import { mohammedRouter } from './routes/mohammed';
 import { careerProfileRouter } from './routes/career-profile';
 import { warRoomRouter } from './routes/war-room';
+import { radarRouter } from './routes/radar';
 
 export { router, publicProcedure, protectedProcedure };
 
@@ -78,6 +79,7 @@ export const appRouter = router({
   mohammed: mohammedRouter,
   careerProfile: careerProfileRouter,
   warRoom: warRoomRouter,
+  radar: radarRouter,
 });
 
 export type AppRouter = typeof appRouter;

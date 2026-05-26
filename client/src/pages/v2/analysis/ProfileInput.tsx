@@ -1,120 +1,154 @@
-import { useEffect, useMemo, useState } from 'react';
+/**
+ * /v2/analyze — Radar v2 preflight.
+ *
+ * The Career Copilot reads career_profile (R02 — never re-ask). The user
+ * just sees their target role + LinkedIn, taps "Start", or chooses a
+ * one-session role override. No URL field, no goal picker, no industry chip
+ * list — those questions were already answered during onboarding.
+ *
+ * If there's no career_profile, AuthGate already redirected to onboarding;
+ * this page renders a graceful empty state for the (rare) race condition.
+ *
+ * If a cached analysis exists for the canonical target role, the primary CTA
+ * becomes "View latest analysis (free)" — only "Run a fresh analysis" charges.
+ */
+
+import { useEffect, useState } from 'react';
 import { useLocation } from 'wouter';
 import { useTranslation } from 'react-i18next';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { Sparkles, Briefcase, Link as LinkIcon, AlertCircle, Bell, RefreshCw } from 'lucide-react';
 import Phone from '@/components/v2/Phone';
 import Topbar from '@/components/v2/Topbar';
 import BottomNav from '@/components/v2/BottomNav';
 import Card from '@/components/v2/Card';
-import Input from '@/components/v2/Input';
 import Button from '@/components/v2/Button';
 import Eyebrow from '@/components/v2/Eyebrow';
-import RadarHistory from '@/components/v2/RadarHistory';
-import { useAuth } from '@/contexts/AuthContext';
-import { validateAndNormalizeLinkedInUrl } from '@/lib/linkedin-url-validator';
-import {
-  newTempAnalysisId,
-  setAnalysisParams,
-  type AnalysisParams,
-  type Industry,
-  type ReportLang,
-  type TargetGoal,
-} from '@/lib/v2/analysisSession';
+import Input from '@/components/v2/Input';
+import Skeleton from '@/components/v2/Skeleton';
+import NumDisplay from '@/components/v2/NumDisplay';
+import { trpc } from '@/lib/trpc';
 
-const GOALS: { id: TargetGoal; ar: string; en: string; emoji: string }[] = [
-  { id: 'job-search',          ar: 'البحث عن وظيفة',     en: 'Job search',          emoji: '🎯' },
-  { id: 'investment',          ar: 'جذب استثمار',         en: 'Investment',          emoji: '🚀' },
-  { id: 'thought-leadership',  ar: 'قيادة فكرية',         en: 'Thought leadership',  emoji: '💼' },
-  { id: 'sales-b2b',           ar: 'مبيعات B2B',          en: 'B2B sales',           emoji: '🤝' },
-  { id: 'career-change',       ar: 'تغيير المسار',         en: 'Career change',       emoji: '📚' },
-  { id: 'internal-promotion',  ar: 'ترقية داخلية',         en: 'Internal promotion',  emoji: '👔' },
-];
+type PreflightShape = Awaited<ReturnType<typeof trpc.radar.preflight>>;
 
-const INDUSTRIES: { id: Industry; ar: string; en: string }[] = [
-  { id: 'oil-gas',           ar: 'النفط والغاز',     en: 'Oil & gas' },
-  { id: 'tech',              ar: 'التقنية',           en: 'Tech' },
-  { id: 'finance',           ar: 'المالية',           en: 'Finance' },
-  { id: 'healthcare',        ar: 'الرعاية الصحية',    en: 'Healthcare' },
-  { id: 'legal',             ar: 'القانون',           en: 'Legal' },
-  { id: 'consulting',        ar: 'الاستشارات',        en: 'Consulting' },
-  { id: 'government',        ar: 'الحكومة',           en: 'Government' },
-  { id: 'academic',          ar: 'الأكاديمي',         en: 'Academic' },
-  { id: 'entrepreneurship',  ar: 'ريادة الأعمال',     en: 'Entrepreneurship' },
-  { id: 'real-estate',       ar: 'العقارات',          en: 'Real estate' },
-  { id: 'other',             ar: 'مجال آخر',          en: 'Other' },
-];
-
-// Canonical Radar cost — must match products.radar.token_cost in Supabase.
-const COST = 149;
-
-export default function ProfileInput() {
-  const { i18n } = useTranslation();
+export default function RadarPreflight() {
+  const { t, i18n } = useTranslation();
   const isAr = i18n.language === 'ar';
   const [, navigate] = useLocation();
-  const { profile } = useAuth();
-  const balance = profile?.token_balance ?? 0;
 
-  const [url, setUrl] = useState('');
-  const [urlError, setUrlError] = useState<string | null>(null);
-  const [goal, setGoal] = useState<TargetGoal | null>(null);
-  const [industry, setIndustry] = useState<Industry | null>(null);
-  const [customIndustry, setCustomIndustry] = useState('');
-  const [language, setLanguage] = useState<ReportLang>(isAr ? 'ar' : 'en');
-  // Keep report language in sync with UI language so AR users always get AR
-  // analysis output, EN users always get EN (B.8).
-  useEffect(() => { setLanguage(isAr ? 'ar' : 'en'); }, [isAr]);
-  const [showAdvanced, setShowAdvanced] = useState(false);
-  const [targetRole, setTargetRole] = useState('');
-  const [targetCompany, setTargetCompany] = useState('');
+  const [pre, setPre] = useState<PreflightShape | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const enoughBalance = balance >= COST;
-  const customIndustryReady = industry !== 'other' || customIndustry.trim().length >= 2;
-  const canStart = !!url.trim() && !urlError && !!goal && !!industry && customIndustryReady && enoughBalance;
+  const [overrideOpen, setOverrideOpen] = useState(false);
+  const [overrideRole, setOverrideRole] = useState('');
+  const [overrideSubmitting, setOverrideSubmitting] = useState(false);
 
-  function handleUrlBlur() {
-    if (!url.trim()) {
-      setUrlError(null);
-      return;
-    }
-    const r = validateAndNormalizeLinkedInUrl(url);
-    if (!r.valid) {
-      setUrlError(isAr ? (r.errorMessageAr || 'رابط غير صالح') : (r.errorMessageEn || 'Invalid URL'));
-    } else {
-      setUrlError(null);
-      setUrl(r.normalizedUrl || url);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await trpc.radar.preflight();
+        if (cancelled) return;
+        setPre(data);
+        if (!data.profile) {
+          // Race against AuthGate — if the user really has no profile, push them to onboarding.
+          navigate('/v2/onboarding', { replace: true });
+        }
+      } catch (e) {
+        if (cancelled) return;
+        setError(e instanceof Error ? e.message : String(e));
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [navigate]);
+
+  function startAnalysis(override?: string) {
+    const params = new URLSearchParams();
+    if (override) params.set('override', override);
+    navigate(`/v2/analyze/loading${params.toString() ? `?${params.toString()}` : ''}`);
+  }
+
+  function viewCached() {
+    if (pre?.latestCacheId) {
+      navigate(`/v2/analyze/result/${pre.latestCacheId}`);
     }
   }
 
-  function handleStart() {
-    if (!canStart || !goal || !industry) return;
-    const id = newTempAnalysisId();
-    const params: AnalysisParams = {
-      linkedinUrl: url.trim(),
-      targetGoal: goal,
-      industry,
-      customIndustryLabel: industry === 'other' ? customIndustry.trim() : undefined,
-      targetRole: targetRole.trim() || undefined,
-      targetCompany: targetCompany.trim() || undefined,
-      // One language for the whole report. The paste-ready "suggested" copy
-      // language is derived server-side from this + the profile's actual
-      // text (see analyzeTargeted).
-      reportLanguage: language,
-    };
-    setAnalysisParams(id, params);
-    navigate(`/v2/analyze/loading?id=${id}`);
+  async function handleOverrideSubmit() {
+    if (!overrideRole.trim()) return;
+    setOverrideSubmitting(true);
+    try {
+      // Persist a 24h section_override so the analysis pages can pick it up,
+      // then start the run with the same role.
+      await trpc.radar.sessionOverride({ targetRole: overrideRole.trim() });
+      setOverrideOpen(false);
+      startAnalysis(overrideRole.trim());
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setOverrideSubmitting(false);
+    }
   }
 
-  // DNA score — reused from V1 to give the user readiness feedback before
-  // they spend tokens. Pure derived state.
-  const dnaScore = useMemo(() => {
-    let s = 0;
-    if (url.trim() && !urlError) s += 30;
-    if (goal) s += 25;
-    if (industry) s += 25;
-    if (language) s += 10;
-    if (targetRole.trim() || targetCompany.trim()) s += 10;
-    return s;
-  }, [url, urlError, goal, industry, language, targetRole, targetCompany]);
+  if (loading) {
+    return (
+      <Phone>
+        <Topbar
+          sticky
+          bg="canvas"
+          leading={
+            <span className="px-2 font-ar text-[15px] font-bold text-v2-ink">
+              {t('radar.title')}
+            </span>
+          }
+        />
+        <div className="flex-1 px-[22px] pt-6">
+          <Skeleton variant="text" lines={2} className="mb-6" />
+          <Skeleton variant="card" className="mb-4" />
+          <Skeleton variant="card" />
+        </div>
+      </Phone>
+    );
+  }
+
+  if (!pre?.profile) {
+    // AuthGate should have caught this — render a manual nudge as a fallback.
+    return (
+      <Phone>
+        <Topbar
+          sticky
+          bg="canvas"
+          leading={<span className="px-2 font-ar text-[15px] font-bold text-v2-ink">{t('radar.title')}</span>}
+        />
+        <div className="flex-1 px-[22px] pt-10">
+          <Card padding="lg" radius="lg" className="text-center">
+            <Eyebrow className="mb-2 block">RADAR</Eyebrow>
+            <h2 className="font-ar text-[18px] font-bold text-v2-ink">
+              {t('radar.errors.noCareerProfile')}
+            </h2>
+            <p className="mt-2 font-ar text-[13px] text-v2-dim">
+              {isAr
+                ? 'أكمل البروفايل المهني لتشغيل الرادار'
+                : 'Complete your career profile to run the Radar.'}
+            </p>
+            <Button
+              variant="primary"
+              className="mt-5"
+              onClick={() => navigate('/v2/onboarding')}
+            >
+              {isAr ? 'إكمال البروفايل' : 'Complete profile'}
+            </Button>
+          </Card>
+        </div>
+      </Phone>
+    );
+  }
+
+  const profile = pre.profile;
+  const triggers = pre.triggers ?? [];
+  const hasTriggers = triggers.length > 0;
 
   return (
     <Phone>
@@ -122,196 +156,185 @@ export default function ProfileInput() {
         sticky
         bg="canvas"
         leading={
-          <span className="font-ar text-[15px] font-bold text-v2-ink px-2">
-            {isAr ? 'تحليل البروفايل' : 'Profile analysis'}
+          <span className="px-2 font-ar text-[15px] font-bold text-v2-ink">
+            {t('radar.title')}
           </span>
         }
       />
 
       <div className="flex-1 px-[22px] pb-[110px] lg:px-0 lg:pb-0">
         <div className="mt-5 mb-6 lg:mt-2 lg:mb-8">
-          <Eyebrow className="mb-1.5 block">{isAr ? `الرادار · ${COST} استخدام` : `RADAR · ${COST} USES`}</Eyebrow>
+          <Eyebrow className="mb-1.5 block">RADAR</Eyebrow>
           <h1 className="font-ar font-bold leading-tight text-v2-ink text-[26px] lg:text-[32px]">
-            {isAr ? 'لنحلل بروفايلك بدقة' : "Let's analyse your profile."}
+            {t('radar.preflight.welcome')}
           </h1>
           <p className="mt-2 font-ar text-[14px] text-v2-dim">
-            {isAr
-              ? 'أدخل رابط LinkedIn، اختر هدفك، وسنُجري تحليلاً عميقاً ومخصصاً لأهدافك'
-              : 'Drop your LinkedIn URL, pick a goal, and we will run a deep, tailored analysis.'}
+            {t('radar.subtitle')}
           </p>
         </div>
 
-        <div className="space-y-4 lg:space-y-5">
-          <Card padding="lg" radius="lg">
-            <Input
-              label={isAr ? 'رابط البروفايل على لينكد إن' : 'LinkedIn profile URL'}
-              dir="ltr"
-              type="url"
-              placeholder="https://linkedin.com/in/username"
-              value={url}
-              onChange={(e) => { setUrl(e.target.value); if (urlError) setUrlError(null); }}
-              onBlur={handleUrlBlur}
-              error={!!urlError}
-              hint={urlError ?? (isAr ? 'سنفحص البروفايل قبل خصم أي توكن' : 'We verify the profile before charging any token')}
-            />
-          </Card>
-
-          <Card padding="lg" radius="lg">
-            <Eyebrow className="mb-2 block">{isAr ? 'الهدف' : 'Goal'}</Eyebrow>
-            <div className="flex flex-wrap gap-2">
-              {GOALS.map((g) => {
-                const active = goal === g.id;
-                return (
-                  <button
-                    key={g.id}
-                    type="button"
-                    onClick={() => setGoal(g.id)}
-                    className={`inline-flex items-center gap-1.5 rounded-v2-pill px-3.5 py-2 font-ar text-[13px] font-semibold border transition-colors duration-150 ease-out cursor-pointer ${
-                      active
-                        ? 'border-teal-600 bg-teal-50 text-teal-700'
-                        : 'border-v2-line bg-v2-surface text-v2-body hover:bg-v2-canvas-2'
-                    }`}
-                  >
-                    <span aria-hidden>{g.emoji}</span>
-                    {isAr ? g.ar : g.en}
-                  </button>
-                );
-              })}
+        {error && (
+          <Card padding="md" radius="md" className="mb-4 border-rose-200 bg-rose-50">
+            <div className="flex items-start gap-2">
+              <AlertCircle size={16} className="mt-0.5 shrink-0 text-rose-600" />
+              <p className="font-ar text-[13px] text-rose-700">{error}</p>
             </div>
           </Card>
+        )}
 
-          <Card padding="lg" radius="lg">
-            <Eyebrow className="mb-2 block">{isAr ? 'المجال' : 'Industry'}</Eyebrow>
-            <div className="flex flex-wrap gap-2">
-              {INDUSTRIES.map((ind) => {
-                const active = industry === ind.id;
-                return (
-                  <button
-                    key={ind.id}
-                    type="button"
-                    onClick={() => {
-                      setIndustry(ind.id);
-                      if (ind.id !== 'other') setCustomIndustry('');
-                    }}
-                    className={`rounded-v2-pill px-3.5 py-2 font-ar text-[13px] font-semibold border transition-colors duration-150 ease-out cursor-pointer ${
-                      active
-                        ? 'border-teal-600 bg-teal-50 text-teal-700'
-                        : 'border-v2-line bg-v2-surface text-v2-body hover:bg-v2-canvas-2'
-                    }`}
-                  >
-                    {isAr ? ind.ar : ind.en}
-                  </button>
-                );
-              })}
+        {/* Snapshot card — what we already know about you. R02 in practice. */}
+        <Card padding="lg" radius="lg" elevated className="mb-4">
+          <div className="grid gap-4">
+            <div>
+              <Eyebrow className="mb-1 block">{t('radar.preflight.yourTargetRole')}</Eyebrow>
+              <div className="flex items-center gap-2">
+                <Briefcase size={16} className="shrink-0 text-v2-mute" />
+                <span className="font-ar text-[16px] font-semibold text-v2-ink">
+                  {profile.target_role}
+                </span>
+                <span className="font-ar text-[12px] text-v2-mute">· {profile.industry}</span>
+              </div>
             </div>
-            {industry === 'other' && (
-              <div className="mt-3">
+            <div>
+              <Eyebrow className="mb-1 block">{t('radar.preflight.yourLinkedin')}</Eyebrow>
+              <div className="flex items-center gap-2">
+                <LinkIcon size={16} className="shrink-0 text-v2-mute" />
+                {profile.linkedin_url ? (
+                  <a
+                    href={profile.linkedin_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    dir="ltr"
+                    className="font-en text-[13px] text-v2-body underline-offset-2 hover:underline"
+                  >
+                    {profile.linkedin_url.replace(/^https?:\/\//, '')}
+                  </a>
+                ) : (
+                  <span className="font-ar text-[13px] text-v2-mute">
+                    {isAr ? 'غير مضاف' : 'not set'}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Override link — opens an inline panel rather than a modal */}
+            {!overrideOpen ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setOverrideRole(profile.target_role);
+                  setOverrideOpen(true);
+                }}
+                className="self-start font-ar text-[13px] font-semibold text-teal-700 underline-offset-2 hover:underline"
+              >
+                {t('radar.preflight.overrideForSession')}
+              </button>
+            ) : (
+              <div className="mt-1 rounded-v2-md border border-teal-200 bg-teal-50 p-3">
                 <Input
-                  label={isAr ? 'ما هو مجالك؟' : 'What is your industry?'}
-                  placeholder={isAr ? 'اكتب مجالك هنا...' : 'Type your industry...'}
-                  value={customIndustry}
-                  onChange={(e) => setCustomIndustry(e.target.value)}
-                  maxLength={60}
-                  dir={isAr ? 'rtl' : 'ltr'}
+                  label={t('radar.preflight.yourTargetRole')}
+                  value={overrideRole}
+                  onChange={(e) => setOverrideRole(e.target.value)}
+                  maxLength={120}
+                  hint={isAr
+                    ? 'يستخدم لهذا التحليل فقط — لن يُعدّل بروفايلك المهني'
+                    : 'Used for this analysis only — your career profile is unchanged.'}
                 />
+                <div className="mt-3 flex gap-2">
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={handleOverrideSubmit}
+                    disabled={!overrideRole.trim() || overrideSubmitting}
+                  >
+                    {overrideSubmitting
+                      ? (isAr ? 'جارٍ البدء…' : 'Starting…')
+                      : (isAr ? 'حلّل بهذا الدور' : 'Analyse with this role')}
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setOverrideOpen(false)}
+                  >
+                    {isAr ? 'إلغاء' : 'Cancel'}
+                  </Button>
+                </div>
               </div>
             )}
-          </Card>
+          </div>
+        </Card>
 
-          <Card padding="lg" radius="lg">
-            <Eyebrow className="mb-2 block">{isAr ? 'لغة التحليل' : 'Report language'}</Eyebrow>
-            <p className="mb-2.5 font-ar text-[12px] text-v2-dim">
-              {isAr
-                ? 'اللغة التي تقرأ بها كل تفاصيل التحليل. النص المُقترَح للصق على بروفايلك سيكون بنفس لغة بروفايلك الحالي (لو اخترت العربية)، أو بالإنجليزية (لو اخترت الإنجليزية)'
-                : 'The language all explanations are written in. The paste-ready suggested copy follows your profile\'s actual language when you pick Arabic, or is always English when you pick English.'}
-            </p>
-            <div className="flex gap-2">
-              {(['ar', 'en'] as ReportLang[]).map((l) => {
-                const active = language === l;
-                return (
-                  <button
-                    key={l}
-                    type="button"
-                    onClick={() => setLanguage(l)}
-                    className={`flex-1 rounded-v2-md px-4 py-3 font-ar text-[14px] font-semibold border transition-colors duration-150 ease-out cursor-pointer ${
-                      active
-                        ? 'border-teal-600 bg-teal-50 text-teal-700'
-                        : 'border-v2-line bg-v2-surface text-v2-body hover:bg-v2-canvas-2'
-                    }`}
-                  >
-                    {l === 'ar' ? '🇸🇦 العربية' : '🇬🇧 English'}
-                  </button>
-                );
-              })}
+        {/* Trigger chip(s) — only shown when something has actually changed
+            since the last Radar run. */}
+        {hasTriggers && (
+          <Card padding="md" radius="md" className="mb-4 border-amber-200 bg-amber-50">
+            <div className="flex items-start gap-2">
+              <Bell size={16} className="mt-0.5 shrink-0 text-amber-700" />
+              <div className="flex-1">
+                <p className="font-ar text-[13px] font-semibold text-amber-900">
+                  {t('radar.preflight.triggersDetected')}
+                </p>
+                <ul className="mt-1 list-disc space-y-0.5 ps-4 font-ar text-[12px] text-amber-800">
+                  {triggers.slice(0, 3).map((tr, i) => (
+                    <li key={i}>{readableTrigger(tr.type, isAr)}</li>
+                  ))}
+                </ul>
+              </div>
             </div>
           </Card>
+        )}
 
-          <Card padding="lg" radius="lg">
-            <button
-              type="button"
-              onClick={() => setShowAdvanced((s) => !s)}
-              className="flex w-full items-center justify-between font-ar text-[14px] font-semibold text-v2-ink cursor-pointer"
+        {/* Primary CTA — depends on whether a cache hit is available for the
+            canonical target role. Override flow uses its own button above. */}
+        <div className="flex flex-col gap-2.5">
+          {pre.hasCache && pre.latestCacheId ? (
+            <>
+              <Button
+                variant="primary"
+                size="lg"
+                fullWidth
+                leadingIcon={<Sparkles size={18} />}
+                onClick={viewCached}
+              >
+                {t('radar.preflight.viewCached')}
+              </Button>
+              <Button
+                variant="secondary"
+                size="md"
+                fullWidth
+                leadingIcon={<RefreshCw size={16} />}
+                onClick={() => startAnalysis()}
+              >
+                {isAr
+                  ? `تحليل جديد (${pre.cost} توكن)`
+                  : `Fresh analysis (${pre.cost} tokens)`}
+              </Button>
+            </>
+          ) : (
+            <Button
+              variant="primary"
+              size="lg"
+              fullWidth
+              leadingIcon={<Sparkles size={18} />}
+              onClick={() => startAnalysis()}
             >
-              <span>{isAr ? 'خيارات متقدمة (اختياري)' : 'Advanced options (optional)'}</span>
-              {showAdvanced ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-            </button>
-            {showAdvanced && (
-              <div className="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-2 lg:gap-4">
-                <Input
-                  label={isAr ? 'الدور المستهدف' : 'Target role'}
-                  placeholder={isAr ? 'مدير مشاريع، مهندس...' : 'Project manager, engineer...'}
-                  value={targetRole}
-                  onChange={(e) => setTargetRole(e.target.value)}
-                />
-                <Input
-                  label={isAr ? 'الشركة المستهدفة' : 'Target company'}
-                  placeholder={isAr ? 'أرامكو، STC...' : 'Aramco, STC...'}
-                  value={targetCompany}
-                  onChange={(e) => setTargetCompany(e.target.value)}
-                />
-              </div>
-            )}
-          </Card>
-
-          {/* Readiness + balance summary */}
-          <Card padding="md" radius="lg" className={enoughBalance ? '' : 'border-rose-200 bg-rose-50'}>
-            <div className="flex items-center justify-between gap-3">
-              <div className="font-ar">
-                <Eyebrow>{isAr ? 'جاهزية المدخلات' : 'Input readiness'}</Eyebrow>
-                <div className="mt-1 text-[18px] font-bold text-v2-ink">{dnaScore}%</div>
-              </div>
-              <div className="text-end font-ar">
-                <Eyebrow>{isAr ? 'رصيدك' : 'Balance'}</Eyebrow>
-                <div className={`mt-1 text-[14px] font-semibold ${enoughBalance ? 'text-v2-ink' : 'text-rose-700'}`}>
-                  {balance} {isAr ? 'توكن' : 'tokens'}
-                </div>
-                <div className="mt-0.5 text-[11px] text-v2-dim">
-                  {isAr ? `يحتاج التحليل ${COST} توكن` : `Analysis needs ${COST} tokens`}
-                </div>
-              </div>
-            </div>
-          </Card>
-
-          <Button
-            variant="primary"
-            size="lg"
-            fullWidth
-            disabled={!canStart}
-            onClick={handleStart}
-          >
-            {isAr ? `ابدأ التحليل (${COST} توكن)` : `Start analysis (${COST} tokens)`}
-          </Button>
-          {!enoughBalance && (
-            <p className="text-center font-ar text-[12px] font-semibold text-rose-700">
-              {isAr ? 'الرصيد غير كافٍ — أعِد الشحن من صفحة الباقات' : 'Not enough tokens — top up on the Pricing page.'}
-            </p>
+              {isAr
+                ? `ابدأ التحليل (${pre.cost} توكن)`
+                : `Start Analysis (${pre.cost} tokens)`}
+            </Button>
           )}
-
-          {/* Past analyses — download PDF/DOCX or re-open. Pattern mirrors the
-              CV history list on /v2/cvs. The component loads its own data so
-              this page doesn't take on extra state. */}
-          <RadarHistory />
+          <p className="text-center font-ar text-[12px] text-v2-mute">
+            <NumDisplay>{pre.cost}</NumDisplay>{' '}
+            {isAr ? 'توكن — تخصم بعد نجاح التحليل فقط' : 'tokens — only charged on success'}
+          </p>
         </div>
+
+        {pre.latestCachedAt && (
+          <p className="mt-4 text-center font-ar text-[11px] text-v2-mute">
+            {t('radar.result.cachedFrom')}:{' '}
+            <NumDisplay>{formatShortDate(pre.latestCachedAt, isAr)}</NumDisplay>
+          </p>
+        )}
       </div>
 
       <BottomNav
@@ -324,8 +347,35 @@ export default function ProfileInput() {
         ]}
         fabIcon="arrow"
         fabLabel={isAr ? 'ابدأ التحليل' : 'Start analysis'}
-        onFabClick={handleStart}
+        onFabClick={() => startAnalysis()}
       />
     </Phone>
   );
+}
+
+function readableTrigger(type: string, isAr: boolean): string {
+  const map: Record<string, [string, string]> = {
+    '5_new_posts':        ['نشرت 5 منشورات منذ آخر تحليل',          'You have published 5 posts since your last analysis'],
+    'target_role_changed':['تغيّر دورك المستهدف',                   'Your target role has changed'],
+    'new_resume':         ['أنشأت سيرة ذاتية جديدة',                 'You created a new resume'],
+    'linkedin_first_link':['أضفت رابط LinkedIn لأول مرة',            'You linked LinkedIn for the first time'],
+    '30_days_passed':     ['مرّ شهر على آخر تحليل',                  '30 days have passed since your last analysis'],
+    'profile_data_changed':['تحدّثت بياناتك في البروفايل المهني',     'Your career profile data has changed'],
+    'manual':             ['لم تجرِ تحليلاً بعد',                     'You have not run an analysis yet'],
+  };
+  const e = map[type];
+  if (!e) return type;
+  return isAr ? e[0] : e[1];
+}
+
+function formatShortDate(iso: string, isAr: boolean): string {
+  try {
+    const d = new Date(iso);
+    const fmt = new Intl.DateTimeFormat(isAr ? 'en-GB' : 'en-GB', {
+      day: '2-digit', month: 'short', year: 'numeric',
+    });
+    return fmt.format(d);
+  } catch {
+    return iso;
+  }
 }

@@ -2628,7 +2628,72 @@
     }
   },
   "radar": {
-    "_placeholder": "يُملأ في Sprint 3"
+    "_placeholder": "يُملأ في Sprint 3",
+    "title": "الرادار",
+    "subtitle": "اكتشف الفجوات وحقّق التقدم",
+    "preflight": {
+      "welcome": "مرحباً بك في الرادار",
+      "yourTargetRole": "الدور المستهدف",
+      "yourLinkedin": "حساب لينكد إن",
+      "overrideForSession": "تعديل لجلسة واحدة",
+      "startAnalysis": "ابدأ التحليل ({{cost}} توكن)",
+      "viewCached": "عرض آخر تحليل (مجاناً)",
+      "triggersDetected": "تم اكتشاف تحديثات منذ آخر تحليل"
+    },
+    "loading": {
+      "discovering": "اكتشاف بياناتك...",
+      "comparing": "مقارنة مع متطلبات الدور...",
+      "revealing": "كشف الفرص...",
+      "almostThere": "نشتغل عليه، اقترب من النهاية..."
+    },
+    "result": {
+      "currentScore": "السكور الحالي",
+      "targetScore": "السكور المتوقع",
+      "afterQuickWins": "بعد تطبيق Quick Wins",
+      "quickWins": "تحسينات سريعة",
+      "strengths": "نقاط القوة",
+      "gaps": "الفجوات",
+      "suggestedActions": "إجراءات مقترحة",
+      "apply": "تطبيق",
+      "applied": "تم التطبيق",
+      "skip": "تخطي",
+      "showMore": "عرض المزيد",
+      "highImpact": "تأثير عالٍ",
+      "mediumImpact": "تأثير متوسط",
+      "lowImpact": "تأثير منخفض",
+      "veryLowEffort": "جهد قليل جداً",
+      "lowEffort": "جهد قليل",
+      "mediumEffort": "جهد متوسط",
+      "highEffort": "جهد عالٍ",
+      "openInResume": "افتح في السيرة",
+      "openInContent": "افتح في المنشورات",
+      "openInProfile": "افتح في الملف المهني",
+      "reAnalyze": "إعادة التحليل",
+      "editTargetRole": "تعديل الدور المستهدف",
+      "cachedFrom": "آخر تحليل في",
+      "fromCache": "من الكاش · 0 توكن",
+      "freshAnalysis": "تحليل جديد",
+      "severity": {
+        "high": "عالية",
+        "medium": "متوسطة",
+        "low": "منخفضة"
+      }
+    },
+    "triggers": {
+      "fiveNewPosts": "نشرت 5 منشورات منذ آخر تحليل",
+      "targetRoleChanged": "تغيّر دورك المستهدف",
+      "newResume": "أنشأت سيرة ذاتية جديدة",
+      "linkedinFirstLink": "أضفت رابط لينكد إن لأول مرة",
+      "thirtyDaysPassed": "مرّ شهر على آخر تحليل",
+      "profileDataChanged": "تحدّثت بياناتك في البروفايل المهني",
+      "manual": "لم تجرِ تحليلاً بعد"
+    },
+    "errors": {
+      "noCareerProfile": "أكمل البروفايل المهني أولاً",
+      "insufficientTokens": "رصيدك غير كافٍ. أضف توكنات أو ترقّ خطتك",
+      "analysisFailed": "فشل التحليل. تم استرداد توكناتك",
+      "linkedinUnreachable": "تعذّر الوصول إلى بروفايل لينكد إن"
+    }
   },
   "resume": {
     "_placeholder": "يُملأ في Sprint 4"

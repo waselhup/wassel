@@ -848,4 +848,114 @@ export const trpc = {
     generateWeeklyJournal: (input?: { language?: 'ar' | 'en' }) =>
       trpcMutation<{ id: string; created: boolean }>('warRoom.generateWeeklyJournal', input || {}),
   },
+  radar: {
+    preflight: () => trpcQuery<{
+      ready: boolean;
+      profile: {
+        target_role: string;
+        industry: string;
+        linkedin_url: string | null;
+        primary_language: 'ar' | 'en';
+      } | null;
+      cost: number;
+      hasCache: boolean;
+      latestCacheId: string | null;
+      latestCachedAt: string | null;
+      triggers: Array<{ type: string; metadata?: Record<string, unknown> }>;
+    }>('radar.preflight'),
+    run: (input?: { overrideTargetRole?: string; language?: 'ar' | 'en'; forceRefresh?: boolean }) =>
+      trpcMutation<{
+        cacheId: string;
+        analysisId: string;
+        isCacheHit: boolean;
+        tokensCharged: number;
+        walletUsed: 'bonus' | 'subscription' | 'topup' | 'mixed' | null;
+        result: RadarResultShape;
+      }>('radar.run', input ?? {}),
+    getCached: (input?: { cacheId?: string }) =>
+      trpcQuery<{
+        cacheId: string;
+        targetRole: string;
+        language: 'ar' | 'en';
+        result: RadarResultShape;
+        currentScore: number;
+        targetScore: number;
+        sourceLinkedinUrl: string | null;
+        hitCount: number;
+        createdAt: string;
+        lastAccessedAt: string;
+      }>('radar.getCached', input ?? {}),
+    history: (input?: { limit?: number }) =>
+      trpcQuery<{
+        analyses: Array<{
+          id: string;
+          cache_id: string | null;
+          target_role: string;
+          is_cache_hit: boolean;
+          tokens_charged: number;
+          wallet_used: string | null;
+          current_score: number | null;
+          target_score: number | null;
+          language: 'ar' | 'en';
+          duration_ms: number | null;
+          created_at: string;
+        }>;
+      }>('radar.history', input ?? {}),
+    applyFix: (input: { cacheId: string; fixIndex: number }) =>
+      trpcMutation<{ success: boolean; appliedFixId: string }>('radar.applyFix', input),
+    revertFix: (input: { appliedFixId: string }) =>
+      trpcMutation<{ success: boolean }>('radar.revertFix', input),
+    refreshTriggers: () =>
+      trpcQuery<{
+        hasTriggered: boolean;
+        triggers: Array<{ type: string; metadata?: Record<string, unknown> }>;
+      }>('radar.refreshTriggers'),
+    markTriggerActedUpon: (input: { triggerId: string }) =>
+      trpcMutation<{ success: boolean }>('radar.markTriggerActedUpon', input),
+    sessionOverride: (input: { targetRole: string; expiresInHours?: number }) =>
+      trpcMutation<{ override: { id: string; section: string; payload: Record<string, unknown>; expires_at: string } }>(
+        'radar.sessionOverride',
+        input,
+      ),
+    clearOverride: (input: { overrideId: string }) =>
+      trpcMutation<{ success: boolean }>('radar.clearOverride', input),
+  },
+};
+
+/**
+ * Shape of the RadarResult returned by `radar.run` and `radar.getCached`.
+ * Mirrors server/_core/lib/radar-engine.ts RadarResultSchema. Kept here
+ * (rather than imported) so the client bundle doesn't pull in the engine.
+ */
+export type RadarResultShape = {
+  strengths: Array<{ title: string; detail: string }>;
+  gaps: Array<{ title: string; detail: string; severity: 'low' | 'medium' | 'high' }>;
+  included_fixes: Array<{
+    title: string;
+    field: 'headline' | 'about' | 'experience' | 'skills';
+    suggestion: string;
+    rationale: string;
+    impact_weight: number;
+  }>;
+  suggested_actions: Array<{
+    title: string;
+    detail: string;
+    pillar: 'resume' | 'content' | 'profile';
+    deeplink: string;
+  }>;
+  quick_wins: Array<{
+    title: string;
+    impact: 'high' | 'medium' | 'low';
+    effort: 'very_low' | 'low' | 'medium' | 'high';
+    area: string;
+    score: number;
+  }>;
+  meta: {
+    current_score: number;
+    target_score: number;
+    target_role: string;
+    profile_hash: string;
+    language: 'ar' | 'en';
+    generated_at: string;
+  };
 };

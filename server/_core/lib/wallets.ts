@@ -212,3 +212,83 @@ export async function creditWallet(
 
   return { success: true, new_balance: newBalance };
 }
+
+/**
+ * Refund a previous deduction by reversing the exact `debited[]` breakdown
+ * the original deduction wrote. Restores the same wallets, in the same
+ * proportions, and writes one `refunded`-status audit row per wallet so the
+ * trail makes sense. Used by the Radar engine (and any future surface that
+ * follows R03 Bowling-Lane Rules — if the operation fails after deduction,
+ * the user's wallet is made whole again).
+ *
+ * The caller is responsible for matching `operation` to the original op so
+ * auditing pairs the refund to the right charge.
+ */
+export async function refundTokens(
+  supabase: SupabaseClient,
+  userId: string,
+  debited: DeductedBreakdown,
+  operation: string,
+  metadata?: Record<string, unknown>
+): Promise<{ success: boolean; refunded: number; errors: string[] }> {
+  if (!debited || debited.length === 0) {
+    return { success: true, refunded: 0, errors: [] };
+  }
+
+  const errors: string[] = [];
+  let totalRefunded = 0;
+
+  for (const entry of debited) {
+    if (entry.amount <= 0) continue;
+    const table = entry.wallet === 'bonus' ? 'wallet_bonus'
+                : entry.wallet === 'subscription' ? 'wallet_subscription'
+                : 'wallet_topup';
+
+    // Read current balance, add back the original amount.
+    const { data: existing, error: readErr } = await supabase
+      .from(table)
+      .select('balance')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (readErr) {
+      errors.push(`${entry.wallet}: read failed — ${readErr.message}`);
+      continue;
+    }
+
+    const currentBalance = Number((existing as { balance?: number } | null)?.balance ?? 0);
+    const newBalance = currentBalance + entry.amount;
+
+    const { error: updateErr } = await supabase
+      .from(table)
+      .upsert({
+        user_id: userId,
+        balance: newBalance,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id' });
+
+    if (updateErr) {
+      errors.push(`${entry.wallet}: write failed — ${updateErr.message}`);
+      continue;
+    }
+
+    totalRefunded += entry.amount;
+
+    const { error: txErr } = await supabase.from('wallet_transactions').insert({
+      user_id: userId,
+      wallet: entry.wallet,
+      direction: 'credit',
+      amount: entry.amount,
+      operation,
+      status: 'refunded',
+      balance_after: newBalance,
+      metadata: metadata ?? null,
+    });
+
+    if (txErr) {
+      console.warn(`[wallets] refund audit row failed (non-fatal) for ${entry.wallet}:`, txErr.message);
+    }
+  }
+
+  return { success: errors.length === 0, refunded: totalRefunded, errors };
+}

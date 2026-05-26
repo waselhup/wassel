@@ -79,6 +79,10 @@ Output rules:
 - 3–5 suggested actions (larger moves; each must deeplink into Resume, Content, or Profile pillars)
 
 Each item is short: title ≤ 60 chars, detail ≤ 180 chars.
+
+Scoring:
+- `meta.current_score` is your honest 0–100 assessment of how well the user's profile already fits the target role. Anchor it: complete profile with strong narrative + target-aligned skills + recent activity ≈ 70–85. Sparse profile or wrong angle ≈ 30–50. Never give 100; even excellent profiles have headroom.
+- For every `included_fix`, set `impact_weight` to a number in [0, 1]: 1.0 if applying this fix closes a high-severity gap; 0.6 for medium; 0.3 for low. The frontend uses this to compute the projected Target Score (capped 95) and to rank Quick Wins.
 ```
 
 ```user
@@ -110,6 +114,7 @@ type RadarResult = {
     field: 'headline' | 'about' | 'experience' | 'skills';
     suggestion: string;
     rationale: string;
+    impact_weight: number;       // 0.0–1.0; drives Target Score and Quick Wins
   }>;
   suggested_actions: Array<{
     title: string;
@@ -117,5 +122,8 @@ type RadarResult = {
     pillar: 'resume' | 'content' | 'profile';
     deeplink: '/v2/cvs/new' | '/v2/posts/new' | '/v2/settings/career' | string;
   }>;
+  meta: {
+    current_score: number;       // 0–100 honest assessment of fit-now
+  };
 };
 ```
