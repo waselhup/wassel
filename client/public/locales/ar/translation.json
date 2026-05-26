@@ -2776,7 +2776,134 @@
     }
   },
   "content": {
-    "_placeholder": "يُملأ في Sprint 5"
+    "_placeholder": "يُملأ في Sprint 5",
+    "title": "المحتوى المهني",
+    "subtitle": "ابنِ حضورك المهني",
+    "modes": {
+      "post": {
+        "name": "منشور",
+        "cost": "5 توكن",
+        "duration": "~10 ثانية",
+        "desc": "منشور قصير مرتكز على فكرة واحدة"
+      },
+      "carousel": {
+        "name": "كاروسيل",
+        "cost": "25 توكن",
+        "duration": "~30 ثانية",
+        "desc": "5-8 شرائح تشرح فكرة كاملة"
+      },
+      "repurpose": {
+        "name": "حزمة إعادة توظيف",
+        "cost": "15 توكن",
+        "duration": "~20 ثانية",
+        "desc": "حوّل منشورك إلى كاروسيل + فيديو + متابعة"
+      }
+    },
+    "hub": {
+      "newPost": "+ منشور جديد",
+      "newCarousel": "+ كاروسيل جديد",
+      "newRepurpose": "+ حزمة إعادة توظيف",
+      "chooseMode": "اختر نوع المحتوى",
+      "quickStart": "اقتراحات سريعة",
+      "quickStartHint": "مبنية على بروفايلك",
+      "recent": "الأحدث",
+      "archived": "المؤرشف",
+      "legacy": "محتوى قديم",
+      "emptyState": "لم تنشئ محتوى بعد — ابدأ الآن!"
+    },
+    "preflight": {
+      "yourTopic": "موضوعك",
+      "suggestedTopics": "موضوعات مقترحة لك",
+      "topicPlaceholder": "اكتب موضوعك أو اختر من المقترحات",
+      "pickSource": "اختر منشوراً للإعادة",
+      "noEligibleSources": "لا توجد منشورات قابلة لإعادة التوظيف. أنشئ منشوراً أولاً.",
+      "start": "ابدأ ({{cost}} توكن)",
+      "viewCached": "عرض النسخة الحالية (مجاناً)",
+      "cachedFootnote": "يتم خصم التوكنات بعد نجاح التوليد. لو فشل — يتم استرداد توكناتك تلقائياً."
+    },
+    "generating": {
+      "drafting": "صياغة المحتوى...",
+      "draftingPost": "صياغة المنشور...",
+      "preparing": "تحضير الشرائح...",
+      "writing": "كتابة المحتوى...",
+      "formatting": "تنسيق المرئيات...",
+      "analyzing": "تحليل المنشور الأصلي...",
+      "bundling": "بناء الحزمة...",
+      "keepTabOpen": "جارٍ التوليد — لا تُغلق النافذة",
+      "almostThere": "لحظة، اقترب من النهاية...",
+      "ready": "✓ المحتوى جاهز",
+      "failed": "✕ فشل التوليد",
+      "noTokensCharged": "لم يتم خصم أي توكنات. يمكنك إعادة المحاولة بأمان"
+    },
+    "editor": {
+      "titlePost": "منشور",
+      "titleCarousel": "كاروسيل",
+      "titleRepurpose": "حزمة إعادة توظيف",
+      "copy": "نسخ",
+      "copied": "تم النسخ ✓",
+      "exportPdf": "تصدير PDF",
+      "exporting": "جارٍ التصدير...",
+      "markPublished": "تم النشر على LinkedIn",
+      "publishing": "جارٍ التحديث...",
+      "setReminder": "تذكير لاحقاً",
+      "editReminder": "تعديل التذكير",
+      "archive": "أرشفة",
+      "archiving": "جارٍ الأرشفة...",
+      "restore": "استعادة",
+      "refinement": "تحسينات سريعة",
+      "freeRefinements": "{{remaining}} من 5 مجانية",
+      "paidRefinement": "5 توكنات/تحسين",
+      "afterFive": "بعد 5، كل تعديل = 5 توكنات",
+      "legacyBanner": "هذا محتوى قديم للقراءة فقط. ابدأ محتوى جديداً لتفعيل التحسينات.",
+      "toneViolationsBanner": "لاحظ المحرر بعض الأنماط غير المُفضّلة في النص. يمكنك تحسينها عبر التحسينات السريعة.",
+      "cachedBadge": "مخزّن — 0 توكن",
+      "chips": {
+        "shorter": "اجعله أقصر",
+        "longer": "اجعله أطول",
+        "moreProfessional": "أكثر احترافية",
+        "morePersonal": "أكثر شخصية",
+        "differentHook": "افتتاحية مختلفة",
+        "differentCta": "دعوة مختلفة",
+        "rephrase": "إعادة صياغة"
+      },
+      "tabs": {
+        "carousel": "الكاروسيل",
+        "videoScript": "نص الفيديو",
+        "followUpPost": "المنشور التالي"
+      },
+      "slide": "الشريحة",
+      "caption": "الوصف",
+      "imagePromptHint": "وصف الصورة (اختياري)",
+      "hookLabel": "الافتتاحية",
+      "beatsLabel": "النقاط",
+      "ctaLabel": "الدعوة",
+      "videoLength": "نص الفيديو (60 ثانية)"
+    },
+    "reminder": {
+      "title": "تذكّرني بالنشر",
+      "in1hour": "بعد ساعة",
+      "in3hours": "بعد 3 ساعات",
+      "tomorrow9am": "غداً 9 صباحاً",
+      "tomorrow7pm": "غداً 7 مساءً",
+      "custom": "وقت مخصص",
+      "pending": "التذكير قيد الانتظار"
+    },
+    "status": {
+      "active": "نشط",
+      "archived": "مؤرشف",
+      "published": "منشور",
+      "legacy": "قديم"
+    },
+    "errors": {
+      "noCareerProfile": "أكمل البروفايل المهني أولاً",
+      "insufficientTokens": "رصيدك غير كافٍ",
+      "generationFailed": "فشل التوليد. تم استرداد توكناتك",
+      "topicRequired": "اكتب موضوعاً أولاً",
+      "sourcePostRequired": "اختر منشوراً للإعادة",
+      "contentNotFound": "لم نجد المحتوى",
+      "copyFailed": "تعذر النسخ — انسخ يدوياً",
+      "legacyReadOnly": "هذا المحتوى للقراءة فقط"
+    }
   },
   "errors": {
     "service_busy": "الخدمة مشغولة حالياً. حاول من جديد بعد لحظات. لم نخصم أي توكن.",

@@ -2778,7 +2778,134 @@
     }
   },
   "content": {
-    "_placeholder": "Populated in Sprint 5"
+    "_placeholder": "Populated in Sprint 5",
+    "title": "Career Content",
+    "subtitle": "Build your professional presence",
+    "modes": {
+      "post": {
+        "name": "Post",
+        "cost": "5 tokens",
+        "duration": "~10 sec",
+        "desc": "A short post anchored on one idea"
+      },
+      "carousel": {
+        "name": "Carousel",
+        "cost": "25 tokens",
+        "duration": "~30 sec",
+        "desc": "5–8 slides that teach one idea"
+      },
+      "repurpose": {
+        "name": "Repurpose Bundle",
+        "cost": "15 tokens",
+        "duration": "~20 sec",
+        "desc": "Turn a post into a carousel + video + follow-up"
+      }
+    },
+    "hub": {
+      "newPost": "+ New Post",
+      "newCarousel": "+ New Carousel",
+      "newRepurpose": "+ New Repurpose Bundle",
+      "chooseMode": "Choose a mode",
+      "quickStart": "Quick start",
+      "quickStartHint": "Based on your profile",
+      "recent": "Recent",
+      "archived": "Archived",
+      "legacy": "Legacy content",
+      "emptyState": "No content yet — start now!"
+    },
+    "preflight": {
+      "yourTopic": "Your topic",
+      "suggestedTopics": "Suggested topics",
+      "topicPlaceholder": "Write your topic or pick a suggestion",
+      "pickSource": "Pick a post to repurpose",
+      "noEligibleSources": "No eligible posts to repurpose. Create a post first.",
+      "start": "Start ({{cost}} tokens)",
+      "viewCached": "View cached (free)",
+      "cachedFootnote": "Tokens are deducted on success. If generation fails, your tokens are automatically refunded."
+    },
+    "generating": {
+      "drafting": "Drafting the content…",
+      "draftingPost": "Drafting the post…",
+      "preparing": "Preparing slides…",
+      "writing": "Writing the content…",
+      "formatting": "Formatting visuals…",
+      "analyzing": "Analyzing the original post…",
+      "bundling": "Building the bundle…",
+      "keepTabOpen": "Generating — keep this tab open.",
+      "almostThere": "Almost there…",
+      "ready": "✓ Content ready",
+      "failed": "✕ Generation failed",
+      "noTokensCharged": "No tokens were charged. You can safely retry."
+    },
+    "editor": {
+      "titlePost": "Post",
+      "titleCarousel": "Carousel",
+      "titleRepurpose": "Repurpose Bundle",
+      "copy": "Copy",
+      "copied": "Copied ✓",
+      "exportPdf": "Export PDF",
+      "exporting": "Exporting…",
+      "markPublished": "Mark as published",
+      "publishing": "Updating…",
+      "setReminder": "Remind me later",
+      "editReminder": "Edit reminder",
+      "archive": "Archive",
+      "archiving": "Archiving…",
+      "restore": "Restore",
+      "refinement": "Quick refinements",
+      "freeRefinements": "{{remaining}} of 5 free",
+      "paidRefinement": "5 tokens / refinement",
+      "afterFive": "After 5, each refinement = 5 tokens",
+      "legacyBanner": "This is legacy content (read-only). Start new content to refine.",
+      "toneViolationsBanner": "The editor flagged a few unwelcome patterns. You can polish them with the quick refinements.",
+      "cachedBadge": "Cached — 0 tokens",
+      "chips": {
+        "shorter": "Make shorter",
+        "longer": "Make longer",
+        "moreProfessional": "More professional",
+        "morePersonal": "More personal",
+        "differentHook": "Different hook",
+        "differentCta": "Different CTA",
+        "rephrase": "Rephrase"
+      },
+      "tabs": {
+        "carousel": "Carousel",
+        "videoScript": "Video script",
+        "followUpPost": "Follow-up post"
+      },
+      "slide": "Slide",
+      "caption": "Caption",
+      "imagePromptHint": "Image prompt (optional)",
+      "hookLabel": "Hook",
+      "beatsLabel": "Beats",
+      "ctaLabel": "CTA",
+      "videoLength": "Video script (60 sec)"
+    },
+    "reminder": {
+      "title": "Remind me to post",
+      "in1hour": "In 1 hour",
+      "in3hours": "In 3 hours",
+      "tomorrow9am": "Tomorrow 9 AM",
+      "tomorrow7pm": "Tomorrow 7 PM",
+      "custom": "Custom time",
+      "pending": "Reminder pending"
+    },
+    "status": {
+      "active": "Active",
+      "archived": "Archived",
+      "published": "Published",
+      "legacy": "Legacy"
+    },
+    "errors": {
+      "noCareerProfile": "Complete your career profile first",
+      "insufficientTokens": "Not enough tokens",
+      "generationFailed": "Generation failed. Your tokens were refunded",
+      "topicRequired": "Write a topic first",
+      "sourcePostRequired": "Pick a post to repurpose",
+      "contentNotFound": "Content not found",
+      "copyFailed": "Copy failed — copy manually",
+      "legacyReadOnly": "This content is read-only"
+    }
   },
   "errors": {
     "service_busy": "The service is busy right now. Try again in a moment. No tokens were spent.",

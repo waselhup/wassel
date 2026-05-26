@@ -27,6 +27,9 @@ const CheckoutSuccess = lazy(() => import('@/pages/v2/CheckoutSuccess'));
 const CheckoutFailed = lazy(() => import('@/pages/v2/CheckoutFailed'));
 const Home = lazy(() => import('@/pages/v2/Home'));
 const Posts = lazy(() => import('@/pages/v2/Posts'));
+const ContentPreflight = lazy(() => import('@/pages/v2/ContentPreflight'));
+const ContentGenerating = lazy(() => import('@/pages/v2/ContentGenerating'));
+const ContentEditor = lazy(() => import('@/pages/v2/ContentEditor'));
 const Profile = lazy(() => import('@/pages/v2/Profile'));
 // /v2/activity retired — its content lives inside /v2/home as the "Recent
 // activity" panel. Legacy path now redirects (see matchActivity below).
@@ -302,6 +305,9 @@ function V2Routes(): ReactElement | null {
   const [matchCvsBuilding] = useRoute('/v2/cvs/building');
   const [matchCvsEditor] = useRoute('/v2/cvs/:id');
   const [matchPosts] = useRoute('/v2/posts');
+  const [matchPostsNew] = useRoute('/v2/posts/new/:type');
+  const [matchPostsGenerating] = useRoute('/v2/posts/generating');
+  const [matchPostsEditor] = useRoute('/v2/posts/:id');
   const [matchProfile] = useRoute('/v2/me');
   const [matchActivity] = useRoute('/v2/activity');
   const [matchOnboarding] = useRoute('/v2/onboarding');
@@ -396,8 +402,19 @@ function V2Routes(): ReactElement | null {
   if (matchCvs) {
     return <ProtectedShell><Suspense fallback={<V2Loader />}><CVBuilder /></Suspense></ProtectedShell>;
   }
+  // Sprint 5 — Content v2: hub → preflight → generating → editor.
+  // Order matters: more-specific routes match before /v2/posts/:id catches them.
+  if (matchPostsNew) {
+    return <ProtectedShell><Suspense fallback={<V2Loader />}><ContentPreflight /></Suspense></ProtectedShell>;
+  }
+  if (matchPostsGenerating) {
+    return <ProtectedShell><Suspense fallback={<V2Loader />}><ContentGenerating /></Suspense></ProtectedShell>;
+  }
   if (matchPosts) {
     return <ProtectedShell><Suspense fallback={<V2Loader />}><Posts /></Suspense></ProtectedShell>;
+  }
+  if (matchPostsEditor) {
+    return <ProtectedShell><Suspense fallback={<V2Loader />}><ContentEditor /></Suspense></ProtectedShell>;
   }
   if (matchProfile) {
     return <ProtectedShell><Suspense fallback={<V2Loader />}><Profile /></Suspense></ProtectedShell>;

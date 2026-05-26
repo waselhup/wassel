@@ -257,7 +257,8 @@
       "Bash(git branch *)",
       "Bash(findstr i18n *)",
       "Bash(findstr post *)",
-      "Bash(findstr /i /n \"CREATE TABLE.*posts\" supabase/migrations/001_initial.sql)"
+      "Bash(findstr /i /n \"CREATE TABLE.*posts\" supabase/migrations/001_initial.sql)",
+      "Bash(findstr /c:\"ContentEditor\" /c:\"ContentPreflight\" /c:\"ContentGenerating\" /c:\"Posts.tsx\" /c:\"content-engine\" /c:\"content-tone\" /c:\"content-export\" /c:\"routes\\\\\\\\content\" /c:\"server\\\\\\\\_core\\\\\\\\trpc\")"
     ]
   },
   "enableAllProjectMcpServers": true,
