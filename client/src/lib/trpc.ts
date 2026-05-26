@@ -1044,6 +1044,108 @@ export const trpc = {
         input,
       ),
   },
+  content: {
+    preflight: (input: {
+      contentType: ContentTypeShape;
+      topic?: string;
+      sourcePostId?: string;
+      language?: 'ar' | 'en';
+    }) => trpcQuery<{
+      hasCareerProfile: boolean;
+      profile: {
+        goal: string;
+        level: string;
+        target_role: string;
+        industry: string;
+        primary_language: 'ar' | 'en';
+      } | null;
+      contentType: ContentTypeShape;
+      estimatedCost: number;
+      hasCacheHit: boolean;
+      latestCacheId: string | null;
+      latestVersionId: string | null;
+      suggestions: TopicSuggestionShape[];
+      activeContentCount: number;
+      archivedCount: number;
+      legacyCount: number;
+    }>('content.preflight', input),
+    listVersions: (input?: {
+      contentType?: ContentTypeShape;
+      status?: 'active' | 'archived' | 'published_externally' | 'legacy' | 'all';
+      limit?: number;
+    }) => trpcQuery<{ versions: ContentVersionRow[] }>('content.listVersions', input ?? {}),
+    getVersion: (input: { versionId: string }) =>
+      trpcQuery<{
+        version: ContentVersionRow & { cache_id: string | null };
+        cache: {
+          id: string;
+          result: ContentResultShape;
+          content_type: ContentTypeShape;
+          topic: string;
+          source_post_id: string | null;
+          created_at: string;
+          expires_at: string;
+          hit_count: number;
+        } | null;
+        refinementsUsed: number;
+        freeRefinementsPerVersion: number;
+        paidRefinementCost: number;
+        pendingReminder: {
+          id: string;
+          remind_at: string;
+          status: string;
+          notification_channel: string[];
+        } | null;
+      }>('content.getVersion', input),
+    getCached: (input: { cacheId: string }) =>
+      trpcQuery<{
+        cacheId: string;
+        contentType: ContentTypeShape;
+        topic: string;
+        sourcePostId: string | null;
+        language: 'ar' | 'en';
+        result: ContentResultShape;
+        tokensCharged: number;
+        hitCount: number;
+        createdAt: string;
+        lastAccessedAt: string;
+        expiresAt: string;
+      }>('content.getCached', input),
+    generatePost: (input: { topic: string; language?: 'ar' | 'en'; forceRefresh?: boolean }) =>
+      trpcMutation<ContentGenerateResultShape>('content.generatePost', input),
+    generateCarousel: (input: { topic: string; language?: 'ar' | 'en'; forceRefresh?: boolean }) =>
+      trpcMutation<ContentGenerateResultShape>('content.generateCarousel', input),
+    generateRepurpose: (input: { sourcePostId: string; language?: 'ar' | 'en'; forceRefresh?: boolean }) =>
+      trpcMutation<ContentGenerateResultShape>('content.generateRepurpose', input),
+    refine: (input: { versionId: string; chipType: string; customPrompt?: string; language?: 'ar' | 'en' }) =>
+      trpcMutation<{
+        result: ContentResultShape;
+        tokensCharged: number;
+        refinementIndex: number;
+        isFreeWindow: boolean;
+        remainingFree: number;
+        cacheId: string;
+      }>('content.refine', input),
+    archive: (input: { versionId: string }) =>
+      trpcMutation<{ success: boolean }>('content.archive', input),
+    restore: (input: { versionId: string }) =>
+      trpcMutation<{ success: boolean }>('content.restore', input),
+    markPublished: (input: { versionId: string; externalUrl?: string }) =>
+      trpcMutation<{ success: boolean }>('content.markPublished', input),
+    setReminder: (input: { versionId: string; remindAt: string; channels?: Array<'in_app' | 'email'> }) =>
+      trpcMutation<{ reminderId: string }>('content.setReminder', input),
+    dismissReminder: (input: { reminderId: string }) =>
+      trpcMutation<{ success: boolean }>('content.dismissReminder', input),
+    exportCarouselPdf: (input: { versionId: string }) =>
+      trpcMutation<{ filename: string; mimeType: string; base64: string }>('content.exportCarouselPdf', input),
+    topicSuggestions: (input?: { language?: 'ar' | 'en' }) =>
+      trpcQuery<{ suggestions: TopicSuggestionShape[]; profileHash: string; isCacheHit: boolean }>(
+        'content.topicSuggestions',
+        input ?? {},
+      ),
+    history: (input?: { limit?: number }) =>
+      trpcQuery<{ versions: ContentVersionRow[] }>('content.history', input ?? {}),
+  },
 };
 
 // ─────────────────────────────────────────────
@@ -1128,6 +1230,85 @@ export type ResumeShape = {
     version_label: string;
     generated_at: string;
   };
+};
+
+// ─────────────────────────────────────────────
+// Content shapes — mirror server/_core/lib/content-engine.ts
+// ─────────────────────────────────────────────
+
+export type ContentTypeShape = 'post' | 'carousel' | 'repurpose_bundle';
+
+export type PostShape = {
+  body: string;
+  hashtags: string[];
+  language: 'ar' | 'en';
+  topic: string;
+  meta: { generated_at: string; content_type: 'post' };
+};
+
+export type CarouselShape = {
+  slides: Array<{ title: string; body: string; image_prompt: string | null }>;
+  caption: string;
+  hashtags: string[];
+  language: 'ar' | 'en';
+  topic: string;
+  meta: { generated_at: string; content_type: 'carousel' };
+};
+
+export type RepurposeBundleShape = {
+  source_post_id: string;
+  carousel: {
+    slides: Array<{ title: string; body: string; image_prompt: string | null }>;
+    caption: string;
+    hashtags: string[];
+  };
+  short_video_script: {
+    hook: string;
+    beats: string[];
+    cta: string;
+  };
+  follow_up_post: {
+    body: string;
+    hashtags: string[];
+  };
+  language: 'ar' | 'en';
+  meta: { generated_at: string; content_type: 'repurpose_bundle' };
+};
+
+export type ContentResultShape = PostShape | CarouselShape | RepurposeBundleShape;
+
+export type TopicSuggestionShape = {
+  topic: string;
+  recommended_type: ContentTypeShape;
+  reason: string;
+};
+
+export type ContentVersionRow = {
+  id: string;
+  cache_id: string | null;
+  content_type: ContentTypeShape;
+  display_title: string;
+  topic: string;
+  status: 'active' | 'archived' | 'published_externally' | 'legacy';
+  tokens_charged: number;
+  wallet_used: 'bonus' | 'subscription' | 'topup' | 'mixed' | null;
+  language: 'ar' | 'en';
+  legacy_source: string | null;
+  external_url: string | null;
+  archived_at: string | null;
+  published_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ContentGenerateResultShape = {
+  cacheId: string;
+  versionId: string;
+  isCacheHit: boolean;
+  tokensCharged: number;
+  walletUsed: 'bonus' | 'subscription' | 'topup' | 'mixed' | null;
+  result: ContentResultShape;
+  toneViolations: string[];
 };
 
 /**
