@@ -82,7 +82,80 @@ export async function trpcMutation<T = any>(name: string, input: any = {}): Prom
   console.log('[trpc] Fetch returned, status:', res.status);
   const j = await res.json();
   console.log('[trpc] Parsed JSON response');
-  return handle(j);
+  const result = handle(j);
+  // Best-effort activity log emission. Never throws; never blocks.
+  fireActivityForMutation(name, input).catch(() => {});
+  return result;
+}
+
+// ─────────────────────────────────────────────
+// Activity interceptor — emits a dashboard.logActivity call after a
+// successful mutation on radar/resume/content/profile endpoints. Silent
+// failures by design — analytics must never break the user's flow.
+// ─────────────────────────────────────────────
+
+type ActivityMapEntry = {
+  action: string;
+  pillar: 'radar' | 'resume' | 'content' | 'profile' | 'wallet' | 'dashboard';
+};
+
+const ACTIVITY_MAP: Record<string, ActivityMapEntry> = {
+  'radar.run':                    { action: 'radar.completed',              pillar: 'radar' },
+  'radar.applyFix':               { action: 'radar.applied_fix',            pillar: 'radar' },
+  'radar.revertFix':              { action: 'radar.reverted_fix',           pillar: 'radar' },
+  'resume.build':                 { action: 'resume.built',                 pillar: 'resume' },
+  'resume.createNewVersion':      { action: 'resume.new_version_built',     pillar: 'resume' },
+  'resume.refine':                { action: 'resume.refined',               pillar: 'resume' },
+  'resume.archive':               { action: 'resume.archived',              pillar: 'resume' },
+  'resume.exportPdf':             { action: 'resume.exported_pdf',          pillar: 'resume' },
+  'resume.exportDocx':            { action: 'resume.exported_docx',         pillar: 'resume' },
+  'content.generatePost':         { action: 'content.post.created',         pillar: 'content' },
+  'content.generateCarousel':     { action: 'content.carousel.created',     pillar: 'content' },
+  'content.generateRepurpose':    { action: 'content.repurpose_bundle.created', pillar: 'content' },
+  'content.refine':               { action: 'content.refined',              pillar: 'content' },
+  'content.markPublished':        { action: 'content.published',            pillar: 'content' },
+  'content.exportCarouselPdf':    { action: 'content.exported_pdf',         pillar: 'content' },
+  'careerProfile.create':         { action: 'onboarding.completed',         pillar: 'profile' },
+  'careerProfile.update':         { action: 'career_profile.updated',       pillar: 'profile' },
+};
+
+async function fireActivityForMutation(name: string, input: unknown): Promise<void> {
+  const entry = ACTIVITY_MAP[name];
+  if (!entry) return;
+  // Avoid recursion / pointless self-logging
+  if (name.startsWith('dashboard.')) return;
+
+  const headers = await authHeaders();
+  if (!headers.Authorization) return;
+
+  const payload: Record<string, unknown> = { source: name };
+  if (input && typeof input === 'object') {
+    const inputObj = input as Record<string, unknown>;
+    if (typeof inputObj.language === 'string') payload.language = inputObj.language;
+    if (typeof inputObj.topic === 'string') payload.topic = inputObj.topic;
+    if (typeof inputObj.targetRole === 'string') payload.target_role = inputObj.targetRole;
+    if (typeof inputObj.overrideTargetRole === 'string') payload.target_role = inputObj.overrideTargetRole;
+    if (typeof inputObj.templateId === 'string') payload.template_id = inputObj.templateId;
+  }
+  const language = (input && typeof input === 'object' && (input as Record<string, unknown>).language) as
+    | 'ar'
+    | 'en'
+    | undefined;
+
+  try {
+    await fetch(`${BASE}/dashboard.logActivity`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        action: entry.action,
+        pillar: entry.pillar,
+        payload,
+        language,
+      }),
+    });
+  } catch {
+    /* swallow */
+  }
 }
 
 export const trpc = {
@@ -1146,6 +1219,66 @@ export const trpc = {
     history: (input?: { limit?: number }) =>
       trpcQuery<{ versions: ContentVersionRow[] }>('content.history', input ?? {}),
   },
+  dashboard: {
+    getCareerPulse: (input?: { language?: 'ar' | 'en' }) =>
+      trpcQuery<CareerPulseShape>('dashboard.getCareerPulse', input ?? {}),
+    getNextTask: (input?: { language?: 'ar' | 'en' }) =>
+      trpcQuery<{ task: AiSuggestionShape | null }>('dashboard.getNextTask', input ?? {}),
+    getAllSuggestions: (input?: {
+      status?: 'active' | 'dismissed' | 'acted_upon' | 'expired' | 'all';
+      limit?: number;
+    }) => trpcQuery<{ suggestions: AiSuggestionShape[] }>('dashboard.getAllSuggestions', input ?? {}),
+    dismissSuggestion: (input: { suggestionId: string }) =>
+      trpcMutation<{ success: boolean }>('dashboard.dismissSuggestion', input),
+    acknowledgeSuggestion: (input: { suggestionId: string }) =>
+      trpcMutation<{ success: boolean }>('dashboard.acknowledgeSuggestion', input),
+    getActivityFeed: (input?: {
+      pillar?:
+        | 'onboarding'
+        | 'radar'
+        | 'resume'
+        | 'content'
+        | 'profile'
+        | 'wallet'
+        | 'dashboard'
+        | 'system';
+      days?: number;
+      limit?: number;
+    }) =>
+      trpcQuery<{ entries: ActivityLogEntryShape[] }>(
+        'dashboard.getActivityFeed',
+        input ?? {},
+      ),
+    getDrafts: () =>
+      trpcQuery<DraftSummaryShape>('dashboard.getDrafts'),
+    getSufficesFor: () =>
+      trpcQuery<SufficesForShape>('dashboard.getSufficesFor'),
+    regenerateSuggestions: (input?: { language?: 'ar' | 'en' }) =>
+      trpcMutation<{ generated: number; throttled: boolean; message?: string }>(
+        'dashboard.regenerateSuggestions',
+        input ?? {},
+      ),
+    markVisited: () =>
+      trpcMutation<{ streakDays: number }>('dashboard.markVisited', {}),
+    logActivity: (input: {
+      action: string;
+      pillar?:
+        | 'onboarding'
+        | 'radar'
+        | 'resume'
+        | 'content'
+        | 'profile'
+        | 'wallet'
+        | 'dashboard'
+        | 'system';
+      target?: string;
+      payload?: Record<string, unknown>;
+      relatedResourceType?: string;
+      relatedResourceId?: string;
+      tokensCharged?: number;
+      language?: 'ar' | 'en';
+    }) => trpcMutation<{ success: boolean }>('dashboard.logActivity', input),
+  },
 };
 
 // ─────────────────────────────────────────────
@@ -1346,5 +1479,121 @@ export type RadarResultShape = {
     profile_hash: string;
     language: 'ar' | 'en';
     generated_at: string;
+  };
+};
+
+// ─────────────────────────────────────────────
+// Dashboard shapes — mirror server/_core/lib/dashboard-engine.ts so the
+// client bundle doesn't pull in the engine itself.
+// ─────────────────────────────────────────────
+
+export type CareerPulseShape = {
+  radarScore: number | null;
+  radarLastUpdated: string | null;
+  radarScoreDelta30d: number | null;
+  resumeCount: number;
+  activeResumeAtsScore: number | null;
+  resumeLastUpdated: string | null;
+  contentCount30d: number;
+  contentLastPostedAt: string | null;
+  walletSummary: {
+    bonus: number;
+    subscription: number;
+    topup: number;
+    total: number;
+    bonusExpiresAt: string | null;
+  };
+  streakDays: number;
+  latestQuickWins: Array<{
+    title: string;
+    impact: 'high' | 'medium' | 'low';
+    effort: 'very_low' | 'low' | 'medium' | 'high';
+    cacheId: string;
+  }>;
+};
+
+export type AiSuggestionShape = {
+  id: string;
+  user_id: string;
+  suggestion_type: 'next_task' | 'quick_win' | 'reminder' | 'opportunity' | null;
+  pillar: 'radar' | 'resume' | 'content' | 'profile' | 'wallet' | null;
+  headline: string;
+  rationale: string;
+  cta_label: string | null;
+  cta_url: string;
+  cta_payload: Record<string, unknown> | null;
+  score: number;
+  priority_score: number | null;
+  language: 'ar' | 'en';
+  status: 'active' | 'dismissed' | 'acted_upon' | 'expired';
+  expires_at: string | null;
+  acted_upon_at: string | null;
+  dismissed_at: string | null;
+  computed_for_date: string;
+  created_at: string;
+};
+
+export type ActivityLogEntryShape = {
+  id: number;
+  user_id: string;
+  action: string;
+  pillar:
+    | 'onboarding'
+    | 'radar'
+    | 'resume'
+    | 'content'
+    | 'profile'
+    | 'wallet'
+    | 'dashboard'
+    | 'system'
+    | null;
+  target: string | null;
+  payload: Record<string, unknown> | null;
+  related_resource_type: string | null;
+  related_resource_id: string | null;
+  tokens_charged: number;
+  language: 'ar' | 'en' | null;
+  created_at: string;
+};
+
+export type DraftSummaryShape = {
+  resume: Array<{
+    id: string;
+    target_role: string;
+    display_name: string;
+    ats_score: number | null;
+    updated_at: string;
+    cache_id: string | null;
+  }>;
+  content: Array<{
+    id: string;
+    content_type: 'post' | 'carousel' | 'repurpose_bundle';
+    display_title: string;
+    topic: string;
+    updated_at: string;
+  }>;
+  radar: Array<{
+    id: string;
+    target_role: string;
+    current_score: number;
+    target_score: number;
+    created_at: string;
+  }>;
+};
+
+export type SufficesForShape = {
+  walletTotal: number;
+  breakdown: {
+    radar: number;
+    resume: number;
+    post: number;
+    carousel: number;
+    repurpose: number;
+  };
+  recommendedBundle: {
+    labelKey: 'fullJourney' | 'contentPush' | 'roleRefresh' | 'topUpFirst';
+    items: Array<{ type: string; count: number; totalCost: number }>;
+    totalCost: number;
+    remainingAfter: number;
   };
 };
