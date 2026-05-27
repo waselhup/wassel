@@ -54,7 +54,10 @@ export async function callClaude(params: ClaudeCallParams): Promise<ClaudeRespon
   }
 
   const model = params.modelOverride || pickModel(params.task);
-  const maxRetries = 4;
+  // 2 retries is enough for transient 429/503 — combined with the 60s
+  // per-attempt timeout this caps total time at ~135s, well below Vercel's
+  // 300s cron limit. Override via CLAUDE_MAX_RETRIES if you need more.
+  const maxRetries = Number(process.env.CLAUDE_MAX_RETRIES ?? 2);
   const body = {
     model,
     max_tokens: params.maxTokens ?? 4000,
@@ -68,6 +71,13 @@ export async function callClaude(params: ClaudeCallParams): Promise<ClaudeRespon
     ],
   };
 
+  // Per-attempt timeout. Without this, a hung Anthropic connection blocks the
+  // entire Vercel function (max 300s); crons that loop over multiple users
+  // can starve before any user is processed. 60s is generous for the deepest
+  // Sonnet/Opus calls (typical: 2–15s) and still leaves ample budget under
+  // the 300s cron cap. Override via CLAUDE_TIMEOUT_MS for staging.
+  const perAttemptTimeoutMs = Number(process.env.CLAUDE_TIMEOUT_MS ?? 60_000);
+
   let lastErr: any = null;
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
@@ -79,6 +89,7 @@ export async function callClaude(params: ClaudeCallParams): Promise<ClaudeRespon
           'anthropic-version': '2023-06-01',
         },
         body: JSON.stringify(body),
+        signal: AbortSignal.timeout(perAttemptTimeoutMs),
       });
 
       if (res.ok) {
@@ -108,8 +119,14 @@ export async function callClaude(params: ClaudeCallParams): Promise<ClaudeRespon
       );
       await new Promise((r) => setTimeout(r, delayMs));
     } catch (err: any) {
-      // Network-level error — retry a couple of times
+      // Network-level error or per-attempt timeout — retry a couple of times.
       if (err?.status) throw err;
+      const isTimeout = err?.name === 'TimeoutError' || err?.name === 'AbortError';
+      if (isTimeout) {
+        console.log(
+          `[claude-client] ${params.task} timed out after ${perAttemptTimeoutMs}ms, retry ${attempt}/${maxRetries}`
+        );
+      }
       lastErr = err;
       if (attempt === maxRetries) throw err;
       await new Promise((r) => setTimeout(r, 2000 * attempt));
