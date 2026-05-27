@@ -847,6 +847,134 @@ app.get('/api/cron/dashboard-suggestions', _cronWrap('dashboard-suggestions', as
   };
 }));
 
+// ===== Cron: expire-bonuses (Sprint 7, daily at 00:00 UTC) =====
+// Sweeps goal_completion_bonuses where expires_at < NOW() AND status='active'.
+// The wallet_bonus.expires_at column gates availability via deduct_tokens_v2,
+// so the visible balance "drops" automatically the moment the timestamp
+// passes. This cron just marks the bonus row as expired and writes an audit
+// trail so admin/finance can attribute the wallet drop.
+app.get('/api/cron/expire-bonuses', _cronWrap('expire-bonuses', async () => {
+  const sb = await _supa();
+  const { data, error } = await sb.rpc('expire_bonuses');
+  if (error) throw new Error(error.message);
+  return (data as Record<string, unknown>) ?? {};
+}));
+
+// ===== Cron: subscription-renewals (Sprint 7, daily at 01:00 UTC) =====
+// For every active user_subscriptions row whose current_period_end is in the
+// past (auto-renew=true), the cron calls grant_subscription_tokens to refill
+// wallet_subscription with the plan's monthly tokens and advance the period.
+//
+// Scheduled downgrades (metadata.downgrade_to) are honored — we grant tokens
+// for the NEW plan and update plan_id on the subscription row.
+//
+// Cancellations (auto_renew=false) are marked 'expired' and the user drops
+// to 'free' on profile.current_plan.
+//
+// Moyasar charges still go through Moyasar subscriptions on its side; this
+// cron only mirrors the post-charge state. For setups without Moyasar
+// recurring billing (early-access manual subscriptions), this cron is the
+// only renewal path.
+app.get('/api/cron/subscription-renewals', _cronWrap('subscription-renewals', async () => {
+  const sb = await _supa();
+  const nowIso = new Date().toISOString();
+
+  // Find subscriptions whose period has ended.
+  const { data: due, error: dueErr } = await sb
+    .from('user_subscriptions')
+    .select('id, user_id, plan_id, billing_cycle, status, auto_renew, current_period_end, metadata')
+    .in('status', ['active', 'trialing'])
+    .lt('current_period_end', nowIso)
+    .limit(500);
+
+  if (dueErr) throw new Error(dueErr.message);
+
+  let renewed = 0;
+  let cancelled = 0;
+  let downgraded = 0;
+  const errors: Array<{ subId: string; error: string }> = [];
+
+  for (const row of (due ?? []) as Array<{
+    id: string;
+    user_id: string;
+    plan_id: string;
+    billing_cycle: 'monthly' | 'annual';
+    auto_renew: boolean;
+    metadata: Record<string, unknown> | null;
+  }>) {
+    try {
+      if (!row.auto_renew) {
+        // Cancellation: mark expired, drop user to free
+        await sb
+          .from('user_subscriptions')
+          .update({ status: 'expired', updated_at: nowIso })
+          .eq('id', row.id);
+        await sb
+          .from('profiles')
+          .update({
+            current_plan: 'free',
+            subscription_cancel_at_period_end: false,
+            subscription_next_renewal_at: null,
+            updated_at: nowIso,
+          })
+          .eq('id', row.user_id);
+        await sb.from('activity_log').insert({
+          user_id: row.user_id,
+          action: 'subscription.expired',
+          target: row.id,
+          payload: { plan: row.plan_id },
+          pillar: 'wallet',
+          tokens_charged: 0,
+        });
+        cancelled++;
+        continue;
+      }
+
+      // Scheduled downgrade?
+      const downgradeTo = (row.metadata?.downgrade_to as string) || null;
+      const newPlanId = downgradeTo || row.plan_id;
+
+      const { error: grantErr } = await sb.rpc('grant_subscription_tokens', {
+        p_user_id: row.user_id,
+        p_plan_id: newPlanId,
+        p_subscription_id: row.id,
+        p_billing_cycle: row.billing_cycle || 'monthly',
+        p_is_first: false,
+      });
+      if (grantErr) throw new Error(`grant_subscription_tokens: ${grantErr.message}`);
+
+      // Compute new period_end and persist on the row
+      const periodEnd = new Date();
+      if (row.billing_cycle === 'annual') {
+        periodEnd.setFullYear(periodEnd.getFullYear() + 1);
+      } else {
+        periodEnd.setMonth(periodEnd.getMonth() + 1);
+      }
+      const cleanedMeta = { ...(row.metadata || {}) };
+      delete cleanedMeta.downgrade_to;
+      delete cleanedMeta.downgrade_scheduled_at;
+
+      await sb
+        .from('user_subscriptions')
+        .update({
+          plan_id: newPlanId,
+          current_period_start: nowIso,
+          current_period_end: periodEnd.toISOString(),
+          metadata: cleanedMeta,
+          updated_at: nowIso,
+        })
+        .eq('id', row.id);
+
+      if (downgradeTo) downgraded++;
+      else renewed++;
+    } catch (e: any) {
+      errors.push({ subId: row.id, error: e?.message || String(e) });
+    }
+  }
+
+  return { renewed, cancelled, downgraded, errors: errors.slice(0, 10) };
+}));
+
 app.use(
   '/api/trpc',
   createExpressMiddleware({

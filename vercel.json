@@ -23,7 +23,10 @@
     { "path": "/api/cron/hussein-auto-resolve", "schedule": "0 * * * *" },
     { "path": "/api/cron/mohammed-reconcile", "schedule": "0 23 * * *" },
     { "path": "/api/cron/mohammed-snapshot", "schedule": "0 0 * * *" },
-    { "path": "/api/cron/war-room-weekly-journal", "schedule": "0 5 * * 0" }
+    { "path": "/api/cron/war-room-weekly-journal", "schedule": "0 5 * * 0" },
+    { "path": "/api/cron/dashboard-suggestions", "schedule": "0 23 * * *" },
+    { "path": "/api/cron/expire-bonuses", "schedule": "0 0 * * *" },
+    { "path": "/api/cron/subscription-renewals", "schedule": "0 1 * * *" }
   ],
   "redirects": [
     {

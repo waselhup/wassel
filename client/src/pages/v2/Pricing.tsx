@@ -71,6 +71,11 @@ function Pricing() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [checkoutPlan, setCheckoutPlan] = useState<Plan | null>(null);
+  // Sprint 7: track whether the logged-in user is eligible for the Goal Bonus
+  // (+150 tokens on first subscription to starter/growth). Unauthenticated
+  // visitors are shown the bonus by default — they'll become first-time users
+  // when they sign up.
+  const [goalBonusEligible, setGoalBonusEligible] = useState<boolean>(true);
 
   const isAr = i18n.language === 'ar';
   const FAQ = isAr ? FAQ_AR : FAQ_EN;
@@ -97,6 +102,22 @@ function Pricing() {
       });
     return () => { cancelled = true; };
   }, []);
+
+  // Sprint 7: check Goal Bonus eligibility for logged-in users.
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    trpc.pricing.getSubscriptionState()
+      .then((state) => {
+        if (cancelled) return;
+        // Eligible if this would be their first paid subscription.
+        setGoalBonusEligible(Boolean(state?.isFirst));
+      })
+      .catch(() => {
+        // Non-fatal — default to showing the bonus.
+      });
+    return () => { cancelled = true; };
+  }, [user]);
 
   const t = (ar: string, en: string) => isAr ? ar : en;
 
@@ -196,9 +217,24 @@ function Pricing() {
               const dark = !!plan.is_featured;
               const name = (isAr ? plan.name_ar : plan.name_en) || plan.id;
               const tagline = isAr ? plan.tagline_ar : plan.tagline_en;
-              const badge = isAr ? plan.badge_ar : plan.badge_en;
               const monthlyTokens = num(plan.monthly_tokens);
               const features = Array.isArray(plan.features) ? plan.features : [];
+
+              // Sprint 7: Goal Bonus badge (+150 tokens for first subscription
+              // on starter/growth, per A18). Overrides any DB badge for
+              // eligible users so the bonus is visible from the very first
+              // pricing-page visit — never hidden in a tooltip.
+              const showGoalBonus =
+                goalBonusEligible &&
+                (plan.id === 'starter' || plan.id === 'growth') &&
+                !plan.is_free && !plan.is_custom;
+              const bonusTotal = monthlyTokens + 150;
+              const dbBadge = isAr ? plan.badge_ar : plan.badge_en;
+              const badge = showGoalBonus
+                ? (isAr
+                    ? `+150 توكن للشهر الأول 🎁`
+                    : `+150 tokens, first month 🎁`)
+                : dbBadge;
 
               const ctaLabel = plan.is_free
                 ? t('استكشف الآن', 'Explore now')
@@ -284,6 +320,15 @@ function Pricing() {
                     }`}
                   >
                     {tokensLabel}
+                    {showGoalBonus && (
+                      <div className={`mt-1 font-ar text-[12px] font-semibold ${
+                        dark ? 'text-teal-300' : 'text-teal-700'
+                      }`}>
+                        {isAr
+                          ? `ابدأ مع ${bonusTotal} توكن للشهر الأول 🎁`
+                          : `Start with ${bonusTotal} tokens, first month 🎁`}
+                      </div>
+                    )}
                   </div>
 
                   <ul className="m-0 mb-5 list-none p-0 lg:mb-6">

@@ -39,6 +39,9 @@ function CheckoutSuccess() {
   const [type, setType] = useState<string | null>(null);
   const [amount, setAmount] = useState<number>(0);
   const [tokensGranted, setTokensGranted] = useState<number>(0);
+  // Sprint 7: Goal Bonus + wallet attribution from the webhook
+  const [bonusGranted, setBonusGranted] = useState<number>(0);
+  const [walletCredited, setWalletCredited] = useState<string | null>(null);
   const [planNameAr, setPlanNameAr] = useState<string | null>(null);
   const [planNameEn, setPlanNameEn] = useState<string | null>(null);
   const [timedOut, setTimedOut] = useState(false);
@@ -64,6 +67,8 @@ function CheckoutSuccess() {
         setAmount(typeof row.amount_sar === 'number' ? row.amount_sar : Number(row.amount_sar));
         const meta = row.metadata || {};
         setTokensGranted(Number(meta.tokens_granted ?? 0));
+        setBonusGranted(Number(meta.bonus_granted ?? 0));
+        setWalletCredited((row as { wallet_credited?: string }).wallet_credited ?? null);
         setPlanNameAr(meta.plan_name_ar ?? null);
         setPlanNameEn(meta.plan_name_en ?? null);
 
@@ -170,9 +175,36 @@ function CheckoutSuccess() {
                   <NumDisplay className="font-ar text-[18px] font-bold text-v2-ink">
                     {tokensGranted}
                   </NumDisplay>
+                  {walletCredited && (
+                    <div className="font-ar text-[10px] text-v2-mute mt-0.5">
+                      {walletCredited === 'subscription'
+                        ? t('محفظة الاشتراك', 'Subscription wallet')
+                        : walletCredited === 'topup'
+                          ? t('محفظة Top-up', 'Top-up wallet')
+                          : t('محفظة الهدية', 'Bonus wallet')}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
+
+            {/* Sprint 7: Goal Bonus celebration — shows when this was a first
+                subscription on starter/growth that triggered the +150 bonus. */}
+            {bonusGranted > 0 && (
+              <div className="mt-4 rounded-v2-md border border-teal-300 bg-teal-50 p-3">
+                <div className="font-ar text-[13px] font-bold text-teal-800">
+                  {isAr
+                    ? `🎁 مكافأة الانطلاق: +${bonusGranted} توكن هدية`
+                    : `🎁 Goal Bonus: +${bonusGranted} bonus tokens`}
+                </div>
+                <div className="mt-1 font-ar text-[11px] text-teal-700">
+                  {t(
+                    'هدية للشهر الأول — تنتهي مع نهاية فترة الاشتراك',
+                    'A gift for your first month — expires at the end of the subscription period.',
+                  )}
+                </div>
+              </div>
+            )}
 
             <div className="mt-5 flex flex-col gap-2">
               <Button variant="primary" size="md" fullWidth onClick={() => navigate('/v2/home')}>

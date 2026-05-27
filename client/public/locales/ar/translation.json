@@ -2657,7 +2657,59 @@
     "tokens_other": "{{count}} توكن",
     "expires_at": "تنتهي في {{iso}}",
     "renews_at": "تتجدد في {{iso}}",
-    "no_expiry": "بدون انتهاء"
+    "no_expiry": "بدون انتهاء",
+    "expiring_today": "تنتهي اليوم",
+    "expiring_in_days": "تنتهي خلال {{days}} أيام",
+    "lifetime": "دائمة"
+  },
+  "goalBonus": {
+    "badge_inline": "+150 توكن للشهر الأول 🎁",
+    "card_title": "ابدأ مع {{total}} توكن للشهر الأول 🎁",
+    "celebration_title": "🎁 مكافأة الانطلاق: +{{tokens}} توكن هدية",
+    "celebration_subtitle": "هدية للشهر الأول — تنتهي مع نهاية فترة الاشتراك",
+    "explanation": "عند اشتراكك في خطة الانطلاق أو النمو لأول مرة، نضيف 150 توكن مكافأة لمحفظتك. تنتهي مع نهاية الشهر الأول."
+  },
+  "checkout": {
+    "processing": "جاري المعالجة…",
+    "success_title": "تم الدفع بنجاح",
+    "success_subtitle_subscription": "تم تفعيل اشتراكك",
+    "success_subtitle_topup": "تمت إضافة التوكن إلى رصيدك",
+    "success_subtitle_product": "تم تفعيل المنتج",
+    "amount": "المبلغ",
+    "tokens_added": "التوكن المضافة",
+    "wallet_subscription": "محفظة الاشتراك",
+    "wallet_topup": "محفظة Top-up",
+    "wallet_bonus": "محفظة الهدية",
+    "go_to_dashboard": "الانتقال إلى لوحة التحكم",
+    "view_billing": "عرض الفاتورة",
+    "still_verifying_title": "نتحقق من حالة الدفع",
+    "still_verifying_body": "تأخّر تأكيد بوّابة الدفع قليلاً. سنرسل لك إيميلاً فور اكتمال التحقق",
+    "failed_title": "لم يكتمل الدفع",
+    "failed_body": "لم يتم خصم أي مبلغ من بطاقتك. يمكنك المحاولة مجدداً، أو اختيار طريقة دفع مختلفة",
+    "retry": "المحاولة مرة أخرى",
+    "back_home": "العودة إلى الرئيسية",
+    "need_help": "بحاجة إلى مساعدة؟"
+  },
+  "topup": {
+    "section_title": "اختر حزمة Top-up",
+    "buying": "جارٍ التحويل…",
+    "price_label": "{{price}} ر.س",
+    "tokens_label": "{{tokens}} توكن",
+    "badge_popular": "الأكثر شعبية",
+    "badge_best_value": "أفضل قيمة"
+  },
+  "subscriptionMgmt": {
+    "current_plan": "خطتك الحالية",
+    "renews_at": "تتجدد في {{date}}",
+    "ends_at": "تنتهي في {{date}}",
+    "upgrade": "ترقية",
+    "downgrade": "تخفيض",
+    "cancel": "إلغاء التجديد",
+    "cancel_immediate": "إلغاء فوراً",
+    "reactivate": "إعادة تفعيل",
+    "downgrade_scheduled": "سيتم التخفيض إلى {{plan}} في {{date}}",
+    "cancel_scheduled": "تم إلغاء التجديد. يبقى الاشتراك نشطاً حتى {{date}}",
+    "upgrade_proration_preview": "ستحصل على {{tokens}} توكن إضافي فوراً (متبقي {{days}} يوماً)"
   },
   "privacy": {
     "title": "الخصوصية والبيانات",
