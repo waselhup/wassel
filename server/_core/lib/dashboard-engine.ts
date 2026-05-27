@@ -460,10 +460,21 @@ export async function generateSuggestions(
   } | null = null;
 
   try {
+    // Augment the system prompt with the schema and a strict JSON-only
+    // directive. The compiled `nextTaskPrompt.system` describes voice and
+    // content rules but never tells the model to OUTPUT JSON, so Claude
+    // was returning prose and extractJson() returned null. We append the
+    // schema + a one-line instruction here so the validator
+    // (parsed.headline && parsed.cta_url && parsed.rationale) passes.
+    const systemWithSchema =
+      nextTaskPrompt.system +
+      '\n\n---\nReturn a single JSON object matching this exact TypeScript type, with no prose, no markdown fences, and no preamble:\n\n' +
+      nextTaskPrompt.schema;
+
     const res = await callClaude({
       task: 'post_generate', // Haiku — same speed/cost tier
       modelOverride: 'claude-haiku-4-5-20251001',
-      system: nextTaskPrompt.system,
+      system: systemWithSchema,
       userContent: nextTaskPrompt.user({
         goal: profile.goal,
         level: profile.level,
