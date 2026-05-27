@@ -253,10 +253,43 @@ async function fulfillPayment(supabase: any, payment: any): Promise<void> {
     await fulfillSubscription(supabase, user_id, payment);
   } else if (type === 'token_topup') {
     const qty = Number(metadata?.tokens_granted ?? 0);
-    if (qty > 0) await grantTokens(supabase, user_id, qty, 'topup', payment.id);
+    if (qty > 0) {
+      await grantTokens(supabase, user_id, qty, 'topup', payment.id);
+      // Sprint 7: also credit wallet_topup (lifetime tokens) via RPC.
+      // Idempotent on payment.id so re-deliveries are safe.
+      const { error: walletErr } = await supabase.rpc('credit_topup_wallet', {
+        p_user_id: user_id,
+        p_amount: qty,
+        p_payment_id: payment.id,
+        p_metadata: { package_code: metadata?.package_code ?? null, source: 'webhook' },
+      });
+      if (walletErr) {
+        console.warn('[muyassar-webhook] credit_topup_wallet failed:', walletErr.message);
+      }
+      await supabase
+        .from('payment_transactions')
+        .update({ wallet_credited: 'topup', tokens_credited: qty })
+        .eq('id', payment.id);
+    }
   } else if (type === 'product') {
     const qty = Number(metadata?.tokens_granted ?? 0);
-    if (qty > 0) await grantTokens(supabase, user_id, qty, 'product', payment.id);
+    if (qty > 0) {
+      await grantTokens(supabase, user_id, qty, 'product', payment.id);
+      // Sprint 7: product single-purchases credit topup wallet (lifetime).
+      const { error: walletErr } = await supabase.rpc('credit_topup_wallet', {
+        p_user_id: user_id,
+        p_amount: qty,
+        p_payment_id: payment.id,
+        p_metadata: { product_id: metadata?.product_id ?? null, source: 'webhook' },
+      });
+      if (walletErr) {
+        console.warn('[muyassar-webhook] credit_topup_wallet (product) failed:', walletErr.message);
+      }
+      await supabase
+        .from('payment_transactions')
+        .update({ wallet_credited: 'topup', tokens_credited: qty })
+        .eq('id', payment.id);
+    }
   } else {
     throw new Error(`Unknown payment type: ${type}`);
   }
@@ -287,7 +320,7 @@ async function fulfillSubscription(supabase: any, userId: string, payment: any):
     .in('status', ['active', 'trialing']);
 
   // Insert new active subscription.
-  const { error: subErr } = await supabase
+  const { data: subRow, error: subErr } = await supabase
     .from('user_subscriptions')
     .insert({
       user_id: userId,
@@ -299,18 +332,52 @@ async function fulfillSubscription(supabase: any, userId: string, payment: any):
       amount_paid_sar: payment.amount_sar,
       auto_renew: true,
       metadata: { payment_id: payment.id },
-    });
+    })
+    .select('id')
+    .single();
 
   if (subErr) throw new Error(`Subscription insert failed: ${subErr.message}`);
 
-  // Update profile plan
+  // Update profile plan (legacy column — kept in sync for backward compat).
   await supabase
     .from('profiles')
     .update({ plan: planId, updated_at: now.toISOString() })
     .eq('id', userId);
 
+  // Legacy token grant (writes to user_tokens + profiles.token_balance for
+  // backward-compat reads like the dashboard topbar).
   if (tokensGranted > 0) {
     await grantTokens(supabase, userId, tokensGranted, 'subscription', payment.id);
+  }
+
+  // Sprint 7: credit wallet_subscription + grant Goal Bonus if eligible.
+  // This is the new source of truth for spendable balance.
+  const { data: grantResult, error: grantErr } = await supabase.rpc('grant_subscription_tokens', {
+    p_user_id: userId,
+    p_plan_id: planId,
+    p_subscription_id: subRow?.id ?? null,
+    p_billing_cycle: billingCycle,
+    p_is_first: null, // auto-detect from profiles.is_first_subscription
+  });
+
+  if (grantErr) {
+    console.warn('[muyassar-webhook] grant_subscription_tokens failed:', grantErr.message);
+  } else {
+    const r = (grantResult ?? {}) as Record<string, unknown>;
+    const bonusGranted = Number(r.bonus_granted ?? 0);
+    // Annotate the payment row with wallet attribution + bonus info.
+    await supabase
+      .from('payment_transactions')
+      .update({
+        wallet_credited: 'subscription',
+        tokens_credited: tokensGranted,
+        metadata: {
+          ...(payment.metadata || {}),
+          bonus_granted: bonusGranted,
+          is_first_subscription: Boolean(r.is_first),
+        },
+      })
+      .eq('id', payment.id);
   }
 }
 

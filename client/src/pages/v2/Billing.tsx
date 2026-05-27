@@ -46,6 +46,25 @@ interface PaymentTx {
   completed_at: string | null;
 }
 
+// Sprint 7: 3-wallet snapshot
+interface WalletSnapshot {
+  bonus: { balance: number; expires_at: string | null };
+  subscription: { balance: number; renews_at: string | null; plan_code: string | null };
+  topup: { balance: number };
+  total: number;
+}
+
+interface TopupPackage {
+  code: string;
+  name_ar: string;
+  name_en: string;
+  tokens: number;
+  price_sar: number;
+  badge_ar: string | null;
+  badge_en: string | null;
+  display_order: number;
+}
+
 function Billing() {
   const [, navigate] = useLocation();
   const { i18n } = useTranslation();
@@ -56,26 +75,32 @@ function Billing() {
   const [error, setError] = useState<string | null>(null);
   const [subscription, setSubscription] = useState<SubscriptionRow | null>(null);
   const [balance, setBalance] = useState<{ balance: number; totalPurchased: number; totalUsed: number } | null>(null);
+  // Sprint 7: 3-wallet breakdown + top-up package grid
+  const [wallets, setWallets] = useState<WalletSnapshot | null>(null);
+  const [topupPackages, setTopupPackages] = useState<TopupPackage[]>([]);
   const [transactions, setTransactions] = useState<{ tokenTransactions: TokenTx[]; paymentTransactions: PaymentTx[] }>({
     tokenTransactions: [], paymentTransactions: [],
   });
   const [showTopUp, setShowTopUp] = useState(false);
-  const [topUpQty, setTopUpQty] = useState(100);
-  const [topUpSubmitting, setTopUpSubmitting] = useState(false);
+  const [topupSubmittingCode, setTopupSubmittingCode] = useState<string | null>(null);
   const [topUpFeedback, setTopUpFeedback] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState(false);
 
   const reload = async () => {
     setLoading(true);
     try {
-      const [sub, bal, hist] = await Promise.all([
+      const [sub, bal, hist, walletSnap, packages] = await Promise.all([
         trpc.pricing.getCurrentSubscription(),
         trpc.pricing.getTokenBalance(),
         trpc.pricing.getTransactionHistory({ limit: 10 }),
+        trpc.pricing.getWalletSnapshot().catch(() => null),
+        trpc.pricing.listTopupPackages().catch(() => [] as TopupPackage[]),
       ]);
       setSubscription(sub as SubscriptionRow | null);
       setBalance(bal);
       setTransactions(hist);
+      setWallets(walletSnap as WalletSnapshot | null);
+      setTopupPackages((packages as TopupPackage[]) ?? []);
       setError(null);
     } catch (e: any) {
       setError(e?.message || 'Failed to load');
@@ -104,28 +129,34 @@ function Billing() {
     }
   };
 
-  const handleTopUp = async () => {
-    if (topUpQty < 10 || topUpQty > 10000) {
-      setTopUpFeedback(t('الكمية يجب أن تكون بين 10 و 10000', 'Quantity must be between 10 and 10000'));
-      return;
-    }
-    setTopUpSubmitting(true);
+  const handleBuyPackage = async (pkg: TopupPackage) => {
+    setTopupSubmittingCode(pkg.code);
     setTopUpFeedback(null);
     try {
-      const res = await trpc.pricing.purchaseTokens({ quantity: topUpQty });
+      const res = await trpc.pricing.createTopupCheckout({ packageCode: pkg.code });
       if (res.muyassarCheckoutUrl) {
         window.location.href = res.muyassarCheckoutUrl;
         return;
       }
       setTopUpFeedback(t(
-        `تم إنشاء طلب دفع بقيمة ${topUpQty} ر.س. الدفع قيد التهيئة`,
-        `Payment request created for ${topUpQty} SAR. Checkout is being configured.`
+        `تم إنشاء طلب دفع بقيمة ${pkg.price_sar} ر.س. الدفع قيد التهيئة`,
+        `Payment request created for ${pkg.price_sar} SAR. Checkout is being configured.`,
       ));
     } catch (e: any) {
       setTopUpFeedback(e?.message || t('فشلت العملية', 'Top-up failed'));
     } finally {
-      setTopUpSubmitting(false);
+      setTopupSubmittingCode(null);
     }
+  };
+
+  const formatRelativeExpiry = (iso: string | null): string => {
+    if (!iso) return '';
+    const ms = new Date(iso).getTime() - Date.now();
+    if (ms <= 0) return t('انتهت', 'Expired');
+    const days = Math.ceil(ms / 86400000);
+    if (days <= 1) return t('تنتهي اليوم', 'Expires today');
+    if (days <= 7) return t(`تنتهي خلال ${days} أيام`, `Expires in ${days} days`);
+    return '';
   };
 
   const formatDate = (s: string | null) => {
@@ -242,7 +273,7 @@ function Billing() {
               )}
             </section>
 
-            {/* Token Balance Widget */}
+            {/* Token Balance Widget — Sprint 7 3-wallet breakdown */}
             <section className="mb-5 rounded-v2-lg border border-v2-line bg-v2-surface p-5 lg:p-7">
               <div className="flex items-baseline justify-between mb-3">
                 <h2 className="font-ar font-bold text-v2-ink text-[16px] lg:text-[18px]">
@@ -257,17 +288,14 @@ function Billing() {
                 </button>
               </div>
 
+              {/* Total */}
               <div className="flex items-baseline gap-2">
                 <NumDisplay className="font-ar text-[36px] font-bold text-v2-ink tabular-nums lg:text-[44px]">
-                  {balance?.balance ?? 0}
+                  {wallets?.total ?? balance?.balance ?? 0}
                 </NumDisplay>
-                {subscription?.plan?.monthly_tokens && (
-                  <span className="font-ar text-[13px] text-v2-dim">
-                    {' / '}
-                    <NumDisplay className="tabular-nums">{subscription.plan.monthly_tokens}</NumDisplay>
-                    {' '}{t('شهرياً', 'monthly')}
-                  </span>
-                )}
+                <span className="font-ar text-[13px] text-v2-dim">
+                  {t('الإجمالي', 'Total')}
+                </span>
               </div>
 
               {balancePct !== null && (
@@ -279,68 +307,104 @@ function Billing() {
                 </div>
               )}
 
-              <div className="mt-3 grid grid-cols-2 gap-3 border-t border-v2-line pt-3 text-center">
-                <div>
-                  <div className="font-ar text-[11px] text-v2-mute">{t('شراء إجمالي', 'Total purchased')}</div>
-                  <NumDisplay className="font-ar text-[15px] font-semibold text-v2-ink tabular-nums">
-                    {balance?.totalPurchased ?? 0}
-                  </NumDisplay>
+              {/* 3-wallet breakdown */}
+              {wallets && (
+                <div className="mt-4 grid grid-cols-3 gap-2 border-t border-v2-line pt-4 text-center">
+                  <div className="rounded-v2-md bg-v2-canvas-2 p-3">
+                    <div className="font-ar text-[11px] text-v2-mute">
+                      {t('هدية 🎁', 'Bonus 🎁')}
+                    </div>
+                    <NumDisplay className="font-ar text-[20px] font-bold text-teal-700 tabular-nums">
+                      {wallets.bonus.balance}
+                    </NumDisplay>
+                    {wallets.bonus.expires_at && wallets.bonus.balance > 0 && (
+                      <div className="font-ar text-[10px] text-amber-700 mt-0.5">
+                        {formatRelativeExpiry(wallets.bonus.expires_at) ||
+                          t('تنتهي مع نهاية الشهر', 'Expires end of month')}
+                      </div>
+                    )}
+                  </div>
+                  <div className="rounded-v2-md bg-v2-canvas-2 p-3">
+                    <div className="font-ar text-[11px] text-v2-mute">
+                      {t('اشتراك', 'Subscription')}
+                    </div>
+                    <NumDisplay className="font-ar text-[20px] font-bold text-v2-ink tabular-nums">
+                      {wallets.subscription.balance}
+                    </NumDisplay>
+                    {subscription?.plan?.monthly_tokens && (
+                      <div className="font-ar text-[10px] text-v2-mute mt-0.5">
+                        {' / '}
+                        <NumDisplay className="tabular-nums">{subscription.plan.monthly_tokens}</NumDisplay>
+                      </div>
+                    )}
+                  </div>
+                  <div className="rounded-v2-md bg-v2-canvas-2 p-3">
+                    <div className="font-ar text-[11px] text-v2-mute">
+                      {t('Top-up', 'Top-up')}
+                    </div>
+                    <NumDisplay className="font-ar text-[20px] font-bold text-v2-ink tabular-nums">
+                      {wallets.topup.balance}
+                    </NumDisplay>
+                    <div className="font-ar text-[10px] text-v2-mute mt-0.5">
+                      {t('دائمة', 'Lifetime')}
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <div className="font-ar text-[11px] text-v2-mute">{t('استُخدم', 'Used')}</div>
-                  <NumDisplay className="font-ar text-[15px] font-semibold text-v2-ink tabular-nums">
-                    {balance?.totalUsed ?? 0}
-                  </NumDisplay>
-                </div>
-              </div>
+              )}
 
+              {/* Top-up packages grid */}
               {showTopUp && (
                 <div className="mt-4 rounded-v2-md border border-v2-line bg-v2-canvas-2 p-3">
-                  <div className="font-ar text-[13px] font-semibold text-v2-ink mb-2">
-                    {t('شحن توكنات (1 توكن = 1 ر.س)', 'Top up tokens (1 token = 1 SAR)')}
+                  <div className="font-ar text-[13px] font-semibold text-v2-ink mb-3">
+                    {t('اختر حزمة Top-up', 'Choose a top-up package')}
                   </div>
-                  <div className="flex flex-wrap items-center gap-2 mb-2">
-                    {[100, 500, 1000].map((q) => (
-                      <button
-                        key={q}
-                        type="button"
-                        onClick={() => setTopUpQty(q)}
-                        className={`rounded-v2-pill px-3 py-1.5 font-ar text-[12px] font-semibold cursor-pointer ${
-                          topUpQty === q
-                            ? 'bg-v2-ink text-white'
-                            : 'bg-v2-surface text-v2-body border border-v2-line hover:border-v2-ink/30'
-                        }`}
-                      >
-                        <NumDisplay className="tabular-nums">{q}</NumDisplay>
-                      </button>
-                    ))}
-                    <input
-                      type="number"
-                      min={10}
-                      max={10000}
-                      value={topUpQty}
-                      onChange={(e) => setTopUpQty(Number(e.target.value) || 0)}
-                      className="w-24 rounded-v2-md border border-v2-line bg-v2-surface px-3 py-1.5 font-ar text-[13px] text-v2-ink focus:border-teal-500 focus:outline-none tabular-nums"
-                    />
-                    <span className="font-ar text-[12px] text-v2-dim">
-                      = <NumDisplay className="tabular-nums">{topUpQty}</NumDisplay> {t('ر.س', 'SAR')}
-                    </span>
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                    {topupPackages.map((pkg) => {
+                      const submitting = topupSubmittingCode === pkg.code;
+                      const badge = isAr ? pkg.badge_ar : pkg.badge_en;
+                      return (
+                        <button
+                          key={pkg.code}
+                          type="button"
+                          onClick={() => handleBuyPackage(pkg)}
+                          disabled={submitting || !!topupSubmittingCode}
+                          className="relative rounded-v2-md border border-v2-line bg-v2-surface p-3 text-start cursor-pointer transition-all duration-200 ease-out hover:border-teal-500 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/40"
+                        >
+                          {badge && (
+                            <span
+                              className="absolute -top-2 end-3 rounded-v2-pill bg-teal-500 px-2 py-0.5 font-ar text-[9px] font-bold"
+                              style={{ color: '#0a3530' }}
+                            >
+                              {badge}
+                            </span>
+                          )}
+                          <div className="font-ar font-semibold text-v2-ink text-[14px]">
+                            {isAr ? pkg.name_ar : pkg.name_en}
+                          </div>
+                          <div className="mt-1 flex items-baseline gap-1">
+                            <NumDisplay className="font-ar text-[18px] font-bold text-v2-ink tabular-nums">
+                              {pkg.tokens}
+                            </NumDisplay>
+                            <span className="font-ar text-[11px] text-v2-dim">{t('توكن', 'tokens')}</span>
+                          </div>
+                          <div className="mt-1 font-ar text-[12px] text-v2-body">
+                            <NumDisplay className="tabular-nums">{pkg.price_sar}</NumDisplay>
+                            {' '}{t('ر.س', 'SAR')}
+                          </div>
+                          {submitting && (
+                            <div className="mt-2 font-ar text-[10px] text-teal-700">
+                              {t('جارٍ التحويل…', 'Redirecting…')}
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                   {topUpFeedback && (
-                    <div className="mb-2 rounded-v2-md border border-teal-200 bg-teal-50 px-3 py-2 font-ar text-[12px] text-teal-800">
+                    <div className="mt-3 rounded-v2-md border border-teal-200 bg-teal-50 px-3 py-2 font-ar text-[12px] text-teal-800">
                       {topUpFeedback}
                     </div>
                   )}
-                  <button
-                    type="button"
-                    onClick={handleTopUp}
-                    disabled={topUpSubmitting}
-                    className="w-full rounded-v2-md bg-v2-ink px-4 py-2.5 font-ar text-[13px] font-semibold text-white cursor-pointer transition-opacity duration-200 ease-out hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/40"
-                  >
-                    {topUpSubmitting
-                      ? t('جارٍ المعالجة…', 'Processing…')
-                      : t('تأكيد الشحن', 'Confirm top-up')}
-                  </button>
                 </div>
               )}
             </section>

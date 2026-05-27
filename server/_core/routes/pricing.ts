@@ -4,6 +4,19 @@ import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import { router, publicProcedure, protectedProcedure } from '../trpc-init';
 import { createInvoice, isMoyasarConfigured } from '../lib/moyasar-client';
+import {
+  listPlans as engineListPlans,
+  listTopupPackages as engineListTopupPackages,
+  getCurrentSubscription as engineGetCurrentSubscription,
+  createSubscriptionCheckout as engineCreateSubscriptionCheckout,
+  createTopupCheckout as engineCreateTopupCheckout,
+  upgradeSubscription as engineUpgradeSubscription,
+  downgradeSubscription as engineDowngradeSubscription,
+  cancelSubscription as engineCancelSubscription,
+  reactivateSubscription as engineReactivateSubscription,
+  getPaymentHistory as engineGetPaymentHistory,
+  estimateProration as engineEstimateProration,
+} from '../lib/pricing-engine';
 
 /**
  * Service-role Supabase client for admin operations (creating users on the
@@ -661,7 +674,7 @@ export const pricingRouter = router({
     .query(async ({ ctx, input }) => {
       const { data, error } = await ctx.supabase
         .from('payment_transactions')
-        .select('id, status, type, amount_sar, currency, completed_at, metadata, reference_id, reference_type')
+        .select('id, status, type, amount_sar, currency, completed_at, metadata, reference_id, reference_type, wallet_credited, tokens_credited')
         .eq('id', input.transactionId)
         .eq('user_id', ctx.user.id)
         .single();
@@ -671,4 +684,244 @@ export const pricingRouter = router({
       }
       return data;
     }),
+
+  // ───────────────────────────────────────────────────────────────────
+  // Sprint 7 endpoints — 3-wallet aware. Live alongside legacy ones for
+  // a clean cutover: the UI moves to these progressively, the old ones
+  // stay until Sprint 8 deprecates them.
+  // ───────────────────────────────────────────────────────────────────
+
+  /**
+   * Public: list active plans (3-wallet shape). Mirrors getPlans but uses
+   * the pricing-engine, returning numeric prices instead of stringy ones.
+   */
+  listPlans: publicProcedure.query(async ({ ctx }) => {
+    try {
+      return await engineListPlans(ctx.supabase);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'unknown';
+      throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: msg });
+    }
+  }),
+
+  /**
+   * Public: list active top-up packages from token_packages.
+   */
+  listTopupPackages: publicProcedure.query(async ({ ctx }) => {
+    try {
+      return await engineListTopupPackages(ctx.supabase);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'unknown';
+      throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: msg });
+    }
+  }),
+
+  /**
+   * Authed: get the caller's full subscription state in one go.
+   * Replaces getCurrentSubscription with a richer shape (planNameAr/En,
+   * monthlyTokens, scheduledDowngradeTo, isFirst).
+   */
+  getSubscriptionState: protectedProcedure.query(async ({ ctx }) => {
+    try {
+      return await engineGetCurrentSubscription(ctx.supabase, ctx.user.id);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'unknown';
+      throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: msg });
+    }
+  }),
+
+  /**
+   * Authed: read the 3-wallet snapshot via the user_wallet_totals view.
+   * Replaces getTokenBalance with the new breakdown.
+   */
+  getWalletSnapshot: protectedProcedure.query(async ({ ctx }) => {
+    const { data, error } = await ctx.supabase
+      .from('user_wallet_totals')
+      .select('*')
+      .eq('user_id', ctx.user.id)
+      .maybeSingle();
+
+    if (error) {
+      throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: error.message });
+    }
+    if (!data) {
+      return {
+        bonus: { balance: 0, expires_at: null as string | null },
+        subscription: { balance: 0, renews_at: null as string | null, plan_code: null as string | null },
+        topup: { balance: 0 },
+        total: 0,
+      };
+    }
+    return {
+      bonus: {
+        balance: Number(data.bonus_balance ?? 0),
+        expires_at: (data.bonus_expires_at as string) ?? null,
+      },
+      subscription: {
+        balance: Number(data.subscription_balance ?? 0),
+        renews_at: (data.subscription_renews_at as string) ?? null,
+        plan_code: (data.subscription_plan_code as string) ?? null,
+      },
+      topup: {
+        balance: Number(data.topup_balance ?? 0),
+      },
+      total: Number(data.total_balance ?? 0),
+    };
+  }),
+
+  /**
+   * Authed: create a subscription checkout. The engine handles plan
+   * validation, Moyasar invoice creation, and payment row insertion.
+   */
+  createSubscriptionCheckout: protectedProcedure
+    .input(z.object({
+      planId: z.string().min(1),
+      billingCycle: z.enum(['monthly', 'annual']),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      try {
+        const r = await engineCreateSubscriptionCheckout(
+          ctx.supabase,
+          ctx.user.id,
+          input.planId,
+          input.billingCycle,
+        );
+        return {
+          paymentId: r.paymentId,
+          amount: r.amountSar,
+          currency: 'SAR' as const,
+          planId: input.planId,
+          billingCycle: input.billingCycle,
+          muyassarCheckoutUrl: r.checkoutUrl,
+        };
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : 'unknown';
+        throw new TRPCError({ code: 'BAD_REQUEST', message: msg });
+      }
+    }),
+
+  /**
+   * Authed: top-up via a fixed package (topup_100 / 250 / 500 etc.).
+   * Replaces purchaseTokens with a packaged shape (price ≠ token count).
+   */
+  createTopupCheckout: protectedProcedure
+    .input(z.object({ packageCode: z.string().min(1) }))
+    .mutation(async ({ ctx, input }) => {
+      try {
+        const r = await engineCreateTopupCheckout(ctx.supabase, ctx.user.id, input.packageCode);
+        return {
+          paymentId: r.paymentId,
+          amount: r.amountSar,
+          currency: 'SAR' as const,
+          tokens: r.tokens,
+          packageCode: input.packageCode,
+          muyassarCheckoutUrl: r.checkoutUrl,
+        };
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : 'unknown';
+        throw new TRPCError({ code: 'BAD_REQUEST', message: msg });
+      }
+    }),
+
+  /**
+   * Authed: pro-rated upgrade (A19). Updates plan + credits prorated tokens.
+   */
+  upgradeSubscription: protectedProcedure
+    .input(z.object({ newPlanId: z.string().min(1) }))
+    .mutation(async ({ ctx, input }) => {
+      try {
+        return await engineUpgradeSubscription(ctx.supabase, ctx.user.id, input.newPlanId);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : 'unknown';
+        throw new TRPCError({ code: 'BAD_REQUEST', message: msg });
+      }
+    }),
+
+  /**
+   * Authed: schedule a downgrade at next renewal (A19). No charge now.
+   */
+  downgradeSubscription: protectedProcedure
+    .input(z.object({ newPlanId: z.string().min(1) }))
+    .mutation(async ({ ctx, input }) => {
+      try {
+        return await engineDowngradeSubscription(ctx.supabase, ctx.user.id, input.newPlanId);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : 'unknown';
+        throw new TRPCError({ code: 'BAD_REQUEST', message: msg });
+      }
+    }),
+
+  /**
+   * Authed: cancel subscription. `immediate: true` ends now, otherwise the
+   * subscription stays active until current_period_end. Sprint 7 version
+   * with explicit immediate flag — the legacy cancelSubscription stays for
+   * existing UI.
+   */
+  cancelSubscriptionV2: protectedProcedure
+    .input(z.object({ immediate: z.boolean().default(false) }).optional())
+    .mutation(async ({ ctx, input }) => {
+      try {
+        return await engineCancelSubscription(ctx.supabase, ctx.user.id, input?.immediate ?? false);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : 'unknown';
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: msg });
+      }
+    }),
+
+  /**
+   * Authed: flip auto_renew back on if the user un-cancels mid-period.
+   */
+  reactivateSubscription: protectedProcedure.mutation(async ({ ctx }) => {
+    try {
+      return await engineReactivateSubscription(ctx.supabase, ctx.user.id);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'unknown';
+      throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: msg });
+    }
+  }),
+
+  /**
+   * Authed: payment history (newest-first, capped at 50 by default).
+   */
+  getPaymentHistory: protectedProcedure
+    .input(z.object({ limit: z.number().int().min(1).max(100).default(20) }).optional())
+    .query(async ({ ctx, input }) => {
+      try {
+        return await engineGetPaymentHistory(ctx.supabase, ctx.user.id, input?.limit ?? 20);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : 'unknown';
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: msg });
+      }
+    }),
+
+  /**
+   * Authed: preview how many tokens an upgrade would add right now. Used by
+   * the Billing UI to show "+X tokens this month" before confirming.
+   */
+  estimateProration: protectedProcedure
+    .input(z.object({ newPlanId: z.string().min(1) }))
+    .query(async ({ ctx, input }) => {
+      try {
+        return await engineEstimateProration(ctx.supabase, ctx.user.id, input.newPlanId);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : 'unknown';
+        throw new TRPCError({ code: 'BAD_REQUEST', message: msg });
+      }
+    }),
+
+  /**
+   * Authed: list this user's Goal Completion Bonus history.
+   */
+  getGoalBonuses: protectedProcedure.query(async ({ ctx }) => {
+    const { data, error } = await ctx.supabase
+      .from('goal_completion_bonuses')
+      .select('id, amount_tokens, plan_at_grant, granted_at, expires_at, status')
+      .eq('user_id', ctx.user.id)
+      .order('granted_at', { ascending: false });
+
+    if (error) {
+      throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: error.message });
+    }
+    return data ?? [];
+  }),
 });

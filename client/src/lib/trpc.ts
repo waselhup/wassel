@@ -626,7 +626,101 @@ export const trpc = {
         metadata: Record<string, any> | null;
         reference_id: string | null;
         reference_type: string | null;
+        wallet_credited?: 'bonus' | 'subscription' | 'topup' | null;
+        tokens_credited?: number | null;
       }>('pricing.getPaymentStatus', input),
+    // ─── Sprint 7 endpoints (3-wallet aware) ─────────────────────────
+    listPlans: () => trpcQuery<Array<{
+      id: string;
+      name_ar: string; name_en: string;
+      tagline_ar: string | null; tagline_en: string | null;
+      monthly_price_sar: number; annual_price_sar: number | null;
+      monthly_tokens: number;
+      display_order: number;
+      is_featured: boolean; is_custom: boolean; is_free: boolean;
+      badge_ar: string | null; badge_en: string | null;
+      features: Array<{
+        feature_key: string; feature_ar: string; feature_en: string;
+        is_included: boolean; is_coming_soon: boolean; is_highlighted: boolean;
+      }>;
+    }>>('pricing.listPlans'),
+    listTopupPackages: () => trpcQuery<Array<{
+      code: string;
+      name_ar: string; name_en: string;
+      tokens: number; price_sar: number;
+      description_ar: string | null; description_en: string | null;
+      badge_ar: string | null; badge_en: string | null;
+      display_order: number;
+    }>>('pricing.listTopupPackages'),
+    getSubscriptionState: () => trpcQuery<{
+      planId: string;
+      planNameAr: string; planNameEn: string;
+      monthlyTokens: number;
+      status: 'active' | 'trialing' | 'cancelled' | 'past_due' | 'expired' | 'free';
+      currentPeriodStart: string | null;
+      currentPeriodEnd: string | null;
+      cancelAtPeriodEnd: boolean;
+      autoRenew: boolean;
+      billingCycle: 'monthly' | 'annual' | null;
+      scheduledDowngradeTo: string | null;
+      isFirst: boolean;
+    }>('pricing.getSubscriptionState'),
+    getWalletSnapshot: () => trpcQuery<{
+      bonus: { balance: number; expires_at: string | null };
+      subscription: { balance: number; renews_at: string | null; plan_code: string | null };
+      topup: { balance: number };
+      total: number;
+    }>('pricing.getWalletSnapshot'),
+    createSubscriptionCheckout: (input: { planId: string; billingCycle: 'monthly' | 'annual' }) =>
+      trpcMutation<{
+        paymentId: string; amount: number; currency: 'SAR';
+        planId: string; billingCycle: 'monthly' | 'annual';
+        muyassarCheckoutUrl: string | null;
+      }>('pricing.createSubscriptionCheckout', input),
+    createTopupCheckout: (input: { packageCode: string }) =>
+      trpcMutation<{
+        paymentId: string; amount: number; currency: 'SAR';
+        tokens: number; packageCode: string;
+        muyassarCheckoutUrl: string | null;
+      }>('pricing.createTopupCheckout', input),
+    upgradeSubscription: (input: { newPlanId: string }) =>
+      trpcMutation<{ proratedTokensAdded: number; fromPlan: string; toPlan: string }>(
+        'pricing.upgradeSubscription', input,
+      ),
+    downgradeSubscription: (input: { newPlanId: string }) =>
+      trpcMutation<{ fromPlan: string; toPlan: string; appliesAt: string | null }>(
+        'pricing.downgradeSubscription', input,
+      ),
+    cancelSubscriptionV2: (input?: { immediate?: boolean }) =>
+      trpcMutation<{ ok: true; effectiveAt: string | null }>(
+        'pricing.cancelSubscriptionV2', input || {},
+      ),
+    reactivateSubscription: () =>
+      trpcMutation<{ ok: true }>('pricing.reactivateSubscription', {}),
+    getPaymentHistory: (input?: { limit?: number }) =>
+      trpcQuery<Array<{
+        id: string;
+        amount_sar: number; currency: string;
+        type: string; status: string;
+        payment_method: string | null;
+        metadata: Record<string, unknown> | null;
+        wallet_credited: 'bonus' | 'subscription' | 'topup' | null;
+        tokens_credited: number | null;
+        created_at: string; completed_at: string | null;
+      }>>('pricing.getPaymentHistory', input || {}),
+    estimateProration: (input: { newPlanId: string }) =>
+      trpcQuery<{
+        fromPlan: string; toPlan: string;
+        currentTokens: number; newTokens: number;
+        proratedTokens: number; daysRemaining: number;
+      }>('pricing.estimateProration', input),
+    getGoalBonuses: () =>
+      trpcQuery<Array<{
+        id: string; amount_tokens: number;
+        plan_at_grant: string;
+        granted_at: string; expires_at: string;
+        status: 'active' | 'consumed' | 'expired' | 'revoked';
+      }>>('pricing.getGoalBonuses'),
   },
   faris: {
     listAgents: () => trpcQuery<Array<{

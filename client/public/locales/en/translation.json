@@ -2659,7 +2659,59 @@
     "tokens_other": "{{count}} tokens",
     "expires_at": "Expires {{iso}}",
     "renews_at": "Renews {{iso}}",
-    "no_expiry": "No expiry"
+    "no_expiry": "No expiry",
+    "expiring_today": "Expires today",
+    "expiring_in_days": "Expires in {{days}} days",
+    "lifetime": "Lifetime"
+  },
+  "goalBonus": {
+    "badge_inline": "+150 tokens, first month 🎁",
+    "card_title": "Start with {{total}} tokens, first month 🎁",
+    "celebration_title": "🎁 Goal Bonus: +{{tokens}} bonus tokens",
+    "celebration_subtitle": "A gift for your first month — expires at the end of the subscription period",
+    "explanation": "Subscribe to Starter or Growth for the first time and we'll add 150 bonus tokens to your wallet. Expires at the end of the first month."
+  },
+  "checkout": {
+    "processing": "Processing…",
+    "success_title": "Payment successful",
+    "success_subtitle_subscription": "Your subscription is now active",
+    "success_subtitle_topup": "Tokens have been added to your balance",
+    "success_subtitle_product": "Your purchase has been activated",
+    "amount": "Amount",
+    "tokens_added": "Tokens added",
+    "wallet_subscription": "Subscription wallet",
+    "wallet_topup": "Top-up wallet",
+    "wallet_bonus": "Bonus wallet",
+    "go_to_dashboard": "Go to dashboard",
+    "view_billing": "View billing",
+    "still_verifying_title": "We're still verifying",
+    "still_verifying_body": "The gateway is taking longer than usual. We'll email you as soon as it confirms",
+    "failed_title": "Your payment didn't go through",
+    "failed_body": "No charge was made to your card. You can try again or use a different payment method",
+    "retry": "Try again",
+    "back_home": "Back to home",
+    "need_help": "Need help?"
+  },
+  "topup": {
+    "section_title": "Choose a top-up package",
+    "buying": "Redirecting…",
+    "price_label": "{{price}} SAR",
+    "tokens_label": "{{tokens}} tokens",
+    "badge_popular": "Most popular",
+    "badge_best_value": "Best value"
+  },
+  "subscriptionMgmt": {
+    "current_plan": "Current plan",
+    "renews_at": "Renews {{date}}",
+    "ends_at": "Ends {{date}}",
+    "upgrade": "Upgrade",
+    "downgrade": "Downgrade",
+    "cancel": "Cancel auto-renew",
+    "cancel_immediate": "Cancel immediately",
+    "reactivate": "Reactivate",
+    "downgrade_scheduled": "Will downgrade to {{plan}} on {{date}}",
+    "cancel_scheduled": "Auto-renewal cancelled. Subscription stays active until {{date}}",
+    "upgrade_proration_preview": "You'll get {{tokens}} additional tokens immediately ({{days}} days remaining)"
   },
   "privacy": {
     "title": "Privacy & data",
