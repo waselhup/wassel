@@ -168,6 +168,15 @@ async function _opsCronSupabase() {
   return createClient(url, key, { auth: { persistSession: false } });
 }
 
+// Alias — the dashboard-suggestions, expire-bonuses and subscription-renewals
+// crons reference `_supa()` (legacy short name) but only `_opsCronSupabase`
+// was ever defined. Without this alias every invocation throws a
+// ReferenceError that the cron's catch handler can't recover from (the
+// catch path also fails on wrong api_logs column names), leaving the
+// connection hung until Vercel kills it at 300s. One-line alias unblocks
+// all three crons.
+const _supa = _opsCronSupabase;
+
 function _cronAuthOk(req: any): boolean {
   const expected = process.env.CRON_SECRET;
   if (!expected) return true;
@@ -702,20 +711,39 @@ function _cronWrap(name: string, fn: () => Promise<any>) {
     const t0 = Date.now();
     try {
       const result = await fn();
-      const sb = await _supa();
-      await sb.from('api_logs').insert({
-        service: 'cron', endpoint: `/api/cron/${name}`, severity: 'info',
-        latency_ms: Date.now() - t0, response_payload: result,
-      });
+      // Use actual api_logs schema columns (status_code, response_time_ms,
+      // error_msg) — the previous version used severity/latency_ms/etc.
+      // which silently rejected, so no cron observability ever worked.
+      try {
+        const sb = await _supa();
+        await sb.from('api_logs').insert({
+          service: 'cron',
+          endpoint: `/api/cron/${name}`,
+          status_code: 200,
+          response_time_ms: Date.now() - t0,
+          error_msg: null,
+        });
+      } catch (logErr: any) {
+        console.warn(`[cron/${name}] log insert failed (non-fatal):`, logErr?.message);
+      }
       res.json({ ok: true, ...result });
     } catch (e: any) {
       console.error(`[cron/${name}] failed:`, e?.message);
       sentryCapture(e, { cron: name });
-      const sb = await _supa();
-      await sb.from('api_logs').insert({
-        service: 'cron', endpoint: `/api/cron/${name}`, severity: 'error',
-        latency_ms: Date.now() - t0, error_message: String(e?.message || e),
-      });
+      // Catch-of-catch: even if the log insert blows up, we still want to
+      // respond 500 to the client so the connection doesn't hang.
+      try {
+        const sb = await _supa();
+        await sb.from('api_logs').insert({
+          service: 'cron',
+          endpoint: `/api/cron/${name}`,
+          status_code: 500,
+          response_time_ms: Date.now() - t0,
+          error_msg: String(e?.message || e).slice(0, 500),
+        });
+      } catch (logErr: any) {
+        console.warn(`[cron/${name}] error log insert failed:`, logErr?.message);
+      }
       res.status(500).json({ error: 'cron_failed', message: e?.message });
     }
   };
