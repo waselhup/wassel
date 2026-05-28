@@ -2125,6 +2125,14 @@
     "backToUser": "Back to User Dashboard",
     "adminBadge": "Founder Mode"
   },
+  "adminNav": {
+    "home": "Home",
+    "warRoom": "War Room",
+    "workforce": "HQ",
+    "finance": "Finance",
+    "more": "More",
+    "morePortals": "More Portals"
+  },
   "finance": {
     "headerTitle": "Finance Command Center",
     "subtitle": "Revenue, costs, margins, and subscriptions on one screen",
@@ -3255,6 +3263,11 @@
       "sessionFailed": "Could not start session",
       "sendFailed": "Could not send message",
       "briefFailed": "Could not generate morning brief"
+    },
+    "mobileFallback": {
+      "title": "War Room is desktop-optimized",
+      "body": "The 2.5D War Room experience requires a larger screen. Open it on desktop for the full agent table, projector, and chat. On mobile you can still review and approve pending tasks from the HQ portal.",
+      "cta": "Open HQ Approval Queue"
     }
   },
   "notifications": {

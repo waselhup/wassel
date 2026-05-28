@@ -50,7 +50,7 @@ export default function ProductIntelDashboard() {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+    <div className="admin-portal-page" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       <div style={{ ...CARD, background: 'linear-gradient(135deg, #FCE7F3 0%, #FBCFE8 100%)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <div style={{ width: 56, height: 56, borderRadius: 16, background: '#EC4899', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 6px 16px rgba(236,72,153,0.3)' }}>

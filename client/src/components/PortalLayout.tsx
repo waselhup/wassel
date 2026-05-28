@@ -4,6 +4,7 @@ import { useLocation, Link } from 'wouter';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Globe, type LucideIcon } from 'lucide-react';
 import PersonaSwitcher from './PersonaSwitcher';
+import AdminMobileNav from './AdminMobileNav';
 import { WasselLogo } from './WasselLogo';
 import UserAvatar from './UserAvatar';
 import { useAuth } from '@/contexts/AuthContext';
@@ -63,14 +64,9 @@ export default function PortalLayout({
         }}
       >
         <div
+          className="mx-auto flex items-center justify-between gap-2 sm:gap-4 px-3 sm:px-6 py-2.5 sm:py-3.5"
           style={{
             maxWidth: 1400,
-            margin: '0 auto',
-            padding: '14px 24px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 16,
             flexWrap: 'wrap',
           }}
         >
@@ -78,7 +74,8 @@ export default function PortalLayout({
           <motion.div
             initial={{ opacity: 0, y: -6 }}
             animate={{ opacity: 1, y: 0 }}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 12, minWidth: 0 }}
+            className="inline-flex items-center gap-2 sm:gap-3"
+            style={{ minWidth: 0, flexShrink: 1 }}
           >
             <Link href="/v2">
               <a aria-label="Wassel home" style={{ display: 'inline-flex', alignItems: 'center', flexShrink: 0 }}>
@@ -88,6 +85,7 @@ export default function PortalLayout({
 
             <span
               aria-hidden
+              className="hidden sm:inline-block"
               style={{
                 width: 1,
                 height: 26,
@@ -98,8 +96,8 @@ export default function PortalLayout({
 
             <div
               style={{
-                width: 34,
-                height: 34,
+                width: 32,
+                height: 32,
                 borderRadius: 10,
                 background: `linear-gradient(135deg, ${accentColor}, ${accentColor}cc)`,
                 display: 'inline-flex',
@@ -109,7 +107,7 @@ export default function PortalLayout({
                 flexShrink: 0,
               }}
             >
-              <Icon size={17} />
+              <Icon size={16} />
             </div>
 
             <div style={{ minWidth: 0 }}>
@@ -117,18 +115,20 @@ export default function PortalLayout({
                 style={{
                   fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
                   fontWeight: 900,
-                  fontSize: 16,
+                  fontSize: 15,
                   margin: 0,
                   color: 'var(--wsl-ink, #0F172A)',
                   lineHeight: 1.2,
                   whiteSpace: 'nowrap',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
+                  maxWidth: '40vw',
                 }}
               >
                 {title}
               </h1>
               <div
+                className="hidden sm:block"
                 style={{
                   fontSize: 10,
                   fontWeight: 800,
@@ -143,21 +143,24 @@ export default function PortalLayout({
             </div>
           </motion.div>
 
-          {/* CENTER — always-visible 4-persona switcher (admin only) */}
-          <div style={{ display: 'inline-flex', alignItems: 'center', flexShrink: 0 }}>
+          {/* CENTER — always-visible persona switcher (desktop only, mobile uses bottom nav) */}
+          <div className="hidden lg:inline-flex items-center" style={{ flexShrink: 0 }}>
             <PersonaSwitcher variant="inline" />
           </div>
 
           {/* RIGHT — language toggle, back-to-user, admin avatar */}
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+          <div className="inline-flex items-center gap-1.5 sm:gap-2">
             <button
               onClick={toggleLang}
               aria-label="toggle-language"
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
+                justifyContent: 'center',
                 gap: 6,
-                padding: '6px 12px',
+                minWidth: 44,
+                minHeight: 36,
+                padding: '6px 10px',
                 borderRadius: 999,
                 border: '1px solid var(--border-subtle, #E5E7EB)',
                 background: '#fff',
@@ -178,11 +181,11 @@ export default function PortalLayout({
                   e.preventDefault();
                   navigate('/v2/home');
                 }}
+                aria-label={t('portal.backToUser')}
+                className="inline-flex items-center gap-1.5 sm:gap-2"
                 style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  padding: '6px 14px',
+                  minHeight: 36,
+                  padding: '6px 10px',
                   borderRadius: 999,
                   background: accentColor,
                   color: '#fff',
@@ -193,13 +196,14 @@ export default function PortalLayout({
                   textDecoration: 'none',
                   boxShadow: `0 4px 12px ${accentColor}40`,
                   transition: 'transform 100ms ease',
+                  justifyContent: 'center',
                 }}
                 onMouseDown={(e) => (e.currentTarget.style.transform = 'scale(0.96)')}
                 onMouseUp={(e) => (e.currentTarget.style.transform = 'scale(1)')}
                 onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
               >
-                <ArrowLeft size={12} style={{ transform: isAr ? 'scaleX(-1)' : undefined }} />
-                {t('portal.backToUser')}
+                <ArrowLeft size={14} style={{ transform: isAr ? 'scaleX(-1)' : undefined }} />
+                <span className="hidden sm:inline">{t('portal.backToUser')}</span>
               </a>
             </Link>
 
@@ -222,9 +226,15 @@ export default function PortalLayout({
         />
       </header>
 
-      <main style={{ maxWidth: 1400, margin: '0 auto', padding: '24px 24px 96px' }}>
+      <main
+        className="mx-auto px-3 sm:px-6 pt-4 sm:pt-6 portal-main-pb"
+        style={{ maxWidth: 1400 }}
+      >
         {children}
       </main>
+
+      {/* Mobile bottom navigation (lg:hidden inside component) */}
+      <AdminMobileNav />
     </div>
   );
 }

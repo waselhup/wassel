@@ -196,6 +196,151 @@ export default function WarRoom() {
     document.documentElement.dir = next === 'ar' ? 'rtl' : 'ltr';
   }
 
+  // ─────────────────────────────────────────────────────────────────
+  // MOBILE FALLBACK — War Room is 2.5D desktop-only.
+  // ─────────────────────────────────────────────────────────────────
+  const [isMobile, setIsMobile] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return window.matchMedia('(max-width: 1023px)').matches;
+  });
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 1023px)');
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    if (mq.addEventListener) mq.addEventListener('change', handler);
+    else mq.addListener(handler);
+    return () => {
+      if (mq.removeEventListener) mq.removeEventListener('change', handler);
+      else mq.removeListener(handler);
+    };
+  }, []);
+
+  if (isMobile) {
+    return (
+      <div
+        dir={language === 'ar' ? 'rtl' : 'ltr'}
+        style={{
+          minHeight: '100vh',
+          background: 'linear-gradient(180deg, #020617 0%, #0F172A 100%)',
+          color: '#F1F5F9',
+          fontFamily: '"Thmanyah Sans", system-ui, sans-serif',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        {/* Slim header */}
+        <header
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '14px 16px',
+            borderBottom: '1px solid rgba(148, 163, 184, 0.18)',
+            background: 'rgba(2, 6, 23, 0.85)',
+          }}
+        >
+          <Link href="/v2/home">
+            <a aria-label="Back home" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, color: '#F1F5F9', textDecoration: 'none' }}>
+              <WasselLogo size={24} />
+            </a>
+          </Link>
+
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+            <button
+              onClick={toggleLang}
+              aria-label="toggle-language"
+              style={{
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                gap: 4, minWidth: 44, minHeight: 36, padding: '6px 10px',
+                borderRadius: 999, border: '1px solid rgba(148, 163, 184, 0.3)',
+                background: 'rgba(15, 23, 42, 0.6)', color: '#F1F5F9', cursor: 'pointer',
+                fontFamily: 'inherit', fontWeight: 800, fontSize: 11,
+              }}
+            >
+              <Globe size={12} />
+              {language === 'ar' ? 'EN' : 'AR'}
+            </button>
+            {user && (
+              <UserAvatar
+                avatarUrl={undefined}
+                name={user.user_metadata?.full_name as string | undefined}
+                email={user.email}
+                size="sm"
+              />
+            )}
+          </div>
+        </header>
+
+        {/* Centered card */}
+        <main
+          style={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '24px 20px',
+          }}
+        >
+          <div
+            style={{
+              width: '100%',
+              maxWidth: 420,
+              background: 'rgba(15, 23, 42, 0.6)',
+              border: '1px solid rgba(148, 163, 184, 0.2)',
+              borderRadius: 20,
+              padding: '28px 22px',
+              textAlign: 'center',
+              boxShadow: '0 12px 40px rgba(0, 0, 0, 0.4)',
+            }}
+          >
+            <div
+              aria-hidden
+              style={{
+                width: 64, height: 64, borderRadius: 18, margin: '0 auto 16px',
+                background: 'linear-gradient(135deg, #6366F1, #8B5CF6)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 10px 30px rgba(99, 102, 241, 0.4)',
+              }}
+            >
+              <Globe size={28} color="#fff" />
+            </div>
+            <h1
+              style={{
+                fontSize: 20, fontWeight: 900, margin: '0 0 10px',
+                color: '#F8FAFC', lineHeight: 1.3,
+              }}
+            >
+              {t('warRoom.mobileFallback.title')}
+            </h1>
+            <p
+              style={{
+                fontSize: 14, color: '#CBD5E1', lineHeight: 1.6,
+                margin: '0 0 22px', fontWeight: 500,
+              }}
+            >
+              {t('warRoom.mobileFallback.body')}
+            </p>
+            <Link href="/v2/workforce">
+              <a
+                style={{
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  gap: 8, width: '100%', minHeight: 48, padding: '12px 18px',
+                  borderRadius: 12,
+                  background: 'linear-gradient(135deg, #8B5CF6, #6366F1)',
+                  color: '#fff', fontWeight: 800, fontSize: 14,
+                  textDecoration: 'none',
+                  boxShadow: '0 8px 22px rgba(139, 92, 246, 0.4)',
+                }}
+              >
+                {t('warRoom.mobileFallback.cta')}
+                <ArrowLeft size={16} style={{ transform: language === 'ar' ? undefined : 'scaleX(-1)' }} />
+              </a>
+            </Link>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div
       dir={language === 'ar' ? 'rtl' : 'ltr'}
