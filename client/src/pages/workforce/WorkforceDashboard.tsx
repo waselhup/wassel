@@ -7,6 +7,7 @@ import {
   ShieldCheck, HeartHandshake, TrendingUp, Microscope, LayoutDashboard,
 } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
+import FatimaSuggestionsLane from './FatimaSuggestionsLane';
 
 const CARD: React.CSSProperties = {
   background: '#fff', borderRadius: 14,
@@ -481,6 +482,9 @@ export default function WorkforceDashboard() {
           </div>
         </section>
       )}
+
+      {/* FATIMA SUGGESTIONS LANE */}
+      <FatimaSuggestionsLane isAr={isAr} />
 
       {/* BRAIN FILE EDITOR */}
       <section style={CARD}>
