@@ -3053,7 +3053,119 @@
     "discovery_failed": "Discovery couldn't complete right now. Try again. No tokens were spent.",
     "export_failed": "We couldn't prepare your download. Try again.",
     "cache_corrupted": "The stored version is unreadable. Create a new one.",
-    "generic": "Something unexpected happened. Try again in a moment."
+    "generic": {
+      "unknown": {
+        "title": "Something went wrong",
+        "body": "{{refundedTokens}} tokens refunded if any. Contact support if it keeps happening.",
+        "cta": "Contact support"
+      }
+    },
+    "auth": {
+      "required": {
+        "title": "Sign in required",
+        "body": "Please sign in to continue.",
+        "cta": "Sign in"
+      },
+      "expired": {
+        "title": "Session expired",
+        "body": "Your progress is saved. Sign in again to continue.",
+        "cta": "Sign in"
+      }
+    },
+    "tokens": {
+      "insufficient": {
+        "title": "Not enough tokens",
+        "body": "You need more tokens to complete this action.",
+        "cta": "Add tokens"
+      },
+      "refund_failed": {
+        "title": "Refund failed",
+        "body": "Contact support and we'll sort it out quickly.",
+        "cta": "Contact support"
+      }
+    },
+    "ai": {
+      "rate_limit": {
+        "title": "Service is busy",
+        "body": "{{refundedTokens}} tokens refunded. Try again in a minute.",
+        "cta": "Try again"
+      },
+      "overloaded": {
+        "title": "AI is overloaded",
+        "body": "Your tokens have been refunded. Try again in a few minutes.",
+        "cta": "Try again"
+      },
+      "timeout": {
+        "title": "Request timed out",
+        "body": "The operation took longer than usual. {{refundedTokens}} tokens refunded.",
+        "cta": "Try again"
+      },
+      "generation_failed": {
+        "title": "Generation failed",
+        "body": "{{refundedTokens}} tokens refunded. Try again.",
+        "cta": "Try again"
+      }
+    },
+    "linkedin": {
+      "not_found": {
+        "title": "Profile not found",
+        "body": "Double-check the link. Your tokens were refunded.",
+        "cta": "Edit link"
+      },
+      "private": {
+        "title": "Profile is private",
+        "body": "Set your LinkedIn profile to public, or upload a resume instead.",
+        "cta": "Upload resume"
+      },
+      "invalid_url": {
+        "title": "Invalid LinkedIn URL",
+        "body": "The link should start with linkedin.com/in/",
+        "cta": "Edit"
+      },
+      "scrape_failed": {
+        "title": "Couldn't reach the profile",
+        "body": "{{refundedTokens}} tokens refunded. Try again.",
+        "cta": "Try again"
+      }
+    },
+    "payment": {
+      "failed": {
+        "title": "Payment failed",
+        "body": "The hold was cancelled. Nothing was charged to your card.",
+        "cta": "Try again"
+      },
+      "cancelled": {
+        "title": "Payment cancelled",
+        "body": "You can try again any time.",
+        "cta": "Try again"
+      }
+    },
+    "network": {
+      "generic": {
+        "title": "Connection problem",
+        "body": "Check your internet and try again.",
+        "cta": "Try again"
+      }
+    },
+    "validation": {
+      "generic": {
+        "title": "Invalid input",
+        "body": "Review the fields and try again.",
+        "cta": "Edit"
+      }
+    },
+    "database": {
+      "generic": {
+        "title": "System error",
+        "body": "Contact support if it keeps happening.",
+        "cta": "Contact support"
+      },
+      "not_found": {
+        "title": "Not found",
+        "body": "It may have been deleted, or the link is invalid.",
+        "cta": "Back to home"
+      }
+    }
   },
   "warRoom": {
     "title": "War Room",
@@ -3143,6 +3255,65 @@
       "sessionFailed": "Could not start session",
       "sendFailed": "Could not send message",
       "briefFailed": "Could not generate morning brief"
+    }
+  },
+  "notifications": {
+    "bell": {
+      "title": "Notifications",
+      "noUnread": "No new notifications",
+      "markAllRead": "Mark all as read",
+      "viewAll": "View all",
+      "newBadge": "New"
+    },
+    "list": {
+      "title": "Notifications",
+      "filter": {
+        "all": "All",
+        "unread": "Unread"
+      },
+      "empty": "No notifications yet"
+    },
+    "settings": {
+      "title": "Notification settings",
+      "email": "Email notifications",
+      "inApp": "In-app notifications",
+      "marketingEmails": "Tips, content & updates",
+      "marketingEmailsHelp": "Weekly career tips. You can stop them any time.",
+      "quietHours": "Quiet hours",
+      "quietHoursHelp": "We won't send notifications during this window.",
+      "from": "From",
+      "to": "To",
+      "language": "Notification language",
+      "testNotification": "Send test notification",
+      "testSent": "Sent — check the bell",
+      "testFailed": "Failed to send"
+    },
+    "templates": {
+      "balance_low": {
+        "title": "Your balance is running low",
+        "body": "You have {{balance}} tokens left. Add tokens to continue your career journey.",
+        "cta": "Add tokens"
+      },
+      "subscription_renewal": {
+        "title": "Your subscription renews soon",
+        "body": "Your {{plan}} subscription renews on {{date}} for {{amount}} SAR.",
+        "cta": "Manage subscription"
+      },
+      "bonus_expiring": {
+        "title": "Your bonus expires soon",
+        "body": "{{bonusTokens}} bonus tokens expire on {{date}}. Use them before they're gone.",
+        "cta": "Start now"
+      },
+      "payment_succeeded": {
+        "title": "Payment successful",
+        "body": "{{tokens}} tokens added to your balance.",
+        "cta": "View history"
+      },
+      "next_task_ready": {
+        "title": "Your next task is ready",
+        "body": "{{taskHeadline}}",
+        "cta": "Start now"
+      }
     }
   }
 }

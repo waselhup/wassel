@@ -406,3 +406,138 @@ export async function sendAnalysisReportEmail(input: AnalysisEmailInput): Promis
 
   return sendRaw({ to: input.to, subject, html, text });
 }
+
+// ─── Sprint 8 — Notification templates ──────────────────────────────
+// One helper per template_key. All share the same shape so the queue
+// processor can call them through a single switch. Each accepts
+// title/body/cta already-localized by the notification engine.
+
+interface TemplateEmailInput {
+  user: EmailRecipient;
+  title: string;
+  body: string;
+  ctaLabel?: string;
+  ctaUrl?: string;
+}
+
+function templateInner(opts: {
+  isAr: boolean;
+  icon: string;       // emoji or short html
+  accentBg: string;   // background gradient style
+  title: string;
+  body: string;
+  ctaLabel?: string;
+  ctaUrl?: string;
+}): string {
+  const ctaHtml = opts.ctaLabel && opts.ctaUrl
+    ? `<p style="text-align:center;margin:24px 0 8px;">${btn(opts.ctaUrl, escapeHtml(opts.ctaLabel))}</p>`
+    : '';
+  return `
+    <div style="text-align:center;margin:0 0 16px;">
+      <div style="display:inline-flex;width:56px;height:56px;align-items:center;justify-content:center;background:${opts.accentBg};border-radius:50%;font-size:26px;">${opts.icon}</div>
+    </div>
+    <h1 style="font-size:20px;font-weight:900;color:#111827;margin:0 0 12px;text-align:center;">${escapeHtml(opts.title)}</h1>
+    <p style="font-size:14px;line-height:1.8;color:#374151;margin:0 0 12px;text-align:center;">${escapeHtml(opts.body)}</p>
+    ${ctaHtml}
+    <p style="font-size:11px;color:#9CA3AF;text-align:center;margin-top:18px;">
+      ${opts.isAr
+        ? 'لإيقاف هذا النوع من الإشعارات، افتح إعدادات الإشعارات في وصل.'
+        : 'To stop these notifications, open notification settings in Wassel.'}
+    </p>
+  `;
+}
+
+export async function sendBalanceLowEmail(input: TemplateEmailInput): Promise<SendResult> {
+  const isAr = (input.user.language || 'ar') === 'ar';
+  const inner = templateInner({
+    isAr,
+    icon: '⚡',
+    accentBg: 'linear-gradient(135deg,#FEF3C7,#FBBF24)',
+    title: input.title,
+    body:  input.body,
+    ctaLabel: input.ctaLabel ?? (isAr ? 'إضافة توكنات' : 'Add tokens'),
+    ctaUrl:   input.ctaUrl   ?? `${APP_URL}/v2/pricing`,
+  });
+  return sendRaw({
+    to: input.user.email,
+    subject: input.title,
+    html: shell({ isAr, preheader: input.body.slice(0, 90), bodyInner: inner }),
+    text: `${input.title}\n\n${input.body}\n\n${input.ctaUrl ?? APP_URL + '/v2/pricing'}`,
+  });
+}
+
+export async function sendSubscriptionRenewalEmail(input: TemplateEmailInput): Promise<SendResult> {
+  const isAr = (input.user.language || 'ar') === 'ar';
+  const inner = templateInner({
+    isAr,
+    icon: '🔁',
+    accentBg: 'linear-gradient(135deg,#DBEAFE,#0EA5E9)',
+    title: input.title,
+    body:  input.body,
+    ctaLabel: input.ctaLabel ?? (isAr ? 'إدارة الاشتراك' : 'Manage subscription'),
+    ctaUrl:   input.ctaUrl   ?? `${APP_URL}/v2/billing`,
+  });
+  return sendRaw({
+    to: input.user.email,
+    subject: input.title,
+    html: shell({ isAr, preheader: input.body.slice(0, 90), bodyInner: inner }),
+    text: `${input.title}\n\n${input.body}\n\n${input.ctaUrl ?? APP_URL + '/v2/billing'}`,
+  });
+}
+
+export async function sendBonusExpiringEmail(input: TemplateEmailInput): Promise<SendResult> {
+  const isAr = (input.user.language || 'ar') === 'ar';
+  const inner = templateInner({
+    isAr,
+    icon: '⏳',
+    accentBg: 'linear-gradient(135deg,#FEE2E2,#F87171)',
+    title: input.title,
+    body:  input.body,
+    ctaLabel: input.ctaLabel ?? (isAr ? 'ابدأ الآن' : 'Start now'),
+    ctaUrl:   input.ctaUrl   ?? `${APP_URL}/v2/home`,
+  });
+  return sendRaw({
+    to: input.user.email,
+    subject: input.title,
+    html: shell({ isAr, preheader: input.body.slice(0, 90), bodyInner: inner }),
+    text: `${input.title}\n\n${input.body}\n\n${input.ctaUrl ?? APP_URL + '/v2/home'}`,
+  });
+}
+
+export async function sendPaymentSucceededEmail(input: TemplateEmailInput): Promise<SendResult> {
+  const isAr = (input.user.language || 'ar') === 'ar';
+  const inner = templateInner({
+    isAr,
+    icon: '✅',
+    accentBg: 'linear-gradient(135deg,#D1FAE5,#10B981)',
+    title: input.title,
+    body:  input.body,
+    ctaLabel: input.ctaLabel ?? (isAr ? 'عرض السجل' : 'View history'),
+    ctaUrl:   input.ctaUrl   ?? `${APP_URL}/v2/billing`,
+  });
+  return sendRaw({
+    to: input.user.email,
+    subject: input.title,
+    html: shell({ isAr, preheader: input.body.slice(0, 90), bodyInner: inner }),
+    text: `${input.title}\n\n${input.body}\n\n${input.ctaUrl ?? APP_URL + '/v2/billing'}`,
+  });
+}
+
+export async function sendNextTaskReadyEmail(input: TemplateEmailInput): Promise<SendResult> {
+  const isAr = (input.user.language || 'ar') === 'ar';
+  const inner = templateInner({
+    isAr,
+    icon: '🎯',
+    accentBg: 'linear-gradient(135deg,#CCFBF1,#0A8F84)',
+    title: input.title,
+    body:  input.body,
+    ctaLabel: input.ctaLabel ?? (isAr ? 'ابدأ الآن' : 'Start now'),
+    ctaUrl:   input.ctaUrl   ?? `${APP_URL}/v2/home`,
+  });
+  return sendRaw({
+    to: input.user.email,
+    subject: input.title,
+    html: shell({ isAr, preheader: input.body.slice(0, 90), bodyInner: inner }),
+    text: `${input.title}\n\n${input.body}\n\n${input.ctaUrl ?? APP_URL + '/v2/home'}`,
+  });
+}

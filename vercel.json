@@ -26,7 +26,9 @@
     { "path": "/api/cron/war-room-weekly-journal", "schedule": "0 5 * * 0" },
     { "path": "/api/cron/dashboard-suggestions", "schedule": "0 23 * * *" },
     { "path": "/api/cron/expire-bonuses", "schedule": "0 0 * * *" },
-    { "path": "/api/cron/subscription-renewals", "schedule": "0 1 * * *" }
+    { "path": "/api/cron/subscription-renewals", "schedule": "0 1 * * *" },
+    { "path": "/api/cron/process-email-queue", "schedule": "*/5 * * * *" },
+    { "path": "/api/cron/notification-triggers", "schedule": "0 6 * * *" }
   ],
   "redirects": [
     {

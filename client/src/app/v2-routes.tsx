@@ -62,6 +62,10 @@ const OnboardingWizard = lazy(() => import('@/pages/onboarding/OnboardingWizard'
 const CareerProfileSettings = lazy(() => import('@/pages/v2/CareerProfileSettings'));
 const PrivacyAndData = lazy(() => import('@/pages/v2/PrivacyAndData'));
 
+// Career Copilot — Sprint 8 surfaces.
+const Notifications         = lazy(() => import('@/pages/v2/Notifications'));
+const NotificationSettings  = lazy(() => import('@/pages/v2/NotificationSettings'));
+
 function V2Loader() {
   // Skeleton-shaped fallback that resembles the page chrome — feels less
   // like a hard interruption than a centered spinner while the chunk loads.
@@ -110,6 +114,7 @@ const ONBOARDING_BYPASS_PREFIXES = [
   '/v2/checkout',
   '/v2/me',
   '/v2/war-room',
+  '/v2/notifications',
 ];
 
 function shouldBypassOnboardingRedirect(location: string): boolean {
@@ -121,12 +126,23 @@ function AuthGate({ children }: { children: ReactNode }) {
   const [location, navigate] = useLocation();
   const [careerProfileChecked, setCareerProfileChecked] = useState(false);
   const checkedForUserRef = useRef<string | null>(null);
+  const appOpenPingedForUserRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
       navigate('/v2/login', { replace: true });
     }
   }, [loading, user, navigate]);
+
+  // Smart dedup: ping the server once per user/session so the notification
+  // engine can skip email-only sends that would arrive while the user is
+  // actively in-app (10-min window). Fire-and-forget — failures are silent.
+  useEffect(() => {
+    if (loading || !user) return;
+    if (appOpenPingedForUserRef.current === user.id) return;
+    appOpenPingedForUserRef.current = user.id;
+    trpc.notifications.markAppOpened().catch(() => { /* silent */ });
+  }, [loading, user]);
 
   // After login, fetch the career_profile once per user/session. If null and
   // we're not already on an onboarding-bypass route, redirect to /v2/onboarding.
@@ -313,6 +329,8 @@ function V2Routes(): ReactElement | null {
   const [matchOnboarding] = useRoute('/v2/onboarding');
   const [matchSettingsCareer] = useRoute('/v2/settings/career');
   const [matchSettingsPrivacy] = useRoute('/v2/settings/privacy');
+  const [matchSettingsNotifications] = useRoute('/v2/settings/notifications');
+  const [matchNotifications] = useRoute('/v2/notifications');
   const [matchAdmin] = useRoute('/v2/admin');
   const [matchMarketing] = useRoute('/v2/marketing');
   const [matchFinance] = useRoute('/v2/finance');
@@ -372,6 +390,12 @@ function V2Routes(): ReactElement | null {
   }
   if (matchSettingsPrivacy) {
     return <ProtectedShell><Suspense fallback={<V2Loader />}><PrivacyAndData /></Suspense></ProtectedShell>;
+  }
+  if (matchSettingsNotifications) {
+    return <ProtectedShell><Suspense fallback={<V2Loader />}><NotificationSettings /></Suspense></ProtectedShell>;
+  }
+  if (matchNotifications) {
+    return <ProtectedShell><Suspense fallback={<V2Loader />}><Notifications /></Suspense></ProtectedShell>;
   }
   if (matchHome) {
     return <ProtectedShell><Suspense fallback={<V2Loader />}><Home /></Suspense></ProtectedShell>;
