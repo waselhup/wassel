@@ -45,7 +45,7 @@ export default function RevenueLabDashboard() {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+    <div className="admin-portal-page" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       <div style={{ ...CARD, background: 'linear-gradient(135deg, #FEF2F2 0%, #FECACA 100%)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <div style={{ width: 56, height: 56, borderRadius: 16, background: '#EF4444', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 6px 16px rgba(239,68,68,0.3)' }}>

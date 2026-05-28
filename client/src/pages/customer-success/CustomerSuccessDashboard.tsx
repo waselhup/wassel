@@ -64,7 +64,7 @@ export default function CustomerSuccessDashboard() {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+    <div className="admin-portal-page" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       {/* Agent header */}
       <div style={{ ...CARD, background: 'linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>

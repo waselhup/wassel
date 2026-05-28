@@ -141,7 +141,7 @@ export default function WorkforceDashboard() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+    <div className="admin-portal-page" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
       {/* MORNING BRIEF */}
       <section style={CARD}>
@@ -187,7 +187,7 @@ export default function WorkforceDashboard() {
       )}
 
       {/* APPROVAL QUEUE + ARGUE THREAD */}
-      <section style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.5fr) minmax(0, 1fr)', gap: 16 }}>
+      <section className="admin-grid-2col">
 
         {/* QUEUE */}
         <div style={CARD}>

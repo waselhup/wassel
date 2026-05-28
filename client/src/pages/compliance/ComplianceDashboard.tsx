@@ -60,7 +60,7 @@ export default function ComplianceDashboard() {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+    <div className="admin-portal-page" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       <div style={{ ...CARD, background: 'linear-gradient(135deg, #EEF2FF 0%, #C7D2FE 100%)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <div style={{ width: 56, height: 56, borderRadius: 16, background: '#6366F1', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 6px 16px rgba(99,102,241,0.3)' }}>

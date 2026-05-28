@@ -280,7 +280,7 @@ export default function FinanceDashboard() {
     <>
       <toast.View />
       <style>{`@keyframes wsl-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }`}</style>
-      <div style={{ margin: '0 auto', padding: '0 4px' }}>
+      <div className="admin-portal-page" style={{ margin: '0 auto', padding: '0 4px' }}>
         <motion.div
           initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 18 }}
@@ -443,7 +443,7 @@ export default function FinanceDashboard() {
           ) : loading.plans ? (
             <LoadingBox height={280} />
           ) : planBreakdown ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(220px, 280px) 1fr', gap: 14 }}>
+            <div className="finance-donut-grid">
               <div style={{ ...cardSurface, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
                 <PlanDonut
                   slices={planSlices}

@@ -93,7 +93,7 @@ export default function GrowthDashboard() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+    <div className="admin-portal-page" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
       {/* SAYED HEADER */}
       <section style={{ ...CARD, background: 'linear-gradient(135deg, #ECFDF5, #fff)' }}>

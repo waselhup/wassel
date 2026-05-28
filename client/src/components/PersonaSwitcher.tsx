@@ -86,16 +86,15 @@ export default function PersonaSwitcher({ variant = 'fab' }: PersonaSwitcherProp
   useEffect(() => () => cancelClose(), []);
 
   // ─────────────────────────────────────────────────────────────────
-  // INLINE VARIANT — always-visible horizontal strip
+  // INLINE VARIANT — always-visible horizontal strip (desktop only)
   // ─────────────────────────────────────────────────────────────────
   if (variant === 'inline') {
     return (
       <div
         role="navigation"
         aria-label="persona switcher"
+        className="hidden lg:inline-flex items-center"
         style={{
-          display: 'inline-flex',
-          alignItems: 'center',
           gap: 4,
           padding: 4,
           borderRadius: 999,
@@ -177,16 +176,7 @@ export default function PersonaSwitcher({ variant = 'fab' }: PersonaSwitcherProp
   // ─────────────────────────────────────────────────────────────────
   return (
     <div
-      style={{
-        position: 'fixed',
-        bottom: 92, // leave room above FeedbackFAB (bottom: 24)
-        insetInlineEnd: 24,
-        zIndex: 90,
-        display: 'inline-flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: 10,
-      }}
+      className="persona-fab"
       onMouseEnter={cancelClose}
       onMouseLeave={scheduleClose}
     >
@@ -197,12 +187,12 @@ export default function PersonaSwitcher({ variant = 'fab' }: PersonaSwitcherProp
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8, scale: 0.92 }}
             transition={{ type: 'spring', stiffness: 360, damping: 26 }}
+            className="persona-fab-grid"
             style={{
               background: '#FFFFFF',
               borderRadius: 16,
               padding: 10,
               display: 'grid',
-              gridTemplateColumns: 'repeat(3, auto)',
               gap: 6,
               border: '1px solid var(--border-subtle, #E5E7EB)',
               boxShadow: '0 12px 28px rgba(15, 23, 42, 0.12)',
