@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { Lightbulb } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 
@@ -18,7 +17,6 @@ interface Props {
 }
 
 export default function FatimaSuggestionsLane({ isAr }: Props) {
-  const { t } = useTranslation();
   const [tasks, setTasks] = useState<TaskRow[]>([]);
   const [loading, setLoading] = useState(true);
 

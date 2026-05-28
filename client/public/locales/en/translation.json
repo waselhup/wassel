@@ -2181,7 +2181,25 @@
     "invoiceDesc": "Description",
     "refundTitle": "Refund payment",
     "refundPaymentId": "Moyasar payment ID",
-    "refundReason": "Reason"
+    "refundReason": "Reason",
+    "s7Title": "Mohammed's Daily Snapshot",
+    "s8Title": "ZATCA Invoices",
+    "mohammedSnapshotLoading": "Loading today's snapshot…",
+    "mohammedSnapshotEmpty": "No snapshot yet. Run the scheduled job first.",
+    "mohammedSnapshotAsOf": "As of {{date}}",
+    "mohammedMrr": "MRR",
+    "mohammedRunway": "Runway",
+    "mohammedMargin": "Margin",
+    "mohammedCash": "Cash on hand",
+    "daysLabel": "days",
+    "zatcaLoading": "Loading invoices…",
+    "zatcaEmpty": "No invoices yet",
+    "zatcaColInvoice": "Invoice #",
+    "zatcaColDate": "Date",
+    "zatcaColCustomer": "Customer",
+    "zatcaColAmount": "Amount",
+    "zatcaColStatus": "Status",
+    "zatcaColPdf": "PDF"
   },
   "ops": {
     "headerTitle": "Operations & Monitoring Center",
@@ -2376,7 +2394,11 @@
     "incidentTitlePh": "Short title...",
     "incidentDescPh": "Describe what happened (optional)...",
     "incidentServicePh": "Affected service (optional)...",
-    "confirmCreateIncident": "Log"
+    "confirmCreateIncident": "Log",
+    "section7": "Hussein's Auto-Resolutions",
+    "husseinResolutionsLoading": "Loading resolutions…",
+    "husseinResolutionsEmpty": "No auto-resolutions recorded yet",
+    "husseinResolutionsNoAction": "no specific action"
   },
   "workforce": {
     "headerTitle": "Wassel Command Center",
