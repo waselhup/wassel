@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   Home, MessagesSquare, LayoutDashboard, Wallet, MoreHorizontal,
-  Megaphone, Activity, HeartHandshake, TrendingUp, Microscope, ShieldCheck, X, User as UserIcon,
+  Megaphone, Activity, HeartHandshake, TrendingUp, Microscope, ShieldCheck, X, User as UserIcon, Sparkles,
 } from 'lucide-react';
 
 const ADMIN_EMAILS = ['waselhup@gmail.com', 'almodhih.1995@gmail.com', 'alhashimali649@gmail.com'];
@@ -37,6 +37,7 @@ const OVERFLOW_ITEMS: NavItem[] = [
   { key: 'revenue_lab',      href: '/v2/revenue-lab',      labelKey: 'personaSwitcher.revenue_lab',      Icon: TrendingUp,     color: '#EF4444', match: (l) => l.startsWith('/v2/revenue-lab') },
   { key: 'product_intel',    href: '/v2/product-intel',    labelKey: 'personaSwitcher.product_intel',    Icon: Microscope,     color: '#EC4899', match: (l) => l.startsWith('/v2/product-intel') },
   { key: 'compliance',       href: '/v2/compliance',       labelKey: 'personaSwitcher.compliance',       Icon: ShieldCheck,    color: '#6366F1', match: (l) => l.startsWith('/v2/compliance') },
+  { key: 'beta',             href: '/v2/beta',             labelKey: 'personaSwitcher.beta',             Icon: Sparkles,       color: '#A855F7', match: (l) => l.startsWith('/v2/beta') },
 ];
 
 // When opened from the USER app, also include "User" so Ali can identify where he started.
