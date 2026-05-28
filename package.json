@@ -9,6 +9,7 @@
     "build:client": "vite build",
     "build:server": "node build-server.js",
     "build:prompts": "node --experimental-strip-types scripts/build-prompts.ts",
+    "build:agent-avatars": "node scripts/build-agent-avatars.mjs",
     "preview": "vite preview",
     "lint": "tsc --noEmit"
   },
@@ -62,6 +63,8 @@
     "zod": "^3.24.0"
   },
   "devDependencies": {
+    "@dicebear/collection": "^9.4.2",
+    "@dicebear/core": "^9.4.2",
     "@types/cors": "^2.8.17",
     "@types/diff-match-patch": "^1.0.36",
     "@types/express": "^5.0.0",
