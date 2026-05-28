@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { createHash } from 'node:crypto';
 import { callClaude, extractText, extractJson } from './claude-client';
+import { validateOutput } from './output-guard';
 import {
   getCareerProfileWithOverrides,
   listActiveSectionOverrides,
@@ -652,6 +653,13 @@ export async function runResumeBuild(
       temperature: 0.35,
     });
     const txt = extractText(callResp);
+
+    // Output Guard: block banned vendor / model names + Eastern Arabic digits
+    const validation = validateOutput(txt, 'resume.build');
+    if (!validation.valid) {
+      throw new ResumeError('MODEL_FAILED', `Output guard blocked: ${validation.reason}`);
+    }
+
     const parsed = extractJson<Record<string, unknown>>(txt);
     if (!parsed) throw new ResumeError('MODEL_FAILED', 'Could not parse Resume JSON.');
 
@@ -875,6 +883,13 @@ export async function createVersionForRole(
       temperature: 0.35,
     });
     const txt = extractText(callResp);
+
+    // Output Guard: block banned vendor / model names + Eastern Arabic digits
+    const validation = validateOutput(txt, 'resume.variant');
+    if (!validation.valid) {
+      throw new ResumeError('MODEL_FAILED', `Output guard blocked: ${validation.reason}`);
+    }
+
     const parsed = extractJson<Record<string, unknown>>(txt);
     if (!parsed) throw new ResumeError('MODEL_FAILED', 'Could not parse Resume JSON.');
 
@@ -1081,6 +1096,13 @@ export async function applyRefinement(
       temperature: 0.4,
     });
     const txt = extractText(callResp);
+
+    // Output Guard: block banned vendor / model names + Eastern Arabic digits
+    const validation = validateOutput(txt, 'resume.refine');
+    if (!validation.valid) {
+      throw new ResumeError('MODEL_FAILED', `Output guard blocked: ${validation.reason}`);
+    }
+
     const parsed = extractJson<{ content: string | string[]; note: string | null }>(txt);
     if (!parsed) throw new ResumeError('MODEL_FAILED', 'Could not parse refinement JSON.');
 
