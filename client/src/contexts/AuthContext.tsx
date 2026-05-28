@@ -281,6 +281,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const signOut = async () => {
     try {
+      try {
+        const { resetAnalytics } = await import('../lib/analytics');
+        resetAnalytics();
+      } catch (_) {}
       const { error } = await supabase.auth.signOut();
       return { error };
     } catch (err) {

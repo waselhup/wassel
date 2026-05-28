@@ -468,6 +468,19 @@ app.post('/api/email/welcome', async (req, res) => {
     const user = await getUserFromAuthHeader(req.headers.authorization);
     if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
+    // Followup Sweep #3: Dhai fraud-scan on new signup.
+    // Fire-and-forget — never blocks welcome email even if Dhai is slow.
+    // scanNewSignup reads signup_ip/email from profiles by user_id.
+    (async () => {
+      try {
+        const { DhaiAgent } = await import('./agents/dhai');
+        const dhai = new DhaiAgent();
+        await dhai.scanNewSignup({ userId: user.id });
+      } catch (err) {
+        console.warn('[Dhai] signup scan failed (non-blocking):', err);
+      }
+    })();
+
     const sb = createClient(SUPABASE_URL_EMAIL, SUPABASE_SERVICE_KEY_EMAIL);
     const { data: profile } = await sb
       .from('profiles')
