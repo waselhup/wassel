@@ -375,7 +375,14 @@ export async function runRadar(
     // 6. Gap-analysis pass (Sonnet)
     const analysisRes = await callClaude({
       task: 'profile_analysis',
-      system: radarPass2GapAnalysisPrompt.system,
+      // Sprint 8 hotfix pattern: append schema + JSON-only directive so the
+      // model emits valid JSON. Pass 1 (discovery) is already JSON-strict in
+      // its source prompt; Pass 2 (gap analysis) was not, which caused the
+      // 82% Quick Wins failure observed in production.
+      system:
+        radarPass2GapAnalysisPrompt.system +
+        '\n\n---\nReturn a single JSON object matching this exact TypeScript type, with no prose, no markdown fences, and no preamble:\n\n' +
+        radarPass2GapAnalysisPrompt.schema,
       userContent: radarPass2GapAnalysisPrompt.user({
         target_role: targetRole,
         industry: profileMerged.industry,

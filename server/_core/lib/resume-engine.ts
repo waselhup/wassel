@@ -626,7 +626,13 @@ export async function runResumeBuild(
   try {
     const callResp = await callClaude({
       task: 'cv_generate',
-      system: resumeFullBuildPrompt.system,
+      // Sprint 8 hotfix pattern: append schema + JSON-only directive so
+      // Claude emits valid JSON instead of prose. The compiled prompt's
+      // `.schema` field is metadata otherwise — never sent to the model.
+      system:
+        resumeFullBuildPrompt.system +
+        '\n\n---\nReturn a single JSON object matching this exact TypeScript type, with no prose, no markdown fences, and no preamble:\n\n' +
+        resumeFullBuildPrompt.schema,
       userContent: resumeFullBuildPrompt.user({
         target_role: targetRole,
         industry: profile.industry,
@@ -842,7 +848,11 @@ export async function createVersionForRole(
     // Re-tailor the language: feed parent's experience + new target, ask for the same shape.
     const callResp = await callClaude({
       task: 'cv_generate',
-      system: resumeFullBuildPrompt.system,
+      // Sprint 8 hotfix pattern — see full build above for rationale.
+      system:
+        resumeFullBuildPrompt.system +
+        '\n\n---\nReturn a single JSON object matching this exact TypeScript type, with no prose, no markdown fences, and no preamble:\n\n' +
+        resumeFullBuildPrompt.schema,
       userContent: resumeFullBuildPrompt.user({
         target_role: newTarget,
         industry: profile.industry,
@@ -1055,7 +1065,11 @@ export async function applyRefinement(
   try {
     const callResp = await callClaude({
       task: 'cv_generate',
-      system: resumePerSectionRefinementPrompt.system,
+      // Sprint 8 hotfix pattern — append schema + JSON-only directive.
+      system:
+        resumePerSectionRefinementPrompt.system +
+        '\n\n---\nReturn a single JSON object matching this exact TypeScript type, with no prose, no markdown fences, and no preamble:\n\n' +
+        resumePerSectionRefinementPrompt.schema,
       userContent: resumePerSectionRefinementPrompt.user({
         section_type: section,
         current_content: typeof currentContent === 'string' ? currentContent : JSON.stringify(currentContent),
