@@ -8,3 +8,5 @@ dist/
 .vercel
 .env*.local
 scripts/.smoke-out/
+.tmp/
+

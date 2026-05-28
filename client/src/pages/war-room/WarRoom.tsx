@@ -9,7 +9,7 @@ import { WasselLogo } from '@/components/WasselLogo';
 import UserAvatar from '@/components/UserAvatar';
 import { trpc } from '@/lib/trpc';
 
-import RoomScene from './components/RoomScene';
+import LuxuryRoom from './components/LuxuryRoom';
 import AgentPortrait, { AGENT_COLORS, type Expression } from './components/AgentPortrait';
 import SpeechBubble from './components/SpeechBubble';
 import ProjectorScreen, { type ProjectorContent } from './components/ProjectorScreen';
@@ -435,7 +435,7 @@ export default function WarRoom() {
 
       {/* Room scene — fills remaining height */}
       <div style={{ flex: 1, position: 'relative', minHeight: '70vh' }}>
-        <RoomScene
+        <LuxuryRoom
           activeSeat={activeSeat}
           projector={projector ? <ProjectorScreen content={projector} language={language} /> : null}
           renderSeat={(seat) => {
