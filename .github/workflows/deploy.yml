@@ -30,11 +30,18 @@ jobs:
 
       - name: Verify bundle contains Supabase key
         run: |
-          KEY_FILE=$(ls dist/assets/index-*.js)
-          if grep -q "hiqotmimlgsrsnovtopd" "$KEY_FILE"; then
+          # Vite now emits multiple index-*.js chunks (code-splitting).
+          # We grep across all of them; finding the URL in any chunk is enough.
+          INDEX_COUNT=$(ls dist/assets/index-*.js 2>/dev/null | wc -l)
+          if [ "$INDEX_COUNT" -lt 1 ]; then
+            echo "❌ No index-*.js files found in dist/assets/"
+            exit 1
+          fi
+          echo "Found $INDEX_COUNT index chunk(s)"
+          if grep -q "hiqotmimlgsrsnovtopd" dist/assets/index-*.js; then
             echo "✅ Supabase URL found in bundle"
           else
-            echo "❌ Supabase URL MISSING from bundle"
+            echo "❌ Supabase URL MISSING from all $INDEX_COUNT bundle(s)"
             exit 1
           fi
 

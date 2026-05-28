@@ -2184,7 +2184,25 @@
     "invoiceDesc": "الوصف",
     "refundTitle": "استرجاع دفعة",
     "refundPaymentId": "معرّف الدفعة في Moyasar",
-    "refundReason": "السبب"
+    "refundReason": "السبب",
+    "s7Title": "لقطة محمد اليومية",
+    "s8Title": "فواتير ZATCA",
+    "mohammedSnapshotLoading": "جاري تحميل لقطة اليوم…",
+    "mohammedSnapshotEmpty": "لا توجد لقطة بعد. شغّل المهمة المجدولة أولاً.",
+    "mohammedSnapshotAsOf": "بتاريخ {{date}}",
+    "mohammedMrr": "MRR",
+    "mohammedRunway": "المدّة المتبقية",
+    "mohammedMargin": "الهامش",
+    "mohammedCash": "النقد المتوفر",
+    "daysLabel": "يوم",
+    "zatcaLoading": "جاري تحميل الفواتير…",
+    "zatcaEmpty": "لا توجد فواتير بعد",
+    "zatcaColInvoice": "رقم الفاتورة",
+    "zatcaColDate": "التاريخ",
+    "zatcaColCustomer": "العميل",
+    "zatcaColAmount": "المبلغ",
+    "zatcaColStatus": "الحالة",
+    "zatcaColPdf": "PDF"
   },
   "ops": {
     "headerTitle": "مركز العمليات والمراقبة",
@@ -2379,7 +2397,11 @@
     "incidentTitlePh": "عنوان قصير...",
     "incidentDescPh": "وصف ما حدث (اختياري)...",
     "incidentServicePh": "الخدمة المتأثرة (اختياري)...",
-    "confirmCreateIncident": "تسجيل"
+    "confirmCreateIncident": "تسجيل",
+    "section7": "حلول حسين التلقائية",
+    "husseinResolutionsLoading": "جاري تحميل الحلول…",
+    "husseinResolutionsEmpty": "لا توجد حلول تلقائية مسجّلة بعد",
+    "husseinResolutionsNoAction": "بدون إجراء محدّد"
   },
   "workforce": {
     "headerTitle": "مركز قيادة وصل",

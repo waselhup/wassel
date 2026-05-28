@@ -97,6 +97,43 @@ export const sayedRouter = router({
       if (item.status !== 'approved') {
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Content not approved' });
       }
+
+      // Followup Sweep #4: Dhai pre-publish moderation.
+      // Blocks publish if content fails A11 / brand-safety / LinkedIn-ToS rules.
+      // Uses 'failed' status (the only block-like value the content_calendar
+      // CHECK constraint allows without a migration) and stores the reason
+      // in performance_data for audit.
+      try {
+        const { dhai } = await import('../agents/dhai');
+        const moderation = await dhai.moderateContent({
+          contentId: item.id,
+          contentType: item.content_type === 'email' ? 'email' : 'social_post',
+          scannedText: item.caption || '',
+          language: item.language || 'ar',
+          sourceAgent: 'sayed',
+        });
+        if (moderation.decision === 'blocked') {
+          await ctx.supabase
+            .from('content_calendar')
+            .update({
+              status: 'failed',
+              performance_data: {
+                blocked_by_moderation: true,
+                violations: moderation.violations,
+                blocked_at: new Date().toISOString(),
+              },
+            })
+            .eq('id', input.contentId);
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: `Blocked by Dhai moderation: ${moderation.violations.join(', ')}`,
+          });
+        }
+      } catch (err) {
+        if (err instanceof TRPCError) throw err;
+        console.warn('[Sayed] moderation check failed (allowing publish):', err);
+      }
+
       // TODO Batch 2: real Snap/LinkedIn/Instagram API publish.
       await ctx.supabase
         .from('content_calendar')

@@ -15,6 +15,7 @@ import ServiceHealthCard from '@/pages/ops/_dashboard/ServiceHealthCard';
 import WebhookActivity from '@/pages/ops/_dashboard/WebhookActivity';
 import CronStatus from '@/pages/ops/_dashboard/CronStatus';
 import IncidentTimeline from '@/pages/ops/_dashboard/IncidentTimeline';
+import HusseinAutoResolutions from '@/pages/ops/_dashboard/HusseinAutoResolutions';
 
 type SubStatus = 'active' | 'expiring' | 'past_due' | 'canceled' | 'new_month';
 // (no extra alias) — the client wrapper uses `new_month` for "new this month"
@@ -626,6 +627,16 @@ export default function OpsDashboard() {
               <ClipboardList size={13} /> {t('ops.runFullCheck')}
             </button>
           </div>
+        </div>
+      </section>
+
+      {/* OPS-7 HUSSEIN AUTO-RESOLUTIONS */}
+      <section>
+        <h2 style={{ ...SECTION_TITLE, marginBottom: 16 }}>
+          <Activity size={18} style={{ color: '#0EA5E9' }} /> {t('ops.section7')}
+        </h2>
+        <div style={CARD}>
+          <HusseinAutoResolutions />
         </div>
       </section>
 

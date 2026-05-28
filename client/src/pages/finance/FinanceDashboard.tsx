@@ -14,6 +14,8 @@ import Waterfall from './_dashboard/Waterfall';
 import PlanDonut from './_dashboard/PlanDonut';
 import PaymentTable from './_dashboard/PaymentTable';
 import CostBar from './_dashboard/CostBar';
+import MohammedDailySnapshot from './_dashboard/MohammedDailySnapshot';
+import ZatcaInvoicesTable from './_dashboard/ZatcaInvoicesTable';
 
 const ADMIN_EMAILS = ['waselhup@gmail.com', 'almodhih.1995@gmail.com', 'alhashimali649@gmail.com'];
 
@@ -690,6 +692,32 @@ export default function FinanceDashboard() {
                 }}>{a.icon} {a.label}</button>
               ))}
             </div>
+          </div>
+        </div>
+
+        {/* ═══ F7 — Mohammed Daily Snapshot ═══ */}
+        <div style={sectionWrap}>
+          <div style={sectionHeader}>
+            <h2 style={sectionTitle}>
+              <Wallet size={16} style={{ color: '#D4AF37' }} />
+              {t('finance.s7Title')}
+            </h2>
+          </div>
+          <div style={cardSurface}>
+            <MohammedDailySnapshot />
+          </div>
+        </div>
+
+        {/* ═══ F8 — ZATCA Invoices ═══ */}
+        <div style={sectionWrap}>
+          <div style={sectionHeader}>
+            <h2 style={sectionTitle}>
+              <ReceiptText size={16} style={{ color: '#D4AF37' }} />
+              {t('finance.s8Title')}
+            </h2>
+          </div>
+          <div style={cardSurface}>
+            <ZatcaInvoicesTable />
           </div>
         </div>
 
