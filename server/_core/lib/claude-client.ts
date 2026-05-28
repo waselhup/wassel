@@ -186,5 +186,13 @@ export function extractJson<T = any>(text: string): T | null {
     } catch {}
   }
 
+  // [Sprint AI-Reliability] All four strategies failed. Log a truncated,
+  // single-line snippet of the failed response so we can diagnose parse
+  // failures from Vercel runtime logs. extractJson returning null is
+  // otherwise invisible in production.
+  console.warn(
+    '[extractJson] parse failed. Response sample:',
+    text.slice(0, 500).replace(/[\n\r]+/g, ' '),
+  );
   return null;
 }

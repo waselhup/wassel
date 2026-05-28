@@ -735,7 +735,13 @@ async function runOneGeneration(
   const guard = opts.language === 'ar' ? STRICT_GUARD_AR : STRICT_GUARD_EN;
 
   if (opts.contentType === 'post') {
-    const system = contentPostPrompt.system + (strict ? guard : '');
+    // Sprint 8 hotfix pattern: schema + JSON-only directive precede the
+    // strict guard so the strict addendum (when present) wraps the JSON rules.
+    const system =
+      contentPostPrompt.system +
+      '\n\n---\nReturn a single JSON object matching this exact TypeScript type, with no prose, no markdown fences, and no preamble:\n\n' +
+      contentPostPrompt.schema +
+      (strict ? guard : '');
     const userMsg = contentPostPrompt.user({
       goal: opts.profile.goal,
       level: opts.profile.level,
@@ -766,7 +772,12 @@ async function runOneGeneration(
   }
 
   if (opts.contentType === 'carousel') {
-    const system = contentCarouselPrompt.system + (strict ? guard : '');
+    // Sprint 8 hotfix pattern — see post branch above for rationale.
+    const system =
+      contentCarouselPrompt.system +
+      '\n\n---\nReturn a single JSON object matching this exact TypeScript type, with no prose, no markdown fences, and no preamble:\n\n' +
+      contentCarouselPrompt.schema +
+      (strict ? guard : '');
     const userMsg = contentCarouselPrompt.user({
       goal: opts.profile.goal,
       level: opts.profile.level,
@@ -807,7 +818,12 @@ async function runOneGeneration(
   if (!opts.sourcePostBody) {
     throw new ContentError('SOURCE_POST_NOT_FOUND', 'Source post body required.');
   }
-  const system = contentRepurposePrompt.system + (strict ? guard : '');
+  // Sprint 8 hotfix pattern — see post branch above for rationale.
+  const system =
+    contentRepurposePrompt.system +
+    '\n\n---\nReturn a single JSON object matching this exact TypeScript type, with no prose, no markdown fences, and no preamble:\n\n' +
+    contentRepurposePrompt.schema +
+    (strict ? guard : '');
   const userMsg = contentRepurposePrompt.user({
     source_post_body: opts.sourcePostBody.slice(0, 6000),
     goal: opts.profile.goal,
