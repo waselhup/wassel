@@ -32,6 +32,7 @@ import { resumeRouter } from './routes/resume';
 import { contentRouter } from './routes/content';
 import { dashboardRouter } from './routes/dashboard';
 import { notificationsRouter } from './routes/notifications';
+import { betaRouter } from './routes/beta';
 
 export { router, publicProcedure, protectedProcedure };
 
@@ -88,6 +89,7 @@ export const appRouter = router({
   content: contentRouter,
   dashboard: dashboardRouter,
   notifications: notificationsRouter,
+  beta: betaRouter,
 });
 
 export type AppRouter = typeof appRouter;

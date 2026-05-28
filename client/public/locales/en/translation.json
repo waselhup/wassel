@@ -2119,7 +2119,8 @@
     "revenue_lab": "Revenue Lab",
     "product_intel": "Product Intel",
     "compliance": "Compliance",
-    "war_room": "War Room"
+    "war_room": "War Room",
+    "beta": "Beta"
   },
   "portal": {
     "backToUser": "Back to User Dashboard",
@@ -3350,6 +3351,80 @@
         "body": "{{taskHeadline}}",
         "cta": "Start now"
       }
+    }
+  },
+  "beta": {
+    "dashboard": {
+      "title": "Beta",
+      "metricsTitle": "Metrics",
+      "codesTitle": "Promo Codes",
+      "feedbackTitle": "Feedback",
+      "createCode": "New Code",
+      "noCodes": "No codes yet",
+      "noFeedback": "No feedback yet",
+      "noData": "No data",
+      "allPillars": "All",
+      "totalUsers": "Users",
+      "totalFeedback": "Feedback",
+      "avgNps": "Avg NPS",
+      "npsScore": "NPS Score"
+    },
+    "promo": {
+      "placeholder": "Enter beta code",
+      "redeem": "Redeem",
+      "success": "Activated! You received {{tokens}} tokens for {{months}} months",
+      "errors": {
+        "notFound": "Code not found",
+        "expired": "Code has expired",
+        "exhausted": "Code fully redeemed",
+        "alreadyRedeemed": "You've already used this code",
+        "unknown": "Something went wrong, please try again"
+      }
+    },
+    "feedback": {
+      "fab": "Share feedback",
+      "title": "How's your Wassel experience?",
+      "subtitle": "Your feedback helps us improve",
+      "pillarLabel": "Section",
+      "npsQuestion": "How would you rate your experience with Wassel?",
+      "npsSelected": "You selected {{score}} out of 10",
+      "whatWorked": "What worked well?",
+      "whatDidnt": "What needs improvement?",
+      "optional": "Optional...",
+      "submit": "Submit feedback",
+      "pillars": {
+        "general": "General",
+        "radar": "Radar",
+        "resume": "Resume",
+        "content": "Content",
+        "dashboard": "Dashboard"
+      }
+    },
+    "createCode": {
+      "title": "Create Promo Code",
+      "create": "Create",
+      "fields": {
+        "code": "Code",
+        "plan": "Plan",
+        "tokens": "Bonus tokens",
+        "months": "Months",
+        "maxRedemptions": "Max uses",
+        "expiresDays": "Expires (days)",
+        "notes": "Notes",
+        "notesPlaceholder": "e.g. Ahmed from Aramco"
+      },
+      "errors": {
+        "codeRequired": "Code is required",
+        "failed": "Failed to create code"
+      }
+    },
+    "table": {
+      "code": "Code",
+      "plan": "Plan",
+      "tokens": "Tokens",
+      "redemptions": "Redemptions",
+      "expires": "Expires",
+      "notes": "Notes"
     }
   }
 }

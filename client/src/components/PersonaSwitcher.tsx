@@ -3,11 +3,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation, Link } from 'wouter';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
-import { User as UserIcon, Megaphone, Wallet, Activity, LayoutDashboard, HeartHandshake, TrendingUp, Microscope, ShieldCheck, MessagesSquare } from 'lucide-react';
+import { User as UserIcon, Megaphone, Wallet, Activity, LayoutDashboard, HeartHandshake, TrendingUp, Microscope, ShieldCheck, MessagesSquare, Sparkles } from 'lucide-react';
 
 const ADMIN_EMAILS = ['waselhup@gmail.com', 'almodhih.1995@gmail.com', 'alhashimali649@gmail.com'];
 
-type PersonaKey = 'war_room' | 'user' | 'marketing' | 'finance' | 'ops' | 'growth' | 'workforce' | 'customer_success' | 'revenue_lab' | 'product_intel' | 'compliance';
+type PersonaKey = 'war_room' | 'user' | 'marketing' | 'finance' | 'ops' | 'growth' | 'workforce' | 'customer_success' | 'revenue_lab' | 'product_intel' | 'compliance' | 'beta';
 
 interface Persona {
   key: PersonaKey;
@@ -30,6 +30,7 @@ const PERSONAS: Persona[] = [
   { key: 'compliance',       href: '/v2/compliance',       color: '#6366F1', Icon: ShieldCheck,     tooltipKey: 'personaSwitcher.compliance' },
   { key: 'finance',          href: '/v2/finance',          color: '#D4AF37', Icon: Wallet,          tooltipKey: 'personaSwitcher.finance' },
   { key: 'ops',              href: '/v2/ops',              color: '#0EA5E9', Icon: Activity,        tooltipKey: 'personaSwitcher.ops' },
+  { key: 'beta',             href: '/v2/beta',             color: '#A855F7', Icon: Sparkles,        tooltipKey: 'personaSwitcher.beta' },
 ];
 
 function detectActive(location: string): PersonaKey {
@@ -43,6 +44,7 @@ function detectActive(location: string): PersonaKey {
   if (location.startsWith('/v2/marketing') || location.startsWith('/v2/admin')) return 'user';
   if (location.startsWith('/v2/finance')) return 'finance';
   if (location.startsWith('/v2/ops')) return 'ops';
+  if (location.startsWith('/v2/beta')) return 'beta';
   return 'user';
 }
 

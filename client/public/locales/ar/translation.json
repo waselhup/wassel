@@ -2113,7 +2113,8 @@
     "revenue_lab": "مختبر الإيرادات",
     "product_intel": "ذكاء المنتج",
     "compliance": "الامتثال",
-    "war_room": "غرفة القيادة"
+    "war_room": "غرفة القيادة",
+    "beta": "البيتا"
   },
   "portal": {
     "backToUser": "العودة إلى لوحة المستخدم",
@@ -3348,6 +3349,80 @@
         "body": "{{taskHeadline}}",
         "cta": "ابدأ الآن"
       }
+    }
+  },
+  "beta": {
+    "dashboard": {
+      "title": "البيتا",
+      "metricsTitle": "المقاييس",
+      "codesTitle": "أكواد البروموشن",
+      "feedbackTitle": "التقييمات",
+      "createCode": "كود جديد",
+      "noCodes": "لا توجد أكواد بعد",
+      "noFeedback": "لا توجد تقييمات بعد",
+      "noData": "لا توجد بيانات",
+      "allPillars": "الكل",
+      "totalUsers": "المستخدمون",
+      "totalFeedback": "التقييمات",
+      "avgNps": "متوسط NPS",
+      "npsScore": "نقاط NPS"
+    },
+    "promo": {
+      "placeholder": "أدخل كود البيتا",
+      "redeem": "تفعيل",
+      "success": "تم التفعيل! حصلت على {{tokens}} توكن لمدة {{months}} أشهر",
+      "errors": {
+        "notFound": "الكود غير موجود",
+        "expired": "انتهت صلاحية الكود",
+        "exhausted": "تم استنفاد الكود",
+        "alreadyRedeemed": "استخدمت هذا الكود من قبل",
+        "unknown": "حدث خطأ، حاول مرة أخرى"
+      }
+    },
+    "feedback": {
+      "fab": "شاركنا رأيك",
+      "title": "كيف تجربتك مع وصل؟",
+      "subtitle": "رأيك يساعدنا على التحسين",
+      "pillarLabel": "القسم",
+      "npsQuestion": "كيف تقيّم تجربتك مع وصل؟",
+      "npsSelected": "اخترت {{score}} من 10",
+      "whatWorked": "ما الذي أعجبك؟",
+      "whatDidnt": "ما الذي يحتاج تحسين؟",
+      "optional": "اختياري...",
+      "submit": "إرسال التقييم",
+      "pillars": {
+        "general": "عام",
+        "radar": "الرادار",
+        "resume": "السيرة الذاتية",
+        "content": "المحتوى",
+        "dashboard": "الرئيسية"
+      }
+    },
+    "createCode": {
+      "title": "إنشاء كود بروموشن",
+      "create": "إنشاء",
+      "fields": {
+        "code": "الكود",
+        "plan": "الباقة",
+        "tokens": "التوكن المضافة",
+        "months": "الأشهر",
+        "maxRedemptions": "الحد الأقصى",
+        "expiresDays": "صلاحية (يوم)",
+        "notes": "ملاحظات",
+        "notesPlaceholder": "مثال: أحمد من أرامكو"
+      },
+      "errors": {
+        "codeRequired": "الكود مطلوب",
+        "failed": "فشل الإنشاء"
+      }
+    },
+    "table": {
+      "code": "الكود",
+      "plan": "الباقة",
+      "tokens": "التوكن",
+      "redemptions": "الاستخدامات",
+      "expires": "الانتهاء",
+      "notes": "ملاحظات"
     }
   }
 }

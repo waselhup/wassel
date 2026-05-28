@@ -1403,6 +1403,18 @@ export const trpc = {
         input ?? {},
       ),
   },
+  beta: {
+    redeemCode: (input: { code: string }) =>
+      trpcMutation<{ success: boolean; error?: string; granted_tokens?: number; granted_plan?: string; granted_months?: number }>('beta.redeemCode', input),
+    submitFeedback: (input: { pillar: string; nps: number; what_worked?: string; what_didnt?: string }) =>
+      trpcMutation<{ success: boolean }>('beta.submitFeedback', input),
+    createCode: (input: { code: string; cohort?: string; granted_plan: string; granted_tokens?: number; granted_months?: number; max_redemptions?: number; notes?: string; expires_in_days?: number }) =>
+      trpcMutation<unknown>('beta.createCode', input),
+    listCodes: () => trpcQuery<unknown[]>('beta.listCodes'),
+    listFeedback: (input?: { pillar?: string; limit?: number }) =>
+      trpcQuery<unknown[]>('beta.listFeedback', input ?? {}),
+    getMetrics: () => trpcQuery<{ total_redemptions: number; total_feedback: number; avg_nps: number; promoters: number; passives: number; detractors: number; nps_score: number }>('beta.getMetrics'),
+  },
 };
 
 // ─── Notification shapes (Sprint 8) ─────────────────────────────────
