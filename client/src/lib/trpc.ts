@@ -1373,6 +1373,75 @@ export const trpc = {
       language?: 'ar' | 'en';
     }) => trpcMutation<{ success: boolean }>('dashboard.logActivity', input),
   },
+  notifications: {
+    list: (input?: { status?: 'unread' | 'all'; limit?: number; offset?: number }) =>
+      trpcQuery<{ notifications: NotificationRowShape[] }>('notifications.list', input ?? {}),
+    unreadCount: () =>
+      trpcQuery<{ count: number }>('notifications.unreadCount'),
+    markAsRead: (input: { notificationId: string }) =>
+      trpcMutation<{ success: boolean }>('notifications.markAsRead', input),
+    markAllAsRead: () =>
+      trpcMutation<{ count: number }>('notifications.markAllAsRead', {}),
+    dismiss: (input: { notificationId: string }) =>
+      trpcMutation<{ success: boolean }>('notifications.dismiss', input),
+    getPreferences: () =>
+      trpcQuery<{ preferences: NotificationPreferencesShape }>('notifications.getPreferences'),
+    updatePreferences: (input: {
+      emailEnabled?: boolean;
+      inAppEnabled?: boolean;
+      marketingEmailsEnabled?: boolean;
+      language?: 'ar' | 'en';
+      quietHoursStart?: string | null;
+      quietHoursEnd?: string | null;
+      timezone?: string;
+    }) => trpcMutation<{ success: boolean }>('notifications.updatePreferences', input),
+    markAppOpened: () =>
+      trpcMutation<{ success: boolean }>('notifications.markAppOpened', {}),
+    testNotification: (input?: { channel?: 'in_app' | 'email' | 'both'; language?: 'ar' | 'en' }) =>
+      trpcMutation<{ queued: boolean; skipped?: boolean; reason?: string; notificationId?: string }>(
+        'notifications.testNotification',
+        input ?? {},
+      ),
+  },
+};
+
+// ─── Notification shapes (Sprint 8) ─────────────────────────────────
+export type NotificationRowShape = {
+  id: string;
+  user_id: string;
+  channel: 'in_app' | 'email' | 'both';
+  category: 'system' | 'engagement' | 'transactional' | 'marketing';
+  template_key: string;
+  title_ar: string; title_en: string;
+  body_ar: string;  body_en: string;
+  cta_label_ar: string | null;
+  cta_label_en: string | null;
+  cta_url: string | null;
+  metadata: Record<string, unknown>;
+  priority: 'low' | 'normal' | 'high' | 'urgent';
+  status: 'pending' | 'sent' | 'delivered' | 'failed' | 'cancelled' | 'read' | 'dismissed';
+  scheduled_for: string;
+  sent_at: string | null;
+  read_at: string | null;
+  dismissed_at: string | null;
+  created_at: string;
+};
+
+export type NotificationPreferencesShape = {
+  user_id: string;
+  email_enabled: boolean;
+  in_app_enabled: boolean;
+  marketing_emails_enabled: boolean;
+  system_emails_enabled: boolean;
+  language: 'ar' | 'en';
+  quiet_hours_start: string | null;
+  quiet_hours_end: string | null;
+  timezone: string;
+  daily_email_count: number;
+  daily_count_reset_at: string;
+  last_email_sent_at: string | null;
+  last_app_opened_at: string | null;
+  updated_at: string;
 };
 
 // ─────────────────────────────────────────────

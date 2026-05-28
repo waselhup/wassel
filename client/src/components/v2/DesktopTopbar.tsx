@@ -6,6 +6,7 @@ import PulseBar from '@/components/v2/PulseBar';
 import JobsIndicator from '@/components/v2/JobsIndicator';
 import UserMenu from '@/components/v2/UserMenu';
 import LangToggle from '@/components/v2/LangToggle';
+import NotificationBell from '@/components/v2/NotificationBell';
 import { useAuth } from '@/contexts/AuthContext';
 
 export interface DesktopNavLink {
@@ -134,6 +135,7 @@ function DesktopTopbar({
               <LangToggle size="sm" />
               {showAccountCluster && (
                 <>
+                  <NotificationBell />
                   <JobsIndicator />
                   <UserMenu />
                 </>

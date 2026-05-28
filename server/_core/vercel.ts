@@ -19,6 +19,7 @@ import { hussein } from './agents/hussein';
 import { mohammed } from './agents/mohammed';
 import { generateWeeklyJournal as warRoomGenerateWeeklyJournal } from './lib/war-room-engine';
 import { generateSuggestions as dashboardGenerateSuggestions, snapshotPulse as dashboardSnapshotPulse } from './lib/dashboard-engine';
+import { processEmailQueue as notificationsProcessEmailQueue, enqueueNotification as notificationsEnqueue } from './lib/notification-engine';
 
 const app = express();
 
@@ -1001,6 +1002,170 @@ app.get('/api/cron/subscription-renewals', _cronWrap('subscription-renewals', as
   }
 
   return { renewed, cancelled, downgraded, errors: errors.slice(0, 10) };
+}));
+
+// ===== Cron: process-email-queue (Sprint 8, every 5 minutes) =====
+// Picks up pending email notifications (channel IN ('email','both') AND
+// status='pending' AND scheduled_for <= NOW()) and sends them via Resend.
+// Frequency caps + dedup are already enforced at enqueue time, so this cron
+// is purely a sender.
+app.get('/api/cron/process-email-queue', _cronWrap('process-email-queue', async () => {
+  const sb = await _supa();
+  return notificationsProcessEmailQueue(sb, 50);
+}));
+
+// ===== Cron: notification-triggers (Sprint 8, daily at 06:00 UTC) =====
+// Scans the user base and enqueues one-shot system notifications:
+//   - balance_low:           users with wallet total < 30 tokens
+//   - subscription_renewal:  active subs whose current_period_end is in next 3 days
+//   - bonus_expiring:        wallet_bonus rows whose expires_at is in next 7 days
+// Frequency caps in the enqueue RPC make this safe to run daily (e.g. balance_low
+// is capped to 1× per 7 days per user).
+app.get('/api/cron/notification-triggers', _cronWrap('notification-triggers', async () => {
+  const sb = await _supa();
+  const now = new Date();
+  const in3d = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+  const in7d = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+  let balanceLow = 0;
+  let renewals  = 0;
+  let bonusExpiring = 0;
+  let skipped = 0;
+  const errors: Array<{ stage: string; userId?: string; error: string }> = [];
+
+  // 1. balance_low — query the snapshot view if available, otherwise sum wallets per user
+  try {
+    const { data: users } = await sb
+      .from('profiles')
+      .select('id')
+      .limit(5000);
+
+    for (const row of (users ?? []) as Array<{ id: string }>) {
+      try {
+        const { data: walletData } = await sb.rpc('get_wallets_v2', { p_user_id: row.id });
+        const total = Number((walletData as Record<string, unknown> | null)?.total ?? 0);
+        if (total > 0 && total < 30) {
+          const r = await notificationsEnqueue(sb, {
+            userId:      row.id,
+            templateKey: 'balance_low',
+            category:    'system',
+            channel:     'both',
+            titleAr:     'رصيدك قارب على النفاد',
+            titleEn:     'Your balance is running low',
+            bodyAr:      `تبقى لك ${total} توكن. أضف توكنات لمتابعة رحلتك المهنية.`,
+            bodyEn:      `You have ${total} tokens left. Add tokens to continue your career journey.`,
+            ctaLabelAr:  'إضافة توكنات',
+            ctaLabelEn:  'Add tokens',
+            ctaUrl:      'https://wasselhub.com/v2/pricing',
+            priority:    'normal',
+            metadata:    { balance: total },
+          });
+          if (r.queued) balanceLow++; else if (r.skipped) skipped++;
+        }
+      } catch (e: any) {
+        errors.push({ stage: 'balance_low', userId: row.id, error: e?.message || String(e) });
+      }
+    }
+  } catch (e: any) {
+    errors.push({ stage: 'balance_low_query', error: e?.message || String(e) });
+  }
+
+  // 2. subscription_renewal — active subs whose period ends in next 3 days
+  try {
+    const { data: subs } = await sb
+      .from('user_subscriptions')
+      .select('id, user_id, plan_id, current_period_end, auto_renew, billing_cycle')
+      .eq('status', 'active')
+      .gte('current_period_end', now.toISOString())
+      .lte('current_period_end', in3d.toISOString())
+      .limit(2000);
+
+    for (const sub of (subs ?? []) as Array<{
+      user_id: string; plan_id: string; current_period_end: string; auto_renew: boolean; billing_cycle: string;
+    }>) {
+      try {
+        const { data: planRow } = await sb
+          .from('subscription_plans')
+          .select('name_ar, name_en, monthly_price_sar, annual_price_sar')
+          .eq('id', sub.plan_id)
+          .maybeSingle();
+
+        const planAr   = planRow?.name_ar || 'الباقة';
+        const planEn   = planRow?.name_en || 'plan';
+        const amount   = sub.billing_cycle === 'annual'
+          ? Number(planRow?.annual_price_sar ?? 0)
+          : Number(planRow?.monthly_price_sar ?? 0);
+        const dateAr   = new Date(sub.current_period_end).toLocaleDateString('en-GB');
+        const dateEn   = dateAr;
+
+        const r = await notificationsEnqueue(sb, {
+          userId:      sub.user_id,
+          templateKey: 'subscription_renewal',
+          category:    'system',
+          channel:     'both',
+          titleAr:     'اشتراكك يتجدد قريباً',
+          titleEn:     'Your subscription renews soon',
+          bodyAr:      `اشتراك ${planAr} يتجدد في ${dateAr} بمبلغ ${amount} ر.س.`,
+          bodyEn:      `Your ${planEn} subscription renews on ${dateEn} for ${amount} SAR.`,
+          ctaLabelAr:  'إدارة الاشتراك',
+          ctaLabelEn:  'Manage subscription',
+          ctaUrl:      'https://wasselhub.com/v2/billing',
+          priority:    'normal',
+          metadata:    { plan: planEn, amount },
+        });
+        if (r.queued) renewals++; else if (r.skipped) skipped++;
+      } catch (e: any) {
+        errors.push({ stage: 'subscription_renewal', userId: sub.user_id, error: e?.message || String(e) });
+      }
+    }
+  } catch (e: any) {
+    errors.push({ stage: 'subscription_renewal_query', error: e?.message || String(e) });
+  }
+
+  // 3. bonus_expiring — wallet_bonus rows expiring in next 7 days with balance > 0
+  try {
+    const { data: bonuses } = await sb
+      .from('wallet_bonus')
+      .select('user_id, balance, expires_at')
+      .gt('balance', 0)
+      .gte('expires_at', now.toISOString())
+      .lte('expires_at', in7d.toISOString())
+      .limit(2000);
+
+    for (const b of (bonuses ?? []) as Array<{ user_id: string; balance: number; expires_at: string }>) {
+      try {
+        const dateStr = new Date(b.expires_at).toLocaleDateString('en-GB');
+        const r = await notificationsEnqueue(sb, {
+          userId:      b.user_id,
+          templateKey: 'bonus_expiring',
+          category:    'engagement',
+          channel:     'both',
+          titleAr:     'مكافأتك تنتهي قريباً',
+          titleEn:     'Your bonus expires soon',
+          bodyAr:      `${b.balance} توكن مكافأة تنتهي في ${dateStr}. استخدمها قبل أن تخسرها.`,
+          bodyEn:      `${b.balance} bonus tokens expire on ${dateStr}. Use them before they're gone.`,
+          ctaLabelAr:  'ابدأ الآن',
+          ctaLabelEn:  'Start now',
+          ctaUrl:      'https://wasselhub.com/v2/home',
+          priority:    'normal',
+          metadata:    { bonusTokens: b.balance },
+        });
+        if (r.queued) bonusExpiring++; else if (r.skipped) skipped++;
+      } catch (e: any) {
+        errors.push({ stage: 'bonus_expiring', userId: b.user_id, error: e?.message || String(e) });
+      }
+    }
+  } catch (e: any) {
+    errors.push({ stage: 'bonus_expiring_query', error: e?.message || String(e) });
+  }
+
+  return {
+    balanceLow,
+    renewals,
+    bonusExpiring,
+    skipped,
+    errors: errors.slice(0, 10),
+  };
 }));
 
 app.use(
