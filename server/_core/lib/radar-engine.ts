@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { createHash } from 'node:crypto';
 import { callClaude, extractText, extractJson } from './claude-client';
+import { validateOutput } from './output-guard';
 import {
   getCareerProfileWithOverrides,
   listActiveSectionOverrides,
@@ -370,6 +371,15 @@ export async function runRadar(
       temperature: 0.2,
     });
     const discoveryText = extractText(discoveryRes);
+
+    // Output Guard: block banned vendor / model names + Eastern Arabic digits.
+    // This pass normally degrades silently to unifiedProfile on parse failure,
+    // but a banned-word violation MUST abort upstream to prevent Pass 2 contamination.
+    const discoveryValidation = validateOutput(discoveryText, 'radar.discovery');
+    if (!discoveryValidation.valid) {
+      throw new RadarError('MODEL_FAILED', `Output guard blocked: ${discoveryValidation.reason}`);
+    }
+
     const normalized = extractJson<Record<string, unknown>>(discoveryText) ?? unifiedProfile;
 
     // 6. Gap-analysis pass (Sonnet)
@@ -398,6 +408,13 @@ export async function runRadar(
       temperature: 0.4,
     });
     const analysisText = extractText(analysisRes);
+
+    // Output Guard: block banned vendor / model names + Eastern Arabic digits
+    const analysisValidation = validateOutput(analysisText, 'radar.analysis');
+    if (!analysisValidation.valid) {
+      throw new RadarError('MODEL_FAILED', `Output guard blocked: ${analysisValidation.reason}`);
+    }
+
     const parsed = extractJson<Record<string, unknown>>(analysisText);
     if (!parsed) {
       throw new RadarError('MODEL_FAILED', 'Could not parse Radar analysis JSON.');

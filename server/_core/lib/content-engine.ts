@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { createHash } from 'node:crypto';
 import { callClaude, extractText, extractJson } from './claude-client';
+import { validateOutput } from './output-guard';
 import {
   getCareerProfileWithOverrides,
   type CareerProfile,
@@ -760,6 +761,13 @@ async function runOneGeneration(
       temperature: 0.5,
     });
     const txt = extractText(resp);
+
+    // Output Guard: block banned vendor / model names + Eastern Arabic digits
+    const validation = validateOutput(txt, 'content.post');
+    if (!validation.valid) {
+      throw new ContentError('MODEL_FAILED', `Output guard blocked: ${validation.reason}`);
+    }
+
     const parsed = extractJson<Record<string, unknown>>(txt);
     if (!parsed) throw new ContentError('MODEL_FAILED', 'Could not parse Post JSON.');
     return PostSchema.parse({
@@ -796,6 +804,13 @@ async function runOneGeneration(
       temperature: 0.5,
     });
     const txt = extractText(resp);
+
+    // Output Guard: block banned vendor / model names + Eastern Arabic digits
+    const validation = validateOutput(txt, 'content.carousel');
+    if (!validation.valid) {
+      throw new ContentError('MODEL_FAILED', `Output guard blocked: ${validation.reason}`);
+    }
+
     const parsed = extractJson<Record<string, unknown>>(txt);
     if (!parsed) throw new ContentError('MODEL_FAILED', 'Could not parse Carousel JSON.');
     return CarouselSchema.parse({
@@ -840,6 +855,13 @@ async function runOneGeneration(
     temperature: 0.5,
   });
   const txt = extractText(resp);
+
+  // Output Guard: block banned vendor / model names + Eastern Arabic digits
+  const validation = validateOutput(txt, 'content.repurpose');
+  if (!validation.valid) {
+    throw new ContentError('MODEL_FAILED', `Output guard blocked: ${validation.reason}`);
+  }
+
   const parsed = extractJson<Record<string, unknown>>(txt);
   if (!parsed) throw new ContentError('MODEL_FAILED', 'Could not parse RepurposeBundle JSON.');
 
@@ -1055,6 +1077,13 @@ async function runRefinement(opts: RunRefinementOpts): Promise<ContentResult> {
     temperature: 0.4,
   });
   const txt = extractText(resp);
+
+  // Output Guard: block banned vendor / model names + Eastern Arabic digits
+  const validation = validateOutput(txt, 'content.refine');
+  if (!validation.valid) {
+    throw new ContentError('MODEL_FAILED', `Output guard blocked: ${validation.reason}`);
+  }
+
   const parsed = extractJson<Record<string, unknown>>(txt);
   if (!parsed) throw new ContentError('MODEL_FAILED', 'Could not parse refined content.');
 
