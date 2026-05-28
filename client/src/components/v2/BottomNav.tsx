@@ -1,8 +1,10 @@
-import type { HTMLAttributes, ReactNode } from 'react';
+import { useState, type HTMLAttributes, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
+import { AdminBottomSheet, isAdminEmail } from '@/components/AdminMobileNav';
 
-export type BottomNavItemId = 'home' | 'analyze' | 'tools' | 'profile' | 'posts' | 'activity';
+export type BottomNavItemId = 'home' | 'analyze' | 'tools' | 'profile' | 'posts' | 'activity' | 'admin';
 
 export interface BottomNavItem {
   id: BottomNavItemId;
@@ -52,6 +54,12 @@ const ProfileIcon = (
     <path d="M4 17 a6 6 0 0112 0" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
   </svg>
 );
+const AdminIcon = (
+  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+    <path d="M10 2 L17 5 V10 C17 14 13.5 17 10 18 C6.5 17 3 14 3 10 V5 L10 2 Z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+    <path d="M7 10 L9 12 L13 8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
 
 function buildDefaultItems(isAr: boolean): BottomNavItem[] {
   return [
@@ -90,47 +98,78 @@ function BottomNav({
   ...rest
 }: BottomNavProps) {
   const { i18n } = useTranslation();
+  const { user } = useAuth();
   const isAr = (i18n.language || 'ar').startsWith('ar');
-  const items = itemsProp ?? buildDefaultItems(isAr);
+  const baseItems = itemsProp ?? buildDefaultItems(isAr);
   const fabLabel = fabLabelProp ?? (isAr ? 'إجراء' : 'Action');
+
+  const [adminSheetOpen, setAdminSheetOpen] = useState(false);
+  const isAdmin = isAdminEmail(user?.email);
+
+  // For admins, swap the 3rd item (typically Studio/posts/tools) with an Admin shortcut.
+  // The Admin item opens the bottom-sheet listing all 10 admin destinations.
+  const items: BottomNavItem[] = isAdmin
+    ? baseItems.map((it, idx) => {
+        const shouldReplace = (it.id === 'posts' || it.id === 'tools') || idx === 2;
+        if (!shouldReplace) return it;
+        return {
+          id: 'admin',
+          label: isAr ? 'الإدارة' : 'Admin',
+          icon: AdminIcon,
+          onSelect: () => setAdminSheetOpen(true),
+        };
+      })
+    : baseItems;
+
   // The FAB is centered. We split the items into two halves so the FAB sits between them.
   const half = Math.ceil(items.length / 2);
   const left = items.slice(0, half);
   const right = items.slice(half);
 
   return (
-    <nav
-      className={cn(
-        // Hidden on desktop — the DesktopShell sidebar covers navigation there.
-        'lg:hidden',
-        'absolute inset-x-0 bottom-0 z-20 border-t border-v2-line bg-v2-surface',
-        className,
+    <>
+      <nav
+        className={cn(
+          // Hidden on desktop — the DesktopShell sidebar covers navigation there.
+          'lg:hidden',
+          'absolute inset-x-0 bottom-0 z-20 border-t border-v2-line bg-v2-surface',
+          className,
+        )}
+        style={{ paddingBottom: `calc(env(safe-area-inset-bottom) + 18px)` }}
+        {...rest}
+      >
+        <div className="relative flex h-[60px] items-center justify-around">
+          {left.map((it) => (
+            <NavButton key={it.id} item={it} active={active === it.id} />
+          ))}
+          <button
+            type="button"
+            onClick={onFabClick}
+            aria-label={fabLabel}
+            className={cn(
+              'flex h-12 w-12 -translate-y-3.5 items-center justify-center',
+              'rounded-v2-lg bg-teal-600 text-white shadow-card cursor-pointer',
+              'transition-colors duration-200 ease-out hover:bg-teal-700',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/40',
+            )}
+          >
+            {fabIcons[fabIcon]}
+          </button>
+          {right.map((it) => (
+            <NavButton key={it.id} item={it} active={active === it.id} />
+          ))}
+        </div>
+      </nav>
+
+      {/* Admin shortcut sheet — rendered only when the viewer is an admin */}
+      {isAdmin && (
+        <AdminBottomSheet
+          open={adminSheetOpen}
+          onClose={() => setAdminSheetOpen(false)}
+          mode="full"
+        />
       )}
-      style={{ paddingBottom: `calc(env(safe-area-inset-bottom) + 18px)` }}
-      {...rest}
-    >
-      <div className="relative flex h-[60px] items-center justify-around">
-        {left.map((it) => (
-          <NavButton key={it.id} item={it} active={active === it.id} />
-        ))}
-        <button
-          type="button"
-          onClick={onFabClick}
-          aria-label={fabLabel}
-          className={cn(
-            'flex h-12 w-12 -translate-y-3.5 items-center justify-center',
-            'rounded-v2-lg bg-teal-600 text-white shadow-card cursor-pointer',
-            'transition-colors duration-200 ease-out hover:bg-teal-700',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/40',
-          )}
-        >
-          {fabIcons[fabIcon]}
-        </button>
-        {right.map((it) => (
-          <NavButton key={it.id} item={it} active={active === it.id} />
-        ))}
-      </div>
-    </nav>
+    </>
   );
 }
 

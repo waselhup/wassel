@@ -2125,7 +2125,8 @@
     "workforce": "المقر",
     "finance": "المالية",
     "more": "المزيد",
-    "morePortals": "بوابات إضافية"
+    "morePortals": "بوابات إضافية",
+    "adminTitle": "اختصارات الإدارة"
   },
   "finance": {
     "headerTitle": "مركز المالية",

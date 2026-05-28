@@ -2131,7 +2131,8 @@
     "workforce": "HQ",
     "finance": "Finance",
     "more": "More",
-    "morePortals": "More Portals"
+    "morePortals": "More Portals",
+    "adminTitle": "Admin Shortcuts"
   },
   "finance": {
     "headerTitle": "Finance Command Center",
