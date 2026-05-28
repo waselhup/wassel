@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  Sparkles, Users, MessageSquare, TrendingUp, Copy, Check,
+  Sparkles, Copy, Check,
   ChevronDown, ChevronUp, Plus, Loader2, X
 } from 'lucide-react';
 import PortalLayout from '@/components/PortalLayout';
@@ -251,7 +251,7 @@ export default function Beta() {
 
   return (
     <PortalLayout
-      persona="admin"
+      persona="marketing"
       title={t('beta.dashboard.title')}
       accentColor="#A855F7"
       Icon={Sparkles}
