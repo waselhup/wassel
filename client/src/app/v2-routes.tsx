@@ -66,6 +66,9 @@ const PrivacyAndData = lazy(() => import('@/pages/v2/PrivacyAndData'));
 const Notifications         = lazy(() => import('@/pages/v2/Notifications'));
 const NotificationSettings  = lazy(() => import('@/pages/v2/NotificationSettings'));
 
+// Beta program (admin only).
+const Beta = lazy(() => import('@/pages/v2/Beta'));
+
 function V2Loader() {
   // Skeleton-shaped fallback that resembles the page chrome — feels less
   // like a hard interruption than a centered spinner while the chunk loads.
@@ -342,6 +345,7 @@ function V2Routes(): ReactElement | null {
   const [matchProductIntel] = useRoute('/v2/product-intel');
   const [matchCompliance] = useRoute('/v2/compliance');
   const [matchWarRoom] = useRoute('/v2/war-room');
+  const [matchBeta] = useRoute('/v2/beta');
 
   if (matchLanding) {
     return <PublicShell><Suspense fallback={<V2Loader />}><Landing /></Suspense></PublicShell>;
@@ -489,6 +493,9 @@ function V2Routes(): ReactElement | null {
   }
   if (matchWarRoom) {
     return <PortalShell><Suspense fallback={<V2Loader />}><WarRoomPanel /></Suspense></PortalShell>;
+  }
+  if (matchBeta) {
+    return <PortalShell><Suspense fallback={<V2Loader />}><Beta /></Suspense></PortalShell>;
   }
 
   return null;
