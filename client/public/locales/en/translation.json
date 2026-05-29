@@ -3426,5 +3426,29 @@
       "expires": "Expires",
       "notes": "Notes"
     }
+  },
+  "companion": {
+    "welcome": {
+      "cta": "Let's begin",
+      "skip": "Skip"
+    },
+    "tour": {
+      "skip": "Skip",
+      "next": "Next",
+      "done": "Got it"
+    },
+    "bubble": {
+      "open": "Open your companion",
+      "title": "Your companion"
+    },
+    "card": {
+      "title": "Your career companion",
+      "onTrack": "You're on track. Keep going — I'm with you."
+    },
+    "message": {
+      "empty": "You're all set for now. Carry on — we're with you.",
+      "act": "Start now",
+      "showPlans": "Show me the plans"
+    }
   }
 }

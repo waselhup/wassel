@@ -27,6 +27,8 @@ Known keys:
 - errors.export_failed      — PDF/DOCX generation failed
 - errors.cache_corrupted    — stored artifact unreadable; user should regenerate
 - errors.generic            — anything else
+
+CRITICAL: `messageKey` is always one of the catalogue keys above (never translate it). But any human-readable value you place in `params` (e.g. a `field` or `kind` label the message will interpolate and show the user) must be written in the user's locale only. If locale=ar → Arabic param values. If locale=en → English param values. Never mix languages. This overrides all other instructions.
 ```
 
 ```user

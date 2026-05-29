@@ -9,6 +9,7 @@ import ErrorBoundary from '@/components/v2/ErrorBoundary';
 import PageTransition from '@/components/v2/PageTransition';
 import ResponsiveShell from '@/components/v2/ResponsiveShell';
 import Skeleton from '@/components/v2/Skeleton';
+import CompanionMount from '@/components/v2/Companion/CompanionMount';
 import { useAuth } from '@/contexts/AuthContext';
 import { trpc } from '@/lib/trpc';
 
@@ -201,6 +202,11 @@ function ProtectedShell({ children }: { children: ReactNode }) {
                 <AuthGate>{children}</AuthGate>
               </PageTransition>
             </main>
+            {/* Career companion — bubble on every protected page except /v2/home
+                (where Home renders the embedded card); welcome + tour fire once
+                on the dashboard. Mounted here so it's scoped to the user app and
+                never leaks onto public/portal shells. */}
+            <CompanionMount />
           </ResponsiveShell>
         </JobsProviderWithToast>
       </ToastProvider>
