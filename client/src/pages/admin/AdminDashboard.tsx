@@ -92,6 +92,325 @@ function LoadingBox({ height = 120 }: { height?: number }) {
   );
 }
 
+// ───────────────────────────────────────────────────────────────────
+// Users list with inline +/- token controls + token movements ledger.
+// Self-contained so the main dashboard stays readable. Reuses the same
+// inline-style vocabulary and the project's custom tRPC wrapper.
+// ───────────────────────────────────────────────────────────────────
+interface AdminUserRow {
+  id: string;
+  email: string | null;
+  full_name: string | null;
+  plan: string;
+  token_balance: number;
+  is_banned: boolean;
+  is_admin?: boolean;
+}
+interface TxRow {
+  id: string;
+  userId: string;
+  userName: string | null;
+  userEmail: string | null;
+  wallet: 'bonus' | 'subscription' | 'topup';
+  direction: 'credit' | 'debit';
+  amount: number;
+  reason: string | null;
+  adminEmail: string | null;
+  createdAt: string;
+}
+
+function UsersAndTransactions({
+  onToast,
+}: {
+  onToast: (type: 'success' | 'error', msg: string) => void;
+}) {
+  const { t } = useTranslation();
+  const [users, setUsers] = useState<AdminUserRow[]>([]);
+  const [txs, setTxs] = useState<TxRow[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(true);
+  const [loadingTx, setLoadingTx] = useState(true);
+  const [err, setErr] = useState<string | null>(null);
+  const [q, setQ] = useState('');
+  const [debouncedQ, setDebouncedQ] = useState('');
+  const [txFilterUser, setTxFilterUser] = useState<string | null>(null);
+
+  // per-row draft state (amount + reason), keyed by user id
+  const [draft, setDraft] = useState<Record<string, { amount: string; reason: string }>>({});
+  const [submitting, setSubmitting] = useState<string | null>(null);
+
+  useEffect(() => {
+    const h = setTimeout(() => setDebouncedQ(q), 300);
+    return () => clearTimeout(h);
+  }, [q]);
+
+  const loadUsers = async (search: string) => {
+    setLoadingUsers(true);
+    setErr(null);
+    try {
+      const data = await trpc.admin.users(search ? { search } : undefined);
+      setUsers((data as AdminUserRow[]) || []);
+    } catch (e: any) {
+      setErr(e?.message || 'Failed to load users');
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  const loadTx = async (userId: string | null) => {
+    setLoadingTx(true);
+    try {
+      const data = await trpc.admin.listTokenTransactions(userId ? { userId, limit: 50 } : { limit: 50 });
+      setTxs(data.transactions || []);
+    } catch {
+      // non-fatal — ledger is read-only display
+    } finally {
+      setLoadingTx(false);
+    }
+  };
+
+  useEffect(() => { loadUsers(debouncedQ); }, [debouncedQ]);
+  useEffect(() => { loadTx(txFilterUser); }, [txFilterUser]);
+
+  const getDraft = (id: string) => draft[id] || { amount: '', reason: '' };
+  const setDraftField = (id: string, field: 'amount' | 'reason', value: string) =>
+    setDraft((d) => ({ ...d, [id]: { ...getDraft(id), [field]: value } }));
+
+  async function adjust(u: AdminUserRow, sign: 1 | -1) {
+    const d = getDraft(u.id);
+    const magnitude = Math.floor(Math.abs(Number(d.amount)));
+    if (!Number.isFinite(magnitude) || magnitude <= 0) {
+      onToast('error', t('admin.cc.usersErrAmount'));
+      return;
+    }
+    const reason = (d.reason || '').trim();
+    if (reason.length < 1) {
+      onToast('error', t('admin.cc.usersErrReason'));
+      return;
+    }
+    const signed = sign * magnitude;
+    const name = u.full_name || u.email || '';
+    setSubmitting(u.id);
+    // optimistic legacy-balance update
+    const prevBalance = u.token_balance || 0;
+    setUsers((list) =>
+      list.map((x) => (x.id === u.id ? { ...x, token_balance: Math.max(0, prevBalance + signed) } : x))
+    );
+    try {
+      const res = await trpc.admin.adjustUserTokens({ userId: u.id, amount: signed, reason });
+      // reconcile with server's authoritative legacy balance
+      setUsers((list) =>
+        list.map((x) => (x.id === u.id ? { ...x, token_balance: res.newLegacyBalance } : x))
+      );
+      onToast(
+        'success',
+        sign > 0
+          ? t('admin.cc.usersAddSuccess', { amount: magnitude.toLocaleString('en-US'), name })
+          : t('admin.cc.usersRemoveSuccess', { amount: magnitude.toLocaleString('en-US'), name })
+      );
+      setDraft((dd) => ({ ...dd, [u.id]: { amount: '', reason: '' } }));
+      loadTx(txFilterUser); // refresh ledger
+    } catch (e: any) {
+      // rollback optimistic update
+      setUsers((list) => list.map((x) => (x.id === u.id ? { ...x, token_balance: prevBalance } : x)));
+      onToast('error', e?.message || t('admin.cc.usersAdjustFail'));
+    } finally {
+      setSubmitting(null);
+    }
+  }
+
+  const walletLabel = (w: string) =>
+    w === 'bonus' ? t('admin.cc.txWalletBonus')
+    : w === 'subscription' ? t('admin.cc.txWalletSubscription')
+    : t('admin.cc.txWalletTopup');
+
+  const fmtDate = (iso: string) => {
+    try {
+      const dt = new Date(iso);
+      const pad = (n: number) => String(n).padStart(2, '0');
+      return `${pad(dt.getDate())}/${pad(dt.getMonth() + 1)}/${dt.getFullYear()} ${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+    } catch { return '—'; }
+  };
+
+  const thStyle: React.CSSProperties = {
+    fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 800, fontSize: 11,
+    color: 'var(--wsl-ink-3, #6B7280)', textAlign: 'start', paddingBottom: 8, whiteSpace: 'nowrap',
+  };
+  const tdStyle: React.CSSProperties = {
+    fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontSize: 12,
+    color: 'var(--wsl-ink, #0F172A)', padding: '8px 0', verticalAlign: 'middle',
+  };
+  const miniInput: React.CSSProperties = {
+    padding: '5px 8px', borderRadius: 7, border: '1px solid var(--wsl-border, #E5E7EB)',
+    fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontSize: 11, outline: 'none', boxSizing: 'border-box',
+  };
+  const miniBtn = (bg: string): React.CSSProperties => ({
+    padding: '5px 10px', borderRadius: 7, border: 'none', background: bg, color: '#fff',
+    cursor: 'pointer', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 800, fontSize: 11,
+  });
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))', gap: 14 }}>
+      {/* ── Users + inline adjust ── */}
+      <div style={cardSurface}>
+        <div style={{ position: 'relative', marginBottom: 12 }}>
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder={t('admin.cc.usersSearch')}
+            style={{ ...miniInput, width: '100%', fontSize: 12, padding: '8px 12px' }}
+          />
+        </div>
+        {err ? (
+          <ErrorBox message={err} retryLabel={t('admin.cc.retry')} onRetry={() => loadUsers(debouncedQ)} />
+        ) : loadingUsers ? (
+          <LoadingBox height={200} />
+        ) : users.length === 0 ? (
+          <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--wsl-ink-3, #6B7280)', fontSize: 12, fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
+            {t('admin.cc.usersEmpty')}
+          </div>
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--wsl-border, #E5E7EB)' }}>
+                  <th style={thStyle}>{t('admin.cc.usersColName')}</th>
+                  <th style={{ ...thStyle, textAlign: 'end' }}>{t('admin.cc.usersColBalance')}</th>
+                  <th style={{ ...thStyle, textAlign: 'end' }}>{t('admin.cc.usersColAdjust')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {users.map((u) => {
+                  const d = getDraft(u.id);
+                  const busy = submitting === u.id;
+                  return (
+                    <tr key={u.id} style={{ borderBottom: '1px solid #F3F4F6' }}>
+                      <td style={tdStyle}>
+                        <div style={{ fontWeight: 800, display: 'flex', alignItems: 'center', gap: 6 }}>
+                          {u.full_name || '—'}
+                          {u.is_admin && (
+                            <span style={{ padding: '1px 5px', borderRadius: 4, background: '#EDE9FE', color: '#7C3AED', fontSize: 9, fontWeight: 900 }}>
+                              {t('au.adminBadge', 'admin')}
+                            </span>
+                          )}
+                        </div>
+                        <div dir="ltr" style={{ fontSize: 10, color: 'var(--wsl-ink-3, #6B7280)', textAlign: 'start', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {u.email || '—'}
+                        </div>
+                      </td>
+                      <td dir="ltr" style={{ ...tdStyle, textAlign: 'end', fontWeight: 900, fontVariantNumeric: 'tabular-nums', color: '#14b8a6' }}>
+                        {(u.token_balance || 0).toLocaleString('en-US')}
+                      </td>
+                      <td style={{ ...tdStyle, textAlign: 'end' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end' }}>
+                          <input
+                            type="number" min={1} dir="ltr" disabled={busy}
+                            value={d.amount}
+                            onChange={(e) => setDraftField(u.id, 'amount', e.target.value)}
+                            placeholder={t('admin.cc.usersAmountPh')}
+                            style={{ ...miniInput, width: 110, fontVariantNumeric: 'tabular-nums' }}
+                          />
+                          <input
+                            type="text" disabled={busy}
+                            value={d.reason}
+                            onChange={(e) => setDraftField(u.id, 'reason', e.target.value)}
+                            placeholder={t('admin.cc.usersReasonPh')}
+                            style={{ ...miniInput, width: 160 }}
+                          />
+                          <div style={{ display: 'flex', gap: 6 }}>
+                            <button disabled={busy} onClick={() => adjust(u, 1)} style={miniBtn('#14b8a6')}>
+                              {busy ? t('admin.cc.usersAdjusting') : `+ ${t('admin.cc.usersAdd')}`}
+                            </button>
+                            <button disabled={busy} onClick={() => adjust(u, -1)} style={miniBtn('#DC2626')}>
+                              {busy ? t('admin.cc.usersAdjusting') : `− ${t('admin.cc.usersRemove')}`}
+                            </button>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* ── Token movements ledger ── */}
+      <div style={cardSurface}>
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+          <div>
+            <div style={{ ...sectionTitle, fontSize: 14 }}>{t('admin.cc.txTitle')}</div>
+            <div style={{ ...sectionSub, marginTop: 2 }}>{t('admin.cc.txSubtitle')}</div>
+          </div>
+          {txFilterUser && (
+            <button
+              onClick={() => setTxFilterUser(null)}
+              style={{ padding: '4px 10px', borderRadius: 7, border: '1px solid var(--wsl-border, #E5E7EB)', background: '#fff', cursor: 'pointer', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 800, fontSize: 10 }}
+            >
+              {t('admin.cc.txClearFilter')}
+            </button>
+          )}
+        </div>
+        {loadingTx ? (
+          <LoadingBox height={200} />
+        ) : txs.length === 0 ? (
+          <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--wsl-ink-3, #6B7280)', fontSize: 12, fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>
+            {t('admin.cc.txEmpty')}
+          </div>
+        ) : (
+          <div style={{ overflowX: 'auto', maxHeight: 360, overflowY: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--wsl-border, #E5E7EB)' }}>
+                  <th style={thStyle}>{t('admin.cc.txColUser')}</th>
+                  <th style={{ ...thStyle, textAlign: 'end' }}>{t('admin.cc.txColAmount')}</th>
+                  <th style={thStyle}>{t('admin.cc.txColWallet')}</th>
+                  <th style={thStyle}>{t('admin.cc.txColReason')}</th>
+                  <th style={thStyle}>{t('admin.cc.txColAdmin')}</th>
+                  <th style={{ ...thStyle, textAlign: 'end' }}>{t('admin.cc.txColDate')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {txs.map((tx) => (
+                  <tr key={tx.id} style={{ borderBottom: '1px solid #F3F4F6' }}>
+                    <td style={tdStyle}>
+                      <button
+                        onClick={() => setTxFilterUser(tx.userId)}
+                        style={{ border: 'none', background: 'transparent', padding: 0, cursor: 'pointer', textAlign: 'start' }}
+                      >
+                        <div style={{ fontWeight: 700, color: 'var(--wsl-ink, #0F172A)', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {tx.userName || tx.userEmail || '—'}
+                        </div>
+                      </button>
+                    </td>
+                    <td dir="ltr" style={{ ...tdStyle, textAlign: 'end', fontWeight: 900, fontVariantNumeric: 'tabular-nums', color: tx.amount >= 0 ? '#10B981' : '#DC2626' }}>
+                      {tx.amount >= 0 ? '+' : '−'}{Math.abs(tx.amount).toLocaleString('en-US')}
+                    </td>
+                    <td style={tdStyle}>
+                      <span style={{ padding: '1px 6px', borderRadius: 4, background: '#F3F4F6', color: 'var(--wsl-ink-2, #374151)', fontSize: 10, fontWeight: 800 }}>
+                        {walletLabel(tx.wallet)}
+                      </span>
+                    </td>
+                    <td style={{ ...tdStyle, maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--wsl-ink-2, #374151)' }}>
+                      {tx.reason || '—'}
+                    </td>
+                    <td dir="ltr" style={{ ...tdStyle, fontSize: 10, color: 'var(--wsl-ink-3, #6B7280)', textAlign: 'start', maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {tx.adminEmail || '—'}
+                    </td>
+                    <td dir="ltr" style={{ ...tdStyle, textAlign: 'end', fontSize: 10, color: 'var(--wsl-ink-3, #6B7280)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
+                      {fmtDate(tx.createdAt)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function ErrorBox({ message, onRetry, retryLabel }: { message: string; onRetry?: () => void; retryLabel: string }) {
   return (
     <div
@@ -539,6 +858,22 @@ export default function AdminDashboard() {
               />
             </div>
           ) : null}
+        </div>
+
+        {/* ═══ SECTION 3.5 — USERS & TOKEN MOVEMENTS ═══════════════════ */}
+        <div style={sectionWrap}>
+          <div style={sectionHeader}>
+            <div>
+              <h2 style={sectionTitle}>
+                <Coins size={16} style={{ color: '#14b8a6' }} />
+                {t('admin.cc.usersTitle')}
+              </h2>
+              <div style={{ ...sectionSub, marginTop: 4 }}>{t('admin.cc.usersSubtitle')}</div>
+            </div>
+          </div>
+          <UsersAndTransactions
+            onToast={(type, msg) => toast.push(type, msg)}
+          />
         </div>
 
         {/* ═══ SECTION 4 — TOKEN ECONOMY ═══════════════════════════════ */}
