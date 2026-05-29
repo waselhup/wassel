@@ -402,7 +402,7 @@ const Payment: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="text-right">
+                  <div className="text-end">
                     <p
                       className={`font-semibold ${
                         tx.type === 'purchase'
