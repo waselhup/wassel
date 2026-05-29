@@ -23,8 +23,24 @@ let lastBrowserOpenedAt = 0;
 const BROWSER_TTL_MS = 60_000;
 
 /**
+ * Default @sparticuz/chromium Brotli pack for the installed version
+ * (138.0.2 → v138.0.0 release, x64). Override on Vercel via
+ * SPARTICUZ_CHROMIUM_PACK if the version is bumped.
+ */
+const DEFAULT_CHROMIUM_PACK =
+  'https://github.com/Sparticuz/chromium/releases/download/v138.0.0/chromium-v138.0.0-pack.x64.tar';
+
+/**
  * Lazily resolve a Chromium binary. Vercel uses @sparticuz/chromium;
  * local dev uses Chrome at WASSEL_LOCAL_CHROME_PATH or the platform default.
+ *
+ * IMPORTANT: esbuild bundles this server into api/index.js, which inlines
+ * @sparticuz/chromium's code but NOT its bin/*.br pack files — so the
+ * no-argument `executablePath()` cannot locate the binary at runtime and
+ * returns undefined (puppeteer.launch then throws the cryptic
+ * `"path" argument ... Received undefined`). Passing an explicit pack
+ * location makes the package download + extract the binary to /tmp
+ * independent of bundling. See SPARTICUZ_CHROMIUM_PACK env var.
  */
 async function getExecutablePath(): Promise<string> {
   if (process.env.WASSEL_LOCAL_CHROME_PATH) {
@@ -34,7 +50,15 @@ async function getExecutablePath(): Promise<string> {
   // path when we never render a PDF.
   const mod = await import('@sparticuz/chromium');
   const chromium = (mod as any).default ?? mod;
-  return await chromium.executablePath();
+  const pack = process.env.SPARTICUZ_CHROMIUM_PACK || DEFAULT_CHROMIUM_PACK;
+  const resolved = await chromium.executablePath(pack);
+  if (!resolved || typeof resolved !== 'string') {
+    throw new Error(
+      `Chromium executablePath could not be resolved from pack "${pack}". ` +
+      'Set SPARTICUZ_CHROMIUM_PACK to a reachable @sparticuz/chromium pack URL/path.',
+    );
+  }
+  return resolved;
 }
 
 /**
@@ -55,12 +79,13 @@ async function getBrowser(): Promise<Browser> {
   const isLocal = !!process.env.WASSEL_LOCAL_CHROME_PATH;
 
   let args: string[] = [];
-  let headless: boolean | 'shell' = true;
+  // @sparticuz/chromium v138 dropped the `.headless` export (it was always
+  // 'shell'/true); hardcode true so we never pass `headless: undefined`.
+  const headless: boolean | 'shell' = true;
   if (!isLocal) {
     const mod = await import('@sparticuz/chromium');
     const chromium: any = (mod as any).default ?? mod;
     args = chromium.args;
-    headless = chromium.headless;
   }
 
   const executablePath = await getExecutablePath();

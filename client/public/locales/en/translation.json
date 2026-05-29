@@ -2892,7 +2892,12 @@
       "changeTemplate": "Change Template",
       "build": "Build Resume ({{cost}} tokens)",
       "viewCached": "View Cached Version (Free)",
-      "newVersion": "New Version for Different Role ({{cost}} tokens)"
+      "newVersion": "New Version for Different Role ({{cost}} tokens)",
+      "language": {
+        "label": "Resume language",
+        "ar": "Arabic",
+        "en": "English"
+      }
     },
     "building": {
       "extracting": "Extracting your experience...",

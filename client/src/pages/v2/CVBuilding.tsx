@@ -52,6 +52,8 @@ export default function CVBuilding() {
   const search = useSearch();
   const templateId = readQuery(search, 'template');
   const override = readQuery(search, 'override');
+  const langParam = readQuery(search, 'lang');
+  const buildLang: 'ar' | 'en' = langParam === 'en' ? 'en' : langParam === 'ar' ? 'ar' : (isAr ? 'ar' : 'en');
 
   const stageBounds = useMemo(() => {
     let cum = 0;
@@ -142,7 +144,7 @@ export default function CVBuilding() {
       const out = await trpc.resume.build({
         templateId,
         overrideTargetRole: override ?? undefined,
-        language: isAr ? 'ar' : 'en',
+        language: buildLang,
       });
       apiDoneAtRef.current = performance.now();
       apiDoneRef.current = true;

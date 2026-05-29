@@ -46,6 +46,7 @@ export default function CVPreflight() {
 
   const [templateChooserOpen, setTemplateChooserOpen] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
+  const [cvLang, setCvLang] = useState<'ar' | 'en'>(isAr ? 'ar' : 'en');
 
   useEffect(() => {
     void load();
@@ -72,6 +73,7 @@ export default function CVPreflight() {
     if (!selectedTemplateId) return;
     const params = new URLSearchParams();
     params.set('template', selectedTemplateId);
+    params.set('lang', cvLang);
     if (overrideRoleOverride) params.set('override', overrideRoleOverride);
     navigate(`/v2/cvs/building?${params.toString()}`);
   }
@@ -177,6 +179,28 @@ export default function CVPreflight() {
                 ) : (
                   <span className="font-ar text-[13px] text-v2-mute">{isAr ? 'غير مضاف' : 'not set'}</span>
                 )}
+              </div>
+            </div>
+
+            {/* CV language selector — user picks the resume language before building */}
+            <div>
+              <Eyebrow className="mb-1 block">{t('resume.preflight.language.label')}</Eyebrow>
+              <div className="inline-flex gap-2">
+                {(['ar', 'en'] as const).map((lng) => (
+                  <button
+                    key={lng}
+                    type="button"
+                    onClick={() => setCvLang(lng)}
+                    aria-pressed={cvLang === lng}
+                    className={`rounded-v2-pill border px-4 py-1.5 font-ar text-[13px] font-semibold transition-colors ${
+                      cvLang === lng
+                        ? 'border-teal-500 bg-teal-50 text-teal-700'
+                        : 'border-v2-line bg-v2-surface text-v2-body hover:bg-v2-canvas-2'
+                    }`}
+                  >
+                    {t(`resume.preflight.language.${lng}`)}
+                  </button>
+                ))}
               </div>
             </div>
 
