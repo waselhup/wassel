@@ -22,18 +22,24 @@ export interface UserMenuItem {
   destructive?: boolean;
 }
 
+// Mirrors the canonical `plans` table (free / starter / growth / enterprise).
+// Legacy pro/elite aliases map to the closest current tier.
 const PLAN_LABELS_AR: Record<string, string> = {
-  free: 'الخطة المجانية',
-  starter: 'خطة البداية',
-  pro: 'الخطة الاحترافية',
-  elite: 'خطة إيليت',
+  free: 'استكشف',
+  starter: 'الانطلاق',
+  growth: 'النمو',
+  enterprise: 'المؤسسات',
+  pro: 'الانطلاق',
+  elite: 'النمو',
 };
 
 const PLAN_LABELS_EN: Record<string, string> = {
-  free: 'Free plan',
-  starter: 'Starter plan',
-  pro: 'Pro plan',
-  elite: 'Elite plan',
+  free: 'Explore',
+  starter: 'Starter',
+  growth: 'Growth',
+  enterprise: 'Enterprise',
+  pro: 'Starter',
+  elite: 'Growth',
 };
 
 const ChevronDown = (

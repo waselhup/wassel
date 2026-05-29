@@ -188,11 +188,15 @@ export default function Profile() {
   const providerLabel = provider === 'linkedin' ? 'LinkedIn' : provider === 'google' ? 'Google' : 'Email';
   const providerColor = provider === 'linkedin' ? '#0077B5' : provider === 'google' ? '#EA4335' : '#6B7280';
 
+  // Plan keys mirror the canonical `plans` table (free / starter / growth).
+  // Legacy pro/elite aliases map to the closest current tier.
   const planFeatures: Record<string, string[]> = {
-    free: [isAr ? 'تحليل لينكدإن واحد' : '1 LinkedIn analysis', isAr ? '10 رسائل شهرياً' : '10 messages/month'],
-    starter: [isAr ? 'تحليلات غير محدودة' : 'Unlimited analyses', isAr ? '100 رسالة' : '100 messages', isAr ? 'تخصيص السيرة الذاتية' : 'CV customization'],
-    pro: [isAr ? 'كل ما في المبتدئ' : 'Everything in Starter', isAr ? '500 رسالة' : '500 messages', isAr ? 'اكتشاف متقدم' : 'Advanced discovery', isAr ? 'أولوية الدعم' : 'Priority support'],
-    elite: [isAr ? 'كل ما في المحترف' : 'Everything in Pro', isAr ? '1500 رسالة' : '1500 messages', isAr ? 'حسابات متعددة' : 'Multiple accounts'],
+    free: [isAr ? 'تحليل رادار واحد' : '1 Radar analysis', isAr ? '10 استخدامات شهرياً' : '10 uses/month'],
+    starter: [isAr ? 'كل ما في استكشف' : 'Everything in Explore', isAr ? '200 استخدام شهرياً' : '200 uses/month', isAr ? 'تخصيص السيرة الذاتية' : 'CV customization', isAr ? 'أولوية الدعم' : 'Priority support'],
+    growth: [isAr ? 'كل ما في الانطلاق' : 'Everything in Starter', isAr ? '600 استخدام شهرياً' : '600 uses/month', isAr ? 'اكتشاف متقدم' : 'Advanced discovery', isAr ? 'دعم مخصص' : 'Dedicated support'],
+    // legacy aliases
+    pro: [isAr ? 'كل ما في استكشف' : 'Everything in Explore', isAr ? '200 استخدام شهرياً' : '200 uses/month', isAr ? 'تخصيص السيرة الذاتية' : 'CV customization', isAr ? 'أولوية الدعم' : 'Priority support'],
+    elite: [isAr ? 'كل ما في الانطلاق' : 'Everything in Starter', isAr ? '600 استخدام شهرياً' : '600 uses/month', isAr ? 'اكتشاف متقدم' : 'Advanced discovery', isAr ? 'دعم مخصص' : 'Dedicated support'],
   };
 
   const statusBadge = (status: string) => {

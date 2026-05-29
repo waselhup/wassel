@@ -28,18 +28,28 @@ export interface DesktopSidebarProps extends HTMLAttributes<HTMLElement> {
   userPlan?: string;
 }
 
+// Plan keys, labels and monthly token quotas mirror the canonical `plans`
+// table in Supabase (free / starter / growth / enterprise). Keep in sync if
+// pricing changes there. Legacy pro/elite aliases map to the closest tier so
+// older profiles still render a sensible label instead of falling back to free.
 const PLAN_QUOTAS: Record<string, number> = {
   free: 10,
-  starter: 500,
-  pro: 2000,
-  elite: 10000,
+  starter: 200,
+  growth: 600,
+  enterprise: 0,
+  // legacy aliases
+  pro: 200,
+  elite: 600,
 };
 
 const PLAN_LABELS: Record<string, string> = {
-  free: 'الخطة المجانية',
-  starter: 'خطة البداية',
-  pro: 'الخطة الاحترافية',
-  elite: 'خطة إيليت',
+  free: 'استكشف',
+  starter: 'الانطلاق',
+  growth: 'النمو',
+  enterprise: 'المؤسسات',
+  // legacy aliases
+  pro: 'الانطلاق',
+  elite: 'النمو',
 };
 
 function firstNameOf(full: string | null | undefined, email: string | null | undefined): string {
@@ -112,7 +122,9 @@ function DesktopSidebar({
   const total = totalProp ?? PLAN_QUOTAS[planKey] ?? PLAN_QUOTAS.free;
   const userName = userNameProp ?? firstNameOf(profile?.full_name, profile?.email ?? user?.email);
   const userPlanLabelsEn: Record<string, string> = {
-    free: 'Free plan', starter: 'Starter plan', pro: 'Pro plan', elite: 'Elite plan',
+    free: 'Explore', starter: 'Starter', growth: 'Growth', enterprise: 'Enterprise',
+    // legacy aliases
+    pro: 'Starter', elite: 'Growth',
   };
   const userPlan = userPlanProp ?? (isAr ? (PLAN_LABELS[planKey] ?? PLAN_LABELS.free) : (userPlanLabelsEn[planKey] ?? userPlanLabelsEn.free));
   const avatarUrl = profile?.avatar_url ?? null;
