@@ -60,7 +60,7 @@ function DesktopTopbar({
   const defaultNavLinks = buildDefaultNavLinks(isAr);
   const navLinks = navLinksProp ?? (
     showAccountCluster && profile?.is_admin
-      ? [...defaultNavLinks, { id: 'admin', label: isAr ? 'الإدارة' : 'Admin', href: '/admin' }]
+      ? [...defaultNavLinks, { id: 'admin', label: isAr ? 'الإدارة' : 'Admin', href: '/v2/marketing' }]
       : defaultNavLinks
   );
 

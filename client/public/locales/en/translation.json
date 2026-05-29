@@ -2496,32 +2496,38 @@
     "al_mukhadram": {
       "name": "Al-Mukhadram",
       "role": "Onboarding & Retention",
-      "en": "Al-Mukhadram"
+      "en": "Al-Mukhadram",
+      "ar": "المخضرم"
     },
     "fatima": {
       "name": "Fatima",
       "role": "Research & Friction Analyst",
-      "en": "Fatima"
+      "en": "Fatima",
+      "ar": "فاطمة"
     },
     "dhai": {
       "name": "Dhai",
       "role": "Compliance & Fraud Guardian",
-      "en": "Dhai"
+      "en": "Dhai",
+      "ar": "ضي"
     },
     "hassan": {
       "name": "Hassan",
       "role": "Conversion & Upsell Engineer",
-      "en": "Hassan"
+      "en": "Hassan",
+      "ar": "حسن"
     },
     "hussein": {
       "name": "Hussein",
       "role": "Platform Guardian",
-      "en": "Hussein"
+      "en": "Hussein",
+      "ar": "حسين"
     },
     "mohammed": {
       "name": "Mohammed",
       "role": "Accountant & Margin Watcher",
-      "en": "Mohammed"
+      "en": "Mohammed",
+      "ar": "محمد"
     },
     "faris": {
       "name": "Faris",
