@@ -10,6 +10,7 @@ import {
   restoreVersion,
   loadTemplates,
   recommendTemplate,
+  computeAtsScore,
   ResumeError,
   RESUME_FULL_BUILD_COST,
   RESUME_NEW_VERSION_COST,
@@ -407,6 +408,55 @@ export const resumeRouter = router({
         mimeType: 'application/json',
         base64: Buffer.from(json, 'utf8').toString('base64'),
       };
+    }),
+
+  /**
+   * Re-evaluate ATS — recompute the deterministic ATS score for a version
+   * on demand (0 tokens). Useful after the scoring algorithm improves, or
+   * for an older version that was never scored. Legacy versions (no cache)
+   * cannot be re-scored.
+   */
+  rescoreVersion: protectedProcedure
+    .input(z.object({ versionId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      const { data: version, error: vErr } = await ctx.supabase
+        .from('resume_versions')
+        .select('id, cache_id, target_role')
+        .eq('id', input.versionId)
+        .eq('user_id', ctx.user.id)
+        .maybeSingle();
+      if (vErr) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: vErr.message });
+      if (!version) throw new TRPCError({ code: 'NOT_FOUND', message: 'Version not found.' });
+      if (!version.cache_id) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Legacy versions cannot be re-scored.' });
+      }
+
+      const { data: cache } = await ctx.supabase
+        .from('resume_cache')
+        .select('result')
+        .eq('id', version.cache_id)
+        .eq('user_id', ctx.user.id)
+        .maybeSingle();
+      if (!cache) throw new TRPCError({ code: 'NOT_FOUND', message: 'Cached resume missing.' });
+
+      const profile = await getCareerProfileWithOverrides(ctx.supabase, ctx.user.id, 'resume');
+      const industry = profile?.industry ?? '';
+      const ats = computeAtsScore(cache.result as Resume, version.target_role, industry);
+
+      await ctx.supabase
+        .from('resume_cache')
+        .update({ ats_score: ats.total, ats_breakdown: ats.breakdown })
+        .eq('id', version.cache_id)
+        .eq('user_id', ctx.user.id);
+      await ctx.supabase
+        .from('resume_versions')
+        .update({ ats_score: ats.total })
+        .eq('id', input.versionId)
+        .eq('user_id', ctx.user.id);
+
+      await logActivity(ctx.supabase, ctx.user.id, 'resume.rescore', input.versionId, { ats_score: ats.total });
+
+      return { atsScore: ats.total, atsBreakdown: ats.breakdown };
     }),
 
   /**

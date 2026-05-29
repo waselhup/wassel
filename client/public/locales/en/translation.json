@@ -2915,6 +2915,12 @@
         "format": "Format",
         "quantified": "Quantified Achievements"
       },
+      "reevaluate": {
+        "button": "Re-evaluate",
+        "loading": "Re-evaluating…",
+        "success": "ATS score updated",
+        "error": "Re-evaluation failed"
+      },
       "chips": {
         "shortenSummary": "Shorten Summary",
         "addLeadershipBullet": "Add Leadership Point",
