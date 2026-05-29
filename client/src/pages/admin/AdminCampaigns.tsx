@@ -99,13 +99,13 @@ const AdminCampaigns: React.FC = () => {
         {/* Search */}
         <Card className="p-6">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[var(--text-secondary)]" />
+            <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[var(--text-secondary)]" />
             <Input
               type="text"
               placeholder={t('admin.searchCampaigns')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
+              className="ps-10"
             />
           </div>
         </Card>
@@ -116,22 +116,22 @@ const AdminCampaigns: React.FC = () => {
             <table className="w-full">
               <thead className="bg-[var(--bg-surface)] border-b border-[var(--border-subtle)]">
                 <tr>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-[var(--text-secondary)]">
+                  <th className="px-6 py-4 text-start text-sm font-semibold text-[var(--text-secondary)]">
                     {t('admin.campaignName')}
                   </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-[var(--text-secondary)]">
+                  <th className="px-6 py-4 text-start text-sm font-semibold text-[var(--text-secondary)]">
                     {t('admin.user')}
                   </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-[var(--text-secondary)]">
+                  <th className="px-6 py-4 text-start text-sm font-semibold text-[var(--text-secondary)]">
                     {t('admin.status')}
                   </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-[var(--text-secondary)]">
+                  <th className="px-6 py-4 text-start text-sm font-semibold text-[var(--text-secondary)]">
                     {t('admin.recipients')}
                   </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-[var(--text-secondary)]">
+                  <th className="px-6 py-4 text-start text-sm font-semibold text-[var(--text-secondary)]">
                     {t('admin.metrics')}
                   </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-[var(--text-secondary)]">
+                  <th className="px-6 py-4 text-start text-sm font-semibold text-[var(--text-secondary)]">
                     {t('admin.date')}
                   </th>
                 </tr>
