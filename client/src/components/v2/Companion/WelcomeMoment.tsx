@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
 import { trpc } from '@/lib/trpc';
 import Button from '@/components/v2/Button';
+import SpinningLogo from '@/components/v2/SpinningLogo';
 import { cn } from '@/lib/utils';
 
 /**
@@ -81,7 +82,7 @@ export default function WelcomeMoment({
 
   // Template greeting (instant). The smart line, when present, replaces the
   // generic sub-line so the moment feels tailored.
-  const greeting = isAr ? `هلا ${firstName} 👋` : `Hi ${firstName} 👋`;
+  const greeting = isAr ? `أهلاً ${firstName} 👋` : `Hi ${firstName} 👋`;
   const templateSub = targetRole
     ? isAr
       ? `جهّزنا لك أول خطوة في طريقك إلى ${targetRole}.`
@@ -118,15 +119,10 @@ export default function WelcomeMoment({
           exit={{ opacity: 0, y: 12, scale: 0.98 }}
           transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
         >
-          {/* soft radar mark, decorative */}
+          {/* Wassel brand spinner — same mark as the landing hero, so the
+              moment reads as genuinely part of the product. */}
           <div className="flex justify-center pt-7">
-            <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-teal-600/10 text-teal-700">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
-                <circle cx="12" cy="12" r="4.5" stroke="currentColor" strokeWidth="1.5" />
-                <circle cx="12" cy="12" r="1.5" fill="currentColor" />
-              </svg>
-            </span>
+            <SpinningLogo size="md" speed="slow" />
           </div>
 
           <div className="px-6 pb-6 pt-4 text-center">
@@ -139,7 +135,7 @@ export default function WelcomeMoment({
 
             <div className="mt-6 flex flex-col items-center gap-2">
               <Button variant="primary" size="md" onClick={onClose} className="w-full">
-                {t('companion.welcome.cta', isAr ? 'يلا نبدأ' : "Let's begin")}
+                {t('companion.welcome.cta', isAr ? 'لنبدأ' : "Let's begin")}
               </Button>
               <button
                 type="button"

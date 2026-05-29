@@ -120,11 +120,11 @@ export default function CompanionBubble({ language }: { language: 'ar' | 'en' })
         transition={{ duration: pulse ? 1.4 : 0.3, ease: 'easeOut' }}
         whileTap={{ scale: 0.94 }}
       >
-        {/* radar mark — consistent with the companion's identity */}
+        {/* canonical Wassel radar mark — landing BrandMark proportions (9/5/1.4) */}
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.6" />
-          <circle cx="12" cy="12" r="4.5" stroke="currentColor" strokeWidth="1.6" />
-          <circle cx="12" cy="12" r="1.6" fill="currentColor" />
+          <circle cx="12" cy="12" r="9.8" stroke="currentColor" strokeWidth="1.6" />
+          <circle cx="12" cy="12" r="5.5" stroke="currentColor" strokeWidth="1.6" />
+          <circle cx="12" cy="12" r="1.5" fill="currentColor" />
         </svg>
 
         {/* "new message" badge — NotificationBell pattern, logical end corner */}

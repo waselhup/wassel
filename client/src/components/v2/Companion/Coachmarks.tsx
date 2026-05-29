@@ -25,10 +25,12 @@ type Step = {
   bodyEn: string;
 };
 
+// Radar mark — the canonical Wassel concentric-rings geometry from the landing
+// BrandMark (r 9 / 5 / 1.4), scaled into a 24px box.
 const RadarIcon = (
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-    <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
-    <circle cx="12" cy="12" r="4.5" stroke="currentColor" strokeWidth="1.5" />
+    <circle cx="12" cy="12" r="9.8" stroke="currentColor" strokeWidth="1.5" />
+    <circle cx="12" cy="12" r="5.5" stroke="currentColor" strokeWidth="1.5" />
     <circle cx="12" cy="12" r="1.5" fill="currentColor" />
   </svg>
 );
@@ -57,7 +59,7 @@ const STEPS: Step[] = [
     icon: RadarIcon,
     titleAr: 'الرادار',
     titleEn: 'Radar',
-    bodyAr: 'يقرأ ملفك ويوريك وين أنت من دورك المستهدف، وش نقاط قوتك ووين الفجوات.',
+    bodyAr: 'يقرأ ملفك ويُظهر لك موقعك من دورك المستهدف: نقاط قوتك وأين الفجوات.',
     bodyEn: 'Reads your profile and shows where you stand against your target role — your strengths and the gaps.',
   },
   {
@@ -73,7 +75,7 @@ const STEPS: Step[] = [
     icon: ContentIcon,
     titleAr: 'المحتوى',
     titleEn: 'Content',
-    bodyAr: 'يساعدك تكتب منشورات مهنية تبني حضورك، بصوتك أنت ومن غير مبالغة.',
+    bodyAr: 'يساعدك على كتابة منشورات مهنية تبني حضورك، بصوتك أنت ودون مبالغة.',
     bodyEn: 'Helps you write professional posts that build your presence — in your own voice.',
   },
   {
@@ -81,7 +83,7 @@ const STEPS: Step[] = [
     icon: WalletIcon,
     titleAr: 'رصيدك',
     titleEn: 'Your balance',
-    bodyAr: 'كل خطوة لها تكلفة بسيطة بالتوكنات. نوريك دايماً كم تحتاج قبل ما تبدأ.',
+    bodyAr: 'كل خطوة لها تكلفة بسيطة بالتوكنات، ونوضّح لك دائماً ما تحتاجه قبل البدء.',
     bodyEn: 'Each step costs a few tokens. We always show you what you need before you start.',
   },
 ];
@@ -171,7 +173,7 @@ export default function Coachmarks({
                 onClick={() => (isLast ? onDone() : setI((n) => n + 1))}
               >
                 {isLast
-                  ? t('companion.tour.done', isAr ? 'تمام، فهمت' : 'Got it')
+                  ? t('companion.tour.done', isAr ? 'فهمت' : 'Got it')
                   : t('companion.tour.next', isAr ? 'التالي' : 'Next')}
               </Button>
             </div>

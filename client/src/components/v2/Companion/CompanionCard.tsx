@@ -74,9 +74,10 @@ export default function CompanionCard({ language }: { language: 'ar' | 'en' }) {
     >
       <div className="mb-2 flex items-center gap-2">
         <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-teal-600/10 text-teal-700">
+          {/* canonical Wassel radar mark — landing BrandMark proportions (9/5/1.4) */}
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-            <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.4" />
-            <circle cx="8" cy="8" r="3" stroke="currentColor" strokeWidth="1.4" />
+            <circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.4" />
+            <circle cx="8" cy="8" r="3.6" stroke="currentColor" strokeWidth="1.4" />
             <circle cx="8" cy="8" r="1" fill="currentColor" />
           </svg>
         </span>

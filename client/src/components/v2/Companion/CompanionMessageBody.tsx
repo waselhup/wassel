@@ -18,9 +18,9 @@ import type { CompanionMessageShape, PurchaseGuidanceShape } from '@/lib/trpc';
  */
 
 function pillarLabel(p: 'radar' | 'resume' | 'content', isAr: boolean): string {
-  if (p === 'radar') return isAr ? 'الرادار' : 'the Radar';
-  if (p === 'resume') return isAr ? 'السيرة' : 'a resume';
-  return isAr ? 'منشور' : 'a post';
+  if (p === 'radar') return isAr ? 'تحليل الرادار' : 'the Radar';
+  if (p === 'resume') return isAr ? 'سيرة ذاتية' : 'a resume';
+  return isAr ? 'منشوراً' : 'a post';
 }
 
 /**
@@ -43,7 +43,7 @@ function GuidanceBlock({
       <p className="font-ar text-[13px] leading-relaxed text-v2-ink">
         {isAr ? (
           <>
-            عشان تسوي {pillarLabel(guidance.pillar, true)} تحتاج{' '}
+            لإنجاز {pillarLabel(guidance.pillar, true)} تحتاج{' '}
             <NumDisplay>{guidance.needed}</NumDisplay> توكن، ورصيدك الحالي{' '}
             <NumDisplay>{guidance.balance}</NumDisplay>.
           </>
@@ -56,7 +56,7 @@ function GuidanceBlock({
         )}
       </p>
       <Button variant="primary" size="sm" onClick={onGuide} className="mt-3">
-        {t('companion.message.showPlans', isAr ? 'تبي أوريك الباقات؟' : 'Show me the plans')}
+        {t('companion.message.showPlans', isAr ? 'أعرض لك الباقات' : 'Show me the plans')}
       </Button>
     </div>
   );
@@ -104,7 +104,7 @@ export default function CompanionMessageBody({
         {t(
           'companion.message.empty',
           isAr
-            ? 'كل شي تمام حالياً. أكمل على راحتك ونحن معك.'
+            ? 'كل شيء على ما يُرام حالياً. واصِل على راحتك ونحن معك.'
             : "You're all set for now. Carry on — we're with you.",
         )}
       </p>
@@ -120,7 +120,7 @@ export default function CompanionMessageBody({
         <p className="font-ar text-[13px] leading-relaxed text-v2-body">
           {t(
             'companion.card.onTrack',
-            isAr ? 'شكلك ماشي صح. كمّل وأنا معك.' : "You're on track. Keep going — I'm with you.",
+            isAr ? 'أنت على المسار الصحيح. واصِل وأنا معك.' : "You're on track. Keep going — I'm with you.",
           )}
         </p>
       );
