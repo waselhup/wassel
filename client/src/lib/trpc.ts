@@ -1203,6 +1203,8 @@ export const trpc = {
       trpcMutation<{ filename: string; mimeType: string; base64: string }>('resume.exportDocx', input),
     exportJson: (input: { versionId: string }) =>
       trpcMutation<{ filename: string; mimeType: string; base64: string }>('resume.exportJson', input),
+    rescoreVersion: (input: { versionId: string }) =>
+      trpcMutation<{ atsScore: number; atsBreakdown: ResumeAtsBreakdownShape }>('resume.rescoreVersion', input),
     history: (input?: { limit?: number }) =>
       trpcQuery<{ versions: ResumeVersionRow[] }>('resume.history', input ?? {}),
     sessionOverride: (input: { targetRole: string; expiresInHours?: number }) =>

@@ -2919,6 +2919,12 @@
         "format": "التنسيق",
         "quantified": "الأرقام والإنجازات"
       },
+      "reevaluate": {
+        "button": "إعادة تقييم",
+        "loading": "جارٍ إعادة التقييم…",
+        "success": "تم تحديث نتيجة ATS",
+        "error": "تعذّرت إعادة التقييم"
+      },
       "chips": {
         "shortenSummary": "اجعل الملخص أقصر",
         "addLeadershipBullet": "أضف نقطة عن القيادة",
