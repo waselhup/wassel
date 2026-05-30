@@ -313,9 +313,7 @@ export default function RadarPreflight() {
                 leadingIcon={<RefreshCw size={16} />}
                 onClick={() => startAnalysis()}
               >
-                {isAr
-                  ? `تحليل جديد (${pre.cost} توكن)`
-                  : `Fresh analysis (${pre.cost} tokens)`}
+                {isAr ? 'تحليل جديد · مجاني' : 'Fresh analysis · free'}
               </Button>
             </>
           ) : (
@@ -326,14 +324,13 @@ export default function RadarPreflight() {
               leadingIcon={<Sparkles size={18} />}
               onClick={() => startAnalysis()}
             >
-              {isAr
-                ? `ابدأ التحليل (${pre.cost} توكن)`
-                : `Start Analysis (${pre.cost} tokens)`}
+              {isAr ? 'ابدأ التحليل المجاني' : 'Start free analysis'}
             </Button>
           )}
           <p className="text-center font-ar text-[12px] text-v2-mute">
-            <NumDisplay>{pre.cost}</NumDisplay>{' '}
-            {isAr ? 'توكن — تخصم بعد نجاح التحليل فقط' : 'tokens — only charged on success'}
+            {isAr
+              ? <>التشخيص مجاني · الإصلاحات الجاهزة <NumDisplay>{pre.cost}</NumDisplay> توكن عند الفتح</>
+              : <>Diagnostic is free · ready-made fixes <NumDisplay>{pre.cost}</NumDisplay> tokens to unlock</>}
           </p>
         </div>
 

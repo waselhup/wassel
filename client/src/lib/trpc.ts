@@ -1075,6 +1075,7 @@ export const trpc = {
         targetRole: string;
         language: 'ar' | 'en';
         result: RadarResultShape;
+        fixesUnlocked: boolean;
         currentScore: number;
         targetScore: number;
         sourceLinkedinUrl: string | null;
@@ -1082,6 +1083,16 @@ export const trpc = {
         createdAt: string;
         lastAccessedAt: string;
       }>('radar.getCached', input ?? {}),
+    // M2 — spend 149 tokens to reveal the ready-made fix rewrites on a free
+    // diagnostic. Idempotent: a repeat call returns the fixes for 0 tokens.
+    unlockFixes: (input: { cacheId: string; language?: 'ar' | 'en' }) =>
+      trpcMutation<{
+        cacheId: string;
+        tokensCharged: number;
+        walletUsed: 'bonus' | 'subscription' | 'topup' | 'mixed' | null;
+        alreadyUnlocked: boolean;
+        result: RadarResultShape;
+      }>('radar.unlockFixes', input),
     history: (input?: { limit?: number }) =>
       trpcQuery<{
         analyses: Array<{
@@ -1754,15 +1765,34 @@ export type ContentGenerateResultShape = {
  * Mirrors server/_core/lib/radar-engine.ts RadarResultSchema. Kept here
  * (rather than imported) so the client bundle doesn't pull in the engine.
  */
+/** The 8 Radar diagnostic dimensions (mirrors engine DIMENSION_KEYS). */
+export type RadarDimensionKey =
+  | 'headline' | 'about' | 'experience' | 'skills'
+  | 'keywords' | 'activity' | 'education' | 'completeness';
+
+export type RadarDimensionShape = {
+  key: RadarDimensionKey;
+  current: number;
+  target: number;
+  gap: number;
+  found: string[];
+  missing: string[];
+  unmeasured?: boolean;
+};
+
 export type RadarResultShape = {
-  strengths: Array<{ title: string; detail: string }>;
-  gaps: Array<{ title: string; detail: string; severity: 'low' | 'medium' | 'high' }>;
+  strengths: Array<{ title: string; detail: string; dimension?: RadarDimensionKey }>;
+  gaps: Array<{ title: string; detail: string; severity: 'low' | 'medium' | 'high'; dimension?: RadarDimensionKey }>;
   included_fixes: Array<{
     title: string;
     field: 'headline' | 'about' | 'experience' | 'skills';
     suggestion: string;
     rationale: string;
     impact_weight: number;
+    dimension?: RadarDimensionKey;
+    // M2: true when the ready-made rewrite is gated behind the 149-token unlock.
+    // When locked, suggestion/rationale arrive empty.
+    locked?: boolean;
   }>;
   suggested_actions: Array<{
     title: string;
@@ -1777,6 +1807,9 @@ export type RadarResultShape = {
     area: string;
     score: number;
   }>;
+  // M2: deterministic per-dimension sub-scores. Absent on pre-M2 cached rows
+  // (the UI falls back to legacy strengths/gaps lists then).
+  dimensions?: RadarDimensionShape[];
   meta: {
     current_score: number;
     target_score: number;

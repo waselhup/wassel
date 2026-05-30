@@ -2897,10 +2897,39 @@
       "cachedFrom": "Analysis from",
       "fromCache": "From cache · 0 tokens",
       "freshAnalysis": "Fresh analysis",
+      "freeDiagnostic": "Free diagnostic",
       "severity": {
         "high": "High",
         "medium": "Medium",
         "low": "Low"
+      },
+      "diagnostic": {
+        "title": "Your profile diagnostic",
+        "found": "What we found",
+        "missing": "What's missing",
+        "why": "Why it matters",
+        "readyFix": "Ready-made fix",
+        "noNotes": "No notes here",
+        "notMeasured": "Not measured",
+        "keepUp": "Excellent — keep this up"
+      },
+      "dimensions": {
+        "headline": "Headline",
+        "about": "Summary",
+        "experience": "Experience",
+        "skills": "Skills",
+        "keywords": "Keywords",
+        "activity": "Activity",
+        "education": "Education & Certifications",
+        "completeness": "Profile Completeness"
+      },
+      "unlock": {
+        "lockedTitle": "Ready-made fixes are locked",
+        "lockedBody": "The diagnostic is complete and free. Unlock the ready-made rewrites to apply them directly.",
+        "cta": "Unlock fixes ({{count}} tokens)",
+        "working": "Working…",
+        "lockedFixHint": "Unlock the fixes to view and apply the ready-made text.",
+        "fixLockedChip": "Ready-made fix locked"
       }
     },
     "triggers": {
@@ -2965,6 +2994,14 @@
       "restore": "Restore",
       "atsScore": {
         "title": "ATS Score",
+        "howBuilt": "How your ATS score is built",
+        "now": "ATS now",
+        "projected": "projected",
+        "afterFixes": "after fixes",
+        "complete": "Complete",
+        "missingSections": "Missing sections",
+        "missingKeywords": "Missing keywords",
+        "addQuantified": "Add numbers and percentages to unquantified bullets",
         "keywords": "Keywords",
         "sections": "Sections",
         "format": "Format",
