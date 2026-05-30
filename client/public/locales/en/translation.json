@@ -271,7 +271,8 @@
       "actCta": "Start now",
       "dismiss": "Not now",
       "highConfidence": "Highly recommended",
-      "empty": "You are on track. No new suggestions."
+      "empty": "You've done the key steps for now. We'll suggest what's next soon.",
+      "fixNow": "Fix it now"
     },
     "pulse": {
       "title": "Your Career Pulse",
@@ -344,6 +345,24 @@
         "roleRefresh": "Role refresh",
         "topUpFirst": "Top up first"
       }
+    },
+    "journeyTitle": "Your Career Journey",
+    "q1": "Where are you now?",
+    "q3": "What matters most now?",
+    "q4": "Your next steps",
+    "readiness": {
+      "noneTitle": "We haven't measured your readiness yet",
+      "noneBody": "Start with a Radar analysis so we can compute your career readiness.",
+      "startFirst": "Start your first analysis",
+      "currentLabel": "Your current readiness",
+      "targetLabel": "Your target",
+      "points": "pts",
+      "pointsGain": "readiness pts",
+      "madeOf": "Made up of:",
+      "linkedinPart": "LinkedIn",
+      "resumePart": "Resume",
+      "completeWithResume": "Build your resume to complete your readiness",
+      "completeWithRadar": "Analyze LinkedIn to complete your readiness"
     }
   },
   "common": {
@@ -3034,8 +3053,9 @@
       "pickSource": "Pick a post to repurpose",
       "noEligibleSources": "No eligible posts to repurpose. Create a post first.",
       "start": "Start ({{cost}} tokens)",
-      "viewCached": "View cached (free)",
-      "cachedFootnote": "Tokens are deducted on success. If generation fails, your tokens are automatically refunded."
+      "viewCached": "View cached (included)",
+      "cachedFootnote": "Tokens are deducted on success. If generation fails, your tokens are automatically refunded.",
+      "cachedIncluded": "Cached — included"
     },
     "generating": {
       "drafting": "Drafting the content…",
@@ -3244,6 +3264,27 @@
         "title": "Not found",
         "body": "It may have been deleted, or the link is invalid.",
         "cta": "Back to home"
+      }
+    },
+    "radar": {
+      "preflight": {
+        "title": "Couldn't prepare the Radar",
+        "body": "Something went wrong preparing the analysis. Please try again.",
+        "cta": "Try again"
+      }
+    },
+    "resume": {
+      "preflight": {
+        "title": "Couldn't prepare the resume",
+        "body": "Something went wrong preparing the resume. Please try again.",
+        "cta": "Try again"
+      }
+    },
+    "dashboard": {
+      "readiness": {
+        "title": "Couldn't load your readiness",
+        "body": "We couldn't compute your readiness right now. Please try again.",
+        "cta": "Try again"
       }
     }
   },

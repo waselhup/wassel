@@ -16,7 +16,7 @@
 import { useEffect, useState } from 'react';
 import { useLocation } from 'wouter';
 import { useTranslation } from 'react-i18next';
-import { Sparkles, Briefcase, Link as LinkIcon, AlertCircle, Bell, RefreshCw } from 'lucide-react';
+import { Sparkles, Briefcase, Link as LinkIcon, Bell, RefreshCw } from 'lucide-react';
 import Phone from '@/components/v2/Phone';
 import Topbar from '@/components/v2/Topbar';
 import BottomNav from '@/components/v2/BottomNav';
@@ -26,6 +26,7 @@ import Eyebrow from '@/components/v2/Eyebrow';
 import Input from '@/components/v2/Input';
 import Skeleton from '@/components/v2/Skeleton';
 import NumDisplay from '@/components/v2/NumDisplay';
+import ErrorBanner from '@/components/v2/ErrorBanner';
 import { trpc } from '@/lib/trpc';
 
 type PreflightShape = Awaited<ReturnType<typeof trpc.radar.preflight>>;
@@ -43,8 +44,12 @@ export default function RadarPreflight() {
   const [overrideRole, setOverrideRole] = useState('');
   const [overrideSubmitting, setOverrideSubmitting] = useState(false);
 
+  const [reloadTick, setReloadTick] = useState(0);
+
   useEffect(() => {
     let cancelled = false;
+    setLoading(true);
+    setError(null);
     (async () => {
       try {
         const data = await trpc.radar.preflight();
@@ -62,7 +67,7 @@ export default function RadarPreflight() {
       }
     })();
     return () => { cancelled = true; };
-  }, [navigate]);
+  }, [navigate, reloadTick]);
 
   function startAnalysis(override?: string) {
     const params = new URLSearchParams();
@@ -174,12 +179,15 @@ export default function RadarPreflight() {
         </div>
 
         {error && (
-          <Card padding="md" radius="md" className="mb-4 border-rose-200 bg-rose-50">
-            <div className="flex items-start gap-2">
-              <AlertCircle size={16} className="mt-0.5 shrink-0 text-rose-600" />
-              <p className="font-ar text-[13px] text-rose-700">{error}</p>
-            </div>
-          </Card>
+          <div className="mb-4">
+            <ErrorBanner
+              messageKey="errors.radar.preflight"
+              category="ai_service"
+              recovery="user_action_required"
+              rawMessage={error}
+              onRetry={() => setReloadTick((n) => n + 1)}
+            />
+          </div>
         )}
 
         {/* Snapshot card — what we already know about you. R02 in practice. */}

@@ -12,6 +12,7 @@ import Input from '@/components/v2/Input';
 import Pill from '@/components/v2/Pill';
 import Toggle from '@/components/v2/Toggle';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTokenBalance } from '@/lib/v2/useTokenBalance';
 import { supabase } from '@/lib/supabase';
 
 // Mirrors the canonical `plans` table (free / starter / growth / enterprise).
@@ -152,6 +153,9 @@ function Profile() {
   const { t, i18n } = useTranslation();
   const isAr = (i18n.language || 'ar').startsWith('ar');
   const { user, profile, signOut, refreshProfile } = useAuth();
+  // Unified token balance (3-wallet total) — same source as the sidebar,
+  // dashboard, and Billing. Falls back to the legacy profile field while loading.
+  const wallet = useTokenBalance();
   const [tab, setTab] = useState<Tab>('profile');
 
   const [name, setName] = useState('');
@@ -381,7 +385,7 @@ function Profile() {
             const planQuotas: Record<string, number> = { free: 10, starter: 200, growth: 600, enterprise: 0, pro: 200, elite: 600 };
             const planPrices: Record<string, string> = { free: 'مجاني', starter: '199 ر.س / شهر', growth: '399 ر.س / شهر', enterprise: 'حسب الطلب', pro: '199 ر.س / شهر', elite: '399 ر.س / شهر' };
             const planKey = profile?.plan ?? 'free';
-            const balance = profile?.token_balance ?? 0;
+            const balance = wallet.total ?? profile?.token_balance ?? 0;
             const quota = planQuotas[planKey] ?? planQuotas.free;
             const usedTokens = Math.max(0, quota - balance);
             const usedPct = quota > 0 ? Math.min(100, Math.round((usedTokens / quota) * 100)) : 0;

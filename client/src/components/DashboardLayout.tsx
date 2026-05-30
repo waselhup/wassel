@@ -12,6 +12,7 @@ import {
 import FeedbackFAB from './FeedbackFAB';
 import PersonaSwitcher from './PersonaSwitcher';
 import { useIsEmbeddedShell } from '@/contexts/EmbeddedShellContext';
+import { useTokenBalance } from '@/lib/v2/useTokenBalance';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -38,7 +39,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, page
   const [location] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [tokenBalance, setTokenBalance] = useState<number | null>(null);
+  // Token balance comes from the unified 3-wallet source (same as the V2
+  // sidebar / dashboard / Billing), not a direct profiles.token_balance read.
+  const wallet = useTokenBalance();
+  const tokenBalance = wallet.total;
   const [userPlan, setUserPlan] = useState<string>('free');
   const isRTL = i18n.language === 'ar';
   const font = '"Thmanyah Sans", system-ui, sans-serif';
@@ -50,10 +54,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, page
 
   useEffect(() => {
     if (!user?.id) return;
-    supabase.from('profiles').select('token_balance,plan').eq('id', user.id).single()
+    // Plan only — the token balance is read from the unified wallet hook above.
+    supabase.from('profiles').select('plan').eq('id', user.id).single()
       .then(({ data }) => {
         if (data) {
-          setTokenBalance(data.token_balance ?? 0);
           setUserPlan(data.plan ?? 'free');
         }
       });

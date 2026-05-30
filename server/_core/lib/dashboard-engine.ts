@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { callClaude, extractText, extractJson } from './claude-client';
 import { getCareerProfile, type CareerProfile, type Language } from './career-profile';
 import { getWallets } from './wallets';
+import { getReadiness, projectedReadinessGain } from './readiness';
 import { nextTaskPrompt } from '../prompts/_generated';
 
 /**
@@ -343,6 +344,140 @@ export async function getNextTask(
     console.warn('[dashboard-engine] getNextTask regenerate failed:', e);
     return null;
   }
+}
+
+// ─────────────────────────────────────────────
+// Next Best Action — impact ÷ effort, scored by projected Readiness gain
+// ─────────────────────────────────────────────
+
+/**
+ * Map a radar quick-win's qualitative impact to an estimated number of RADAR
+ * points it would add. Quick wins improve the LinkedIn/Radar side, so the gain
+ * flows through the 0.6 radar weight when projected onto unified Readiness.
+ */
+const IMPACT_RADAR_POINTS: Record<'high' | 'medium' | 'low', number> = {
+  high: 12,
+  medium: 7,
+  low: 3,
+};
+
+/** Effort label + a rough minutes estimate, for the "دقيقتان" chip. */
+const EFFORT_MINUTES: Record<'very_low' | 'low' | 'medium' | 'high', number> = {
+  very_low: 2,
+  low: 5,
+  medium: 15,
+  high: 45,
+};
+
+export type NextBestAction = {
+  /** The underlying AI suggestion (same row the Next Task card shows). */
+  task: AiSuggestionRow | null;
+  /** Projected unified-Readiness points this action would add (≥ 0). */
+  pointGain: number | null;
+  /** Coarse effort bucket, from the radar quick win when available. */
+  effort: 'very_low' | 'low' | 'medium' | 'high' | null;
+  /** Rough minutes estimate derived from effort (for the UI chip). */
+  effortMinutes: number | null;
+  /** Where the point-gain estimate came from. */
+  source: 'radar_quick_win' | 'pillar_estimate' | null;
+};
+
+/**
+ * The single most valuable next move, annotated with its projected Readiness
+ * point-gain and effort. Layers on top of the existing getNextTask plumbing —
+ * it does NOT replace it. We reuse the top radar quick win (which carries real
+ * impact/effort values) to estimate the gain; if the task isn't radar-derived
+ * we fall back to a conservative pillar estimate so the number is never blank
+ * when an action exists.
+ *
+ * Read-only + cheap. Never throws.
+ */
+export async function getNextBestAction(
+  supabase: SupabaseClient,
+  userId: string,
+  language: 'ar' | 'en' = 'ar'
+): Promise<NextBestAction> {
+  const task = await getNextTask(supabase, userId, language);
+  if (!task) {
+    return { task: null, pointGain: null, effort: null, effortMinutes: null, source: null };
+  }
+
+  // Readiness inputs — needed to project the gain against the live baseline.
+  let radarCurrent: number | null = null;
+  let atsCurrent: number | null = null;
+  try {
+    const r = await getReadiness(supabase, userId);
+    radarCurrent = r.breakdown.radar;
+    atsCurrent = r.breakdown.ats;
+  } catch {
+    /* leave nulls — projectedReadinessGain treats them safely */
+  }
+
+  // Prefer the top radar quick win's impact/effort when the task is radar-side.
+  let impact: 'high' | 'medium' | 'low' | null = null;
+  let effort: 'very_low' | 'low' | 'medium' | 'high' | null = null;
+  let source: NextBestAction['source'] = null;
+
+  if (task.pillar === 'radar') {
+    try {
+      const { data: cacheRows } = await supabase
+        .from('radar_cache')
+        .select('result, created_at')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      const result = (cacheRows ?? [])[0] as
+        | { result?: { quick_wins?: Array<{ impact?: string; effort?: string }> } }
+        | undefined;
+      const top = result?.result?.quick_wins?.[0];
+      if (top) {
+        impact = (top.impact as 'high' | 'medium' | 'low') ?? 'medium';
+        effort = (top.effort as 'very_low' | 'low' | 'medium' | 'high') ?? 'low';
+        source = 'radar_quick_win';
+      }
+    } catch {
+      /* fall through to estimate */
+    }
+  }
+
+  // Project the gain. Each pillar maps to which side of the score it moves:
+  //   radar/profile → radar side (×0.6)   |   resume → ATS side (×0.4)
+  let pointGain: number;
+  if (source === 'radar_quick_win' && impact) {
+    pointGain = projectedReadinessGain({
+      radarCurrent,
+      atsCurrent,
+      deltaRadar: IMPACT_RADAR_POINTS[impact],
+    });
+  } else {
+    // Conservative pillar estimate (no quick-win data). A medium-impact move.
+    source = 'pillar_estimate';
+    effort = effort ?? 'medium';
+    if (task.pillar === 'resume') {
+      // Building/improving a resume moves the ATS side. If there's no resume
+      // yet, model creating one at a solid starting ATS (~70).
+      pointGain = projectedReadinessGain({
+        radarCurrent,
+        atsCurrent,
+        deltaAts: atsCurrent == null ? 70 : IMPACT_RADAR_POINTS.medium,
+      });
+    } else {
+      // radar / profile / content / wallet → radar-side estimate.
+      pointGain = projectedReadinessGain({
+        radarCurrent,
+        atsCurrent,
+        deltaRadar: atsCurrent == null && radarCurrent == null && task.pillar === 'radar' ? 60 : IMPACT_RADAR_POINTS.medium,
+      });
+    }
+  }
+
+  return {
+    task,
+    pointGain,
+    effort,
+    effortMinutes: effort ? EFFORT_MINUTES[effort] : null,
+    source,
+  };
 }
 
 export async function listSuggestions(
@@ -828,5 +963,7 @@ export async function snapshotPulse(supabase: SupabaseClient, userId: string): P
     );
 }
 
-// Re-export type for convenience
-export type { CareerProfile, Language };
+// Re-export for convenience (getReadiness is imported above and used by
+// getNextBestAction; surface it + its type so the router imports one module).
+export { getReadiness };
+export type { Readiness } from './readiness';

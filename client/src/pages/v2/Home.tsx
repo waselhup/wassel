@@ -10,29 +10,34 @@ import NumDisplay from '@/components/v2/NumDisplay';
 import Button from '@/components/v2/Button';
 import Skeleton, { useInitialLoading } from '@/components/v2/Skeleton';
 import CompanionCard from '@/components/v2/Companion/CompanionCard';
+import ErrorBanner from '@/components/v2/ErrorBanner';
 import { useAuth } from '@/contexts/AuthContext';
 import { trpc } from '@/lib/trpc';
 import type {
-  AiSuggestionShape,
   CareerPulseShape,
   ActivityLogEntryShape,
   DraftSummaryShape,
   SufficesForShape,
+  ReadinessShape,
 } from '@/lib/trpc';
 
 /**
- * Sprint 6 — Career Copilot Cockpit.
+ * مركز رحلتك المهنية — the Career Journey command center (P1 Foundation).
  *
- * Five layers, top-down:
- *   1. NextTaskCard            (above the fold; the one action)
- *   2. CareerPulse             (radar / resume / content / wallet KPIs)
- *   3. QuickWinsMini           (3 chips from the latest radar)
- *   4. ActivityTimeline        (last 7 days)
- *   5. DraftLibrary            (collapsed; resume / content / radar)
- *   +  SufficesForWidget       (sidebar / floating)
+ * The screen LEADS A JOURNEY, top-down, answering four questions in order:
+ *   1. أين أنت؟        → ReadinessHero: goal + target role + the unified
+ *                         Readiness number, shown TRANSPARENTLY with its
+ *                         breakdown (LinkedIn X | Resume Y). Honest null state
+ *                         for new users — never "0 / 100".
+ *   2. إلى أين تصل؟     → the target Readiness + the delta (+N نقطة).
+ *   3. أهم شيء الآن؟    → NextBestActionCard: the #1 action with its projected
+ *                         Readiness point-gain + effort + [إصلاح الآن].
+ *   4. الخطوة التالية؟  → the ordered journey steps (Career Pulse, Quick Wins,
+ *                         Activity, Drafts) — the existing widgets, reframed.
  *
- * All data fetched in parallel on mount. Each layer renders independently
- * so a slow query doesn't block the others.
+ * The Companion card + the ProtectedShell CompanionMount/SupportWidget mounts
+ * are preserved untouched. All data fetched in parallel on mount; each section
+ * renders independently so a slow query never blocks the others.
  */
 
 // ─────────────────────────────────────────────
@@ -63,6 +68,26 @@ function greetingFor(date: Date, isAr: boolean): string {
   if (h < 12) return 'Good morning';
   if (h < 18) return 'Hello';
   return 'Good evening';
+}
+
+/** Short, human goal label for the hero context line. */
+function goalLabel(goal: string | null | undefined, isAr: boolean): string | null {
+  if (!goal) return null;
+  const ar: Record<string, string> = {
+    job_search: 'البحث عن وظيفة',
+    promotion: 'الترقية',
+    personal_brand: 'بناء علامتك المهنية',
+    opportunities: 'فرص جديدة',
+    career_change: 'تغيير المسار',
+  };
+  const en: Record<string, string> = {
+    job_search: 'Job search',
+    promotion: 'Promotion',
+    personal_brand: 'Personal brand',
+    opportunities: 'New opportunities',
+    career_change: 'Career change',
+  };
+  return (isAr ? ar : en)[goal] ?? null;
 }
 
 function relativeTime(iso: string, isAr: boolean, now = Date.now()): string {
@@ -117,14 +142,199 @@ function pillarIcon(pillar: string | null): ReactNode {
 // Sub-components
 // ─────────────────────────────────────────────
 
-function NextTaskCard({
-  task,
+/**
+ * SectionQuestion — the small heading that frames each journey step as one of
+ * the four questions ("أين أنت؟", "إلى أين تصل؟", …). Keeps the page reading as
+ * a guided journey instead of a wall of isolated tiles.
+ */
+function SectionQuestion({ children }: { children: ReactNode }) {
+  return (
+    <h2 className="mb-3 font-ar text-[15px] font-semibold text-v2-dim lg:text-[16px]">
+      {children}
+    </h2>
+  );
+}
+
+/**
+ * ReadinessHero — answers Q1 (أين أنت؟) and Q2 (إلى أين تصل؟).
+ *
+ * Shows the unified Readiness number TRANSPARENTLY: the headline number plus
+ * the breakdown line "LinkedIn X (رابط للرادار) | Resume Y (رابط للسيرة)" so the
+ * number is never a black box (Gate #24 / C1+C4). For a new user with no
+ * signal we NEVER render 0/100 — we render the honest empty-state copy and the
+ * "ابدأ تحليلك الأول" CTA. Partial states (radar only / resume only) show the
+ * readiness from the present signal and nudge for the missing half.
+ */
+function ReadinessHero({
+  data,
+  loading,
+  isAr,
+  goal,
+  targetRole,
+  navigate,
+}: {
+  data: ReadinessShape | null;
+  loading: boolean;
+  isAr: boolean;
+  goal: string | null | undefined;
+  targetRole: string | null | undefined;
+  navigate: (to: string) => void;
+}) {
+  const { t } = useTranslation();
+
+  if (loading) {
+    return (
+      <Card padding="lg" radius="lg" elevated className="bg-gradient-to-br from-teal-50 to-white border-teal-100">
+        <Skeleton variant="text" width={120} className="mb-3" />
+        <Skeleton variant="text" width={90} className="h-12 mb-3" />
+        <Skeleton variant="text" lines={2} />
+      </Card>
+    );
+  }
+
+  const gLabel = goalLabel(goal, isAr);
+  const contextLine =
+    gLabel && targetRole
+      ? (isAr ? `${gLabel} · دور ${targetRole}` : `${gLabel} · ${targetRole}`)
+      : gLabel || (targetRole ?? '');
+
+  // ── Null state: no radar AND no resume → honest, never 0/100 (Gate #24). ──
+  if (!data || data.state === 'none' || data.readiness == null) {
+    return (
+      <Card padding="lg" radius="lg" elevated className="bg-gradient-to-br from-teal-50 to-white border-teal-100">
+        {contextLine && <Eyebrow className="text-teal-700">{contextLine}</Eyebrow>}
+        <p className="mt-2 font-ar text-[16px] font-semibold text-v2-ink leading-snug">
+          {t('dashboard.readiness.noneTitle', isAr ? 'لم نقيّم جاهزيتك بعد' : "We haven't measured your readiness yet")}
+        </p>
+        <p className="mt-1.5 font-ar text-[13px] text-v2-body leading-relaxed">
+          {t(
+            'dashboard.readiness.noneBody',
+            isAr
+              ? 'ابدأ بتحليل بروفايلك على الرادار لنحسب جاهزيتك المهنية.'
+              : 'Start with a Radar analysis so we can compute your career readiness.',
+          )}
+        </p>
+        <div className="mt-4">
+          <Button variant="primary" size="md" onClick={() => navigate('/v2/analyze')}>
+            {t('dashboard.readiness.startFirst', isAr ? 'ابدأ تحليلك الأول' : 'Start your first analysis')}
+          </Button>
+        </div>
+      </Card>
+    );
+  }
+
+  const { readiness, target, breakdown, state } = data;
+  const delta = target != null && readiness != null ? target - readiness : null;
+
+  // The transparent breakdown chips. Each present signal links to its source.
+  const radarChip =
+    breakdown.radar != null ? (
+      <button
+        type="button"
+        onClick={() => navigate('/v2/analyze')}
+        className="inline-flex items-center gap-1 rounded-v2-pill bg-white/70 px-2.5 py-1 font-ar text-[12px] text-v2-ink-2 hover:bg-white cursor-pointer transition-colors duration-150"
+      >
+        {t('dashboard.readiness.linkedinPart', isAr ? 'LinkedIn' : 'LinkedIn')}{' '}
+        <NumDisplay className="font-semibold">{breakdown.radar}</NumDisplay>
+      </button>
+    ) : null;
+  const atsChip =
+    breakdown.ats != null ? (
+      <button
+        type="button"
+        onClick={() => navigate('/v2/cvs')}
+        className="inline-flex items-center gap-1 rounded-v2-pill bg-white/70 px-2.5 py-1 font-ar text-[12px] text-v2-ink-2 hover:bg-white cursor-pointer transition-colors duration-150"
+      >
+        {t('dashboard.readiness.resumePart', isAr ? 'السيرة' : 'Resume')}{' '}
+        <NumDisplay className="font-semibold">{breakdown.ats}</NumDisplay>
+      </button>
+    ) : null;
+
+  // Nudge copy for the missing half (partial states).
+  const missingNudge =
+    state === 'radar_only'
+      ? t('dashboard.readiness.completeWithResume', isAr ? 'أنشئ سيرتك لإكمال جاهزيتك' : 'Build your resume to complete your readiness')
+      : state === 'resume_only'
+        ? t('dashboard.readiness.completeWithRadar', isAr ? 'حلّل LinkedIn لإكمال جاهزيتك' : 'Analyze LinkedIn to complete your readiness')
+        : null;
+
+  return (
+    <Card padding="lg" radius="lg" elevated className="bg-gradient-to-br from-teal-50 to-white border-teal-100">
+      {contextLine && <Eyebrow className="text-teal-700">{contextLine}</Eyebrow>}
+
+      {/* Q1: where are you — the current readiness number, big. */}
+      <div className="mt-2 flex items-end justify-between gap-4">
+        <div>
+          <p className="font-ar text-[12px] font-semibold text-v2-dim">
+            {t('dashboard.readiness.currentLabel', isAr ? 'جاهزيتك الحالية' : 'Your current readiness')}
+          </p>
+          <div className="flex items-baseline gap-1.5">
+            <NumDisplay className="text-[44px] font-bold leading-none text-v2-ink lg:text-[52px]">
+              {readiness}
+            </NumDisplay>
+            <span className="font-ar text-[14px] text-v2-dim">/ 100</span>
+          </div>
+        </div>
+
+        {/* Q2: where to — the target + delta. */}
+        {target != null && (
+          <div className="text-end">
+            <p className="font-ar text-[12px] font-semibold text-v2-dim">
+              {t('dashboard.readiness.targetLabel', isAr ? 'هدفك' : 'Your target')}
+            </p>
+            <div className="flex items-baseline justify-end gap-1.5">
+              <NumDisplay className="text-[26px] font-bold leading-none text-teal-700">
+                {target}
+              </NumDisplay>
+              <span className="font-ar text-[12px] text-v2-dim">/ 100</span>
+            </div>
+            {delta != null && delta > 0 && (
+              <p className="mt-0.5 font-ar text-[12px] font-semibold text-teal-700">
+                +<NumDisplay>{delta}</NumDisplay> {t('dashboard.readiness.points', isAr ? 'نقطة' : 'pts')}
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Transparent breakdown — the number is never a black box (Gate #24). */}
+      {(radarChip || atsChip) && (
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <span className="font-ar text-[12px] text-v2-dim">
+            {t('dashboard.readiness.madeOf', isAr ? 'تتكوّن من:' : 'Made up of:')}
+          </span>
+          {radarChip}
+          {atsChip}
+        </div>
+      )}
+
+      {missingNudge && (
+        <p className="mt-3 font-ar text-[13px] text-v2-body">
+          {missingNudge}
+        </p>
+      )}
+    </Card>
+  );
+}
+
+/**
+ * NextBestActionCard — answers Q3 (أهم شيء الآن؟).
+ *
+ * The single most valuable move, annotated with its projected Readiness
+ * point-gain and effort: "إعادة كتابة العنوان | +8 نقاط جاهزية | دقيقتان |
+ * [إصلاح الآن]". Falls back to the calm "on track" empty state when there's no
+ * action — but only renders that when there's genuinely nothing pending (it's
+ * driven by the same suggestion the engine surfaces, so it can't claim "all
+ * good" while a real gap-derived task exists).
+ */
+function NextBestActionCard({
+  nba,
   loading,
   isAr,
   onAct,
   onDismiss,
 }: {
-  task: AiSuggestionShape | null;
+  nba: ReadinessShape['nextBestAction'] | null;
   loading: boolean;
   isAr: boolean;
   onAct: () => void;
@@ -134,26 +344,35 @@ function NextTaskCard({
 
   if (loading) {
     return (
-      <Card padding="lg" radius="lg" elevated className="bg-gradient-to-br from-teal-50 to-white border-teal-100">
-        <Skeleton variant="text" width={100} className="mb-3" />
+      <Card padding="lg" radius="lg" elevated>
+        <Skeleton variant="text" width={90} className="mb-3" />
         <Skeleton variant="text" lines={2} className="mb-4" />
         <Skeleton variant="text" width={140} className="h-10" />
       </Card>
     );
   }
 
+  const task = nba?.task ?? null;
+
   if (!task) {
     return (
       <Card padding="lg" radius="lg" elevated>
         <Eyebrow>{t('dashboard.nextTask.title', isAr ? 'خطوتك التالية' : 'Your Next Move')}</Eyebrow>
         <p className="mt-2 font-ar text-[14px] text-v2-dim">
-          {t('dashboard.nextTask.empty', isAr ? 'أنت على المسار الصحيح. لا توجد توصيات جديدة.' : 'You are on track. No new suggestions.')}
+          {t('dashboard.nextTask.empty', isAr ? 'أنجزت أهم الخطوات الحالية. سنقترح التالي قريباً.' : 'You\'ve done the key steps for now. We\'ll suggest what\'s next soon.')}
         </p>
       </Card>
     );
   }
 
-  const highConfidence = (task.score ?? 0) >= 8;
+  const effortLabel = (effort: string | null): string | null => {
+    if (!effort) return null;
+    const ar: Record<string, string> = { very_low: 'دقيقتان', low: '5 دقائق', medium: '15 دقيقة', high: '45 دقيقة' };
+    const en: Record<string, string> = { very_low: '2 min', low: '5 min', medium: '15 min', high: '45 min' };
+    return (isAr ? ar : en)[effort] ?? null;
+  };
+  const eLabel = effortLabel(nba?.effort ?? null);
+  const pointGain = nba?.pointGain ?? null;
 
   return (
     <Card
@@ -162,28 +381,35 @@ function NextTaskCard({
       elevated
       className="bg-gradient-to-br from-teal-50 to-white border-teal-100 transition-shadow duration-300 hover:shadow-card-hover"
     >
-      <div className="flex items-start justify-between gap-3 mb-2">
-        <Eyebrow className="text-teal-700">
-          {t('dashboard.nextTask.title', isAr ? 'خطوتك التالية' : 'Your Next Move')}
-        </Eyebrow>
-        {highConfidence && (
-          <span className="inline-flex items-center gap-1 rounded-v2-pill bg-teal-600 px-2 py-0.5 font-ar text-[10px] font-semibold text-white">
-            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
-              <path d="M5 1 L6 4 L9 4.3 L7 6.4 L7.5 9.3 L5 7.8 L2.5 9.3 L3 6.4 L1 4.3 L4 4 Z" fill="currentColor" />
-            </svg>
-            {t('dashboard.nextTask.highConfidence', isAr ? 'موصى به بشدة' : 'Highly recommended')}
+      <Eyebrow className="text-teal-700">
+        {t('dashboard.nextTask.title', isAr ? 'خطوتك التالية' : 'Your Next Move')}
+      </Eyebrow>
+      <h2 className="mt-2 font-ar text-[18px] font-bold text-v2-ink leading-snug lg:text-[22px]">
+        {task.headline}
+      </h2>
+
+      {/* The impact chips: +N نقاط جاهزية · effort. This is what turns a bare
+          suggestion into a journey step with a measurable payoff. */}
+      <div className="mt-2.5 flex flex-wrap items-center gap-2">
+        {pointGain != null && pointGain > 0 && (
+          <span className="inline-flex items-center gap-1 rounded-v2-pill bg-teal-600 px-2.5 py-1 font-ar text-[12px] font-semibold text-white">
+            +<NumDisplay>{pointGain}</NumDisplay> {t('dashboard.readiness.pointsGain', isAr ? 'نقاط جاهزية' : 'readiness pts')}
+          </span>
+        )}
+        {eLabel && (
+          <span className="inline-flex items-center gap-1 rounded-v2-pill bg-white border border-teal-100 px-2.5 py-1 font-ar text-[12px] text-v2-ink-2">
+            <NumDisplay>{eLabel}</NumDisplay>
           </span>
         )}
       </div>
-      <h2 className="font-ar text-[18px] font-bold text-v2-ink leading-snug lg:text-[22px]">
-        {task.headline}
-      </h2>
-      <p className="mt-2 font-ar text-[13px] text-v2-body leading-relaxed lg:text-[14px]">
+
+      <p className="mt-2.5 font-ar text-[13px] text-v2-body leading-relaxed lg:text-[14px]">
         {task.rationale}
       </p>
+
       <div className="mt-4 flex flex-wrap items-center gap-2">
         <Button variant="primary" size="md" onClick={onAct}>
-          {task.cta_label || t('dashboard.nextTask.actCta', isAr ? 'ابدأ الآن' : 'Start now')}
+          {t('dashboard.nextTask.fixNow', isAr ? 'إصلاح الآن' : 'Fix it now')}
         </Button>
         <button
           type="button"
@@ -653,16 +879,20 @@ function Home() {
   const { user, profile, loading: authLoading } = useAuth();
   const loading = initialLoading || authLoading;
 
+  const [readiness, setReadiness] = useState<ReadinessShape | null>(null);
+  const [readinessLoading, setReadinessLoading] = useState(true);
+  const [readinessError, setReadinessError] = useState<string | null>(null);
+  const [reloadTick, setReloadTick] = useState(0);
   const [pulse, setPulse] = useState<CareerPulseShape | null>(null);
   const [pulseLoading, setPulseLoading] = useState(true);
-  const [task, setTask] = useState<AiSuggestionShape | null>(null);
-  const [taskLoading, setTaskLoading] = useState(true);
   const [feed, setFeed] = useState<ActivityLogEntryShape[]>([]);
   const [feedLoading, setFeedLoading] = useState(true);
   const [drafts, setDrafts] = useState<DraftSummaryShape | null>(null);
   const [draftsLoading, setDraftsLoading] = useState(true);
   const [suffices, setSuffices] = useState<SufficesForShape | null>(null);
   const [streakDays, setStreakDays] = useState<number | null>(null);
+  const [careerGoal, setCareerGoal] = useState<string | null>(null);
+  const [careerTargetRole, setCareerTargetRole] = useState<string | null>(null);
 
   // Parallel fetch on mount + markVisited
   useEffect(() => {
@@ -674,19 +904,36 @@ function Home() {
       if (!cancelled) setStreakDays(r.streakDays);
     }).catch(() => {});
 
+    // Q1+Q2+Q3 source: the unified Readiness + the #1 Next Best Action.
+    setReadinessError(null);
+    trpc.dashboard.getReadiness({ language }).then((r) => {
+      if (!cancelled) {
+        setReadiness(r);
+        setReadinessLoading(false);
+      }
+    }).catch((e: unknown) => {
+      if (!cancelled) {
+        // A genuine fetch failure must NOT silently render the "no signal"
+        // empty state (that would be wrong info — Gate #24). Surface it.
+        setReadinessError(e instanceof Error ? e.message : String(e));
+        setReadinessLoading(false);
+      }
+    });
+
+    // Goal + target role for the hero context line ("البحث عن وظيفة · دور X").
+    trpc.careerProfile.get().then((r) => {
+      if (!cancelled && r?.profile) {
+        setCareerGoal(r.profile.goal ?? null);
+        setCareerTargetRole(r.profile.target_role ?? null);
+      }
+    }).catch(() => {});
+
     trpc.dashboard.getCareerPulse({ language }).then((r) => {
       if (!cancelled) {
         setPulse(r);
         setPulseLoading(false);
       }
     }).catch(() => { if (!cancelled) setPulseLoading(false); });
-
-    trpc.dashboard.getNextTask({ language }).then((r) => {
-      if (!cancelled) {
-        setTask(r.task);
-        setTaskLoading(false);
-      }
-    }).catch(() => { if (!cancelled) setTaskLoading(false); });
 
     trpc.dashboard.getActivityFeed({ days: 7, limit: 12 }).then((r) => {
       if (!cancelled) {
@@ -707,7 +954,7 @@ function Home() {
     }).catch(() => {});
 
     return () => { cancelled = true; };
-  }, [user, isAr]);
+  }, [user, isAr, reloadTick]);
 
   const firstName = firstNameOf(profile, user, isAr);
   const greeting = useMemo(() => {
@@ -715,20 +962,26 @@ function Home() {
     return isAr ? `${g}، ${firstName}` : `${g}, ${firstName}`;
   }, [firstName, isAr]);
 
+  // The #1 Next Best Action drives Q3 (act / dismiss the underlying suggestion).
+  const nbaTask = readiness?.nextBestAction?.task ?? null;
+
   const handleAct = async () => {
-    if (!task) return;
+    if (!nbaTask) return;
     try {
-      await trpc.dashboard.acknowledgeSuggestion({ suggestionId: task.id });
+      await trpc.dashboard.acknowledgeSuggestion({ suggestionId: nbaTask.id });
     } catch { /* ignore */ }
-    navigate(task.cta_url);
+    navigate(nbaTask.cta_url);
   };
 
   const handleDismiss = async () => {
-    if (!task) return;
+    if (!nbaTask) return;
     try {
-      await trpc.dashboard.dismissSuggestion({ suggestionId: task.id });
+      await trpc.dashboard.dismissSuggestion({ suggestionId: nbaTask.id });
     } catch { /* ignore */ }
-    setTask(null);
+    // Drop the action locally so the card collapses to its calm empty state.
+    setReadiness((prev) =>
+      prev ? { ...prev, nextBestAction: { ...prev.nextBestAction, task: null } } : prev,
+    );
   };
 
   return (
@@ -759,41 +1012,74 @@ function Home() {
 
       <div className="flex-1 px-[22px] pb-[110px] lg:px-0 lg:pb-0">
 
-        {/* Greeting */}
+        {/* Title + greeting — this screen is "مركز رحلتك المهنية", a journey,
+            not a tool dashboard. */}
         <div className="mt-5 mb-5 lg:mt-2 lg:mb-6">
           {loading ? (
             <Skeleton variant="text" width="60%" className="h-[28px] lg:h-[34px]" />
           ) : (
-            <h1 className="truncate font-ar font-bold leading-tight text-v2-ink text-[22px] lg:text-[28px]">
-              {greeting}
-            </h1>
+            <>
+              <h1 className="truncate font-ar font-bold leading-tight text-v2-ink text-[22px] lg:text-[28px]">
+                {t('dashboard.journeyTitle', isAr ? 'مركز رحلتك المهنية' : 'Your Career Journey')}
+              </h1>
+              <p className="mt-1 truncate font-ar text-[14px] text-v2-dim">{greeting}</p>
+            </>
           )}
         </div>
 
-        {/* Desktop: 12-col grid (main 8 / side 4). Mobile: stacked. */}
+        {/* Desktop: 12-col grid (main 8 / side 4). Mobile: stacked. The order
+            follows the four questions top-to-bottom. */}
         <div className="lg:grid lg:grid-cols-12 lg:gap-6">
 
-          {/* Layer 1 — Next Task */}
+          {/* ── Q1 + Q2: أين أنت؟ / إلى أين تصل؟ — the Readiness hero. ── */}
           <div className="mb-6 lg:order-1 lg:col-span-8 lg:mb-0">
-            <NextTaskCard
-              task={task}
-              loading={taskLoading}
+            <SectionQuestion>
+              {t('dashboard.q1', isAr ? 'أين أنت الآن؟' : 'Where are you now?')}
+            </SectionQuestion>
+            {readinessError ? (
+              <ErrorBanner
+                messageKey="errors.dashboard.readiness"
+                category="network"
+                recovery="silent_retry"
+                rawMessage={readinessError}
+                onRetry={() => { setReadinessLoading(true); setReloadTick((n) => n + 1); }}
+              />
+            ) : (
+              <ReadinessHero
+                data={readiness}
+                loading={readinessLoading}
+                isAr={isAr}
+                goal={careerGoal}
+                targetRole={careerTargetRole}
+                navigate={navigate}
+              />
+            )}
+          </div>
+
+          {/* Companion presence — warm greeting + purchase guidance. On mobile
+              it sits right under the hero; on desktop it leads the sidebar. It
+              deliberately does NOT repeat the next action (showTask=false inside)
+              so it complements the action card rather than duplicating it. */}
+          <div className="mb-6 lg:order-2 lg:col-span-4 lg:mb-0">
+            <CompanionCard language={isAr ? 'ar' : 'en'} />
+          </div>
+
+          {/* ── Q3: أهم شيء الآن؟ — the #1 Next Best Action with point-gain. ── */}
+          <div className="mb-6 lg:order-3 lg:col-span-8 lg:mb-0 lg:mt-2">
+            <SectionQuestion>
+              {t('dashboard.q3', isAr ? 'أهم شيء الآن؟' : 'What matters most now?')}
+            </SectionQuestion>
+            <NextBestActionCard
+              nba={readiness?.nextBestAction ?? null}
+              loading={readinessLoading}
               isAr={isAr}
               onAct={handleAct}
               onDismiss={handleDismiss}
             />
           </div>
 
-          {/* Companion presence — warm greeting + purchase guidance. On mobile
-              it sits right under the Next Task; on desktop it leads the sidebar.
-              It deliberately does NOT repeat the task (showTask=false inside) so
-              it complements the Next Task card rather than duplicating it. */}
-          <div className="mb-6 lg:order-2 lg:col-span-4 lg:mb-0">
-            <CompanionCard language={isAr ? 'ar' : 'en'} />
-          </div>
-
-          {/* Suffices For — sidebar on desktop, mobile shows after pulse */}
-          <div className="hidden lg:block lg:order-2 lg:col-span-4">
+          {/* Suffices For — sidebar on desktop, mobile shows after the action */}
+          <div className="hidden lg:block lg:order-2 lg:col-span-4 lg:mt-2">
             <SufficesForWidget
               data={suffices}
               loading={pulseLoading}
@@ -802,8 +1088,15 @@ function Home() {
             />
           </div>
 
-          {/* Layer 2 — Career Pulse */}
-          <div className="mb-6 lg:order-3 lg:col-span-12 lg:mb-0 lg:mt-2">
+          {/* ── Q4: الخطوة التالية؟ — the ordered journey steps. ── */}
+          <div className="lg:order-4 lg:col-span-12 lg:mt-2">
+            <SectionQuestion>
+              {t('dashboard.q4', isAr ? 'الخطوة التالية؟' : 'Your next steps')}
+            </SectionQuestion>
+          </div>
+
+          {/* Career Pulse */}
+          <div className="mb-6 lg:order-5 lg:col-span-12 lg:mb-0">
             <CareerPulse pulse={pulse} loading={pulseLoading} isAr={isAr} navigate={navigate} />
           </div>
 
@@ -817,20 +1110,20 @@ function Home() {
             />
           </div>
 
-          {/* Layer 3 — Quick Wins */}
+          {/* Quick Wins */}
           {pulse?.latestQuickWins && pulse.latestQuickWins.length > 0 && (
-            <div className="mb-6 lg:order-4 lg:col-span-12 lg:mt-2 lg:mb-0">
+            <div className="mb-6 lg:order-6 lg:col-span-12 lg:mt-2 lg:mb-0">
               <QuickWinsMini wins={pulse.latestQuickWins} isAr={isAr} navigate={navigate} />
             </div>
           )}
 
-          {/* Layer 4 — Activity Timeline */}
-          <div className="mb-6 lg:order-5 lg:col-span-8 lg:mt-2 lg:mb-0">
+          {/* Activity Timeline */}
+          <div className="mb-6 lg:order-7 lg:col-span-8 lg:mt-2 lg:mb-0">
             <ActivityTimeline entries={feed} loading={feedLoading} isAr={isAr} navigate={navigate} />
           </div>
 
-          {/* Layer 5 — Drafts */}
-          <div className="mb-6 lg:order-6 lg:col-span-4 lg:mt-2 lg:mb-0">
+          {/* Drafts */}
+          <div className="mb-6 lg:order-8 lg:col-span-4 lg:mt-2 lg:mb-0">
             <DraftLibrary
               drafts={drafts}
               loading={draftsLoading}
@@ -844,7 +1137,7 @@ function Home() {
       <BottomNav
         active="home"
         items={[
-          { id: 'home',    label: isAr ? 'الرئيسية' : 'Home',    icon: <span /> , onSelect: () => navigate('/v2/home') },
+          { id: 'home',    label: isAr ? 'رحلتك' : 'Journey',     icon: <span /> , onSelect: () => navigate('/v2/home') },
           { id: 'analyze', label: isAr ? 'الرادار' : 'Radar',   icon: <span /> , onSelect: () => navigate('/v2/analyze') },
           { id: 'posts',   label: isAr ? 'الاستوديو' : 'Studio', icon: <span /> , onSelect: () => navigate('/v2/posts') },
           { id: 'profile', label: isAr ? 'حسابي' : 'Account',    icon: <span /> , onSelect: () => navigate('/v2/me') },
