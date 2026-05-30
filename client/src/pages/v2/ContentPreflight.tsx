@@ -8,7 +8,7 @@
  *   - A source post picker for repurpose_bundle
  *
  * If a cache hit exists for the entered topic, the CTA flips to
- * "عرض النسخة الحالية (مجاناً)" / "View cached (free)".
+ * "عرض النسخة الحالية (مشمول)" / "View cached (included)".
  */
 
 import { useEffect, useMemo, useState } from 'react';
@@ -210,7 +210,7 @@ export default function ContentPreflight() {
               </p>
               {isCacheHit && (
                 <p className="font-ar text-[12px] font-semibold text-teal-700">
-                  {isAr ? 'مخزّن — مجاناً' : 'Cached — free'}
+                  {t('content.preflight.cachedIncluded', isAr ? 'مخزّن — مشمول' : 'Cached — included')}
                 </p>
               )}
               <p className="font-ar text-[10px] text-v2-dim">{isAr ? modeMeta.durationAr : modeMeta.durationEn}</p>
@@ -306,7 +306,7 @@ export default function ContentPreflight() {
           onClick={start}
         >
           {isCacheHit
-            ? t('content.preflight.viewCached', isAr ? 'عرض النسخة الحالية (مجاناً)' : 'View cached (free)')
+            ? t('content.preflight.viewCached', isAr ? 'عرض النسخة الحالية (مشمول)' : 'View cached (included)')
             : (isAr
                 ? `ابدأ (${cost} توكن)`
                 : `Start (${cost} tokens)`)}

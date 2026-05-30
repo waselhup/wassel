@@ -1350,6 +1350,8 @@ export const trpc = {
       trpcQuery<CareerPulseShape>('dashboard.getCareerPulse', input ?? {}),
     getNextTask: (input?: { language?: 'ar' | 'en' }) =>
       trpcQuery<{ task: AiSuggestionShape | null }>('dashboard.getNextTask', input ?? {}),
+    getReadiness: (input?: { language?: 'ar' | 'en' }) =>
+      trpcQuery<ReadinessShape>('dashboard.getReadiness', input ?? {}),
     getAllSuggestions: (input?: {
       status?: 'active' | 'dismissed' | 'acted_upon' | 'expired' | 'all';
       limit?: number;
@@ -1789,6 +1791,30 @@ export type RadarResultShape = {
 // Dashboard shapes — mirror server/_core/lib/dashboard-engine.ts so the
 // client bundle doesn't pull in the engine itself.
 // ─────────────────────────────────────────────
+
+export type ReadinessStateShape = 'none' | 'radar_only' | 'resume_only' | 'both';
+
+export type NextBestActionShape = {
+  task: AiSuggestionShape | null;
+  pointGain: number | null;
+  effort: 'very_low' | 'low' | 'medium' | 'high' | null;
+  effortMinutes: number | null;
+  source: 'radar_quick_win' | 'pillar_estimate' | null;
+};
+
+export type ReadinessShape = {
+  /** Unified current readiness (0..100), or null when no signal exists. */
+  readiness: number | null;
+  /** Unified target readiness (0..100), or null when no signal exists. */
+  target: number | null;
+  breakdown: {
+    radar: number | null;
+    ats: number | null;
+  };
+  state: ReadinessStateShape;
+  /** The #1 action + its projected Readiness point-gain. */
+  nextBestAction: NextBestActionShape;
+};
 
 export type CareerPulseShape = {
   radarScore: number | null;

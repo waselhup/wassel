@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import NumDisplay from '@/components/v2/NumDisplay';
 import Eyebrow from '@/components/v2/Eyebrow';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTokenBalance } from '@/lib/v2/useTokenBalance';
 
 export interface DesktopSidebarItem {
   id: string;
@@ -95,7 +96,7 @@ const CvIcon = (
 
 function buildDefaultItems(isAr: boolean): DesktopSidebarItem[] {
   return [
-    { id: 'home',     label: isAr ? 'الرئيسية'  : 'Home',     href: '/v2/home',     icon: HomeIcon },
+    { id: 'home',     label: isAr ? 'رحلتك'      : 'Journey',  href: '/v2/home',     icon: HomeIcon },
     { id: 'analyze',  label: isAr ? 'الرادار'    : 'Radar',    href: '/v2/analyze',  icon: RadarIcon },
     { id: 'cv',       label: isAr ? 'السيرة'     : 'CV',       href: '/v2/cvs',      icon: CvIcon },
     { id: 'posts',    label: isAr ? 'المنشورات'  : 'Posts',    href: '/v2/posts',    icon: PostsIcon },
@@ -118,7 +119,12 @@ function DesktopSidebar({
   const isAr = (i18n.language || 'ar').startsWith('ar');
 
   const planKey = profile?.plan ?? 'free';
-  const balance = balanceProp ?? profile?.token_balance ?? 0;
+  // Unified token source (3-wallet total via get_wallets_v2) — same number the
+  // dashboard, Profile, and Billing show. An explicit `balance` prop still wins
+  // for callers that already hold the value. While the wallet loads we fall back
+  // to the legacy profile field so the widget isn't blank on first paint.
+  const wallet = useTokenBalance();
+  const balance = balanceProp ?? wallet.total ?? profile?.token_balance ?? 0;
   const total = totalProp ?? PLAN_QUOTAS[planKey] ?? PLAN_QUOTAS.free;
   const userName = userNameProp ?? firstNameOf(profile?.full_name, profile?.email ?? user?.email);
   const userPlanLabelsEn: Record<string, string> = {

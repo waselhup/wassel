@@ -34,6 +34,14 @@ export interface ErrorBannerProps {
   messageKey: string;
   /** Translation params merged into the t() call */
   params?: Record<string, unknown>;
+  /**
+   * Raw, already-localized message to show as the body instead of the
+   * messageKey lookup. Used at call sites that only hold a caught server/error
+   * string (no structured code yet) but still want the shared banner chrome +
+   * the R06 "3 questions" + retry CTA. The title still comes from messageKey /
+   * category so the banner reads consistently.
+   */
+  rawMessage?: string | null;
   /** Backend category — drives the icon/color */
   category?: ErrorCategory;
   /** Refunded token count — shown as the "did I lose anything?" line */
@@ -63,6 +71,7 @@ const CATEGORY_STYLES: Record<ErrorCategory, { bg: string; border: string; iconB
 function ErrorBanner({
   messageKey,
   params,
+  rawMessage,
   category = 'unknown',
   refundedTokens,
   recovery,
@@ -79,10 +88,12 @@ function ErrorBanner({
     ...params,
     defaultValue: t('errors.generic.unknown.title', { defaultValue: isAr ? 'حدث خطأ' : 'Something went wrong' }),
   });
-  const body  = t(`${messageKey}.body`,  {
-    ...params,
-    defaultValue: t('errors.generic.unknown.body', { defaultValue: isAr ? 'تواصل مع الدعم لو تكرر.' : 'Contact support if it keeps happening.' }),
-  });
+  const body  = (rawMessage && rawMessage.trim())
+    ? rawMessage.trim()
+    : t(`${messageKey}.body`,  {
+        ...params,
+        defaultValue: t('errors.generic.unknown.body', { defaultValue: isAr ? 'تواصل مع الدعم لو تكرر.' : 'Contact support if it keeps happening.' }),
+      });
   const ctaLabel = t(`${messageKey}.cta`, {
     ...params,
     defaultValue: t('errors.generic.unknown.cta', { defaultValue: isAr ? 'إعادة المحاولة' : 'Try again' }),

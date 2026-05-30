@@ -157,8 +157,11 @@ export default function OnboardingWizard() {
         hasLinkedIn={Boolean(state.linkedin.linkedinUrl)}
         onPrimaryAction={() => {
           void createdProfile;
-          // /v2/analyze ships in Sprint 3 — until then route to /v2/home
-          navigate('/v2/home');
+          // First run = the Radar (the CTA copy already says "ابدأ تحليل الرادار
+          // الأول"). R08: the journey's entry point is /v2/analyze, not the
+          // dashboard. The secondary button below stays as "go home" for users
+          // who'd rather land on the dashboard first.
+          navigate('/v2/analyze');
         }}
         onSecondaryAction={() => navigate('/v2/home')}
       />

@@ -4,6 +4,8 @@ import { router, protectedProcedure } from '../trpc-init';
 import {
   getCareerPulse,
   getNextTask,
+  getNextBestAction,
+  getReadiness,
   listSuggestions,
   generateSuggestions,
   dismissSuggestion,
@@ -75,6 +77,28 @@ export const dashboardRouter = router({
     .query(async ({ ctx, input }) => {
       const task = await getNextTask(ctx.supabase, ctx.user.id, input?.language ?? 'ar');
       return { task };
+    }),
+
+  // Unified Career Readiness + the #1 Next Best Action annotated with its
+  // projected Readiness point-gain. One query feeds the Home "where am I /
+  // where to / what now" hero. Compute-on-read (no cron, no persisted column).
+  getReadiness: protectedProcedure
+    .input(z.object({ language: LANGUAGE.optional() }).optional())
+    .query(async ({ ctx, input }) => {
+      try {
+        const readiness = await getReadiness(ctx.supabase, ctx.user.id);
+        const nextBestAction = await getNextBestAction(
+          ctx.supabase,
+          ctx.user.id,
+          input?.language ?? 'ar'
+        );
+        return { ...readiness, nextBestAction };
+      } catch (e) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: e instanceof Error ? e.message : 'getReadiness failed',
+        });
+      }
     }),
 
   getAllSuggestions: protectedProcedure

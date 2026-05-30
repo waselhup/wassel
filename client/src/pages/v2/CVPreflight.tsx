@@ -15,7 +15,7 @@ import { useEffect, useState } from 'react';
 import { useLocation } from 'wouter';
 import { useTranslation } from 'react-i18next';
 import {
-  FileText, Briefcase, Link as LinkIcon, AlertCircle, Sparkles, Palette,
+  FileText, Briefcase, Link as LinkIcon, Sparkles, Palette,
   ChevronRight,
 } from 'lucide-react';
 import Phone from '@/components/v2/Phone';
@@ -27,6 +27,7 @@ import Eyebrow from '@/components/v2/Eyebrow';
 import Input from '@/components/v2/Input';
 import Skeleton from '@/components/v2/Skeleton';
 import NumDisplay from '@/components/v2/NumDisplay';
+import ErrorBanner from '@/components/v2/ErrorBanner';
 import { trpc, type ResumeTemplateShape } from '@/lib/trpc';
 
 type PreflightShape = Awaited<ReturnType<typeof trpc.resume.preflight>>;
@@ -149,12 +150,15 @@ export default function CVPreflight() {
         </div>
 
         {error && (
-          <Card padding="md" radius="md" className="mb-4 border-rose-200 bg-rose-50">
-            <div className="flex items-start gap-2">
-              <AlertCircle size={16} className="mt-0.5 shrink-0 text-rose-600" />
-              <p className="font-ar text-[13px] text-rose-700">{error}</p>
-            </div>
-          </Card>
+          <div className="mb-4">
+            <ErrorBanner
+              messageKey="errors.resume.preflight"
+              category="ai_service"
+              recovery="user_action_required"
+              rawMessage={error}
+              onRetry={() => { setError(null); void load(); }}
+            />
+          </div>
         )}
 
         {/* Snapshot — target role + LinkedIn pulled from career_profile */}
