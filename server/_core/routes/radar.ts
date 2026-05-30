@@ -3,6 +3,8 @@ import { TRPCError } from '@trpc/server';
 import { router, protectedProcedure } from '../trpc-init';
 import {
   runRadar,
+  unlockFixes,
+  gateFixes,
   applyIncludedFix,
   revertAppliedFix,
   checkRefreshTriggers,
@@ -10,6 +12,7 @@ import {
   preflight,
   RadarError,
   RADAR_COST,
+  RADAR_UNLOCK_COST,
   type RadarResult,
 } from '../lib/radar-engine';
 import {
@@ -105,6 +108,42 @@ export const radarRouter = router({
     }),
 
   /**
+   * M2 — unlock the ready-made fixes (the paid half of the inverted pricing).
+   * The diagnostic from radar.run / getCached is free; this spends 149 tokens
+   * to reveal the actual rewritten title/summary/bullets. Idempotent: a second
+   * call (or a race) returns the fixes for 0 tokens. Bowling-Lane refund on
+   * failure lives in the engine.
+   */
+  unlockFixes: protectedProcedure
+    .input(z.object({
+      cacheId: z.string().uuid(),
+      language: LANGUAGE.optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      try {
+        const out = await unlockFixes(ctx.supabase, {
+          userId: ctx.user.id,
+          cacheId: input.cacheId,
+          language: input.language ?? 'ar',
+        });
+        await logActivity(ctx.supabase, ctx.user.id, 'radar.fixes_unlocked', input.cacheId, {
+          tokens_charged: out.tokensCharged,
+          wallet_used: out.walletUsed,
+          already_unlocked: out.alreadyUnlocked,
+        });
+        return {
+          cacheId: out.cacheId,
+          tokensCharged: out.tokensCharged,
+          walletUsed: out.walletUsed,
+          alreadyUnlocked: out.alreadyUnlocked,
+          result: out.result,
+        };
+      } catch (err) {
+        throw radarErrorToTrpc(err);
+      }
+    }),
+
+  /**
    * Fetch a stored Radar result by cacheId (or the user's latest one
    * when cacheId is omitted). Used by the AnalyzeResult page on direct
    * link / refresh.
@@ -115,7 +154,7 @@ export const radarRouter = router({
       const cacheId = input?.cacheId;
       let query = ctx.supabase
         .from('radar_cache')
-        .select('id, user_id, target_role, profile_hash, language, result, current_score, target_score, source_linkedin_url, hit_count, created_at, last_accessed_at')
+        .select('id, user_id, target_role, profile_hash, language, result, current_score, target_score, source_linkedin_url, hit_count, fixes_unlocked, created_at, last_accessed_at')
         .eq('user_id', ctx.user.id);
 
       if (cacheId) query = query.eq('id', cacheId);
@@ -128,11 +167,15 @@ export const radarRouter = router({
       if (!data) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'No cached Radar result.' });
       }
+      const fixesUnlocked = Boolean(data.fixes_unlocked);
       return {
         cacheId: data.id,
         targetRole: data.target_role,
         language: data.language,
-        result: data.result as RadarResult,
+        // M2: gate the ready-made fixes on the row's unlock flag — the
+        // diagnostic is free, the rewrites stay locked until 149 is spent.
+        result: gateFixes(data.result as RadarResult, fixesUnlocked),
+        fixesUnlocked,
         currentScore: data.current_score,
         targetScore: data.target_score,
         sourceLinkedinUrl: data.source_linkedin_url,
@@ -279,3 +322,4 @@ export const radarRouter = router({
 
 export type RadarRouter = typeof radarRouter;
 export const RADAR_COST_EXPORTED = RADAR_COST;
+export const RADAR_UNLOCK_COST_EXPORTED = RADAR_UNLOCK_COST;

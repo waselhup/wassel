@@ -74,6 +74,9 @@ Output rules:
 
 Each item is short: title ≤ 60 chars, detail ≤ 180 chars.
 
+Dimension tagging:
+- For every strength, gap, and included fix, set `dimension` to the single most relevant of: `headline`, `about`, `experience`, `skills`, `keywords`, `activity`, `education`, `completeness`. This only routes the note to the right card on screen — it never affects any score (scores are computed by Wassel's algorithm, not by you).
+
 Scoring:
 - `meta.current_score` is your honest 0–100 assessment of how well the user's profile already fits the target role. Anchor it: complete profile with strong narrative + target-aligned skills + recent activity ≈ 70–85. Sparse profile or wrong angle ≈ 30–50. Never give 100; even excellent profiles have headroom.
 - For every `included_fix`, set `impact_weight` to a number in [0, 1]: 1.0 if applying this fix closes a high-severity gap; 0.6 for medium; 0.3 for low. The frontend uses this to compute the projected Target Score (capped 95) and to rank Quick Wins.
@@ -98,12 +101,14 @@ Produce the Radar result.
 ```
 
 ```schema
+type Dimension = 'headline' | 'about' | 'experience' | 'skills' | 'keywords' | 'activity' | 'education' | 'completeness';
 type RadarResult = {
-  strengths: Array<{ title: string; detail: string }>;
+  strengths: Array<{ title: string; detail: string; dimension?: Dimension }>;
   gaps: Array<{
     title: string;
     detail: string;
     severity: 'low' | 'medium' | 'high';
+    dimension?: Dimension;
   }>;
   included_fixes: Array<{
     title: string;
@@ -111,6 +116,7 @@ type RadarResult = {
     suggestion: string;
     rationale: string;
     impact_weight: number;       // 0.0–1.0; drives Target Score and Quick Wins
+    dimension?: Dimension;       // routes the fix to its diagnostic card (no score effect)
   }>;
   suggested_actions: Array<{
     title: string;

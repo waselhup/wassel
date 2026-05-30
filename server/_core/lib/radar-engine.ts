@@ -30,15 +30,32 @@ import { withBrain } from '../prompts/brain';
 // Output schema (must match what the prompt emits + computed fields)
 // ─────────────────────────────────────────────
 
+/**
+ * The 8 diagnostic dimensions the Radar UI renders as cards. Used both as the
+ * key on per-dimension sub-scores (computeDimensionScores) AND as the optional
+ * narrative tag the model may attach to each strength / gap / fix so the UI can
+ * dissolve them into the right card (Pass-2 prompt sets it; absence is fine).
+ */
+export const DIMENSION_KEYS = [
+  'headline', 'about', 'experience', 'skills',
+  'keywords', 'activity', 'education', 'completeness',
+] as const;
+export type DimensionKey = (typeof DIMENSION_KEYS)[number];
+const DimensionKeyEnum = z.enum(DIMENSION_KEYS);
+
 export const RadarResultSchema = z.object({
   strengths: z.array(z.object({
     title: z.string(),
     detail: z.string(),
+    // Optional narrative tag → which of the 8 cards this belongs to (#26: the
+    // model only TAGS the narrative; it never authors a number).
+    dimension: DimensionKeyEnum.optional(),
   })),
   gaps: z.array(z.object({
     title: z.string(),
     detail: z.string(),
     severity: z.enum(['low', 'medium', 'high']),
+    dimension: DimensionKeyEnum.optional(),
   })),
   included_fixes: z.array(z.object({
     title: z.string(),
@@ -46,6 +63,11 @@ export const RadarResultSchema = z.object({
     suggestion: z.string(),
     rationale: z.string(),
     impact_weight: z.number().min(0).max(1).default(0.5),
+    dimension: DimensionKeyEnum.optional(),
+    // Set true by gateFixes() when the user hasn't unlocked the ready-made
+    // rewrites yet. When locked, suggestion/rationale are blanked in the
+    // response but title/field/impact_weight survive (Quick Wins need them).
+    locked: z.boolean().optional(),
   })),
   suggested_actions: z.array(z.object({
     title: z.string(),
@@ -60,6 +82,17 @@ export const RadarResultSchema = z.object({
     area: z.string(),
     score: z.number(),
   })),
+  // Deterministic per-dimension sub-scores (#26). Optional so pre-M2 cached
+  // rows (which lack it) still parse; the UI falls back to legacy lists then.
+  dimensions: z.array(z.object({
+    key: DimensionKeyEnum,
+    current: z.number().min(0).max(100),
+    target: z.number().min(0).max(100),
+    gap: z.number(),
+    found: z.array(z.string()),
+    missing: z.array(z.string()),
+    unmeasured: z.boolean().optional(),
+  })).optional(),
   meta: z.object({
     current_score: z.number().min(0).max(100),
     target_score: z.number().min(0).max(100),
@@ -71,6 +104,7 @@ export const RadarResultSchema = z.object({
 });
 
 export type RadarResult = z.infer<typeof RadarResultSchema>;
+export type DimensionResult = NonNullable<RadarResult['dimensions']>[number];
 
 // ─────────────────────────────────────────────
 // Helpers — exported for testability
@@ -199,9 +233,13 @@ export function computeQuickWins(
  */
 export function estimateCurrentScore(linkedinData: unknown): number {
   const p = (linkedinData ?? {}) as Record<string, unknown>;
+  // The raw UnifiedProfile carries `summary`; the discovery-normalized shape
+  // carries `about`. Accept either so this fires regardless of which is passed
+  // (previously read only `about`, so it never scored a raw profile's summary).
+  const aboutText = String(p.about ?? p.summary ?? '');
   let score = 0;
   if (p.headline && String(p.headline).length > 10) score += 12;
-  if (p.about && String(p.about).length > 60) score += 18;
+  if (aboutText.length > 60) score += 18;
   if (Array.isArray(p.experience) && p.experience.length > 0) score += 20;
   if (Array.isArray(p.experience) && p.experience.length >= 3) score += 8;
   if (Array.isArray(p.skills) && p.skills.length > 0) score += 10;
@@ -211,6 +249,238 @@ export function estimateCurrentScore(linkedinData: unknown): number {
   if (Array.isArray(p.languages) && p.languages.length > 0) score += 4;
   if (p.profilePicture) score += 4;
   return Math.max(20, Math.min(score, 88));
+}
+
+// ─────────────────────────────────────────────
+// M2 — Fix gating (free diagnostic / locked ready-made fixes)
+// ─────────────────────────────────────────────
+
+/**
+ * Strip the ready-made fix rewrites from a result when the user hasn't paid to
+ * unlock them. The DIAGNOSTIC (scores, dimensions, gaps, recommendations) is
+ * always free; only `suggestion` + `rationale` — the actual rewritten text the
+ * user would apply — are gated. We KEEP `title`, `field`, `impact_weight` and
+ * `dimension` because Quick Wins, the Target Score, and the 8-card bucketing
+ * all depend on them. Pure function — no DB, no mutation of the input.
+ *
+ * The same function runs on radar.run, radar.getCached, and radar.unlockFixes
+ * so the gating logic lives in exactly one place (no drift between read paths).
+ */
+export function gateFixes(result: RadarResult, fixesUnlocked: boolean): RadarResult {
+  if (fixesUnlocked) {
+    // Make the unlocked state explicit so the client never shows a stale lock.
+    return {
+      ...result,
+      included_fixes: result.included_fixes.map((f) => ({ ...f, locked: false })),
+    };
+  }
+  return {
+    ...result,
+    included_fixes: result.included_fixes.map((f) => ({
+      title: f.title,
+      field: f.field,
+      impact_weight: f.impact_weight,
+      dimension: f.dimension,
+      suggestion: '',
+      rationale: '',
+      locked: true,
+    })),
+  };
+}
+
+// ─────────────────────────────────────────────
+// M2 — Per-dimension diagnostic sub-scores (#26: deterministic, never AI)
+// ─────────────────────────────────────────────
+
+/**
+ * Score each of the 8 Radar dimensions from the RAW UnifiedProfile. Every score
+ * is computed from field presence / length / counts — never from the model
+ * (Gate #26). `found` / `missing` are derived from the SAME predicates as the
+ * score, so a card's narrative can never contradict its number.
+ *
+ * Each dimension is scored on its own point budget, then normalized to 0–100
+ * for display. `target = min(95, current + headroom)` where headroom is the
+ * share of the budget the user is still missing (R10 — never claim 100).
+ *
+ * `keywords` is the only dimension that needs the target role: it reuses the
+ * same idea as the ATS keyword check (matched / expected target tokens).
+ * `activity` is marked `unmeasured` when the scrape source can't see posts —
+ * we show an honest "we can't measure this" rather than a damning 0 (#24).
+ */
+export function computeDimensionScores(
+  linkedinData: unknown,
+  targetRole: string,
+  industry: string,
+  language: 'ar' | 'en' = 'ar',
+): DimensionResult[] {
+  const p = (linkedinData ?? {}) as Record<string, unknown>;
+  const ar = language === 'ar';
+  const str = (v: unknown): string => (typeof v === 'string' ? v : '');
+  const arr = <T = unknown>(v: unknown): T[] => (Array.isArray(v) ? (v as T[]) : []);
+
+  // Normalize raw points (0..max) into a 0–100 card with an honest target.
+  const card = (
+    key: DimensionKey,
+    points: number,
+    max: number,
+    found: string[],
+    missing: string[],
+    unmeasured?: boolean,
+  ): DimensionResult => {
+    // Per-dimension current is capped at 95 (R10 — never claim a perfect 100;
+    // every dimension keeps headroom, mirroring the overall-score cap). This
+    // also guarantees target ≥ current with target ≤ 95.
+    const current = Math.max(0, Math.min(95, Math.round((points / max) * 100)));
+    const headroom = Math.round(((max - points) / max) * 100);
+    const target = unmeasured ? current : Math.max(current, Math.min(95, current + headroom));
+    return {
+      key,
+      current,
+      target,
+      gap: Math.max(0, target - current),
+      found,
+      missing,
+      ...(unmeasured ? { unmeasured: true } : {}),
+    };
+  };
+
+  const headline = str(p.headline).trim();
+  const summary = str(p.about ?? p.summary).trim();
+  const experience = arr<Record<string, unknown>>(p.experience);
+  const skills = arr<unknown>(p.skills).map((s) => (typeof s === 'string' ? s : str((s as Record<string, unknown>)?.title ?? (s as Record<string, unknown>)?.name)));
+  const education = arr<Record<string, unknown>>(p.education);
+  const certifications = arr<Record<string, unknown>>(p.certifications);
+  const languages = arr<unknown>(p.languages);
+  const activity = arr<unknown>(p.activity);
+  const hasPicture = Boolean(p.profilePicture);
+  const customUrl = Boolean(p.customUrl);
+  const location = str(p.location).trim();
+
+  // ── 1. Headline (max 25) ──────────────────────────────────────────
+  const hLen = headline.length;
+  const hPoints = hLen === 0 ? 0 : hLen < 30 ? 10 : hLen <= 120 ? 25 : 20;
+  const dHeadline = card('headline', hPoints, 25,
+    hLen >= 30 ? [ar ? `عنوان واضح (${hLen} حرف)` : `Clear headline (${hLen} chars)`] : [],
+    hLen === 0 ? [ar ? 'لا يوجد عنوان' : 'No headline']
+      : hLen < 30 ? [ar ? 'العنوان قصير — أضف الدور والتخصص' : 'Headline is short — add role and specialization']
+      : hLen > 120 ? [ar ? 'العنوان طويل جداً — اختصره' : 'Headline is too long — trim it'] : [],
+  );
+
+  // ── 2. About / summary (max 30) ───────────────────────────────────
+  const sLen = summary.length;
+  const sPoints = sLen === 0 ? 0 : sLen < 60 ? 8 : sLen <= 300 ? 22 : sLen <= 1500 ? 30 : 24;
+  const dAbout = card('about', sPoints, 30,
+    sLen >= 60 ? [ar ? 'ملخص مكتمل' : 'Complete summary'] : [],
+    sLen === 0 ? [ar ? 'لا يوجد ملخص' : 'No summary']
+      : sLen < 60 ? [ar ? 'الملخص مختصر جداً' : 'Summary is too short']
+      : sLen > 1500 ? [ar ? 'الملخص مطوّل — ركّزه' : 'Summary is too long — focus it'] : [],
+  );
+
+  // ── 3. Experience (max 30) ────────────────────────────────────────
+  const expCount = experience.length;
+  const describedCount = experience.filter((e) => str(e.description).trim().length > 0).length;
+  let expPoints = expCount === 0 ? 0 : 14;
+  if (expCount >= 3) expPoints += 8;
+  expPoints += Math.min(8, describedCount * 2);
+  expPoints = Math.min(30, expPoints);
+  const dExperience = card('experience', expPoints, 30,
+    expCount > 0 ? [ar ? `${expCount} خبرات، ${describedCount} منها بوصف` : `${expCount} roles, ${describedCount} with a description`] : [],
+    expCount === 0 ? [ar ? 'لا توجد خبرات مدرجة' : 'No experience listed']
+      : describedCount < expCount ? [ar ? 'أضف وصفاً للأدوار بدون تفاصيل' : 'Add descriptions to roles that have none'] : [],
+  );
+
+  // ── 4. Skills (max 22) ────────────────────────────────────────────
+  const skillCount = skills.filter((s) => s.trim().length > 0).length;
+  const skPoints = skillCount === 0 ? 0 : skillCount < 5 ? 8 : skillCount < 10 ? 16 : 22;
+  const dSkills = card('skills', skPoints, 22,
+    skillCount > 0 ? [ar ? `${skillCount} مهارة` : `${skillCount} skills`] : [],
+    skillCount < 10 ? [ar ? 'أضف مهارات للوصول إلى 10 أو أكثر' : 'Add skills to reach 10 or more'] : [],
+  );
+
+  // ── 5. Keywords (max 25) — matched vs target-role tokens ──────────
+  const expectedKw = deriveDimensionKeywords(targetRole, industry);
+  const haystack = [
+    headline, summary,
+    ...skills,
+    ...experience.flatMap((e) => [str(e.title), str(e.description)]),
+  ].join(' ').toLowerCase();
+  const matchedKw = expectedKw.filter((k) => haystack.includes(k));
+  const missingKw = expectedKw.filter((k) => !haystack.includes(k));
+  const kwPoints = expectedKw.length > 0 ? Math.round((matchedKw.length / expectedKw.length) * 25) : 18;
+  const dKeywords = card('keywords', kwPoints, 25,
+    matchedKw.slice(0, 8),
+    missingKw.slice(0, 8),
+  );
+
+  // ── 6. Activity (max 18) — unmeasured when the source can't see posts ─
+  const activityMeasured = activity.length > 0;
+  const actPoints = activity.length === 0 ? 0 : activity.length <= 2 ? 8 : activity.length <= 5 ? 14 : 18;
+  const dActivity = activityMeasured
+    ? card('activity', actPoints, 18,
+        [ar ? `${activity.length} منشور حديث` : `${activity.length} recent posts`],
+        activity.length < 3 ? [ar ? 'انشر بوتيرة أعلى لزيادة ظهورك' : 'Post more regularly to raise visibility'] : [])
+    : card('activity', 0, 18, [], [ar ? 'لا يمكننا قياس نشاطك من هذا المصدر' : "We can't measure your activity from this source"], true);
+
+  // ── 7. Education + certifications (max 20) ─────────────────────────
+  const eduCount = education.length;
+  const certCount = certifications.length;
+  let edPoints = eduCount >= 1 ? 10 : 0;
+  if (certCount >= 1) edPoints += 6;
+  if (certCount >= 3) edPoints += 4;
+  edPoints = Math.min(20, edPoints);
+  const dEducation = card('education', edPoints, 20,
+    (eduCount > 0 || certCount > 0) ? [ar ? `${eduCount} مؤهل، ${certCount} شهادة` : `${eduCount} qualifications, ${certCount} certifications`] : [],
+    certCount === 0 ? [ar ? 'أضف شهادات مهنية' : 'Add professional certifications']
+      : eduCount === 0 ? [ar ? 'أضف مؤهلك التعليمي' : 'Add your education'] : [],
+  );
+
+  // ── 8. Profile completeness (max 20) ──────────────────────────────
+  const compFound: string[] = [];
+  const compMissing: string[] = [];
+  let compPoints = 0;
+  const compSignal = (ok: boolean, pts: number, foundAr: string, foundEn: string, missAr: string, missEn: string) => {
+    if (ok) { compPoints += pts; compFound.push(ar ? foundAr : foundEn); }
+    else compMissing.push(ar ? missAr : missEn);
+  };
+  compSignal(hasPicture, 5, 'صورة احترافية', 'Profile picture', 'لا توجد صورة', 'No profile picture');
+  compSignal(customUrl, 3, 'رابط مخصص', 'Custom URL', 'رابط لينكدإن غير مخصص', 'LinkedIn URL is not customized');
+  compSignal(location.length > 0, 3, 'الموقع محدد', 'Location set', 'الموقع غير محدد', 'Location not set');
+  compSignal(languages.length > 0, 3, 'لغات مدرجة', 'Languages listed', 'لا توجد لغات', 'No languages listed');
+  compSignal(headline.length > 0, 3, 'عنوان موجود', 'Headline present', 'لا يوجد عنوان', 'No headline');
+  compSignal(summary.length > 0, 3, 'ملخص موجود', 'Summary present', 'لا يوجد ملخص', 'No summary');
+  const dCompleteness = card('completeness', compPoints, 20, compFound, compMissing);
+
+  return [dHeadline, dAbout, dExperience, dSkills, dKeywords, dActivity, dEducation, dCompleteness];
+}
+
+/**
+ * Keyword set for the `keywords` dimension. Mirrors the spirit of the resume
+ * engine's derivedKeywords (role + industry tokens + a few role-specific
+ * extras) so the two surfaces agree on what "target keywords" means.
+ */
+function deriveDimensionKeywords(targetRole: string, industry: string): string[] {
+  const tokens = [
+    ...targetRole.toLowerCase().split(/\s+/),
+    ...industry.toLowerCase().split(/\s+/),
+  ]
+    .map((t) => t.replace(/[^a-z0-9؀-ۿ]+/g, ''))
+    .filter((t) => t.length >= 3);
+
+  const extras: Record<string, string[]> = {
+    product: ['roadmap', 'metrics', 'stakeholders'],
+    manager: ['leadership', 'led', 'cross-functional'],
+    data: ['sql', 'python', 'analytics'],
+    engineer: ['design', 'system', 'architecture'],
+    designer: ['figma', 'prototyping', 'usability'],
+    marketing: ['campaign', 'growth', 'funnel'],
+    sales: ['pipeline', 'quota', 'crm'],
+    finance: ['budget', 'forecast', 'reporting'],
+  };
+  const roleLower = targetRole.toLowerCase();
+  for (const [key, terms] of Object.entries(extras)) {
+    if (roleLower.includes(key)) tokens.push(...terms);
+  }
+  return Array.from(new Set(tokens));
 }
 
 // ─────────────────────────────────────────────
@@ -245,7 +515,11 @@ export class RadarError extends Error {
   }
 }
 
+// 149 tokens. Post-M2 this is the cost to UNLOCK the ready-made fixes — the
+// diagnostic itself is free. preflight.cost surfaces it so the entry screen can
+// say "the fixes cost 149", and the radar.unlockFixes flow charges it.
 const RADAR_TOKEN_COST = 149;
+export const RADAR_UNLOCK_COST = RADAR_TOKEN_COST;
 
 export async function runRadar(
   supabase: SupabaseClient,
@@ -329,7 +603,9 @@ export async function runRadar(
         .single();
 
       return {
-        result: cached.result as RadarResult,
+        // Gate the ready-made fixes by the row's unlock flag — a cache hit on a
+        // not-yet-unlocked diagnostic must still hide the paid rewrites (M2).
+        result: gateFixes(cached.result as RadarResult, Boolean(cached.fixes_unlocked)),
         isCacheHit: true,
         tokensCharged: 0,
         walletUsed: null,
@@ -339,25 +615,10 @@ export async function runRadar(
     }
   }
 
-  // 4. Cache miss — deduct first (atomic), refund on any failure below
-  const deductRes = await deductTokens(supabase, opts.userId, RADAR_TOKEN_COST, 'radar.v2', {
-    target_role: targetRole,
-    profile_hash: profileHash,
-    language,
-  });
-  if (!deductRes.success) {
-    if (deductRes.error === 'INSUFFICIENT_TOKENS') {
-      throw new RadarError(
-        'INSUFFICIENT_TOKENS',
-        language === 'ar'
-          ? 'رصيدك غير كافٍ لإجراء تحليل جديد'
-          : 'Not enough tokens to run a new analysis.',
-        { available: deductRes.available, cost: RADAR_TOKEN_COST },
-      );
-    }
-    throw new RadarError('INTERNAL', `Deduction failed: ${deductRes.error}`);
-  }
-
+  // 4. Cache miss — M2 pricing inversion: the DIAGNOSTIC is FREE. We run the
+  //    two AI passes at zero token cost; the ready-made fixes are gated later by
+  //    gateFixes() until the user spends 149 via radar.unlockFixes. Nothing is
+  //    deducted here, so a model failure simply throws (no refund needed).
   let result: RadarResult;
   try {
     // 5. Discovery pass (Haiku)
@@ -439,6 +700,8 @@ export async function runRadar(
       fixes as Array<{ title: string; field: string; impact_weight?: number }>,
       suggested as Array<{ title: string; pillar: string }>,
     );
+    // M2: deterministic per-dimension sub-scores from the RAW profile (#26).
+    const dimensions = computeDimensionScores(unifiedProfile, targetRole, profileMerged.industry, language);
 
     result = RadarResultSchema.parse({
       strengths: parsed.strengths ?? [],
@@ -449,6 +712,7 @@ export async function runRadar(
       })),
       suggested_actions: suggested,
       quick_wins: quickWins,
+      dimensions,
       meta: {
         current_score: modelScore,
         target_score: targetScore,
@@ -459,22 +723,22 @@ export async function runRadar(
       },
     });
   } catch (err: unknown) {
-    // Bowling-Lane refund: undo the exact deduction we just performed.
-    await refundTokens(supabase, opts.userId, deductRes.debited, 'radar.v2.refund', {
-      reason: err instanceof Error ? err.message : String(err),
-    });
+    // No tokens were deducted for the free diagnostic, so there is nothing to
+    // refund — just surface the failure.
     if (err instanceof RadarError) throw err;
     throw new RadarError(
       'MODEL_FAILED',
       language === 'ar'
-        ? 'فشل التحليل. تم استرداد توكناتك'
-        : 'Analysis failed. Your tokens were refunded.',
+        ? 'تعذّر إكمال التحليل. حاول مرة أخرى'
+        : 'The analysis could not be completed. Please try again.',
       { error: err instanceof Error ? err.message : String(err) },
     );
   }
 
-  // 8. Persist cache + analysis
-  const debitedSummary = summarizeDebited(deductRes.debited);
+  // 8. Persist cache + analysis. We store the FULL result (with the real fix
+  //    rewrites) so radar.unlockFixes can reveal them later without re-running
+  //    the model. The row starts locked (fixes_unlocked=false) and free
+  //    (tokens_charged=0); only the RETURNED copy is gated below.
   const { data: cacheRow, error: cacheErr } = await supabase
     .from('radar_cache')
     .insert({
@@ -486,17 +750,14 @@ export async function runRadar(
       current_score: result.meta.current_score,
       target_score: result.meta.target_score,
       source_linkedin_url: profileMerged.linkedin_url,
-      tokens_charged: RADAR_TOKEN_COST,
+      tokens_charged: 0,
+      fixes_unlocked: false,
     })
     .select('id')
     .single();
 
   if (cacheErr || !cacheRow) {
-    // Persistence failed AFTER a successful model call — give the user
-    // their tokens back rather than leaving them with no artifact.
-    await refundTokens(supabase, opts.userId, deductRes.debited, 'radar.v2.persist_failed', {
-      reason: cacheErr?.message ?? 'cache_insert_failed',
-    });
+    // Nothing was charged for the diagnostic, so there is nothing to refund.
     throw new RadarError('INTERNAL', `Cache write failed: ${cacheErr?.message ?? 'unknown'}`);
   }
 
@@ -507,8 +768,8 @@ export async function runRadar(
       cache_id: cacheRow.id,
       target_role: targetRole,
       is_cache_hit: false,
-      tokens_charged: RADAR_TOKEN_COST,
-      wallet_used: debitedSummary,
+      tokens_charged: 0,
+      wallet_used: null,
       current_score: result.meta.current_score,
       target_score: result.meta.target_score,
       language,
@@ -518,7 +779,7 @@ export async function runRadar(
     .select('id')
     .single();
 
-  // 9. Bookkeeping on profiles (best-effort)
+  // 9. Bookkeeping on profiles (best-effort) — feeds M1 Readiness (compute-on-read).
   await supabase
     .from('profiles')
     .update({
@@ -529,10 +790,11 @@ export async function runRadar(
     .eq('id', opts.userId);
 
   return {
-    result,
+    // Fresh diagnostic → fixes always start locked in the response.
+    result: gateFixes(result, false),
     isCacheHit: false,
-    tokensCharged: RADAR_TOKEN_COST,
-    walletUsed: debitedSummary,
+    tokensCharged: 0,
+    walletUsed: null,
     cacheId: cacheRow.id,
     analysisId: analysisRow?.id ?? '',
   };
@@ -544,6 +806,113 @@ function summarizeDebited(
   if (!Array.isArray(debited) || debited.length === 0) return null;
   if (debited.length === 1) return debited[0].wallet;
   return 'mixed';
+}
+
+// ─────────────────────────────────────────────
+// M2 — Unlock the ready-made fixes (the paid half of the inverted pricing)
+// ─────────────────────────────────────────────
+
+export type UnlockFixesSuccess = {
+  result: RadarResult;
+  tokensCharged: number;
+  walletUsed: 'bonus' | 'subscription' | 'topup' | 'mixed' | null;
+  alreadyUnlocked: boolean;
+  cacheId: string;
+};
+
+/**
+ * Spend RADAR_UNLOCK_COST (149) to reveal the ready-made fix rewrites on a
+ * diagnostic the user already generated for free. Bowling-Lane Rules (R03):
+ *   - If already unlocked → return the full result for 0 tokens (idempotent).
+ *     This MUST short-circuit BEFORE deductTokens, because deduct_tokens_v2
+ *     rejects amount <= 0 with INVALID_AMOUNT.
+ *   - Else deduct 149 → flip fixes_unlocked via a conditional UPDATE that only
+ *     wins if the row was still locked. If we lost the race (0 rows) or the
+ *     write errored, refund the exact debit and recover gracefully.
+ */
+export async function unlockFixes(
+  supabase: SupabaseClient,
+  opts: { userId: string; cacheId: string; language?: 'ar' | 'en' },
+): Promise<UnlockFixesSuccess> {
+  const language: 'ar' | 'en' = opts.language ?? 'ar';
+
+  const { data: row, error: readErr } = await supabase
+    .from('radar_cache')
+    .select('id, result, fixes_unlocked')
+    .eq('id', opts.cacheId)
+    .eq('user_id', opts.userId)
+    .maybeSingle();
+  if (readErr) throw new RadarError('INTERNAL', `Cache read failed: ${readErr.message}`);
+  if (!row) throw new RadarError('INTERNAL', 'Cached result not found.');
+
+  const fullResult = row.result as RadarResult;
+
+  // Idempotent fast-path — already paid, reveal for free (no deduction).
+  if (row.fixes_unlocked) {
+    return {
+      result: gateFixes(fullResult, true),
+      tokensCharged: 0,
+      walletUsed: null,
+      alreadyUnlocked: true,
+      cacheId: row.id,
+    };
+  }
+
+  // Deduct first (R03), then unlock; refund on any failure after the debit.
+  const deductRes = await deductTokens(supabase, opts.userId, RADAR_UNLOCK_COST, 'radar.v2.unlock_fixes', {
+    cache_id: opts.cacheId,
+  });
+  if (!deductRes.success) {
+    if (deductRes.error === 'INSUFFICIENT_TOKENS') {
+      throw new RadarError(
+        'INSUFFICIENT_TOKENS',
+        language === 'ar'
+          ? 'رصيدك غير كافٍ لفتح الإصلاحات الجاهزة'
+          : 'Not enough tokens to unlock the ready-made fixes.',
+        { available: deductRes.available, cost: RADAR_UNLOCK_COST },
+      );
+    }
+    throw new RadarError('INTERNAL', `Deduction failed: ${deductRes.error}`);
+  }
+
+  // Conditional flip — only succeeds if the row was still locked (race-safe).
+  const { data: flipped, error: flipErr } = await supabase
+    .from('radar_cache')
+    .update({ fixes_unlocked: true })
+    .eq('id', opts.cacheId)
+    .eq('user_id', opts.userId)
+    .eq('fixes_unlocked', false)
+    .select('id');
+
+  if (flipErr) {
+    await refundTokens(supabase, opts.userId, deductRes.debited, 'radar.v2.unlock_fixes.refund', {
+      reason: flipErr.message,
+    });
+    throw new RadarError('INTERNAL', `Unlock write failed: ${flipErr.message}`);
+  }
+
+  // Lost the race: a concurrent unlock already flipped the flag. We were
+  // charged but shouldn't double-charge — refund this debit and reveal anyway.
+  if (!flipped || flipped.length === 0) {
+    await refundTokens(supabase, opts.userId, deductRes.debited, 'radar.v2.unlock_fixes.refund', {
+      reason: 'already_unlocked_concurrently',
+    });
+    return {
+      result: gateFixes(fullResult, true),
+      tokensCharged: 0,
+      walletUsed: null,
+      alreadyUnlocked: true,
+      cacheId: row.id,
+    };
+  }
+
+  return {
+    result: gateFixes(fullResult, true),
+    tokensCharged: RADAR_UNLOCK_COST,
+    walletUsed: summarizeDebited(deductRes.debited),
+    alreadyUnlocked: false,
+    cacheId: row.id,
+  };
 }
 
 // ─────────────────────────────────────────────

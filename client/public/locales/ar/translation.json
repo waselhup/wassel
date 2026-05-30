@@ -2901,10 +2901,39 @@
       "cachedFrom": "آخر تحليل في",
       "fromCache": "من الكاش · 0 توكن",
       "freshAnalysis": "تحليل جديد",
+      "freeDiagnostic": "تحليل مجاني",
       "severity": {
         "high": "عالية",
         "medium": "متوسطة",
         "low": "منخفضة"
+      },
+      "diagnostic": {
+        "title": "تشخيص ملفك",
+        "found": "ما اكتُشف",
+        "missing": "ما ينقص",
+        "why": "لماذا يهم",
+        "readyFix": "الإصلاح الجاهز",
+        "noNotes": "لا توجد ملاحظات هنا",
+        "notMeasured": "غير مُقاس",
+        "keepUp": "ممتاز — حافظ على هذا المستوى"
+      },
+      "dimensions": {
+        "headline": "العنوان",
+        "about": "الملخص",
+        "experience": "الخبرات",
+        "skills": "المهارات",
+        "keywords": "الكلمات المفتاحية",
+        "activity": "النشاط",
+        "education": "التعليم والشهادات",
+        "completeness": "اكتمال الملف"
+      },
+      "unlock": {
+        "lockedTitle": "الإصلاحات الجاهزة مقفلة",
+        "lockedBody": "التشخيص كامل ومجاني. افتح النصوص الجاهزة لتطبّقها مباشرة.",
+        "cta": "افتح الإصلاحات ({{count}} توكن)",
+        "working": "جارٍ…",
+        "lockedFixHint": "افتح الإصلاحات لعرض النص الجاهز وتطبيقه.",
+        "fixLockedChip": "الإصلاح الجاهز مقفل"
       }
     },
     "triggers": {
@@ -2969,6 +2998,14 @@
       "restore": "استعادة",
       "atsScore": {
         "title": "نتيجة ATS",
+        "howBuilt": "كيف تكوّنت نتيجة ATS",
+        "now": "ATS الحالي",
+        "projected": "المتوقع",
+        "afterFixes": "بعد المعالجة",
+        "complete": "مكتمل",
+        "missingSections": "أقسام ناقصة",
+        "missingKeywords": "كلمات مفقودة",
+        "addQuantified": "أضف أرقاماً ونسباً للنقاط بدون قياس",
         "keywords": "الكلمات المفتاحية",
         "sections": "الأقسام",
         "format": "التنسيق",

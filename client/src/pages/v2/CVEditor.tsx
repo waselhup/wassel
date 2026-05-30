@@ -323,6 +323,7 @@ export default function CVEditor() {
               <AtsScoreCard
                 score={atsScore}
                 breakdown={atsBreakdown}
+                resume={resume}
                 isAr={isAr}
                 onExpand={() => setAtsModalOpen(true)}
                 onRescore={canRescore ? handleRescore : undefined}
@@ -453,7 +454,7 @@ export default function CVEditor() {
       </div>
 
       {atsModalOpen && atsBreakdown && atsScore !== null && (
-        <AtsModal score={atsScore} breakdown={atsBreakdown} isAr={isAr} onClose={() => setAtsModalOpen(false)} />
+        <AtsModal score={atsScore} breakdown={atsBreakdown} resume={resume} isAr={isAr} onClose={() => setAtsModalOpen(false)} />
       )}
     </Phone>
   );
@@ -463,8 +464,66 @@ export default function CVEditor() {
 // Sub-components — inline (Sprint 3 minimal-touch principle)
 // ─────────────────────────────────────────────
 
-function AtsScoreCard({ score, breakdown, isAr, onExpand, onRescore, rescoring, rescoreLabel, rescoreLoadingLabel }: {
-  score: number; breakdown: ResumeAtsBreakdownShape; isAr: boolean; onExpand: () => void;
+// ─────────────────────────────────────────────
+// ATS explainability (M2) — every component shows score / what's missing /
+// its deterministic point impact. The +impact is ALGORITHMIC (headroom =
+// max − value), never AI-authored (#26). Expected = min(95, current + Σ impact).
+// ─────────────────────────────────────────────
+
+type AtsComponent = {
+  key: 'keywords' | 'sections' | 'format' | 'quantified';
+  label: string;
+  value: number;
+  max: number;
+  impact: number;          // points recoverable in this component (max − value)
+  missing: string[];       // concrete, deterministic "what's missing" lines
+};
+
+const ATS_FORMAT_ISSUE_LABELS: Record<string, { ar: string; en: string }> = {
+  long_bullet: { ar: 'نقاط طويلة جداً — اختصرها', en: 'Bullets are too long — shorten them' },
+  emoji_in_bullets: { ar: 'إيموجي داخل النقاط — أزلها', en: 'Emojis in bullets — remove them' },
+  non_iso_dates: { ar: 'تواريخ بصيغة غير قياسية (YYYY-MM)', en: 'Dates not in standard format (YYYY-MM)' },
+  long_summary: { ar: 'الملخص طويل جداً — ركّزه', en: 'Summary is too long — focus it' },
+};
+
+/**
+ * Derive the 4 ATS components with their missing-items and point impact from
+ * the stored breakdown + the resume object. Pure + deterministic (#26).
+ */
+function computeAtsComponents(breakdown: ResumeAtsBreakdownShape, resume: ResumeShape, isAr: boolean): AtsComponent[] {
+  // Sections: which of the 4 required sections are absent (derived from resume).
+  const missingSections: string[] = [];
+  if (!(resume.summary ?? '').trim()) missingSections.push(isAr ? 'الملخص' : 'Summary');
+  if ((resume.experience ?? []).length === 0) missingSections.push(isAr ? 'الخبرة' : 'Experience');
+  if ((resume.education ?? []).length === 0) missingSections.push(isAr ? 'التعليم' : 'Education');
+  if (((resume.skills?.hard?.length ?? 0) + (resume.skills?.soft?.length ?? 0)) === 0) missingSections.push(isAr ? 'المهارات' : 'Skills');
+
+  const kwMissing = breakdown.missing_keywords.length > 0
+    ? [(isAr ? 'كلمات مفقودة: ' : 'Missing keywords: ') + breakdown.missing_keywords.slice(0, 10).join('، ')]
+    : [];
+
+  const formatMissing = breakdown.issues.map((i) => (isAr ? ATS_FORMAT_ISSUE_LABELS[i]?.ar : ATS_FORMAT_ISSUE_LABELS[i]?.en) ?? i);
+
+  const quantifiedMissing = breakdown.quantified < 15
+    ? [isAr ? 'أضف أرقاماً ونسباً للنقاط بدون قياس' : 'Add numbers and percentages to unquantified bullets']
+    : [];
+
+  return [
+    { key: 'keywords',   label: isAr ? 'الكلمات المفتاحية' : 'Keywords',               value: breakdown.keywords,   max: 40, impact: 40 - breakdown.keywords,   missing: kwMissing },
+    { key: 'sections',   label: isAr ? 'الأقسام' : 'Sections',                          value: breakdown.sections,   max: 25, impact: 25 - breakdown.sections,   missing: missingSections.length ? [(isAr ? 'أقسام ناقصة: ' : 'Missing sections: ') + missingSections.join('، ')] : [] },
+    { key: 'format',     label: isAr ? 'التنسيق' : 'Format',                            value: breakdown.format,     max: 20, impact: 20 - breakdown.format,     missing: formatMissing },
+    { key: 'quantified', label: isAr ? 'الأرقام والإنجازات' : 'Quantified Achievements', value: breakdown.quantified, max: 15, impact: 15 - breakdown.quantified, missing: quantifiedMissing },
+  ];
+}
+
+/** Expected ATS once the visible headroom is recovered — capped 95 (R10). */
+function expectedAtsScore(score: number, components: AtsComponent[]): number {
+  const headroom = components.reduce((acc, c) => acc + Math.max(0, c.impact), 0);
+  return Math.min(95, score + headroom);
+}
+
+function AtsScoreCard({ score, breakdown, resume, isAr, onExpand, onRescore, rescoring, rescoreLabel, rescoreLoadingLabel }: {
+  score: number; breakdown: ResumeAtsBreakdownShape; resume: ResumeShape; isAr: boolean; onExpand: () => void;
   onRescore?: () => void; rescoring?: boolean; rescoreLabel?: string; rescoreLoadingLabel?: string;
 }) {
   const value = useMotionValue(0);
@@ -476,6 +535,9 @@ function AtsScoreCard({ score, breakdown, isAr, onExpand, onRescore, rescoring, 
     const controls = animate(value, score, { duration: 1.2, ease: [0.16, 1, 0.3, 1] });
     return () => { controls.stop(); unsub(); };
   }, [score, value, rounded]);
+
+  const components = computeAtsComponents(breakdown, resume, isAr);
+  const expected = expectedAtsScore(score, components);
 
   const color =
     score >= 80 ? 'text-emerald-700 bg-emerald-50 border-emerald-200'
@@ -501,6 +563,15 @@ function AtsScoreCard({ score, breakdown, isAr, onExpand, onRescore, rescoring, 
             <span>Q · <NumDisplay>{breakdown.quantified}</NumDisplay>/15</span>
           </div>
         </div>
+        {/* Current → expected, so the number is never a black box (#24). */}
+        {expected > score && (
+          <p className="mt-2 font-ar text-[12px] text-v2-body">
+            {isAr ? 'ATS الحالي' : 'ATS now'} <strong className="font-en"><NumDisplay>{score}</NumDisplay></strong>
+            <span className="text-v2-mute"> → </span>
+            {isAr ? 'المتوقع' : 'projected'} <strong className="font-en text-teal-700"><NumDisplay>{expected}</NumDisplay></strong>
+            <span className="ms-1 text-v2-mute">{isAr ? 'بعد المعالجة' : 'after fixes'}</span>
+          </p>
+        )}
       </button>
       {onRescore && (
         <button
@@ -517,71 +588,68 @@ function AtsScoreCard({ score, breakdown, isAr, onExpand, onRescore, rescoring, 
   );
 }
 
-function AtsModal({ score, breakdown, isAr, onClose }: {
-  score: number; breakdown: ResumeAtsBreakdownShape; isAr: boolean; onClose: () => void;
+function AtsModal({ score, breakdown, resume, isAr, onClose }: {
+  score: number; breakdown: ResumeAtsBreakdownShape; resume: ResumeShape; isAr: boolean; onClose: () => void;
 }) {
+  const components = computeAtsComponents(breakdown, resume, isAr);
+  const expected = expectedAtsScore(score, components);
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 lg:items-center" onClick={onClose}>
-      <Card padding="lg" radius="lg" className="w-full max-w-[520px]" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
-        <div className="mb-4 flex items-center justify-between">
+      <Card padding="lg" radius="lg" className="max-h-[88vh] w-full max-w-[520px] overflow-y-auto" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+        <div className="mb-1 flex items-center justify-between">
           <h3 className="font-ar text-[18px] font-bold text-v2-ink">
-            {isAr ? 'تفصيل نتيجة ATS' : 'ATS Score Breakdown'}
+            {isAr ? 'كيف تكوّنت نتيجة ATS' : 'How your ATS score is built'}
           </h3>
           <button onClick={onClose} aria-label="Close"><X size={20} /></button>
         </div>
 
-        <div className="grid gap-3">
-          <BreakdownRow label={isAr ? 'الكلمات المفتاحية' : 'Keywords'} value={breakdown.keywords} max={40} isAr={isAr} />
-          <BreakdownRow label={isAr ? 'الأقسام' : 'Sections'} value={breakdown.sections} max={25} isAr={isAr} />
-          <BreakdownRow label={isAr ? 'التنسيق' : 'Format'} value={breakdown.format} max={20} isAr={isAr} />
-          <BreakdownRow label={isAr ? 'الأرقام والإنجازات' : 'Quantified Achievements'} value={breakdown.quantified} max={15} isAr={isAr} />
+        {/* Current → expected headline (#24 transparency). */}
+        <p className="mb-4 font-ar text-[13px] text-v2-body">
+          {isAr ? 'ATS الحالي' : 'ATS now'} <strong className="font-en"><NumDisplay>{score}</NumDisplay></strong>
+          <span className="text-v2-mute"> → </span>
+          {isAr ? 'المتوقع' : 'projected'} <strong className="font-en text-teal-700"><NumDisplay>{expected}</NumDisplay></strong>
+          <span className="ms-1 text-v2-mute">/ <NumDisplay>100</NumDisplay></span>
+        </p>
+
+        <div className="grid gap-4">
+          {components.map((c) => (
+            <BreakdownRow key={c.key} component={c} isAr={isAr} />
+          ))}
         </div>
 
-        <div className="mt-5 grid gap-3 text-[12px]">
-          {breakdown.matched_keywords.length > 0 && (
-            <div>
-              <p className="mb-1 font-ar font-semibold text-emerald-700">
-                {isAr ? 'كلمات مطابقة' : 'Matched keywords'} · <NumDisplay>{breakdown.matched_keywords.length}</NumDisplay>
-              </p>
-              <p className="font-en text-v2-body">{breakdown.matched_keywords.slice(0, 12).join(', ')}</p>
-            </div>
-          )}
-          {breakdown.missing_keywords.length > 0 && (
-            <div>
-              <p className="mb-1 font-ar font-semibold text-rose-700">
-                {isAr ? 'كلمات مفقودة' : 'Missing keywords'} · <NumDisplay>{breakdown.missing_keywords.length}</NumDisplay>
-              </p>
-              <p className="font-en text-v2-body">{breakdown.missing_keywords.slice(0, 12).join(', ')}</p>
-            </div>
-          )}
-          {breakdown.issues.length > 0 && (
-            <div>
-              <p className="mb-1 font-ar font-semibold text-amber-700">
-                {isAr ? 'تنبيهات التنسيق' : 'Format issues'}
-              </p>
-              <ul className="list-disc ps-4 font-ar text-v2-body">
-                {breakdown.issues.map((i) => <li key={i}>{i}</li>)}
-              </ul>
-            </div>
-          )}
-        </div>
+        {breakdown.matched_keywords.length > 0 && (
+          <div className="mt-5 text-[12px]">
+            <p className="mb-1 font-ar font-semibold text-emerald-700">
+              {isAr ? 'كلمات مطابقة' : 'Matched keywords'} · <NumDisplay>{breakdown.matched_keywords.length}</NumDisplay>
+            </p>
+            <p className="font-en text-v2-body">{breakdown.matched_keywords.slice(0, 12).join(', ')}</p>
+          </div>
+        )}
 
         <div className="mt-5 text-center font-ar text-[14px] font-semibold text-v2-ink">
-          {isAr ? 'النتيجة الإجمالية' : 'Total'} · <NumDisplay>{score}</NumDisplay> / 100
+          {isAr ? 'النتيجة الإجمالية' : 'Total'} · <NumDisplay>{score}</NumDisplay> / <NumDisplay>100</NumDisplay>
         </div>
       </Card>
     </div>
   );
 }
 
-function BreakdownRow({ label, value, max, isAr }: { label: string; value: number; max: number; isAr: boolean }) {
+function BreakdownRow({ component, isAr }: { component: AtsComponent; isAr: boolean }) {
+  const { label, value, max, impact, missing } = component;
   const pct = Math.round((value / max) * 100);
   return (
     <div>
       <div className="flex items-baseline justify-between font-ar text-[12px]">
         <span className="font-semibold text-v2-ink">{label}</span>
-        <span className="text-v2-mute">
-          <NumDisplay>{value}</NumDisplay> / <NumDisplay>{max}</NumDisplay>
+        <span className="flex items-center gap-2">
+          <span className="text-v2-mute">
+            <NumDisplay>{value}</NumDisplay> / <NumDisplay>{max}</NumDisplay>
+          </span>
+          {impact > 0 && (
+            <span className="rounded-v2-pill bg-emerald-50 px-1.5 py-0.5 font-en text-[10px] font-bold text-emerald-700">
+              +<NumDisplay>{impact}</NumDisplay>
+            </span>
+          )}
         </span>
       </div>
       <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-v2-line">
@@ -591,8 +659,18 @@ function BreakdownRow({ label, value, max, isAr }: { label: string; value: numbe
           transition={{ duration: 0.5, ease: 'easeOut' }}
         />
       </div>
-      {/* Reserved for future per-row tip; isAr currently used only via parent text */}
-      <span className="sr-only">{isAr ? 'النسبة المئوية' : 'percent'}</span>
+      {/* What's missing in this component — the reason the points aren't full. */}
+      {missing.length > 0 ? (
+        <ul className="mt-1.5 space-y-0.5">
+          {missing.map((m, i) => (
+            <li key={i} className="flex items-start gap-1.5 font-ar text-[11px] leading-relaxed text-v2-body">
+              <span className="mt-1 inline-block h-1 w-1 shrink-0 rounded-full bg-amber-500" />{m}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mt-1.5 font-ar text-[11px] text-emerald-700">{isAr ? 'مكتمل ✓' : 'Complete ✓'}</p>
+      )}
     </div>
   );
 }
