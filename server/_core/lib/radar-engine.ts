@@ -11,6 +11,7 @@ import {
 import { deductTokens, refundTokens } from './wallets';
 import { scrapeLinkedInProfileHybrid } from '../services/profile-scraper';
 import { radarPass1DiscoveryPrompt, radarPass2GapAnalysisPrompt } from '../prompts/_generated';
+import { withBrain } from '../prompts/brain';
 
 /**
  * Radar v2 engine — the Career Copilot's gap-analysis brain.
@@ -363,7 +364,7 @@ export async function runRadar(
     const discoveryRes = await callClaude({
       task: 'profile_analysis',
       modelOverride: 'claude-haiku-4-5-20251001',
-      system: radarPass1DiscoveryPrompt.system,
+      system: withBrain(radarPass1DiscoveryPrompt.system),
       userContent: radarPass1DiscoveryPrompt.user({
         raw_scrape: JSON.stringify(unifiedProfile).slice(0, 60000),
       }),
@@ -389,10 +390,11 @@ export async function runRadar(
       // model emits valid JSON. Pass 1 (discovery) is already JSON-strict in
       // its source prompt; Pass 2 (gap analysis) was not, which caused the
       // 82% Quick Wins failure observed in production.
-      system:
+      system: withBrain(
         radarPass2GapAnalysisPrompt.system +
         '\n\n---\nReturn a single JSON object matching this exact TypeScript type, with no prose, no markdown fences, and no preamble:\n\n' +
         radarPass2GapAnalysisPrompt.schema,
+      ),
       userContent: radarPass2GapAnalysisPrompt.user({
         target_role: targetRole,
         industry: profileMerged.industry,

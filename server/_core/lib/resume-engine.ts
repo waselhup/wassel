@@ -14,6 +14,7 @@ import {
   resumeFullBuildPrompt,
   resumePerSectionRefinementPrompt,
 } from '../prompts/_generated';
+import { withBrain } from '../prompts/brain';
 
 /**
  * Resume v2 engine — Career Copilot's targeted ATS resume builder.
@@ -630,10 +631,11 @@ export async function runResumeBuild(
       // Sprint 8 hotfix pattern: append schema + JSON-only directive so
       // Claude emits valid JSON instead of prose. The compiled prompt's
       // `.schema` field is metadata otherwise — never sent to the model.
-      system:
+      system: withBrain(
         resumeFullBuildPrompt.system +
         '\n\n---\nReturn a single JSON object matching this exact TypeScript type, with no prose, no markdown fences, and no preamble:\n\n' +
         resumeFullBuildPrompt.schema,
+      ),
       userContent: resumeFullBuildPrompt.user({
         target_role: targetRole,
         industry: profile.industry,
@@ -857,10 +859,11 @@ export async function createVersionForRole(
     const callResp = await callClaude({
       task: 'cv_generate',
       // Sprint 8 hotfix pattern — see full build above for rationale.
-      system:
+      system: withBrain(
         resumeFullBuildPrompt.system +
         '\n\n---\nReturn a single JSON object matching this exact TypeScript type, with no prose, no markdown fences, and no preamble:\n\n' +
         resumeFullBuildPrompt.schema,
+      ),
       userContent: resumeFullBuildPrompt.user({
         target_role: newTarget,
         industry: profile.industry,
@@ -1081,10 +1084,11 @@ export async function applyRefinement(
     const callResp = await callClaude({
       task: 'cv_generate',
       // Sprint 8 hotfix pattern — append schema + JSON-only directive.
-      system:
+      system: withBrain(
         resumePerSectionRefinementPrompt.system +
         '\n\n---\nReturn a single JSON object matching this exact TypeScript type, with no prose, no markdown fences, and no preamble:\n\n' +
         resumePerSectionRefinementPrompt.schema,
+      ),
       userContent: resumePerSectionRefinementPrompt.user({
         section_type: section,
         current_content: typeof currentContent === 'string' ? currentContent : JSON.stringify(currentContent),
