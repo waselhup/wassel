@@ -2,6 +2,9 @@ import { Document, Packer, Paragraph, TextRun, AlignmentType } from 'docx';
 import { callClaude, extractText, extractJson } from './claude-client';
 import { renderHtmlToPdf } from './arabic-pdf-renderer';
 import { buildCoverLetterHtml } from './cv-pdf-html';
+import { validateOutput } from './output-guard';
+import { validateTone } from './content-tone-validator';
+import { withBrain } from '../prompts/brain';
 
 export interface CoverLetterInput {
   cvData: any;
@@ -50,7 +53,7 @@ TONE: Confident but not arrogant. Formal but warm. Never use:
 - Clichés: "team player", "go-getter", "passionate".
 
 LANGUAGE: Match 'language' parameter exactly.
-- 'ar': Formal MSA (فصحى). Greeting: "السلام عليكم،" or "حضرة مدير التوظيف،".
+- 'ar': Formal MSA (فصحى). Greeting: "حضرة مدير التوظيف،" — a professional business salutation. Never use a religious greeting.
 - 'en': Professional English. Greeting: "Dear Hiring Manager,".
 
 OUTPUT (strict JSON, no markdown fences, no commentary):
@@ -63,6 +66,66 @@ OUTPUT (strict JSON, no markdown fences, no commentary):
 The signature must include a closing line and the candidate's name on a new line.
 Example EN: "Sincerely,\\nMohammad Al-Ali"
 Example AR: "مع خالص التقدير،\\nمحمد العلي"`;
+
+// Strict addendum appended on a retry after a guard/tone violation. Names the
+// specific failure modes so the model corrects them — mirrors the content
+// engine's STRICT_GUARD pattern (A11 / L5 guard).
+const STRICT_GUARD_AR =
+  '\n\nإضافة صارمة: رُصد محتوى غير مطابق في المحاولة السابقة. لا تستخدم أي تحية دينية ("السلام عليكم"، "بسم الله")، ولا اسم أي منصة أو نموذج ذكاء اصطناعي، ولا أرقام عربية شرقية (استخدم 0-9). ابدأ بتحية مهنية: "حضرة مدير التوظيف،".';
+const STRICT_GUARD_EN =
+  '\n\nStrict addendum: non-compliant content was detected in the previous attempt. Do not use any religious salutation, any vendor or AI-model name, or Eastern Arabic digits (use 0-9). Open with a professional salutation: "Dear Hiring Manager,".';
+
+async function callCoverLetter(
+  userPrompt: string,
+  strict: boolean,
+  language: 'ar' | 'en',
+): Promise<CoverLetterContent> {
+  const guard = language === 'ar' ? STRICT_GUARD_AR : STRICT_GUARD_EN;
+  const res = await callClaude({
+    task: 'cv_generate',
+    system: withBrain(COVER_LETTER_SYSTEM + (strict ? guard : '')),
+    userContent: userPrompt,
+    maxTokens: 2000,
+  });
+
+  const text = extractText(res);
+
+  // L5 Output Guard: block banned vendor / model names + Eastern Arabic digits
+  // on the RAW model text before we parse it.
+  const outputCheck = validateOutput(text, 'cover_letter.generate');
+  if (!outputCheck.valid) {
+    throw new CoverLetterGuardError(`Output guard blocked: ${outputCheck.reason}`);
+  }
+
+  const parsed = extractJson<any>(text);
+  if (!parsed) {
+    throw new Error('Cover letter generator did not return valid JSON');
+  }
+
+  const content = normalizeCoverLetter(parsed);
+
+  // Tone validation: catches religious salutations + vendor leaks in the
+  // assembled letter (greeting + body + signature).
+  const flat = [content.greeting, ...content.paragraphs, content.signature]
+    .filter(Boolean)
+    .join('\n\n');
+  const toneCheck = validateTone(flat, language);
+  if (!toneCheck.valid) {
+    throw new CoverLetterGuardError(`Tone violation: ${toneCheck.violations.join(', ')}`);
+  }
+
+  return content;
+}
+
+// Thrown when the generated letter trips the output guard or tone validator.
+// Distinct from a generic Error so the retry logic only re-rolls on a
+// compliance failure, not on a transport/parse error.
+class CoverLetterGuardError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'CoverLetterGuardError';
+  }
+}
 
 export async function generateCoverLetterContent(
   input: CoverLetterInput
@@ -83,20 +146,17 @@ export async function generateCoverLetterContent(
     language: input.language,
   });
 
-  const res = await callClaude({
-    task: 'cv_generate',
-    system: COVER_LETTER_SYSTEM,
-    userContent: userPrompt,
-    maxTokens: 2000,
-  });
-
-  const text = extractText(res);
-  const parsed = extractJson<any>(text);
-  if (!parsed) {
-    throw new Error('Cover letter generator did not return valid JSON');
+  // First attempt. On a guard/tone failure, retry once with a strict addendum.
+  // If the retry still fails compliance, throw — never return a non-compliant
+  // draft. cv.generate's caller treats this as a non-fatal cover-letter failure
+  // and partial-refunds the bundle surcharge.
+  try {
+    return await callCoverLetter(userPrompt, false, input.language);
+  } catch (err) {
+    if (!(err instanceof CoverLetterGuardError)) throw err;
+    console.warn('[cover-letter] compliance failure, retrying strict:', err.message);
+    return await callCoverLetter(userPrompt, true, input.language);
   }
-
-  return normalizeCoverLetter(parsed);
 }
 
 function normalizeCoverLetter(raw: any): CoverLetterContent {

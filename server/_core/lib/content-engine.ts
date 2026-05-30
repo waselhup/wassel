@@ -14,6 +14,7 @@ import {
   contentRepurposePrompt,
 } from '../prompts/_generated';
 import { validateTone, flattenForValidation } from './content-tone-validator';
+import { withBrain } from '../prompts/brain';
 
 /**
  * Content v2 engine — Career Copilot's targeted content brain.
@@ -738,11 +739,11 @@ async function runOneGeneration(
   if (opts.contentType === 'post') {
     // Sprint 8 hotfix pattern: schema + JSON-only directive precede the
     // strict guard so the strict addendum (when present) wraps the JSON rules.
-    const system =
+    const system = withBrain(
       contentPostPrompt.system +
       '\n\n---\nReturn a single JSON object matching this exact TypeScript type, with no prose, no markdown fences, and no preamble:\n\n' +
       contentPostPrompt.schema +
-      (strict ? guard : '');
+      (strict ? guard : ''));
     const userMsg = contentPostPrompt.user({
       goal: opts.profile.goal,
       level: opts.profile.level,
@@ -781,11 +782,11 @@ async function runOneGeneration(
 
   if (opts.contentType === 'carousel') {
     // Sprint 8 hotfix pattern — see post branch above for rationale.
-    const system =
+    const system = withBrain(
       contentCarouselPrompt.system +
       '\n\n---\nReturn a single JSON object matching this exact TypeScript type, with no prose, no markdown fences, and no preamble:\n\n' +
       contentCarouselPrompt.schema +
-      (strict ? guard : '');
+      (strict ? guard : ''));
     const userMsg = contentCarouselPrompt.user({
       goal: opts.profile.goal,
       level: opts.profile.level,
@@ -834,11 +835,11 @@ async function runOneGeneration(
     throw new ContentError('SOURCE_POST_NOT_FOUND', 'Source post body required.');
   }
   // Sprint 8 hotfix pattern — see post branch above for rationale.
-  const system =
+  const system = withBrain(
     contentRepurposePrompt.system +
     '\n\n---\nReturn a single JSON object matching this exact TypeScript type, with no prose, no markdown fences, and no preamble:\n\n' +
     contentRepurposePrompt.schema +
-    (strict ? guard : '');
+    (strict ? guard : ''));
   const userMsg = contentRepurposePrompt.user({
     source_post_body: opts.sourcePostBody.slice(0, 6000),
     goal: opts.profile.goal,
@@ -1071,7 +1072,7 @@ async function runRefinement(opts: RunRefinementOpts): Promise<ContentResult> {
   const resp = await callClaude({
     task: 'post_generate',
     modelOverride: 'claude-haiku-4-5-20251001',
-    system,
+    system: withBrain(system),
     userContent: userMsg,
     maxTokens: 4000,
     temperature: 0.4,
