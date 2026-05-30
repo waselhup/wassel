@@ -33,6 +33,7 @@ import { contentRouter } from './routes/content';
 import { dashboardRouter } from './routes/dashboard';
 import { notificationsRouter } from './routes/notifications';
 import { betaRouter } from './routes/beta';
+import { supportRouter } from './routes/support';
 
 export { router, publicProcedure, protectedProcedure };
 
@@ -90,6 +91,7 @@ export const appRouter = router({
   dashboard: dashboardRouter,
   notifications: notificationsRouter,
   beta: betaRouter,
+  support: supportRouter,
 });
 
 export type AppRouter = typeof appRouter;
