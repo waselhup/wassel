@@ -286,6 +286,36 @@ export const trpc = {
       trpcQuery<any[]>('admin.users', input || {}),
     addTokens: (input: { userId: string; amount: number; reason: string }) =>
       trpcMutation<{ success: boolean; newBalance: number }>('admin.addTokens', input),
+    adjustUserTokens: (input: { userId: string; amount: number; reason: string; wallet?: 'bonus' }) =>
+      trpcMutation<{
+        success: boolean;
+        newBalance: number;
+        newLegacyBalance: number;
+        wallets: {
+          bonus: { balance: number; expires_at: string | null; expired: boolean };
+          subscription: { balance: number; renews_at: string | null };
+          topup: { balance: number };
+          total: number;
+        };
+      }>('admin.adjustUserTokens', input),
+    listTokenTransactions: (input?: { userId?: string; limit?: number }) =>
+      trpcQuery<{
+        transactions: Array<{
+          id: string;
+          userId: string;
+          userName: string | null;
+          userEmail: string | null;
+          wallet: 'bonus' | 'subscription' | 'topup';
+          direction: 'credit' | 'debit';
+          amount: number;
+          operation: string;
+          status: string;
+          balanceAfter: number;
+          reason: string | null;
+          adminEmail: string | null;
+          createdAt: string;
+        }>;
+      }>('admin.listTokenTransactions', input || {}),
     toggleBan: (input: { userId: string }) =>
       trpcMutation<{ success: boolean; banned: boolean }>('admin.toggleBan', input),
     campaigns: () => trpcQuery<any[]>('admin.campaigns'),
@@ -1203,6 +1233,8 @@ export const trpc = {
       trpcMutation<{ filename: string; mimeType: string; base64: string }>('resume.exportDocx', input),
     exportJson: (input: { versionId: string }) =>
       trpcMutation<{ filename: string; mimeType: string; base64: string }>('resume.exportJson', input),
+    rescoreVersion: (input: { versionId: string }) =>
+      trpcMutation<{ atsScore: number; atsBreakdown: ResumeAtsBreakdownShape }>('resume.rescoreVersion', input),
     history: (input?: { limit?: number }) =>
       trpcQuery<{ versions: ResumeVersionRow[] }>('resume.history', input ?? {}),
     sessionOverride: (input: { targetRole: string; expiresInHours?: number }) =>

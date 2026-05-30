@@ -371,7 +371,8 @@
     "cv": "السير الذاتية",
     "campaigns": "الحملات",
     "tokens": "الرموز",
-    "profile": "الملف الشخصي"
+    "profile": "الملف الشخصي",
+    "logout": "تسجيل الخروج"
   },
   "onboarding": {
     "progress": {
@@ -579,6 +580,7 @@
     "urlPlaceholder": "ملفك الشخصي",
     "cost": "التكلفة: 5 رموز",
     "analyze": "تحليل ملف LinkedIn",
+    "analyzeButton": "تحليل ملف LinkedIn",
     "analyzing": "جاري التحليل...",
     "scoreLabel": "نقاط LinkedIn الخاصة بك",
     "scoreExcellent": "ممتاز! ملفك محسّن جيداً",
@@ -649,6 +651,7 @@
     "title": "حملات البريد الإلكتروني",
     "subtitle": "إدارة ومتابعة حملات التواصل الخاصة بك",
     "newCampaign": "حملة جديدة",
+    "new": "حملة جديدة",
     "noCampaigns": "لا توجد حملات بعد",
     "noCampaignsDesc": "أنشئ حملة بريد إلكترونية أولى للبدء في التواصل مع صناع القرار",
     "filterAll": "الكل",
@@ -914,7 +917,38 @@
       "expandSection": "توسيع",
       "collapseSection": "طي",
       "allClear": "كل شيء على ما يرام",
-      "verdictNeutral": "محايد"
+      "verdictNeutral": "محايد",
+      "usersTitle": "المستخدمون والتوكنز",
+      "usersSubtitle": "أضف أو اخصم توكنز لأي مستخدم، وتابع حركة التوكنز",
+      "usersSearch": "ابحث بالاسم أو البريد...",
+      "usersColName": "الاسم",
+      "usersColBalance": "الرصيد",
+      "usersColAdjust": "تعديل التوكنز",
+      "usersEmpty": "لا يوجد مستخدمون",
+      "usersAmountPh": "الكمية",
+      "usersReasonPh": "السبب (مطلوب)",
+      "usersAdd": "إضافة",
+      "usersRemove": "خصم",
+      "usersAdjusting": "جارٍ...",
+      "usersErrReason": "السبب مطلوب",
+      "usersErrAmount": "أدخل كمية صحيحة",
+      "usersAddSuccess": "تمت إضافة {{amount}} توكن لـ {{name}}",
+      "usersRemoveSuccess": "تم خصم {{amount}} توكن من {{name}}",
+      "usersAdjustFail": "فشل تعديل التوكنز",
+      "txTitle": "سجل حركة التوكنز",
+      "txSubtitle": "من، كم، أي محفظة، أي مشرف، ومتى",
+      "txColUser": "المستخدم",
+      "txColAmount": "الكمية",
+      "txColWallet": "المحفظة",
+      "txColReason": "السبب",
+      "txColAdmin": "المشرف",
+      "txColDate": "التاريخ",
+      "txEmpty": "لا توجد حركات بعد",
+      "txWalletBonus": "مكافأة",
+      "txWalletSubscription": "اشتراك",
+      "txWalletTopup": "شحن",
+      "txAll": "الكل",
+      "txClearFilter": "إلغاء الفلتر"
     }
   },
   "payment": {
@@ -1000,6 +1034,9 @@
     "starter": "مبتدئ",
     "pro": "احترافي",
     "elite": "نخبة"
+  },
+  "brand": {
+    "name": "وصل"
   },
   "cv": {
     "title": "تخصيص السيرة الذاتية",
@@ -2490,32 +2527,38 @@
     "al_mukhadram": {
       "name": "المخضرم",
       "role": "حارس العملاء",
-      "ar": "المخضرم"
+      "ar": "المخضرم",
+      "en": "Al-Mukhadram"
     },
     "fatima": {
       "name": "فاطمة",
       "role": "محللة الاستخدام والاحتكاك",
-      "ar": "فاطمة"
+      "ar": "فاطمة",
+      "en": "Fatima"
     },
     "dhai": {
       "name": "ضي",
       "role": "حارسة الامتثال والاحتيال",
-      "ar": "ضي"
+      "ar": "ضي",
+      "en": "Dhai"
     },
     "hassan": {
       "name": "حسن",
       "role": "مهندس التحويل والترقية",
-      "ar": "حسن"
+      "ar": "حسن",
+      "en": "Hassan"
     },
     "hussein": {
       "name": "حسين",
       "role": "حارس المنصة",
-      "ar": "حسين"
+      "ar": "حسين",
+      "en": "Hussein"
     },
     "mohammed": {
       "name": "محمد",
       "role": "المحاسب وحارس الهامش",
-      "ar": "محمد"
+      "ar": "محمد",
+      "en": "Mohammed"
     },
     "faris": {
       "name": "فارس",
@@ -2884,7 +2927,12 @@
       "changeTemplate": "تغيير القالب",
       "build": "ابنِ السيرة ({{cost}} توكن)",
       "viewCached": "عرض النسخة الحالية (مجاناً)",
-      "newVersion": "نسخة جديدة لدور مختلف ({{cost}} توكن)"
+      "newVersion": "نسخة جديدة لدور مختلف ({{cost}} توكن)",
+      "language": {
+        "label": "لغة السيرة",
+        "ar": "العربية",
+        "en": "الإنجليزية"
+      }
     },
     "building": {
       "extracting": "استخراج خبرتك...",
@@ -2906,6 +2954,12 @@
         "sections": "الأقسام",
         "format": "التنسيق",
         "quantified": "الأرقام والإنجازات"
+      },
+      "reevaluate": {
+        "button": "إعادة تقييم",
+        "loading": "جارٍ إعادة التقييم…",
+        "success": "تم تحديث نتيجة ATS",
+        "error": "تعذّرت إعادة التقييم"
       },
       "chips": {
         "shortenSummary": "اجعل الملخص أقصر",

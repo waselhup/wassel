@@ -33,6 +33,7 @@ import Button from '@/components/v2/Button';
 import Eyebrow from '@/components/v2/Eyebrow';
 import Skeleton from '@/components/v2/Skeleton';
 import NumDisplay from '@/components/v2/NumDisplay';
+import { useToast } from '@/lib/v2/toast';
 import {
   trpc,
   type ResumeShape,
@@ -51,8 +52,9 @@ const CHIPS: Array<{ chipType: string; section: string; arLabel: string; enLabel
 ];
 
 export default function CVEditor() {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const isAr = i18n.language === 'ar';
+  const { showToast } = useToast();
   const [, navigate] = useLocation();
   const [match, params] = useRoute<{ id: string }>('/v2/cvs/:id');
   const versionId = match ? params.id : null;
@@ -68,6 +70,7 @@ export default function CVEditor() {
 
   const [refining, setRefining] = useState<string | null>(null);
   const [exporting, setExporting] = useState<'pdf' | 'docx' | 'json' | null>(null);
+  const [rescoring, setRescoring] = useState(false);
   const [archiving, setArchiving] = useState(false);
   const [atsModalOpen, setAtsModalOpen] = useState(false);
   const [newVersionOpen, setNewVersionOpen] = useState(false);
@@ -134,6 +137,24 @@ export default function CVEditor() {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
       setRefining(null);
+    }
+  }
+
+  async function handleRescore() {
+    if (!versionId) return;
+    setRescoring(true);
+    setError(null);
+    try {
+      const out = await trpc.resume.rescoreVersion({ versionId });
+      setAtsScore(out.atsScore);
+      setAtsBreakdown(out.atsBreakdown);
+      showToast({ message: t('resume.editor.reevaluate.success'), tone: 'success' });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setError(msg);
+      showToast({ message: t('resume.editor.reevaluate.error'), description: msg, tone: 'error' });
+    } finally {
+      setRescoring(false);
     }
   }
 
@@ -237,6 +258,7 @@ export default function CVEditor() {
   const version = data.version as ResumeVersionRow & { cache_id: string | null };
   const isLegacy = version.status === 'legacy';
   const canRefine = !isLegacy && !!data.cache;
+  const canRescore = !isLegacy && !!data.cache;
   const remainingFree = Math.max(0, (data.freeRefinementsPerVersion ?? 5) - refinementsUsed);
 
   return (
@@ -303,6 +325,10 @@ export default function CVEditor() {
                 breakdown={atsBreakdown}
                 isAr={isAr}
                 onExpand={() => setAtsModalOpen(true)}
+                onRescore={canRescore ? handleRescore : undefined}
+                rescoring={rescoring}
+                rescoreLabel={t('resume.editor.reevaluate.button')}
+                rescoreLoadingLabel={t('resume.editor.reevaluate.loading')}
               />
             )}
 
@@ -437,8 +463,9 @@ export default function CVEditor() {
 // Sub-components — inline (Sprint 3 minimal-touch principle)
 // ─────────────────────────────────────────────
 
-function AtsScoreCard({ score, breakdown, isAr, onExpand }: {
+function AtsScoreCard({ score, breakdown, isAr, onExpand, onRescore, rescoring, rescoreLabel, rescoreLoadingLabel }: {
   score: number; breakdown: ResumeAtsBreakdownShape; isAr: boolean; onExpand: () => void;
+  onRescore?: () => void; rescoring?: boolean; rescoreLabel?: string; rescoreLoadingLabel?: string;
 }) {
   const value = useMotionValue(0);
   const rounded = useTransform(value, (v) => Math.round(v));
@@ -475,6 +502,17 @@ function AtsScoreCard({ score, breakdown, isAr, onExpand }: {
           </div>
         </div>
       </button>
+      {onRescore && (
+        <button
+          type="button"
+          onClick={onRescore}
+          disabled={rescoring}
+          className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-v2-pill border border-v2-line bg-v2-surface px-3 py-1.5 font-ar text-[12px] font-semibold text-v2-body transition-colors hover:bg-v2-canvas-2 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <RefreshCw size={14} className={rescoring ? 'animate-spin' : ''} />
+          {rescoring ? (rescoreLoadingLabel ?? '…') : (rescoreLabel ?? (isAr ? 'إعادة تقييم' : 'Re-evaluate'))}
+        </button>
+      )}
     </Card>
   );
 }

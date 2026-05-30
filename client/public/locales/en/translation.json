@@ -917,7 +917,38 @@
       "expandSection": "Expand",
       "collapseSection": "Collapse",
       "allClear": "All clear",
-      "verdictNeutral": "neutral"
+      "verdictNeutral": "neutral",
+      "usersTitle": "Users & Tokens",
+      "usersSubtitle": "Add or remove tokens for any user, and track token movements",
+      "usersSearch": "Search by name or email...",
+      "usersColName": "Name",
+      "usersColBalance": "Balance",
+      "usersColAdjust": "Adjust tokens",
+      "usersEmpty": "No users",
+      "usersAmountPh": "Amount",
+      "usersReasonPh": "Reason (required)",
+      "usersAdd": "Add",
+      "usersRemove": "Remove",
+      "usersAdjusting": "Working...",
+      "usersErrReason": "Reason is required",
+      "usersErrAmount": "Enter a valid amount",
+      "usersAddSuccess": "Added {{amount}} tokens to {{name}}",
+      "usersRemoveSuccess": "Removed {{amount}} tokens from {{name}}",
+      "usersAdjustFail": "Failed to adjust tokens",
+      "txTitle": "Token movements log",
+      "txSubtitle": "Who, how much, which wallet, which admin, and when",
+      "txColUser": "User",
+      "txColAmount": "Amount",
+      "txColWallet": "Wallet",
+      "txColReason": "Reason",
+      "txColAdmin": "Admin",
+      "txColDate": "Date",
+      "txEmpty": "No movements yet",
+      "txWalletBonus": "Bonus",
+      "txWalletSubscription": "Subscription",
+      "txWalletTopup": "Top-up",
+      "txAll": "All",
+      "txClearFilter": "Clear filter"
     }
   },
   "payment": {
@@ -2496,32 +2527,38 @@
     "al_mukhadram": {
       "name": "Al-Mukhadram",
       "role": "Onboarding & Retention",
-      "en": "Al-Mukhadram"
+      "en": "Al-Mukhadram",
+      "ar": "المخضرم"
     },
     "fatima": {
       "name": "Fatima",
       "role": "Research & Friction Analyst",
-      "en": "Fatima"
+      "en": "Fatima",
+      "ar": "فاطمة"
     },
     "dhai": {
       "name": "Dhai",
       "role": "Compliance & Fraud Guardian",
-      "en": "Dhai"
+      "en": "Dhai",
+      "ar": "ضي"
     },
     "hassan": {
       "name": "Hassan",
       "role": "Conversion & Upsell Engineer",
-      "en": "Hassan"
+      "en": "Hassan",
+      "ar": "حسن"
     },
     "hussein": {
       "name": "Hussein",
       "role": "Platform Guardian",
-      "en": "Hussein"
+      "en": "Hussein",
+      "ar": "حسين"
     },
     "mohammed": {
       "name": "Mohammed",
       "role": "Accountant & Margin Watcher",
-      "en": "Mohammed"
+      "en": "Mohammed",
+      "ar": "محمد"
     },
     "faris": {
       "name": "Faris",
@@ -2886,7 +2923,12 @@
       "changeTemplate": "Change Template",
       "build": "Build Resume ({{cost}} tokens)",
       "viewCached": "View Cached Version (Free)",
-      "newVersion": "New Version for Different Role ({{cost}} tokens)"
+      "newVersion": "New Version for Different Role ({{cost}} tokens)",
+      "language": {
+        "label": "Resume language",
+        "ar": "Arabic",
+        "en": "English"
+      }
     },
     "building": {
       "extracting": "Extracting your experience...",
@@ -2908,6 +2950,12 @@
         "sections": "Sections",
         "format": "Format",
         "quantified": "Quantified Achievements"
+      },
+      "reevaluate": {
+        "button": "Re-evaluate",
+        "loading": "Re-evaluating…",
+        "success": "ATS score updated",
+        "error": "Re-evaluation failed"
       },
       "chips": {
         "shortenSummary": "Shorten Summary",

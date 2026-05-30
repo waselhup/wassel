@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { router, protectedProcedure } from '../trpc-init';
 import { TRPCError } from '@trpc/server';
 import { sendTokenGrantEmail, shouldSendTransactional } from '../lib/email';
+import { creditWallet, deductTokens, getWallets } from '../lib/wallets';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -210,6 +211,188 @@ export const adminRouter = router({
           message: 'Failed to add tokens',
         });
       }
+    }),
+
+  // ─────────────────────────────────────────────────────────────────
+  // Manual token adjustment (add OR remove) — admin-only.
+  //
+  // Writes to BOTH systems so the grant is both spendable on v2 features
+  // (3-wallet: wallet_bonus, read by deduct_tokens_v2 / get_wallets_v2)
+  // AND reflected in the legacy profiles.token_balance the admin table
+  // and older code paths read. The acting admin's id + email are recorded
+  // in the ledger metadata (wallet_transactions has no created_by column).
+  // ─────────────────────────────────────────────────────────────────
+  adjustUserTokens: adminProcedure
+    .input(
+      z.object({
+        userId: z.string().uuid(),
+        amount: z.number().int().refine((n) => n !== 0, 'Amount must be non-zero'),
+        reason: z.string().min(1),
+        wallet: z.literal('bonus').default('bonus'),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      // Existence check only — balance is owned by the wallets (+ trigger mirror).
+      const { data: profile } = await ctx.supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', input.userId)
+        .single();
+      if (!profile) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'User not found' });
+      }
+
+      const adminMeta = {
+        admin_id: ctx.user.id,
+        admin_email: ctx.user.email ?? null,
+        reason: input.reason,
+        source: 'admin.adjustUserTokens',
+      };
+
+      if (input.amount > 0) {
+        // CREDIT the bonus wallet (90-day expiry, consumed first) + mirror legacy.
+        const credit = await creditWallet(
+          ctx.supabase,
+          input.userId,
+          'bonus',
+          input.amount,
+          'admin.grant',
+          { expiresInDays: 90, metadata: adminMeta }
+        );
+        if (!credit.success) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: credit.message || 'Failed to credit wallet',
+          });
+        }
+      } else {
+        // REMOVE — deduct via the v2 RPC (consumes bonus → subscription → topup).
+        const deduct = await deductTokens(
+          ctx.supabase,
+          input.userId,
+          Math.abs(input.amount),
+          'admin.deduct',
+          adminMeta
+        );
+        if (!deduct.success) {
+          if (deduct.error === 'INSUFFICIENT_TOKENS') {
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: 'User does not have enough tokens to remove that amount',
+            });
+          }
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: deduct.message || 'Failed to remove tokens',
+          });
+        }
+      }
+
+      // NOTE: we do NOT touch profiles.token_balance here. A DB trigger
+      // (sync_profile_token_balance on wallet_bonus/subscription/topup, per
+      // migration 20260604_token_balance_mirror.sql) already recomputes
+      // token_balance = SUM(3 wallets) whenever creditWallet/deductTokens
+      // write a wallet row. Mirroring manually would double-apply the delta
+      // on top of the trigger's authoritative sum and diverge the balance.
+      // So the wallets are the single source of truth and token_balance
+      // faithfully follows them.
+
+      // Legacy audit row (token_transactions) — does not affect any balance,
+      // just keeps the older economy views' history continuous.
+      await ctx.supabase.from('token_transactions').insert([
+        {
+          user_id: input.userId,
+          type: input.amount > 0 ? 'admin_add' : 'admin_remove',
+          amount: input.amount,
+          description: input.reason,
+          metadata: adminMeta,
+        },
+      ]);
+
+      // Re-read after the wallet write; the trigger has synced token_balance
+      // to wallets.total, so both numbers agree.
+      const wallets = await getWallets(ctx.supabase, input.userId);
+
+      return {
+        success: true,
+        newBalance: wallets.total,
+        newLegacyBalance: wallets.total,
+        wallets,
+      };
+    }),
+
+  // ─────────────────────────────────────────────────────────────────
+  // Token movements ledger — admin-only. Reads the canonical 3-wallet
+  // ledger (wallet_transactions) and joins user + acting admin from the
+  // metadata. Newest first; optional per-user filter.
+  // ─────────────────────────────────────────────────────────────────
+  listTokenTransactions: adminProcedure
+    .input(
+      z
+        .object({
+          userId: z.string().uuid().optional(),
+          limit: z.number().int().positive().max(200).default(50),
+        })
+        .optional()
+    )
+    .query(async ({ input, ctx }) => {
+      let query = ctx.supabase
+        .from('wallet_transactions')
+        .select('id, user_id, wallet, direction, amount, operation, status, balance_after, metadata, created_at')
+        .order('created_at', { ascending: false })
+        .limit(input?.limit ?? 50);
+
+      if (input?.userId) query = query.eq('user_id', input.userId);
+
+      const { data: rows, error } = await query;
+      if (error) {
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: error.message });
+      }
+
+      const list = rows || [];
+      const userIds = Array.from(new Set(list.map((r: any) => r.user_id).filter(Boolean)));
+      const adminIds = Array.from(
+        new Set(
+          list
+            .map((r: any) => (r.metadata && typeof r.metadata === 'object' ? r.metadata.admin_id : null))
+            .filter(Boolean)
+        )
+      );
+      const allIds = Array.from(new Set([...userIds, ...adminIds]));
+
+      const profileMap = new Map<string, { full_name: string | null; email: string | null }>();
+      if (allIds.length) {
+        const { data: profiles } = await ctx.supabase
+          .from('profiles')
+          .select('id, full_name, email')
+          .in('id', allIds);
+        (profiles || []).forEach((p: any) => profileMap.set(p.id, { full_name: p.full_name, email: p.email }));
+      }
+
+      return {
+        transactions: list.map((r: any) => {
+          const meta = (r.metadata && typeof r.metadata === 'object' ? r.metadata : {}) as Record<string, unknown>;
+          const adminId = (meta.admin_id as string) || null;
+          const signedAmount = r.direction === 'debit' ? -Math.abs(r.amount) : Math.abs(r.amount);
+          const user = profileMap.get(r.user_id);
+          const admin = adminId ? profileMap.get(adminId) : null;
+          return {
+            id: r.id,
+            userId: r.user_id,
+            userName: user?.full_name || null,
+            userEmail: user?.email || null,
+            wallet: r.wallet,
+            direction: r.direction,
+            amount: signedAmount,
+            operation: r.operation,
+            status: r.status,
+            balanceAfter: r.balance_after,
+            reason: (meta.reason as string) || null,
+            adminEmail: (meta.admin_email as string) || admin?.email || null,
+            createdAt: r.created_at,
+          };
+        }),
+      };
     }),
 
   toggleBan: adminProcedure

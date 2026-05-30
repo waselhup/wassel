@@ -14,11 +14,15 @@ import Toggle from '@/components/v2/Toggle';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 
+// Mirrors the canonical `plans` table (free / starter / growth / enterprise).
+// Legacy pro/elite aliases map to the closest current tier.
 const PLAN_LABELS: Record<string, string> = {
-  free: 'مجاني',
-  starter: 'بداية',
-  pro: 'برو',
-  elite: 'إيليت',
+  free: 'استكشف',
+  starter: 'الانطلاق',
+  growth: 'النمو',
+  enterprise: 'المؤسسات',
+  pro: 'الانطلاق',
+  elite: 'النمو',
 };
 
 function initialOf(name: string | null | undefined, fallback: string): string {
@@ -372,8 +376,10 @@ function Profile() {
           )}
 
           {tab === 'plan' && (() => {
-            const planQuotas: Record<string, number> = { free: 100, starter: 500, pro: 2000, elite: 10000 };
-            const planPrices: Record<string, string> = { free: 'مجاني', starter: '49 ر.س / شهر', pro: '99 ر.س / شهر', elite: '299 ر.س / شهر' };
+            // Quotas + prices mirror the canonical `plans` table (free/starter/growth).
+            // Legacy pro/elite aliases map to the closest current tier.
+            const planQuotas: Record<string, number> = { free: 10, starter: 200, growth: 600, enterprise: 0, pro: 200, elite: 600 };
+            const planPrices: Record<string, string> = { free: 'مجاني', starter: '199 ر.س / شهر', growth: '399 ر.س / شهر', enterprise: 'حسب الطلب', pro: '199 ر.س / شهر', elite: '399 ر.س / شهر' };
             const planKey = profile?.plan ?? 'free';
             const balance = profile?.token_balance ?? 0;
             const quota = planQuotas[planKey] ?? planQuotas.free;

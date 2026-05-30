@@ -1,4 +1,3 @@
-import { jsPDF } from 'jspdf';
 import {
   Document,
   Packer,
@@ -10,25 +9,72 @@ import {
   TabStopType,
   TabStopPosition,
 } from 'docx';
+import { CAIRO_FONT_BASE64 } from './cairo-font-data';
+import { renderHtmlToPdf } from './arabic-pdf-renderer';
 import type { Resume } from './resume-engine';
 
 /**
- * Resume export helpers — PDF (jspdf), DOCX (docx), and raw JSON.
+ * Resume export helpers — PDF (headless Chromium), DOCX (docx), and raw JSON.
  *
  * All exports cost 0 tokens (per Sprint 4 prompt). The layouts are
  * intentionally minimal and ATS-friendly: one column, plain text,
  * standard section headings, no images or tables in body content.
  *
- * RTL note: jsPDF base does NOT shape Arabic glyphs natively. For Arabic
- * resumes we still produce an ATS-grade PDF, but Latin titles render
- * perfectly while Arabic text falls back to logical-order rendering —
- * which is what ATS systems parse anyway. The DOCX export uses the
- * `docx` library's native RTL support and round-trips perfectly in Word.
+ * RTL note: the PDF export renders an HTML document through headless
+ * Chromium (the same proven path the CV builder uses), so Arabic is
+ * shaped, ligated, and bidi-ordered correctly — no "tofu" boxes. The
+ * Cairo font is embedded as a base64 data URI so the render needs no
+ * network. The DOCX export uses the `docx` library's native RTL support
+ * and round-trips perfectly in Word.
  */
 
-const PDF_MARGIN_MM = 18;
-const PDF_LINE_HEIGHT = 5.4;
-const PDF_BULLET_INDENT = 6;
+const CAIRO_DATA_URI = `data:font/ttf;base64,${CAIRO_FONT_BASE64}`;
+
+const FONT_FACE = `@font-face {
+  font-family: 'Cairo';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: block;
+  src: url('${CAIRO_DATA_URI}') format('truetype');
+}`;
+
+const BASE_FONT = `'Cairo', 'Noto Sans Arabic', 'Calibri', Arial, sans-serif`;
+
+const ESCAPE: Record<string, string> = {
+  '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+};
+function esc(s: string | null | undefined): string {
+  if (!s) return '';
+  return String(s).replace(/[&<>"']/g, (c) => ESCAPE[c] ?? c);
+}
+
+type Headings = {
+  summary: string;
+  experience: string;
+  education: string;
+  skills: string;
+  certifications: string;
+  languages: string;
+};
+
+const HEADINGS: Record<'ar' | 'en', Headings> = {
+  ar: {
+    summary: 'الملخص',
+    experience: 'الخبرة',
+    education: 'التعليم',
+    skills: 'المهارات',
+    certifications: 'الشهادات',
+    languages: 'اللغات',
+  },
+  en: {
+    summary: 'Summary',
+    experience: 'Experience',
+    education: 'Education',
+    skills: 'Skills',
+    certifications: 'Certifications',
+    languages: 'Languages',
+  },
+};
 
 function joinHeader(parts: Array<string | null | undefined>): string {
   return parts.filter((p) => p && p.trim()).join(' · ');
@@ -38,114 +84,169 @@ export function exportToJson(resume: Resume): string {
   return JSON.stringify(resume, null, 2);
 }
 
-export async function exportToPdf(resume: Resume): Promise<Uint8Array> {
-  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const contentWidth = pageWidth - PDF_MARGIN_MM * 2;
-  let y = PDF_MARGIN_MM;
+/**
+ * Build a single-column, ATS-friendly HTML document for the resume, with
+ * the Cairo font embedded so headless Chromium can shape Arabic correctly.
+ */
+export function buildResumeHtml(resume: Resume): string {
+  const isRTL = resume.meta?.language === 'ar';
+  const dir: 'rtl' | 'ltr' = isRTL ? 'rtl' : 'ltr';
+  const lang = isRTL ? 'ar' : 'en';
+  const h = HEADINGS[lang];
 
-  function ensureRoom(needMm: number) {
-    const pageHeight = doc.internal.pageSize.getHeight();
-    if (y + needMm > pageHeight - PDF_MARGIN_MM) {
-      doc.addPage();
-      y = PDF_MARGIN_MM;
+  let sections = '';
+
+  // Summary
+  if (resume.summary) {
+    sections += section(h.summary, `<p>${esc(resume.summary)}</p>`);
+  }
+
+  // Experience
+  if (resume.experience.length > 0) {
+    let body = '';
+    for (const exp of resume.experience) {
+      const dateParts = [exp.start, exp.end].filter((p) => p && p.trim());
+      const dates = dateParts.join(' – ');
+      const bullets = exp.bullets.length
+        ? `<ul>${exp.bullets.map((b) => `<li>${esc(b)}</li>`).join('')}</ul>`
+        : '';
+      body += `<div class="entry">
+        <div class="row"><span class="bold">${esc(exp.role)} — ${esc(exp.company)}</span><span class="right muted">${esc(dates)}</span></div>
+        ${exp.location ? `<p class="muted">${esc(exp.location)}</p>` : ''}
+        ${bullets}
+      </div>`;
     }
+    sections += section(h.experience, body);
   }
 
-  function writeWrapped(text: string, fontSize: number, options: { bold?: boolean; indent?: number } = {}) {
-    if (!text) return;
-    doc.setFontSize(fontSize);
-    doc.setFont('helvetica', options.bold ? 'bold' : 'normal');
-    const indent = options.indent ?? 0;
-    const lines = doc.splitTextToSize(text, contentWidth - indent);
-    for (const line of lines) {
-      ensureRoom(PDF_LINE_HEIGHT);
-      doc.text(line, PDF_MARGIN_MM + indent, y);
-      y += PDF_LINE_HEIGHT;
+  // Education
+  if (resume.education.length > 0) {
+    let body = '';
+    for (const ed of resume.education) {
+      body += `<div class="entry">
+        <div class="row"><span class="bold">${esc(ed.degree)} — ${esc(ed.institution)}</span><span class="right muted">${esc(ed.graduated)}</span></div>
+        ${ed.honors ? `<p class="muted">${esc(ed.honors)}</p>` : ''}
+      </div>`;
     }
+    sections += section(h.education, body);
   }
 
-  function sectionHeading(label: string) {
-    ensureRoom(PDF_LINE_HEIGHT * 2);
-    y += 1.5;
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.text(label.toUpperCase(), PDF_MARGIN_MM, y);
-    y += 1.2;
-    doc.setDrawColor(180);
-    doc.line(PDF_MARGIN_MM, y, pageWidth - PDF_MARGIN_MM, y);
-    y += PDF_LINE_HEIGHT;
+  // Skills
+  if (resume.skills.hard.length > 0 || resume.skills.soft.length > 0) {
+    let body = '';
+    if (resume.skills.hard.length > 0) {
+      body += `<p>${esc(resume.skills.hard.join(', '))}</p>`;
+    }
+    if (resume.skills.soft.length > 0) {
+      body += `<p>${esc(resume.skills.soft.join(', '))}</p>`;
+    }
+    sections += section(h.skills, body);
   }
 
-  // Header
-  writeWrapped(resume.header.name || '', 18, { bold: true });
-  writeWrapped(resume.header.title || '', 12);
+  // Certifications
+  if (resume.certifications.length > 0) {
+    const items = resume.certifications.map((c) => {
+      const parts = [c.name, c.issuer, c.year ? `(${c.year})` : ''].filter(Boolean);
+      return `<li>${esc(parts.join(' — '))}</li>`;
+    }).join('');
+    sections += section(h.certifications, `<ul>${items}</ul>`);
+  }
+
+  // Languages
+  if (resume.languages.length > 0) {
+    const text = resume.languages
+      .map((l) => `${l.name}${l.proficiency ? ` (${l.proficiency})` : ''}`)
+      .join(', ');
+    sections += section(h.languages, `<p>${esc(text)}</p>`);
+  }
+
   const contact = joinHeader([
     resume.header.email,
     resume.header.phone,
     resume.header.location,
     resume.header.linkedin_url,
   ]);
-  if (contact) writeWrapped(contact, 10);
 
-  // Summary
-  if (resume.summary) {
-    sectionHeading('Summary');
-    writeWrapped(resume.summary, 10);
+  return `<!DOCTYPE html>
+<html lang="${lang}" dir="${dir}">
+<head>
+<meta charset="utf-8" />
+<title>${esc(resume.header.name)} — Resume</title>
+<style>
+  ${FONT_FACE}
+  @page { size: A4; margin: 16mm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: ${BASE_FONT};
+    font-size: 10.5pt;
+    line-height: 1.45;
+    color: #000;
+    direction: ${dir};
   }
-
-  // Experience
-  if (resume.experience.length > 0) {
-    sectionHeading('Experience');
-    for (const exp of resume.experience) {
-      const roleLine = `${exp.role} — ${exp.company}`;
-      const dateLine = `${exp.start || ''} – ${exp.end || ''}${exp.location ? ' · ' + exp.location : ''}`;
-      writeWrapped(roleLine, 11, { bold: true });
-      if (dateLine.trim() !== '–') writeWrapped(dateLine, 9);
-      for (const b of exp.bullets) {
-        writeWrapped(`• ${b}`, 10, { indent: PDF_BULLET_INDENT });
-      }
-      y += 1;
-    }
+  .name {
+    font-size: 18pt;
+    font-weight: 700;
+    margin-bottom: 2px;
   }
-
-  // Education
-  if (resume.education.length > 0) {
-    sectionHeading('Education');
-    for (const ed of resume.education) {
-      const line = `${ed.degree} — ${ed.institution}${ed.graduated ? ' (' + ed.graduated + ')' : ''}`;
-      writeWrapped(line, 10, { bold: true });
-      if (ed.honors) writeWrapped(ed.honors, 9, { indent: PDF_BULLET_INDENT });
-    }
+  .title {
+    font-size: 12pt;
+    color: #333;
+    margin-bottom: 4px;
   }
-
-  // Skills
-  if (resume.skills.hard.length > 0 || resume.skills.soft.length > 0) {
-    sectionHeading('Skills');
-    if (resume.skills.hard.length > 0) {
-      writeWrapped(`Hard: ${resume.skills.hard.join(', ')}`, 10);
-    }
-    if (resume.skills.soft.length > 0) {
-      writeWrapped(`Soft: ${resume.skills.soft.join(', ')}`, 10);
-    }
+  .contact {
+    font-size: 9.5pt;
+    color: #555;
+    margin-bottom: 14px;
   }
-
-  // Certifications
-  if (resume.certifications.length > 0) {
-    sectionHeading('Certifications');
-    for (const c of resume.certifications) {
-      writeWrapped(`• ${c.name} — ${c.issuer}${c.year ? ' (' + c.year + ')' : ''}`, 10, { indent: PDF_BULLET_INDENT });
-    }
+  .section-header {
+    font-weight: 700;
+    font-size: 11pt;
+    margin-top: 14px;
+    padding-bottom: 3px;
+    border-bottom: 1px solid #444;
+    margin-bottom: 8px;
   }
-
-  // Languages
-  if (resume.languages.length > 0) {
-    sectionHeading('Languages');
-    writeWrapped(resume.languages.map((l) => `${l.name} (${l.proficiency})`).join(', '), 10);
+  .entry { margin-bottom: 8px; }
+  .row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
   }
+  .bold { font-weight: 700; }
+  .muted { color: #555; }
+  .right { flex-shrink: 0; white-space: nowrap; }
+  ul {
+    padding-inline-start: 18px;
+    margin: 4px 0 2px;
+  }
+  li { margin-bottom: 2px; line-height: 1.4; }
+  p { margin-bottom: 4px; }
+</style>
+</head>
+<body>
+  <div class="name">${esc(resume.header.name)}</div>
+  ${resume.header.title ? `<div class="title">${esc(resume.header.title)}</div>` : ''}
+  ${contact ? `<div class="contact">${esc(contact)}</div>` : ''}
+  ${sections}
+</body>
+</html>`;
+}
 
-  const arrayBuffer = doc.output('arraybuffer');
-  return new Uint8Array(arrayBuffer);
+function section(title: string, body: string): string {
+  return `<div class="section-header">${esc(title)}</div>${body}`;
+}
+
+export async function exportToPdf(resume: Resume): Promise<Uint8Array> {
+  const html = buildResumeHtml(resume);
+  const dir: 'rtl' | 'ltr' = resume.meta?.language === 'ar' ? 'rtl' : 'ltr';
+  const pdfBuffer = await renderHtmlToPdf({
+    html,
+    dir,
+    format: 'A4',
+    margin: { top: '16mm', right: '16mm', bottom: '16mm', left: '16mm' },
+  });
+  return new Uint8Array(pdfBuffer);
 }
 
 export async function exportToDocx(resume: Resume): Promise<Uint8Array> {
