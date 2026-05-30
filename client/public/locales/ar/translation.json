@@ -3502,5 +3502,48 @@
       "act": "ابدأ الآن",
       "showPlans": "أعرض لك الباقات"
     }
+  },
+  "support": {
+    "title": "مساعدة وصل",
+    "launcherAria": "افتح المساعدة",
+    "close": "إغلاق",
+    "greeting": "مرحباً بك في وصل. كيف يمكننا مساعدتك؟",
+    "commonQuestions": "أسئلة شائعة",
+    "inputPlaceholder": "اكتب رسالتك…",
+    "send": "إرسال",
+    "typing": "جارٍ الكتابة…",
+    "error": "تعذّر إرسال رسالتك. حاول مرة أخرى.",
+    "handoffNote": "سيتابع أحد أعضاء فريقنا سؤالك ويرد عليك قريباً.",
+    "admin": {
+      "headerTitle": "محادثات الدعم",
+      "title": "محادثات الدعم",
+      "refresh": "تحديث",
+      "filterAwaiting": "بانتظار الرد",
+      "filterActive": "نشطة",
+      "filterClosed": "مغلقة",
+      "filterAll": "الكل",
+      "statusAwaiting": "بانتظار الرد",
+      "statusActive": "نشطة",
+      "statusClosed": "مغلقة",
+      "visitor": "زائر",
+      "user": "مستخدم",
+      "replies": "ردود آلية",
+      "extendedShort": "موسّع",
+      "started": "بدأت",
+      "selectPrompt": "اختر محادثة لعرض تفاصيلها.",
+      "empty": "لا توجد محادثات في هذا التصنيف.",
+      "listError": "تعذّر تحميل المحادثات.",
+      "threadError": "تعذّر تحميل المحادثة.",
+      "extendedOn": "محادثة موسّعة: مفعّلة",
+      "extendedOff": "تفعيل المحادثة الموسّعة",
+      "extendedVisitorHint": "المحادثات الموسّعة للمستخدمين المسجّلين فقط",
+      "source": {
+        "user": "العميل",
+        "faq": "سؤال شائع",
+        "ai": "رد",
+        "handoff": "تحويل لموظف",
+        "admin": "رد الفريق"
+      }
+    }
   }
 }

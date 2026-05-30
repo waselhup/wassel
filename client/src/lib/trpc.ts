@@ -1464,6 +1464,85 @@ export const trpc = {
       trpcQuery<unknown[]>('beta.listFeedback', input ?? {}),
     getMetrics: () => trpcQuery<{ total_redemptions: number; total_feedback: number; avg_nps: number; promoters: number; passives: number; detractors: number; nps_score: number }>('beta.getMetrics'),
   },
+  // ─── Support / customer-service chat (Part 2 UI consumes Part 1 backend) ──
+  support: {
+    /** Public — saved FAQ entries for the sequence UI. Zero AI cost. */
+    faqList: (input?: { audience?: 'all' | 'visitor' | 'user' }) =>
+      trpcQuery<{
+        faqs: Array<{
+          id: string;
+          question_ar: string; question_en: string;
+          answer_ar: string;   answer_en: string;
+          display_order: number;
+        }>;
+      }>('support.faqList', input ?? {}),
+    /** Public — create a conversation (visitor or, if authed, user). */
+    startConversation: (input?: { visitorId?: string }) =>
+      trpcMutation<{
+        conversationId: string;
+        mode: 'visitor' | 'user';
+        status: 'active' | 'awaiting_admin' | 'closed';
+        aiReplyCount: number;
+        allowExtended: boolean;
+      }>('support.startConversation', input ?? {}),
+    /** Public — core endpoint: FAQ-first → capped AI → handoff (server-enforced). */
+    sendMessage: (input: { conversationId: string; message: string }) =>
+      trpcMutation<{
+        conversationId: string;
+        source: 'faq' | 'ai' | 'handoff';
+        reply: string;
+        language: 'ar' | 'en';
+        aiReplyCount: number;
+        status: 'active' | 'awaiting_admin' | 'closed';
+        faqId?: string | null;
+        capReached: boolean;
+      }>('support.sendMessage', input),
+    caps: () => trpcQuery<{ visitor: number; userDefault: number; userExtended: number }>('support.caps'),
+    admin: {
+      listConversations: (input?: { status?: 'active' | 'awaiting_admin' | 'closed'; limit?: number }) =>
+        trpcQuery<{
+          conversations: Array<{
+            id: string;
+            mode: 'visitor' | 'user';
+            user_id: string | null;
+            status: 'active' | 'awaiting_admin' | 'closed';
+            ai_reply_count: number;
+            allow_extended: boolean;
+            last_message_at: string;
+            created_at: string;
+          }>;
+        }>('support.admin.listConversations', input ?? {}),
+      getConversation: (input: { conversationId: string }) =>
+        trpcQuery<{
+          conversation: {
+            id: string;
+            mode: 'visitor' | 'user';
+            user_id: string | null;
+            status: 'active' | 'awaiting_admin' | 'closed';
+            ai_reply_count: number;
+            allow_extended: boolean;
+            visitor_id: string | null;
+            last_message_at: string;
+            created_at: string;
+            updated_at: string;
+          };
+          messages: Array<{
+            id: string;
+            role: 'user' | 'assistant' | 'admin';
+            source: 'user' | 'faq' | 'ai' | 'handoff' | 'admin';
+            content: string;
+            faq_id: string | null;
+            created_at: string;
+          }>;
+        }>('support.admin.getConversation', input),
+      setAllowExtended: (input: { conversationId: string; allow: boolean }) =>
+        trpcMutation<{
+          conversationId: string;
+          allowExtended: boolean;
+          status: 'active' | 'awaiting_admin' | 'closed';
+        }>('support.admin.setAllowExtended', input),
+    },
+  },
 };
 
 // ─── Notification shapes (Sprint 8) ─────────────────────────────────

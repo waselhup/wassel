@@ -50,6 +50,7 @@ const RevenueLabPanel = lazy(() => import('@/pages/v2/RevenueLabPanel'));
 const ProductIntelPanel = lazy(() => import('@/pages/v2/ProductIntelPanel'));
 const CompliancePanel = lazy(() => import('@/pages/v2/CompliancePanel'));
 const WarRoomPanel = lazy(() => import('@/pages/v2/WarRoomPanel'));
+const SupportInboxPanel = lazy(() => import('@/pages/v2/SupportInboxPanel'));
 
 // 3-stage profile analysis flow: Input → Loading → Result. State bridges
 // stages via sessionStorage (see lib/v2/analysisSession.ts). Stage 1 lives
@@ -351,6 +352,7 @@ function V2Routes(): ReactElement | null {
   const [matchProductIntel] = useRoute('/v2/product-intel');
   const [matchCompliance] = useRoute('/v2/compliance');
   const [matchWarRoom] = useRoute('/v2/war-room');
+  const [matchSupportInbox] = useRoute('/v2/support');
   const [matchBeta] = useRoute('/v2/beta');
 
   if (matchLanding) {
@@ -499,6 +501,9 @@ function V2Routes(): ReactElement | null {
   }
   if (matchWarRoom) {
     return <PortalShell><Suspense fallback={<V2Loader />}><WarRoomPanel /></Suspense></PortalShell>;
+  }
+  if (matchSupportInbox) {
+    return <PortalShell><Suspense fallback={<V2Loader />}><SupportInboxPanel /></Suspense></PortalShell>;
   }
   if (matchBeta) {
     return <PortalShell><Suspense fallback={<V2Loader />}><Beta /></Suspense></PortalShell>;

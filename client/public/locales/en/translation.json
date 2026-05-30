@@ -3498,5 +3498,48 @@
       "act": "Start now",
       "showPlans": "Show me the plans"
     }
+  },
+  "support": {
+    "title": "Wassel Help",
+    "launcherAria": "Open help",
+    "close": "Close",
+    "greeting": "Welcome to Wassel. How can we help you?",
+    "commonQuestions": "Common questions",
+    "inputPlaceholder": "Type your message…",
+    "send": "Send",
+    "typing": "Typing…",
+    "error": "We couldn’t send your message. Please try again.",
+    "handoffNote": "A member of our team will follow up on your question shortly.",
+    "admin": {
+      "headerTitle": "Support Conversations",
+      "title": "Support Conversations",
+      "refresh": "Refresh",
+      "filterAwaiting": "Awaiting reply",
+      "filterActive": "Active",
+      "filterClosed": "Closed",
+      "filterAll": "All",
+      "statusAwaiting": "Awaiting reply",
+      "statusActive": "Active",
+      "statusClosed": "Closed",
+      "visitor": "Visitor",
+      "user": "User",
+      "replies": "Auto replies",
+      "extendedShort": "Extended",
+      "started": "Started",
+      "selectPrompt": "Select a conversation to view its details.",
+      "empty": "No conversations in this filter.",
+      "listError": "Could not load conversations.",
+      "threadError": "Could not load the conversation.",
+      "extendedOn": "Extended chat: on",
+      "extendedOff": "Enable extended chat",
+      "extendedVisitorHint": "Extended chat is for logged-in users only",
+      "source": {
+        "user": "Customer",
+        "faq": "FAQ",
+        "ai": "Reply",
+        "handoff": "Handoff",
+        "admin": "Team reply"
+      }
+    }
   }
 }
