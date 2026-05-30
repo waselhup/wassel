@@ -301,7 +301,7 @@ export async function getCareerPulse(
 export async function getNextTask(
   supabase: SupabaseClient,
   userId: string,
-  _language: 'ar' | 'en' = 'ar'
+  language: 'ar' | 'en' = 'ar'
 ): Promise<AiSuggestionRow | null> {
   // Expire suggestions whose expires_at has passed (best-effort)
   await supabase
@@ -311,18 +311,38 @@ export async function getNextTask(
     .eq('status', 'active')
     .lt('expires_at', new Date().toISOString());
 
+  // Surface only suggestions that match the user's CURRENT language. A
+  // suggestion authored in a different language (e.g. the user switched
+  // ar↔en after a nightly generation) is hidden — never shown, never
+  // deleted. We don't translate stored rows; the right task is the one
+  // written in the language the user reads now.
   const { data, error } = await supabase
     .from('ai_suggestions')
     .select('*')
     .eq('user_id', userId)
     .eq('status', 'active')
+    .eq('language', language)
     .order('priority_score', { ascending: false, nullsFirst: false })
     .order('score', { ascending: false })
     .order('created_at', { ascending: false })
     .limit(1);
 
-  if (error || !data || data.length === 0) return null;
-  return data[0] as AiSuggestionRow;
+  if (!error && data && data.length > 0) {
+    return data[0] as AiSuggestionRow;
+  }
+
+  // No active suggestion in the requested language. Generate one fresh,
+  // in the correct language, in this same call. Throttle: exactly one
+  // generation attempt per load (generateSuggestions makes a single Claude
+  // call). On any failure we return null and the dashboard renders its
+  // safe empty state — we never surface the mismatched-language row.
+  try {
+    const { suggestions } = await generateSuggestions(supabase, userId, language);
+    return suggestions[0] ?? null;
+  } catch (e) {
+    console.warn('[dashboard-engine] getNextTask regenerate failed:', e);
+    return null;
+  }
 }
 
 export async function listSuggestions(

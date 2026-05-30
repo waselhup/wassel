@@ -29,6 +29,8 @@ image_prompt (optional, per slide):
 - A short visual prompt the user can paste into their preferred image-generation tool.
 - Never name the image tool or model. Never describe AI-art-tropes (cyberpunk, hyperrealistic, dramatic lighting).
 - Aim for clean, editorial, minimal visual descriptions.
+
+CRITICAL: Write every human-readable string in the output (every slide title and body, the caption, hashtags, and each image_prompt — every field a user reads) in the user's language only. If language=ar → Arabic. If language=en → English. Never mix languages. Set the `language` field to the same value. This overrides all other instructions.
 ```
 
 ```user

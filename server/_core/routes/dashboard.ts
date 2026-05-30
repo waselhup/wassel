@@ -15,6 +15,14 @@ import {
   logActivity,
   type DashboardPillar,
 } from '../lib/dashboard-engine';
+import {
+  getCompanionState,
+  markWelcomed,
+  markTourDone,
+  recordSignal,
+  generateWelcome,
+  getCompanionMessage,
+} from '../lib/companion-engine';
 
 /**
  * Dashboard v2 tRPC router — 11 endpoints.
@@ -168,4 +176,57 @@ export const dashboardRouter = router({
       });
       return { success: true };
     }),
+
+  // ───────────────────────────────────────────
+  // Companion — the in-app career companion (Phase 1).
+  // Additive nested router; reuses the dashboard engine + companion engine.
+  // ───────────────────────────────────────────
+  companion: router({
+    // Lifecycle flags (welcome / tour) + visit counter. Seeds the row on first read.
+    getState: protectedProcedure.query(async ({ ctx }) => {
+      return await getCompanionState(ctx.supabase, ctx.user.id);
+    }),
+
+    // The one smart welcome line (free, generated once, cached). The client
+    // shows its template welcome immediately and only enriches with this if it
+    // resolves — generation never blocks the welcome moment.
+    getWelcome: protectedProcedure
+      .input(z.object({ language: LANGUAGE.optional() }).optional())
+      .query(async ({ ctx, input }) => {
+        return await generateWelcome(ctx.supabase, ctx.user.id, input?.language ?? 'ar');
+      }),
+
+    markWelcomed: protectedProcedure.mutation(async ({ ctx }) => {
+      return await markWelcomed(ctx.supabase, ctx.user.id);
+    }),
+
+    markTourDone: protectedProcedure.mutation(async ({ ctx }) => {
+      return await markTourDone(ctx.supabase, ctx.user.id);
+    }),
+
+    // The companion's contextual message: the reused Next Task + optional
+    // step-by-step purchase guidance when the wallet can't cover the action.
+    getMessage: protectedProcedure
+      .input(z.object({ language: LANGUAGE.optional() }).optional())
+      .query(async ({ ctx, input }) => {
+        return await getCompanionMessage(ctx.supabase, ctx.user.id, input?.language ?? 'ar');
+      }),
+
+    // Adaptation seed — store a behavioural signal. Storage only.
+    recordSignal: protectedProcedure
+      .input(
+        z.object({
+          signalType: z.enum(['page_view', 'action', 'visit']),
+          route: z.string().max(200).optional(),
+          payload: z.record(z.unknown()).optional(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        return await recordSignal(ctx.supabase, ctx.user.id, {
+          signalType: input.signalType,
+          route: input.route,
+          payload: input.payload,
+        });
+      }),
+  }),
 });

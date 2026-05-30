@@ -9,6 +9,7 @@ import Eyebrow from '@/components/v2/Eyebrow';
 import NumDisplay from '@/components/v2/NumDisplay';
 import Button from '@/components/v2/Button';
 import Skeleton, { useInitialLoading } from '@/components/v2/Skeleton';
+import CompanionCard from '@/components/v2/Companion/CompanionCard';
 import { useAuth } from '@/contexts/AuthContext';
 import { trpc } from '@/lib/trpc';
 import type {
@@ -781,6 +782,14 @@ function Home() {
               onAct={handleAct}
               onDismiss={handleDismiss}
             />
+          </div>
+
+          {/* Companion presence — warm greeting + purchase guidance. On mobile
+              it sits right under the Next Task; on desktop it leads the sidebar.
+              It deliberately does NOT repeat the task (showTask=false inside) so
+              it complements the Next Task card rather than duplicating it. */}
+          <div className="mb-6 lg:order-2 lg:col-span-4 lg:mb-0">
+            <CompanionCard language={isAr ? 'ar' : 'en'} />
           </div>
 
           {/* Suffices For — sidebar on desktop, mobile shows after pulse */}

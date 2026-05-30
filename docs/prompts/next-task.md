@@ -28,6 +28,8 @@ Constraints:
 - Never suggest "go pay for an upgrade" or similar revenue-oriented prompts.
 - Never suggest something the user already did in the last 7 days (the activity log shows you what they've done).
 - If activity is sparse and you can't pick a confident suggestion, return a low-score (1–3) gentle nudge to revisit the Radar.
+
+CRITICAL: Write every human-readable string in the output (headline, rationale — every field a user reads) in the user's language only. If language=ar → Arabic. If language=en → English. Never mix languages. Set the `language` field to the same value. This overrides all other instructions.
 ```
 
 ```user

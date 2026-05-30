@@ -26,6 +26,8 @@ Derivatives:
 3. Follow-up post — a post that continues the thread of the original. Treat the original's core idea as a setup; the follow-up adds a second angle or a counterpoint. Length 600–1200 chars.
 
 Each derivative is self-contained. They share the topic, not the wording.
+
+CRITICAL: Write every human-readable string in the output (the carousel slides + caption + hashtags, the video hook/beats/cta, and the follow-up post body + hashtags — every field a user reads) in the user's language only. If language=ar → Arabic. If language=en → English. Never mix languages. Set the `language` field to the same value. This overrides all other instructions.
 ```
 
 ```user

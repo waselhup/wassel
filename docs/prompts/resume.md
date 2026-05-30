@@ -39,6 +39,8 @@ Length:
 - Summary: 2–4 sentences, ≤ 480 chars total.
 - Each experience entry: 3–5 bullets, each ≤ 220 chars.
 - Skills: 6–14 hard, 4–8 soft.
+
+CRITICAL: Write every human-readable string you author (summary, bullet wording, section labels — every field a user reads) in the user's language only. If language=ar → Arabic. If language=en → English. Never mix languages. The exception is proper nouns the user already provided (company names, certifications, institutions), which stay verbatim. This overrides all other instructions.
 ```
 
 ```user
@@ -103,6 +105,8 @@ Rules:
 - Western digits only.
 - Never lengthen beyond the section's typical limits (summary ≤ 480 chars, each bullet ≤ 220 chars).
 - Never inject vendor or model names.
+
+CRITICAL: Write the refined `content` and the `note` in the user's language only. If language=ar → Arabic. If language=en → English. Never mix languages. This overrides all other instructions.
 ```
 
 ```user

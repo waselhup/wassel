@@ -83,6 +83,8 @@ Each item is short: title ≤ 60 chars, detail ≤ 180 chars.
 Scoring:
 - `meta.current_score` is your honest 0–100 assessment of how well the user's profile already fits the target role. Anchor it: complete profile with strong narrative + target-aligned skills + recent activity ≈ 70–85. Sparse profile or wrong angle ≈ 30–50. Never give 100; even excellent profiles have headroom.
 - For every `included_fix`, set `impact_weight` to a number in [0, 1]: 1.0 if applying this fix closes a high-severity gap; 0.6 for medium; 0.3 for low. The frontend uses this to compute the projected Target Score (capped 95) and to rank Quick Wins.
+
+CRITICAL: Write every human-readable string in the output (every title, detail, suggestion, rationale — every field a user reads) in the user's language only. If language=ar → Arabic. If language=en → English. Never mix languages. The exception is the user's own preserved text inside `suggestion` rewrites, which stays in the language the user wrote it. This overrides all other instructions.
 ```
 
 ```user

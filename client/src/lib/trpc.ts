@@ -1404,6 +1404,23 @@ export const trpc = {
       tokensCharged?: number;
       language?: 'ar' | 'en';
     }) => trpcMutation<{ success: boolean }>('dashboard.logActivity', input),
+    companion: {
+      getState: () =>
+        trpcQuery<CompanionStateShape>('dashboard.companion.getState'),
+      getWelcome: (input?: { language?: 'ar' | 'en' }) =>
+        trpcQuery<{ message: string | null }>('dashboard.companion.getWelcome', input ?? {}),
+      markWelcomed: () =>
+        trpcMutation<{ success: boolean }>('dashboard.companion.markWelcomed', {}),
+      markTourDone: () =>
+        trpcMutation<{ success: boolean }>('dashboard.companion.markTourDone', {}),
+      getMessage: (input?: { language?: 'ar' | 'en' }) =>
+        trpcQuery<CompanionMessageShape>('dashboard.companion.getMessage', input ?? {}),
+      recordSignal: (input: {
+        signalType: 'page_view' | 'action' | 'visit';
+        route?: string;
+        payload?: Record<string, unknown>;
+      }) => trpcMutation<{ success: boolean }>('dashboard.companion.recordSignal', input),
+    },
   },
   notifications: {
     list: (input?: { status?: 'unread' | 'all'; limit?: number; offset?: number }) =>
@@ -1738,6 +1755,30 @@ export type AiSuggestionShape = {
   dismissed_at: string | null;
   computed_for_date: string;
   created_at: string;
+};
+
+export type CompanionStateShape = {
+  user_id: string;
+  welcomed_at: string | null;
+  tour_done_at: string | null;
+  welcome_message: string | null;
+  welcome_message_lang: 'ar' | 'en' | null;
+  visit_count: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type PurchaseGuidanceShape = {
+  needed: number;
+  balance: number;
+  shortfall: number;
+  pillar: 'radar' | 'resume' | 'content';
+  cta_url: '/v2/pricing';
+};
+
+export type CompanionMessageShape = {
+  task: AiSuggestionShape | null;
+  guidance: PurchaseGuidanceShape | null;
 };
 
 export type ActivityLogEntryShape = {

@@ -23,6 +23,8 @@ Structure:
 - 0–3 relevant hashtags.
 
 Length: 600–1500 characters total (excluding hashtags).
+
+CRITICAL: Write every human-readable string in the output (body, hashtags — every field a user reads) in the user's language only. If language=ar → Arabic. If language=en → English. Never mix languages. Set the `language` field to the same value. This overrides all other instructions.
 ```
 
 ```user
