@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import * as Sentry from '@sentry/react';
 import V2Routes from './app/v2-routes';
+import SupportWidgetMount from './components/v2/Support/SupportWidgetMount';
 
 /**
  * Replace the current URL with `to` and render nothing. Used to retire
@@ -133,7 +134,7 @@ const AppRoutes: React.FC = () => {
   const [matchAppTickets] = useRoute('/app/tickets');
   const [matchAppAdmin] = useRoute('/app/admin');
 
-  if (matchV2) return <V2Routes />;
+  if (matchV2) return (<><V2Routes /><SupportWidgetMount /></>);
 
   // Public routes that have a v2 equivalent → redirect (preserve bookmarks).
   // /reset-password and /about, /blog, /privacy, /terms keep their legacy v1
