@@ -565,8 +565,23 @@ export async function runRadar(
   }
   const profileHash = computeProfileHash(unifiedProfile);
 
-  // 3. Cache check (R09)
-  if (!opts.forceRefresh) {
+  // 3. Cache check (R09). The lookup is keyed on profile_hash, so it runs
+  //    UNCONDITIONALLY — even under forceRefresh. Rationale (#26 + Bowling-Lane:
+  //    never spend AI with no value):
+  //      • Same profile_hash  → identical model input ⇒ identical output. A
+  //        forced re-run would burn Claude tokens to regenerate the exact same
+  //        diagnostic, so we serve the cached row instead (0 tokens, 0 model).
+  //        This ALSO removes the duplicate-key crash: the bare INSERT below was
+  //        colliding with the existing row on the
+  //        (user_id, target_role, profile_hash, language) unique key whenever
+  //        forceRefresh skipped this block on an already-analyzed profile.
+  //      • Different profile_hash (the profile actually changed) → this lookup
+  //        misses (the hash is part of the key) ⇒ we fall through to the model
+  //        and INSERT a fresh, locked row. So forceRefresh still refreshes the
+  //        only case where there is something to refresh.
+  //    forceRefresh therefore means "reflect the latest profile", not "ignore
+  //    the cache" — and an unchanged profile has nothing newer to reflect.
+  {
     const { data: cached } = await supabase
       .from('radar_cache')
       .select('*')
