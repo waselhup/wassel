@@ -213,12 +213,12 @@ function DesktopSidebar({
       {showTokenWidget && (
         <div className="px-3 py-2">
           <div className="rounded-v2-md border border-v2-line bg-v2-canvas px-3.5 py-3">
-            <Eyebrow>{isAr ? 'رصيد الاستخدامات' : 'USAGE BALANCE'}</Eyebrow>
+            <Eyebrow>{isAr ? 'رصيد التوكن' : 'TOKEN BALANCE'}</Eyebrow>
             <div className="mt-1.5 flex items-baseline gap-1.5">
               <NumDisplay className="text-[20px] font-bold leading-none text-v2-ink">
                 {balance}
               </NumDisplay>
-              <span className="font-ar text-[11px] text-v2-dim">{isAr ? 'استخدام' : 'uses'}</span>
+              <span className="font-ar text-[11px] text-v2-dim">{isAr ? 'توكن' : 'tokens'}</span>
             </div>
             <button
               type="button"

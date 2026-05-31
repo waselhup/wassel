@@ -149,6 +149,10 @@ function Billing() {
     }
   };
 
+  // Always returns an accurate, human expiry string — never empty for a real
+  // date (an empty string here used to fall back to a misleading "expires end
+  // of month", which breaks #24 transparency for a 90-day bonus). Near dates
+  // read relatively; far dates show the exact day.
   const formatRelativeExpiry = (iso: string | null): string => {
     if (!iso) return '';
     const ms = new Date(iso).getTime() - Date.now();
@@ -156,13 +160,15 @@ function Billing() {
     const days = Math.ceil(ms / 86400000);
     if (days <= 1) return t('تنتهي اليوم', 'Expires today');
     if (days <= 7) return t(`تنتهي خلال ${days} أيام`, `Expires in ${days} days`);
-    return '';
+    return t(`تنتهي في ${formatDate(iso)}`, `Expires ${formatDate(iso)}`);
   };
 
   const formatDate = (s: string | null) => {
     if (!s) return '—';
     const d = new Date(s);
-    return d.toLocaleDateString(isAr ? 'ar-SA' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    // `-u-nu-latn` forces Western digits (0-9) per the Western-digits rule —
+    // ar-SA would otherwise render Eastern Arabic numerals (٢٠٢٦).
+    return d.toLocaleDateString(isAr ? 'ar-u-nu-latn' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' });
   };
 
   const balancePct = balance && subscription?.plan?.monthly_tokens
@@ -317,12 +323,15 @@ function Billing() {
                     <NumDisplay className="font-ar text-[20px] font-bold text-teal-700 tabular-nums">
                       {wallets.bonus.balance}
                     </NumDisplay>
-                    {wallets.bonus.expires_at && wallets.bonus.balance > 0 && (
+                    {wallets.bonus.expires_at && wallets.bonus.balance > 0 ? (
                       <div className="font-ar text-[10px] text-amber-700 mt-0.5">
-                        {formatRelativeExpiry(wallets.bonus.expires_at) ||
-                          t('تنتهي مع نهاية الشهر', 'Expires end of month')}
+                        {formatRelativeExpiry(wallets.bonus.expires_at)}
                       </div>
-                    )}
+                    ) : wallets.bonus.balance > 0 ? (
+                      <div className="font-ar text-[10px] text-v2-mute mt-0.5">
+                        {t('بدون انتهاء', 'No expiry')}
+                      </div>
+                    ) : null}
                   </div>
                   <div className="rounded-v2-md bg-v2-canvas-2 p-3">
                     <div className="font-ar text-[11px] text-v2-mute">
@@ -350,6 +359,17 @@ function Billing() {
                     </div>
                   </div>
                 </div>
+              )}
+
+              {/* Consumption-order transparency note (#24): make it explicit
+                  which wallet is spent first and what expires when. */}
+              {wallets && (
+                <p className="mt-3 font-ar text-[11px] leading-relaxed text-v2-dim">
+                  {t(
+                    'تُستهلك توكناتك بالترتيب: المكافآت أولاً، ثم الاشتراك، ثم الشحن. توكنات المكافآت تنتهي في تاريخها، وتوكنات الاشتراك تتجدد كل دورة، وتوكنات الشحن دائمة.',
+                    'Tokens are spent in order: Bonus first, then Subscription, then Top-up. Bonus tokens expire on their date, subscription tokens renew each cycle, and top-up tokens never expire.',
+                  )}
+                </p>
               )}
 
               {/* Top-up packages grid */}
