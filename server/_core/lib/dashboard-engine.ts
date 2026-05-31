@@ -4,6 +4,7 @@ import { getCareerProfile, type CareerProfile, type Language } from './career-pr
 import { getWallets } from './wallets';
 import { getReadiness, projectedReadinessGain } from './readiness';
 import { nextTaskPrompt } from '../prompts/_generated';
+import { withBrain } from '../prompts/brain';
 
 /**
  * Dashboard Engine — Sprint 6 brain of /v2/home.
@@ -621,10 +622,23 @@ export async function generateSuggestions(
     // was returning prose and extractJson() returned null. We append the
     // schema + a one-line instruction here so the validator
     // (parsed.headline && parsed.cta_url && parsed.rationale) passes.
+    //
+    // LANGUAGE (#25): the headline/rationale are AI-written WORDS and must be in
+    // the user's language. Two reinforcements vs. the old English-leaking output:
+    //   1. withBrain() prepends the constitution (incl. the language rule) — every
+    //      other engine does this; dashboard was the lone engine that skipped it.
+    //   2. A parameterized LANGUAGE LOCK is appended AFTER the schema, so the last
+    //      tokens the model reads before generating name the literal target
+    //      language — countering the recency pull of the English schema/CTA paths
+    //      on Haiku. (Numbers stay algorithmic per #26 — score/priority are clamped
+    //      and computed in code, not taken from the model verbatim.)
+    const langName =
+      language === 'ar' ? 'Arabic (Modern Standard Arabic, فصحى مبسطة)' : 'English';
     const systemWithSchema =
-      nextTaskPrompt.system +
+      withBrain(nextTaskPrompt.system) +
       '\n\n---\nReturn a single JSON object matching this exact TypeScript type, with no prose, no markdown fences, and no preamble:\n\n' +
-      nextTaskPrompt.schema;
+      nextTaskPrompt.schema +
+      `\n\n---\nLANGUAGE LOCK (non-negotiable): language = "${language}". Write "headline" and "rationale" entirely in ${langName}. Do not use any other language in those two fields. Set the "language" field to "${language}". This overrides every other instruction above.`;
 
     const res = await callClaude({
       task: 'post_generate', // Haiku — same speed/cost tier

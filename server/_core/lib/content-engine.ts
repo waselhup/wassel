@@ -476,8 +476,24 @@ export async function generateContent(
 
   const topicHash = computeTopicHash(topic, opts.contentType, sourcePostIdResolved);
 
-  // Cache check
-  if (!opts.forceRefresh) {
+  // Cache check (mirrors the radar forceRefresh fix). The lookup is keyed on
+  // topic_hash, so it runs UNCONDITIONALLY — even under forceRefresh. Rationale
+  // (#26 + Bowling-Lane: never spend AI with no value):
+  //   • Same topic_hash (still fresh) → identical model input ⇒ identical output.
+  //     A forced re-run would burn tokens regenerating the same draft, so we serve
+  //     the cached row (0 tokens) and reuse the existing active version. This ALSO
+  //     removes the duplicate-key crash: the bare INSERT below was colliding with
+  //     the existing row on the (user_id, content_type, topic_hash, language)
+  //     unique key whenever forceRefresh skipped this block on an already-cached
+  //     topic. No paid-lock to preserve here (content has no unlock flag); the
+  //     draft/version row is reused, not duplicated.
+  //   • Different topic_hash (topic actually changed) → this lookup misses (the
+  //     hash is part of the key) ⇒ we fall through to the model and INSERT fresh.
+  //     So forceRefresh still refreshes the only case where there is something new.
+  // forceRefresh therefore means "reflect the latest topic", not "ignore the cache".
+  // (A same-hash row whose TTL has expired still misses here and is regenerated —
+  //  that expired-row path is unchanged by this fix.)
+  {
     const { data: cached } = await supabase
       .from('content_cache')
       .select('*')
