@@ -2989,11 +2989,10 @@
     },
     "editor": {
       "refinement": "تحسينات سريعة",
-      "freeRefinements": "{{remaining}} من 5 تحسينات مجانية متبقية",
+      "freeRefinements": "{{remaining}} من 5 تحسينات مشمولة متبقية",
       "afterFive": "بعد 5 تحسينات، كل تعديل يكلف 5 توكنات",
       "exportPdf": "تصدير PDF",
       "exportDocx": "تصدير Word",
-      "exportJson": "تصدير JSON",
       "archive": "أرشفة",
       "restore": "استعادة",
       "atsScore": {
@@ -3033,15 +3032,38 @@
       "mit_technical": {
         "name": "MIT للتقنيين",
         "reason": "مناسب للأدوار التقنية والهندسية"
-      },
-      "saudi_executive": {
-        "name": "القيادي السعودي",
-        "reason": "تنسيق فاخر للقيادات في السوق السعودي"
-      },
-      "modern_minimal": {
-        "name": "العصري المختصر",
-        "reason": "تصميم نظيف للمحترفين"
       }
+    },
+    "diagnostic": {
+      "title": "شخّص سيرتك مجاناً",
+      "subtitle": "احصل على تقييم ATS كامل بأربعة مكوّنات — بدون أي توكن. ثم قرّر إن أردت بناء السيرة الكاملة.",
+      "scoreLinkedin": "قيّم ملفي على LinkedIn",
+      "scoreLinkedinDesc": "نقيس ملفك الحالي كأنه سيرة ذاتية — 0 توكن، فوري.",
+      "uploadCv": "ارفع سيرتي الحالية",
+      "uploadCvDesc": "PDF أو Word — نشخّصها بنفس المقياس، 0 توكن.",
+      "diagnoseNow": "شخّص الآن (0 توكن)",
+      "diagnosing": "جارٍ التشخيص…",
+      "chooseFile": "اختر ملفاً",
+      "needLinkedin": "أضف رابط LinkedIn في بروفايلك المهني أولاً.",
+      "currentScore": "نتيجة ATS الحالية",
+      "projected": "المتوقع",
+      "afterBuild": "نقطة بعد بناء السيرة المخصّصة",
+      "fromLinkedin": "محسوبة من ملفك على LinkedIn",
+      "fromUpload": "محسوبة من السيرة التي رفعتها",
+      "breakdownTitle": "كيف تكوّنت النتيجة",
+      "complete": "مكتمل",
+      "benchmarkTitle": "مقارنة بالنموذج المثالي للدور",
+      "you": "أنت",
+      "ideal": "النموذج المثالي",
+      "gap": "الفجوة",
+      "benchmarkNote": "النموذج المثالي مرجع داخلي محسوب من معايير وصل لهذا المستوى — لا يعتمد على بيانات سوق خارجية.",
+      "raiseTitle": "ارفع نقاطك",
+      "buildTitle": "ابنِ سيرتك المخصّصة",
+      "unlockBody": "البناء الكامل يخصّص كل قسم للدور المستهدف، يرفع نتيجة ATS، ويصدّر PDF و Word بقالب احترافي مع سبب الاختيار وبديلين.",
+      "buildFull": "ابنِ السيرة الكاملة (179 توكن)",
+      "buildFootnote": "تُخصم 179 توكن بعد نجاح البناء فقط",
+      "another": "تشخيص مصدر آخر",
+      "readError": "تعذّر قراءة نص كافٍ من الملف"
     },
     "errors": {
       "noCareerProfile": "أكمل البروفايل المهني أولاً",
@@ -3128,7 +3150,7 @@
       "archiving": "جارٍ الأرشفة...",
       "restore": "استعادة",
       "refinement": "تحسينات سريعة",
-      "freeRefinements": "{{remaining}} من 5 مجانية",
+      "freeRefinements": "{{remaining}} من 5 مشمولة",
       "paidRefinement": "5 توكنات/تحسين",
       "afterFive": "بعد 5، كل تعديل = 5 توكنات",
       "legacyBanner": "هذا محتوى قديم للقراءة فقط. ابدأ محتوى جديداً لتفعيل التحسينات.",

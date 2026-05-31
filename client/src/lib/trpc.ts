@@ -1141,6 +1141,7 @@ export const trpc = {
         } | null;
         recommendedTemplate: ResumeTemplateShape | null;
         alternativeTemplates: ResumeTemplateShape[];
+        templateReasons: Record<string, TemplateReasonCode[]>;
         hasCache: boolean;
         latestCacheId: string | null;
         latestVersionId: string | null;
@@ -1184,7 +1185,11 @@ export const trpc = {
     listTemplates: (input?: { language?: 'ar' | 'en' }) =>
       trpcQuery<{ templates: ResumeTemplateShape[] }>('resume.listTemplates', input ?? {}),
     recommendTemplate: (input?: { overrideTargetRole?: string; language?: 'ar' | 'en' }) =>
-      trpcQuery<{ primary: ResumeTemplateShape; alternatives: ResumeTemplateShape[] }>(
+      trpcQuery<{
+        primary: ResumeTemplateShape;
+        alternatives: ResumeTemplateShape[];
+        reasons: Record<string, TemplateReasonCode[]>;
+      }>(
         'resume.recommendTemplate',
         input ?? {},
       ),
@@ -1242,8 +1247,11 @@ export const trpc = {
       trpcMutation<{ filename: string; mimeType: string; base64: string }>('resume.exportPdf', input),
     exportDocx: (input: { versionId: string }) =>
       trpcMutation<{ filename: string; mimeType: string; base64: string }>('resume.exportDocx', input),
-    exportJson: (input: { versionId: string }) =>
-      trpcMutation<{ filename: string; mimeType: string; base64: string }>('resume.exportJson', input),
+    diagnose: (input?: {
+      overrideTargetRole?: string;
+      language?: 'ar' | 'en';
+      upload?: { text: string; filename?: string };
+    }) => trpcMutation<ResumeDiagnosticShape>('resume.diagnose', input ?? {}),
     rescoreVersion: (input: { versionId: string }) =>
       trpcMutation<{ atsScore: number; atsBreakdown: ResumeAtsBreakdownShape }>('resume.rescoreVersion', input),
     history: (input?: { limit?: number }) =>
@@ -1642,6 +1650,41 @@ export type ResumeAtsBreakdownShape = {
   matched_keywords: string[];
   missing_keywords: string[];
   issues: string[];
+};
+
+// M3 — the deterministic reason codes recommendTemplate attaches per template.
+export type TemplateReasonCode =
+  | 'level-match'
+  | 'region-match'
+  | 'global-fallback'
+  | 'language-match'
+  | 'industry-boost';
+
+// M3 — internal target-profile benchmark (you vs ideal-for-role).
+export type TargetBenchmarkShape = {
+  you: number;
+  ideal: number;
+  gap: number;
+  level: string;
+  components: Array<{
+    key: 'keywords' | 'sections' | 'format' | 'quantified';
+    you: number;
+    ideal: number;
+    max: number;
+  }>;
+};
+
+// M3 — free ATS diagnostic result (0 tokens, deterministic).
+export type ResumeDiagnosticShape = {
+  source: 'linkedin' | 'upload';
+  atsScore: number;
+  atsBreakdown: ResumeAtsBreakdownShape;
+  expectedScore: number;
+  benchmark: TargetBenchmarkShape;
+  targetRole: string;
+  language: 'ar' | 'en';
+  diagnosticId: string;
+  isCacheHit: boolean;
 };
 
 export type ResumeShape = {

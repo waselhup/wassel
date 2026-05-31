@@ -197,20 +197,38 @@ function summarizeDebited(debited: DeductedBreakdown): 'bonus' | 'subscription' 
 // Template recommendation (Sprint 4 prompt — A06-style algorithm)
 // ─────────────────────────────────────────────
 
+/**
+ * The deterministic reason codes recommendTemplate attaches to each scored
+ * template. The UI maps these to localized copy ("اخترنا MIT لأن الدور تقني…").
+ * #24/#26: the ranking is algorithmic; the words around it are localized in the
+ * client, never authored by a model.
+ */
+export type TemplateReasonCode =
+  | 'level-match'
+  | 'region-match'
+  | 'global-fallback'
+  | 'language-match'
+  | 'industry-boost';
+
+export type ScoredTemplate = {
+  template: ResumeTemplate;
+  score: number;
+  reasons: TemplateReasonCode[];
+};
+
 export function recommendTemplate(
   profile: Pick<CareerProfile, 'level' | 'industry' | 'primary_language'> & { region?: 'saudi' | 'gcc' | 'global' },
   templates: ResumeTemplate[],
   language: 'ar' | 'en',
-): { primary: ResumeTemplate; alternatives: ResumeTemplate[] } {
+): { primary: ResumeTemplate; alternatives: ResumeTemplate[]; scored: ScoredTemplate[] } {
   const region = profile.region ?? (profile.primary_language === 'ar' ? 'saudi' : 'global');
   const industry = (profile.industry ?? '').toLowerCase();
 
-  type Scored = { template: ResumeTemplate; score: number; reasons: string[] };
-  const scored: Scored[] = templates
+  const scored: ScoredTemplate[] = templates
     .filter((t) => t.is_active && t.language_fit.includes(language))
     .map((t) => {
       let score = 0;
-      const reasons: string[] = [];
+      const reasons: TemplateReasonCode[] = [];
 
       if (t.level_fit.includes(profile.level)) {
         score += 40;
@@ -245,6 +263,9 @@ export function recommendTemplate(
   return {
     primary: scored[0].template,
     alternatives: scored.slice(1, 4).map((s) => s.template),
+    // Top-4 scored entries with reasons, so the UI can explain WHY the primary
+    // was chosen and what each alternative offers (M3 — surface reasons[]).
+    scored: scored.slice(0, 4),
   };
 }
 
@@ -253,10 +274,10 @@ export function recommendTemplate(
 // Keywords 40% + Sections 25% + Format 20% + Quantified 15%
 // ─────────────────────────────────────────────
 
-const ATS_REQUIRED_SECTIONS = ['summary', 'experience', 'education', 'skills'] as const;
+export const ATS_REQUIRED_SECTIONS = ['summary', 'experience', 'education', 'skills'] as const;
 const QUANTIFIED_RE = /(\d+(\.\d+)?\s*(%|٪)|\$\s*\d+|﷼\s*\d+|SAR\s*\d+|\d+x\s|\d+ years?|\d+ months?|\d+\+)/i;
 
-function derivedKeywords(targetRole: string, industry: string): string[] {
+export function derivedKeywords(targetRole: string, industry: string): string[] {
   const tokens = [
     ...targetRole.toLowerCase().split(/\s+/),
     ...industry.toLowerCase().split(/\s+/),
@@ -360,6 +381,96 @@ export function computeAtsScore(resume: Resume, targetRole: string, industry: st
 }
 
 // ─────────────────────────────────────────────
+// Target-profile benchmark (M3) — internal, honest, deterministic.
+//
+// Replaces the idea of a "market audit". We claim NO external market data
+// (#24): the "ideal target for this role" is a deterministic reference score
+// derived from what a complete, well-quantified resume for this seniority
+// would achieve on Wassel's OWN 4-component ATS algorithm (K40/S25/F20/Q15).
+//
+// Construction (transparent, reproducible — #26):
+//   - sections: a model resume has all 4 → full 25.
+//   - format:   a model resume is clean → full 20.
+//   - keywords: a model resume covers most expected role keywords. We use a
+//     seniority-scaled coverage ceiling (executives are expected to cover more
+//     of the role vocabulary than entry candidates), never 100% — even an
+//     ideal resume leaves keyword headroom, mirroring R10 ("never claim 100").
+//   - quantified: a model resume quantifies most but not all bullets.
+// The target is capped at TARGET_PROFILE_CAP so it always sits below a perfect
+// 100, and is ALWAYS ≥ the user's current score (a benchmark you've already
+// passed isn't a benchmark — we lift it to current+1 in that rare case).
+// ─────────────────────────────────────────────
+
+export const TARGET_PROFILE_CAP = 92;
+
+const LEVEL_KEYWORD_COVERAGE: Record<string, number> = {
+  entry: 0.7,
+  mid: 0.8,
+  senior: 0.85,
+  executive: 0.9,
+};
+const LEVEL_QUANTIFIED_COVERAGE: Record<string, number> = {
+  entry: 0.55,
+  mid: 0.65,
+  senior: 0.75,
+  executive: 0.8,
+};
+
+export type BenchmarkComponent = {
+  key: 'keywords' | 'sections' | 'format' | 'quantified';
+  you: number;
+  ideal: number;
+  max: number;
+};
+
+export type TargetProfileBenchmark = {
+  /** The user's current ATS total (echoed from the supplied breakdown). */
+  you: number;
+  /** The deterministic ideal-resume reference total for this role+level. */
+  ideal: number;
+  /** ideal − you, never negative. */
+  gap: number;
+  level: string;
+  /** Per-component you-vs-ideal so the UI can show where the gap sits. */
+  components: BenchmarkComponent[];
+};
+
+/**
+ * Compute the internal target-profile benchmark for a role at a seniority
+ * level, given the user's current ATS breakdown. Pure + deterministic.
+ */
+export function computeTargetProfileBenchmark(
+  currentBreakdown: AtsBreakdown,
+  currentTotal: number,
+  level: string,
+): TargetProfileBenchmark {
+  const kwCoverage = LEVEL_KEYWORD_COVERAGE[level] ?? 0.8;
+  const qCoverage = LEVEL_QUANTIFIED_COVERAGE[level] ?? 0.65;
+
+  const idealKeywords = Math.round(40 * kwCoverage);
+  const idealSections = 25; // a model resume has all required sections
+  const idealFormat = 20; // a model resume is ATS-clean
+  const idealQuantified = Math.round(15 * qCoverage);
+  const idealRaw = idealKeywords + idealSections + idealFormat + idealQuantified;
+  const ideal = Math.max(currentTotal + 1, Math.min(TARGET_PROFILE_CAP, idealRaw));
+
+  const components: BenchmarkComponent[] = [
+    { key: 'keywords', you: currentBreakdown.keywords, ideal: idealKeywords, max: 40 },
+    { key: 'sections', you: currentBreakdown.sections, ideal: idealSections, max: 25 },
+    { key: 'format', you: currentBreakdown.format, ideal: idealFormat, max: 20 },
+    { key: 'quantified', you: currentBreakdown.quantified, ideal: idealQuantified, max: 15 },
+  ];
+
+  return {
+    you: currentTotal,
+    ideal,
+    gap: Math.max(0, ideal - currentTotal),
+    level,
+    components,
+  };
+}
+
+// ─────────────────────────────────────────────
 // Template loader
 // ─────────────────────────────────────────────
 
@@ -387,6 +498,11 @@ export type PreflightResult = {
   profile: Pick<CareerProfile, 'target_role' | 'industry' | 'level' | 'linkedin_url' | 'primary_language'> | null;
   recommendedTemplate: ResumeTemplate | null;
   alternativeTemplates: ResumeTemplate[];
+  /**
+   * Per-template reason codes (M3 — surface recommendTemplate's reasons[]).
+   * Keyed by template id; the UI maps the codes to localized "why" copy.
+   */
+  templateReasons: Record<string, TemplateReasonCode[]>;
   hasCache: boolean;
   latestCacheId: string | null;
   latestVersionId: string | null;
@@ -416,6 +532,7 @@ export async function preflight(
       profile: null,
       recommendedTemplate: null,
       alternativeTemplates: [],
+      templateReasons: {},
       hasCache: false,
       latestCacheId: null,
       latestVersionId: null,
@@ -427,7 +544,9 @@ export async function preflight(
   }
 
   const templates = await loadTemplates(supabase, language);
-  const { primary, alternatives } = recommendTemplate(profile, templates, language);
+  const { primary, alternatives, scored } = recommendTemplate(profile, templates, language);
+  const templateReasons: Record<string, TemplateReasonCode[]> = {};
+  for (const s of scored) templateReasons[s.template.id] = s.reasons;
 
   const { data: latest } = await supabase
     .from('resume_cache')
@@ -463,6 +582,7 @@ export async function preflight(
     },
     recommendedTemplate: primary,
     alternativeTemplates: alternatives,
+    templateReasons,
     hasCache: Boolean(latest),
     latestCacheId: latest?.id ?? null,
     latestVersionId,
