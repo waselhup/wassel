@@ -270,6 +270,9 @@ async function fulfillPayment(supabase: any, payment: any): Promise<void> {
         .from('payment_transactions')
         .update({ wallet_credited: 'topup', tokens_credited: qty })
         .eq('id', payment.id);
+
+      // Notify: top-up tokens added (caps/dedup enforced in the RPC).
+      await notifyPaymentSucceeded(supabase, user_id, qty);
     }
   } else if (type === 'product') {
     const qty = Number(metadata?.tokens_granted ?? 0);
@@ -378,6 +381,10 @@ async function fulfillSubscription(supabase: any, userId: string, payment: any):
         },
       })
       .eq('id', payment.id);
+
+    // Notify: subscription tokens granted (caps/dedup enforced in the RPC).
+    const subTokens = Number(r.tokens_granted ?? tokensGranted ?? 0);
+    await notifyPaymentSucceeded(supabase, userId, subTokens + bonusGranted);
   }
 }
 
@@ -447,4 +454,38 @@ async function grantTokens(
     description: `Tokens granted from ${source}`,
     metadata: { source, payment_id: paymentId },
   });
+}
+
+/**
+ * Fire the `payment_succeeded` notification (in-app + email) after a payment is
+ * fulfilled. Best-effort: failures are logged, never thrown — a notification
+ * problem must not fail the webhook (the payment already succeeded). Frequency
+ * caps, opt-outs and smart dedup are enforced inside enqueue_notification().
+ */
+async function notifyPaymentSucceeded(
+  supabase: any,
+  userId: string,
+  tokens: number,
+): Promise<void> {
+  if (!userId || !(tokens > 0)) return;
+  try {
+    const { enqueueNotification } = await import('./notification-engine');
+    await enqueueNotification(supabase, {
+      userId,
+      templateKey: 'payment_succeeded',
+      category:    'system',
+      channel:     'both',
+      titleAr:     'تم الدفع بنجاح',
+      titleEn:     'Payment successful',
+      bodyAr:      `تم إضافة ${tokens} توكن إلى رصيدك.`,
+      bodyEn:      `${tokens} tokens have been added to your balance.`,
+      ctaLabelAr:  'عرض السجل',
+      ctaLabelEn:  'View history',
+      ctaUrl:      'https://wasselhub.com/v2/billing',
+      priority:    'normal',
+      metadata:    { tokens },
+    });
+  } catch (e: any) {
+    console.warn('[muyassar-webhook] payment_succeeded notification failed (non-fatal):', e?.message || String(e));
+  }
 }

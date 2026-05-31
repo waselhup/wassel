@@ -39,22 +39,22 @@ function VisualPanel() {
       <div className="relative flex h-full flex-col justify-between p-12">
         {/* Brand quote / value prop */}
         <div className="max-w-[440px]">
-          <Eyebrow className="mb-4 block !text-teal-700">منصة عربية ذكية لمحترفي LinkedIn</Eyebrow>
+          <Eyebrow className="mb-4 block !text-teal-700">مساعدك المهني</Eyebrow>
           <p className="font-ar text-[26px] font-bold leading-[1.25] text-v2-ink">
-            حوّل لينكدإن إلى
+            من وضعك الحالي
             <br />
-            <span className="font-semibold text-teal-700">قناة فرص</span>
+            <span className="font-semibold text-teal-700">إلى هدفك المهني</span>
           </p>
           <p className="mt-3 font-ar text-[14px] leading-relaxed text-v2-body">
-            تحليل، صياغة، وسيرة ذاتية — كلها بأساليب ونبرات تناسب أهدافك
+            مساعد واحد يقرأ وضعك، يحدّد خطوتك التالية، ويرافقك نحو هدفك
           </p>
         </div>
 
         {/* Mock dashboard preview card */}
         <div className="mx-auto w-full max-w-[440px] rounded-v2-lg border border-v2-line bg-v2-surface p-5 shadow-lift">
           <div className="mb-3 flex items-center justify-between">
-            <Eyebrow>RADAR · SCORE</Eyebrow>
-            <span className="rounded-full bg-teal-50 px-2 py-0.5 font-en text-[10px] font-bold text-teal-700">LIVE</span>
+            <Eyebrow>الجاهزية المهنية</Eyebrow>
+            <span className="rounded-full bg-teal-50 px-2 py-0.5 font-ar text-[10px] font-bold text-teal-700">مباشر</span>
           </div>
           <div className="flex items-baseline gap-2">
             <NumDisplay className="text-[40px] font-bold leading-none text-v2-ink">88</NumDisplay>
@@ -65,9 +65,9 @@ function VisualPanel() {
           </div>
           <ul className="mt-4 m-0 flex list-none flex-col gap-2 p-0">
             {[
-              'العنوان المهني واضح ومختصر',
-              'المهارات تتطابق مع الدور المستهدف',
-              'منشورات نشطة آخر 30 يوم',
+              'حضورك المهني واضح ومتّسق',
+              'مهاراتك تتطابق مع هدفك',
+              'خطوتك التالية محدّدة وجاهزة',
             ].map((line) => (
               <li key={line} className="flex items-start gap-2 font-ar text-[12px] text-v2-body">
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true" className="mt-0.5 shrink-0">
@@ -215,8 +215,8 @@ function Auth() {
             </h1>
             <p className="mt-2 mb-6 font-ar leading-relaxed text-v2-body text-[13px] lg:mb-8 lg:text-[14px]">
               {isSignup
-                ? 'أنشئ حساباً مجانياً · جرّب أولى ميزات وصل'
-                : 'سجّل الدخول لمتابعة العمل'}
+                ? 'أنشئ حسابك · ابدأ بتشخيص فوري لوضعك المهني'
+                : 'سجّل الدخول لمتابعة رحلتك'}
             </p>
 
             <div className="mb-6 grid grid-cols-2 gap-1 rounded-v2-md border border-v2-line bg-v2-canvas-2 p-1 lg:mb-8">

@@ -32,8 +32,8 @@
     "admin": "Admin"
   },
   "hero": {
-    "title": "Multiply Your Job Opportunities Effortlessly",
-    "subtitle": "Wassel isn’t just a platform — it’s your strategic partner. We help you showcase your skills professionally and automate your outreach, ensuring the world sees your true value",
+    "title": "From where you are to your career goal",
+    "subtitle": "Wassel isn’t just a platform — it’s your career copilot. We help you read your situation, bring your value forward, and guide you step by step toward your goal",
     "cta_primary": "Explore now",
     "cta_primary_badge": "Explore now · Try Wassel's first features",
     "cta_secondary": "Watch Demo",
@@ -54,7 +54,7 @@
         "description": "Above average"
       }
     ],
-    "title2": "Wassel: Professional Networking Automation at Your Fingertips"
+    "title2": "Wassel: Your career copilot at your fingertips"
   },
   "features": {
     "title": "Three Phases to Career Success",
@@ -1914,7 +1914,7 @@
     },
     "hero": {
       "title": "An Intelligent Career Platform for Professionals",
-      "subtitle": "The central hub for your LinkedIn presence",
+      "subtitle": "Your career copilot, from where you are to your goal",
       "cta_primary": "Explore now",
       "cta_signin": "Sign in"
     },
@@ -2091,30 +2091,30 @@
       "signup": "Sign up"
     },
     "hero": {
-      "eyebrow": "Smart Arabic platform for LinkedIn professionals",
-      "headlineLine1": "Turn LinkedIn into an opportunity channel",
-      "headlineLine2": "not just a profile",
+      "eyebrow": "Your career copilot",
+      "headlineLine1": "From where you are",
+      "headlineLine2": "to your career goal",
       "headlineHighlight": "",
-      "subtitle": "Wassel analyzes your profile and suggests content and edits that help you attract more career opportunities",
-      "ctaPrimary": "Explore now",
+      "subtitle": "Wassel is a career copilot that reads your situation, names your next step, and guides you toward your goal — not separate tools, but one guided journey",
+      "ctaPrimary": "Start your journey",
       "ctaSecondary": "Sign in",
       "signIn": "Sign in",
-      "freeTokensSuffix": "🎁 Try Wassel's first features"
+      "freeTokensSuffix": "🎁 Start with an instant read of where you stand"
     },
     "features": {
-      "eyebrow": "The product",
-      "heading": "Three connected tools\nOne goal: more opportunities",
+      "eyebrow": "How Wassel guides you",
+      "heading": "One copilot that leads you\nstep by step to your goal",
       "radar": {
-        "title": "Analyze your profile",
-        "description": "Discover strengths and improvement opportunities in your LinkedIn profile to get more opportunities"
+        "title": "Reads your situation",
+        "description": "Assesses your professional presence, surfaces your strengths and gaps, and shows where you stand today against your goal"
       },
       "studio": {
-        "title": "Create LinkedIn posts",
-        "description": "Create professional posts with different styles and tones that suit your audience and goals"
+        "title": "Shapes your words",
+        "description": "Helps you craft professional content in styles and tones that fit your audience and your goal"
       },
       "cv": {
-        "title": "Pass ATS systems with ease",
-        "description": "Create a professional ATS-compatible resume using Harvard and MIT templates"
+        "title": "Prepares your resume",
+        "description": "Builds an ATS-ready resume with professional templates that bring your value forward"
       }
     },
     "pricingTeaser": {
@@ -2124,7 +2124,7 @@
       "cta": "See pricing →"
     },
     "footer": {
-      "tagline": "A smart platform that helps you build a stronger professional presence on LinkedIn",
+      "tagline": "Your career copilot — guiding you from where you are to your goal",
       "commercialRegistrationLabel": "Commercial registration",
       "commercialRegistrationShort": "CR",
       "locationLabel": "Location",

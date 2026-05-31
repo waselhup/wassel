@@ -16,11 +16,11 @@ const FEATURE_INFO: Record<string, FeatureInfo> = {
   campaigns: {
     icon: Send,
     titleAr: 'التواصل المهني قريباً',
-    titleEn: 'Smart outreach coming soon',
+    titleEn: 'Professional outreach coming soon',
     descAr:
-      'نعمل على ميزة متقدّمة لأتمتة التواصل المهني على LinkedIn بالذكاء الاصطناعي — مع احترام كامل لحدود المنصة وبجودة محادثات حقيقية',
+      'نعمل على ميزة تساعدك على صياغة رسائل تواصل مهني تناسب هدفك ونبرتك — كلمات تكتبها أنت وترسلها بنفسك، بجودة محادثة حقيقية',
     descEn:
-      'We are crafting a thoughtful AI-powered outreach experience — one that respects platform limits and reads like a real conversation.',
+      'We are crafting a feature that helps you compose professional outreach messages that fit your goal and tone — words you write and send yourself, with the quality of a real conversation.',
     eta: 'Q3 2026',
   },
 };
