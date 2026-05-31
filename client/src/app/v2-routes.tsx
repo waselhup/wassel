@@ -38,6 +38,7 @@ const Profile = lazy(() => import('@/pages/v2/Profile'));
 // tRPC/business logic but render inside the V2 ProtectedShell chrome.
 const CVBuilder = lazy(() => import('@/pages/v2/CVBuilder'));
 const CVPreflight = lazy(() => import('@/pages/v2/CVPreflight'));
+const CVDiagnostic = lazy(() => import('@/pages/v2/CVDiagnostic'));
 const CVBuilding = lazy(() => import('@/pages/v2/CVBuilding'));
 const CVEditor = lazy(() => import('@/pages/v2/CVEditor'));
 const AdminPanel = lazy(() => import('@/pages/v2/AdminPanel'));
@@ -328,6 +329,7 @@ function V2Routes(): ReactElement | null {
   const [matchAnalyzeResult] = useRoute('/v2/analyze/result/:id');
   const [matchCvs] = useRoute('/v2/cvs');
   const [matchCvsNew] = useRoute('/v2/cvs/new');
+  const [matchCvsDiagnose] = useRoute('/v2/cvs/diagnose');
   const [matchCvsBuilding] = useRoute('/v2/cvs/building');
   const [matchCvsEditor] = useRoute('/v2/cvs/:id');
   const [matchPosts] = useRoute('/v2/posts');
@@ -428,6 +430,9 @@ function V2Routes(): ReactElement | null {
   // 'new' isn't treated as a version id.
   if (matchCvsNew) {
     return <ProtectedShell><Suspense fallback={<V2Loader />}><CVPreflight /></Suspense></ProtectedShell>;
+  }
+  if (matchCvsDiagnose) {
+    return <ProtectedShell><Suspense fallback={<V2Loader />}><CVDiagnostic /></Suspense></ProtectedShell>;
   }
   if (matchCvsBuilding) {
     return <ProtectedShell><Suspense fallback={<V2Loader />}><CVBuilding /></Suspense></ProtectedShell>;

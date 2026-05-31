@@ -19,17 +19,18 @@ import {
   type Resume,
   type AtsScoreResult,
 } from '../lib/resume-engine';
-import { exportToPdf, exportToDocx, exportToJson } from '../lib/resume-export';
+import { exportToPdf, exportToDocx } from '../lib/resume-export';
+import { runDiagnostic } from '../lib/resume-diagnostic';
 import { createSectionOverride, logActivity } from '../lib/career-profile';
 import { getCareerProfileWithOverrides } from '../lib/career-profile';
 
 /**
- * Resume v2 tRPC router — 15 endpoints.
+ * Resume v2 tRPC router.
  *
  * Read: preflight, listVersions, getVersion, getCached, listTemplates,
  *       recommendTemplate, history
- * Write: build, createNewVersion, refine, archive, restore,
- *        exportPdf, exportDocx, exportJson
+ * Write: diagnose (free, 0 tokens), build, createNewVersion, refine, archive,
+ *        restore, exportPdf, exportDocx
  *
  * All endpoints are protectedProcedure (user must be authenticated).
  */
@@ -201,12 +202,58 @@ export const resumeRouter = router({
         const profile = await getCareerProfileWithOverrides(ctx.supabase, ctx.user.id, 'resume');
         if (!profile) throw new ResumeError('NO_CAREER_PROFILE', 'Career profile missing.');
         const templates = await loadTemplates(ctx.supabase, language);
-        const { primary, alternatives } = recommendTemplate(
+        const { primary, alternatives, scored } = recommendTemplate(
           { ...profile, ...(input?.overrideTargetRole ? { target_role: input.overrideTargetRole } : {}) },
           templates,
           language,
         );
-        return { primary, alternatives };
+        // Surface reasons[] so the UI can explain the pick (M3 — #24/#26).
+        const reasons: Record<string, string[]> = {};
+        for (const s of scored) reasons[s.template.id] = s.reasons;
+        return { primary, alternatives, reasons };
+      } catch (err) {
+        throw resumeErrorToTrpc(err);
+      }
+    }),
+
+  /**
+   * FREE ATS diagnostic (0 tokens) — M3 "Outputs".
+   *
+   * Two entry paths:
+   *   B) no upload → scores the user's LinkedIn profile as-if a resume.
+   *   A) upload    → the client extracts CV text (document.parse) and posts it.
+   * Returns the 4-component ATS breakdown + current→expected projection + the
+   * internal target-profile benchmark, all deterministic (#26). The paid 179
+   * build stays the locked output — this screen sells the points, not a resume.
+   * It is a mutation because it scrapes + persists a free-lifetime cache row,
+   * but it never deducts (0 tokens, no refund path).
+   */
+  diagnose: protectedProcedure
+    .input(z.object({
+      overrideTargetRole: z.string().trim().min(1).max(120).optional(),
+      language: LANGUAGE.optional(),
+      upload: z.object({
+        text: z.string().min(1).max(120000),
+        filename: z.string().max(255).optional(),
+      }).optional(),
+    }).optional())
+    .mutation(async ({ ctx, input }) => {
+      try {
+        const out = await runDiagnostic(ctx.supabase, {
+          userId: ctx.user.id,
+          language: input?.language ?? 'ar',
+          overrideTargetRole: input?.overrideTargetRole,
+          upload: input?.upload,
+        });
+        await logActivity(ctx.supabase, ctx.user.id, 'resume.diagnose', out.diagnosticId, {
+          source: out.source,
+          ats_score: out.atsScore,
+          expected_score: out.expectedScore,
+          target_role: out.targetRole,
+          is_cache_hit: out.isCacheHit,
+          tokens_charged: 0,
+        });
+        return out;
       } catch (err) {
         throw resumeErrorToTrpc(err);
       }
@@ -393,21 +440,6 @@ export const resumeRouter = router({
         filename: result.filename + '.docx',
         mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         base64: Buffer.from(bytes).toString('base64'),
-      };
-    }),
-
-  /**
-   * Export JSON — 0 tokens.
-   */
-  exportJson: protectedProcedure
-    .input(z.object({ versionId: z.string().uuid() }))
-    .mutation(async ({ ctx, input }) => {
-      const result = await getCachedForVersion(ctx, input.versionId);
-      const json = exportToJson(result.resume);
-      return {
-        filename: result.filename + '.json',
-        mimeType: 'application/json',
-        base64: Buffer.from(json, 'utf8').toString('base64'),
       };
     }),
 

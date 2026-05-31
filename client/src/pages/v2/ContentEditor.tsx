@@ -389,7 +389,7 @@ export default function ContentEditor() {
                   <Eyebrow>{isAr ? 'تحسينات سريعة' : 'Quick refinements'}</Eyebrow>
                   <span className="font-ar text-[11px] text-v2-dim">
                     {remainingFree > 0
-                      ? (isAr ? `${remainingFree} من 5 مجانية` : `${remainingFree} of 5 free`)
+                      ? (isAr ? `${remainingFree} من 5 مشمولة` : `${remainingFree} of 5 included`)
                       : (isAr ? '5 توكنات/تحسين' : '5 tokens / refinement')}
                   </span>
                 </div>

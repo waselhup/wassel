@@ -16,7 +16,7 @@ import { useLocation } from 'wouter';
 import { useTranslation } from 'react-i18next';
 import {
   FileText, Briefcase, Link as LinkIcon, Sparkles, Palette,
-  ChevronRight,
+  ChevronRight, Gauge,
 } from 'lucide-react';
 import Phone from '@/components/v2/Phone';
 import Topbar from '@/components/v2/Topbar';
@@ -28,9 +28,32 @@ import Input from '@/components/v2/Input';
 import Skeleton from '@/components/v2/Skeleton';
 import NumDisplay from '@/components/v2/NumDisplay';
 import ErrorBanner from '@/components/v2/ErrorBanner';
-import { trpc, type ResumeTemplateShape } from '@/lib/trpc';
+import { trpc, type ResumeTemplateShape, type TemplateReasonCode } from '@/lib/trpc';
 
 type PreflightShape = Awaited<ReturnType<typeof trpc.resume.preflight>>;
+
+// M3 — turn recommendTemplate's deterministic reason codes into one localized
+// "why we chose this" line. The ranking is algorithmic (#26); only the wording
+// is localized here, never authored by a model (#24).
+function reasonText(codes: TemplateReasonCode[] | undefined, templateId: string, isAr: boolean): string {
+  if (!codes || codes.length === 0) return '';
+  const isMit = templateId === 'mit_technical';
+  const parts: string[] = [];
+  if (codes.includes('industry-boost')) {
+    parts.push(isAr ? 'لأن دورك تقني' : 'because your role is technical');
+  }
+  if (codes.includes('level-match')) {
+    parts.push(isAr ? 'يناسب مستواك المهني' : 'it fits your seniority');
+  }
+  if (codes.includes('region-match')) {
+    parts.push(isAr ? 'ومناسب لسوقك' : 'and suits your market');
+  } else if (codes.includes('global-fallback')) {
+    parts.push(isAr ? 'وبمعايير عالمية' : 'with a global standard');
+  }
+  const name = isMit ? (isAr ? 'MIT' : 'MIT') : (isAr ? 'هارفارد' : 'Harvard');
+  const lead = isAr ? `اخترنا ${name} ` : `We chose ${name} `;
+  return lead + parts.join(isAr ? '، ' : ', ');
+}
 
 export default function CVPreflight() {
   const { t, i18n } = useTranslation();
@@ -258,6 +281,12 @@ export default function CVPreflight() {
                 <p className="mt-1 font-ar text-[13px] text-v2-body">
                   {isAr ? (tmpl.description_ar ?? '') : (tmpl.description_en ?? '')}
                 </p>
+                {/* M3 — surface recommendTemplate's reasons[] (#24 transparency). */}
+                {reasonText(pre.templateReasons?.[tmpl.id], tmpl.id, isAr) && (
+                  <p className="mt-1.5 font-ar text-[12px] font-medium text-teal-700">
+                    {reasonText(pre.templateReasons?.[tmpl.id], tmpl.id, isAr)}
+                  </p>
+                )}
               </div>
               <button
                 type="button"
@@ -285,28 +314,37 @@ export default function CVPreflight() {
           </Card>
         )}
 
-        {/* Primary CTA */}
+        {/* Primary CTA — M3: lead with the FREE ATS diagnostic. The diagnostic
+            sells the points; the locked 179 build is the output behind it. */}
         <div className="flex flex-col gap-2.5">
           {pre.hasCache && pre.latestVersionId ? (
             <>
               <Button variant="primary" size="lg" fullWidth leadingIcon={<Sparkles size={18} />} onClick={viewCached}>
                 {t('resume.preflight.viewCached')}
               </Button>
-              <Button variant="secondary" size="md" fullWidth leadingIcon={<FileText size={16} />} onClick={() => startBuild()} disabled={!selectedTemplateId}>
+              <Button variant="secondary" size="md" fullWidth leadingIcon={<Gauge size={16} />} onClick={() => navigate('/v2/cvs/diagnose')}>
+                {isAr ? 'تشخيص ATS مجاني' : 'Free ATS diagnostic'}
+              </Button>
+              <Button variant="ghost" size="md" fullWidth leadingIcon={<FileText size={16} />} onClick={() => startBuild()} disabled={!selectedTemplateId}>
                 {isAr ? `سيرة جديدة (179 توكن)` : `Fresh build (179 tokens)`}
               </Button>
             </>
           ) : (
-            <Button variant="primary" size="lg" fullWidth leadingIcon={<FileText size={18} />} onClick={() => startBuild()} disabled={!selectedTemplateId}>
-              {isAr
-                ? `ابنِ السيرة (${pre.estimatedCost} توكن)`
-                : `Build Resume (${pre.estimatedCost} tokens)`}
-            </Button>
+            <>
+              <Button variant="primary" size="lg" fullWidth leadingIcon={<Gauge size={18} />} onClick={() => navigate('/v2/cvs/diagnose')}>
+                {isAr ? 'شخّص سيرتك مجاناً (0 توكن)' : 'Diagnose your resume — free (0 tokens)'}
+              </Button>
+              <Button variant="secondary" size="md" fullWidth leadingIcon={<FileText size={16} />} onClick={() => startBuild()} disabled={!selectedTemplateId}>
+                {isAr
+                  ? `ابنِ السيرة مباشرة (${pre.estimatedCost} توكن)`
+                  : `Build directly (${pre.estimatedCost} tokens)`}
+              </Button>
+            </>
           )}
           <p className="text-center font-ar text-[12px] text-v2-mute">
             {isAr
-              ? <><NumDisplay>{pre.estimatedCost || 179}</NumDisplay>{' '}توكن — تخصم بعد نجاح البناء فقط</>
-              : <><NumDisplay>{pre.estimatedCost || 179}</NumDisplay>{' '}tokens — only charged on successful build</>}
+              ? 'التشخيص مجاني — البناء الكامل يُخصم بعد نجاحه فقط'
+              : 'The diagnostic is free — the full build is charged only on success'}
           </p>
         </div>
 

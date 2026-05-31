@@ -23,7 +23,7 @@ import { useTranslation } from 'react-i18next';
 import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
 import {
   ArrowLeft, Check, RefreshCw, Archive,
-  FileText, FileDown, Code, Sparkles, Zap, Database, X, ChevronDown, ChevronUp,
+  FileText, FileDown, Sparkles, Zap, Database, X, ChevronDown, ChevronUp,
   Briefcase, Award, GraduationCap, Languages,
 } from 'lucide-react';
 import Phone from '@/components/v2/Phone';
@@ -69,7 +69,7 @@ export default function CVEditor() {
   const [refinementsUsed, setRefinementsUsed] = useState(0);
 
   const [refining, setRefining] = useState<string | null>(null);
-  const [exporting, setExporting] = useState<'pdf' | 'docx' | 'json' | null>(null);
+  const [exporting, setExporting] = useState<'pdf' | 'docx' | null>(null);
   const [rescoring, setRescoring] = useState(false);
   const [archiving, setArchiving] = useState(false);
   const [atsModalOpen, setAtsModalOpen] = useState(false);
@@ -158,13 +158,11 @@ export default function CVEditor() {
     }
   }
 
-  async function handleExport(format: 'pdf' | 'docx' | 'json') {
+  async function handleExport(format: 'pdf' | 'docx') {
     if (!versionId) return;
     setExporting(format);
     try {
-      const fn = format === 'pdf' ? trpc.resume.exportPdf
-               : format === 'docx' ? trpc.resume.exportDocx
-               : trpc.resume.exportJson;
+      const fn = format === 'pdf' ? trpc.resume.exportPdf : trpc.resume.exportDocx;
       const out = await fn({ versionId });
       const bytes = Uint8Array.from(atob(out.base64), (c) => c.charCodeAt(0));
       const blob = new Blob([bytes], { type: out.mimeType });
@@ -312,9 +310,11 @@ export default function CVEditor() {
         </div>
 
         <div className="mt-5 lg:grid lg:grid-cols-12 lg:gap-6">
-          {/* LEFT: Resume preview */}
+          {/* LEFT: Resume preview — renders in the chosen template's identity
+              (Harvard classic vs MIT modern) so the on-screen preview matches
+              the exported PDF/DOCX (M3: Harvard ≠ MIT). */}
           <div className="lg:col-span-7">
-            <ResumePreview resume={resume} isAr={isAr} />
+            <ResumePreview resume={resume} isAr={isAr} templateId={version.template_id} />
           </div>
 
           {/* RIGHT: ATS + chips + exports */}
@@ -339,7 +339,7 @@ export default function CVEditor() {
                   <Eyebrow>{isAr ? 'تحسينات سريعة' : 'Quick Refinements'}</Eyebrow>
                   <span className="font-ar text-[11px] font-semibold text-v2-mute">
                     {remainingFree > 0
-                      ? (isAr ? <><NumDisplay>{remainingFree}</NumDisplay>{' '}من{' '}5{' '}مجانية</> : <><NumDisplay>{remainingFree}</NumDisplay>/5 free</>)
+                      ? (isAr ? <><NumDisplay>{remainingFree}</NumDisplay>{' '}من{' '}5{' '}مشمولة</> : <><NumDisplay>{remainingFree}</NumDisplay>/5 included</>)
                       : (isAr ? <>5{' '}توكن لكل تعديل</> : <>5 tokens each</>)}
                   </span>
                 </div>
@@ -382,10 +382,6 @@ export default function CVEditor() {
                 <Button variant="secondary" size="sm" leadingIcon={<FileText size={14} />}
                   onClick={() => handleExport('docx')} disabled={!!exporting || !data.cache}>
                   {exporting === 'docx' ? '…' : 'Word'}
-                </Button>
-                <Button variant="secondary" size="sm" leadingIcon={<Code size={14} />}
-                  onClick={() => handleExport('json')} disabled={!!exporting || !data.cache}>
-                  {exporting === 'json' ? '…' : 'JSON'}
                 </Button>
               </div>
               <p className="mt-3 font-ar text-[11px] text-v2-mute">
@@ -675,27 +671,37 @@ function BreakdownRow({ component, isAr }: { component: AtsComponent; isAr: bool
   );
 }
 
-function ResumePreview({ resume, isAr }: { resume: ResumeShape; isAr: boolean }) {
+function ResumePreview({ resume, isAr, templateId }: { resume: ResumeShape; isAr: boolean; templateId?: string }) {
   const [openExp, setOpenExp] = useState<Record<number, boolean>>({});
+  // M3: the preview adopts the chosen template's identity so it matches the
+  // exported PDF/DOCX. MIT (modern) = left accent rule + maroon labels +
+  // company-first lines + mono dates; Harvard (classic) = centered serif-ish
+  // header + underlined labels + role-first lines.
+  const isMit = templateId === 'mit_technical';
 
   return (
     <Card padding="lg" radius="lg" elevated>
-      <div className="border-b border-v2-line pb-3" dir={isAr ? 'rtl' : 'ltr'}>
-        <h2 className="font-ar text-[22px] font-bold text-v2-ink">{resume.header.name}</h2>
-        <p className="mt-1 font-ar text-[14px] font-semibold text-v2-body">{resume.header.title}</p>
-        <p className="mt-1 font-en text-[12px] text-v2-mute">
+      <div
+        className={isMit
+          ? 'border-b-2 border-[#6b1f1f] pb-3 text-start'
+          : 'border-b border-v2-line pb-3 text-center'}
+        dir={isAr ? 'rtl' : 'ltr'}
+      >
+        <h2 className={`font-ar font-bold text-v2-ink ${isMit ? 'text-[21px]' : 'text-[22px] tracking-wide'}`}>{resume.header.name}</h2>
+        <p className={`mt-1 font-ar text-[14px] font-semibold ${isMit ? 'text-[#6b1f1f]' : 'text-v2-body'}`}>{resume.header.title}</p>
+        <p className={`mt-1 text-[12px] text-v2-mute ${isMit ? 'font-mono' : 'font-en'}`}>
           {[resume.header.email, resume.header.phone, resume.header.location].filter(Boolean).join(' · ')}
         </p>
       </div>
 
       {resume.summary && (
-        <Section label={isAr ? 'الملخص' : 'Summary'}>
+        <Section label={isAr ? 'الملخص' : 'Summary'} mit={isMit}>
           <p className="font-ar text-[13px] leading-relaxed text-v2-body">{resume.summary}</p>
         </Section>
       )}
 
       {resume.experience.length > 0 && (
-        <Section label={isAr ? 'الخبرة' : 'Experience'} icon={<Briefcase size={14} />}>
+        <Section label={isAr ? 'الخبرة' : 'Experience'} icon={<Briefcase size={14} className={isMit ? 'text-[#6b1f1f]' : ''} />} mit={isMit}>
           {resume.experience.map((exp, idx) => (
             <div key={idx} className="mb-3 last:mb-0">
               <button
@@ -704,10 +710,17 @@ function ResumePreview({ resume, isAr }: { resume: ResumeShape; isAr: boolean })
                 className="flex w-full items-start justify-between gap-2 text-start"
               >
                 <div className="min-w-0 flex-1">
-                  <p className="font-ar text-[13px] font-semibold text-v2-ink">
-                    {exp.role} — <span className="text-v2-body">{exp.company}</span>
-                  </p>
-                  <p className="font-en text-[11px] text-v2-mute">
+                  {isMit ? (
+                    <>
+                      <p className="font-ar text-[13px] font-bold text-v2-ink">{exp.company}</p>
+                      <p className="font-ar text-[12px] italic text-v2-body">{exp.role}</p>
+                    </>
+                  ) : (
+                    <p className="font-ar text-[13px] font-semibold text-v2-ink">
+                      {exp.role} — <span className="text-v2-body">{exp.company}</span>
+                    </p>
+                  )}
+                  <p className={`text-[11px] text-v2-mute ${isMit ? 'font-mono' : 'font-en'}`}>
                     <NumDisplay>{exp.start}</NumDisplay> – <NumDisplay>{exp.end}</NumDisplay>
                     {exp.location ? ` · ${exp.location}` : ''}
                   </p>
@@ -725,7 +738,7 @@ function ResumePreview({ resume, isAr }: { resume: ResumeShape; isAr: boolean })
       )}
 
       {resume.education.length > 0 && (
-        <Section label={isAr ? 'التعليم' : 'Education'} icon={<GraduationCap size={14} />}>
+        <Section label={isAr ? 'التعليم' : 'Education'} icon={<GraduationCap size={14} className={isMit ? 'text-[#6b1f1f]' : ''} />} mit={isMit}>
           <ul className="space-y-1.5 font-ar text-[12px]">
             {resume.education.map((ed, i) => (
               <li key={i}>
@@ -739,22 +752,30 @@ function ResumePreview({ resume, isAr }: { resume: ResumeShape; isAr: boolean })
       )}
 
       {(resume.skills.hard.length > 0 || resume.skills.soft.length > 0) && (
-        <Section label={isAr ? 'المهارات' : 'Skills'} icon={<Award size={14} />}>
-          {resume.skills.hard.length > 0 && (
-            <p className="font-ar text-[12px] text-v2-body">
-              <span className="font-semibold">{isAr ? 'تقنية:' : 'Hard:'}</span> {resume.skills.hard.join(', ')}
+        <Section label={isAr ? 'المهارات' : 'Skills'} icon={<Award size={14} className={isMit ? 'text-[#6b1f1f]' : ''} />} mit={isMit}>
+          {isMit ? (
+            <p className="font-mono text-[11px] text-v2-body">
+              {[...resume.skills.hard, ...resume.skills.soft].join('  ·  ')}
             </p>
-          )}
-          {resume.skills.soft.length > 0 && (
-            <p className="mt-1 font-ar text-[12px] text-v2-body">
-              <span className="font-semibold">{isAr ? 'ناعمة:' : 'Soft:'}</span> {resume.skills.soft.join(', ')}
-            </p>
+          ) : (
+            <>
+              {resume.skills.hard.length > 0 && (
+                <p className="font-ar text-[12px] text-v2-body">
+                  <span className="font-semibold">{isAr ? 'تقنية:' : 'Hard:'}</span> {resume.skills.hard.join(', ')}
+                </p>
+              )}
+              {resume.skills.soft.length > 0 && (
+                <p className="mt-1 font-ar text-[12px] text-v2-body">
+                  <span className="font-semibold">{isAr ? 'ناعمة:' : 'Soft:'}</span> {resume.skills.soft.join(', ')}
+                </p>
+              )}
+            </>
           )}
         </Section>
       )}
 
       {resume.certifications.length > 0 && (
-        <Section label={isAr ? 'الشهادات' : 'Certifications'} icon={<Check size={14} />}>
+        <Section label={isAr ? 'الشهادات' : 'Certifications'} icon={<Check size={14} className={isMit ? 'text-[#6b1f1f]' : ''} />} mit={isMit}>
           <ul className="space-y-1 font-ar text-[12px] text-v2-body">
             {resume.certifications.map((c, i) => (
               <li key={i}>
@@ -767,7 +788,7 @@ function ResumePreview({ resume, isAr }: { resume: ResumeShape; isAr: boolean })
       )}
 
       {resume.languages.length > 0 && (
-        <Section label={isAr ? 'اللغات' : 'Languages'} icon={<Languages size={14} />}>
+        <Section label={isAr ? 'اللغات' : 'Languages'} icon={<Languages size={14} className={isMit ? 'text-[#6b1f1f]' : ''} />} mit={isMit}>
           <p className="font-ar text-[12px] text-v2-body">
             {resume.languages.map((l) => `${l.name} (${l.proficiency})`).join(' · ')}
           </p>
@@ -777,12 +798,12 @@ function ResumePreview({ resume, isAr }: { resume: ResumeShape; isAr: boolean })
   );
 }
 
-function Section({ label, children, icon }: { label: string; children: React.ReactNode; icon?: React.ReactNode }) {
+function Section({ label, children, icon, mit }: { label: string; children: React.ReactNode; icon?: React.ReactNode; mit?: boolean }) {
   return (
     <div className="mt-4">
-      <div className="mb-2 flex items-center gap-1.5">
+      <div className={`mb-2 flex items-center gap-1.5 ${mit ? 'border-b-2 border-[#6b1f1f]/70 pb-0.5 w-fit' : ''}`}>
         {icon}
-        <Eyebrow>{label}</Eyebrow>
+        <Eyebrow className={mit ? '!text-[#6b1f1f] tracking-[0.15em]' : ''}>{label}</Eyebrow>
       </div>
       {children}
     </div>

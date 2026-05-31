@@ -2985,11 +2985,10 @@
     },
     "editor": {
       "refinement": "Quick Refinements",
-      "freeRefinements": "{{remaining}} of 5 free refinements left",
+      "freeRefinements": "{{remaining}} of 5 included refinements left",
       "afterFive": "After 5 refinements, each costs 5 tokens",
       "exportPdf": "Export PDF",
       "exportDocx": "Export Word",
-      "exportJson": "Export JSON",
       "archive": "Archive",
       "restore": "Restore",
       "atsScore": {
@@ -3029,15 +3028,38 @@
       "mit_technical": {
         "name": "MIT Technical",
         "reason": "Suitable for technical and engineering roles"
-      },
-      "saudi_executive": {
-        "name": "Saudi Executive",
-        "reason": "Premium layout for KSA market executives"
-      },
-      "modern_minimal": {
-        "name": "Modern Minimal",
-        "reason": "Clean design for professionals"
       }
+    },
+    "diagnostic": {
+      "title": "Diagnose your resume — free",
+      "subtitle": "Get a full 4-component ATS read — at zero tokens. Then decide whether to build the full resume.",
+      "scoreLinkedin": "Score my LinkedIn profile",
+      "scoreLinkedinDesc": "We measure your profile as-if a resume — 0 tokens, instant.",
+      "uploadCv": "Upload my current CV",
+      "uploadCvDesc": "PDF or Word — diagnosed on the same ruler, 0 tokens.",
+      "diagnoseNow": "Diagnose now (0 tokens)",
+      "diagnosing": "Diagnosing…",
+      "chooseFile": "Choose a file",
+      "needLinkedin": "Add your LinkedIn URL in your career profile first.",
+      "currentScore": "Current ATS score",
+      "projected": "projected",
+      "afterBuild": "points after the tailored build",
+      "fromLinkedin": "Computed from your LinkedIn profile",
+      "fromUpload": "Computed from your uploaded CV",
+      "breakdownTitle": "How the score breaks down",
+      "complete": "Complete",
+      "benchmarkTitle": "Versus the ideal profile for this role",
+      "you": "You",
+      "ideal": "Ideal",
+      "gap": "Gap",
+      "benchmarkNote": "The ideal is an internal reference computed from Wassel’s criteria for this level — it uses no external market data.",
+      "raiseTitle": "Raise your score",
+      "buildTitle": "Build your tailored resume",
+      "unlockBody": "The full build tailors every section to your target role, lifts your ATS score, and exports PDF + Word in a real template with the selection reason and two alternatives.",
+      "buildFull": "Build the full resume (179 tokens)",
+      "buildFootnote": "179 tokens — charged only on a successful build",
+      "another": "Diagnose another source",
+      "readError": "Could not read enough text from the file."
     },
     "errors": {
       "noCareerProfile": "Complete your career profile first",
@@ -3124,7 +3146,7 @@
       "archiving": "Archiving…",
       "restore": "Restore",
       "refinement": "Quick refinements",
-      "freeRefinements": "{{remaining}} of 5 free",
+      "freeRefinements": "{{remaining}} of 5 included",
       "paidRefinement": "5 tokens / refinement",
       "afterFive": "After 5, each refinement = 5 tokens",
       "legacyBanner": "This is legacy content (read-only). Start new content to refine.",
