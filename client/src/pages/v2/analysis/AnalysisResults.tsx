@@ -217,7 +217,7 @@ export default function RadarResult() {
             {justRanInfo.isCacheHit ? (
               <span className="inline-flex items-center gap-1.5 rounded-v2-pill bg-emerald-50 px-3 py-1 font-ar text-[12px] font-semibold text-emerald-700 border border-emerald-200">
                 <Database size={14} />
-                {isAr ? 'من الكاش · 0 توكن' : 'From cache · 0 tokens'}
+                {isAr ? 'من الكاش · 0 نقطة' : 'From cache · 0 tokens'}
               </span>
             ) : (
               <span className="inline-flex items-center gap-1.5 rounded-v2-pill bg-teal-50 px-3 py-1 font-ar text-[12px] font-semibold text-teal-700 border border-teal-200">
@@ -534,7 +534,7 @@ function DiagnosticCards(props: {
             >
               {unlocking
                 ? (isAr ? 'جارٍ…' : 'Working…')
-                : (isAr ? <>افتح الإصلاحات (<NumDisplay>149</NumDisplay> توكن)</> : <>Unlock fixes (<NumDisplay>149</NumDisplay> tokens)</>)}
+                : (isAr ? <>افتح الإصلاحات (<NumDisplay>149</NumDisplay> نقطة)</> : <>Unlock fixes (<NumDisplay>149</NumDisplay> tokens)</>)}
             </Button>
           </div>
           {unlockError && <p className="mt-2 font-ar text-[12px] text-rose-700">{unlockError}</p>}

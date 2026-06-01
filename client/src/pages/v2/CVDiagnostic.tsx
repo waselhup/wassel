@@ -160,7 +160,7 @@ export default function CVDiagnostic() {
           </h1>
           <p className="mt-2 font-ar text-[13px] text-v2-body leading-relaxed">
             {t('resume.diagnostic.subtitle', isAr
-              ? 'احصل على تقييم ATS كامل بأربعة مكوّنات — بدون أي توكن. ثم قرّر إن أردت بناء السيرة الكاملة.'
+              ? 'احصل على تقييم ATS كامل بأربعة مكوّنات — بدون أي نقطة. ثم قرّر إن أردت بناء السيرة الكاملة.'
               : 'Get a full 4-component ATS read — at zero tokens. Then decide whether to build the full resume.')}
           </p>
         </div>
@@ -217,7 +217,7 @@ function SourcePicker({ isAr, running, hasLinkedin, onLinkedin, onUpload }: {
               {isAr ? 'قيّم ملفي على LinkedIn' : 'Score my LinkedIn profile'}
             </h3>
             <p className="mt-1 font-ar text-[12px] text-v2-body leading-relaxed">
-              {isAr ? 'نقيس ملفك الحالي كأنه سيرة ذاتية — 0 توكن، فوري.' : 'We measure your profile as-if a resume — 0 tokens, instant.'}
+              {isAr ? 'نقيس ملفك الحالي كأنه سيرة ذاتية — 0 نقطة، فوري.' : 'We measure your profile as-if a resume — 0 tokens, instant.'}
             </p>
             <Button
               variant="primary" size="md" className="mt-3"
@@ -227,7 +227,7 @@ function SourcePicker({ isAr, running, hasLinkedin, onLinkedin, onUpload }: {
             >
               {running === 'linkedin'
                 ? (isAr ? 'جارٍ التشخيص…' : 'Diagnosing…')
-                : (isAr ? 'شخّص الآن (0 توكن)' : 'Diagnose now (0 tokens)')}
+                : (isAr ? 'شخّص الآن (0 نقطة)' : 'Diagnose now (0 tokens)')}
             </Button>
             {!hasLinkedin && (
               <p className="mt-2 font-ar text-[11px] text-amber-700">
@@ -249,7 +249,7 @@ function SourcePicker({ isAr, running, hasLinkedin, onLinkedin, onUpload }: {
               {isAr ? 'ارفع سيرتي الحالية' : 'Upload my current CV'}
             </h3>
             <p className="mt-1 font-ar text-[12px] text-v2-body leading-relaxed">
-              {isAr ? 'PDF أو Word — نشخّصها بنفس المقياس، 0 توكن.' : 'PDF or Word — diagnosed on the same ruler, 0 tokens.'}
+              {isAr ? 'PDF أو Word — نشخّصها بنفس المقياس، 0 نقطة.' : 'PDF or Word — diagnosed on the same ruler, 0 tokens.'}
             </p>
             <label className="mt-3 inline-flex cursor-pointer items-center gap-2 rounded-v2-pill border border-v2-line bg-v2-surface px-4 py-2 font-ar text-[13px] font-semibold text-v2-body hover:bg-v2-canvas-2">
               <FileText size={15} />
@@ -386,10 +386,10 @@ function DiagnosticResultView({ isAr, result, onBuild, onReset }: {
             : 'The full build tailors every section to your target role, lifts your ATS score, and exports PDF + Word in a real template with the selection reason and two alternatives.'}
         </p>
         <Button variant="primary" size="lg" fullWidth className="mt-4" leadingIcon={<FileText size={18} />} onClick={onBuild}>
-          {isAr ? 'ابنِ السيرة الكاملة (179 توكن)' : 'Build the full resume (179 tokens)'}
+          {isAr ? 'ابنِ السيرة الكاملة (179 نقطة)' : 'Build the full resume (179 tokens)'}
         </Button>
         <p className="mt-2 text-center font-ar text-[11px] text-v2-mute">
-          {isAr ? 'تُخصم 179 توكن بعد نجاح البناء فقط' : '179 tokens — charged only on a successful build'}
+          {isAr ? 'تُخصم 179 نقطة بعد نجاح البناء فقط' : '179 tokens — charged only on a successful build'}
         </p>
         <button type="button" onClick={onReset} className="mt-3 w-full font-ar text-[12px] text-v2-mute hover:text-v2-body">
           {isAr ? 'تشخيص مصدر آخر' : 'Diagnose another source'}

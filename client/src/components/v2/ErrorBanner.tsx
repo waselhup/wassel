@@ -102,7 +102,7 @@ function ErrorBanner({
   // R06 Q2: "Did I lose anything?"
   const lossLine = (refundedTokens && refundedTokens > 0)
     ? (isAr
-        ? `تم استرداد ${refundedTokens} توكن إلى رصيدك.`
+        ? `تم استرداد ${refundedTokens} نقطة إلى رصيدك.`
         : `${refundedTokens} tokens refunded to your wallet.`)
     : recovery === 'user_action_required' && category === 'tokens'
       ? null
@@ -125,7 +125,7 @@ function ErrorBanner({
       if (category === 'tokens') {
         primaryCta = (
           <Button variant="primary" size={compact ? 'sm' : 'md'} onClick={() => navigate('/v2/pricing')}>
-            {isAr ? 'إضافة توكنات' : 'Add tokens'}
+            {isAr ? 'إضافة نقاط' : 'Add tokens'}
           </Button>
         );
       } else if (category === 'auth') {

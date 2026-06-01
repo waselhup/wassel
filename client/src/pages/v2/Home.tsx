@@ -518,7 +518,7 @@ function CareerPulse({
         <PulseTile
           label={t('dashboard.pulse.wallet', isAr ? 'الرصيد' : 'Balance')}
           value={pulse?.walletSummary?.total ?? 0}
-          unit={isAr ? 'توكن' : 'tokens'}
+          unit={isAr ? 'نقطة' : 'tokens'}
           hint={
             pulse?.walletSummary?.bonusExpiresAt
               ? isAr
@@ -850,7 +850,7 @@ function SufficesForWidget({
             {bundleLabelMap[recommendedBundle.labelKey]}
           </p>
           <NumDisplay className="font-ar text-[11px] text-v2-dim">
-            {recommendedBundle.totalCost} {isAr ? 'توكن' : 'tokens'}
+            {recommendedBundle.totalCost} {isAr ? 'نقطة' : 'tokens'}
           </NumDisplay>
         </div>
       )}
@@ -860,7 +860,7 @@ function SufficesForWidget({
           onClick={() => navigate('/v2/pricing')}
           className="mt-2 font-ar text-[12px] font-semibold text-teal-700 hover:text-teal-600 cursor-pointer"
         >
-          {t('dashboard.sufficesFor.addTokens', isAr ? 'إضافة توكنات' : 'Add tokens')} →
+          {t('dashboard.sufficesFor.addTokens', isAr ? 'إضافة نقاط' : 'Add tokens')} →
         </button>
       )}
     </Card>

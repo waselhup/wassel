@@ -38,13 +38,13 @@ function num(v: unknown): number {
 }
 
 const FAQ_AR: { q: string; a: string }[] = [
-  { q: 'كيف يتم احتساب الاستخدامات؟', a: 'كل باقة تشمل عدداً محدداً من الاستخدامات الشهرية تكفي لتحليلات البروفايل وإنشاء المنشورات وتوليد السير الذاتية. الاستخدامات تتجدد في تاريخ التجديد الشهري ولا تتراكم' },
+  { q: 'كيف يتم احتساب النقاط؟', a: 'كل باقة تشمل عدداً محدداً من النقاط الشهرية تكفي لتحليلات البروفايل وإنشاء المنشورات وتوليد السير الذاتية. النقاط تتجدد في تاريخ التجديد الشهري ولا تتراكم' },
   { q: 'ما وسائل الدفع المتاحة؟',     a: 'ندعم مدى وVisa وMastercard وApple Pay عبر بوّابة Moyasar الآمنة. الفواتير تصل بالبريد فور الاشتراك' },
   { q: 'هل أحتاج بطاقة ائتمان للبدء؟', a: 'لا. باقة الاستكشاف مجانية بالكامل ولا تتطلب بطاقة ائتمان — يمكنك تجربة المنصة فوراً بعد إنشاء حساب' },
 ];
 
 const FAQ_EN: { q: string; a: string }[] = [
-  { q: 'How is usage calculated?',           a: 'Each plan includes a set number of monthly uses covering profile analyses, post generation, and CV creation. Uses refresh on your monthly renewal date and do not roll over' },
+  { q: 'How are tokens calculated?',          a: 'Each plan includes a set number of monthly tokens covering profile analyses, post generation, and CV creation. Tokens refresh on your monthly renewal date and do not roll over' },
   { q: 'What payment methods are available?', a: 'We accept Mada, Visa, Mastercard, and Apple Pay through the secure Moyasar gateway. Invoices arrive by email after subscribing' },
   { q: 'Do I need a credit card to start?',   a: 'No. The Explore plan is fully free and requires no credit card — you can try the platform immediately after creating an account' },
 ];
@@ -232,7 +232,7 @@ function Pricing() {
               const dbBadge = isAr ? plan.badge_ar : plan.badge_en;
               const badge = showGoalBonus
                 ? (isAr
-                    ? `+150 توكن للشهر الأول 🎁`
+                    ? `+150 نقطة للشهر الأول 🎁`
                     : `+150 tokens, first month 🎁`)
                 : dbBadge;
 
@@ -246,7 +246,7 @@ function Pricing() {
                 ? t('حسب الاحتياج', 'Custom volume')
                 : plan.is_free
                   ? t('منشوران LinkedIn للتجربة', 'Two LinkedIn posts to try')
-                  : t(`${monthlyTokens} استخدام شهرياً`, `${monthlyTokens} uses / month`);
+                  : t(`${monthlyTokens} نقطة شهرياً`, `${monthlyTokens} tokens / month`);
 
               const priceLabel = plan.is_custom
                 ? t('سعر مخصّص', 'Custom')
@@ -325,7 +325,7 @@ function Pricing() {
                         dark ? 'text-teal-300' : 'text-teal-700'
                       }`}>
                         {isAr
-                          ? `ابدأ مع ${bonusTotal} توكن للشهر الأول 🎁`
+                          ? `ابدأ مع ${bonusTotal} نقطة للشهر الأول 🎁`
                           : `Start with ${bonusTotal} tokens, first month 🎁`}
                       </div>
                     )}

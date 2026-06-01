@@ -333,7 +333,7 @@ export default function ContentEditor() {
           </div>
           {justBuiltInfo && justBuiltInfo.isCacheHit && (
             <span className="rounded-full bg-teal-50 px-2 py-0.5 font-ar text-[10px] font-semibold text-teal-700">
-              {isAr ? 'مخزّن — 0 توكن' : 'Cached — 0 tokens'}
+              {isAr ? 'مخزّن — 0 نقطة' : 'Cached — 0 tokens'}
             </span>
           )}
         </div>
@@ -390,7 +390,7 @@ export default function ContentEditor() {
                   <span className="font-ar text-[11px] text-v2-dim">
                     {remainingFree > 0
                       ? (isAr ? `${remainingFree} من 5 مشمولة` : `${remainingFree} of 5 included`)
-                      : (isAr ? '5 توكنات/تحسين' : '5 tokens / refinement')}
+                      : (isAr ? '5 نقاط/تحسين' : '5 tokens / refinement')}
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -529,7 +529,7 @@ export default function ContentEditor() {
                 </div>
                 {data.version.tokens_charged > 0 && (
                   <div className="mt-1 flex items-center justify-between">
-                    <span>{isAr ? 'التوكنات المستهلكة' : 'Tokens used'}</span>
+                    <span>{isAr ? 'النقاط المستهلكة' : 'Tokens used'}</span>
                     <span className="font-semibold text-v2-body"><NumDisplay>{data.version.tokens_charged}</NumDisplay></span>
                   </div>
                 )}

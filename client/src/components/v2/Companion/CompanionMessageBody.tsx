@@ -44,7 +44,7 @@ function GuidanceBlock({
         {isAr ? (
           <>
             لإنجاز {pillarLabel(guidance.pillar, true)} تحتاج{' '}
-            <NumDisplay>{guidance.needed}</NumDisplay> توكن، ورصيدك الحالي{' '}
+            <NumDisplay>{guidance.needed}</NumDisplay> نقطة، ورصيدك الحالي{' '}
             <NumDisplay>{guidance.balance}</NumDisplay>.
           </>
         ) : (

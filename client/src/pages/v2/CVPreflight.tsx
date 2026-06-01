@@ -326,17 +326,17 @@ export default function CVPreflight() {
                 {isAr ? 'تشخيص ATS مجاني' : 'Free ATS diagnostic'}
               </Button>
               <Button variant="ghost" size="md" fullWidth leadingIcon={<FileText size={16} />} onClick={() => startBuild()} disabled={!selectedTemplateId}>
-                {isAr ? `سيرة جديدة (179 توكن)` : `Fresh build (179 tokens)`}
+                {isAr ? `سيرة جديدة (179 نقطة)` : `Fresh build (179 tokens)`}
               </Button>
             </>
           ) : (
             <>
               <Button variant="primary" size="lg" fullWidth leadingIcon={<Gauge size={18} />} onClick={() => navigate('/v2/cvs/diagnose')}>
-                {isAr ? 'شخّص سيرتك مجاناً (0 توكن)' : 'Diagnose your resume — free (0 tokens)'}
+                {isAr ? 'شخّص سيرتك مجاناً (0 نقطة)' : 'Diagnose your resume — free (0 tokens)'}
               </Button>
               <Button variant="secondary" size="md" fullWidth leadingIcon={<FileText size={16} />} onClick={() => startBuild()} disabled={!selectedTemplateId}>
                 {isAr
-                  ? `ابنِ السيرة مباشرة (${pre.estimatedCost} توكن)`
+                  ? `ابنِ السيرة مباشرة (${pre.estimatedCost} نقطة)`
                   : `Build directly (${pre.estimatedCost} tokens)`}
               </Button>
             </>

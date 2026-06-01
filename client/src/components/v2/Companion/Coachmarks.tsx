@@ -83,7 +83,7 @@ const STEPS: Step[] = [
     icon: WalletIcon,
     titleAr: 'رصيدك',
     titleEn: 'Your balance',
-    bodyAr: 'كل خطوة لها تكلفة بسيطة بالتوكنات، ونوضّح لك دائماً ما تحتاجه قبل البدء.',
+    bodyAr: 'كل خطوة لها تكلفة بسيطة بالنقاط، ونوضّح لك دائماً ما تحتاجه قبل البدء.',
     bodyEn: 'Each step costs a few tokens. We always show you what you need before you start.',
   },
 ];

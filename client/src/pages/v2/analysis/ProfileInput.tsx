@@ -329,7 +329,7 @@ export default function RadarPreflight() {
           )}
           <p className="text-center font-ar text-[12px] text-v2-mute">
             {isAr
-              ? <>التشخيص مجاني · الإصلاحات الجاهزة <NumDisplay>{pre.cost}</NumDisplay> توكن عند الفتح</>
+              ? <>التشخيص مجاني · الإصلاحات الجاهزة <NumDisplay>{pre.cost}</NumDisplay> نقطة عند الفتح</>
               : <>Diagnostic is free · ready-made fixes <NumDisplay>{pre.cost}</NumDisplay> tokens to unlock</>}
           </p>
         </div>

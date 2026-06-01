@@ -191,12 +191,12 @@ export default function Profile() {
   // Plan keys mirror the canonical `plans` table (free / starter / growth).
   // Legacy pro/elite aliases map to the closest current tier.
   const planFeatures: Record<string, string[]> = {
-    free: [isAr ? 'تحليل رادار واحد' : '1 Radar analysis', isAr ? '10 استخدامات شهرياً' : '10 uses/month'],
-    starter: [isAr ? 'كل ما في استكشف' : 'Everything in Explore', isAr ? '200 استخدام شهرياً' : '200 uses/month', isAr ? 'تخصيص السيرة الذاتية' : 'CV customization', isAr ? 'أولوية الدعم' : 'Priority support'],
-    growth: [isAr ? 'كل ما في الانطلاق' : 'Everything in Starter', isAr ? '600 استخدام شهرياً' : '600 uses/month', isAr ? 'اكتشاف متقدم' : 'Advanced discovery', isAr ? 'دعم مخصص' : 'Dedicated support'],
+    free: [isAr ? 'تحليل رادار واحد' : '1 Radar analysis', isAr ? '10 نقاط شهرياً' : '10 tokens/month'],
+    starter: [isAr ? 'كل ما في استكشف' : 'Everything in Explore', isAr ? '200 نقطة شهرياً' : '200 tokens/month', isAr ? 'تخصيص السيرة الذاتية' : 'CV customization', isAr ? 'أولوية الدعم' : 'Priority support'],
+    growth: [isAr ? 'كل ما في الانطلاق' : 'Everything in Starter', isAr ? '500 نقطة شهرياً' : '500 tokens/month', isAr ? 'اكتشاف متقدم' : 'Advanced discovery', isAr ? 'دعم مخصص' : 'Dedicated support'],
     // legacy aliases
-    pro: [isAr ? 'كل ما في استكشف' : 'Everything in Explore', isAr ? '200 استخدام شهرياً' : '200 uses/month', isAr ? 'تخصيص السيرة الذاتية' : 'CV customization', isAr ? 'أولوية الدعم' : 'Priority support'],
-    elite: [isAr ? 'كل ما في الانطلاق' : 'Everything in Starter', isAr ? '600 استخدام شهرياً' : '600 uses/month', isAr ? 'اكتشاف متقدم' : 'Advanced discovery', isAr ? 'دعم مخصص' : 'Dedicated support'],
+    pro: [isAr ? 'كل ما في استكشف' : 'Everything in Explore', isAr ? '200 نقطة شهرياً' : '200 tokens/month', isAr ? 'تخصيص السيرة الذاتية' : 'CV customization', isAr ? 'أولوية الدعم' : 'Priority support'],
+    elite: [isAr ? 'كل ما في الانطلاق' : 'Everything in Starter', isAr ? '500 نقطة شهرياً' : '500 tokens/month', isAr ? 'اكتشاف متقدم' : 'Advanced discovery', isAr ? 'دعم مخصص' : 'Dedicated support'],
   };
 
   const statusBadge = (status: string) => {
@@ -253,14 +253,14 @@ export default function Profile() {
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
           style={{ background: 'linear-gradient(135deg, #14b8a6 0%, #0ea5e9 100%)', borderRadius: 16, padding: 24, marginBottom: 20, boxShadow: '0 8px 24px rgba(10,143,132,0.25)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
           <div>
-            <div style={{ fontSize: 12, opacity: 0.8, fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 700, marginBottom: 4 }}>{t('profile.tokensCard.title', 'رصيد التوكنز الحالي')}</div>
+            <div style={{ fontSize: 12, opacity: 0.8, fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 700, marginBottom: 4 }}>{t('profile.tokensCard.title', 'رصيد النقاط الحالي')}</div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
               <span style={{ fontSize: 48, fontWeight: 900, fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>{tokenBalance.toLocaleString('en-US')}</span>
-              <span style={{ fontSize: 16, opacity: 0.8, fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>{t('profile.tokensCard.balance', 'توكن')}</span>
+              <span style={{ fontSize: 16, opacity: 0.8, fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>{t('profile.tokensCard.balance', 'نقطة')}</span>
             </div>
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
-            <Link href="/pricing"><a style={{ padding: '10px 18px', borderRadius: 10, background: 'rgba(255,255,255,0.2)', color: '#fff', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 13, textDecoration: 'none', border: '1px solid rgba(255,255,255,0.3)' }}>{t('profile.tokensCard.buyMore', 'شراء توكنز')}</a></Link>
+            <Link href="/pricing"><a style={{ padding: '10px 18px', borderRadius: 10, background: 'rgba(255,255,255,0.2)', color: '#fff', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 13, textDecoration: 'none', border: '1px solid rgba(255,255,255,0.3)' }}>{t('profile.tokensCard.buyMore', 'شراء نقاط')}</a></Link>
             <Link href="/pricing"><a style={{ padding: '10px 18px', borderRadius: 10, background: '#fff', color: '#14b8a6', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 13, textDecoration: 'none' }}>{t('profile.tokensCard.upgrade', 'ترقية الباقة')}</a></Link>
           </div>
         </motion.div>
@@ -369,7 +369,7 @@ export default function Profile() {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 12 }}>
                 <div style={{ padding: 16, borderRadius: 12, background: '#F0FDF9', textAlign: 'center' }}>
                   <div style={{ fontSize: 28, fontWeight: 900, color: '#14b8a6', fontFamily: '"Thmanyah Sans", system-ui, sans-serif' }}>{tokenBalance}</div>
-                  <div style={{ fontSize: 12, color: 'var(--wsl-ink-3)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 700 }}>{isAr ? 'توكنز متبقية' : 'Tokens Remaining'}</div>
+                  <div style={{ fontSize: 12, color: 'var(--wsl-ink-3)', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 700 }}>{isAr ? 'نقاط متبقية' : 'Tokens Remaining'}</div>
                 </div>
               </div>
             </div>

@@ -169,7 +169,7 @@ export default function AdminUsers() {
       const name = grantModal.full_name || grantModal.email || "";
       toast.push(
         "success",
-        t("au.grantSuccess", "تمت إضافة {{amount}} توكن لـ {{name}}", {
+        t("au.grantSuccess", "تمت إضافة {{amount}} نقطة لـ {{name}}", {
           amount: amount.toLocaleString("en-US"),
           name,
         })
@@ -180,7 +180,7 @@ export default function AdminUsers() {
       fetchUsers(debouncedQ);
       fetchStats();
     } catch (e: any) {
-      toast.push("error", e?.message || t("au.grantFail", "فشلت إضافة التوكنز"));
+      toast.push("error", e?.message || t("au.grantFail", "فشلت إضافة النقاط"));
     } finally {
       setGrantSubmitting(false);
     }
@@ -249,7 +249,7 @@ export default function AdminUsers() {
               {t("au.title", "المستخدمون")}
             </h1>
             <p className="text-gray-500 mt-2">
-              {t("au.subtitle", "إدارة حسابات المستخدمين والتوكنز")}
+              {t("au.subtitle", "إدارة حسابات المستخدمين والنقاط")}
             </p>
           </div>
           <button
@@ -290,7 +290,7 @@ export default function AdminUsers() {
           />
           <StatCard
             icon={<Award className="w-5 h-5" />}
-            label={t("au.stat.tokens", "إجمالي التوكنز الممنوحة")}
+            label={t("au.stat.tokens", "إجمالي النقاط الممنوحة")}
             value={stats?.tokensPurchased ?? null}
             tint="amber"
           />
@@ -341,7 +341,7 @@ export default function AdminUsers() {
                 <tr className="text-xs font-semibold text-gray-500 border-b border-gray-100">
                   <th className="pb-3 text-start">{t("au.name", "الاسم")}</th>
                   <th className="pb-3 text-start">{t("au.plan", "الخطة")}</th>
-                  <th className="pb-3 text-start">{t("au.tokens", "التوكنز")}</th>
+                  <th className="pb-3 text-start">{t("au.tokens", "النقاط")}</th>
                   <th className="pb-3 text-start">{t("au.status", "الحالة")}</th>
                   <th className="pb-3 text-start">{t("au.joined", "انضم")}</th>
                   <th className="pb-3 text-end">{t("au.actions", "")}</th>
@@ -453,7 +453,7 @@ export default function AdminUsers() {
                                   className="w-full text-start px-3 py-2 text-sm hover:bg-gray-50 flex items-center gap-2 text-gray-700"
                                 >
                                   <Coins className="w-4 h-4 text-amber-500" />
-                                  {t("au.grantTokens", "منح توكنز")}
+                                  {t("au.grantTokens", "منح نقاط")}
                                 </button>
                                 <button
                                   onClick={() => handleToggleBan(u)}
@@ -503,7 +503,7 @@ export default function AdminUsers() {
           >
             <div className="flex items-center justify-between mb-5">
               <h3 className="font-bold text-[var(--wsl-ink)] text-lg">
-                {t("au.grantTitle", "منح توكنز")}
+                {t("au.grantTitle", "منح نقاط")}
               </h3>
               <button
                 onClick={() => !grantSubmitting && setGrantModal(null)}

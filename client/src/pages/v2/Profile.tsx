@@ -405,7 +405,7 @@ function Profile() {
                   <div className="mt-5 border-t border-white/10 pt-4">
                     <Eyebrow className="!text-teal-300 mb-2 block">الاستهلاك</Eyebrow>
                     <div className="mb-1.5 flex items-baseline justify-between">
-                      <span className="font-ar text-[13px] opacity-80">التوكن المستخدم</span>
+                      <span className="font-ar text-[13px] opacity-80">النقاط المستخدم</span>
                       <NumDisplay className="text-[12px] font-semibold">
                         {usedTokens} / {quota}
                       </NumDisplay>
@@ -422,7 +422,7 @@ function Profile() {
                 <Card padding="lg" radius="md" elevated className="h-full">
                   <Eyebrow className="!text-teal-700">قارن الباقات</Eyebrow>
                   <p className="mt-2 font-ar text-[13px] leading-relaxed text-v2-body">
-                    اختر الباقة المناسبة لك. التوكن يتجدد شهرياً ويُستخدم في تحليل البروفايل، صياغة المنشورات، وتوليد السيرة الذاتية.
+                    اختر الباقة المناسبة لك. النقاط يتجدد شهرياً ويُستخدم في تحليل البروفايل، صياغة المنشورات، وتوليد السيرة الذاتية.
                   </p>
                   <div className="mt-4 flex flex-col gap-2">
                     <Button variant="primary" size="md" fullWidth onClick={() => navigate('/v2/pricing')}>
@@ -440,7 +440,7 @@ function Profile() {
                 <Eyebrow className="mb-2.5 block">الاستهلاك</Eyebrow>
                 <div className="mb-5">
                   <div className="mb-1.5 flex items-baseline justify-between">
-                    <span className="font-ar text-[13px] text-v2-body">التوكن المستخدم</span>
+                    <span className="font-ar text-[13px] text-v2-body">النقاط المستخدم</span>
                     <NumDisplay className="text-[12px] font-semibold text-v2-ink">
                       {usedTokens} / {quota}
                     </NumDisplay>
