@@ -157,7 +157,7 @@ function CheckoutSuccess() {
                     `Your ${planNameEn || planNameAr} subscription is now active.`
                   )
                 : type === 'token_topup'
-                  ? t('تمت إضافة التوكن إلى رصيدك', 'Tokens have been added to your balance.')
+                  ? t('تمت إضافة النقاط إلى رصيدك', 'Tokens have been added to your balance.')
                   : t('تم تفعيل المنتج', 'Your purchase has been activated.')}
             </p>
 
@@ -171,7 +171,7 @@ function CheckoutSuccess() {
               </div>
               {tokensGranted > 0 && (
                 <div>
-                  <div className="font-ar text-[11px] text-v2-dim">{t('التوكن المضافة', 'Tokens added')}</div>
+                  <div className="font-ar text-[11px] text-v2-dim">{t('النقاط المضافة', 'Tokens added')}</div>
                   <NumDisplay className="font-ar text-[18px] font-bold text-v2-ink">
                     {tokensGranted}
                   </NumDisplay>
@@ -194,7 +194,7 @@ function CheckoutSuccess() {
               <div className="mt-4 rounded-v2-md border border-teal-300 bg-teal-50 p-3">
                 <div className="font-ar text-[13px] font-bold text-teal-800">
                   {isAr
-                    ? `🎁 مكافأة الانطلاق: +${bonusGranted} توكن هدية`
+                    ? `🎁 مكافأة الانطلاق: +${bonusGranted} نقطة هدية`
                     : `🎁 Goal Bonus: +${bonusGranted} bonus tokens`}
                 </div>
                 <div className="mt-1 font-ar text-[11px] text-teal-700">

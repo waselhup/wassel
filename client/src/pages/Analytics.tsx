@@ -149,7 +149,7 @@ export default function Analytics() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <Coins size={16} style={{ color: '#B45309' }} />
               <span style={{ fontSize: 13, color: '#92400E', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 800 }}>
-                {t('analytics.tokens.balance', 'رصيد التوكنات')}
+                {t('analytics.tokens.balance', 'رصيد النقاط')}
               </span>
             </div>
             <div style={{ fontSize: 38, fontWeight: 900, color: '#92400E', fontFamily: '"Thmanyah Sans", system-ui, sans-serif', marginTop: 4, lineHeight: 1 }}>
@@ -241,7 +241,7 @@ export default function Analytics() {
         {/* Tokens Breakdown */}
         <div style={{ ...cardBase, padding: 22, marginBottom: 20 }}>
           <h2 style={{ fontFamily: '"Thmanyah Sans", system-ui, sans-serif', fontWeight: 900, fontSize: 16, color: 'var(--wsl-ink)', margin: '0 0 14px' }}>
-            {t('analytics.tokens.breakdown', 'استهلاك التوكنات حسب الميزة')}
+            {t('analytics.tokens.breakdown', 'استهلاك النقاط حسب الميزة')}
           </h2>
           <div style={{ height: 260 }}>
             {tokensBd.length === 0 ? (

@@ -98,7 +98,7 @@ export default function DashboardHome() {
   }, []);
 
   const stats: Stat[] = [
-    { key: "tokens", label: t("home.stats.tokens", "رصيد التوكنز"), value: counts.tokens, delta: "",
+    { key: "tokens", label: t("home.stats.tokens", "رصيد النقاط"), value: counts.tokens, delta: "",
       icon: Coins, gradient: "from-teal-50 to-emerald-50", iconBg: "bg-amber-500" },
     { key: "analyses", label: t("home.stats.analyses", "تحليلات LinkedIn"), value: counts.analyses, delta: "",
       icon: BarChart2, gradient: "from-blue-50 to-cyan-50", iconBg: "bg-blue-500" },
@@ -121,7 +121,7 @@ export default function DashboardHome() {
   const activity: ActivityItem[] = [
     ...(counts.analyses > 0 ? [{ id: "a", icon: BarChart2, title: `${t("home.activity.analysisCount", "تحليلات ملف شخصي")}: ${counts.analyses}`, time: "", color: "bg-blue-100 text-blue-600" }] : []),
     ...(counts.cvs > 0 ? [{ id: "c", icon: FileText, title: `${t("home.activity.cvCount", "سير ذاتية")}: ${counts.cvs}`, time: "", color: "bg-emerald-100 text-emerald-600" }] : []),
-    ...(counts.tokens > 0 ? [{ id: "t", icon: Coins, title: `${t("home.activity.tokensCount", "رصيد التوكنز")}: ${counts.tokens}`, time: "", color: "bg-amber-100 text-amber-600" }] : []),
+    ...(counts.tokens > 0 ? [{ id: "t", icon: Coins, title: `${t("home.activity.tokensCount", "رصيد النقاط")}: ${counts.tokens}`, time: "", color: "bg-amber-100 text-amber-600" }] : []),
   ];
 
   const chartData = counts.analyses + counts.cvs > 0

@@ -151,11 +151,11 @@ function PricingProducts() {
         <section className="mb-6 lg:mb-0 lg:py-16 lg:text-center">
           <Eyebrow className="mb-2 block !text-teal-700 lg:mb-3">PRODUCTS</Eyebrow>
           <h1 className="font-ar font-bold leading-tight text-v2-ink text-[24px] lg:text-[42px]">
-            {t('اشترِ فردياً، أو استخدم رصيد التوكن', 'Buy single, or use your token balance')}
+            {t('اشترِ فردياً، أو استخدم رصيد النقاط', 'Buy single, or use your token balance')}
           </h1>
           <p className="mt-2 font-ar leading-relaxed text-v2-body text-[14px] lg:mx-auto lg:mt-3 lg:max-w-[560px] lg:text-[16px]">
             {t(
-              'كل منتج يأتي بسعر واضح بالريال السعودي، أو يمكنك استخدام رصيد التوكن لديك',
+              'كل منتج يأتي بسعر واضح بالريال السعودي، أو يمكنك استخدام رصيد النقاط لديك',
               'Each product has a clear SAR price, or you can spend your existing token balance.'
             )}
           </p>
@@ -165,7 +165,7 @@ function PricingProducts() {
               <NumDisplay className="font-ar text-[13px] font-semibold text-v2-ink tabular-nums">
                 {tokenBalance}
               </NumDisplay>
-              <span className="font-ar text-[12px] text-v2-body">{t('توكن', 'tokens')}</span>
+              <span className="font-ar text-[12px] text-v2-body">{t('نقطة', 'tokens')}</span>
             </div>
           )}
         </section>
@@ -206,7 +206,7 @@ function PricingProducts() {
                       className="absolute -top-2.5 end-4 rounded-v2-pill bg-teal-500 px-2.5 py-1 font-ar text-[10px] font-bold tracking-[0.04em]"
                       style={{ color: '#0a3530' }}
                     >
-                      {t('وفّر 19 توكن', 'Save 19 tokens')}
+                      {t('وفّر 19 نقطة', 'Save 19 tokens')}
                     </span>
                   )}
 
@@ -238,7 +238,7 @@ function PricingProducts() {
                         <NumDisplay className="font-ar text-[16px] font-semibold text-teal-700 tabular-nums">
                           {tokens}
                         </NumDisplay>
-                        <span className="font-ar text-[11px] text-v2-dim">{t('توكن', 'tokens')}</span>
+                        <span className="font-ar text-[11px] text-v2-dim">{t('نقطة', 'tokens')}</span>
                       </div>
                     </div>
                   </div>
@@ -275,10 +275,10 @@ function PricingProducts() {
                       }`}
                     >
                       {canUseTokens
-                        ? t('استخدم التوكن', 'Use tokens')
+                        ? t('استخدم النقاط', 'Use tokens')
                         : tokenBalance === null
-                          ? t('سجّل الدخول لاستخدام التوكن', 'Sign in to use tokens')
-                          : t(`رصيد غير كافٍ (${tokens} توكن مطلوبة)`, `Insufficient (${tokens} tokens needed)`)}
+                          ? t('سجّل الدخول لاستخدام النقاط', 'Sign in to use tokens')
+                          : t(`رصيد غير كافٍ (${tokens} نقطة مطلوبة)`, `Insufficient (${tokens} tokens needed)`)}
                     </button>
                   </div>
                 </div>

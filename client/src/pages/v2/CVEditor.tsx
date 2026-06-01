@@ -283,12 +283,12 @@ export default function CVEditor() {
             {justBuiltInfo.isCacheHit ? (
               <span className="inline-flex items-center gap-1.5 rounded-v2-pill bg-emerald-50 px-3 py-1 font-ar text-[12px] font-semibold text-emerald-700 border border-emerald-200">
                 <Database size={14} />
-                {isAr ? 'من الكاش · 0 توكن' : 'From cache · 0 tokens'}
+                {isAr ? 'من الكاش · 0 نقطة' : 'From cache · 0 tokens'}
               </span>
             ) : (
               <span className="inline-flex items-center gap-1.5 rounded-v2-pill bg-teal-50 px-3 py-1 font-ar text-[12px] font-semibold text-teal-700 border border-teal-200">
                 <Zap size={14} />
-                {isAr ? <>سيرة جديدة · <NumDisplay>{justBuiltInfo.tokensCharged}</NumDisplay> توكن</> : <>Fresh build · <NumDisplay>{justBuiltInfo.tokensCharged}</NumDisplay> tokens</>}
+                {isAr ? <>سيرة جديدة · <NumDisplay>{justBuiltInfo.tokensCharged}</NumDisplay> نقطة</> : <>Fresh build · <NumDisplay>{justBuiltInfo.tokensCharged}</NumDisplay> tokens</>}
               </span>
             )}
           </div>
@@ -340,7 +340,7 @@ export default function CVEditor() {
                   <span className="font-ar text-[11px] font-semibold text-v2-mute">
                     {remainingFree > 0
                       ? (isAr ? <><NumDisplay>{remainingFree}</NumDisplay>{' '}من{' '}5{' '}مشمولة</> : <><NumDisplay>{remainingFree}</NumDisplay>/5 included</>)
-                      : (isAr ? <>5{' '}توكن لكل تعديل</> : <>5 tokens each</>)}
+                      : (isAr ? <>5{' '}نقطة لكل تعديل</> : <>5 tokens each</>)}
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -365,7 +365,7 @@ export default function CVEditor() {
                 {remainingFree === 0 && (
                   <p className="mt-3 font-ar text-[11px] text-v2-mute">
                     {isAr
-                      ? 'بعد 5 تحسينات، كل تعديل يكلف 5 توكنات'
+                      ? 'بعد 5 تحسينات، كل تعديل يكلف 5 نقاط'
                       : 'After 5 refinements, each costs 5 tokens.'}
                   </p>
                 )}
@@ -385,7 +385,7 @@ export default function CVEditor() {
                 </Button>
               </div>
               <p className="mt-3 font-ar text-[11px] text-v2-mute">
-                {isAr ? 'كل التصدير مجاني — 0 توكن' : 'All exports are free — 0 tokens'}
+                {isAr ? 'كل التصدير مجاني — 0 نقطة' : 'All exports are free — 0 tokens'}
               </p>
             </Card>
 
@@ -405,13 +405,13 @@ export default function CVEditor() {
                       className="w-full rounded-v2-md border border-v2-line bg-white px-3 py-2 font-ar text-[14px] text-v2-ink"
                     />
                     <p className="mt-2 font-ar text-[11px] text-v2-mute">
-                      {isAr ? 'يعيد استخدام خبرتك ويخصّص اللغة — 49 توكن' : 'Reuses your experience, re-tailors the language — 49 tokens.'}
+                      {isAr ? 'يعيد استخدام خبرتك ويخصّص اللغة — 49 نقطة' : 'Reuses your experience, re-tailors the language — 49 tokens.'}
                     </p>
                     <div className="mt-3 flex gap-2">
                       <Button variant="primary" size="sm" onClick={handleNewVersion} disabled={!newRoleInput.trim() || newVersionSubmitting} leadingIcon={<Sparkles size={14} />}>
                         {newVersionSubmitting
                           ? (isAr ? 'جارٍ…' : 'Working…')
-                          : (isAr ? 'ابنِ (49 توكن)' : 'Build (49 tokens)')}
+                          : (isAr ? 'ابنِ (49 نقطة)' : 'Build (49 tokens)')}
                       </Button>
                       <Button variant="ghost" size="sm" onClick={() => setNewVersionOpen(false)}>
                         {isAr ? 'إلغاء' : 'Cancel'}
@@ -420,7 +420,7 @@ export default function CVEditor() {
                   </>
                 ) : (
                   <Button variant="primary" size="sm" fullWidth leadingIcon={<RefreshCw size={14} />} onClick={() => { setNewRoleInput(''); setNewVersionOpen(true); }}>
-                    {isAr ? 'نسخة لدور مختلف (49 توكن)' : 'New version for a different role (49 tokens)'}
+                    {isAr ? 'نسخة لدور مختلف (49 نقطة)' : 'New version for a different role (49 tokens)'}
                   </Button>
                 )}
               </Card>

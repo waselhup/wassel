@@ -237,7 +237,7 @@ export default function ContentGenerating() {
           </h1>
           <p className="mt-2 font-ar text-[14px] text-v2-dim max-w-[440px]">
             {phase === 'error'
-              ? (isAr ? 'لم يتم خصم أي توكنات. يمكنك إعادة المحاولة بأمان' : 'No tokens were charged. You can safely retry.')
+              ? (isAr ? 'لم يتم خصم أي نقاط. يمكنك إعادة المحاولة بأمان' : 'No tokens were charged. You can safely retry.')
               : (isAr ? 'لحظات قليلة فقط' : 'Just a few seconds')}
           </p>
           {phase !== 'error' && (

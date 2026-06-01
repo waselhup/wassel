@@ -734,7 +734,7 @@ export default function ProfileAnalysis() {
                 <Zap size={16} style={{ color: enough ? '#065f46' : '#991b1b' }} />
                 <span style={{ color: enough ? '#065f46' : '#991b1b', fontWeight: 700 }}>
                   {i18n.language === 'ar'
-                    ? `رصيدك: ${liveBalance} توكن • التحليل يحتاج ${cost}`
+                    ? `رصيدك: ${liveBalance} نقطة • التحليل يحتاج ${cost}`
                     : `Your balance: ${liveBalance} tokens • Analysis needs ${cost}`}
                 </span>
               </div>

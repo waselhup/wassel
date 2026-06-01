@@ -206,7 +206,7 @@ export default function ContentPreflight() {
             </div>
             <div className="text-end">
               <p className={`font-ar text-[18px] font-bold ${isCacheHit ? 'text-teal-700 line-through opacity-70' : 'text-v2-ink'}`}>
-                <NumDisplay>{modeMeta.cost}</NumDisplay> {isAr ? 'توكن' : 'tokens'}
+                <NumDisplay>{modeMeta.cost}</NumDisplay> {isAr ? 'نقطة' : 'tokens'}
               </p>
               {isCacheHit && (
                 <p className="font-ar text-[12px] font-semibold text-teal-700">
@@ -308,14 +308,14 @@ export default function ContentPreflight() {
           {isCacheHit
             ? t('content.preflight.viewCached', isAr ? 'عرض النسخة الحالية (مشمول)' : 'View cached (included)')
             : (isAr
-                ? `ابدأ (${cost} توكن)`
+                ? `ابدأ (${cost} نقطة)`
                 : `Start (${cost} tokens)`)}
         </Button>
 
         {!isCacheHit && (
           <p className="mt-3 text-center font-ar text-[11px] text-v2-dim">
             {isAr
-              ? 'يتم خصم التوكنات بعد نجاح التوليد. لو فشل — يتم استرداد توكناتك تلقائياً.'
+              ? 'يتم خصم النقاط بعد نجاح التوليد. لو فشل — يتم استرداد نقاطك تلقائياً.'
               : 'Tokens are deducted on success. If generation fails, your tokens are automatically refunded.'}
           </p>
         )}

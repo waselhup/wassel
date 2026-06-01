@@ -138,7 +138,7 @@ function VersionRow({
           {v.tokens_charged > 0 && (
             <>
               <span>·</span>
-              <span><NumDisplay>{v.tokens_charged}</NumDisplay> {isAr ? 'توكن' : 'tokens'}</span>
+              <span><NumDisplay>{v.tokens_charged}</NumDisplay> {isAr ? 'نقطة' : 'tokens'}</span>
             </>
           )}
         </div>

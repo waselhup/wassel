@@ -278,7 +278,7 @@
       "carouselCount": "{{count}} كاروسيل",
       "repurposeCount": "{{count}} حزمة",
       "recommendedBundle": "موصى به لك",
-      "addTokens": "إضافة توكنات",
+      "addTokens": "إضافة نقاط",
       "bundles": {
         "fullJourney": "رحلة كاملة",
         "contentPush": "دفعة محتوى",
@@ -319,7 +319,7 @@
     "skip": "تخطي",
     "email": "البريد الإلكتروني",
     "name": "الاسم",
-    "tokens": "توكن",
+    "tokens": "نقطة",
     "plan": "باقة",
     "or": "أو"
   },
@@ -500,10 +500,10 @@
       "security": "الأمان"
     },
     "tokensCard": {
-      "title": "رصيد التوكنز الحالي",
-      "balance": "توكن",
+      "title": "رصيد النقاط الحالي",
+      "balance": "نقطة",
       "used": "مستخدم",
-      "buyMore": "شراء توكنز",
+      "buyMore": "شراء نقاط",
       "upgrade": "ترقية الباقة"
     },
     "identity": {
@@ -783,7 +783,7 @@
       "tileActivated": "مستخدمون نشطوا اليوم",
       "tilePaying": "مشتركون مدفوعون",
       "tileMrr": "الإيراد الشهري",
-      "tileTokensBurned": "توكنز مستهلكة اليوم",
+      "tileTokensBurned": "نقاط مستهلكة اليوم",
       "tileFires": "حرائق نشطة",
       "verdictHealthy": "صحي",
       "verdictWatch": "مراقبة",
@@ -812,23 +812,23 @@
       "heroesTitle": "مستخدمون بطوليون",
       "heroesSub": "حالات نجاح مرشحة لشهادة عميل",
       "cohortEmpty": "لا مستخدمين في هذه المجموعة الآن",
-      "cohortGrantTokens": "منح 50 توكن",
+      "cohortGrantTokens": "منح 50 نقطة",
       "cohortSendEmail": "إرسال بريد",
       "cohortAskTestimonial": "اطلب شهادة",
       "cohortAnalysesShort": "{{n}} تحليلات",
       "cohortDaysOld": "{{n}} يوم",
-      "cohortTokensLeft": "{{n}} توكن متبقي",
+      "cohortTokensLeft": "{{n}} نقطة متبقي",
       "cohortLastSeen": "آخر نشاط: قبل {{n}} يوم",
       "cohortMrr": "{{n}} ر.س/شهر",
       "cohortKbItems": "{{n}} عنصر معرفي",
-      "s4Title": "اقتصاد التوكنز",
-      "s4Subtitle": "إلى أين تذهب توكناتك — وكم تكلفك فعلياً",
+      "s4Title": "اقتصاد النقاط",
+      "s4Subtitle": "إلى أين تذهب نقاطك — وكم تكلفك فعلياً",
       "burnByCategoryTitle": "الاستهلاك حسب الميزة (آخر 30 يوم)",
       "catLinkedin": "تحليل البروفايل",
       "catCv": "إنشاء سيرة",
       "catCampaign": "حملات ورسائل",
       "catOther": "إدارية / أخرى",
-      "catTokens": "{{n}} توكن",
+      "catTokens": "{{n}} نقطة",
       "catCost": "~{{n}} دولار",
       "totalCostUSD": "إجمالي التكلفة المقدرة (دولار)",
       "topConsumersTitle": "أعلى 10 مستهلكين",
@@ -838,7 +838,7 @@
       "topConsumersMargin": "الهامش",
       "topConsumersAction": "إجراء",
       "marginAlert": "⚠️ مستخدم {{plan}} يكلفك {{pct}}% من ثمن الباقة — راجع",
-      "grantTokensBtn": "منح توكنز",
+      "grantTokensBtn": "منح نقاط",
       "noMarginIssues": "لا مشاكل ربحية — الهوامش جيدة",
       "s5Title": "إشارات النمو",
       "s5Subtitle": "المؤشرات الأهم لقياس صحة التسويق",
@@ -877,12 +877,12 @@
       "collapseSection": "طي",
       "allClear": "كل شيء على ما يرام",
       "verdictNeutral": "محايد",
-      "usersTitle": "المستخدمون والتوكنز",
-      "usersSubtitle": "أضف أو اخصم توكنز لأي مستخدم، وتابع حركة التوكنز",
+      "usersTitle": "المستخدمون والنقاط",
+      "usersSubtitle": "أضف أو اخصم نقاط لأي مستخدم، وتابع حركة النقاط",
       "usersSearch": "ابحث بالاسم أو البريد...",
       "usersColName": "الاسم",
       "usersColBalance": "الرصيد",
-      "usersColAdjust": "تعديل التوكنز",
+      "usersColAdjust": "تعديل النقاط",
       "usersEmpty": "لا يوجد مستخدمون",
       "usersAmountPh": "الكمية",
       "usersReasonPh": "السبب (مطلوب)",
@@ -891,10 +891,10 @@
       "usersAdjusting": "جارٍ...",
       "usersErrReason": "السبب مطلوب",
       "usersErrAmount": "أدخل كمية صحيحة",
-      "usersAddSuccess": "تمت إضافة {{amount}} توكن لـ {{name}}",
-      "usersRemoveSuccess": "تم خصم {{amount}} توكن من {{name}}",
-      "usersAdjustFail": "فشل تعديل التوكنز",
-      "txTitle": "سجل حركة التوكنز",
+      "usersAddSuccess": "تمت إضافة {{amount}} نقطة لـ {{name}}",
+      "usersRemoveSuccess": "تم خصم {{amount}} نقطة من {{name}}",
+      "usersAdjustFail": "فشل تعديل النقاط",
+      "txTitle": "سجل حركة النقاط",
       "txSubtitle": "من، كم، أي محفظة، أي مشرف، ومتى",
       "txColUser": "المستخدم",
       "txColAmount": "الكمية",
@@ -1087,8 +1087,8 @@
     },
     "generate": {
       "title": "جاهز للإنشاء؟",
-      "subtitle": "129 توكن لكل سيرة (DOCX + PDF)",
-      "button": "إنشاء السيرة — 129 توكن",
+      "subtitle": "129 نقطة لكل سيرة (DOCX + PDF)",
+      "button": "إنشاء السيرة — 129 نقطة",
       "success": "تم الإنشاء!",
       "error": "فشل الإنشاء"
     },
@@ -1139,7 +1139,7 @@
     "includeHashtags": "إضافة هاشتاقات",
     "generate": "توليد المنشور",
     "generating": "جاري التوليد...",
-    "tokenCost": "{{cost}} توكنز",
+    "tokenCost": "{{cost}} نقاط",
     "copy": "نسخ",
     "copied": "تم النسخ",
     "edit": "تعديل",
@@ -1160,7 +1160,7 @@
     "startWriting": "ابدأ الكتابة",
     "aiBadge": "مولّد بالذكاء الاصطناعي",
     "errorGenerating": "حدث خطأ أثناء التوليد",
-    "notEnoughTokens": "ليس لديك توكنز كافية",
+    "notEnoughTokens": "ليس لديك نقاط كافية",
     "quickAction": "أنشئ منشور LinkedIn",
     "quickActionDesc": "بالذكاء الاصطناعي خلال ثوانٍ",
     "postToLinkedIn": "نشر في LinkedIn",
@@ -1300,7 +1300,7 @@
       },
       "generate": {
         "button": "توليد 3 نسخ",
-        "buttonTokens": "توليد 3 نسخ • {{tokens}} توكن",
+        "buttonTokens": "توليد 3 نسخ • {{tokens}} نقطة",
         "generating": "نصنع بوستك الخاص...",
         "loading1": "نستوحي من اللهجة المختارة...",
         "loading2": "نخلط النبرات بذكاء...",
@@ -1351,7 +1351,7 @@
   "profileAnalysis": {
     "title": "تحليل البروفايل المهني",
     "subtitle": "احصل على تحليل عميق لملفك الشخصي على LinkedIn بالذكاء الاصطناعي",
-    "tokens": "توكن للتحليل",
+    "tokens": "نقطة للتحليل",
     "urlLabel": "رابط LinkedIn",
     "inputTitle": "رابط LinkedIn أو صورة الملف الشخصي",
     "inputSub": "أدخل الرابط أو ارفع صورة لبدء التحليل",
@@ -1444,9 +1444,9 @@
       "jobsApplied": "وظائف مُتقدَّم لها"
     },
     "tokens": {
-      "balance": "رصيد التوكنات",
-      "usedTotal": "الاستخدام الكلي: {{n}} توكن",
-      "breakdown": "استهلاك التوكنات حسب الميزة"
+      "balance": "رصيد النقاط",
+      "usedTotal": "الاستخدام الكلي: {{n}} نقطة",
+      "breakdown": "استهلاك النقاط حسب الميزة"
     },
     "activity": {
       "title": "نشاطك خلال الفترة",
@@ -1485,7 +1485,7 @@
       "analysisCount": "تحليلات ملف شخصي",
       "cvCount": "سير ذاتية",
       "campaignCount": "حملات",
-      "tokensCount": "رصيد التوكنز"
+      "tokensCount": "رصيد النقاط"
     },
     "chart": {
       "total": "إجمالي"
@@ -1493,12 +1493,12 @@
   },
   "au": {
     "title": "المستخدمون",
-    "subtitle": "إدارة حسابات المستخدمين والتوكنز",
+    "subtitle": "إدارة حسابات المستخدمين والنقاط",
     "refresh": "تحديث",
     "search": "ابحث بالاسم أو البريد...",
     "name": "الاسم",
     "plan": "الخطة",
-    "tokens": "التوكنز",
+    "tokens": "النقاط",
     "status": "الحالة",
     "joined": "انضم",
     "actions": "",
@@ -1506,10 +1506,10 @@
     "banned": "محظور",
     "noName": "—",
     "adminBadge": "مشرف",
-    "grantTokens": "منح توكنز",
+    "grantTokens": "منح نقاط",
     "ban": "حظر",
     "unban": "إلغاء الحظر",
-    "grantTitle": "منح توكنز",
+    "grantTitle": "منح نقاط",
     "currentBalance": "الرصيد الحالي",
     "amount": "الكمية",
     "reason": "السبب",
@@ -1517,8 +1517,8 @@
     "cancel": "إلغاء",
     "confirmGrant": "تأكيد",
     "granting": "جاري الإضافة...",
-    "grantSuccess": "تمت إضافة {{amount}} توكن لـ {{name}}",
-    "grantFail": "فشلت إضافة التوكنز",
+    "grantSuccess": "تمت إضافة {{amount}} نقطة لـ {{name}}",
+    "grantFail": "فشلت إضافة النقاط",
     "errAmount": "الكمية يجب أن تكون أكبر من صفر",
     "errReason": "السبب مطلوب (3 أحرف على الأقل)",
     "confirmBan": "هل أنت متأكد من حظر {{name}}؟",
@@ -1536,7 +1536,7 @@
       "total": "إجمالي المستخدمين",
       "active": "نشط (7 أيام)",
       "paid": "مشتركون مدفوع",
-      "tokens": "إجمالي التوكنز الممنوحة"
+      "tokens": "إجمالي النقاط الممنوحة"
     }
   },
   "analyzer": {
@@ -1546,8 +1546,8 @@
     "inputLabel": "رابط LinkedIn",
     "analyze": "تحليل",
     "disclaimer": "تستخدم الأداة استخراجاً آلياً ثم Claude Sonnet للتحليل — نتائجك خاصة ولا تُشارَك",
-    "cost": "استهلاك: {{n}} توكن",
-    "used": "تم استهلاك: {{n}} توكن",
+    "cost": "استهلاك: {{n}} نقطة",
+    "used": "تم استهلاك: {{n}} نقطة",
     "success": "اكتمل التحليل",
     "error": "حدث خطأ — حاول مرة أخرى",
     "rateLimit": "ضغط عالٍ الآن — جرّب بعد دقيقة",
@@ -1688,7 +1688,7 @@
     },
     "generate": {
       "button": "بدء التحليل",
-      "buttonTokens": "تحليل • {{tokens}} توكن",
+      "buttonTokens": "تحليل • {{tokens}} نقطة",
       "analyzing": "نحلل بروفايلك...",
       "loadingMessages": [
         "نستخرج بيانات بروفايلك...",
@@ -1839,7 +1839,7 @@
     },
     "errors": {
       "analysisFailed": "فشل التحليل — حاول مرة أخرى",
-      "tokenInsufficient": "رصيد التوكن غير كافٍ",
+      "tokenInsufficient": "رصيد النقاط غير كافٍ",
       "exportFailed": "فشل التحميل"
     }
   },
@@ -2529,19 +2529,19 @@
     },
     "subscription": {
       "label": "محفظة الاشتراك",
-      "detail": "توكناتك الشهرية. تتجدد مع كل دورة."
+      "detail": "نقاطك الشهرية. تتجدد مع كل دورة."
     },
     "topup": {
       "label": "محفظة الشحن",
       "detail": "شحن مدفوع. تبقى لديك دون انتهاء."
     },
     "total": "الإجمالي المتاح",
-    "tokens_zero": "لا يوجد توكن",
-    "tokens_one": "توكن واحد",
-    "tokens_two": "توكنان",
-    "tokens_few": "{{count}} توكنات",
-    "tokens_many": "{{count}} توكناً",
-    "tokens_other": "{{count}} توكن",
+    "tokens_zero": "لا توجد نقاط",
+    "tokens_one": "نقطة واحدة",
+    "tokens_two": "نقطتان",
+    "tokens_few": "{{count}} نقاط",
+    "tokens_many": "{{count}} نقطةً",
+    "tokens_other": "{{count}} نقطة",
     "expires_at": "تنتهي في {{iso}}",
     "renews_at": "تتجدد في {{iso}}",
     "no_expiry": "بدون انتهاء",
@@ -2550,20 +2550,20 @@
     "lifetime": "دائمة"
   },
   "goalBonus": {
-    "badge_inline": "+150 توكن للشهر الأول 🎁",
-    "card_title": "ابدأ مع {{total}} توكن للشهر الأول 🎁",
-    "celebration_title": "🎁 مكافأة الانطلاق: +{{tokens}} توكن هدية",
+    "badge_inline": "+150 نقطة للشهر الأول 🎁",
+    "card_title": "ابدأ مع {{total}} نقطة للشهر الأول 🎁",
+    "celebration_title": "🎁 مكافأة الانطلاق: +{{tokens}} نقطة هدية",
     "celebration_subtitle": "هدية للشهر الأول — تنتهي مع نهاية فترة الاشتراك",
-    "explanation": "عند اشتراكك في خطة الانطلاق أو النمو لأول مرة، نضيف 150 توكن مكافأة لمحفظتك. تنتهي مع نهاية الشهر الأول."
+    "explanation": "عند اشتراكك في خطة الانطلاق أو النمو لأول مرة، نضيف 150 نقطة مكافأة لمحفظتك. تنتهي مع نهاية الشهر الأول."
   },
   "checkout": {
     "processing": "جاري المعالجة…",
     "success_title": "تم الدفع بنجاح",
     "success_subtitle_subscription": "تم تفعيل اشتراكك",
-    "success_subtitle_topup": "تمت إضافة التوكن إلى رصيدك",
+    "success_subtitle_topup": "تمت إضافة النقاط إلى رصيدك",
     "success_subtitle_product": "تم تفعيل المنتج",
     "amount": "المبلغ",
-    "tokens_added": "التوكن المضافة",
+    "tokens_added": "النقاط المضافة",
     "wallet_subscription": "محفظة الاشتراك",
     "wallet_topup": "محفظة Top-up",
     "wallet_bonus": "محفظة الهدية",
@@ -2581,7 +2581,7 @@
     "section_title": "اختر حزمة Top-up",
     "buying": "جارٍ التحويل…",
     "price_label": "{{price}} ر.س",
-    "tokens_label": "{{tokens}} توكن",
+    "tokens_label": "{{tokens}} نقطة",
     "badge_popular": "الأكثر شعبية",
     "badge_best_value": "أفضل قيمة"
   },
@@ -2596,7 +2596,7 @@
     "reactivate": "إعادة تفعيل",
     "downgrade_scheduled": "سيتم التخفيض إلى {{plan}} في {{date}}",
     "cancel_scheduled": "تم إلغاء التجديد. يبقى الاشتراك نشطاً حتى {{date}}",
-    "upgrade_proration_preview": "ستحصل على {{tokens}} توكن إضافي فوراً (متبقي {{days}} يوماً)"
+    "upgrade_proration_preview": "ستحصل على {{tokens}} نقطة إضافي فوراً (متبقي {{days}} يوماً)"
   },
   "privacy": {
     "title": "الخصوصية والبيانات",
@@ -2657,7 +2657,7 @@
       "yourTargetRole": "الدور المستهدف",
       "yourLinkedin": "حساب لينكد إن",
       "overrideForSession": "تعديل لجلسة واحدة",
-      "startAnalysis": "ابدأ التحليل ({{cost}} توكن)",
+      "startAnalysis": "ابدأ التحليل ({{cost}} نقطة)",
       "viewCached": "عرض آخر تحليل (مجاناً)",
       "triggersDetected": "تم اكتشاف تحديثات منذ آخر تحليل"
     },
@@ -2692,7 +2692,7 @@
       "reAnalyze": "إعادة التحليل",
       "editTargetRole": "تعديل الدور المستهدف",
       "cachedFrom": "آخر تحليل في",
-      "fromCache": "من الكاش · 0 توكن",
+      "fromCache": "من الكاش · 0 نقطة",
       "freshAnalysis": "تحليل جديد",
       "freeDiagnostic": "تحليل مجاني",
       "severity": {
@@ -2723,7 +2723,7 @@
       "unlock": {
         "lockedTitle": "الإصلاحات الجاهزة مقفلة",
         "lockedBody": "التشخيص كامل ومجاني. افتح النصوص الجاهزة لتطبّقها مباشرة.",
-        "cta": "افتح الإصلاحات ({{count}} توكن)",
+        "cta": "افتح الإصلاحات ({{count}} نقطة)",
         "working": "جارٍ…",
         "lockedFixHint": "افتح الإصلاحات لعرض النص الجاهز وتطبيقه.",
         "fixLockedChip": "الإصلاح الجاهز مقفل"
@@ -2740,8 +2740,8 @@
     },
     "errors": {
       "noCareerProfile": "أكمل البروفايل المهني أولاً",
-      "insufficientTokens": "رصيدك غير كافٍ. أضف توكنات أو ترقّ خطتك",
-      "analysisFailed": "فشل التحليل. تم استرداد توكناتك",
+      "insufficientTokens": "رصيدك غير كافٍ. أضف نقاط أو ترقّ خطتك",
+      "analysisFailed": "فشل التحليل. تم استرداد نقاطك",
       "linkedinUnreachable": "تعذّر الوصول إلى بروفايل لينكد إن"
     }
   },
@@ -2766,9 +2766,9 @@
       "overrideForSession": "تعديل لجلسة واحدة",
       "recommendedTemplate": "القالب الموصى به",
       "changeTemplate": "تغيير القالب",
-      "build": "ابنِ السيرة ({{cost}} توكن)",
+      "build": "ابنِ السيرة ({{cost}} نقطة)",
       "viewCached": "عرض النسخة الحالية (مجاناً)",
-      "newVersion": "نسخة جديدة لدور مختلف ({{cost}} توكن)",
+      "newVersion": "نسخة جديدة لدور مختلف ({{cost}} نقطة)",
       "language": {
         "label": "لغة السيرة",
         "ar": "العربية",
@@ -2783,7 +2783,7 @@
     "editor": {
       "refinement": "تحسينات سريعة",
       "freeRefinements": "{{remaining}} من 5 تحسينات مشمولة متبقية",
-      "afterFive": "بعد 5 تحسينات، كل تعديل يكلف 5 توكنات",
+      "afterFive": "بعد 5 تحسينات، كل تعديل يكلف 5 نقاط",
       "exportPdf": "تصدير PDF",
       "exportDocx": "تصدير Word",
       "archive": "أرشفة",
@@ -2829,12 +2829,12 @@
     },
     "diagnostic": {
       "title": "شخّص سيرتك مجاناً",
-      "subtitle": "احصل على تقييم ATS كامل بأربعة مكوّنات — بدون أي توكن. ثم قرّر إن أردت بناء السيرة الكاملة.",
+      "subtitle": "احصل على تقييم ATS كامل بأربعة مكوّنات — بدون أي نقطة. ثم قرّر إن أردت بناء السيرة الكاملة.",
       "scoreLinkedin": "قيّم ملفي على LinkedIn",
-      "scoreLinkedinDesc": "نقيس ملفك الحالي كأنه سيرة ذاتية — 0 توكن، فوري.",
+      "scoreLinkedinDesc": "نقيس ملفك الحالي كأنه سيرة ذاتية — 0 نقطة، فوري.",
       "uploadCv": "ارفع سيرتي الحالية",
-      "uploadCvDesc": "PDF أو Word — نشخّصها بنفس المقياس، 0 توكن.",
-      "diagnoseNow": "شخّص الآن (0 توكن)",
+      "uploadCvDesc": "PDF أو Word — نشخّصها بنفس المقياس، 0 نقطة.",
+      "diagnoseNow": "شخّص الآن (0 نقطة)",
       "diagnosing": "جارٍ التشخيص…",
       "chooseFile": "اختر ملفاً",
       "needLinkedin": "أضف رابط LinkedIn في بروفايلك المهني أولاً.",
@@ -2853,15 +2853,15 @@
       "raiseTitle": "ارفع نقاطك",
       "buildTitle": "ابنِ سيرتك المخصّصة",
       "unlockBody": "البناء الكامل يخصّص كل قسم للدور المستهدف، يرفع نتيجة ATS، ويصدّر PDF و Word بقالب احترافي مع سبب الاختيار وبديلين.",
-      "buildFull": "ابنِ السيرة الكاملة (179 توكن)",
-      "buildFootnote": "تُخصم 179 توكن بعد نجاح البناء فقط",
+      "buildFull": "ابنِ السيرة الكاملة (179 نقطة)",
+      "buildFootnote": "تُخصم 179 نقطة بعد نجاح البناء فقط",
       "another": "تشخيص مصدر آخر",
       "readError": "تعذّر قراءة نص كافٍ من الملف"
     },
     "errors": {
       "noCareerProfile": "أكمل البروفايل المهني أولاً",
-      "insufficientTokens": "رصيدك غير كافٍ. أضف توكنات أو ترقّ خطتك",
-      "buildFailed": "فشل البناء. تم استرداد توكناتك",
+      "insufficientTokens": "رصيدك غير كافٍ. أضف نقاط أو ترقّ خطتك",
+      "buildFailed": "فشل البناء. تم استرداد نقاطك",
       "templateNotFound": "القالب غير موجود",
       "legacyReadOnly": "النسخة القديمة للقراءة فقط"
     }
@@ -2873,19 +2873,19 @@
     "modes": {
       "post": {
         "name": "منشور",
-        "cost": "5 توكن",
+        "cost": "5 نقطة",
         "duration": "~10 ثانية",
         "desc": "منشور قصير مرتكز على فكرة واحدة"
       },
       "carousel": {
         "name": "كاروسيل",
-        "cost": "25 توكن",
+        "cost": "25 نقطة",
         "duration": "~30 ثانية",
         "desc": "5-8 شرائح تشرح فكرة كاملة"
       },
       "repurpose": {
         "name": "حزمة إعادة توظيف",
-        "cost": "15 توكن",
+        "cost": "15 نقطة",
         "duration": "~20 ثانية",
         "desc": "حوّل منشورك إلى كاروسيل + فيديو + متابعة"
       }
@@ -2908,9 +2908,9 @@
       "topicPlaceholder": "اكتب موضوعك أو اختر من المقترحات",
       "pickSource": "اختر منشوراً للإعادة",
       "noEligibleSources": "لا توجد منشورات قابلة لإعادة التوظيف. أنشئ منشوراً أولاً.",
-      "start": "ابدأ ({{cost}} توكن)",
+      "start": "ابدأ ({{cost}} نقطة)",
       "viewCached": "عرض النسخة الحالية (مشمول)",
-      "cachedFootnote": "يتم خصم التوكنات بعد نجاح التوليد. لو فشل — يتم استرداد توكناتك تلقائياً.",
+      "cachedFootnote": "يتم خصم النقاط بعد نجاح التوليد. لو فشل — يتم استرداد نقاطك تلقائياً.",
       "cachedIncluded": "مخزّن — مشمول"
     },
     "generating": {
@@ -2925,7 +2925,7 @@
       "almostThere": "لحظة، اقترب من النهاية...",
       "ready": "✓ المحتوى جاهز",
       "failed": "✕ فشل التوليد",
-      "noTokensCharged": "لم يتم خصم أي توكنات. يمكنك إعادة المحاولة بأمان"
+      "noTokensCharged": "لم يتم خصم أي نقاط. يمكنك إعادة المحاولة بأمان"
     },
     "editor": {
       "titlePost": "منشور",
@@ -2944,11 +2944,11 @@
       "restore": "استعادة",
       "refinement": "تحسينات سريعة",
       "freeRefinements": "{{remaining}} من 5 مشمولة",
-      "paidRefinement": "5 توكنات/تحسين",
-      "afterFive": "بعد 5، كل تعديل = 5 توكنات",
+      "paidRefinement": "5 نقاط/تحسين",
+      "afterFive": "بعد 5، كل تعديل = 5 نقاط",
       "legacyBanner": "هذا محتوى قديم للقراءة فقط. ابدأ محتوى جديداً لتفعيل التحسينات.",
       "toneViolationsBanner": "لاحظ المحرر بعض الأنماط غير المُفضّلة في النص. يمكنك تحسينها عبر التحسينات السريعة.",
-      "cachedBadge": "مخزّن — 0 توكن",
+      "cachedBadge": "مخزّن — 0 نقطة",
       "chips": {
         "shorter": "اجعله أقصر",
         "longer": "اجعله أطول",
@@ -2989,7 +2989,7 @@
     "errors": {
       "noCareerProfile": "أكمل البروفايل المهني أولاً",
       "insufficientTokens": "رصيدك غير كافٍ",
-      "generationFailed": "فشل التوليد. تم استرداد توكناتك",
+      "generationFailed": "فشل التوليد. تم استرداد نقاطك",
       "topicRequired": "اكتب موضوعاً أولاً",
       "sourcePostRequired": "اختر منشوراً للإعادة",
       "contentNotFound": "لم نجد المحتوى",
@@ -2998,21 +2998,21 @@
     }
   },
   "errors": {
-    "service_busy": "الخدمة مشغولة حالياً. حاول من جديد بعد لحظات. لم نخصم أي توكن.",
-    "timeout": "استغرقت العملية وقتاً أطول من المتوقع. حاول من جديد. لم نخصم أي توكن.",
-    "no_tokens": "لا توجد توكنات كافية. قم بتجديد محفظتك ثم أعد المحاولة.",
+    "service_busy": "الخدمة مشغولة حالياً. حاول من جديد بعد لحظات. لم نخصم أي نقطة.",
+    "timeout": "استغرقت العملية وقتاً أطول من المتوقع. حاول من جديد. لم نخصم أي نقطة.",
+    "no_tokens": "لا توجد نقاط كافية. قم بتجديد محفظتك ثم أعد المحاولة.",
     "no_tokens_partial": "رصيدك أقل من المطلوب لهذه العملية. اشحن المحفظة ثم أعد المحاولة.",
     "invalid_input": "هناك مدخل غير صحيح في الحقل: {{field}}.",
     "not_found": "لم نجد {{kind}}. ربما تم حذفه.",
     "unauthorized": "انتهت جلستك. سجّل الدخول من جديد.",
     "rate_limited": "كثرت الطلبات في وقت قصير. حاول بعد قليل.",
-    "discovery_failed": "تعذّر إكمال الاكتشاف الآن. حاول من جديد. لم نخصم أي توكن.",
+    "discovery_failed": "تعذّر إكمال الاكتشاف الآن. حاول من جديد. لم نخصم أي نقطة.",
     "export_failed": "تعذّر تجهيز الملف للتنزيل. حاول من جديد.",
     "cache_corrupted": "النسخة المحفوظة غير مقروءة. أنشئ نسخة جديدة.",
     "generic": {
       "unknown": {
         "title": "حدث خطأ",
-        "body": "تم استرداد {{refundedTokens}} توكن إن وُجد. تواصل مع الدعم لو تكرر.",
+        "body": "تم استرداد {{refundedTokens}} نقطة إن وُجد. تواصل مع الدعم لو تكرر.",
         "cta": "تواصل مع الدعم"
       }
     },
@@ -3031,11 +3031,11 @@
     "tokens": {
       "insufficient": {
         "title": "رصيدك غير كافٍ",
-        "body": "تحتاج توكنات إضافية لإكمال هذه العملية.",
-        "cta": "إضافة توكنات"
+        "body": "تحتاج نقاط إضافية لإكمال هذه العملية.",
+        "cta": "إضافة نقاط"
       },
       "refund_failed": {
-        "title": "فشل استرداد التوكن",
+        "title": "فشل استرداد النقاط",
         "body": "تواصل مع الدعم وسنحل المشكلة بسرعة.",
         "cta": "تواصل مع الدعم"
       }
@@ -3043,29 +3043,29 @@
     "ai": {
       "rate_limit": {
         "title": "الخدمة مزدحمة قليلاً",
-        "body": "تم استرداد {{refundedTokens}} توكن. حاول بعد دقيقة.",
+        "body": "تم استرداد {{refundedTokens}} نقطة. حاول بعد دقيقة.",
         "cta": "إعادة المحاولة"
       },
       "overloaded": {
         "title": "الذكاء الاصطناعي مشغول",
-        "body": "تم استرداد توكناتك. أعد المحاولة خلال دقائق.",
+        "body": "تم استرداد نقاطك. أعد المحاولة خلال دقائق.",
         "cta": "إعادة المحاولة"
       },
       "timeout": {
         "title": "انتهت المهلة",
-        "body": "العملية أخذت وقتاً أطول من المعتاد. تم استرداد {{refundedTokens}} توكن.",
+        "body": "العملية أخذت وقتاً أطول من المعتاد. تم استرداد {{refundedTokens}} نقطة.",
         "cta": "إعادة المحاولة"
       },
       "generation_failed": {
         "title": "تعذّر إكمال العملية",
-        "body": "تم استرداد {{refundedTokens}} توكن. أعد المحاولة.",
+        "body": "تم استرداد {{refundedTokens}} نقطة. أعد المحاولة.",
         "cta": "إعادة المحاولة"
       }
     },
     "linkedin": {
       "not_found": {
         "title": "البروفايل غير موجود",
-        "body": "تأكد من الرابط. تم استرداد توكناتك.",
+        "body": "تأكد من الرابط. تم استرداد نقاطك.",
         "cta": "تعديل الرابط"
       },
       "private": {
@@ -3080,7 +3080,7 @@
       },
       "scrape_failed": {
         "title": "تعذّر الوصول للبروفايل",
-        "body": "تم استرداد {{refundedTokens}} توكن. أعد المحاولة.",
+        "body": "تم استرداد {{refundedTokens}} نقطة. أعد المحاولة.",
         "cta": "إعادة المحاولة"
       }
     },
@@ -3273,8 +3273,8 @@
     "templates": {
       "balance_low": {
         "title": "رصيدك قارب على النفاد",
-        "body": "تبقى لك {{balance}} توكن. أضف توكنات لمتابعة رحلتك المهنية.",
-        "cta": "إضافة توكنات"
+        "body": "تبقى لك {{balance}} نقطة. أضف نقاط لمتابعة رحلتك المهنية.",
+        "cta": "إضافة نقاط"
       },
       "subscription_renewal": {
         "title": "اشتراكك يتجدد قريباً",
@@ -3283,12 +3283,12 @@
       },
       "bonus_expiring": {
         "title": "مكافأتك تنتهي قريباً",
-        "body": "{{bonusTokens}} توكن مكافأة تنتهي في {{date}}. استخدمها قبل أن تخسرها.",
+        "body": "{{bonusTokens}} نقطة مكافأة تنتهي في {{date}}. استخدمها قبل أن تخسرها.",
         "cta": "ابدأ الآن"
       },
       "payment_succeeded": {
         "title": "تم الدفع بنجاح",
-        "body": "تم إضافة {{tokens}} توكن إلى رصيدك.",
+        "body": "تم إضافة {{tokens}} نقطة إلى رصيدك.",
         "cta": "عرض السجل"
       },
       "next_task_ready": {
@@ -3317,7 +3317,7 @@
     "promo": {
       "placeholder": "أدخل كود البيتا",
       "redeem": "تفعيل",
-      "success": "تم التفعيل! حصلت على {{tokens}} توكن لمدة {{months}} أشهر",
+      "success": "تم التفعيل! حصلت على {{tokens}} نقطة لمدة {{months}} أشهر",
       "errors": {
         "notFound": "الكود غير موجود",
         "expired": "انتهت صلاحية الكود",
@@ -3351,7 +3351,7 @@
       "fields": {
         "code": "الكود",
         "plan": "الباقة",
-        "tokens": "التوكن المضافة",
+        "tokens": "النقاط المضافة",
         "months": "الأشهر",
         "maxRedemptions": "الحد الأقصى",
         "expiresDays": "صلاحية (يوم)",
@@ -3366,7 +3366,7 @@
     "table": {
       "code": "الكود",
       "plan": "الباقة",
-      "tokens": "التوكن",
+      "tokens": "النقاط",
       "redemptions": "الاستخدامات",
       "expires": "الانتهاء",
       "notes": "ملاحظات"

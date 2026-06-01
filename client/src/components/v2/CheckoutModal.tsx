@@ -168,7 +168,7 @@ function CheckoutModal({ plan, billingCycle, onClose }: CheckoutModalProps) {
                   </div>
                 </div>
                 <div className="mt-1 font-ar text-[12px] text-v2-body">
-                  {t(`${plan.monthly_tokens} استخدام شهرياً`, `${plan.monthly_tokens} uses / month`)}
+                  {t(`${plan.monthly_tokens} نقطة شهرياً`, `${plan.monthly_tokens} tokens / month`)}
                 </div>
               </div>
 

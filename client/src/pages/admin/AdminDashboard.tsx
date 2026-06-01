@@ -515,7 +515,7 @@ export default function AdminDashboard() {
         amount: grantAmount,
         reason: 'Admin grant from cohort card',
       });
-      toast.push('success', isAr ? `تمت إضافة ${grantAmount} توكن` : `Granted ${grantAmount} tokens`);
+      toast.push('success', isAr ? `تمت إضافة ${grantAmount} نقطة` : `Granted ${grantAmount} tokens`);
       setGrantModal(null);
       loadSection('cohorts', () => trpc.admin.cohorts(), setCohorts);
     } catch (e: any) {

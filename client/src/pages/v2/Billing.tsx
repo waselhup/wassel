@@ -283,14 +283,14 @@ function Billing() {
             <section className="mb-5 rounded-v2-lg border border-v2-line bg-v2-surface p-5 lg:p-7">
               <div className="flex items-baseline justify-between mb-3">
                 <h2 className="font-ar font-bold text-v2-ink text-[16px] lg:text-[18px]">
-                  {t('رصيد التوكن', 'Token balance')}
+                  {t('رصيد النقاط', 'Token balance')}
                 </h2>
                 <button
                   type="button"
                   onClick={() => setShowTopUp((v) => !v)}
                   className="font-ar text-[12px] font-semibold text-teal-700 hover:text-teal-800 cursor-pointer"
                 >
-                  {showTopUp ? t('إخفاء', 'Hide') : t('شحن توكنات', 'Top up')}
+                  {showTopUp ? t('إخفاء', 'Hide') : t('شحن نقاط', 'Top up')}
                 </button>
               </div>
 
@@ -366,7 +366,7 @@ function Billing() {
               {wallets && (
                 <p className="mt-3 font-ar text-[11px] leading-relaxed text-v2-dim">
                   {t(
-                    'تُستهلك توكناتك بالترتيب: المكافآت أولاً، ثم الاشتراك، ثم الشحن. توكنات المكافآت تنتهي في تاريخها، وتوكنات الاشتراك تتجدد كل دورة، وتوكنات الشحن دائمة.',
+                    'تُستهلك نقاطك بالترتيب: المكافآت أولاً، ثم الاشتراك، ثم الشحن. نقاط المكافآت تنتهي في تاريخها، ونقاط الاشتراك تتجدد كل دورة، ونقاط الشحن دائمة.',
                     'Tokens are spent in order: Bonus first, then Subscription, then Top-up. Bonus tokens expire on their date, subscription tokens renew each cycle, and top-up tokens never expire.',
                   )}
                 </p>
@@ -405,7 +405,7 @@ function Billing() {
                             <NumDisplay className="font-ar text-[18px] font-bold text-v2-ink tabular-nums">
                               {pkg.tokens}
                             </NumDisplay>
-                            <span className="font-ar text-[11px] text-v2-dim">{t('توكن', 'tokens')}</span>
+                            <span className="font-ar text-[11px] text-v2-dim">{t('نقطة', 'tokens')}</span>
                           </div>
                           <div className="mt-1 font-ar text-[12px] text-v2-body">
                             <NumDisplay className="tabular-nums">{pkg.price_sar}</NumDisplay>
@@ -446,7 +446,7 @@ function Billing() {
                       <div>
                         <div className="font-ar text-[13px] font-semibold text-v2-ink">
                           {p.type === 'subscription' ? t('اشتراك', 'Subscription')
-                            : p.type === 'token_topup' ? t('شحن توكنات', 'Token top-up')
+                            : p.type === 'token_topup' ? t('شحن نقاط', 'Token top-up')
                             : t('شراء منتج', 'Product purchase')}
                         </div>
                         <div className="font-ar text-[11px] text-v2-mute">{formatDate(p.created_at)}</div>
@@ -476,7 +476,7 @@ function Billing() {
                     <div key={tx.id} className="flex items-center justify-between border-b border-v2-line py-2 last:border-b-0">
                       <div>
                         <div className="font-ar text-[13px] font-semibold text-v2-ink">
-                          {tx.description || t('عملية توكن', 'Token operation')}
+                          {tx.description || t('عملية نقطة', 'Token operation')}
                         </div>
                         <div className="font-ar text-[11px] text-v2-mute">{formatDate(tx.created_at)}</div>
                       </div>
